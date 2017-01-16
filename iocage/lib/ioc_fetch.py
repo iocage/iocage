@@ -129,10 +129,14 @@ class IOCFetch(object):
             - XX.X_RELEASE
         """
         if self.server == "ftp.freebsd.org":
-            self.root_dir = "/pub/FreeBSD/releases/{}".format(self.arch)
+            self.server = "https://download.freebsd.org"
+            self.root_dir = "ftp/releases/{}".format(self.arch)
 
-        if "http://" not in self.server:
+        if self.auth and "https" not in self.server:
+            self.server = "https://" + self.server
+        elif "http" not in self.server:
             self.server = "http://" + self.server
+
         logging.getLogger("requests").setLevel(logging.WARNING)
 
         if self.auth == "basic":
