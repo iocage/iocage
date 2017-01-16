@@ -40,6 +40,30 @@ class IOCFetch(object):
         self._file = _file
         self.files = ("base.txz", "lib32.txz", "doc.txz")
 
+    @staticmethod
+    def __eol_release():
+        """Scrapes the FreeBSD website and returns a list of EOL RELEASES"""
+        logging.getLogger("requests").setLevel(logging.WARNING)
+        _eol = "https://www.freebsd.org/security/unsupported.html"
+        req = requests.get(_eol)
+        status = req.status_code == requests.codes.ok
+        eol_releases = []
+        if not status:
+            req.raise_for_status()
+
+        for eol in req.content.split():
+            eol = eol.strip("href=").strip("/").split(">")
+            # We want a dynamic EOL
+            try:
+                if "-RELEASE" in eol[1]:
+                    eol = eol[1].strip('</td')
+                    if eol not in eol_releases:
+                        eol_releases.append(eol)
+            except IndexError:
+                pass
+
+        return eol_releases
+
     def __validate_release(self, releases):
         """
         Checks if the user supplied an index number and returns the
@@ -80,7 +104,8 @@ class IOCFetch(object):
     def fetch_release(self):
         """Small wrapper to choose the right fetch."""
         if self.http:
-            self.http_fetch_release()
+            eol = self.__eol_release()
+            self.http_fetch_release(eol)
         elif self._file:
             # Format for file directory should be: root-dir/RELEASE/*.txz
             if not self.root_dir:
@@ -117,9 +142,10 @@ class IOCFetch(object):
                 self.lgr.info("Extracting: {}... ".format(f))
                 self.extract_fetch(f)
         else:
-            self.ftp_fetch_release()
+            eol = self.__eol_release()
+            self.ftp_fetch_release(eol)
 
-    def http_fetch_release(self):
+    def http_fetch_release(self, eol):
         """
         Fetch a user specified RELEASE from FreeBSD's http server or a user
         supplied one. The user can also specify the user, password and
@@ -164,7 +190,10 @@ class IOCFetch(object):
 
             releases = sort_release(releases)
             for r in releases:
-                self.lgr.info("[{}] {}".format(releases.index(r), r))
+                if r in eol:
+                    self.lgr.info("[{}] {} (EOL)".format(releases.index(r), r))
+                else:
+                    self.lgr.info("[{}] {}".format(releases.index(r), r))
             self.release = raw_input("\nWhich release do you want to fetch?"
                                      " (EXIT) ")
             self.release = self.__validate_release(releases)
@@ -172,7 +201,7 @@ class IOCFetch(object):
         self.download_fetch(self.files)
         self.update_fetch()
 
-    def ftp_fetch_release(self):
+    def ftp_fetch_release(self, eol):
         """
         Fetch a user specified RELEASE from FreeBSD's ftp server or a user
         supplied one. The user can also specify the user, password and
@@ -199,7 +228,10 @@ class IOCFetch(object):
         if not self.release:
             releases = sort_release(ftp_list)
             for r in releases:
-                self.lgr.info("[{}] {}".format(releases.index(r), r))
+                if r in eol:
+                    self.lgr.info("[{}] {} (EOL)".format(releases.index(r), r))
+                else:
+                    self.lgr.info("[{}] {}".format(releases.index(r), r))
             self.release = raw_input("\nWhich release do you want to fetch?"
                                      " (EXIT) ")
 
