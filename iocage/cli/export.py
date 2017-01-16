@@ -19,7 +19,7 @@ def export_cmd(jail):
     """Make a recursive snapshot of the jail and export to a file."""
     lgr = logging.getLogger('ioc_cli_export')
 
-    pool = IOCJson("").get_prop_value("pool")
+    pool = IOCJson().get_prop_value("pool")
     iocroot = IOCJson(pool).get_prop_value("iocroot")
     date = datetime.utcnow().strftime("%F")
     jails, paths = IOCList("uuid").get_datasets()

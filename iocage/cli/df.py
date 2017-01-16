@@ -22,7 +22,7 @@ def df_cmd(header, _long):
     lgr = logging.getLogger('ioc_cli_df')
 
     jails, paths = IOCList("uuid").get_datasets()
-    pool = IOCJson("").get_prop_value("pool")
+    pool = IOCJson().get_prop_value("pool")
     iocroot = IOCJson(pool).get_prop_value("iocroot")
     jail_list = []
 

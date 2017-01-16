@@ -13,7 +13,7 @@ class IOCClean(object):
     """Cleans datasets and snapshots of a given type."""
 
     def __init__(self):
-        self.pool = IOCJson("").get_prop_value("pool")
+        self.pool = IOCJson().get_prop_value("pool")
         self.iocroot = IOCJson(self.pool).get_prop_value("iocroot")
         self.lgr = logging.getLogger('ioc_clean')
 

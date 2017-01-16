@@ -21,7 +21,7 @@ def snapshot_cmd(jail, name):
     lgr = logging.getLogger('ioc_cli_snapshot')
 
     jails, paths = IOCList("uuid").get_datasets()
-    pool = IOCJson("").get_prop_value("pool")
+    pool = IOCJson().get_prop_value("pool")
     date = datetime.utcnow().strftime("%F_%T")
 
     _jail = {tag: uuid for (tag, uuid) in jails.iteritems() if

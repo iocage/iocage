@@ -24,7 +24,7 @@ class IOCList(object):
         self.header = hdr
         self.full = full
         self.return_object = rtrn_object
-        self.pool = IOCJson("").get_prop_value("pool")
+        self.pool = IOCJson().get_prop_value("pool")
         self.iocroot = IOCJson(self.pool).get_prop_value("iocroot")
         self.lgr = logging.getLogger('ioc_list')
 

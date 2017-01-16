@@ -17,7 +17,7 @@ def import_cmd(jail):
     """Import from an iocage export."""
     lgr = logging.getLogger('ioc_cli_import')
 
-    pool = IOCJson("").get_prop_value("pool")
+    pool = IOCJson().get_prop_value("pool")
     iocroot = IOCJson(pool).get_prop_value("iocroot")
     image_dir = "{}/images".format(iocroot)
     exports = os.listdir(image_dir)

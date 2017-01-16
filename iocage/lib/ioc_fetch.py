@@ -26,7 +26,7 @@ class IOCFetch(object):
 
     def __init__(self, server, user, password, auth, release, root_dir, http,
                  _file):
-        self.pool = IOCJson("").get_prop_value("pool")
+        self.pool = IOCJson().get_prop_value("pool")
         self.iocroot = IOCJson(self.pool).get_prop_value("iocroot")
         self.server = server
         self.user = user
