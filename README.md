@@ -7,8 +7,8 @@ iocage is a jail/container manager amalgamating some of the best features and
 technologies the FreeBSD operating system has to offer. It is geared for ease
  of use with a simple and easy to understand command syntax.
 
-iocage is in the FreeBSD ports tree as sysutils/iocage.
-To install using binary packages, simply run: `pkg install iocage`
+iocage is in the FreeBSD ports tree as sysutils/py-iocage.
+To install using binary packages, simply run: `pkg install py27-iocage`
 
 If cloning the repo directly, cd into the cloned directory and run `pip install .` as root.
 
@@ -23,7 +23,7 @@ If cloning the repo directly, cd into the cloned directory and run `pip install 
 We _like_ issues! If you are having trouble with `iocage` please open a GitHub [issue](https://github.com/iocage/iocage/issues) and we will ~~run around with our hair on fire~~ look into it. Before doing so, please give us some information about the situation:
 - Tell us what version of FreeBSD you are using with something like `uname -ro`
 - It would also be helpful if you gave us the output of `iocage version`
-- Most importantly, try to be detailed. Simply stating "I tried consoling into a jail and it broke" will not help us very much. However, saying something like this helps much, much more:
+- Most importantly, try to be detailed. Simply stating "I tried consoling into a jail and it broke" will not help us very much.
 - Use the [Markdown Basics](https://help.github.com/articles/markdown-basics/#code-formatting) GitHub page for more information on how to paste lines of code and terminal output.
 
 ####Submitting a pull request:
@@ -58,6 +58,7 @@ Start the jail:
 **REQUIREMENTS**
 - FreeBSD 9.3-RELEASE amd64 or newer
 - ZFS file system
+- Python 2.7
 - Optional - Kernel compiled with:
 
         # This is optional and only needed if you need VNET
