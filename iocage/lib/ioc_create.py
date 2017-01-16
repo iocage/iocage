@@ -17,7 +17,7 @@ class IOCCreate(object):
     """Create a jail from a clone."""
 
     def __init__(self, release, props, num, pkglist=None, plugin=False):
-        self.pool = IOCJson("").get_prop_value("pool")
+        self.pool = IOCJson().get_prop_value("pool")
         self.iocroot = IOCJson(self.pool).get_prop_value("iocroot")
         self.release = release
         self.props = props
@@ -74,7 +74,7 @@ class IOCCreate(object):
         This sets up the default configuration for a jail. It also does some
         mild sanity checking on the properties users are supplying.
         """
-        version = IOCJson("").iocage_version()
+        version = IOCJson().iocage_version()
 
         with open('/etc/hostid', 'r') as _file:
             hostid = _file.read().strip()

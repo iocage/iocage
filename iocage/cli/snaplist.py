@@ -20,7 +20,7 @@ def snaplist_cmd(header, jail):
     lgr = logging.getLogger('ioc_cli_snaplist')
 
     jails, paths = IOCList("uuid").get_datasets()
-    pool = IOCJson("").get_prop_value("pool")
+    pool = IOCJson().get_prop_value("pool")
     snap_list = []
 
     _jail = {tag: uuid for (tag, uuid) in jails.iteritems() if

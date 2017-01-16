@@ -12,7 +12,7 @@ class IOCCheck(object):
     """Checks if the required iocage datasets are present"""
 
     def __init__(self, altpool):
-        self.pool = IOCJson("").get_prop_value("pool")
+        self.pool = IOCJson().get_prop_value("pool")
         self.altpool = altpool
         self.lgr = logging.getLogger('ioc_check')
 

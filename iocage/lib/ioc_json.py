@@ -10,7 +10,7 @@ from os import geteuid, path
 
 def _get_pool_and_iocroot():
     """For internal setting of pool and iocroot."""
-    pool = IOCJson("").get_prop_value("pool")
+    pool = IOCJson().get_prop_value("pool")
     iocroot = IOCJson(pool).get_prop_value("iocroot")
 
     return (pool, iocroot)
@@ -22,7 +22,7 @@ class IOCJson(object):
     format, will set and get properties.
     """
 
-    def __init__(self, location, silent=False):
+    def __init__(self, location="", silent=False):
         self.location = location
         self.lgr = logging.getLogger('ioc_json')
 
