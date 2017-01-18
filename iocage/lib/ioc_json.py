@@ -29,28 +29,25 @@ class IOCJson(object):
         if silent:
             self.lgr.disabled = True
 
-    @staticmethod
-    def convert_to_json_ucl():
+    def convert_to_json_ucl(self):
         """Convert to JSON. Accepts a location to the ucl configuration."""
-        raise RuntimeError("Migrating from iocage develop is not supported!")
-        # Maybe one day, but today is not that day.
-        # if geteuid() != 0:
-        #     raise RuntimeError("You need to be root to convert the"
-        #                        " configuration to the new format!")
-        #
-        # with open(self.location + "/config") as conf:
-        #     lines = conf.readlines()
-        #
-        # key_and_value = {}
-        #
-        # for line in lines:
-        #     line = line.partition("=")
-        #     key = line[0].rstrip()
-        #     value = line[2].replace(";", "").replace('"', '').strip()
-        #
-        #     key_and_value[key] = value
-        #
-        # self.write_json(key_and_value)
+        if geteuid() != 0:
+            raise RuntimeError("You need to be root to convert the"
+                               " configuration to the new format!")
+
+        with open(self.location + "/config") as conf:
+            lines = conf.readlines()
+
+        key_and_value = {}
+
+        for line in lines:
+            line = line.partition("=")
+            key = line[0].rstrip()
+            value = line[2].replace(";", "").replace('"', '').strip()
+
+            key_and_value[key] = value
+
+        self.write_json(key_and_value)
 
     def convert_to_json_zfs(self, uuid):
         """Convert to JSON. Accepts a jail UUID"""
@@ -209,9 +206,14 @@ class IOCJson(object):
         and their default values that don't exist.
         """
         version = self.iocage_version()
-        conf_version = conf["CONFIG_VERSION"]
 
-        if version != conf_version:
-            # TODO: When we have a real change to keys to migrate.
+        try:
+            conf_version = conf["CONFIG_VERSION"]
+
+            if version != conf_version:
+                # TODO: When we have a real change to keys to migrate.
+                conf["CONFIG_VERSION"] = version
+                self.write_json(conf)
+        except KeyError:
             conf["CONFIG_VERSION"] = version
             self.write_json(conf)
