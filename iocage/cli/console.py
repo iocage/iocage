@@ -50,8 +50,16 @@ def console_cmd(jail, force):
     if not status and force:
         lgr.info("{} ({}) is not running".format(uuid, tag) +
                  ", starting jail.")
-        IOCStart(uuid, path, silent=True).start_jail(jail, conf)
-        status = True
+        if conf["type"] == "jail":
+            IOCStart(uuid, path, silent=True).start_jail(jail, conf)
+            status = True
+        elif conf["type"] == "basejail":
+            raise RuntimeError("Please run \"iocage migrate\" before trying"
+                               " to start {} ({})".format(uuid, tag))
+        else:
+            raise RuntimeError("{} is not a supported jail type.".format(
+                    conf["type"]
+            ))
 
     if status:
         Popen(["jexec", "ioc-{}".format(uuid), "login"] +

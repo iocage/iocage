@@ -45,4 +45,13 @@ def start_cmd(jail):
             raise RuntimeError("{} not found!".format(jail))
 
         conf = IOCJson(path).load_json()
-        IOCStart(uuid, path).start_jail(tag, conf)
+
+        if conf["type"] == "jail":
+            IOCStart(uuid, path).start_jail(tag, conf)
+        elif conf["type"] == "basejail":
+            raise RuntimeError("Please run \"iocage migrate\" before trying"
+                               " to start {} ({})".format(uuid, tag))
+        else:
+            raise RuntimeError("{} is not a supported jail type.".format(
+                    conf["type"]
+            ))
