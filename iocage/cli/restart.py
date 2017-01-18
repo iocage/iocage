@@ -33,13 +33,21 @@ def restart_cmd(jail, soft):
 
             conf = IOCJson(path).load_json()
 
-            try:
-                if not soft:
-                    __hard_restart(uuid, j, path, conf)
-                else:
-                    __soft_restart(uuid, j, path, conf)
-            except RuntimeError as err:
-                lgr.error(err)
+            if conf["type"] == "jail":
+                try:
+                    if not soft:
+                        __hard_restart(uuid, j, path, conf)
+                    else:
+                        __soft_restart(uuid, j, path, conf)
+                except RuntimeError as err:
+                    lgr.error(err)
+            elif conf["type"] == "basejail":
+                lgr.error("Please run \"iocage migrate\" before trying"
+                          " to restart {} ({})".format(uuid, j))
+            else:
+                lgr.error("{} is not a supported jail type.".format(
+                        conf["type"]
+                ))
     else:
         _jail = {tag: uuid for (tag, uuid) in jails.iteritems() if
                  uuid.startswith(jail) or tag == jail}
@@ -58,10 +66,18 @@ def restart_cmd(jail, soft):
 
         conf = IOCJson(path).load_json()
 
-        if not soft:
-            __hard_restart(uuid, tag, path, conf)
+        if conf["type"] == "jail":
+            if not soft:
+                __hard_restart(uuid, tag, path, conf)
+            else:
+                __soft_restart(uuid, tag, path, conf)
+        elif conf["type"] == "basejail":
+            raise RuntimeError("Please run \"iocage migrate\" before trying"
+                               " to restart {} ({})".format(uuid, tag))
         else:
-            __soft_restart(uuid, tag, path, conf)
+            raise RuntimeError("{} is not a supported jail type.".format(
+                    conf["type"]
+            ))
 
 
 def __hard_restart(uuid, jail, path, conf):

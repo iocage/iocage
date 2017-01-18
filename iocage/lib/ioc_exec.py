@@ -40,8 +40,16 @@ class IOCExec(object):
                           ", starting jail.")
             conf = IOCJson(self.path).load_json()
 
-            IOCStart(self.uuid, self.path, silent=True).start_jail(self.tag,
-                                                                   conf)
+            if conf["type"] == "jail":
+                IOCStart(self.uuid, self.path, silent=True).start_jail(self.tag,
+                                                                       conf)
+            elif conf["type"] == "basejail":
+                raise RuntimeError("Please run \"iocage migrate\" before trying"
+                                   " to start {} ({})".format(uuid, tag))
+            else:
+                raise RuntimeError("{} is not a supported jail type.".format(
+                        conf["type"]
+                ))
             self.lgr.info("\nCommand output:")
 
         Popen(["jexec", flag, user, "ioc-{}".format(self.uuid)] +

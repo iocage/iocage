@@ -15,10 +15,10 @@ import requests
 from backports import lzma
 from requests.auth import HTTPDigestAuth
 
+from iocage.lib.ioc_common import sort_release
 from iocage.lib.ioc_create import IOCCreate
 from iocage.lib.ioc_exec import IOCExec
 from iocage.lib.ioc_json import IOCJson
-from iocage.lib.ioc_common import sort_release
 
 
 class IOCFetch(object):
