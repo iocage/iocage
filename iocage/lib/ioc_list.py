@@ -34,7 +34,7 @@ class IOCList(object):
         if self.list_type == "all" or self.list_type == "uuid":
             # List the datasets underneath self.POOL/iocroot/jails
             cmd = ["zfs", "list", "-rHd", "1",
-                   "{}{}/jails".format(self.pool, self.iocroot)]
+                   "{}/iocage/jails".format(self.pool)]
 
             # UUIDS are 12345678-1234-1234-1234-123456789012
             regex = re.compile("{}/jails/".format(self.iocroot) +
@@ -42,8 +42,7 @@ class IOCList(object):
         elif self.list_type == "base":
             # List the datasets underneath self.POOL/iocroot/releases
             cmd = ["zfs", "list", "-rHd", "1",
-                   "{}{}/releases".format(self.pool,
-                                          self.iocroot)]
+                   "{}/iocage/releases".format(self.pool)]
 
             # Format is Major.Minor-{RELEASE,STABLE,CURRENT,BETA,ALPHA,RC}
             # TODO: Support other "bases" besides RELEASE?
@@ -74,8 +73,7 @@ class IOCList(object):
 
             if len(dups):
                 self.lgr.error("ERROR: Duplicate tag ({}) detected!".format(
-                    tag
-                ))
+                        tag))
                 for d, t in sorted(dups.iteritems()):
                     u = d.split("/")[3]
                     self.lgr.error("  {} ({})".format(u, t))

@@ -23,7 +23,6 @@ def df_cmd(header, _long):
 
     jails, paths = IOCList("uuid").get_datasets()
     pool = IOCJson().get_prop_value("pool")
-    iocroot = IOCJson(pool).get_prop_value("iocroot")
     jail_list = []
 
     for jail in jails:
@@ -37,18 +36,18 @@ def df_cmd(header, _long):
         path = paths[jail]
         conf = IOCJson(path).load_json()
         zconf = ["zfs", "get", "-H", "-o", "value"]
-        pool_and_iocroot = "{}{}/jails/{}".format(pool, iocroot, full_uuid)
+        mountpoint = "{}/iocage/jails/{}".format(pool, full_uuid)
 
         tag = conf["tag"]
-        compressratio = Popen(zconf + ["compressratio", pool_and_iocroot],
+        compressratio = Popen(zconf + ["compressratio", mountpoint],
                               stdout=PIPE).communicate()[0].strip()
-        reservation = Popen(zconf + ["reservation", pool_and_iocroot],
+        reservation = Popen(zconf + ["reservation", mountpoint],
                             stdout=PIPE).communicate()[0].strip()
-        quota = Popen(zconf + ["quota", pool_and_iocroot],
+        quota = Popen(zconf + ["quota", mountpoint],
                       stdout=PIPE).communicate()[0].strip()
-        used = Popen(zconf + ["used", pool_and_iocroot],
+        used = Popen(zconf + ["used", mountpoint],
                      stdout=PIPE).communicate()[0].strip()
-        available = Popen(zconf + ["available", pool_and_iocroot],
+        available = Popen(zconf + ["available", mountpoint],
                           stdout=PIPE).communicate()[0].strip()
 
         jail_list.append([uuid, compressratio, reservation, quota, used,
