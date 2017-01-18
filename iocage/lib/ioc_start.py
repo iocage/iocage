@@ -274,5 +274,8 @@ class IOCStart(object):
                       "w") as resolv_conf:
                 for line in resolver.split(";"):
                     resolv_conf.write(line + "\n")
+        elif resolver == "none":
+            copy("/etc/resolv.conf", "{}/root/etc/resolv.conf".format(
+                    self.path))
         else:
             copy(resolver, "{}/root/etc/resolv.conf".format(self.path))
