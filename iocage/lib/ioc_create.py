@@ -16,7 +16,8 @@ from iocage.lib.ioc_start import IOCStart
 class IOCCreate(object):
     """Create a jail from a clone."""
 
-    def __init__(self, release, props, num, pkglist=None, plugin=False):
+    def __init__(self, release, props, num, pkglist=None, plugin=False,
+                 migrate=False, config=None, silent=False):
         self.pool = IOCJson().get_prop_value("pool")
         self.iocroot = IOCJson(self.pool).get_prop_value("iocroot")
         self.release = release
@@ -24,7 +25,12 @@ class IOCCreate(object):
         self.num = num
         self.pkglist = pkglist
         self.plugin = plugin
+        self.migrate = migrate
+        self.config = config
         self.lgr = logging.getLogger('ioc_create')
+
+        if silent:
+            self.lgr.disabled = True
 
     def create_jail(self):
         """
@@ -34,7 +40,12 @@ class IOCCreate(object):
         """
         jail_uuid = str(uuid.uuid4())
         location = "{}/jails/{}".format(self.iocroot, jail_uuid)
-        config = self.create_config(jail_uuid)
+
+        if self.migrate:
+            config = self.config
+        else:
+            config = self.create_config(jail_uuid)
+
         jail = "{}/iocage/jails/{}/root".format(self.pool, jail_uuid)
 
         try:
@@ -66,7 +77,7 @@ class IOCCreate(object):
             else:
                 self.install_packages(jail_uuid, location, _tag, config)
 
-        if self.plugin:
+        if self.plugin or self.migrate:
             return jail_uuid
 
     def create_config(self, jail_uuid):
