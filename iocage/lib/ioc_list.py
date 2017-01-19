@@ -143,9 +143,13 @@ class IOCList(object):
             else:
                 state = "down"
 
-            template = check_output(["zfs", "get", "-H", "-o", "value",
-                                     "origin", "{}/iocage/jails/{}/root".format(
-                    self.pool, uuid)]).split("/")[3]
+            if conf["type"] == "template":
+                template = "-"
+            else:
+                template = check_output(["zfs", "get", "-H", "-o", "value",
+                                         "origin",
+                                         "{}/iocage/jails/{}/root".format(
+                                             self.pool, uuid)]).split("/")[3]
 
             if template == release:
                 # Then it does not have a template.
