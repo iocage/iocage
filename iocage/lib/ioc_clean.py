@@ -6,6 +6,7 @@ from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call, \
 
 import os
 
+from iocage.lib.ioc_destroy import IOCDestroy
 from iocage.lib.ioc_json import IOCJson
 
 
@@ -20,8 +21,7 @@ class IOCClean(object):
     @staticmethod
     def __stop_jails():
         """Stops every jail running forcefully."""
-        jls = Popen(["jls", "jid"], stdout=PIPE).communicate()[
-            0].split()
+        jls = Popen(["jls", "jid"], stdout=PIPE).communicate()[0].split()
 
         for j in jls:
             try:
@@ -37,6 +37,9 @@ class IOCClean(object):
         try:
             check_output(["zfs", "destroy", "-r", "-f",
                           "{}/iocage/jails".format(self.pool)],
+                         stderr=STDOUT)
+            check_output(["zfs", "destroy", "-r", "-f",
+                          "{}/iocage/templates".format(self.pool)],
                          stderr=STDOUT)
         except CalledProcessError as err:
             if "snapshot" not in err.output.strip():
@@ -72,3 +75,38 @@ class IOCClean(object):
                         "{}/iocage".format(self.pool)])
         except CalledProcessError as err:
             raise RuntimeError("ERROR: {}".format(err))
+
+    def clean_templates(self):
+        """Cleans all jails and their respective snapshots."""
+        self.__stop_jails()
+
+        datasets = check_output(["zfs", "get", "-o", "name,value", "-t",
+                                 "filesystem", "-H",
+                                 "origin"]).splitlines()
+
+        datasets = dict([map(str, c.split("\t")) for c in datasets])
+        children_dict = {name: mount for name, mount in datasets.iteritems() if
+                         "{}/iocage/templates".format(self.pool) in mount}
+        template_dict = {name: mount for name, mount in datasets.iteritems() if
+                         "{}/iocage/releases".format(self.pool) in mount}
+
+        for jail in children_dict.iterkeys():
+            if "/jails" in jail:
+                jail = jail.rstrip("/root")
+                uuid = jail.split("/")[3]
+                path = jail.replace("{}/iocage".format(self.pool), self.iocroot)
+                conf = IOCJson(path).load_json()
+                tag = conf["tag"]
+
+                IOCDestroy(uuid, tag, path, silent=True).destroy_jail()
+
+        for template in template_dict.iterkeys():
+            if "/templates" in template:
+                template = template.rstrip("/root")
+                path = template.replace("{}/iocage".format(self.pool),
+                                        self.iocroot)
+                conf = IOCJson(path).load_json()
+                uuid = conf["host_hostuuid"]
+                tag = conf["tag"]
+
+                IOCDestroy(uuid, tag, path, silent=True).destroy_jail()

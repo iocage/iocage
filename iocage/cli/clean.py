@@ -26,7 +26,7 @@ def clean_cmd(force, dataset_type):
     if dataset_type == "jails":
         if not force:
             lgr.warning("\nWARNING: This will destroy ALL jails"
-                        " and any snapshots on a RELEASE!")
+                        " and any snapshots on a RELEASE, including templates!")
             answer = raw_input("\nAre you sure? y[N]: ")
 
             if answer.lower() == "" or answer.lower() == "n":
@@ -47,6 +47,16 @@ def clean_cmd(force, dataset_type):
     elif dataset_type == "release":
         pass
     elif dataset_type == "template":
+        if not force:
+            lgr.warning("\nWARNING: This will destroy ALL templates"
+                        " and jails created from them!")
+            answer = raw_input("\nAre you sure? y[N]: ")
+
+            if answer.lower() == "" or answer.lower() == "n":
+                exit()
+
+        IOCClean().clean_templates()
+        lgr.info("All iocage template datasets have been destroyed.")
         pass
     else:
         raise RuntimeError("Please specify a dataset type to clean!")
