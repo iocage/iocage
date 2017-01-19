@@ -13,7 +13,7 @@ class IOCDestroy(object):
     destroy that as well.
     """
 
-    def __init__(self, uuid, jail, path, silent):
+    def __init__(self, uuid, jail, path, silent=False):
         self.pool = IOCJson().get_prop_value("pool")
         self.iocroot = IOCJson(self.pool).get_prop_value("iocroot")
         self.uuid = uuid
