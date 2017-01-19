@@ -76,6 +76,9 @@ def main():
     skip_check_cmds = ["--help", "clean", "deactivate"]
 
     try:
+        if "iocage" in sys.argv[0] and len(sys.argv) == 1:
+            skip_check = True
+
         for arg in sys.argv[1:]:
             if arg in skip_check_cmds:
                 skip_check = True
