@@ -48,6 +48,12 @@ class IOCList(object):
             # TODO: Support other "bases" besides RELEASE?
             regex = re.compile("{}/releases/".format(self.iocroot) +
                                "\\w*.\\w-RELEASE")
+        elif self.list_type == "template":
+            # List the datasets underneath self.POOL/iocroot/releases
+            cmd = ["zfs", "list", "-rHd", "1",
+                   "{}/iocage/templates".format(self.pool)]
+
+            regex = re.compile("{}/templates/".format(self.iocroot))
 
         zfs_list = Popen(cmd, stdout=PIPE).communicate()[0].split()
         datasets = [d for d in zfs_list if re.match(regex, d)]
@@ -71,6 +77,20 @@ class IOCList(object):
                 jails[conf["tag"]] = conf["host_hostuuid"]
                 paths[conf["tag"]] = jail
 
+            template_cmd = ["zfs", "list", "-rHd", "1",
+                   "{}/iocage/templates".format(self.pool)]
+            template_regex = re.compile("{}/templates/".format(self.iocroot))
+            template_zfs_list = Popen(template_cmd, stdout=PIPE).communicate()[
+                0].split()
+            template_datasets = [t for t in template_zfs_list if re.match(
+                template_regex, t)]
+
+            for template in template_datasets:
+                conf = IOCJson(template).load_json()
+
+                jails[conf["tag"]] = conf["host_hostuuid"]
+                paths[conf["tag"]] = template
+
             if len(dups):
                 self.lgr.error("ERROR: Duplicate tag ({}) detected!".format(
                         tag))
@@ -87,6 +107,10 @@ class IOCList(object):
 
             if self.return_object:
                 return bases
+        elif self.list_type == "template":
+            templates = self.list_all(datasets)
+            if self.return_object:
+                return templates
 
     def list_all(self, jails):
         """List all jails."""
@@ -95,9 +119,9 @@ class IOCList(object):
         for jail in jails:
             conf = IOCJson(jail).load_json()
 
-            full_uuid = conf['host_hostuuid']
+            uuid = conf['host_hostuuid']
             full_ip4 = conf['ip4_addr']
-            short_uuid = full_uuid[:8]
+
             try:
                 short_ip4 = full_ip4.split("|")[1].split("/")[0]
             except IndexError:
@@ -111,7 +135,7 @@ class IOCList(object):
             if full_ip4 == "none":
                 full_ip4 = "-"
 
-            status = self.get_jid(full_uuid)
+            status = self.get_jid(uuid)
             jid = status[1]
 
             if status[0]:
@@ -119,25 +143,37 @@ class IOCList(object):
             else:
                 state = "down"
 
+            template = check_output(["zfs", "get", "-H", "-o", "value",
+                                 "origin", "{}/iocage/jails/{}/root".format(
+                                self.pool, uuid)]).split("/")[3]
+
+            if template == release:
+                # Then it does not have a template.
+                template = "-"
+
             # Append the JID and the UUID to the table
             if self.full:
-                jail_list.append([jid, full_uuid, boot, state, tag, jail_type,
-                                  full_ip4, release])
+                jail_list.append([jid, uuid, boot, state, tag, jail_type,
+                                  full_ip4, release, template])
             else:
-                jail_list.append([jid, short_uuid, state, tag, short_ip4])
+                jail_list.append([jid, uuid[:8], state, tag, short_ip4])
 
         jail_list.sort(key=ioc_common.sort_tag)
         # Prints the table
         if self.header:
             if self.full:
                 jail_list.insert(0, ["JID", "UUID", "BOOT", "STATE", "TAG",
-                                     "TYPE", "IP4", "RELEASE"])
+                                     "TYPE", "IP4", "RELEASE", "TEMPLATE"])
             else:
                 jail_list.insert(0, ["JID", "UUID", "STATE", "TAG", "IP4"])
 
             self.lgr.info(to_text(jail_list, header=True, hor="-", ver="|",
                                   corners="+"))
         else:
+            if self.return_object:
+                flat_jail = [j[3] for j in jail_list]
+                return flat_jail
+
             for jail in jail_list:
                 self.lgr.info("\t".join(jail))
 
@@ -151,7 +187,7 @@ class IOCList(object):
                                   corners="+"))
         else:
             if self.return_object:
-                flat_base = [x for x in base_list for x in x]
+                flat_base = [b for b in base_list for b in b]
                 return flat_base
 
             for base in base_list:
