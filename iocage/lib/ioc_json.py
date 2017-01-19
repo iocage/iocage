@@ -152,12 +152,6 @@ class IOCJson(object):
                 loc = "{}/iocage".format(self.location)
                 mount = check_output(["zfs", "get", "-H", "-o", "value",
                                       "mountpoint", loc]).strip()
-
-                # Happens if the user has iocage-develop installed
-                # concurrently.
-                if mount == "/{}/iocage".format(self.location):
-                    mount = "/iocage"
-
                 return mount
             except CalledProcessError:
                 raise RuntimeError("{} not found!".format(self.location))
