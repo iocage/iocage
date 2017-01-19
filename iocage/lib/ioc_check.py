@@ -32,6 +32,14 @@ class IOCCheck(object):
 
             self.pool = self.altpool
 
+        mounts = check_output(["zfs", "get", "-o", "name,value", "-t",
+                               "filesystem", "-H",
+                               "mountpoint"]).splitlines()
+
+        mounts = dict([map(str, m.split("\t")) for m in mounts])
+        dups = {name: mount for name, mount in mounts.iteritems() if
+                mount == "/iocage"}
+
         for dataset in datasets:
             try:
                 check_output(["zfs", "get", "-H", "creation", "{}/{}".format(
@@ -44,10 +52,14 @@ class IOCCheck(object):
                 if "deactivate" not in sys.argv[1:]:
                     self.lgr.info("Creating {}/{}".format(self.pool, dataset))
                     if dataset == "iocage":
+                        if len(dups) != 0:
+                            mount = "mountpoint=/{}/iocage".format(self.pool)
+                        else:
+                            mount = "mountpoint=/iocage"
+
                         Popen(["zfs", "create", "-o", "compression=lz4",
-                               "-o", "mountpoint=/iocage",
-                               "{}/{}".format(self.pool,
-                                              dataset)]).communicate()
+                               "-o", mount, "{}/{}".format(
+                                    self.pool, dataset)]).communicate()
                     else:
                         Popen(["zfs", "create", "-o", "compression=lz4",
                                "{}/{}".format(self.pool,
