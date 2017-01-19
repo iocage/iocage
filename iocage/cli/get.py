@@ -54,6 +54,12 @@ def get_cmd(prop, jail, recursive, header):
                 state = "down"
 
             lgr.info(state)
+        elif prop == "all":
+            props = IOCJson(path).get_prop_value(prop)
+
+            for p, v in props.iteritems():
+                lgr.info("{}:{}".format(p, v))
+
         else:
             try:
                 lgr.info(IOCJson(path).get_prop_value(prop))
@@ -73,6 +79,8 @@ def get_cmd(prop, jail, recursive, header):
                         state = "down"
 
                     jail_list.append([j, state])
+                elif prop == "all":
+                    raise
                 else:
                     jail_list.append(
                         [uuid, j, IOCJson(path).get_prop_value(prop)])
