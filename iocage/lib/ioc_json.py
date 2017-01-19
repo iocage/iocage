@@ -2,7 +2,7 @@
 import json
 import logging
 import sys
-from subprocess import CalledProcessError, PIPE, Popen, check_output
+from subprocess import CalledProcessError, PIPE, Popen, check_output, STDOUT
 
 import re
 from os import geteuid, path
@@ -178,8 +178,51 @@ class IOCJson(object):
                 conf["tag"] = IOCCreate("", prop, 0).create_link(
                         conf["host_hostuuid"], value, old_tag=old_tag)
                 tag = conf["tag"]
-        self.write_json(conf)
 
+        if key == "template":
+            pool, iocroot = _get_pool_and_iocroot()
+            uuid = conf["host_hostuuid"]
+            tag = conf["tag"]
+            old_location = "{}/iocage/jails/{}".format(pool, uuid)
+            new_location = "{}/iocage/templates/{}".format(pool, tag)
+
+            # I hate these recursive deps.
+            from iocage.lib.ioc_list import IOCList
+            jid = IOCList.get_jid(uuid)[0]
+
+            if jid:
+                raise RuntimeError("{} ({}) is running."
+                                   " Please stop it first!".format(uuid, tag))
+
+            if value == "yes":
+                try:
+                    check_output(["zfs", "rename", "-p", old_location,
+                                  new_location], stderr=STDOUT)
+                    conf["type"] = "template"
+
+                    self.location = new_location.lstrip(pool).replace(
+                        "/iocage", iocroot)
+                except CalledProcessError as err:
+                    raise RuntimeError("ERROR: {}".format(err.output.strip()))
+
+                self.lgr.info("{} ({}) converted to a template.".format(uuid,
+                                                                        tag))
+                self.lgr.disabled = True
+            elif value == "no":
+                try:
+                    check_output(["zfs", "rename", "-p", new_location,
+                                  old_location], stderr=STDOUT)
+                    conf["type"] = "jail"
+
+                    self.location = old_location.lstrip(pool).replace(
+                        "/iocage", iocroot)
+                except CalledProcessError as err:
+                    raise RuntimeError("ERROR: {}".format(err.output.strip()))
+
+                self.lgr.info("{} ({}) converted to a jail.".format(uuid, tag))
+                self.lgr.disabled = True
+
+        self.write_json(conf)
         self.lgr.info(
                 "Property: {} has been updated to {}".format(key, value))
 
