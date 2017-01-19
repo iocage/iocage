@@ -75,7 +75,7 @@ def get_cmd(prop, jail, recursive, header):
                     jail_list.append([j, state])
                 else:
                     jail_list.append(
-                            [uuid, j, IOCJson(path).get_prop_value(prop)])
+                        [uuid, j, IOCJson(path).get_prop_value(prop)])
             except:
                 raise RuntimeError("{} is not a valid property!".format(prop))
 

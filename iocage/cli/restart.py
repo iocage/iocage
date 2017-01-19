@@ -49,7 +49,7 @@ def restart_cmd(jail, soft):
                                    " to restart {} ({})".format(uuid, j))
             else:
                 lgr.error("{} is not a supported jail type.".format(
-                        conf["type"]
+                    conf["type"]
                 ))
     else:
         _jail = {tag: uuid for (tag, uuid) in jails.iteritems() if
@@ -82,7 +82,7 @@ def restart_cmd(jail, soft):
                                " to restart {} ({})".format(uuid, tag))
         else:
             raise RuntimeError("{} is not a supported jail type.".format(
-                    conf["type"]
+                conf["type"]
             ))
 
 
@@ -115,6 +115,6 @@ def __soft_restart(uuid, jail, path, conf):
         start_cmd = ["jexec", "ioc-{}".format(uuid)] + exec_start
         Popen(start_cmd, stdout=PIPE, stderr=PIPE).communicate()
         IOCJson(path).set_prop_value("last_started={}".format(
-                datetime.utcnow().strftime("%F %T")), silent=True)
+            datetime.utcnow().strftime("%F %T")), silent=True)
     else:
         raise RuntimeError("{} is not running!".format(jail))

@@ -65,11 +65,11 @@ def migrate_cmd(force, delete):
             new_prop("host_hostuuid={}".format(new_uuid))
             new_prop("type=jail")
             new_prop(
-                    "jail_zfs_dataset={}/jails/{}/data".format(iocroot,
-                                                               new_uuid))
+                "jail_zfs_dataset={}/jails/{}/data".format(iocroot,
+                                                           new_uuid))
 
             lgr.info("Copying files for {} ({}), please wait...".format(
-                    uuid, tag
+                uuid, tag
             ))
 
             copytree("{}/jails_old/{}/root".format(iocroot, uuid),

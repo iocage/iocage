@@ -6,7 +6,7 @@ import os
 def test_activate(zpool):
     if os.geteuid() != 0:
         raise RuntimeError(
-                "You need to have root privileges to run any tests.")
+            "You need to have root privileges to run any tests.")
     try:
         subprocess.check_call(["zfs", "set", "org.freebsd.ioc:active=yes",
                                zpool], stdout=subprocess.PIPE)

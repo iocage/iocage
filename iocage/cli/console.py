@@ -61,7 +61,7 @@ def console_cmd(jail, force):
                                " to start {} ({})".format(uuid, j))
         else:
             raise RuntimeError("{} is not a supported jail type.".format(
-                    conf["type"]
+                conf["type"]
             ))
 
     if status:

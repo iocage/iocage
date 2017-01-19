@@ -78,7 +78,7 @@ class IOCFetch(object):
                 self.release = releases[int(self.release)]
             except IndexError:
                 raise RuntimeError("[{}] is not in the list!".format(
-                        self.release))
+                    self.release))
             except ValueError:
                 rel = os.uname()[2]
                 if "-RELEASE" in rel:
@@ -122,19 +122,19 @@ class IOCFetch(object):
             else:
                 Popen(["zfs", "create", "-o", "compression=lz4",
                        "{}/iocage/download/{}".format(
-                               self.pool,
-                               self.release)]).communicate()
+                           self.pool,
+                           self.release)]).communicate()
             dataset = "{}/download/{}".format(self.iocroot, self.release)
 
             for f in self.files:
                 # TODO: Fancier
                 if not os.path.isfile(f):
                     Popen(["zfs", "destroy", "-r", "-f", "{}{}".format(
-                            self.pool, dataset)])
+                        self.pool, dataset)])
                     raise RuntimeError("ERROR: {}.txz is a required "
                                        "file!".format(f) +
                                        "\nPlease place it in {}/{}".format(
-                                               self.root_dir, self.release))
+                                           self.root_dir, self.release))
                 self.lgr.info("Copying: {}... ".format(f))
                 copy(f, dataset)
 
@@ -258,17 +258,17 @@ class IOCFetch(object):
             for f in _list:
                 if self.auth == "basic":
                     r = requests.get("{}/{}/{}/{}".format(
-                            self.server, self.root_dir, self.release, f),
-                            auth=(self.user, self.password), stream=True)
+                        self.server, self.root_dir, self.release, f),
+                        auth=(self.user, self.password), stream=True)
                 elif self.auth == "digest":
                     r = requests.get("{}/{}/{}/{}".format(
-                            self.server, self.root_dir, self.release, f),
-                            auth=HTTPDigestAuth(self.user, self.password),
-                            stream=True)
+                        self.server, self.root_dir, self.release, f),
+                        auth=HTTPDigestAuth(self.user, self.password),
+                        stream=True)
                 else:
                     r = requests.get("{}/{}/{}/{}".format(
-                            self.server, self.root_dir, self.release, f),
-                            stream=True)
+                        self.server, self.root_dir, self.release, f),
+                        stream=True)
 
                 status = r.status_code == requests.codes.ok
                 if not status:
@@ -328,7 +328,7 @@ class IOCFetch(object):
         # TODO: Check for STABLE/PRERELEASE/CURRENT/BETA if we support those.
         # TODO: Fancier.
         self.lgr.info("\n* Updating {} to the latest patch level... ".format(
-                self.release))
+            self.release))
 
         os.environ["UNAME_r"] = self.release
         os.environ["PAGER"] = "/bin/cat"
@@ -363,12 +363,12 @@ class IOCFetch(object):
         try:
             # Why this sometimes doesn't exist, we may never know.
             os.remove("{}/releases/{}/root/etc/resolv.conf".format(
-                    self.iocroot, self.release))
+                self.iocroot, self.release))
         except OSError:
             pass
 
         Popen(["umount", "{}/releases/{}/root/dev".format(
-                self.iocroot, self.release)]).communicate()
+            self.iocroot, self.release)]).communicate()
 
     def fetch_plugin(self, _json, props, num):
         """Expects an JSON object."""
@@ -383,7 +383,7 @@ class IOCFetch(object):
             self.lgr.info("Plugin: {}".format(conf["name"]))
             self.lgr.info("  Using RELEASE: {}".format(self.release))
             self.lgr.info(
-                    "  Post-install Artifact: {}".format(conf["artifact"]))
+                "  Post-install Artifact: {}".format(conf["artifact"]))
             self.lgr.info("  These pkgs will be installed:")
 
             for pkg in conf["pkgs"]:
@@ -392,7 +392,7 @@ class IOCFetch(object):
             if os.path.isdir("{}/releases/{}".format(self.iocroot,
                                                      self.release)):
                 self.lgr.info(
-                        " RELEASE: {} already fetched.".format(self.release))
+                    " RELEASE: {} already fetched.".format(self.release))
             else:
                 self.lgr.info("\nFetching RELEASE: {}".format(self.release))
                 self.fetch_release()
@@ -448,6 +448,6 @@ class IOCFetch(object):
                 self.lgr.info("Running post_install.sh")
                 command = ["sh", "/root/post_install.sh"]
                 IOCExec(command, uuid, conf["name"], "{}/root".format(
-                        jaildir), plugin=True, plugin_dir=jaildir).exec_jail()
+                    jaildir), plugin=True, plugin_dir=jaildir).exec_jail()
             except IOError:
                 pass

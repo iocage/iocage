@@ -24,8 +24,8 @@ def pytest_addoption(parser):
                      help="Use a local file directory for root-dir instead of "
                           "FTP or HTTP.")
     parser.addoption(
-            "--root-dir", action="store",
-            help="Root directory containing all the RELEASEs for fetching.")
+        "--root-dir", action="store",
+        help="Root directory containing all the RELEASEs for fetching.")
 
 
 @pytest.fixture
