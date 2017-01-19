@@ -35,6 +35,13 @@ def set_cmd(prop, jail):
     else:
         raise RuntimeError("{} not found!".format(jail))
 
+    if "template" in prop:
+        if "template" in path and prop != "template=no":
+            raise RuntimeError("{} ({}) is already a template!".format(
+                uuid, tag
+            ))
+        elif "template" not in path and prop != "template=yes":
+            raise RuntimeError("{} ({}) is already a jail!".format(uuid, tag))
     try:
         # We use this to test if it's a valid property at all.
         _prop = prop.partition("=")[0]
