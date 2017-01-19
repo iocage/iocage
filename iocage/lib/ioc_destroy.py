@@ -13,7 +13,7 @@ class IOCDestroy(object):
     destroy that as well.
     """
 
-    def __init__(self, uuid, jail, path):
+    def __init__(self, uuid, jail, path, silent):
         self.pool = IOCJson().get_prop_value("pool")
         self.iocroot = IOCJson(self.pool).get_prop_value("iocroot")
         self.uuid = uuid
@@ -22,9 +22,13 @@ class IOCDestroy(object):
         self.release = IOCJson(self.path).get_prop_value("release")
         self.lgr = logging.getLogger('ioc_destroy')
 
+        if silent:
+            self.lgr.disabled = True
+
     def destroy_jail(self):
         """Destroys a jail and then attempts to destroy the snapshot"""
         self.lgr.info("Destroying {} ({})".format(self.uuid, self.jail))
+        self.path = self.path.replace(self.iocroot, "/iocage")
         Popen(["zfs", "destroy", "-r", self.pool + self.path]).communicate()
 
         try:
