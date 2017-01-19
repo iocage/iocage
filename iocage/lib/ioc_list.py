@@ -121,6 +121,7 @@ class IOCList(object):
 
             uuid = conf['host_hostuuid']
             full_ip4 = conf['ip4_addr']
+            jail_root = "{}/iocage/jails/{}/root".format(self.pool, uuid)
 
             try:
                 short_ip4 = full_ip4.split("|")[1].split("/")[0]
@@ -146,10 +147,12 @@ class IOCList(object):
             if conf["type"] == "template":
                 template = "-"
             else:
-                template = check_output(["zfs", "get", "-H", "-o", "value",
-                                         "origin",
-                                         "{}/iocage/jails/{}/root".format(
-                                             self.pool, uuid)]).split("/")[3]
+                try:
+                    template = check_output(["zfs", "get", "-H", "-o", "value",
+                                             "origin",
+                                             jail_root]).split("/")[3]
+                except IndexError:
+                    template = "-"
 
             if template == release:
                 # Then it does not have a template.
