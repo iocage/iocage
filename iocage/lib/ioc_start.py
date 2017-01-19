@@ -163,7 +163,7 @@ class IOCStart(object):
                            fdescfs,
                            "allow.dying",
                            "exec.consolelog={}/log/ioc-{}-console.log".format(
-                                   self.iocroot, self.uuid),
+                               self.iocroot, self.uuid),
                            "persist"])
             start.communicate()
 
@@ -189,9 +189,9 @@ class IOCStart(object):
                               "ioc-{}".format(self.uuid)] + exec_start,
                              stdout=PIPE, stderr=PIPE)
             Popen(["tee", "-a", "{}/log/{}-console.log".format(
-                    self.iocroot, self.uuid)], stdin=PIPE,
+                self.iocroot, self.uuid)], stdin=PIPE,
                   stdout=PIPE).communicate(
-                    input=services.communicate()[0])
+                input=services.communicate()[0])
 
             if services.returncode:
                 self.lgr.info("  + Starting services FAILED")
@@ -200,7 +200,7 @@ class IOCStart(object):
 
             self.generate_resolv()
             self.set("last_started={}".format(datetime.utcnow().strftime(
-                    "%F %T")))
+                "%F %T")))
             # TODO: DHCP/BPF
             # TODO: Add jailed datasets support
         else:
@@ -240,15 +240,15 @@ class IOCStart(object):
                             epair_b = re.sub("a$", "b", epair_a)
 
                             Popen(["ifconfig", epair_a, "name", "{}:{}".format(
-                                    nic, jid), "mtu", membermtu],
+                                nic, jid), "mtu", membermtu],
                                   stdout=PIPE).communicate()
                             Popen(["ifconfig", epair_b, "vnet", "ioc-{}".format(
-                                    self.uuid)]).communicate()
+                                self.uuid)]).communicate()
                             Popen(["jexec", "ioc-{}".format(self.uuid),
                                    "ifconfig", epair_b, "name", nic, "mtu",
                                    membermtu]).communicate()
                             Popen(["ifconfig", bridge, "addm", "{}:{}".format(
-                                    nic, jid), "up"]).communicate()
+                                nic, jid), "up"]).communicate()
                             Popen(["ifconfig", "{}:{}".format(nic, jid),
                                    "up"]).communicate()
                             Popen(["jexec", "ioc-{}".format(self.uuid),
@@ -276,6 +276,6 @@ class IOCStart(object):
                     resolv_conf.write(line + "\n")
         elif resolver == "none":
             copy("/etc/resolv.conf", "{}/root/etc/resolv.conf".format(
-                    self.path))
+                self.path))
         else:
             copy(resolver, "{}/root/etc/resolv.conf".format(self.path))

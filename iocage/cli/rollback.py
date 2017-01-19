@@ -48,10 +48,10 @@ def rollback_cmd(jail, name, force):
 
     if not force:
         lgr.warning(
-                "\nWARNING: This will destroy ALL data created since"
-                " {} was taken.".format(
-                        name) + "\nIncluding ALL snapshots taken after"
-                                " {} for {} ({}).".format(name, uuid, tag))
+            "\nWARNING: This will destroy ALL data created since"
+            " {} was taken.".format(
+                name) + "\nIncluding ALL snapshots taken after"
+                        " {} for {} ({}).".format(name, uuid, tag))
         answer = raw_input("\nAre you sure? y[N]: ")
 
         if answer.lower() == "" or answer.lower() == "n":

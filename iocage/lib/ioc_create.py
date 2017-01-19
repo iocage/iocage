@@ -72,14 +72,15 @@ class IOCCreate(object):
             try:
                 check_call(["zfs", "snapshot",
                             "{}/iocage/releases/{}/root@{}".format(
-                                    self.pool, self.release, jail_uuid)],
+                                self.pool, self.release, jail_uuid)],
                            stderr=PIPE)
             except CalledProcessError:
-                raise RuntimeError("RELEASE: {} not found!".format(self.release))
+                raise RuntimeError(
+                    "RELEASE: {} not found!".format(self.release))
 
             Popen(["zfs", "clone", "-p",
                    "{}/iocage/releases/{}/root@{}".format(
-                           self.pool, self.release, jail_uuid),
+                       self.pool, self.release, jail_uuid),
                    jail], stdout=PIPE).communicate()
 
         IOCJson(location).write_json(config)
@@ -256,7 +257,7 @@ class IOCCreate(object):
         property is required for pkg to have network access.
         """
         self.lgr.info("{0}, starting jail.".format(
-                "\n{} ({}) is not running".format(jail_uuid, _tag)))
+            "\n{} ({}) is not running".format(jail_uuid, _tag)))
         IOCStart(jail_uuid, location, silent=True).start_jail(_tag, config)
         jid = IOCList().get_jid(jail_uuid)[1]
         resolver = config["resolver"]
@@ -295,7 +296,7 @@ class IOCCreate(object):
         # If this exists, another jail has used this tag.
         try:
             readlink_mount = os.readlink(
-                    "{}/tags/{}".format(self.iocroot, tag))
+                "{}/tags/{}".format(self.iocroot, tag))
             readlink_uuid = readlink_mount.split("/")[3]
         except OSError:
             pass
@@ -324,13 +325,13 @@ class IOCCreate(object):
                 return tag
         else:
             self.lgr.warning("\n  WARNING: tag: \"{}\" in use by {}!\n".format(
-                    tag, readlink_uuid) + "  Renaming {}'s tag to {}.\n".format(
-                    jail_uuid, tag_date))
+                tag, readlink_uuid) + "  Renaming {}'s tag to {}.\n".format(
+                jail_uuid, tag_date))
 
             os.symlink(jail_location, "{}/tags/{}".format(self.iocroot,
                                                           tag_date))
             IOCJson(jail_location, silent=True).set_prop_value(
-                    "tag={}".format(tag_date), create_func=True)
+                "tag={}".format(tag_date), create_func=True)
 
             return tag_date
 

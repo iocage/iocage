@@ -78,7 +78,7 @@ class IOCList(object):
                 paths[conf["tag"]] = jail
 
             template_cmd = ["zfs", "list", "-rHd", "1",
-                   "{}/iocage/templates".format(self.pool)]
+                            "{}/iocage/templates".format(self.pool)]
             template_regex = re.compile("{}/templates/".format(self.iocroot))
             template_zfs_list = Popen(template_cmd, stdout=PIPE).communicate()[
                 0].split()
@@ -93,7 +93,7 @@ class IOCList(object):
 
             if len(dups):
                 self.lgr.error("ERROR: Duplicate tag ({}) detected!".format(
-                        tag))
+                    tag))
                 for d, t in sorted(dups.iteritems()):
                     u = d.split("/")[3]
                     self.lgr.error("  {} ({})".format(u, t))
@@ -144,8 +144,8 @@ class IOCList(object):
                 state = "down"
 
             template = check_output(["zfs", "get", "-H", "-o", "value",
-                                 "origin", "{}/iocage/jails/{}/root".format(
-                                self.pool, uuid)]).split("/")[3]
+                                     "origin", "{}/iocage/jails/{}/root".format(
+                    self.pool, uuid)]).split("/")[3]
 
             if template == release:
                 # Then it does not have a template.

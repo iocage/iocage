@@ -2,7 +2,7 @@
 import json
 import logging
 import sys
-from subprocess import CalledProcessError, PIPE, Popen, check_output, STDOUT
+from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_output
 
 import re
 from os import geteuid, path
@@ -176,7 +176,7 @@ class IOCJson(object):
                 # Circular dep! Meh.
                 from iocage.lib.ioc_create import IOCCreate
                 conf["tag"] = IOCCreate("", prop, 0).create_link(
-                        conf["host_hostuuid"], value, old_tag=old_tag)
+                    conf["host_hostuuid"], value, old_tag=old_tag)
                 tag = conf["tag"]
 
         if key == "template":
@@ -224,7 +224,7 @@ class IOCJson(object):
 
         self.write_json(conf)
         self.lgr.info(
-                "Property: {} has been updated to {}".format(key, value))
+            "Property: {} has been updated to {}".format(key, value))
 
         # Used for import
         if not create_func:

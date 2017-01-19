@@ -51,7 +51,7 @@ class IOCExec(object):
                                    " to start {} ({})".format(uuid, j))
             else:
                 raise RuntimeError("{} is not a supported jail type.".format(
-                        conf["type"]
+                    conf["type"]
                 ))
             self.lgr.info("\nCommand output:")
 

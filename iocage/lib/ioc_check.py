@@ -43,7 +43,7 @@ class IOCCheck(object):
         for dataset in datasets:
             try:
                 check_output(["zfs", "get", "-H", "creation", "{}/{}".format(
-                        self.pool, dataset)], stderr=PIPE)
+                    self.pool, dataset)], stderr=PIPE)
             except CalledProcessError:
                 if os.geteuid() != 0:
                     raise RuntimeError("Run as root to create missing"
@@ -59,7 +59,7 @@ class IOCCheck(object):
 
                         Popen(["zfs", "create", "-o", "compression=lz4",
                                "-o", mount, "{}/{}".format(
-                                    self.pool, dataset)]).communicate()
+                                self.pool, dataset)]).communicate()
                     else:
                         Popen(["zfs", "create", "-o", "compression=lz4",
                                "{}/{}".format(self.pool,

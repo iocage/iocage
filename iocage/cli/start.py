@@ -56,5 +56,5 @@ def start_cmd(jail):
                                " to start {} ({})".format(uuid, tag))
         else:
             raise RuntimeError("{} is not a supported jail type.".format(
-                    conf["type"]
+                conf["type"]
             ))
