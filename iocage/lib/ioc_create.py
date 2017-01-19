@@ -17,7 +17,7 @@ class IOCCreate(object):
     """Create a jail from a clone."""
 
     def __init__(self, release, props, num, pkglist=None, plugin=False,
-                 migrate=False, config=None, silent=False):
+                 migrate=False, config=None, silent=False, template=False):
         self.pool = IOCJson().get_prop_value("pool")
         self.iocroot = IOCJson(self.pool).get_prop_value("iocroot")
         self.release = release
@@ -27,6 +27,7 @@ class IOCCreate(object):
         self.plugin = plugin
         self.migrate = migrate
         self.config = config
+        self.template = template
         self.lgr = logging.getLogger('ioc_create')
 
         if silent:
@@ -48,18 +49,38 @@ class IOCCreate(object):
 
         jail = "{}/iocage/jails/{}/root".format(self.pool, jail_uuid)
 
-        try:
-            check_call(["zfs", "snapshot",
-                        "{}/iocage/releases/{}/root@{}".format(
+        if self.template:
+            try:
+                check_call(["zfs", "snapshot",
+                            "{}/iocage/templates/{}/root@{}".format(
                                 self.pool, self.release, jail_uuid)],
-                       stderr=PIPE)
-        except CalledProcessError:
-            raise RuntimeError("RELEASE: {} not found!".format(self.release))
+                           stderr=PIPE)
+            except CalledProcessError:
+                raise RuntimeError("Template: {} not found!".format(
+                    self.release))
 
-        Popen(["zfs", "clone", "-p",
-               "{}/iocage/releases/{}/root@{}".format(
+            Popen(["zfs", "clone", "-p",
+                   "{}/iocage/templates/{}/root@{}".format(
                        self.pool, self.release, jail_uuid),
-               jail], stdout=PIPE).communicate()
+                   jail], stdout=PIPE).communicate()
+
+            # self.release is actually the templates name
+            config["release"] = IOCJson("{}/templates/{}".format(
+                self.iocroot, self.release)).get_prop_value("release")
+
+        else:
+            try:
+                check_call(["zfs", "snapshot",
+                            "{}/iocage/releases/{}/root@{}".format(
+                                    self.pool, self.release, jail_uuid)],
+                           stderr=PIPE)
+            except CalledProcessError:
+                raise RuntimeError("RELEASE: {} not found!".format(self.release))
+
+            Popen(["zfs", "clone", "-p",
+                   "{}/iocage/releases/{}/root@{}".format(
+                           self.pool, self.release, jail_uuid),
+                   jail], stdout=PIPE).communicate()
 
         IOCJson(location).write_json(config)
 
