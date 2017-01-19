@@ -51,14 +51,14 @@ class IOCJson(object):
 
     def convert_to_json_zfs(self, uuid):
         """Convert to JSON. Accepts a jail UUID"""
-        pool, iocroot = _get_pool_and_iocroot()
+        pool, _ = _get_pool_and_iocroot()
 
         if geteuid() != 0:
             raise RuntimeError("You need to be root to convert the"
                                " configuration to the new format!")
 
-        cmd = ["zfs", "get", "-H", "-s", "local", "-o", "property,value",
-               "all", "{}{}/jails/{}".format(pool, iocroot, uuid)]
+        cmd = ["zfs", "get", "-H", "-o", "property,value", "all",
+               "{}/iocage/jails/{}".format(pool, uuid)]
 
         regex = re.compile("org.freebsd.iocage")
 
@@ -97,7 +97,12 @@ class IOCJson(object):
                 with open(self.location + "/config.json") as conf:
                     conf = json.load(conf)
             else:
-                uuid = self.location.split("/")[3]
+                dataset = self.location.split("/")
+
+                for d in dataset:
+                    if len(d) == 36:
+                        uuid = d
+
                 self.convert_to_json_zfs(uuid)
 
                 with open(self.location + "/config.json") as conf:
