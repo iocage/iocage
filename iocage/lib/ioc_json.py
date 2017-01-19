@@ -155,6 +155,10 @@ class IOCJson(object):
                 return mount
             except CalledProcessError:
                 raise RuntimeError("{} not found!".format(self.location))
+        elif prop == "all":
+            conf = self.load_json()
+
+            return conf
         else:
             conf = self.load_json()
 
