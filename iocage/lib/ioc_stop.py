@@ -13,7 +13,7 @@ class IOCStop(object):
         self.jail = jail
         self.path = path
         self.conf = conf
-        self.jid = IOCList().get_jid(uuid)
+        self.status, self.jid = IOCList().get_jid(uuid)
         self.nics = conf["interfaces"]
         self.lgr = logging.getLogger('ioc_stop')
 
@@ -33,9 +33,7 @@ class IOCStop(object):
         #     print("{:>15s}".format("FAILED"))
         #
         # TODO: exec_stop
-        if self.jid[0]:
-            self.jid = self.jid[1]
-        else:
+        if not self.jid:
             raise RuntimeError("{} is not running!".format(self.jail))
 
         self.lgr.info("* Stopping {} ({})".format(self.uuid, self.jail))

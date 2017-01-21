@@ -136,10 +136,9 @@ class IOCList(object):
             if full_ip4 == "none":
                 full_ip4 = "-"
 
-            status = self.get_jid(uuid)
-            jid = status[1]
+            status, jid = self.get_jid(uuid)
 
-            if status[0]:
+            if status:
                 state = "up"
             else:
                 state = "down"

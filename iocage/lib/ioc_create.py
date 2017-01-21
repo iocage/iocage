@@ -259,7 +259,7 @@ class IOCCreate(object):
         self.lgr.info("{0}, starting jail.".format(
             "\n{} ({}) is not running".format(jail_uuid, _tag)))
         IOCStart(jail_uuid, location, silent=True).start_jail(_tag, config)
-        jid = IOCList().get_jid(jail_uuid)[1]
+        _, jid = IOCList().get_jid(jail_uuid)
         resolver = config["resolver"]
 
         if resolver != "/etc/resolv.conf" and resolver != "none":

@@ -178,6 +178,8 @@ class IOCJson(object):
 
         conf = self.load_json()
         old_tag = conf["tag"]
+        uuid = conf["host_hostuuid"]
+        status, jid = IOCList.get_jid(uuid)
         conf[key] = value
 
         if not create_func:
@@ -199,7 +201,7 @@ class IOCJson(object):
             from iocage.lib.ioc_list import IOCList
             jid = IOCList.get_jid(uuid)[0]
 
-            if jid:
+            if status:
                 raise RuntimeError("{} ({}) is running."
                                    " Please stop it first!".format(uuid, tag))
 

@@ -98,8 +98,7 @@ def __soft_restart(uuid, jail, path, conf):
     the network stack intact, ideal for VIMAGE.
     """
     getjid = IOCList().get_jid(uuid)
-    status = getjid[0]
-    jid = getjid[1]
+    status, jid = getjid
     lgr = logging.getLogger('ioc_cli_restart')
 
     # These needs to be a list.
