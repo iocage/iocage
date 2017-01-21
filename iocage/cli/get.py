@@ -46,7 +46,7 @@ def get_cmd(prop, jail, recursive, header):
             raise RuntimeError("{} not found!".format(jail))
 
         if prop == "state":
-            status = get_jid(path.split("/")[3])[0]
+            status, _ = get_jid(path.split("/")[3])
 
             if status:
                 state = "up"
@@ -71,7 +71,7 @@ def get_cmd(prop, jail, recursive, header):
             path = paths[j]
             try:
                 if prop == "state":
-                    status = get_jid(path.split("/")[3])[0]
+                    status, _ = get_jid(path.split("/")[3])
 
                     if status:
                         state = "up"

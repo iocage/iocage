@@ -38,7 +38,7 @@ def export_cmd(jail):
     else:
         raise RuntimeError("{} not found!".format(jail))
 
-    status = IOCList().get_jid(uuid)[0]
+    status, _ = IOCList().get_jid(uuid)
     if status:
         raise RuntimeError("{} ({}) is runnning, stop the jail before "
                            "exporting!".format(uuid, tag))

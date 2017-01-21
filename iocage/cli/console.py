@@ -34,7 +34,7 @@ def console_cmd(jail, force):
         iocjson = IOCJson(path)
         conf = iocjson.load_json()
         login_flags = conf["login_flags"].split()
-        status = IOCList().get_jid(uuid)[0]
+        status, _ = IOCList().get_jid(uuid)
     elif len(_jail) > 1:
         lgr.error("Multiple jails found for"
                   " {}:".format(jail))

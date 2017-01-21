@@ -42,10 +42,9 @@ class IOCStart(object):
         specified data that is meant to populate resolv.conf
         will be copied into the jail.
         """
-        jid = IOCList().get_jid(self.uuid)
+        status, _ = IOCList().get_jid(self.uuid)
         # If the jail is not running, let's do this thing.
-        if not jid[0]:
-            jid = jid[1]
+        if not status:
             mount_procfs = conf["mount_procfs"]
             host_domainname = conf["host_domainname"]
             host_hostname = conf["host_hostname"]
@@ -208,7 +207,7 @@ class IOCStart(object):
 
     def start_network(self, vnet):
         if vnet:
-            jid = IOCList().get_jid(self.uuid)[1]
+            _, jid = IOCList().get_jid(self.uuid)
             ip4_addr = self.get("ip4_addr")
             defaultgw = self.get("defaultrouter")
             nics = self.get("interfaces").split(",")
