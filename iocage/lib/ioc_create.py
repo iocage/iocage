@@ -90,7 +90,7 @@ class IOCCreate(object):
         _tag = self.create_link(jail_uuid, config["tag"])
         self.create_rc(location, config["host_hostname"])
 
-        self.lgr.info("{} ({}) successfully created!".format(_tag, jail_uuid))
+        self.lgr.info("{} ({}) successfully created!".format(jail_uuid, _tag))
 
         if self.pkglist:
             if config["ip4_addr"] == "none":
