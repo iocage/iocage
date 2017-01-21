@@ -4,9 +4,9 @@ import logging
 
 import click
 
-from iocage.lib.ioc_list import IOCList
-from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_fetch import IOCFetch
+from iocage.lib.ioc_json import IOCJson
+from iocage.lib.ioc_list import IOCList
 
 __cmdname__ = "update_cmd"
 __rootcmd__ = True
@@ -37,4 +37,3 @@ def update_cmd(jail):
 
     conf = IOCJson(path).load_json()
     IOCFetch(conf["release"]).update_fetch(True, uuid, tag)
-
