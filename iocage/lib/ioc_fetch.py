@@ -24,8 +24,9 @@ from iocage.lib.ioc_json import IOCJson
 class IOCFetch(object):
     """Fetch a RELEASE for use as a jail base."""
 
-    def __init__(self, server, user, password, auth, release, root_dir, http,
-                 _file):
+    def __init__(self, release, server="ftp.freebsd.org", user="anonymous",
+                 password="anonymous@", auth=None, root_dir=None,
+                 http=False, _file=False):
         self.pool = IOCJson().get_prop_value("pool")
         self.iocroot = IOCJson(self.pool).get_prop_value("iocroot")
         self.server = server
@@ -316,23 +317,37 @@ class IOCFetch(object):
             with tarfile.open(fileobj=xz) as tar:
                 tar.extractall(dest)
 
-    def update_fetch(self):
+    def update_fetch(self, cli=False, uuid=None, tag=None):
         """This calls 'freebsd-update' to update the fetched RELEASE."""
-        Popen(["mount", "-t", "devfs", "devfs",
-               "{}/releases/{}/root/dev".format(self.iocroot,
-                                                self.release)]).communicate()
-        copy("/etc/resolv.conf",
-             "{}/releases/{}/root/etc/resolv.conf".format(self.iocroot,
-                                                          self.release))
+        if cli:
+            cmd = ["mount", "-t", "devfs", "devfs",
+                   "{}/jails/{}/root/dev".format(self.iocroot, uuid)]
+            new_root = "{}/jails/{}/root".format(self.iocroot, uuid)
 
-        # TODO: Check for STABLE/PRERELEASE/CURRENT/BETA if we support those.
-        # TODO: Fancier.
-        self.lgr.info("\n* Updating {} to the latest patch level... ".format(
-            self.release))
+            # TODO: Check for STABLE/PRERELEASE/CURRENT/BETA if we support
+            # those.
+            # TODO: Fancier.
+            self.lgr.info(
+                "\n* Updating {} ({}) to the latest patch level... ".format(
+                    uuid, tag))
+        else:
+            cmd = ["mount", "-t", "devfs", "devfs",
+                   "{}/releases/{}/root/dev".format(self.iocroot,
+                                                    self.release)]
+            new_root = "{}/releases/{}/root".format(self.iocroot, self.release)
+
+            # TODO: Check for STABLE/PRERELEASE/CURRENT/BETA if we support
+            # those.
+            # TODO: Fancier.
+            self.lgr.info(
+                "\n* Updating {} to the latest patch level... ".format(
+                    self.release))
+
+        Popen(cmd).communicate()
+        copy("/etc/resolv.conf", "{}/etc/resolv.conf".format(new_root))
 
         os.environ["UNAME_r"] = self.release
         os.environ["PAGER"] = "/bin/cat"
-        new_root = "{}/releases/{}/root".format(self.iocroot, self.release)
         if os.path.isfile("{}/etc/freebsd-update.conf".format(new_root)):
             # 10.1-RELEASE and under have a interactive check
             if float(self.release.partition("-")[0][:5]) <= 10.1:
@@ -342,7 +357,6 @@ class IOCFetch(object):
                         for line in update_conf:
                             tmp_conf.write(re.sub("\[ ! -t 0 \]", "false",
                                                   line))
-
                 os.chmod(tmp_conf.name, 0o755)
                 Popen([tmp_conf.name, "-b", new_root, "-d",
                        "{}/var/db/freebsd-update/".format(new_root), "-f",
@@ -362,13 +376,11 @@ class IOCFetch(object):
 
         try:
             # Why this sometimes doesn't exist, we may never know.
-            os.remove("{}/releases/{}/root/etc/resolv.conf".format(
-                self.iocroot, self.release))
+            os.remove("{}/etc/resolv.conf".format(new_root))
         except OSError:
             pass
 
-        Popen(["umount", "{}/releases/{}/root/dev".format(
-            self.iocroot, self.release)]).communicate()
+        Popen(["umount", "{}/dev".format(new_root)]).communicate()
 
     def fetch_plugin(self, _json, props, num):
         """Expects an JSON object."""
