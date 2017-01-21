@@ -99,7 +99,7 @@ class IOCStart(object):
                 pass
 
             # FreeBSD 9.3 and under do not support this.
-            if userland_version < 9.3:
+            if userland_version <= 9.3:
                 tmpfs = ""
                 fdescfs = ""
             else:
@@ -107,7 +107,7 @@ class IOCStart(object):
                 fdescfs = "mount.fdescfs={}".format(mount_fdescfs)
 
             # FreeBSD 10.3 and under do not support this.
-            if userland_version < 10.3:
+            if userland_version <= 10.3:
                 _sysvmsg = ""
                 _sysvsem = ""
                 _sysvshm = ""
