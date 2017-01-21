@@ -32,12 +32,12 @@ def fetch_cmd(http, _file, server, user, password, auth, release, plugin,
     """CLI command that calls fetch_release()"""
     if plugin:
         if count == 1:
-            IOCFetch(server, user, password, auth, "", root_dir,
+            IOCFetch("", server, user, password, auth, root_dir,
                      http=http, _file=_file).fetch_plugin(plugin, props, 0)
         else:
             for j in xrange(1, count + 1):
-                IOCFetch(server, user, password, auth, "", root_dir,
+                IOCFetch("", server, user, password, auth, root_dir,
                          http=http, _file=_file).fetch_plugin(plugin, props, j)
     else:
-        IOCFetch(server, user, password, auth, release,
-                 root_dir, http=http, _file=_file).fetch_release()
+        IOCFetch(release, server, user, password, auth, root_dir, http=http,
+                 _file=_file).fetch_release()
