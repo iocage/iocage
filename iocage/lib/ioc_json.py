@@ -33,7 +33,7 @@ class IOCJson(object):
         """Convert to JSON. Accepts a location to the ucl configuration."""
         if geteuid() != 0:
             raise RuntimeError("You need to be root to convert the"
-                               " configuration to the new format!")
+                               " configurations to the new format!")
 
         with open(self.location + "/config") as conf:
             lines = conf.readlines()
@@ -55,7 +55,7 @@ class IOCJson(object):
 
         if geteuid() != 0:
             raise RuntimeError("You need to be root to convert the"
-                               " configuration to the new format!")
+                               " configurations to the new format!")
 
         cmd = ["zfs", "get", "-H", "-o", "property,value", "all",
                "{}/iocage/jails/{}".format(pool, uuid)]
@@ -67,9 +67,7 @@ class IOCJson(object):
         # Find each of the props we want to convert.
         props = [p for p in zfs_get if re.search(regex, p)]
 
-        key_and_value = {"host_domainname": "none",
-                         "CONFIG_VERSION" : self.iocage_version()
-                         }
+        key_and_value = {"host_domainname": "none"}
 
         for prop in props:
             prop = prop.partition(":")
@@ -86,10 +84,11 @@ class IOCJson(object):
 
     def load_json(self):
         """Load the JSON at the location given. Returns a JSON object."""
+        version = self.iocage_version()
+
         try:
             with open(self.location + "/config.json") as conf:
                 conf = json.load(conf)
-                self.check_config(conf)
         except IOError:
             if path.isfile(self.location + "/config"):
                 self.convert_to_json_ucl()
@@ -107,6 +106,14 @@ class IOCJson(object):
 
                 with open(self.location + "/config.json") as conf:
                     conf = json.load(conf)
+
+        try:
+            conf_version = conf["CONFIG_VERSION"]
+
+            if version != conf_version:
+                conf = self.check_config(conf, version)
+        except KeyError:
+            conf = self.check_config(conf, version)
 
         return conf
 
@@ -174,6 +181,10 @@ class IOCJson(object):
 
     def set_prop_value(self, prop, create_func=False):
         """Set a property for the specified jail."""
+        # TODO: Some value sanitization for any property.
+        # Circular dep! Meh.
+        from iocage.lib.ioc_list import IOCList
+        from iocage.lib.ioc_create import IOCCreate
         key, _, value = prop.partition("=")
 
         conf = self.load_json()
@@ -181,30 +192,29 @@ class IOCJson(object):
         uuid = conf["host_hostuuid"]
         status, jid = IOCList.get_jid(uuid)
         conf[key] = value
+        sysctls_cmd = ["sysctl", "-d", "security.jail.param"]
+        jail_param_regex = re.compile("security.jail.param.")
+        sysctls_list = Popen(sysctls_cmd, stdout=PIPE).communicate()[0].split()
+        jail_params = [p.replace("security.jail.param.", "").replace(":", "")
+                       for p in sysctls_list if re.match(jail_param_regex, p)]
+        single_period = ["allow_raw_sockets", "allow_socket_af",
+                         "allow_set_hostname"]
 
         if not create_func:
             if key == "tag":
-                # Circular dep! Meh.
-                from iocage.lib.ioc_create import IOCCreate
                 conf["tag"] = IOCCreate("", prop, 0).create_link(
                     conf["host_hostuuid"], value, old_tag=old_tag)
                 tag = conf["tag"]
 
         if key == "template":
             pool, iocroot = _get_pool_and_iocroot()
-            uuid = conf["host_hostuuid"]
-            tag = conf["tag"]
             old_location = "{}/iocage/jails/{}".format(pool, uuid)
-            new_location = "{}/iocage/templates/{}".format(pool, tag)
-
-            # I hate these recursive deps.
-            from iocage.lib.ioc_list import IOCList
-            jid = IOCList.get_jid(uuid)[0]
+            new_location = "{}/iocage/templates/{}".format(pool, old_tag)
 
             if status:
                 raise RuntimeError("{} ({}) is running."
-                                   " Please stop it first!".format(uuid, tag))
-
+                                   " Please stop it first!".format(uuid,
+                                                                   old_tag))
             if value == "yes":
                 try:
                     check_output(["zfs", "rename", "-p", old_location,
@@ -217,7 +227,7 @@ class IOCJson(object):
                     raise RuntimeError("ERROR: {}".format(err.output.strip()))
 
                 self.lgr.info("{} ({}) converted to a template.".format(uuid,
-                                                                        tag))
+                                                                        old_tag))
                 self.lgr.disabled = True
             elif value == "no":
                 try:
@@ -230,7 +240,8 @@ class IOCJson(object):
                 except CalledProcessError as err:
                     raise RuntimeError("ERROR: {}".format(err.output.strip()))
 
-                self.lgr.info("{} ({}) converted to a jail.".format(uuid, tag))
+                self.lgr.info("{} ({}) converted to a jail.".format(uuid,
+                                                                    old_tag))
                 self.lgr.disabled = True
 
         self.write_json(conf)
@@ -242,26 +253,50 @@ class IOCJson(object):
             if key == "tag":
                 return tag
 
+        # We can attempt to set a property in realtime to jail.
+        if key in single_period:
+            key = key.replace("_", ".", 1)
+        else:
+            key = key.replace("_", ".")
+
+        if key in jail_params:
+            try:
+                check_output(["jail", "-m", "jid={}".format(jid),
+                              "{}={}".format(key, value)], stderr=STDOUT)
+            except CalledProcessError as err:
+                raise RuntimeError("ERROR: {}".format(err.output.strip()))
+
     @staticmethod
     def iocage_version():
         """Sets the iocage configuration version."""
-        version = "1"
+        version = "2"
         return version
 
-    def check_config(self, conf):
+    def check_config(self, conf, version):
         """
-        Takes JSON as input and checks the config version and adds any keys
-        and their default values that don't exist.
+        Takes JSON as input and checks to see what is missing and adds the
+        new keys with their default values if missing.
         """
-        version = self.iocage_version()
+        if geteuid() != 0:
+            raise RuntimeError("You need to be root to convert the"
+                               " configurations to the new format!")
 
+        # Version 2 keys
         try:
-            conf_version = conf["CONFIG_VERSION"]
-
-            if version != conf_version:
-                # TODO: When we have a real change to keys to migrate.
-                conf["CONFIG_VERSION"] = version
-                self.write_json(conf)
+            sysvmsg = conf["sysvmsg"]
+            sysvsem = conf["sysvsem"]
+            sysvshm = conf["sysvshm"]
         except KeyError:
-            conf["CONFIG_VERSION"] = version
-            self.write_json(conf)
+            sysvmsg = "new"
+            sysvsem = "new"
+            sysvshm = "new"
+
+        # Set all keys, even if it's the same value.
+        conf["sysvmsg"] = sysvmsg
+        conf["sysvsem"] = sysvsem
+        conf["sysvshm"] = sysvshm
+
+        conf["CONFIG_VERSION"] = version
+        self.write_json(conf)
+
+        return conf
