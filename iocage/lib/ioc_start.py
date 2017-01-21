@@ -43,6 +43,8 @@ class IOCStart(object):
         will be copied into the jail.
         """
         status, _ = IOCList().get_jid(self.uuid)
+        userland_version = float(uname()[2][:4])
+
         # If the jail is not running, let's do this thing.
         if not status:
             mount_procfs = conf["mount_procfs"]
@@ -73,6 +75,9 @@ class IOCStart(object):
             stop_timeout = conf["stop_timeout"]
             mount_devfs = conf["mount_devfs"]
             mount_fdescfs = conf["mount_fdescfs"]
+            sysvmsg = conf["sysvmsg"]
+            sysvsem = conf["sysvsem"]
+            sysvshm = conf["sysvshm"]
 
             if mount_procfs == "1":
                 Popen(["mount", "-t", "procfs", "proc", self.path +
@@ -93,13 +98,23 @@ class IOCStart(object):
             except:
                 pass
 
-            # FreeBSD 9 does not support this.
-            if uname()[2][:2] == "9":
+            # FreeBSD 9.3 and under do not support this.
+            if userland_version < 9.3:
                 tmpfs = ""
                 fdescfs = ""
             else:
                 tmpfs = "allow.mount.tmpfs={}".format(allow_mount_tmpfs)
                 fdescfs = "mount.fdescfs={}".format(mount_fdescfs)
+
+            # FreeBSD 10.3 and under do not support this.
+            if userland_version < 10.3:
+                _sysvmsg = ""
+                _sysvsem = ""
+                _sysvshm = ""
+            else:
+                _sysvmsg = "sysvmsg={}".format(sysvmsg)
+                _sysvsem = "sysvsem={}".format(sysvsem)
+                _sysvshm = "sysvshm={}".format(sysvshm)
 
             if conf["vnet"] == "off":
                 ip4_addr = conf["ip4_addr"]
@@ -140,6 +155,9 @@ class IOCStart(object):
                            "children.max={}".format(children_max),
                            "allow.set_hostname={}".format(allow_set_hostname),
                            "allow.sysvipc={}".format(allow_sysvipc),
+                           _sysvmsg,
+                           _sysvsem,
+                           _sysvshm,
                            "allow.raw_sockets={}".format(allow_raw_sockets),
                            "allow.chflags={}".format(allow_chflags),
                            "allow.mount={}".format(allow_mount),
