@@ -15,8 +15,10 @@ __rootcmd__ = True
 @click.option("--release", "-r", required=False)
 @click.option("--template", "-t", required=False)
 @click.option("--pkglist", "-p", default=None)
+@click.option("--short", "-s", is_flag=True, default=False,
+              help="Use a short UUID of 8 characters instead of the default 36")
 @click.argument("props", nargs=-1)
-def create_cmd(release, template, count, props, pkglist):
+def create_cmd(release, template, count, props, pkglist, short):
     lgr = logging.getLogger('ioc_cli_create')
 
     if not template and not release:
@@ -32,7 +34,7 @@ def create_cmd(release, template, count, props, pkglist):
     if count == 1:
         try:
             IOCCreate(release, props, 0, pkglist,
-                      template=template).create_jail()
+                      template=template, short=short).create_jail()
         except RuntimeError as err:
             lgr.error(err)
             if template:
@@ -51,7 +53,7 @@ def create_cmd(release, template, count, props, pkglist):
         for j in xrange(1, count + 1):
             try:
                 IOCCreate(release, props, j, pkglist,
-                          template=template).create_jail()
+                          template=template, short=short).create_jail()
             except RuntimeError as err:
                 lgr.error(err)
                 if template:

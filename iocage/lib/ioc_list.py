@@ -37,8 +37,7 @@ class IOCList(object):
                    "{}/iocage/jails".format(self.pool)]
 
             # UUIDS are 12345678-1234-1234-1234-123456789012
-            regex = re.compile("{}/jails/".format(self.iocroot) +
-                               "\\w{8}-(\\w{4}-){3}\\w{12}")
+            regex = re.compile("{}/jails/".format(self.iocroot) + "\\w{8}")
         elif self.list_type == "base":
             # List the datasets underneath self.POOL/iocroot/releases
             cmd = ["zfs", "list", "-rHd", "1",

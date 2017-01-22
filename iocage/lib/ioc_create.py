@@ -17,7 +17,8 @@ class IOCCreate(object):
     """Create a jail from a clone."""
 
     def __init__(self, release, props, num, pkglist=None, plugin=False,
-                 migrate=False, config=None, silent=False, template=False):
+                 migrate=False, config=None, silent=False, template=False,
+                 short=False):
         self.pool = IOCJson().get_prop_value("pool")
         self.iocroot = IOCJson(self.pool).get_prop_value("iocroot")
         self.release = release
@@ -28,6 +29,7 @@ class IOCCreate(object):
         self.migrate = migrate
         self.config = config
         self.template = template
+        self.short = short
         self.lgr = logging.getLogger('ioc_create')
 
         if silent:
@@ -40,6 +42,10 @@ class IOCCreate(object):
         defaults.
         """
         jail_uuid = str(uuid.uuid4())
+
+        if self.short:
+            jail_uuid = jail_uuid[:8]
+
         location = "{}/jails/{}".format(self.iocroot, jail_uuid)
 
         if self.migrate:
