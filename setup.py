@@ -12,7 +12,8 @@ setup(name='iocage',
           'click',
           'tabletext',
           'backports.lzma',
-          'requests'
+          'requests',
+          'tqdm'
       ],
       entry_points={
           'console_scripts': [

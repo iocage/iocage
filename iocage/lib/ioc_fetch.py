@@ -2,7 +2,6 @@
 import contextlib
 import json
 import logging
-import shutil
 import tarfile
 from ftplib import FTP
 from shutil import copy
@@ -15,6 +14,7 @@ import requests
 from backports import lzma
 from requests.auth import HTTPDigestAuth
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+from tqdm import tqdm
 
 from iocage.lib.ioc_common import sort_release
 from iocage.lib.ioc_create import IOCCreate
@@ -286,10 +286,19 @@ class IOCFetch(object):
                     r.raise_for_status()
 
                 with open(f, "w") as txz:
-                    # TODO: Fancier.
-                    self.lgr.info("Downloading: {}... ".format(f))
-                    shutil.copyfileobj(r.raw, txz)
-                del r
+                    pbar = tqdm(total=int(r.headers.get('content-length')),
+                                bar_format="{desc}{percentage:3.0f}%"
+                                           " {rate_fmt}"
+                                           " Elapsed: {elapsed}"
+                                           " Remaining: {remaining}",
+                                unit="bit",
+                                unit_scale="mega")
+                    pbar.set_description("Downloading: {}".format(f))
+
+                    for chunk in r.iter_content(chunk_size=1024):
+                        txz.write(chunk)
+                        pbar.update(len(chunk))
+                    pbar.close()
 
                 # TODO: Fancier.
                 self.lgr.info("Extracting: {}... ".format(f))
@@ -301,9 +310,25 @@ class IOCFetch(object):
             for f in _list:
                 if bool(re.compile(r"base.txz|lib32.txz|doc.txz").match(f)):
                     try:
-                        # TODO: Fancier.
-                        self.lgr.info("Downloading: {}... ".format(f))
-                        ftp.retrbinary("RETR {}".format(f), open(f, "w").write)
+                        ftp.voidcmd('TYPE I')
+                        filesize = ftp.size(f)
+
+                        with open(f, "w") as txz:
+                            pbar = tqdm(total=filesize,
+                                        bar_format="{desc}{percentage:3.0f}%"
+                                                   " {rate_fmt}"
+                                                   " Elapsed: {elapsed}"
+                                                   " Remaining: {remaining}",
+                                        unit="bit",
+                                        unit_scale="mega")
+                            pbar.set_description("Downloading: {}".format(f))
+
+                            def callback(chunk):
+                                txz.write(chunk)
+                                pbar.update(len(chunk))
+
+                            ftp.retrbinary("RETR {}".format(f), callback)
+                            pbar.close()
 
                         # TODO: Fancier.
                         self.lgr.info("Extracting: {}... ".format(f))
@@ -336,7 +361,6 @@ class IOCFetch(object):
 
             # TODO: Check for STABLE/PRERELEASE/CURRENT/BETA if we support
             # those.
-            # TODO: Fancier.
             self.lgr.info(
                 "\n* Updating {} ({}) to the latest patch level... ".format(
                     uuid, tag))
@@ -348,7 +372,6 @@ class IOCFetch(object):
 
             # TODO: Check for STABLE/PRERELEASE/CURRENT/BETA if we support
             # those.
-            # TODO: Fancier.
             self.lgr.info(
                 "\n* Updating {} to the latest patch level... ".format(
                     self.release))
@@ -371,18 +394,18 @@ class IOCFetch(object):
                 Popen([tmp_conf.name, "-b", new_root, "-d",
                        "{}/var/db/freebsd-update/".format(new_root), "-f",
                        "{}/etc/freebsd-update.conf".format(new_root),
-                       "fetch"], stdout=PIPE, stderr=PIPE).communicate()
+                       "fetch"], stderr=PIPE).communicate()
                 os.remove(tmp_conf.name)
             else:
                 Popen(["freebsd-update", "-b", new_root, "-d",
                        "{}/var/db/freebsd-update/".format(new_root), "-f",
                        "{}/etc/freebsd-update.conf".format(new_root),
-                       "fetch"], stdout=PIPE, stderr=PIPE).communicate()
+                       "fetch"], stderr=PIPE).communicate()
 
             Popen(["freebsd-update", "-b", new_root, "-d",
                    "{}/var/db/freebsd-update/".format(new_root), "-f",
                    "{}/etc/freebsd-update.conf".format(new_root),
-                   "install"], stdout=PIPE, stderr=PIPE).communicate()
+                   "install"], stderr=PIPE).communicate()
 
         try:
             # Why this sometimes doesn't exist, we may never know.
