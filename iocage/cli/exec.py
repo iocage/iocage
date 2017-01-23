@@ -24,6 +24,7 @@ def exec_cmd(command, jail, host_user, jail_user):
 
     if jail.startswith("-"):
         raise RuntimeError("Please specify a jail first!")
+
     if host_user and jail_user:
         raise RuntimeError("Please only specify either host_user or"
                            " jail_user, not both!")
