@@ -33,7 +33,7 @@ class IOCStop(object):
         #     print("{:>15s}".format("FAILED"))
         #
         # TODO: exec_stop
-        if not self.jid:
+        if not self.status:
             raise RuntimeError("{} is not running!".format(self.jail))
 
         self.lgr.info("* Stopping {} ({})".format(self.uuid, self.jail))
