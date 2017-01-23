@@ -185,10 +185,8 @@ class IOCStart(object):
             start.communicate()
 
             if start.returncode:
-                # TODO: Fancier.
                 self.lgr.info("  + Start FAILED")
             else:
-                # TODO: Fancier.
                 self.lgr.info("  + Started OK")
 
             if not ospath.isfile("{}/root/dev/log".format(self.path)):
@@ -198,7 +196,6 @@ class IOCStart(object):
                 chdir(original_path)
 
             self.start_network(vnet)
-            # TODO: Fancier.
             # This needs to be a list.
             exec_start = conf["exec_start"].split()
 
@@ -260,7 +257,7 @@ class IOCStart(object):
                                 self.uuid)]).communicate()
                             Popen(["jexec", "ioc-{}".format(self.uuid),
                                    "ifconfig", epair_b, "name", nic, "mtu",
-                                   membermtu]).communicate()
+                                   membermtu], stdout=PIPE).communicate()
                             Popen(["ifconfig", bridge, "addm", "{}:{}".format(
                                 nic, jid), "up"]).communicate()
                             Popen(["ifconfig", "{}:{}".format(nic, jid),
