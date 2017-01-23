@@ -10,7 +10,9 @@ __cmdname__ = "exec_cmd"
 __rootcmd__ = True
 
 
-@click.command(name="exec", help="Run a command inside a specified jail.")
+@click.command(context_settings=dict(
+    ignore_unknown_options=True, ),
+    name="exec", help="Run a command inside a specified jail.")
 @click.option("--host_user", "-u", default="root",
               help="The host user to use.")
 @click.option("--jail_user", "-U", help="The jail user to use.")
@@ -20,6 +22,8 @@ def exec_cmd(command, jail, host_user, jail_user):
     """Runs the command given inside the specified jail as the supplied user."""
     lgr = logging.getLogger('ioc_cli_exec')
 
+    if jail.startswith("-"):
+        raise RuntimeError("Please specify a jail first!")
     if host_user and jail_user:
         raise RuntimeError("Please only specify either host_user or"
                            " jail_user, not both!")
