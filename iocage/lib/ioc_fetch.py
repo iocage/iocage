@@ -197,7 +197,7 @@ class IOCFetch(object):
                     if rel not in releases:
                         releases.append(rel)
 
-            releases = sort_release(releases)
+            releases = sort_release(releases, self.iocroot)
             for r in releases:
                 if r in eol:
                     self.lgr.info("[{}] {} (EOL)".format(releases.index(r), r))
@@ -235,7 +235,7 @@ class IOCFetch(object):
         ftp_list = ftp.nlst()
 
         if not self.release:
-            releases = sort_release(ftp_list)
+            releases = sort_release(ftp_list, self.iocroot)
             for r in releases:
                 if r in eol:
                     self.lgr.info("[{}] {} (EOL)".format(releases.index(r), r))
