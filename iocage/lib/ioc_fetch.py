@@ -1,7 +1,9 @@
 """iocage fetch module."""
 import contextlib
+import hashlib
 import json
 import logging
+import shutil
 import tarfile
 from ftplib import FTP
 from shutil import copy
@@ -134,7 +136,6 @@ class IOCFetch(object):
             dataset = "{}/download/{}".format(self.iocroot, self.release)
 
             for f in self.files:
-                # TODO: Fancier
                 if not os.path.isfile(f):
                     Popen(["zfs", "destroy", "-r", "-f", "{}{}".format(
                         self.pool, dataset)])
@@ -145,7 +146,6 @@ class IOCFetch(object):
                 self.lgr.info("Copying: {}... ".format(f))
                 copy(f, dataset)
 
-                # TODO: Fancier.
                 self.lgr.info("Extracting: {}... ".format(f))
                 self.extract_fetch(f)
         else:
@@ -252,91 +252,160 @@ class IOCFetch(object):
         ftp.quit()
         self.update_fetch()
 
-    def download_fetch(self, _list, ftp=None):
-        """Creates the download dataset and then downloads the RELEASE."""
-        self.lgr.info("Fetching: {}\n".format(self.release))
+    def __check_download(self, _list, ftp):
+        """
+        Will check if every file we need exists, if they do we check the SHA256
+        and make sure it matches the files they may already have.
+        """
+        hashes = {}
+        missing = []
 
         if os.path.isdir("{}/download/{}".format(self.iocroot, self.release)):
-            pass
+            os.chdir("{}/download/{}".format(self.iocroot, self.release))
+
+            for _, _, files in os.walk("."):
+                if "MANIFEST" not in files:
+                    if ftp and self.server == "ftp.freebsd.org":
+                        ftp.retrbinary("RETR MANIFEST", open("MANIFEST",
+                                                             "w").write)
+                    elif not ftp and self.server == \
+                            "https://download.freebsd.org":
+                        r = requests.get("{}/{}/{}/MANIFEST".format(
+                            self.server, self.root_dir, self.release),
+                            verify=self.verify, stream=True)
+
+                        status = r.status_code == requests.codes.ok
+                        if not status:
+                            r.raise_for_status()
+
+                        with open("MANIFEST", "w") as txz:
+                            shutil.copyfileobj(r.raw, txz)
+
+            try:
+                with open("MANIFEST") as _manifest:
+                    for line in _manifest:
+                        col = line.split("\t")
+                        hashes[col[0]] = col[1]
+            except IOError:
+                raise RuntimeError("MANIFEST file is missing!")
+
+            for f in self.files:
+                if f == "MANIFEST":
+                    continue
+
+                # Python Central
+                hash_block = 65536
+                sha256 = hashlib.sha256()
+
+                try:
+                    with open(f) as txz:
+                        buf = txz.read(hash_block)
+                        while len(buf) > 0:
+                            sha256.update(buf)
+                            buf = txz.read(hash_block)
+
+                        if hashes[f] != sha256.hexdigest():
+                            self.lgr.info("{} failed verification,"
+                                          " will redownload!".format(f))
+                            missing.append(f)
+                        else:
+                            self.lgr.info("Extracting: {}... ".format(f))
+                            try:
+                                self.extract_fetch(f)
+                            except:
+                                raise
+                except IOError:
+                    self.lgr.error("{} missing, will download!".format(f))
+                    missing.append(f)
+
+            return missing
         else:
             Popen(["zfs", "create", "-o", "compression=lz4",
                    "{}/iocage/download/{}".format(self.pool,
                                                   self.release)]).communicate()
+            return _list
 
-        os.chdir("{}/download/{}".format(self.iocroot, self.release))
-        if self.http:
-            for f in _list:
-                if self.auth == "basic":
-                    r = requests.get("{}/{}/{}/{}".format(
-                        self.server, self.root_dir, self.release, f),
-                        auth=(self.user, self.password),
-                        verify=self.verify, stream=True)
-                elif self.auth == "digest":
-                    r = requests.get("{}/{}/{}/{}".format(
-                        self.server, self.root_dir, self.release, f),
-                        auth=HTTPDigestAuth(self.user, self.password),
-                        verify=self.verify, stream=True)
-                else:
-                    r = requests.get("{}/{}/{}/{}".format(
-                        self.server, self.root_dir, self.release, f),
-                        verify=self.verify, stream=True)
+    def download_fetch(self, _list, ftp=None):
+        """Creates the download dataset and then downloads the RELEASE."""
+        self.lgr.info("Fetching: {}\n".format(self.release))
+        _list = self.__check_download(_list, ftp)
 
-                status = r.status_code == requests.codes.ok
-                if not status:
-                    r.raise_for_status()
+        if _list:
+            os.chdir("{}/download/{}".format(self.iocroot, self.release))
+            if self.http:
+                for f in _list:
+                    if self.auth == "basic":
+                        r = requests.get("{}/{}/{}/{}".format(
+                            self.server, self.root_dir, self.release, f),
+                            auth=(self.user, self.password),
+                            verify=self.verify, stream=True)
+                    elif self.auth == "digest":
+                        r = requests.get("{}/{}/{}/{}".format(
+                            self.server, self.root_dir, self.release, f),
+                            auth=HTTPDigestAuth(self.user, self.password),
+                            verify=self.verify, stream=True)
+                    else:
+                        r = requests.get("{}/{}/{}/{}".format(
+                            self.server, self.root_dir, self.release, f),
+                            verify=self.verify, stream=True)
 
-                with open(f, "w") as txz:
-                    pbar = tqdm(total=int(r.headers.get('content-length')),
-                                bar_format="{desc}{percentage:3.0f}%"
-                                           " {rate_fmt}"
-                                           " Elapsed: {elapsed}"
-                                           " Remaining: {remaining}",
-                                unit="bit",
-                                unit_scale="mega")
-                    pbar.set_description("Downloading: {}".format(f))
+                    status = r.status_code == requests.codes.ok
+                    if not status:
+                        r.raise_for_status()
 
-                    for chunk in r.iter_content(chunk_size=1024):
-                        txz.write(chunk)
-                        pbar.update(len(chunk))
-                    pbar.close()
+                    with open(f, "w") as txz:
+                        pbar = tqdm(total=int(r.headers.get('content-length')),
+                                    bar_format="{desc}{percentage:3.0f}%"
+                                               " {rate_fmt}"
+                                               " Elapsed: {elapsed}"
+                                               " Remaining: {remaining}",
+                                    unit="bit",
+                                    unit_scale="mega")
+                        pbar.set_description("Downloading: {}".format(f))
 
-                # TODO: Fancier.
-                self.lgr.info("Extracting: {}... ".format(f))
-                try:
-                    self.extract_fetch(f)
-                except:
-                    raise
-        elif ftp:
-            for f in _list:
-                if bool(re.compile(r"base.txz|lib32.txz|doc.txz").match(f)):
+                        for chunk in r.iter_content(chunk_size=1024):
+                            txz.write(chunk)
+                            pbar.update(len(chunk))
+                        pbar.close()
+
+                    self.lgr.info("Extracting: {}... ".format(f))
                     try:
-                        ftp.voidcmd('TYPE I')
-                        filesize = ftp.size(f)
-
-                        with open(f, "w") as txz:
-                            pbar = tqdm(total=filesize,
-                                        bar_format="{desc}{percentage:3.0f}%"
-                                                   " {rate_fmt}"
-                                                   " Elapsed: {elapsed}"
-                                                   " Remaining: {remaining}",
-                                        unit="bit",
-                                        unit_scale="mega")
-                            pbar.set_description("Downloading: {}".format(f))
-
-                            def callback(chunk):
-                                txz.write(chunk)
-                                pbar.update(len(chunk))
-
-                            ftp.retrbinary("RETR {}".format(f), callback)
-                            pbar.close()
-
-                        # TODO: Fancier.
-                        self.lgr.info("Extracting: {}... ".format(f))
                         self.extract_fetch(f)
                     except:
                         raise
-                else:
-                    pass
+            elif ftp:
+                for f in _list:
+                    if bool(re.compile(r"base.txz|lib32.txz|doc.txz").match(f)):
+                        try:
+                            ftp.voidcmd('TYPE I')
+                            filesize = ftp.size(f)
+
+                            with open(f, "w") as txz:
+                                pbar = tqdm(total=filesize,
+                                            bar_format="{desc}{"
+                                                       "percentage:3.0f}%"
+                                                       " {rate_fmt}"
+                                                       " Elapsed: {elapsed}"
+                                                       " Remaining: {"
+                                                       "remaining}",
+                                            unit="bit",
+                                            unit_scale="mega")
+                                pbar.set_description(
+                                    "Downloading: {}".format(f))
+
+                                def callback(chunk):
+                                    txz.write(chunk)
+                                    pbar.update(len(chunk))
+
+                                ftp.retrbinary("RETR {}".format(f), callback)
+                                pbar.close()
+
+                            self.lgr.info("Extracting: {}... ".format(f))
+                            self.extract_fetch(f)
+                        except:
+                            raise
+                    else:
+                        pass
 
     def extract_fetch(self, f):
         """
