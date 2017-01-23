@@ -14,6 +14,7 @@ import re
 import requests
 from backports import lzma
 from requests.auth import HTTPDigestAuth
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 from iocage.lib.ioc_common import sort_release
 from iocage.lib.ioc_create import IOCCreate
@@ -26,7 +27,7 @@ class IOCFetch(object):
 
     def __init__(self, release, server="ftp.freebsd.org", user="anonymous",
                  password="anonymous@", auth=None, root_dir=None,
-                 http=False, _file=False):
+                 http=False, _file=False, verify=True):
         self.pool = IOCJson().get_prop_value("pool")
         self.iocroot = IOCJson(self.pool).get_prop_value("iocroot")
         self.server = server
@@ -39,7 +40,12 @@ class IOCFetch(object):
         self.arch = os.uname()[4]
         self.http = http
         self._file = _file
+        self.verify = verify
         self.files = ("base.txz", "lib32.txz", "doc.txz")
+
+        if not verify:
+            # The user likely knows this already.
+            requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
     @staticmethod
     def __eol_release():
@@ -168,11 +174,13 @@ class IOCFetch(object):
 
         if self.auth == "basic":
             req = requests.get("{}/{}".format(self.server, self.root_dir),
-                               auth=(self.user, self.password))
+                               auth=(self.user, self.password),
+                               verify=self.verify)
         elif self.auth == "digest":
             req = requests.get("{}/{}".format(self.server, self.root_dir),
                                auth=HTTPDigestAuth(self.user,
-                                                   self.password))
+                                                   self.password),
+                               verify=self.verify)
         else:
             req = requests.get("{}/{}".format(self.server, self.root_dir))
 
@@ -247,6 +255,7 @@ class IOCFetch(object):
     def download_fetch(self, _list, ftp=None):
         """Creates the download dataset and then downloads the RELEASE."""
         self.lgr.info("Fetching: {}\n".format(self.release))
+
         if os.path.isdir("{}/download/{}".format(self.iocroot, self.release)):
             pass
         else:
@@ -260,16 +269,17 @@ class IOCFetch(object):
                 if self.auth == "basic":
                     r = requests.get("{}/{}/{}/{}".format(
                         self.server, self.root_dir, self.release, f),
-                        auth=(self.user, self.password), stream=True)
+                        auth=(self.user, self.password),
+                        verify=self.verify, stream=True)
                 elif self.auth == "digest":
                     r = requests.get("{}/{}/{}/{}".format(
                         self.server, self.root_dir, self.release, f),
                         auth=HTTPDigestAuth(self.user, self.password),
-                        stream=True)
+                        verify=self.verify, stream=True)
                 else:
                     r = requests.get("{}/{}/{}/{}".format(
                         self.server, self.root_dir, self.release, f),
-                        stream=True)
+                        verify=self.verify, stream=True)
 
                 status = r.status_code == requests.codes.ok
                 if not status:

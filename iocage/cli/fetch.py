@@ -21,23 +21,29 @@ __rootcmd__ = True
 @click.option("--auth", "-a", default=None, help="Authentication method for "
                                                  "HTTP fetching. Valid "
                                                  "values: basic, digest")
+@click.option("--verify/--noverify", default=False, help="Enable or disable"
+                                                         " verifying SSL cert"
+                                                         " for HTTP fetching.")
 @click.option("--release", "-r", help="The FreeBSD release to fetch.")
 @click.option("--plugin", "-P", help="The plugin to fetch.")
 @click.argument("props", nargs=-1)
 @click.option("--count", "-c", default=1)
 @click.option("--root-dir", "-d", help="Root directory " +
                                        "containing all the RELEASEs.")
-def fetch_cmd(http, _file, server, user, password, auth, release, plugin,
+def fetch_cmd(http, _file, server, user, password, auth, verify, release,
+              plugin,
               root_dir, props, count):
     """CLI command that calls fetch_release()"""
     if plugin:
         if count == 1:
             IOCFetch("", server, user, password, auth, root_dir,
-                     http=http, _file=_file).fetch_plugin(plugin, props, 0)
+                     http=http, _file=_file, verify=verify).fetch_plugin(
+                plugin, props, 0)
         else:
             for j in xrange(1, count + 1):
                 IOCFetch("", server, user, password, auth, root_dir,
-                         http=http, _file=_file).fetch_plugin(plugin, props, j)
+                         http=http, _file=_file, verify=verify).fetch_plugin(
+                    plugin, props, j)
     else:
         IOCFetch(release, server, user, password, auth, root_dir, http=http,
-                 _file=_file).fetch_release()
+                 _file=_file, verify=verify).fetch_release()
