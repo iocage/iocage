@@ -254,17 +254,18 @@ class IOCJson(object):
                 return tag
 
         # We can attempt to set a property in realtime to jail.
-        if key in single_period:
-            key = key.replace("_", ".", 1)
-        else:
-            key = key.replace("_", ".")
+        if status:
+            if key in single_period:
+                key = key.replace("_", ".", 1)
+            else:
+                key = key.replace("_", ".")
 
-        if key in jail_params:
-            try:
-                check_output(["jail", "-m", "jid={}".format(jid),
-                              "{}={}".format(key, value)], stderr=STDOUT)
-            except CalledProcessError as err:
-                raise RuntimeError("ERROR: {}".format(err.output.strip()))
+            if key in jail_params:
+                try:
+                    check_output(["jail", "-m", "jid={}".format(jid),
+                                  "{}={}".format(key, value)], stderr=STDOUT)
+                except CalledProcessError as err:
+                    raise RuntimeError("ERROR: {}".format(err.output.strip()))
 
     @staticmethod
     def iocage_version():
