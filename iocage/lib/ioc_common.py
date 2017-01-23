@@ -29,7 +29,7 @@ def sort_tag(tag):
         return _tag, 0
 
 
-def sort_release(releases, split=False):
+def sort_release(releases, iocroot, split=False):
     """
     Sort the list by RELEASE, if split is true it's expecting full
     datasets.
@@ -38,7 +38,8 @@ def sort_release(releases, split=False):
 
     if split:
         for rel in releases:
-            rel = float(rel.split("/")[3].split()[0].split("-")[0])
+            rel = float(rel.split(iocroot)[1].split("/")[2].split("-")[0])
+
             release_list.append(rel)
     else:
         for release in releases:

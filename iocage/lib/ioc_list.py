@@ -184,7 +184,7 @@ class IOCList(object):
 
     def list_bases(self, datasets):
         """Lists all bases."""
-        base_list = ioc_common.sort_release(datasets, split=True)
+        base_list = ioc_common.sort_release(datasets, self.iocroot, split=True)
 
         if self.header:
             base_list.insert(0, ["Bases fetched"])
