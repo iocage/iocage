@@ -2,7 +2,7 @@
 import logging
 from datetime import datetime
 from shutil import copy
-from subprocess import PIPE, Popen
+from subprocess import PIPE, Popen, check_call
 
 import re
 from os import X_OK, access, chdir, getcwd, makedirs, path as ospath, symlink, \
@@ -202,15 +202,12 @@ class IOCStart(object):
             # This needs to be a list.
             exec_start = conf["exec_start"].split()
 
-            services = Popen(["setfib", conf["exec_fib"], "jexec",
-                              "ioc-{}".format(self.uuid)] + exec_start,
-                             stdout=PIPE, stderr=PIPE)
-            Popen(["tee", "-a", "{}/log/{}-console.log".format(
-                self.iocroot, self.uuid)], stdin=PIPE,
-                  stdout=PIPE).communicate(
-                input=services.communicate()[0])
-
-            if services.returncode:
+            with open("{}/log/{}-console.log".format(self.iocroot,
+                                                     self.uuid), "a") as f:
+                services = check_call(["jexec",
+                                       "ioc-{}".format(self.uuid)] + exec_start,
+                                      stdout=f, stderr=PIPE)
+            if services:
                 self.lgr.info("  + Starting services FAILED")
             else:
                 self.lgr.info("  + Starting services OK")
