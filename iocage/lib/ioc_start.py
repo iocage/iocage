@@ -8,6 +8,7 @@ import re
 from os import X_OK, access, chdir, getcwd, makedirs, path as ospath, symlink, \
     uname
 
+from iocage.lib.ioc_common import open_atomic
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
@@ -18,12 +19,13 @@ class IOCStart(object):
     for them. It also finds any scripts the user supplies for exec_*
     """
 
-    def __init__(self, uuid, path, silent=False):
+    def __init__(self, uuid, jail, path, conf, silent=False):
         self.pool = IOCJson(" ").get_prop_value("pool")
         self.iocroot = IOCJson(self.pool).get_prop_value("iocroot")
-
         self.uuid = uuid
+        self.jail = jail
         self.path = path
+        self.conf = conf
         self.get = IOCJson(self.path, silent=True).get_prop_value
         self.set = IOCJson(self.path, silent=True).set_prop_value
         self.lgr = logging.getLogger('ioc_start')
@@ -31,7 +33,9 @@ class IOCStart(object):
         if silent:
             self.lgr.disabled = True
 
-    def start_jail(self, jail, conf):
+        self.__start_jail__()
+
+    def __start_jail__(self):
         """
         Takes a UUID, and the user supplied name of a jail, the path and the
         configuration location. It then supplies the jail utility with that
@@ -47,44 +51,44 @@ class IOCStart(object):
 
         # If the jail is not running, let's do this thing.
         if not status:
-            mount_procfs = conf["mount_procfs"]
-            host_domainname = conf["host_domainname"]
-            host_hostname = conf["host_hostname"]
-            securelevel = conf["securelevel"]
-            devfs_ruleset = conf["devfs_ruleset"]
-            enforce_statfs = conf["enforce_statfs"]
-            children_max = conf["children_max"]
-            allow_set_hostname = conf["allow_set_hostname"]
-            allow_sysvipc = conf["allow_sysvipc"]
-            allow_raw_sockets = conf["allow_raw_sockets"]
-            allow_chflags = conf["allow_chflags"]
-            allow_mount = conf["allow_mount"]
-            allow_mount_devfs = conf["allow_mount_devfs"]
-            allow_mount_nullfs = conf["allow_mount_nullfs"]
-            allow_mount_procfs = conf["allow_mount_procfs"]
-            allow_mount_tmpfs = conf["allow_mount_tmpfs"]
-            allow_mount_zfs = conf["allow_mount_zfs"]
-            allow_quotas = conf["allow_quotas"]
-            allow_socket_af = conf["allow_socket_af"]
+            mount_procfs = self.conf["mount_procfs"]
+            host_domainname = self.conf["host_domainname"]
+            host_hostname = self.conf["host_hostname"]
+            securelevel = self.conf["securelevel"]
+            devfs_ruleset = self.conf["devfs_ruleset"]
+            enforce_statfs = self.conf["enforce_statfs"]
+            children_max = self.conf["children_max"]
+            allow_set_hostname = self.conf["allow_set_hostname"]
+            allow_sysvipc = self.conf["allow_sysvipc"]
+            allow_raw_sockets = self.conf["allow_raw_sockets"]
+            allow_chflags = self.conf["allow_chflags"]
+            allow_mount = self.conf["allow_mount"]
+            allow_mount_devfs = self.conf["allow_mount_devfs"]
+            allow_mount_nullfs = self.conf["allow_mount_nullfs"]
+            allow_mount_procfs = self.conf["allow_mount_procfs"]
+            allow_mount_tmpfs = self.conf["allow_mount_tmpfs"]
+            allow_mount_zfs = self.conf["allow_mount_zfs"]
+            allow_quotas = self.conf["allow_quotas"]
+            allow_socket_af = self.conf["allow_socket_af"]
             exec_prestart = self.findscript("prestart")
             exec_poststart = self.findscript("poststart")
             exec_prestop = self.findscript("prestop")
-            exec_stop = conf["exec_stop"]
-            exec_clean = conf["exec_clean"]
-            exec_timeout = conf["exec_timeout"]
-            stop_timeout = conf["stop_timeout"]
-            mount_devfs = conf["mount_devfs"]
-            mount_fdescfs = conf["mount_fdescfs"]
-            sysvmsg = conf["sysvmsg"]
-            sysvsem = conf["sysvsem"]
-            sysvshm = conf["sysvshm"]
+            exec_stop = self.conf["exec_stop"]
+            exec_clean = self.conf["exec_clean"]
+            exec_timeout = self.conf["exec_timeout"]
+            stop_timeout = self.conf["stop_timeout"]
+            mount_devfs = self.conf["mount_devfs"]
+            mount_fdescfs = self.conf["mount_fdescfs"]
+            sysvmsg = self.conf["sysvmsg"]
+            sysvsem = self.conf["sysvsem"]
+            sysvshm = self.conf["sysvshm"]
 
             if mount_procfs == "1":
                 Popen(["mount", "-t", "procfs", "proc", self.path +
                        "/root/proc"]).communicate()
 
             try:
-                mount_linprocfs = conf["mount_linprocfs"]
+                mount_linprocfs = self.conf["mount_linprocfs"]
 
                 if mount_linprocfs == "1":
                     if not ospath.isdir("{}/root/compat/linux/proc".format(
@@ -116,13 +120,13 @@ class IOCStart(object):
                 _sysvsem = "sysvsem={}".format(sysvsem)
                 _sysvshm = "sysvshm={}".format(sysvshm)
 
-            if conf["vnet"] == "off":
-                ip4_addr = conf["ip4_addr"]
-                ip4_saddrsel = conf["ip4_saddrsel"]
-                ip4 = conf["ip4"]
-                ip6_addr = conf["ip6_addr"]
-                ip6_saddrsel = conf["ip6_saddrsel"]
-                ip6 = conf["ip6"]
+            if self.conf["vnet"] == "off":
+                ip4_addr = self.conf["ip4_addr"]
+                ip4_saddrsel = self.conf["ip4_saddrsel"]
+                ip4 = self.conf["ip4"]
+                ip6_addr = self.conf["ip6_addr"]
+                ip6_saddrsel = self.conf["ip6_saddrsel"]
+                ip6 = self.conf["ip6"]
 
                 if ip4_addr == "none":
                     ip4_addr = ""
@@ -142,7 +146,8 @@ class IOCStart(object):
                 net = ["vnet"]
                 vnet = True
 
-            self.lgr.info("* Starting {} ({})".format(self.uuid, jail))
+            self.lgr.info("* Starting {} ({})".format(self.uuid, self.conf[
+                "tag"]))
             start = Popen(["jail", "-c"] + net +
                           ["name=ioc-{}".format(self.uuid),
                            "host.domainname={}".format(host_domainname),
@@ -197,7 +202,7 @@ class IOCStart(object):
 
             self.start_network(vnet)
             # This needs to be a list.
-            exec_start = conf["exec_start"].split()
+            exec_start = self.conf["exec_start"].split()
 
             with open("{}/log/{}-console.log".format(self.iocroot,
                                                      self.uuid), "a") as f:
@@ -215,7 +220,9 @@ class IOCStart(object):
             # TODO: DHCP/BPF
             # TODO: Add jailed datasets support
         else:
-            raise RuntimeError(jail + " is already running!")
+            self.lgr.error("{} ({}) is already running!".format(self.uuid,
+                                                                self.conf[
+                                                                    "tag"]))
 
     def start_network(self, vnet):
         if vnet:
@@ -281,8 +288,8 @@ class IOCStart(object):
         resolver = self.get("resolver")
         #                                     compat
         if resolver != "/etc/resolv.conf" and resolver != "none":
-            with open("{}/root/etc/resolv.conf".format(self.path),
-                      "w") as resolv_conf:
+            with open_atomic("{}/root/etc/resolv.conf".format(self.path),
+                             "w") as resolv_conf:
                 for line in resolver.split(";"):
                     resolv_conf.write(line + "\n")
         elif resolver == "none":

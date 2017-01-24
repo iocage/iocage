@@ -51,7 +51,7 @@ def console_cmd(jail, force):
         lgr.info("{} ({}) is not running".format(uuid, tag) +
                  ", starting jail.")
         if conf["type"] == "jail":
-            IOCStart(uuid, path, silent=True).start_jail(jail, conf)
+            IOCStart(uuid, jail, path, conf, silent=True)
             status = True
         elif conf["type"] == "basejail":
             raise RuntimeError("Please run \"iocage migrate\" before trying"

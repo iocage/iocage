@@ -15,7 +15,7 @@ def test_start():
     conf = IOCJson(path).load_json()
     conf_short = IOCJson(path_short).load_json()
 
-    IOCStart(uuid, path).start_jail("test", conf)
-    IOCStart(uuid_short, path_short).start_jail("test_short", conf_short)
+    IOCStart(uuid, "test", path, conf)
+    IOCStart(uuid_short, "test_short", path_short, conf_short)
 
     assert True == True
