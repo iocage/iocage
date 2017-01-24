@@ -27,7 +27,7 @@ def start_cmd(jail):
             path = paths[j]
 
             conf = IOCJson(path).load_json()
-            IOCStart(uuid, path).start_jail(j, conf)
+            IOCStart(uuid, j, path, conf)
     else:
         _jail = {tag: uuid for (tag, uuid) in jails.iteritems() if
                  uuid.startswith(jail) or tag == jail}
@@ -47,7 +47,7 @@ def start_cmd(jail):
         conf = IOCJson(path).load_json()
 
         if conf["type"] == "jail":
-            IOCStart(uuid, path).start_jail(tag, conf)
+            IOCStart(uuid, tag, path, conf)
         elif conf["type"] == "basejail":
             raise RuntimeError("Please run \"iocage migrate\" before trying"
                                " to start {} ({})".format(uuid, tag))

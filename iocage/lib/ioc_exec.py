@@ -41,8 +41,7 @@ class IOCExec(object):
             conf = IOCJson(self.path).load_json()
 
             if conf["type"] == "jail":
-                IOCStart(self.uuid, self.path, silent=True).start_jail(self.tag,
-                                                                       conf)
+                IOCStart(self.uuid, self.tag, self.path, conf, silent=True)
             elif conf["type"] == "basejail":
                 raise RuntimeError("Please run \"iocage migrate\" before trying"
                                    " to start {} ({})".format(uuid, tag))
