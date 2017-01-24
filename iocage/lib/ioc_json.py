@@ -6,6 +6,7 @@ from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_output
 
 import re
 from os import geteuid, path
+
 from iocage.lib.ioc_common import open_atomic
 
 

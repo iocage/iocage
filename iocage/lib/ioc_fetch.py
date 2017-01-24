@@ -50,7 +50,7 @@ class IOCFetch(object):
             requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
     @staticmethod
-    def __eol_release():
+    def __eol_release__():
         """Scrapes the FreeBSD website and returns a list of EOL RELEASES"""
         logging.getLogger("requests").setLevel(logging.WARNING)
         _eol = "https://www.freebsd.org/security/unsupported.html"
@@ -73,7 +73,7 @@ class IOCFetch(object):
 
         return eol_releases
 
-    def __validate_release(self, releases):
+    def __validate_release__(self, releases):
         """
         Checks if the user supplied an index number and returns the
         RELEASE. If they gave us a full RELEASE, we make sure that exists in
@@ -113,7 +113,7 @@ class IOCFetch(object):
     def fetch_release(self):
         """Small wrapper to choose the right fetch."""
         if self.http:
-            eol = self.__eol_release()
+            eol = self.__eol_release__()
             self.http_fetch_release(eol)
         elif self._file:
             # Format for file directory should be: root-dir/RELEASE/*.txz
@@ -149,7 +149,7 @@ class IOCFetch(object):
                 self.lgr.info("Extracting: {}... ".format(f))
                 self.extract_fetch(f)
         else:
-            eol = self.__eol_release()
+            eol = self.__eol_release__()
             self.ftp_fetch_release(eol)
 
     def http_fetch_release(self, eol):
@@ -205,7 +205,7 @@ class IOCFetch(object):
                     self.lgr.info("[{}] {}".format(releases.index(r), r))
             self.release = raw_input("\nWhich release do you want to fetch?"
                                      " (EXIT) ")
-            self.release = self.__validate_release(releases)
+            self.release = self.__validate_release__(releases)
 
         self.download_fetch(self.files)
         self.update_fetch()
@@ -244,7 +244,7 @@ class IOCFetch(object):
             self.release = raw_input("\nWhich release do you want to fetch?"
                                      " (EXIT) ")
 
-            self.release = self.__validate_release(releases)
+            self.release = self.__validate_release__(releases)
 
         ftp.cwd(self.release)
         ftp_list = ftp.nlst()

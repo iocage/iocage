@@ -36,9 +36,9 @@ def restart_cmd(jail, soft):
             if conf["type"] == "jail":
                 try:
                     if not soft:
-                        __hard_restart(uuid, j, path, conf)
+                        __hard_restart__(uuid, j, path, conf)
                     else:
-                        __soft_restart(uuid, j, path, conf)
+                        __soft_restart__(uuid, j, path, conf)
                 except RuntimeError as err:
                     lgr.error(err)
             elif conf["type"] == "basejail":
@@ -71,9 +71,9 @@ def restart_cmd(jail, soft):
 
         if conf["type"] == "jail":
             if not soft:
-                __hard_restart(uuid, tag, path, conf)
+                __hard_restart__(uuid, tag, path, conf)
             else:
-                __soft_restart(uuid, tag, path, conf)
+                __soft_restart__(uuid, tag, path, conf)
         elif conf["type"] == "basejail":
             raise RuntimeError("Please run \"iocage migrate\" before trying"
                                " to restart {} ({})".format(uuid, tag))
@@ -86,13 +86,13 @@ def restart_cmd(jail, soft):
             ))
 
 
-def __hard_restart(uuid, jail, path, conf):
+def __hard_restart__(uuid, jail, path, conf):
     """Stops and then starts the jail."""
     IOCStop(uuid, jail, path, conf)
-    IOCStart(uuid, path).start_jail(jail, conf)
+    IOCStart(uuid, jail, path, conf)
 
 
-def __soft_restart(uuid, jail, path, conf):
+def __soft_restart__(uuid, jail, path, conf):
     """
     Will tear down the jail by running exec_stop and then exec_start, leaving
     the network stack intact, ideal for VIMAGE.
@@ -113,7 +113,7 @@ def __soft_restart(uuid, jail, path, conf):
         Popen(["pkill", "-j", jid]).communicate()
         start_cmd = ["jexec", "ioc-{}".format(uuid)] + exec_start
         Popen(start_cmd, stdout=PIPE, stderr=PIPE).communicate()
-        IOCJson(path).set_prop_value("last_started={}".format(
-            datetime.utcnow().strftime("%F %T")), silent=True)
+        IOCJson(path, silent=True).set_prop_value("last_started={}".format(
+            datetime.utcnow().strftime("%F %T")))
     else:
         raise RuntimeError("{} is not running!".format(jail))
