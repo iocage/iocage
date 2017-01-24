@@ -22,7 +22,6 @@ def destroy_cmd(force, jails):
     if jails:
         get_jid = IOCList().get_jid
         jail_list, paths = IOCList("uuid").get_datasets()
-        count = 1
 
         for jail in jails:
             _jail = {tag: uuid for (tag, uuid) in jail_list.iteritems() if
@@ -44,13 +43,9 @@ def destroy_cmd(force, jails):
                 lgr.warning("\nWARNING: This will destroy"
                             " jail {} ({})".format(uuid, tag))
                 lgr.info("Dataset: {}".format(path))
-                answer = raw_input("\nAre you sure? y[N]: ")
 
-                if answer.lower() == "" or answer.lower() == "n":
-                    if count == len(jails):
-                        exit()
-                    else:
-                        continue
+                if not click.confirm("\nAre you sure?"):
+                    continue # no, continue to next jail
 
             status, _ = get_jid(uuid)
 

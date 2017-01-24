@@ -1,0 +1,11 @@
+*.so
+*.pyc
+*.pyo
+*.egg-info/
+*.egg
+.DS_Store
+.tox/
+.cache/
+.idea/
+venv/
+venv-*/
