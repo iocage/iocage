@@ -34,33 +34,35 @@ class IOCStop(object):
         #
         # TODO: exec_stop
         if not self.status:
-            raise RuntimeError("{} is not running!".format(self.jail))
-
-        self.lgr.info("* Stopping {} ({})".format(self.uuid, self.jail))
-        for nic in self.nics.split(","):
-            nic = nic.split(":")[0]
-            try:
-                check_call(["ifconfig", "{}:{}".format(nic, self.jid),
-                            "destroy"], stderr=PIPE)
-            except CalledProcessError:
-                pass
-
-        stop = Popen(["jail", "-r", "ioc-{}".format(self.uuid)],
-                     stderr=PIPE)
-        stop.communicate()
-
-        # TODO: Fancier.
-        if stop.returncode:
-            self.lgr.info("  + Removing jail process FAILED")
+            self.lgr.error("{} ({}) is not running!".format(self.uuid,
+                                                            self.conf["tag"]))
         else:
-            self.lgr.info("  + Removing jail process OK")
+            self.lgr.info(
+                "* Stopping {} ({})".format(self.uuid, self.conf["tag"]))
+            for nic in self.nics.split(","):
+                nic = nic.split(":")[0]
+                try:
+                    check_call(["ifconfig", "{}:{}".format(nic, self.jid),
+                                "destroy"], stderr=PIPE)
+                except CalledProcessError:
+                    pass
 
-        Popen(["umount", "-afF", "{}/fstab".format(self.path)], stderr=PIPE)
-        Popen(["umount", "-f", "{}/root/dev/fd".format(self.path)],
-              stderr=PIPE).communicate()
-        Popen(["umount", "-f", "{}/root/dev".format(self.path)],
-              stderr=PIPE).communicate()
-        Popen(["umount", "-f", "{}/root/proc".format(self.path)],
-              stderr=PIPE).communicate()
-        Popen(["umount", "-f", "{}/root/compat/linux/proc".format(self.path)],
-              stderr=PIPE).communicate()
+            stop = Popen(["jail", "-r", "ioc-{}".format(self.uuid)],
+                         stderr=PIPE)
+            stop.communicate()
+
+            if stop.returncode:
+                self.lgr.info("  + Removing jail process FAILED")
+            else:
+                self.lgr.info("  + Removing jail process OK")
+
+            Popen(["umount", "-afF", "{}/fstab".format(self.path)], stderr=PIPE)
+            Popen(["umount", "-f", "{}/root/dev/fd".format(self.path)],
+                  stderr=PIPE).communicate()
+            Popen(["umount", "-f", "{}/root/dev".format(self.path)],
+                  stderr=PIPE).communicate()
+            Popen(["umount", "-f", "{}/root/proc".format(self.path)],
+                  stderr=PIPE).communicate()
+            Popen(
+                ["umount", "-f", "{}/root/compat/linux/proc".format(self.path)],
+                stderr=PIPE).communicate()
