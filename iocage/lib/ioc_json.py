@@ -6,6 +6,7 @@ from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_output
 
 import re
 from os import geteuid, path
+from iocage.lib.ioc_common import open_atomic
 
 
 def _get_pool_and_iocroot():
@@ -119,7 +120,7 @@ class IOCJson(object):
 
     def write_json(self, data):
         """Write a JSON file at the location given with supplied data."""
-        with open(self.location + "/config.json", 'w') as out:
+        with open_atomic(self.location + "/config.json", 'w') as out:
             json.dump(data, out, sort_keys=True, indent=4,
                       ensure_ascii=False)
 
