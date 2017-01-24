@@ -2,7 +2,8 @@
 import logging
 from datetime import datetime
 from shutil import copy
-from subprocess import PIPE, Popen, check_call
+from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call, \
+    check_output
 
 import re
 from os import X_OK, access, chdir, getcwd, makedirs, path as ospath, symlink, \
@@ -251,29 +252,58 @@ class IOCStart(object):
                             equal = True
 
                         if equal:
+                            mac_a, mac_b = self.__generate_vnet_mac__(nic)
                             epair_a_cmd = ["ifconfig", "epair", "create"]
                             epair_a = Popen(epair_a_cmd,
                                             stdout=PIPE).communicate()[0]
                             epair_a = epair_a.strip()
                             epair_b = re.sub("a$", "b", epair_a)
 
-                            Popen(["ifconfig", epair_a, "name", "{}:{}".format(
-                                nic, jid), "mtu", membermtu],
-                                  stdout=PIPE).communicate()
-                            Popen(["ifconfig", epair_b, "vnet", "ioc-{}".format(
-                                self.uuid)]).communicate()
-                            Popen(["jexec", "ioc-{}".format(self.uuid),
-                                   "ifconfig", epair_b, "name", nic, "mtu",
-                                   membermtu], stdout=PIPE).communicate()
-                            Popen(["ifconfig", bridge, "addm", "{}:{}".format(
-                                nic, jid), "up"]).communicate()
-                            Popen(["ifconfig", "{}:{}".format(nic, jid),
-                                   "up"]).communicate()
-                            Popen(["jexec", "ioc-{}".format(self.uuid),
-                                   "ifconfig", iface, ip4, "up"]).communicate()
-                            Popen(["jexec", "ioc-{}".format(self.uuid),
-                                   "route", "add", "default", defaultgw],
-                                  stdout=PIPE).communicate()
+                            try:
+                                # Host side
+                                check_output(["ifconfig", epair_a, "name",
+                                              "{}:{}".format(nic, jid), "mtu",
+                                              membermtu], stderr=STDOUT)
+                                check_output(["ifconfig", "{}:{}".format(nic,
+                                                                         jid),
+                                              "link", mac_a], stderr=STDOUT)
+                                check_output(["ifconfig", "{}:{}".format(nic,
+                                                                         jid),
+                                              "description",
+                                              "associated with jail:"
+                                              " {} ({})".format(self.uuid,
+                                                                self.conf[
+                                                                    "tag"])],
+                                             stderr=STDOUT)
+
+                                # Jail side
+                                check_output(["ifconfig", epair_b, "vnet",
+                                              "ioc-{}".format(self.uuid)],
+                                             stderr=STDOUT)
+                                check_output(["jexec", "ioc-{}".format(
+                                    self.uuid), "ifconfig", epair_b, "name",
+                                              nic, "mtu", membermtu],
+                                             stderr=STDOUT)
+                                check_output(["jexec", "ioc-{}".format(
+                                    self.uuid), "ifconfig", nic, "link", mac_b],
+                                             stderr=STDOUT)
+
+                                check_output(["ifconfig", bridge, "addm",
+                                              "{}:{}".format(nic, jid), "up"],
+                                             stderr=STDOUT)
+                                check_output(["ifconfig", "{}:{}".format(nic,
+                                                                         jid),
+                                              "up"], stderr=STDOUT)
+                                check_output(
+                                    ["jexec", "ioc-{}".format(self.uuid),
+                                     "ifconfig", iface, ip4, "up"],
+                                    stderr=STDOUT)
+                                check_output(["jexec", "ioc-{}".format(
+                                    self.uuid), "route", "add", "default",
+                                              defaultgw], stderr=STDOUT)
+                            except CalledProcessError as err:
+                                raise RuntimeError(
+                                    "ERROR: {}".format(err.output.strip()))
                 except:
                     pass
 
@@ -297,3 +327,40 @@ class IOCStart(object):
                 self.path))
         else:
             copy(resolver, "{}/root/etc/resolv.conf".format(self.path))
+
+    def __generate_vnet_mac__(self, nic):
+        """
+        Generates a random MAC address and checks for uniquness.
+        If the jail already has a mac address generated, it will return that
+        instead.
+        """
+        mac = self.get("{}_mac".format(nic))
+
+        if mac == "none":
+            jails, paths = IOCList("uuid").get_datasets()
+            mac_list = []
+
+            for jail in jails:
+                path = paths[jail]
+                _conf = IOCJson(path).load_json()
+                mac = _conf["mac_prefix"]
+                mac_list.append(_conf["{}_mac".format(nic)].split(","))
+
+            # We have to flatten our list of lists.
+            mac_list = [m for maclist in mac_list for m in maclist]
+            for number in xrange(16 ** 6):
+                # SO
+                hex_num_a = hex(number)[2:].zfill(6)
+                hex_num_b = hex(number + 1)[2:].zfill(6)
+                gen_mac_a = "{}{}{}{}{}{}{}".format(mac, *hex_num_a)
+                gen_mac_b = "{}{}{}{}{}{}{}".format(mac, *hex_num_b)
+                gen_mac_combined = "{},{}".format(gen_mac_a, gen_mac_b)
+
+                if gen_mac_a in mac_list or gen_mac_b in mac_list:
+                    continue
+                else:
+                    self.set("{}_mac={}".format(nic, gen_mac_combined))
+                    return gen_mac_a, gen_mac_b
+        else:
+            mac_a, mac_b = mac.split(",")
+            return mac_a, mac_b
