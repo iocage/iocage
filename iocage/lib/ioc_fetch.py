@@ -43,7 +43,7 @@ class IOCFetch(object):
         self.http = http
         self._file = _file
         self.verify = verify
-        self.files = ("base.txz", "lib32.txz", "doc.txz")
+        self.files = ("MANIFEST", "base.txz", "lib32.txz", "doc.txz")
 
         if not verify:
             # The user likely knows this already.
@@ -139,10 +139,16 @@ class IOCFetch(object):
                 if not os.path.isfile(f):
                     Popen(["zfs", "destroy", "-r", "-f", "{}{}".format(
                         self.pool, dataset)])
-                    raise RuntimeError("ERROR: {}.txz is a required "
-                                       "file!".format(f) +
-                                       "\nPlease place it in {}/{}".format(
-                                           self.root_dir, self.release))
+                    if f == "MANIFEST":
+                        error = "ERROR: {} is a required file!".format(f) + \
+                                "\nPlease place it in {}/{}".format(
+                                    self.root_dir, self.release)
+                    else:
+                        error = "ERROR: {}.txz is a required file!".format(f)\
+                                + \
+                                "\nPlease place it in {}/{}".format(
+                                    self.root_dir, self.release)
+                    raise RuntimeError(error)
                 self.lgr.info("Copying: {}... ".format(f))
                 copy(f, dataset)
 
@@ -368,14 +374,17 @@ class IOCFetch(object):
                             pbar.update(len(chunk))
                         pbar.close()
 
-                    self.lgr.info("Extracting: {}... ".format(f))
-                    try:
-                        self.extract_fetch(f)
-                    except:
-                        raise
+                    if f != "MANIFEST":
+                        try:
+                            self.lgr.info("Extracting: {}... ".format(f))
+                            self.extract_fetch(f)
+                        except:
+                            raise
             elif ftp:
                 for f in _list:
-                    if bool(re.compile(r"base.txz|lib32.txz|doc.txz").match(f)):
+                    if bool(re.compile(
+                            r"MANIFEST|base.txz|lib32.txz|doc.txz").match(
+                            f)):
                         try:
                             ftp.voidcmd('TYPE I')
                             filesize = ftp.size(f)
@@ -400,8 +409,9 @@ class IOCFetch(object):
                                 ftp.retrbinary("RETR {}".format(f), callback)
                                 pbar.close()
 
-                            self.lgr.info("Extracting: {}... ".format(f))
-                            self.extract_fetch(f)
+                            if f != "MANIFEST":
+                                self.lgr.info("Extracting: {}... ".format(f))
+                                self.extract_fetch(f)
                         except:
                             raise
                     else:
