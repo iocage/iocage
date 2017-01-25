@@ -1,4 +1,6 @@
 """CLI command to fetch a jail RELEASE."""
+from subprocess import check_output
+
 import click
 
 from iocage.lib.ioc_fetch import IOCFetch
@@ -34,16 +36,24 @@ def fetch_cmd(http, _file, server, user, password, auth, verify, release,
               plugin,
               root_dir, props, count):
     """CLI command that calls fetch_release()"""
+    freebsd_version = check_output(["freebsd-version"])
+
+    if "HBSD" in freebsd_version:
+        if server == "ftp.freebsd.org":
+            hardened = True
+    else:
+        hardened = False
+
     if plugin:
         if count == 1:
             IOCFetch("", server, user, password, auth, root_dir,
-                     http=http, _file=_file, verify=verify).fetch_plugin(
-                plugin, props, 0)
+                     http=http, _file=_file, verify=verify,
+                     hardened=hardened).fetch_plugin(plugin, props, 0)
         else:
             for j in xrange(1, count + 1):
                 IOCFetch("", server, user, password, auth, root_dir,
-                         http=http, _file=_file, verify=verify).fetch_plugin(
-                    plugin, props, j)
+                         http=http, _file=_file, verify=verify,
+                         hardened=hardened).fetch_plugin(plugin, props, j)
     else:
         IOCFetch(release, server, user, password, auth, root_dir, http=http,
-                 _file=_file, verify=verify).fetch_release()
+                 _file=_file, verify=verify, hardened=hardened).fetch_release()

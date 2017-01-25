@@ -44,9 +44,8 @@ class IOCList(object):
                    "{}/iocage/releases".format(self.pool)]
 
             # Format is Major.Minor-{RELEASE,STABLE,CURRENT,BETA,ALPHA,RC}
-            # TODO: Support other "bases" besides RELEASE?
             regex = re.compile("{}/releases/".format(self.iocroot) +
-                               "\\w*.\\w-RELEASE")
+                               "\\w*.\\w")
         elif self.list_type == "template":
             # List the datasets underneath self.POOL/iocroot/releases
             cmd = ["zfs", "list", "-rHd", "1",
