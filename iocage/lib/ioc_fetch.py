@@ -261,7 +261,8 @@ class IOCFetch(object):
                 releases = sort_release(releases, self.iocroot)
                 for r in releases:
                     if r in eol:
-                        self.lgr.info("[{}] {} (EOL)".format(releases.index(r), r))
+                        self.lgr.info(
+                            "[{}] {} (EOL)".format(releases.index(r), r))
                     else:
                         self.lgr.info("[{}] {}".format(releases.index(r), r))
                 self.release = raw_input("\nWhich release do you want to fetch?"
