@@ -45,7 +45,7 @@ def destroy_cmd(force, jails):
                 lgr.info("Dataset: {}".format(path))
 
                 if not click.confirm("\nAre you sure?"):
-                    continue # no, continue to next jail
+                    continue  # no, continue to next jail
 
             status, _ = get_jid(uuid)
 
