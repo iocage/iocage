@@ -56,7 +56,7 @@ Start the jail:
 `iocage start myjail`
 
 **REQUIREMENTS**
-- FreeBSD 9.3-RELEASE amd64 or newer
+- FreeBSD 9.3-RELEASE amd64 and higher or HardenedBSD/TrueOS
 - ZFS file system
 - Python 2.7
 - Optional - Kernel compiled with:
