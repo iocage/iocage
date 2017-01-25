@@ -14,6 +14,9 @@ def pytest_addoption(parser):
                      help="The password to use for fetching.")
     parser.addoption("--http", action="store_true",
                      help="Have --server define a HTTP server instead.")
+    parser.addoption("--hardened", action="store_true",
+                     help="Have fetch expect the default HardeneBSD layout"
+                          " instead.")
     parser.addoption("--auth", action="store", default=None,
                      help="Authentication method "
                           "for "
@@ -68,6 +71,12 @@ def root_dir(request):
 def http(request):
     """Have --server define a HTTP server instead."""
     return request.config.getoption("--http")
+
+
+@pytest.fixture
+def hardened(request):
+    """Have fetch expect the default HardeneBSD layout instead."""
+    return request.config.getoption("--hardened")
 
 
 @pytest.fixture

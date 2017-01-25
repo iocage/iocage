@@ -1,12 +1,14 @@
 """Update module for the cli."""
 
 import logging
+from subprocess import Popen, check_output
 
 import click
 
 from iocage.lib.ioc_fetch import IOCFetch
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
+from iocage.lib.ioc_start import IOCStart
 
 __cmdname__ = "update_cmd"
 __rootcmd__ = True
@@ -35,5 +37,26 @@ def update_cmd(jail):
     else:
         raise RuntimeError("{} not found!".format(jail))
 
+    freebsd_version = check_output(["freebsd-version"])
+    status, jid = IOCList.get_jid(uuid)
     conf = IOCJson(path).load_json()
-    IOCFetch(conf["release"]).update_fetch(True, uuid, tag)
+
+    if "HBSD" in freebsd_version:
+        if conf["type"] == "jail":
+            if not status:
+                IOCStart(uuid, tag, path, conf, silent=True)
+                status, jid = IOCList.get_jid(uuid)
+
+            Popen(["hbsd-update", "-j", jid]).communicate()
+        elif conf["type"] == "basejail":
+            raise RuntimeError("Please run \"iocage migrate\" before trying"
+                               " to start {} ({})".format(uuid, tag))
+        elif conf["type"] == "template":
+            raise RuntimeError("Please convert back to a jail before trying"
+                               " to start {} ({})".format(uuid, tag))
+        else:
+            raise RuntimeError("{} is not a supported jail type.".format(
+                conf["type"]
+            ))
+    else:
+        IOCFetch(conf["release"]).update_fetch(True, uuid, tag)

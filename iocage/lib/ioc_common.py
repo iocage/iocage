@@ -1,4 +1,5 @@
 """Common methods we reuse."""
+import collections
 import shutil
 import tempfile as tmp
 from contextlib import contextmanager
@@ -31,36 +32,44 @@ def sort_tag(tag):
         return _tag, 0
 
 
-def sort_release(releases, iocroot, split=False):
+def sort_release(releases, iocroot, split=False, hardened=False):
     """
     Sort the list by RELEASE, if split is true it's expecting full
     datasets.
     """
+    r_dict = {}
     release_list = []
 
     if split:
         for rel in releases:
-            rel = float(rel.split(iocroot)[1].split("/")[2].split("-")[0])
+            rel, r_type = rel.split(iocroot)[1].split("/")[2].split("-")
 
-            release_list.append(rel)
+            if len(rel) > 2:
+                rel = float(rel)
+
+            r_dict[rel] = r_type
     else:
         for release in releases:
-            if "-RELEASE" in release:
-                release = float(release.split("-")[0])
-                release_list.append(release)
+            try:
+                release, r_type = release.split("-")
 
-    release_list.sort()
+                if len(release) > 2:
+                    release = float(release)
 
-    for r in release_list:
-        index = release_list.index(r)
-        release_list.remove(r)
+                r_dict[release] = r_type
+            except ValueError:
+                pass
 
+    ordered_r_dict = collections.OrderedDict(sorted(r_dict.iteritems()))
+    index = 0
+
+    for r, t in ordered_r_dict.iteritems():
         if split:
-            # We want these sorted, so we cheat a bit.
-            release_list.insert(index, ["{}-RELEASE".format(r)])
+            release_list.insert(index, ["{}-{}".format(r, t)])
+            index += 1
         else:
-            # We want these sorted, so we cheat a bit.
-            release_list.insert(index, "{}-RELEASE".format(r))
+            release_list.insert(index, "{}-{}".format(r, t))
+            index += 1
 
     return release_list
 

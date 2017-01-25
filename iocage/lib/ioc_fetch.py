@@ -28,22 +28,36 @@ class IOCFetch(object):
     """Fetch a RELEASE for use as a jail base."""
 
     def __init__(self, release, server="ftp.freebsd.org", user="anonymous",
-                 password="anonymous@", auth=None, root_dir=None,
-                 http=False, _file=False, verify=True):
+                 password="anonymous@", auth=None, root_dir=None, http=False,
+                 _file=False, verify=True, hardened=False):
         self.pool = IOCJson().get_prop_value("pool")
         self.iocroot = IOCJson(self.pool).get_prop_value("iocroot")
         self.server = server
         self.user = user
         self.password = password
         self.auth = auth
-        self.release = release
+
+        if release:
+            self.release = release.upper()
+        else:
+            self.release = release
+
         self.root_dir = root_dir
         self.lgr = logging.getLogger('ioc_fetch')
         self.arch = os.uname()[4]
         self.http = http
         self._file = _file
         self.verify = verify
+        self.hardened = hardened
         self.files = ("MANIFEST", "base.txz", "lib32.txz", "doc.txz")
+
+        if hardened:
+            self.http = True
+
+            if release:
+                self.release = "{}-stable".format(self.release[:2]).upper()
+            else:
+                self.release = release
 
         if not verify:
             # The user likely knows this already.
@@ -167,6 +181,12 @@ class IOCFetch(object):
             - XX.X-RELEASE
             - XX.X_RELEASE
         """
+        if self.hardened:
+            if self.server == "ftp.freebsd.org":
+                self.server = "http://installer.hardenedbsd.org"
+                rdir = "releases/pub/HardenedBSD/releases/{0}/{0}".format(
+                    self.arch)
+
         if self.server == "ftp.freebsd.org":
             self.server = "https://download.freebsd.org"
             self.root_dir = "ftp/releases/{}".format(self.arch)
@@ -178,43 +198,83 @@ class IOCFetch(object):
 
         logging.getLogger("requests").setLevel(logging.WARNING)
 
-        if self.auth == "basic":
-            req = requests.get("{}/{}".format(self.server, self.root_dir),
-                               auth=(self.user, self.password),
-                               verify=self.verify)
-        elif self.auth == "digest":
-            req = requests.get("{}/{}".format(self.server, self.root_dir),
-                               auth=HTTPDigestAuth(self.user,
-                                                   self.password),
-                               verify=self.verify)
-        else:
-            req = requests.get("{}/{}".format(self.server, self.root_dir))
+        if self.hardened:
+            if self.auth == "basic":
+                req = requests.get("{}/releases".format(self.server),
+                                   auth=(self.user, self.password),
+                                   verify=self.verify)
+            elif self.auth == "digest":
+                req = requests.get("{}/releases".format(self.server),
+                                   auth=HTTPDigestAuth(self.user,
+                                                       self.password),
+                                   verify=self.verify)
+            else:
+                req = requests.get("{}/releases".format(self.server))
 
-        releases = []
-        status = req.status_code == requests.codes.ok
-        if not status:
-            req.raise_for_status()
+            releases = []
+            status = req.status_code == requests.codes.ok
+            if not status:
+                req.raise_for_status()
 
-        if not self.release:
-            for rel in req.content.split():
-                rel = rel.strip("href=").strip("/").split(">")
-                if "-RELEASE" in rel[0]:
-                    rel = rel[0].strip('"').strip("/").strip("/</a")
-                    if rel not in releases:
-                        releases.append(rel)
+            if not self.release:
+                for rel in req.content.split():
+                    rel = rel.strip("href=").strip("/").split(">")
+                    if "_stable" in rel[0]:
+                        rel = rel[0].strip('"').strip("/").strip("/</a")
+                        rel = rel.replace("hardened_", "").replace(
+                            "_master-LAST", "").replace("_", "-").upper()
+                        if rel not in releases:
+                            releases.append(rel)
 
-            releases = sort_release(releases, self.iocroot)
-            for r in releases:
-                if r in eol:
-                    self.lgr.info("[{}] {} (EOL)".format(releases.index(r), r))
-                else:
+                releases = sort_release(releases, self.iocroot)
+                for r in releases:
                     self.lgr.info("[{}] {}".format(releases.index(r), r))
-            self.release = raw_input("\nWhich release do you want to fetch?"
-                                     " (EXIT) ")
-            self.release = self.__validate_release__(releases)
+                self.release = raw_input("\nWhich release do you want to fetch?"
+                                         " (EXIT) ")
+                self.release = self.__validate_release__(releases)
+        else:
+            if self.auth == "basic":
+                req = requests.get("{}/{}".format(self.server, self.root_dir),
+                                   auth=(self.user, self.password),
+                                   verify=self.verify)
+            elif self.auth == "digest":
+                req = requests.get("{}/{}".format(self.server, self.root_dir),
+                                   auth=HTTPDigestAuth(self.user,
+                                                       self.password),
+                                   verify=self.verify)
+            else:
+                req = requests.get("{}/{}".format(self.server, self.root_dir))
 
+            releases = []
+            status = req.status_code == requests.codes.ok
+            if not status:
+                req.raise_for_status()
+
+            if not self.release:
+                for rel in req.content.split():
+                    rel = rel.strip("href=").strip("/").split(">")
+                    if "-RELEASE" in rel[0]:
+                        rel = rel[0].strip('"').strip("/").strip("/</a")
+                        if rel not in releases:
+                            releases.append(rel)
+
+                releases = sort_release(releases, self.iocroot)
+                for r in releases:
+                    if r in eol:
+                        self.lgr.info("[{}] {} (EOL)".format(releases.index(r), r))
+                    else:
+                        self.lgr.info("[{}] {}".format(releases.index(r), r))
+                self.release = raw_input("\nWhich release do you want to fetch?"
+                                         " (EXIT) ")
+                self.release = self.__validate_release__(releases)
+
+        if self.hardened:
+            self.root_dir = "{}/hardenedbsd-{}-LAST".format(rdir,
+                                                            self.release.lower())
         self.download_fetch(self.files)
-        self.update_fetch()
+
+        if not self.hardened:
+            self.update_fetch()
 
     def ftp_fetch_release(self, eol):
         """
@@ -340,20 +400,23 @@ class IOCFetch(object):
             os.chdir("{}/download/{}".format(self.iocroot, self.release))
             if self.http:
                 for f in _list:
-                    if self.auth == "basic":
-                        r = requests.get("{}/{}/{}/{}".format(
-                            self.server, self.root_dir, self.release, f),
-                            auth=(self.user, self.password),
-                            verify=self.verify, stream=True)
-                    elif self.auth == "digest":
-                        r = requests.get("{}/{}/{}/{}".format(
-                            self.server, self.root_dir, self.release, f),
-                            auth=HTTPDigestAuth(self.user, self.password),
-                            verify=self.verify, stream=True)
+                    if self.hardened:
+                        _file = "{}/{}/{}".format(self.server, self.root_dir,
+                                                  f)
+                        if f == "lib32.txz":
+                            continue
                     else:
-                        r = requests.get("{}/{}/{}/{}".format(
-                            self.server, self.root_dir, self.release, f),
-                            verify=self.verify, stream=True)
+                        _file = "{}/{}/{}/{}".format(self.server, self.root_dir,
+                                                     self.release, f)
+                    if self.auth == "basic":
+                        r = requests.get(_file, auth=(self.user, self.password),
+                                         verify=self.verify, stream=True)
+                    elif self.auth == "digest":
+                        r = requests.get(_file, auth=HTTPDigestAuth(
+                            self.user, self.password), verify=self.verify,
+                                         stream=True)
+                    else:
+                        r = requests.get(_file, verify=self.verify, stream=True)
 
                     status = r.status_code == requests.codes.ok
                     if not status:
