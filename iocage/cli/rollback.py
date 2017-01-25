@@ -52,9 +52,7 @@ def rollback_cmd(jail, name, force):
             " {} was taken.".format(
                 name) + "\nIncluding ALL snapshots taken after"
                         " {} for {} ({}).".format(name, uuid, tag))
-        answer = raw_input("\nAre you sure? y[N]: ")
-
-        if answer.lower() == "" or answer.lower() == "n":
+        if not click.confirm("\nAre you sure?"):
             exit()
     try:
         datasets = Popen(["zfs", "list", "-H", "-r",

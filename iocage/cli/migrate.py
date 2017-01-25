@@ -30,9 +30,7 @@ def migrate_cmd(force, delete):
     if not force:
         lgr.warning("\nWARNING: This will migrate ALL basejails, it can take a"
                     " long time!")
-        answer = raw_input("\nAre you sure? y[N]: ")
-
-        if answer.lower() == "" or answer.lower() == "n":
+        if not click.confirm("\nAre you sure?"):
             exit()
 
     for tag, uuid in jails.iteritems():
