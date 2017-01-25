@@ -1,0 +1,124 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>How to create and use templates &#8212; iocage 0.9.3 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.9.3',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="top" title="iocage 0.9.3 documentation" href="index.html" />
+    <link rel="next" title="Create a jail package!" href="jail-package.html" />
+    <link rel="prev" title="Advanced usage" href="advanced-use.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="how-to-create-and-use-templates">
+<h1>How to create and use templates<a class="headerlink" href="#how-to-create-and-use-templates" title="Permalink to this headline">¶</a></h1>
+<p><strong>Templates can save you precious time!</strong></p>
+<p>Set up a jail any way you like, and create a template from it. All packages and pre-configured settings will be available for deployment next time within seconds.</p>
+<p>Any jail can be converted to a template and back to a jail again as required. In fact a template is just another jail which has the property <code class="docutils literal"><span class="pre">template</span></code> set to &#8220;yes&#8221;. The difference is that templates are not started by iocage.</p>
+<p><strong>Here is how to create a template with iocage:</strong></p>
+<ol class="arabic simple">
+<li>Create a new jail <code class="docutils literal"><span class="pre">iocage</span> <span class="pre">create</span> <span class="pre">tag=mytemplate</span></code></li>
+<li>Configure the jail&#8217;s networking</li>
+<li>Install any package you like and customize jail</li>
+<li>Once finished with customization stop the jail <code class="docutils literal"><span class="pre">iocage</span> <span class="pre">stop</span> <span class="pre">UUID</span> <span class="pre">|</span> <span class="pre">TAG</span></code></li>
+<li>A good idea is set some notes <code class="docutils literal"><span class="pre">iocage</span> <span class="pre">set</span> <span class="pre">notes=&quot;customized</span> <span class="pre">PHP,nginx</span> <span class="pre">jail&quot;</span> <span class="pre">UUID</span> <span class="pre">|</span> <span class="pre">TAG</span></code></li>
+<li>Turn the template property on <code class="docutils literal"><span class="pre">iocage</span> <span class="pre">set</span> <span class="pre">template=yes</span> <span class="pre">UUID</span> <span class="pre">|</span> <span class="pre">TAG</span></code></li>
+<li>List your template with <code class="docutils literal"><span class="pre">iocage</span> <span class="pre">list</span> <span class="pre">-t</span></code></li>
+</ol>
+<p><strong>Here is how to use the created template:</strong></p>
+<p>To create a new jail from this template simply clone it!</p>
+<ol class="arabic simple">
+<li><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">clone</span> <span class="pre">UUID-of-mytemplate</span> <span class="pre">tag=mynewjail</span></code></li>
+<li>List new jail <code class="docutils literal"><span class="pre">iocage</span> <span class="pre">list</span></code></li>
+<li>Start jail <code class="docutils literal"><span class="pre">iocage</span> <span class="pre">start</span> <span class="pre">UUID</span> <span class="pre">|</span> <span class="pre">TAG</span></code></li>
+</ol>
+<p>Done!</p>
+<p><strong>If you need to make further customization in the template or want to patch it, you have two options.</strong></p>
+<ul class="simple">
+<li>convert template back to jail with <code class="docutils literal"><span class="pre">iocage</span> <span class="pre">set</span> <span class="pre">template=no</span> <span class="pre">UUID-of-template</span></code>, and start the jail</li>
+<li>if you don&#8217;t need network access to make the changes simply run <code class="docutils literal"><span class="pre">iocage</span> <span class="pre">chroot</span> <span class="pre">UUID-of-template</span></code>, make the changes and exit</li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="advanced-use.html" title="previous chapter">Advanced usage</a></li>
+      <li>Next: <a href="jail-package.html" title="next chapter">Create a jail package!</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/templates.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Brandon Schneider and Peter Toth.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.8</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/templates.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

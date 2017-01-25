@@ -1,0 +1,220 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Basic usage &#8212; iocage 0.9.3 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.9.3',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="top" title="iocage 0.9.3 documentation" href="index.html" />
+    <link rel="next" title="Networking" href="networking.html" />
+    <link rel="prev" title="iocage - A FreeBSD jail manager" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="basic-usage">
+<h1>Basic usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline">¶</a></h1>
+<p>This section is about basic use and is a suitable quick howto for newcomers.</p>
+<div class="section" id="fetch-a-release">
+<h2>Fetch a release<a class="headerlink" href="#fetch-a-release" title="Permalink to this headline">¶</a></h2>
+<p>The very first step with iocage is to fetch a RELEASE. By default iocage will attempt to fetch the
+host&#8217;s current RELEASE from the freebsd.org servers. Once the RELEASE bits are downloaded, the most
+recent patches are applied too.</p>
+<p>Simply run:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">fetch</span></code></p>
+<p>If a specific RELEASE is required run:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">fetch</span> <span class="pre">release=9.3-RELEASE</span></code></p>
+<p>In case a specific download mirror is required simply run:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">fetch</span> <span class="pre">ftphost=ftp.hostname.org</span></code></p>
+<p>You can also specify a ftp directory to fetch the base files from:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">fetch</span> <span class="pre">ftpdir=/dir/</span></code></p>
+</div>
+<div class="section" id="create-a-jail">
+<h2>Create a jail<a class="headerlink" href="#create-a-jail" title="Permalink to this headline">¶</a></h2>
+<p>There are three supported basic jail types: full, clone and base jail. In addition to these three
+there are two more which are discussed later (empty and templates).
+Depending on requirements the <cite>create</cite> subcommand can be tweaked to create any of the three types.
+By default iocage will create a fully independent jail of the current host&#8217;s RELEASE and set the TAG property to todays date.</p>
+<p>Creating a jail is real simple, just run:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">create</span></code></p>
+<p>This will create a fully independent jail.</p>
+<p>To create a lightweight jail (clone) run:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">create</span> <span class="pre">-c</span></code></p>
+<p>To create a base jail:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">create</span> <span class="pre">-b</span></code></p>
+<p>To create a jail and set its IP address and tag property run:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">create</span> <span class="pre">-c</span> <span class="pre">tag=myjail</span> <span class="pre">ip4_addr=&quot;em0|10.1.1.10/24&quot;</span></code></p>
+<p>For more information please read iocage(8).</p>
+</div>
+<div class="section" id="listing-jails">
+<h2>Listing jails<a class="headerlink" href="#listing-jails" title="Permalink to this headline">¶</a></h2>
+<p>To list all jails run:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">list</span></code></p>
+<p>To see all downloaded RELEASEs run:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">list</span> <span class="pre">-r</span></code></p>
+<p>To see available templates run:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">list</span> <span class="pre">-t</span></code></p>
+</div>
+<div class="section" id="start-stop-or-restart-a-jail">
+<h2>Start, stop or restart a jail<a class="headerlink" href="#start-stop-or-restart-a-jail" title="Permalink to this headline">¶</a></h2>
+<p>To start or stop any jail on the system both the UUID or TAG can be used interchangeably.
+To simplify UUID handling iocage accepts a partial UUID too with any subcommand.</p>
+<div class="section" id="start">
+<h3>Start<a class="headerlink" href="#start" title="Permalink to this headline">¶</a></h3>
+<p>To start a jail tagged www01 simply run:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">start</span> <span class="pre">www01</span></code></p>
+<p>To start a jail with a full UUID run:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">start</span> <span class="pre">26e8e027-f00c-11e4-8f7f-3c970e80eb61</span></code></p>
+<p>Or to start the jail only with a partial UUID enter the first few characters only:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">start</span> <span class="pre">26e8</span></code></p>
+</div>
+<div class="section" id="stop">
+<h3>Stop<a class="headerlink" href="#stop" title="Permalink to this headline">¶</a></h3>
+<p>To stop a jail just use the <code class="docutils literal"><span class="pre">stop</span></code> subcommand instead of start:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">stop</span> <span class="pre">www01</span></code></p>
+</div>
+<div class="section" id="restart">
+<h3>Restart<a class="headerlink" href="#restart" title="Permalink to this headline">¶</a></h3>
+<p>To restart a jail run:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">restart</span> <span class="pre">www01</span></code></p>
+<p><em>Note: Short UUIDs are supported with all operations and subcommands within iocage.</em></p>
+</div>
+</div>
+<div class="section" id="configure-a-jail">
+<h2>Configure a jail<a class="headerlink" href="#configure-a-jail" title="Permalink to this headline">¶</a></h2>
+<p>Any property can be reconfigured with the <code class="docutils literal"><span class="pre">set</span></code> subcommand.</p>
+<div class="section" id="set-property">
+<h3>Set property<a class="headerlink" href="#set-property" title="Permalink to this headline">¶</a></h3>
+<p>To set the jail&#8217;s TAG property run:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">set</span> <span class="pre">tag=www02</span> <span class="pre">26e8e027</span></code></p>
+</div>
+<div class="section" id="get-property">
+<h3>Get property<a class="headerlink" href="#get-property" title="Permalink to this headline">¶</a></h3>
+<p>To verify any property simply run the <code class="docutils literal"><span class="pre">get</span></code> subcommand:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">get</span> <span class="pre">tag</span> <span class="pre">26e8e027</span></code></p>
+</div>
+<div class="section" id="get-all-properties">
+<h3>Get all properties:<a class="headerlink" href="#get-all-properties" title="Permalink to this headline">¶</a></h3>
+<p>Or to display all supported properties run:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">get</span> <span class="pre">all</span> <span class="pre">26e8e027</span></code></p>
+</div>
+</div>
+<div class="section" id="system-wide-defaults">
+<h2>System wide defaults<a class="headerlink" href="#system-wide-defaults" title="Permalink to this headline">¶</a></h2>
+<p>Starting with version 1.6.0 system wide defaults can be set. These defaults will be re-applied for all
+newly created jails. To create a system wide default override for a property simply specify the <code class="docutils literal"><span class="pre">default</span></code> keyword instead of a jail UUID or TAG.</p>
+<p>Example, to turn off VNET capability for all newly created jails run:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">set</span> <span class="pre">vnet=off</span> <span class="pre">default</span></code></p>
+</div>
+<div class="section" id="destroy-a-jails">
+<h2>Destroy a jails<a class="headerlink" href="#destroy-a-jails" title="Permalink to this headline">¶</a></h2>
+<p>To destroy a jail, simply run:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">destroy</span> <span class="pre">www02</span></code></p>
+<p><strong>Warning:</strong> this will irreversibly destroy the jail!</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Basic usage</a><ul>
+<li><a class="reference internal" href="#fetch-a-release">Fetch a release</a></li>
+<li><a class="reference internal" href="#create-a-jail">Create a jail</a></li>
+<li><a class="reference internal" href="#listing-jails">Listing jails</a></li>
+<li><a class="reference internal" href="#start-stop-or-restart-a-jail">Start, stop or restart a jail</a><ul>
+<li><a class="reference internal" href="#start">Start</a></li>
+<li><a class="reference internal" href="#stop">Stop</a></li>
+<li><a class="reference internal" href="#restart">Restart</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#configure-a-jail">Configure a jail</a><ul>
+<li><a class="reference internal" href="#set-property">Set property</a></li>
+<li><a class="reference internal" href="#get-property">Get property</a></li>
+<li><a class="reference internal" href="#get-all-properties">Get all properties:</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#system-wide-defaults">System wide defaults</a></li>
+<li><a class="reference internal" href="#destroy-a-jails">Destroy a jails</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">iocage - A FreeBSD jail manager</a></li>
+      <li>Next: <a href="networking.html" title="next chapter">Networking</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/basic-use.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Brandon Schneider and Peter Toth.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.8</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/basic-use.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>FAQ &#8212; iocage 0.9.3 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.9.3',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="top" title="iocage 0.9.3 documentation" href="index.html" />
+    <link rel="prev" title="Known Issues" href="known-issues.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="faq">
+<h1>FAQ<a class="headerlink" href="#faq" title="Permalink to this headline">¶</a></h1>
+<dl class="docutils">
+<dt><strong>What is iocage?</strong></dt>
+<dd>iocage is jail management script aiming to simplify jail administration
+tasks as much as possible.</dd>
+<dt><strong>What is a jail?</strong></dt>
+<dd>Jail is a FreeBSD <strong>OS virtualization</strong> technology allowing to run multiple
+copies of the operating system. Some operating systems use the term
+<strong>Zones</strong> or <strong>Containers</strong> for OS virtualization.</dd>
+<dt><strong>What is VNET?</strong></dt>
+<dd>VNET is an independent per jail virtual networking stack.</dd>
+<dt><strong>How do I configure network interfaces in a VNET or shared IPjail?</strong></dt>
+<dd>You configure both the same way: <code class="docutils literal"><span class="pre">iocage</span> <span class="pre">set</span>
+<span class="pre">ip4_add=&quot;interface|IP/netmask&quot;</span> <span class="pre">UUID</span> <span class="pre">|</span> <span class="pre">TAG</span></code>. For more info please refer to the
+documentation.</dd>
+<dt><strong>Do I need to set my default gateway?</strong></dt>
+<dd>Only if VNET is enabled. You need to assign an IP address to the <strong>bridge</strong>
+where the jail interface is attached to. This IP essentially becomes your default
+gateway for your jail.</dd>
+<dt><strong>Can I run a firewall inside a jail?</strong></dt>
+<dd>Yes in a VNET jail <strong>IPFW is supported</strong>. PF is not supported inside the
+jail - though you can still enable PF for the host itself. If you plan on
+using <strong>IPFW</strong> inside a jail make sure <strong>securelevel</strong> is set to <strong>2</strong></dd>
+<dt><strong>Can I enable both IPFW and PF at the same time?</strong></dt>
+<dd>Yes, make sure you allow traffic on both in/out for your jails.</dd>
+<dt><strong>Can I create custom jail templates?</strong></dt>
+<dd>Yes, and thin provision them too! Starting with version 1.3 there is also a
+package option for jail packaging.</dd>
+<dt><strong>What is a jail clone?</strong></dt>
+<dd><strong>Clones</strong> are ZFS clones, these are fully writable copies of the
+source jail.</dd>
+<dt><strong>Can I limit the CPU and Memory use?</strong></dt>
+<dd>Yes. (refer to manual page)</dd>
+<dt><strong>Is there a way to display resource consumption?</strong></dt>
+<dd>Yes, <code class="docutils literal"><span class="pre">iocage</span> <span class="pre">inuse</span> <span class="pre">UUID</span> <span class="pre">|</span> <span class="pre">TAG</span></code></dd>
+<dt><strong>Is NAT supported for the jails?</strong></dt>
+<dd>Yes. This is built into FreeBSD. Treat your server as a core
+router/firewall. Check documentation section on NAT.</dd>
+<dt><strong>Will iocage work on a generic system with no ZFS pools?</strong></dt>
+<dd>No. ZFS is a must, if you run a FreeBSD server you should be using ZFS!</dd>
+<dt><strong>Is ZFS jailing supported?</strong></dt>
+<dd>Yes, please refer to man page.</dd>
+</dl>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="known-issues.html" title="previous chapter">Known Issues</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/faq.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Brandon Schneider and Peter Toth.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.8</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/faq.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

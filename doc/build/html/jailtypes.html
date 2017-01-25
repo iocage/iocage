@@ -1,0 +1,161 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Jail types &#8212; iocage 0.9.3 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.9.3',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="top" title="iocage 0.9.3 documentation" href="index.html" />
+    <link rel="next" title="Best practices" href="best-practices.html" />
+    <link rel="prev" title="Networking" href="networking.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="jail-types">
+<h1>Jail types<a class="headerlink" href="#jail-types" title="Permalink to this headline">¶</a></h1>
+<p>iocage supports five different jail types:</p>
+<ul class="simple">
+<li>thick (default)</li>
+<li>thin</li>
+<li>base</li>
+<li>template</li>
+<li>empty</li>
+</ul>
+<p>All types have their pros &amp; cons and serves different needs.</p>
+<div class="section" id="full-thick">
+<h2>Full (thick)<a class="headerlink" href="#full-thick" title="Permalink to this headline">¶</a></h2>
+<p>Full (thick) jail is the default type and it is created with the following command:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">create</span></code></p>
+<p>A full jail has a fully independent ZFS dataset suitable for network replication
+(ZFS send/recv).</p>
+</div>
+<div class="section" id="clone-thin">
+<h2>Clone (thin)<a class="headerlink" href="#clone-thin" title="Permalink to this headline">¶</a></h2>
+<p>Thin jails are lightweight clones created with:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">create</span> <span class="pre">-c</span></code></p>
+<p>Thin jails are cloned from the appropriate RELEASE at creation time and consume
+only a fraction of space, preserving only the changing data.</p>
+</div>
+<div class="section" id="base">
+<h2>Base<a class="headerlink" href="#base" title="Permalink to this headline">¶</a></h2>
+<p>The original basejail concept based on nullfs mounts got popularized by ezjail.
+iocage basejails use independent read-only ZFS filesystem clones to achieve the
+same functionality.</p>
+<p>To create a basejail execute:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">create</span> <span class="pre">-b</span></code></p>
+<p>Basejails re-clone their base filesystems at each startup. They are ideal for
+environments where patching or upgrades are required at once to multiple jails.</p>
+</div>
+<div class="section" id="template">
+<h2>Template<a class="headerlink" href="#template" title="Permalink to this headline">¶</a></h2>
+<p>Template is just another jail where the &#8220;template&#8221; property is set to &#8220;yes&#8221;.</p>
+<p>To turn a jail into a template simply execute:</p>
+<p><code class="docutils literal"><span class="pre">iocate</span> <span class="pre">set</span> <span class="pre">template=yes</span> <span class="pre">UUID|TAG</span></code></p>
+<p>After this operation the jail can be listed with:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">list</span> <span class="pre">-t</span></code></p>
+<p>To deploy a jail from this template, execute:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">clone</span> <span class="pre">TEMPLATE_UUID</span> <span class="pre">tag=mynewjail</span></code></p>
+<p>Templates can be converted back and forth with setting the &#8220;template&#8221; property.</p>
+</div>
+<div class="section" id="empty">
+<h2>Empty<a class="headerlink" href="#empty" title="Permalink to this headline">¶</a></h2>
+<p>Empty jails are intended for unsupported jail setups or testing.
+To create an empty jail run:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">create</span> <span class="pre">-e</span></code></p>
+<p>These are ideal for experimentation with unsupported RELEASES or Linux jails.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Jail types</a><ul>
+<li><a class="reference internal" href="#full-thick">Full (thick)</a></li>
+<li><a class="reference internal" href="#clone-thin">Clone (thin)</a></li>
+<li><a class="reference internal" href="#base">Base</a></li>
+<li><a class="reference internal" href="#template">Template</a></li>
+<li><a class="reference internal" href="#empty">Empty</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="networking.html" title="previous chapter">Networking</a></li>
+      <li>Next: <a href="best-practices.html" title="next chapter">Best practices</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/jailtypes.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Brandon Schneider and Peter Toth.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.8</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/jailtypes.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

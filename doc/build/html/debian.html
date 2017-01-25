@@ -1,0 +1,127 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Create a Debian Squeeze jail (GNU/kFreeBSD) &#8212; iocage 0.9.3 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.9.3',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="top" title="iocage 0.9.3 documentation" href="index.html" />
+    <link rel="next" title="Known Issues" href="known-issues.html" />
+    <link rel="prev" title="Create a jail package!" href="jail-package.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="create-a-debian-squeeze-jail-gnu-kfreebsd">
+<h1>Create a Debian Squeeze jail (GNU/kFreeBSD)<a class="headerlink" href="#create-a-debian-squeeze-jail-gnu-kfreebsd" title="Permalink to this headline">¶</a></h1>
+<p><strong>In this howto we will set up a Debian (GNU/kFreeBSD) jail. GNrUkFreeBSD is a
+Debian userland tailored for the FreeBSD kernel.</strong></p>
+<p>Don&#8217;t forget to replace UUID with your jail&#8217;s full UUID!</p>
+<p><strong>Create an empty jail with linux specifics:</strong></p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">create</span> <span class="pre">-e</span> <span class="pre">tag=debian</span> <span class="pre">exec_start=&quot;/etc/init.d/rc</span> <span class="pre">3&quot;</span>
+<span class="pre">exec_stop=&quot;/etc/init.d/rc</span> <span class="pre">0&quot;</span></code></p>
+<p><strong>Install debootstrap on the host:</strong></p>
+<p><code class="docutils literal"><span class="pre">pkg</span> <span class="pre">install</span> <span class="pre">debootstrap</span></code></p>
+<p><strong>Grab the mountpoint for our empty jail, append /root/ to it and run
+debootstrap:</strong></p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">get</span> <span class="pre">mountpoint</span> <span class="pre">UUID</span> <span class="pre">|</span> <span class="pre">TAG</span></code></p>
+<p><code class="docutils literal"><span class="pre">debootstrap</span> <span class="pre">squeeze</span> <span class="pre">/iocage/jails/UUID/root/</span></code> (you can replace squeeze with wheezy if that is what you need)</p>
+<p><strong>Edit the jail&#8217;s fstab and add these lines:</strong></p>
+<p><code class="docutils literal"><span class="pre">/iocage/jails/UUID/fstab</span></code></p>
+<blockquote>
+<div><div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">linsys</span>   <span class="o">/</span><span class="n">iocage</span><span class="o">/</span><span class="n">jails</span><span class="o">/</span><span class="n">UUID</span><span class="o">/</span><span class="n">root</span><span class="o">/</span><span class="n">sys</span>         <span class="n">linsysfs</span>  <span class="n">rw</span>          <span class="mi">0</span> <span class="mi">0</span>
+<span class="n">linproc</span>  <span class="o">/</span><span class="n">iocage</span><span class="o">/</span><span class="n">jails</span><span class="o">/</span><span class="n">UUID</span><span class="o">/</span><span class="n">root</span><span class="o">/</span><span class="n">proc</span>        <span class="n">linprocfs</span> <span class="n">rw</span>          <span class="mi">0</span> <span class="mi">0</span>
+<span class="n">tmpfs</span>    <span class="o">/</span><span class="n">iocage</span><span class="o">/</span><span class="n">jails</span><span class="o">/</span><span class="n">UUID</span><span class="o">/</span><span class="n">root</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">init</span><span class="o">/</span><span class="n">rw</span> <span class="n">tmpfs</span>     <span class="n">rw</span><span class="p">,</span><span class="n">mode</span><span class="o">=</span><span class="mi">777</span> <span class="mi">0</span> <span class="mi">0</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p><strong>Start the jail and attach to it:</strong></p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">start</span> <span class="pre">UUID</span> <span class="pre">|</span> <span class="pre">TAG</span></code></p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">console</span> <span class="pre">UUID</span> <span class="pre">|</span> <span class="pre">TAG</span></code></p>
+<p>What you gain is a 64bit Debian Linux userland. Please note this is not
+recommended for production use. The intention was to show that iocage will let
+you do almost anything you want with your jails.</p>
+<p>If you wish to install a Linux only Debian jail you can follow this tutorial:
+<a class="reference external" href="http://devil-detail.blogspot.co.nz/2013/08/debian-linux-freebsd-jail-zfs.html">debian-linux-freebsd-jail-zfs</a></p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="jail-package.html" title="previous chapter">Create a jail package!</a></li>
+      <li>Next: <a href="known-issues.html" title="next chapter">Known Issues</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/debian.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Brandon Schneider and Peter Toth.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.8</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/debian.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

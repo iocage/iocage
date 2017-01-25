@@ -1,0 +1,241 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Networking &#8212; iocage 0.9.3 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.9.3',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="top" title="iocage 0.9.3 documentation" href="index.html" />
+    <link rel="next" title="Jail types" href="jailtypes.html" />
+    <link rel="prev" title="Basic usage" href="basic-use.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="networking">
+<h1>Networking<a class="headerlink" href="#networking" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="intro">
+<h2>Intro<a class="headerlink" href="#intro" title="Permalink to this headline">¶</a></h2>
+<p>Jails have multiple networking options based on what features are desired. Traditionally jails
+only supported IP alias based networking where an IP address is assigned to the host&#8217;s interface
+which is then utilized by the jail for network communication. This is known as &#8220;shared IP&#8221; based jails.</p>
+<p>Anoter option emerged in recent years, called VNET or sometimes referred to as VIMAGE.
+VNET is a fully virtualized, isolated per jail networking stack.
+VNET abstracts virtual network interfaces to jails, which behave the same way as physical interfaces.</p>
+<p>iocage will try to guess whether VNET support is available in the system and if it is will enable it by
+default for newly created jails.</p>
+</div>
+<div class="section" id="shared-ip">
+<h2>Shared IP<a class="headerlink" href="#shared-ip" title="Permalink to this headline">¶</a></h2>
+<p>Stability: It is rock solid and battle tested well over a decade.</p>
+<div class="section" id="system-requirements">
+<h3>System requirements<a class="headerlink" href="#system-requirements" title="Permalink to this headline">¶</a></h3>
+<p>None, everything is built into the default GENERIC kernel.</p>
+</div>
+<div class="section" id="usage">
+<h3>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h3>
+<p><strong>Make sure VNET is disabled</strong></p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">get</span> <span class="pre">vnet</span> <span class="pre">UUID</span> <span class="pre">|</span> <span class="pre">TAG</span></code></p>
+<p><strong>If set to &#8220;on&#8221; disable it</strong></p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">set</span> <span class="pre">vnet=off</span> <span class="pre">UUID</span> <span class="pre">|</span> <span class="pre">TAG</span></code></p>
+<p>A system wide default can be configured if required. This will take effect for newly created jails only.</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">set</span> <span class="pre">vnet=off</span> <span class="pre">default</span></code></p>
+<p><strong>Configure an IP address</strong></p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">set</span> <span class="pre">ip4_addr=&quot;em0|10.1.1.10/24&quot;</span> <span class="pre">UUID|</span> <span class="pre">TAG</span></code></p>
+<p>If multiple addresses are desired just separate the configuration directives with a comma.</p>
+<p>Example:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">set</span> <span class="pre">ip4_addr=&quot;em0|10.1.1.10/24,em0|10.1.1.11/24&quot;</span> <span class="pre">UUID|</span> <span class="pre">TAG</span></code></p>
+<p><strong>Start jail:</strong></p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">start</span> <span class="pre">UUID</span> <span class="pre">|</span> <span class="pre">TAG</span></code></p>
+<p><strong>Verify visible IP configuration in the jail</strong></p>
+<p><em>(jail must be running for this to work)</em></p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">exec</span> <span class="pre">UUID</span> <span class="pre">|</span> <span class="pre">TAG</span> <span class="pre">ifconfig</span></code></p>
+</div>
+</div>
+<div class="section" id="vimage-vnet">
+<h2>VIMAGE/VNET<a class="headerlink" href="#vimage-vnet" title="Permalink to this headline">¶</a></h2>
+<p>Stability: VIMAGE is considered experimental, unexpected system crashes can occur (for details please see known issues section)</p>
+<div class="section" id="id1">
+<h3>System requirements<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p><strong>Kernel</strong></p>
+<p>Rebuild the kernel with the following options:</p>
+<p><em>(also disable SCTP if not required)</em></p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">nooptions</span>       <span class="n">SCTP</span>   <span class="c1"># Stream Control Transmission Protocol</span>
+<span class="n">options</span>         <span class="n">VIMAGE</span> <span class="c1"># VNET/Vimage support</span>
+<span class="n">options</span>         <span class="n">RACCT</span>  <span class="c1"># Resource containers</span>
+<span class="n">options</span>         <span class="n">RCTL</span>   <span class="c1"># same as above</span>
+</pre></div>
+</div>
+<p><strong>/etc/rc.conf</strong></p>
+<p>Add bridge configuration to /etc/rc.conf:</p>
+<p><em>(on the host node)</em></p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># set up two bridge interfaces for iocage</span>
+<span class="n">cloned_interfaces</span><span class="o">=</span><span class="s2">&quot;bridge0 bridge1&quot;</span>
+
+<span class="c1"># plumb interface em0 into bridge0</span>
+<span class="n">ifconfig_bridge0</span><span class="o">=</span><span class="s2">&quot;addm em0 up&quot;</span>
+<span class="n">ifconfig_em0</span><span class="o">=</span><span class="s2">&quot;up&quot;</span>
+</pre></div>
+</div>
+<p><strong>/etc/sysctl.conf</strong></p>
+<p>Add these tunables to /etc/sysctl.conf:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">inet</span><span class="o">.</span><span class="n">ip</span><span class="o">.</span><span class="n">forwarding</span><span class="o">=</span><span class="mi">1</span>       <span class="c1"># Enable IP forwarding between interfaces</span>
+<span class="n">net</span><span class="o">.</span><span class="n">link</span><span class="o">.</span><span class="n">bridge</span><span class="o">.</span><span class="n">pfil_onlyip</span><span class="o">=</span><span class="mi">0</span>  <span class="c1"># Only pass IP packets when pfil is enabled</span>
+<span class="n">net</span><span class="o">.</span><span class="n">link</span><span class="o">.</span><span class="n">bridge</span><span class="o">.</span><span class="n">pfil_bridge</span><span class="o">=</span><span class="mi">0</span>  <span class="c1"># Packet filter on the bridge interface</span>
+<span class="n">net</span><span class="o">.</span><span class="n">link</span><span class="o">.</span><span class="n">bridge</span><span class="o">.</span><span class="n">pfil_member</span><span class="o">=</span><span class="mi">0</span>  <span class="c1"># Packet filter on the member interface</span>
+</pre></div>
+</div>
+<p><strong>Configure default GW for jail</strong></p>
+<p>Example: <code class="docutils literal"><span class="pre">iocage</span> <span class="pre">set</span> <span class="pre">defaultrouter=10.1.1.254</span> <span class="pre">UUID</span> <span class="pre">|</span> <span class="pre">TAG</span></code></p>
+<p><strong>Configure an IP address</strong></p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">set</span> <span class="pre">ip4_addr=&quot;vnet0|10.1.1.10/24&quot;</span> <span class="pre">UUID</span> <span class="pre">|</span> <span class="pre">TAG</span></code></p>
+<p><strong>Start jail and ping default gateway</strong></p>
+<p>Start the jail:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">start</span> <span class="pre">UUID</span> <span class="pre">|</span> <span class="pre">TAG</span></code></p>
+<p>Drop into jail:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">console</span> <span class="pre">UUID</span> <span class="pre">|</span> <span class="pre">TAG</span></code></p>
+<p>Ping default gateway, example:</p>
+<p><code class="docutils literal"><span class="pre">ping</span> <span class="pre">10.1.1.254</span></code></p>
+</div>
+<div class="section" id="gotchas">
+<h3>Gotchas<a class="headerlink" href="#gotchas" title="Permalink to this headline">¶</a></h3>
+<p><strong>Routes</strong></p>
+<p>Make sure default gateway knows the route back to the VNET subnets.</p>
+<p><strong>If using VLANs</strong></p>
+<p>If you are using VLAN interfaces for the jail host you not only have
+to add the vlan interface as bridge member but the parent interface
+of the VLAN as bridge member as well.</p>
+</div>
+</div>
+<div class="section" id="configuring-network-interfaces">
+<h2>Configuring Network Interfaces<a class="headerlink" href="#configuring-network-interfaces" title="Permalink to this headline">¶</a></h2>
+<p>iocage handles network configuration for both, shared IP and VNET jails transparently.</p>
+<div class="section" id="configuring-a-shared-ip-jail">
+<h3>Configuring a shared IP jail<a class="headerlink" href="#configuring-a-shared-ip-jail" title="Permalink to this headline">¶</a></h3>
+<p><strong>IPv4</strong></p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">set</span> <span class="pre">ip4_addr=&quot;em0|192.168.0.10/24&quot;</span> <span class="pre">UUID|TAG</span></code></p>
+<p><strong>IPv6</strong></p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">set</span> <span class="pre">ip6_addr=&quot;em0|2001:123:456:242::5/64&quot;</span> <span class="pre">UUID|TAG</span></code></p>
+<p>This will add an IP alias 192.168.0.10/24 to interface em0 for the shared IP jail at start time, as well as 2001:123:456::5/64.</p>
+</div>
+<div class="section" id="configuring-a-vnet-jail">
+<h3>Configuring a VNET jail<a class="headerlink" href="#configuring-a-vnet-jail" title="Permalink to this headline">¶</a></h3>
+<p>To configure both IPv4 and IPv6:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">set</span> <span class="pre">ip4_addr=&quot;vnet0|192.168.0.10/24&quot;</span> <span class="pre">UUID|TAG</span></code></p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">set</span> <span class="pre">ip6_addr=&quot;vnet0|2001:123:456:242::5/64&quot;</span> <span class="pre">UUID|TAG</span></code></p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">set</span> <span class="pre">defaultrouter6=&quot;2001:123:456:242::1&quot;</span> <span class="pre">UUID|TAG</span></code></p>
+<p><em>NOTE: For VNET jails a default route has to be specified too.</em></p>
+</div>
+<div class="section" id="hints">
+<h3>Hints<a class="headerlink" href="#hints" title="Permalink to this headline">¶</a></h3>
+<p>To start a jail with no IPv4/6 address whatsoever set these properties:</p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">set</span> <span class="pre">ip4_addr=none</span> <span class="pre">ip6_addr=none</span> <span class="pre">UUID|TAG</span></code></p>
+<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">set</span> <span class="pre">defaultrouter=none</span> <span class="pre">defaultrouter6=none</span> <span class="pre">UUID|TAG</span></code></p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Networking</a><ul>
+<li><a class="reference internal" href="#intro">Intro</a></li>
+<li><a class="reference internal" href="#shared-ip">Shared IP</a><ul>
+<li><a class="reference internal" href="#system-requirements">System requirements</a></li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#vimage-vnet">VIMAGE/VNET</a><ul>
+<li><a class="reference internal" href="#id1">System requirements</a></li>
+<li><a class="reference internal" href="#gotchas">Gotchas</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#configuring-network-interfaces">Configuring Network Interfaces</a><ul>
+<li><a class="reference internal" href="#configuring-a-shared-ip-jail">Configuring a shared IP jail</a></li>
+<li><a class="reference internal" href="#configuring-a-vnet-jail">Configuring a VNET jail</a></li>
+<li><a class="reference internal" href="#hints">Hints</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="basic-use.html" title="previous chapter">Basic usage</a></li>
+      <li>Next: <a href="jailtypes.html" title="next chapter">Jail types</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/networking.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Brandon Schneider and Peter Toth.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.8</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/networking.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
