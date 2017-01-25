@@ -27,9 +27,7 @@ def clean_cmd(force, dataset_type):
         if not force:
             lgr.warning("\nWARNING: This will destroy ALL jails"
                         " and any snapshots on a RELEASE, including templates!")
-            answer = raw_input("\nAre you sure? y[N]: ")
-
-            if answer.lower() == "" or answer.lower() == "n":
+            if not click.confirm("\nAre you sure?"):
                 exit()
 
         IOCClean().clean_jails()
@@ -37,9 +35,7 @@ def clean_cmd(force, dataset_type):
     elif dataset_type == "all":
         if not force:
             lgr.warning("\nWARNING: This will destroy ALL iocage data!")
-            answer = raw_input("\nAre you sure? y[N]: ")
-
-            if answer.lower() == "" or answer.lower() == "n":
+            if not click.confirm("\nAre you sure?"):
                 exit()
 
         IOCClean().clean_all()
@@ -50,9 +46,7 @@ def clean_cmd(force, dataset_type):
         if not force:
             lgr.warning("\nWARNING: This will destroy ALL templates"
                         " and jails created from them!")
-            answer = raw_input("\nAre you sure? y[N]: ")
-
-            if answer.lower() == "" or answer.lower() == "n":
+            if not click.confirm("\nAre you sure?"):
                 exit()
 
         IOCClean().clean_templates()
