@@ -1,0 +1,141 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Best practices &#8212; iocage 0.9.3 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.9.3',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="top" title="iocage 0.9.3 documentation" href="index.html" />
+    <link rel="next" title="Advanced usage" href="advanced-use.html" />
+    <link rel="prev" title="Jail types" href="jailtypes.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="best-practices">
+<h1>Best practices<a class="headerlink" href="#best-practices" title="Permalink to this headline">¶</a></h1>
+<p>These are some generic guidelines for working with iocage managed jails.</p>
+<p><strong>Use PF as a module</strong></p>
+<blockquote>
+<div>This is the default setting in the <code class="docutils literal"><span class="pre">GENERIC</span></code> kernel. There seems to be a VNET bug which is only
+triggered when PF is directly compiled into the kernel.</div></blockquote>
+<p><strong>Always tag your jails and templates!</strong></p>
+<blockquote>
+<div>This will help you avoid mistakes and easily identify jails.</div></blockquote>
+<p><strong>Set the notes property</strong></p>
+<blockquote>
+<div>Set the <code class="docutils literal"><span class="pre">notes</span></code> property to something meaningful, especially for templates
+and jails you might use only once in a while.</div></blockquote>
+<p><strong>VNET</strong></p>
+<blockquote>
+<div><code class="docutils literal"><span class="pre">VNET</span></code> will give you more control and isolation. Also allows to run per jail firewalls.
+See known issues about VNET.</div></blockquote>
+<p><strong>Don&#8217;t overuse resource limiting!</strong></p>
+<blockquote>
+<div>Unless really needed, let the OS decide how to do it best. Set limits with
+the &#8220;log action&#8221; before enforcing &#8220;deny&#8221;. This way you can check the logs
+before creating any performance bottlenecks.</div></blockquote>
+<p><strong>Discover templates!</strong></p>
+<blockquote>
+<div>Templates will make your life easy, try them!</div></blockquote>
+<p><strong>Use the restart command instead of start/stop</strong></p>
+<blockquote>
+<div>If you wish to restart a jail use the <code class="docutils literal"><span class="pre">restart</span></code> command which performs a
+soft restart and it leaves the <code class="docutils literal"><span class="pre">VNET</span></code> stack alone, less stressful for the
+kernel and you.</div></blockquote>
+<p><strong>Check your firewall rules</strong></p>
+<blockquote>
+<div>When using <code class="docutils literal"><span class="pre">IPFW</span></code> inside a <code class="docutils literal"><span class="pre">VNET</span></code> jail put <code class="docutils literal"><span class="pre">firewall_enable=&quot;YES&quot;</span></code>
+<code class="docutils literal"><span class="pre">firewall_type=&quot;open&quot;</span></code> into <code class="docutils literal"><span class="pre">/etc/rc.conf</span></code> for a start. This way you can exclude
+the firewall from blocking you right from the beginning! Lock it down once you&#8217;ve tested
+everything. Also check PF firewall rules on the host if you happen to mix both.</div></blockquote>
+<p><strong>Get rid of old snapshots</strong></p>
+<blockquote>
+<div>Remove snapshots you don&#8217;t need, especially from jails where data is changing a lot!</div></blockquote>
+<p><strong>Use the chroot sub-command</strong></p>
+<blockquote>
+<div>In case you need to access or modify files in a template or a jail which is in a
+stopped state, use <code class="docutils literal"><span class="pre">iocage</span> <span class="pre">chroot</span> <span class="pre">UUID</span> <span class="pre">|</span> <span class="pre">TAG</span></code>. This way you don&#8217;t need to spin up the
+jail or convert the template.</div></blockquote>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="jailtypes.html" title="previous chapter">Jail types</a></li>
+      <li>Next: <a href="advanced-use.html" title="next chapter">Advanced usage</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/best-practices.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Brandon Schneider and Peter Toth.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.8</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/best-practices.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
