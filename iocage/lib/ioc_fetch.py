@@ -158,11 +158,11 @@ class IOCFetch(object):
                                 "\nPlease place it in {}/{}".format(
                                     self.root_dir, self.release)
                     else:
-                        error = "ERROR: {}.txz is a required file!".format(f)\
-                                + \
-                                "\nPlease place it in {}/{}".format(
-                                    self.root_dir, self.release)
+                        error = "ERROR: {}.txz is a required file!".format(f) \
+                                + "\nPlease place it in {}/{}".format(
+                            self.root_dir, self.release)
                     raise RuntimeError(error)
+
                 self.lgr.info("Copying: {}... ".format(f))
                 copy(f, dataset)
 
@@ -447,7 +447,7 @@ class IOCFetch(object):
                 for f in _list:
                     if bool(re.compile(
                             r"MANIFEST|base.txz|lib32.txz|doc.txz").match(
-                            f)):
+                        f)):
                         try:
                             ftp.voidcmd('TYPE I')
                             filesize = ftp.size(f)
@@ -501,8 +501,6 @@ class IOCFetch(object):
                    "{}/jails/{}/root/dev".format(self.iocroot, uuid)]
             new_root = "{}/jails/{}/root".format(self.iocroot, uuid)
 
-            # TODO: Check for STABLE/PRERELEASE/CURRENT/BETA if we support
-            # those.
             self.lgr.info(
                 "\n* Updating {} ({}) to the latest patch level... ".format(
                     uuid, tag))
@@ -512,8 +510,6 @@ class IOCFetch(object):
                                                     self.release)]
             new_root = "{}/releases/{}/root".format(self.iocroot, self.release)
 
-            # TODO: Check for STABLE/PRERELEASE/CURRENT/BETA if we support
-            # those.
             self.lgr.info(
                 "\n* Updating {} to the latest patch level... ".format(
                     self.release))
@@ -560,8 +556,6 @@ class IOCFetch(object):
     def fetch_plugin(self, _json, props, num):
         """Expects an JSON object."""
         prop_dict = False
-        # TODO: Check if the filename is resolvable on the filesystem, otherwise
-        # check our GitHub repo. Unless it starts with git://, http(s)://
         with open(_json) as j:
             conf = json.load(j)
         self.release = conf["release"]

@@ -283,7 +283,6 @@ class IOCCreate(object):
             with open(self.pkglist) as j:
                 self.pkglist = json.load(j)["pkgs"]
 
-        # TODO: Fancier.
         self.lgr.info("\nUpdating pkg repository... ")
         # We can get some annoying mismatch warnings.
         Popen(["pkg", "-j", jid, "update"], stderr=PIPE,
@@ -291,7 +290,6 @@ class IOCCreate(object):
 
         self.lgr.info("Installing supplied packages:")
         for pkg in self.pkglist:
-            # TODO: Fancier.
             self.lgr.info("  - {}... ".format(pkg))
             Popen(["pkg", "-j", jid, "install", "-q", "-y", pkg],
                   stderr=PIPE, stdout=PIPE).communicate()
