@@ -360,6 +360,9 @@ class IOCFetch(object):
                 if f == "MANIFEST":
                     continue
 
+                if self.hardened and f == "lib32.txz":
+                    continue
+
                 # Python Central
                 hash_block = 65536
                 sha256 = hashlib.sha256()
