@@ -272,7 +272,13 @@ class IOCFetch(object):
         if self.hardened:
             self.root_dir = "{}/hardenedbsd-{}-LAST".format(rdir,
                                                             self.release.lower())
+        self.lgr.info("Fetching: {}\n".format(self.release))
         self.download_fetch(self.files)
+        missing = self.__check_download__(self.files)
+
+        if missing:
+            self.download_fetch(missing)
+            self.__check_download__(missing, _missing=True)
 
         if not self.hardened:
             self.update_fetch()
@@ -288,6 +294,7 @@ class IOCFetch(object):
         """
         ftp = FTP(self.server)
         ftp.login(user=self.user, passwd=self.password)
+
         if self.server == "ftp.freebsd.org":
             try:
                 ftp.cwd("/pub/FreeBSD/releases/{}".format(self.arch))
@@ -315,11 +322,19 @@ class IOCFetch(object):
 
         ftp.cwd(self.release)
         ftp_list = ftp.nlst()
+
+        self.lgr.info("Fetching: {}\n".format(self.release))
         self.download_fetch(ftp_list, ftp=ftp)
+        missing = self.__check_download__(ftp_list, ftp)
+
+        if missing:
+            self.download_fetch(missing, ftp=ftp)
+            self.__check_download__(missing, ftp, _missing=True)
+
         ftp.quit()
         self.update_fetch()
 
-    def __check_download(self, _list, ftp):
+    def __check_download__(self, _list, ftp, _missing=False):
         """
         Will check if every file we need exists, if they do we check the SHA256
         and make sure it matches the files they may already have.
@@ -367,41 +382,51 @@ class IOCFetch(object):
                 hash_block = 65536
                 sha256 = hashlib.sha256()
 
-                try:
-                    with open(f) as txz:
-                        buf = txz.read(hash_block)
-                        while len(buf) > 0:
-                            sha256.update(buf)
+                if f in _list:
+                    try:
+                        with open(f) as txz:
                             buf = txz.read(hash_block)
 
-                        if hashes[f] != sha256.hexdigest():
-                            self.lgr.info("{} failed verification,"
-                                          " will redownload!".format(f))
+                            while len(buf) > 0:
+                                sha256.update(buf)
+                                buf = txz.read(hash_block)
+
+                            if hashes[f] != sha256.hexdigest():
+                                if not _missing:
+                                    self.lgr.info("{} failed verification,"
+                                                  " will redownload!".format(f))
+                                    missing.append(f)
+                                else:
+                                    raise RuntimeError("Too many failed"
+                                                       " verifications!")
+                    except IOError:
+                        if not _missing:
+                            self.lgr.error(
+                                "{} missing, will download!".format(f))
                             missing.append(f)
                         else:
-                            self.lgr.info("Extracting: {}... ".format(f))
-                            try:
-                                self.extract_fetch(f)
-                            except:
-                                raise
-                except IOError:
-                    self.lgr.error("{} missing, will download!".format(f))
-                    missing.append(f)
+                            raise RuntimeError("Too many failed verifications!")
+
+                if not missing:
+                    self.lgr.info("Extracting: {}... ".format(f))
+
+                    try:
+                        self.extract_fetch(f)
+                    except:
+                        raise
 
             return missing
-        else:
-            Popen(["zfs", "create", "-o", "compression=lz4",
-                   "{}/iocage/download/{}".format(self.pool,
-                                                  self.release)]).communicate()
-            return _list
 
     def download_fetch(self, _list, ftp=None):
         """Creates the download dataset and then downloads the RELEASE."""
-        self.lgr.info("Fetching: {}\n".format(self.release))
-        _list = self.__check_download(_list, ftp)
+        if not os.path.isdir("{}/download/{}".format(self.iocroot,
+                                                     self.release)):
+            Popen(["zfs", "create", "-o", "compression=lz4",
+                   "{}/iocage/download/{}".format(self.pool,
+                                                  self.release)]).communicate()
 
-        if _list:
             os.chdir("{}/download/{}".format(self.iocroot, self.release))
+
             if self.http:
                 for f in _list:
                     if self.hardened:
@@ -440,13 +465,6 @@ class IOCFetch(object):
                             txz.write(chunk)
                             pbar.update(len(chunk))
                         pbar.close()
-
-                    if f != "MANIFEST":
-                        try:
-                            self.lgr.info("Extracting: {}... ".format(f))
-                            self.extract_fetch(f)
-                        except:
-                            raise
             elif ftp:
                 for f in _list:
                     if bool(re.compile(
@@ -475,10 +493,6 @@ class IOCFetch(object):
 
                                 ftp.retrbinary("RETR {}".format(f), callback)
                                 pbar.close()
-
-                            if f != "MANIFEST":
-                                self.lgr.info("Extracting: {}... ".format(f))
-                                self.extract_fetch(f)
                         except:
                             raise
                     else:
