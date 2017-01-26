@@ -40,8 +40,15 @@ relevant. Lines may not be longer then 80 characters.
 - Transparent ZFS snapshot management
 - Export and import
 - And many more!
-
+---
 **QUICK HOWTO:**
+
+Activate a zpool:
+
+`iocage activate ZPOOL`
+
+*NOTE: ZPOOL is a placeholder. Use `zpool list` and substitue it for the 
+zpool you wish to use.*
 
 Fetch a release:
 
@@ -51,28 +58,43 @@ Create a jail:
 
 `iocage create tag=myjail ip4_addr="em0|192.168.1.10/24" -r 11.0-RELEASE`
 
+*NOTE: em0 and 11.0-RELEASE are placeholders. Please replace them with your 
+real interface (`ifconfig`) and RELEASE chosen during `iocage fetch`.*
+
 Start the jail:
 
 `iocage start myjail`
+
+
+
+Congratulations, you have created your first jail with iocage!
+You can now use it like you would a real system.
+Since SSH won't be available by default, `iocage console myjail` is a useful 
+spot to begin configuration of your jail.
+
+To see a list of commands available to you now, type `iocage` outside the jail.
+
+------
 
 **REQUIREMENTS**
 - FreeBSD 9.3-RELEASE amd64 and higher or HardenedBSD/TrueOS
 - ZFS file system
 - Python 2.7
-- Optional - Kernel compiled with:
+
+**Optional**
+ - Kernel compiled with:
 
         # This is optional and only needed if you need VNET
 
         options         VIMAGE # VNET/Vimage support
 
-**OTHER CONSIDERATIONS**
+**Helpful Considerations**
 - For the explanations on jail properties read jail(8)
-- Create bridge0 and bridge1 interfaces
-
-**HINTS**
-- Use iocage set/get to modify properties
+- Create bridge0 and bridge1 interfaces for VNET jails to attach to.
+- Use `iocage set` to modify properties and `iocage get` to retrieve property
+ values
 - Type `iocage COMMAND --help` to see any flags the command supports and
-their help.
+their help. *Example: `iocage create --help`*
 - If using VNET consider adding the following to `/etc/sysctl.conf` on the host:
 
         net.inet.ip.forwarding=1       # Enable IP forwarding between interfaces
