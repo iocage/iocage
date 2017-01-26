@@ -6,7 +6,7 @@ I use PyCharm for all of my programming, and these are what I use for my setting
 
 ####A few general rules first:
 - Open any pull request against the `master` branch
-- Keep code to 80 characters or less. , otherwise split them with a `\`. Only 
+- Keep code to 80 characters or less.
 - Comment your code
 - Pull request description should clearly show what the change is including output if relevant.
 - Squash commits before opening a pull request.
