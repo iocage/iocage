@@ -42,8 +42,8 @@ I use PyCharm for all of my programming, and these are what I use for my setting
 - Run isort on `import` statements, including `from imports`.
 - Keep `from imports` within their own group:
 ```
-import foo
 import bar
+import foo
 
 from baz import foo
 from foobar import morefoo
