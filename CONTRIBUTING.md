@@ -32,15 +32,15 @@ I use PyCharm for all of my programming, and these are what I use for my setting
 - Align multiline collections and comprehensions
 - Place `}` on a new line after a dictionary assignment
 - 1 line between declarations and code
-- 1 line after top level imports
-- 1 line around class
-- 1 line around method
-- 2 lines around top-level classes and functions
-- 1 line before and after if statements
-- 1 line before and after for loops
-- 1 line before and after while loops
-- Run isort on import statements, including from imports.
-- Keep from imports within their own group:
+- 1 line after top level `imports`
+- 1 line around `class`
+- 1 line around `method`
+- 2 lines around top-level `classes` and `functions`
+- 1 line before and after `if` statements
+- 1 line before and after `for` loops
+- 1 line before and after `while` loops
+- Run isort on `import` statements, including `from imports`.
+- Keep `from imports` within their own group:
 ```
 import foo
 import bar
@@ -48,7 +48,7 @@ import bar
 from baz import foo
 from foobar import morefoo
 ```
-- Join from imports with the same source
+- Join `from imports` with the same source
 - Align dictionaries on colons:
 ```
 x = max(
