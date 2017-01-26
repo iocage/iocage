@@ -149,7 +149,7 @@ class IOCStart(object):
 
             self.lgr.info("* Starting {} ({})".format(self.uuid, self.conf[
                 "tag"]))
-            start = Popen(["jail", "-c"] + net +
+            start = Popen([x for x in ["jail", "-c"] + net +
                           ["name=ioc-{}".format(self.uuid),
                            "host.domainname={}".format(host_domainname),
                            "host.hostname={}".format(host_hostname),
@@ -187,7 +187,7 @@ class IOCStart(object):
                            "allow.dying",
                            "exec.consolelog={}/log/ioc-{}-console.log".format(
                                self.iocroot, self.uuid),
-                           "persist"])
+                           "persist"] if x != ''])
             start.communicate()
 
             if start.returncode:
