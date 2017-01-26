@@ -50,7 +50,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'iocage'
-copyright = u'2017, Brandon Schneider and Peter Toth'
+copyright = u'2014-2017, iocage'
 author = u'Brandon Schneider and Peter Toth'
 
 # The version info for the project you're documenting, acts as replacement for
