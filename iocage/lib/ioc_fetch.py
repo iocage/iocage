@@ -334,7 +334,7 @@ class IOCFetch(object):
         ftp.quit()
         self.update_fetch()
 
-    def __check_download__(self, _list, ftp, _missing=False):
+    def __check_download__(self, _list, ftp=None, _missing=False):
         """
         Will check if every file we need exists, if they do we check the SHA256
         and make sure it matches the files they may already have.
