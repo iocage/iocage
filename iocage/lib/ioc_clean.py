@@ -62,9 +62,11 @@ class IOCClean(object):
                                "failed!".format(self.pool))
 
         if os.path.exists("{}/tags".format(self.iocroot)):
-            shutil.rmtree("{}/tags".format(self.iocroot),
-                          ignore_errors=True)
+            shutil.rmtree("{}/tags".format(self.iocroot), ignore_errors=True)
             os.mkdir("{}/tags".format(self.iocroot))
+
+        if os.path.exists("{}/log".format(self.iocroot)):
+            shutil.rmtree("{}/log".format(self.iocroot), ignore_errors=True)
 
     def clean_all(self):
         """Cleans everything related to iocage."""
