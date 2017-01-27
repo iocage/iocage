@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 
 setup(name='iocage',
-      version='0.9.3',
+      version='0.9.4',
       description='A jail manager that uses ZFS.',
       author='Brandon Schneider and Peter Toth',
       author_email='brandon@ixsystems.com',

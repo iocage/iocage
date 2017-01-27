@@ -16,7 +16,7 @@ def print_version(ctx, param, value):
     """Prints the version and then exits."""
     if not value or ctx.resilient_parsing:
         return
-    print("Version\t0.9.3 2017/01/23")
+    print("Version\t0.9.4 2017/01/26")
     sys.exit()
 
 
