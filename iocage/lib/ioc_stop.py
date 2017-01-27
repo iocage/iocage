@@ -27,6 +27,9 @@ class IOCStop(object):
         self.__stop_jail__()
 
     def __stop_jail__(self):
+        ip4_addr = self.conf["ip4_addr"]
+        vnet = self.conf["vnet"]
+
         if not self.status:
             self.lgr.error("{} ({}) is not running!".format(self.uuid,
                                                             self.conf["tag"]))
@@ -34,14 +37,25 @@ class IOCStop(object):
             self.lgr.info(
                 "* Stopping {} ({})".format(self.uuid, self.conf["tag"]))
 
-            if self.conf["ip4_addr"] != "inherit":
+            if vnet == "on":
                 for nic in self.nics.split(","):
                     nic = nic.split(":")[0]
                     try:
-                        check_call(["ifconfig", "{}:{}".format(nic, self.jid),
-                                    "destroy"], stderr=PIPE)
+                        check_output(["ifconfig", "{}:{}".format(nic, self.jid),
+                                      "destroy"], stderr=STDOUT)
                     except CalledProcessError:
                         pass
+
+            if ip4_addr != "inherit" and vnet == "off":
+                if ip4_addr != "none":
+                    for ip4 in ip4_addr.split():
+                        iface, addr = ip4.split("/")[0].split("|")
+                        try:
+                            check_output(["ifconfig", iface, addr,
+                                          "-alias"], stderr=STDOUT)
+                        except CalledProcessError as err:
+                            raise RuntimeError(
+                                "ERROR: {}".format(err.output.strip()))
 
             # TODO: Prestop findscript
             exec_stop = self.conf["exec_stop"].split()
