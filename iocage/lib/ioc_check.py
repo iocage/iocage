@@ -11,10 +11,13 @@ from iocage.lib.ioc_json import IOCJson
 class IOCCheck(object):
     """Checks if the required iocage datasets are present"""
 
-    def __init__(self, altpool):
+    def __init__(self, altpool, silent=False):
         self.pool = IOCJson().get_prop_value("pool")
         self.altpool = altpool
         self.lgr = logging.getLogger('ioc_check')
+
+        if silent:
+            self.lgr.disabled = True
 
         self.__check_datasets__()
 
