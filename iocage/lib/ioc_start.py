@@ -103,6 +103,34 @@ class IOCStart(object):
             except:
                 pass
 
+            if self.conf["jail_zfs"] == "on":
+                allow_mount = "1"
+                enforce_statfs = "1"
+                allow_mount_zfs = "1"
+
+                for jdataset in self.conf["jail_zfs_dataset"].split():
+                    jdataset = jdataset.strip()
+
+                    try:
+                        check_call(["zfs", "get", "-H", "creation",
+                                    "{}/{}".format(self.pool,
+                                                   jdataset)],
+                                   stdout=PIPE, stderr=PIPE)
+                    except CalledProcessError:
+                        check_output(["zfs", "create", "-o",
+                                      "compression=lz4", "-o",
+                                      "mountpoint=none",
+                                      "{}/{}".format(self.pool, jdataset)],
+                                     stderr=STDOUT)
+
+                    try:
+                        check_output(["zfs", "set", "jailed=on",
+                                      "{}/{}".format(self.pool, jdataset)],
+                                     stderr=STDOUT)
+                    except CalledProcessError as err:
+                        raise RuntimeError(
+                            "ERROR: {}".format(err.output.strip()))
+
             # FreeBSD 9.3 and under do not support this.
             if userland_version <= 9.3:
                 tmpfs = ""
@@ -150,44 +178,44 @@ class IOCStart(object):
             self.lgr.info("* Starting {} ({})".format(self.uuid, self.conf[
                 "tag"]))
             start = Popen([x for x in ["jail", "-c"] + net +
-                          ["name=ioc-{}".format(self.uuid),
-                           "host.domainname={}".format(host_domainname),
-                           "host.hostname={}".format(host_hostname),
-                           "path={}/root".format(self.path),
-                           "securelevel={}".format(securelevel),
-                           "host.hostuuid={}".format(self.uuid),
-                           "devfs_ruleset={}".format(devfs_ruleset),
-                           "enforce_statfs={}".format(enforce_statfs),
-                           "children.max={}".format(children_max),
-                           "allow.set_hostname={}".format(allow_set_hostname),
-                           "allow.sysvipc={}".format(allow_sysvipc),
-                           _sysvmsg,
-                           _sysvsem,
-                           _sysvshm,
-                           "allow.raw_sockets={}".format(allow_raw_sockets),
-                           "allow.chflags={}".format(allow_chflags),
-                           "allow.mount={}".format(allow_mount),
-                           "allow.mount.devfs={}".format(allow_mount_devfs),
-                           "allow.mount.nullfs={}".format(allow_mount_nullfs),
-                           "allow.mount.procfs={}".format(allow_mount_procfs),
-                           tmpfs,
-                           "allow.mount.zfs={}".format(allow_mount_zfs),
-                           "allow.quotas={}".format(allow_quotas),
-                           "allow.socket_af={}".format(allow_socket_af),
-                           "exec.prestart={}".format(exec_prestart),
-                           "exec.poststart={}".format(exec_poststart),
-                           "exec.prestop={}".format(exec_prestop),
-                           "exec.stop={}".format(exec_stop),
-                           "exec.clean={}".format(exec_clean),
-                           "exec.timeout={}".format(exec_timeout),
-                           "stop.timeout={}".format(stop_timeout),
-                           "mount.fstab={}/fstab".format(self.path),
-                           "mount.devfs={}".format(mount_devfs),
-                           fdescfs,
-                           "allow.dying",
-                           "exec.consolelog={}/log/ioc-{}-console.log".format(
-                               self.iocroot, self.uuid),
-                           "persist"] if x != ''])
+                           ["name=ioc-{}".format(self.uuid),
+                            "host.domainname={}".format(host_domainname),
+                            "host.hostname={}".format(host_hostname),
+                            "path={}/root".format(self.path),
+                            "securelevel={}".format(securelevel),
+                            "host.hostuuid={}".format(self.uuid),
+                            "devfs_ruleset={}".format(devfs_ruleset),
+                            "enforce_statfs={}".format(enforce_statfs),
+                            "children.max={}".format(children_max),
+                            "allow.set_hostname={}".format(allow_set_hostname),
+                            "allow.sysvipc={}".format(allow_sysvipc),
+                            _sysvmsg,
+                            _sysvsem,
+                            _sysvshm,
+                            "allow.raw_sockets={}".format(allow_raw_sockets),
+                            "allow.chflags={}".format(allow_chflags),
+                            "allow.mount={}".format(allow_mount),
+                            "allow.mount.devfs={}".format(allow_mount_devfs),
+                            "allow.mount.nullfs={}".format(allow_mount_nullfs),
+                            "allow.mount.procfs={}".format(allow_mount_procfs),
+                            tmpfs,
+                            "allow.mount.zfs={}".format(allow_mount_zfs),
+                            "allow.quotas={}".format(allow_quotas),
+                            "allow.socket_af={}".format(allow_socket_af),
+                            "exec.prestart={}".format(exec_prestart),
+                            "exec.poststart={}".format(exec_poststart),
+                            "exec.prestop={}".format(exec_prestop),
+                            "exec.stop={}".format(exec_stop),
+                            "exec.clean={}".format(exec_clean),
+                            "exec.timeout={}".format(exec_timeout),
+                            "stop.timeout={}".format(stop_timeout),
+                            "mount.fstab={}/fstab".format(self.path),
+                            "mount.devfs={}".format(mount_devfs),
+                            fdescfs,
+                            "allow.dying",
+                            "exec.consolelog={}/log/ioc-{}-console.log".format(
+                                self.iocroot, self.uuid),
+                            "persist"] if x != ''])
             start.communicate()
 
             if start.returncode:
@@ -202,6 +230,43 @@ class IOCStart(object):
                 chdir(original_path)
 
             self.start_network(vnet)
+
+            if self.conf["jail_zfs"] == "on":
+                for jdataset in self.conf["jail_zfs_dataset"].split():
+                    jdataset = jdataset.strip()
+                    children = check_output(["zfs", "list", "-H", "-r", "-o",
+                                             "name", "-S", "name",
+                                             "{}/{}".format(self.pool,
+                                                            jdataset)])
+
+                    try:
+                        check_output(["zfs", "jail", "ioc-{}".format(self.uuid),
+                                      "{}/{}".format(self.pool, jdataset)],
+                                     stderr=STDOUT)
+                    except CalledProcessError as err:
+                        raise RuntimeError(
+                            "ERROR: {}".format(err.output.strip()))
+
+                    for child in children.split():
+                        child = child.strip()
+
+                        try:
+                            mountpoint = check_output(["zfs", "get", "-H",
+                                                       "-o",
+                                                       "value", "mountpoint",
+                                                       "{}/{}".format(
+                                                           self.pool,
+                                                           jdataset)]).strip()
+                            if mountpoint != "none":
+                                check_output(["jexec", "ioc-{}".format(
+                                    self.uuid), "zfs", "mount", child],
+                                             stderr=STDOUT)
+                        except CalledProcessError as err:
+                            raise RuntimeError(
+                                "ERROR: {}".format(err.output.strip()))
+
+            self.generate_resolv()
+            # TODO: exec_fib support
             # This needs to be a list.
             exec_start = self.conf["exec_start"].split()
 
@@ -215,11 +280,9 @@ class IOCStart(object):
             else:
                 self.lgr.info("  + Starting services OK")
 
-            self.generate_resolv()
             self.set("last_started={}".format(datetime.utcnow().strftime(
                 "%F %T")))
             # TODO: DHCP/BPF
-            # TODO: Add jailed datasets support
         else:
             self.lgr.error("{} ({}) is already running!".format(self.uuid,
                                                                 self.conf[
