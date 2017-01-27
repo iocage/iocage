@@ -277,7 +277,7 @@ class IOCFetch(object):
         missing = self.__check_download__(self.files)
 
         if missing:
-            self.download_fetch(missing)
+            self.download_fetch(missing, missing=True)
             self.__check_download__(missing, _missing=True)
 
         if not self.hardened:
@@ -325,10 +325,10 @@ class IOCFetch(object):
 
         self.lgr.info("Fetching: {}\n".format(self.release))
         self.download_fetch(ftp_list, ftp=ftp)
-        missing = self.__check_download__(ftp_list, ftp)
+        missing = self.__check_download__(ftp_list, ftp=ftp)
 
         if missing:
-            self.download_fetch(missing, ftp=ftp)
+            self.download_fetch(missing, ftp, missing=True)
             self.__check_download__(missing, ftp, _missing=True)
 
         ftp.quit()
@@ -417,14 +417,18 @@ class IOCFetch(object):
 
             return missing
 
-    def download_fetch(self, _list, ftp=None):
+    def download_fetch(self, _list, ftp=None, missing=False):
         """Creates the download dataset and then downloads the RELEASE."""
-        if not os.path.isdir("{}/download/{}".format(self.iocroot,
-                                                     self.release)):
+        dataset = "{}/download/{}".format(self.iocroot, self.release)
+        fresh = False
+
+        if not os.path.isdir(dataset):
+            fresh = True
             Popen(["zfs", "create", "-o", "compression=lz4",
                    "{}/iocage/download/{}".format(self.pool,
                                                   self.release)]).communicate()
 
+        if missing or fresh:
             os.chdir("{}/download/{}".format(self.iocroot, self.release))
 
             if self.http:
