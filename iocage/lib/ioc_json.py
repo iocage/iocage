@@ -284,6 +284,8 @@ class IOCJson(object):
             raise RuntimeError("You need to be root to convert the"
                                " configurations to the new format!")
 
+        _, iocroot = _get_pool_and_iocroot()
+
         # Version 2 keys
         try:
             sysvmsg = conf["sysvmsg"]
@@ -300,9 +302,12 @@ class IOCJson(object):
         conf["sysvshm"] = sysvshm
 
         # Version 3 keys
-        _, iocroot = _get_pool_and_iocroot()
-        freebsd_version = "{}/releases/{}/root/bin/freebsd-version".format(
-            iocroot, conf["release"])
+        try:
+            freebsd_version = "{}/releases/{}/root/bin/freebsd-version".format(
+                iocroot, conf["release"])
+        except IOError:
+            freebsd_version = "{}/templates/{}/root/bin/freebsd-version".format(
+                iocroot, conf["tag"])
 
         with open(freebsd_version) as r:
             for line in r:

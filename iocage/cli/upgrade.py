@@ -47,8 +47,6 @@ def upgrade_cmd(jail, release):
     conf = IOCJson(path).load_json()
     host_release = os.uname()[2]
     jail_release = conf["release"]
-    _freebsd_version = "{}/releases/{}/root/bin/freebsd-version".format(
-        iocroot, release)
     started = False
 
     if conf["type"] == "jail":
@@ -66,6 +64,9 @@ def upgrade_cmd(jail, release):
         raise RuntimeError("{} is not a supported jail type.".format(
             conf["type"]
         ))
+
+    _freebsd_version = "{}/releases/{}/root/bin/freebsd-version".format(
+        iocroot, release)
 
     if "HBSD" in freebsd_version:
         Popen(["hbsd-upgrade", "-j", jid]).communicate()
