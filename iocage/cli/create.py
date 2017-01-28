@@ -40,13 +40,13 @@ def create_cmd(release, template, count, props, pkglist, short):
             if template:
                 lgr.info("Created Templates:")
                 templates = IOCList("template", hdr=False,
-                                    rtrn_object=True).get_datasets()
+                                    rtrn_object=True).list_datasets()
                 for temp in templates:
                     lgr.info("  {}".format(temp))
             else:
                 lgr.info("Fetched RELEASEs:")
                 releases = IOCList("base", hdr=False,
-                                   rtrn_object=True).get_datasets()
+                                   rtrn_object=True).list_datasets()
                 for rel in releases:
                     lgr.info("  {}".format(rel))
     else:
@@ -59,13 +59,13 @@ def create_cmd(release, template, count, props, pkglist, short):
                 if template:
                     lgr.info("Created Templates:")
                     templates = IOCList("template", hdr=False,
-                                        rtrn_object=True).get_datasets()
+                                        rtrn_object=True).list_datasets()
                     for temp in templates:
                         lgr.info("  {}".format(temp))
                 else:
                     lgr.info("Fetched RELEASEs:")
                     releases = IOCList("base", hdr=False,
-                                       rtrn_object=True).get_datasets()
+                                       rtrn_object=True).list_datasets()
                     for rel in releases:
                         lgr.info("  {}".format(rel))
                 exit()

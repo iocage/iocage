@@ -21,4 +21,4 @@ def list_cmd(dataset_type, header, _long):
     """This passes the arg and calls the jail_datasets function."""
     if dataset_type is None:
         dataset_type = "all"
-    IOCList(dataset_type, header, _long).get_datasets()
+    IOCList(dataset_type, header, _long).list_datasets()

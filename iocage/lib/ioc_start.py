@@ -21,14 +21,14 @@ class IOCStart(object):
     """
 
     def __init__(self, uuid, jail, path, conf, silent=False):
-        self.pool = IOCJson(" ").get_prop_value("pool")
-        self.iocroot = IOCJson(self.pool).get_prop_value("iocroot")
+        self.pool = IOCJson(" ").json_get_value("pool")
+        self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
         self.uuid = uuid
         self.jail = jail
         self.path = path
         self.conf = conf
-        self.get = IOCJson(self.path, silent=True).get_prop_value
-        self.set = IOCJson(self.path, silent=True).set_prop_value
+        self.get = IOCJson(self.path, silent=True).json_get_value
+        self.set = IOCJson(self.path, silent=True).json_set_value
         self.lgr = logging.getLogger('ioc_start')
 
         if silent:
@@ -47,7 +47,7 @@ class IOCStart(object):
         specified data that is meant to populate resolv.conf
         will be copied into the jail.
         """
-        status, _ = IOCList().get_jid(self.uuid)
+        status, _ = IOCList().list_get_jid(self.uuid)
         userland_version = float(uname()[2][:4])
 
         # If the jail is not running, let's do this thing.
@@ -71,9 +71,9 @@ class IOCStart(object):
             allow_mount_zfs = self.conf["allow_mount_zfs"]
             allow_quotas = self.conf["allow_quotas"]
             allow_socket_af = self.conf["allow_socket_af"]
-            exec_prestart = self.findscript("prestart")
-            exec_poststart = self.findscript("poststart")
-            exec_prestop = self.findscript("prestop")
+            exec_prestart = self.start_findscript("prestart")
+            exec_poststart = self.start_findscript("poststart")
+            exec_prestop = self.start_findscript("prestop")
             exec_stop = self.conf["exec_stop"]
             exec_clean = self.conf["exec_clean"]
             exec_timeout = self.conf["exec_timeout"]
@@ -265,7 +265,7 @@ class IOCStart(object):
                             raise RuntimeError(
                                 "ERROR: {}".format(err.output.strip()))
 
-            self.generate_resolv()
+            self.start_generate_resolv()
             # TODO: exec_fib support
             # This needs to be a list.
             exec_start = self.conf["exec_start"].split()
@@ -290,7 +290,7 @@ class IOCStart(object):
 
     def start_network(self, vnet):
         if vnet:
-            _, jid = IOCList().get_jid(self.uuid)
+            _, jid = IOCList().list_get_jid(self.uuid)
             ip4_addr = self.get("ip4_addr")
             defaultgw = self.get("defaultrouter")
             nics = self.get("interfaces").split(",")
@@ -315,7 +315,7 @@ class IOCStart(object):
                             equal = True
 
                         if equal:
-                            mac_a, mac_b = self.__generate_vnet_mac__(nic)
+                            mac_a, mac_b = self.__start_generate_vnet_mac__(nic)
                             epair_a_cmd = ["ifconfig", "epair", "create"]
                             epair_a = Popen(epair_a_cmd,
                                             stdout=PIPE).communicate()[0]
@@ -370,14 +370,14 @@ class IOCStart(object):
                 except:
                     pass
 
-    def findscript(self, exec_type):
+    def start_findscript(self, exec_type):
         # TODO: Do something with this.
         if access("{}/{}".format(self.path, exec_type), X_OK):
             return "{}/{}".format(self.path, exec_type)
         else:
             return self.get("exec_{}".format(exec_type))
 
-    def generate_resolv(self):
+    def start_generate_resolv(self):
         resolver = self.get("resolver")
         #                                     compat
         if resolver != "/etc/resolv.conf" and resolver != "none":
@@ -391,7 +391,7 @@ class IOCStart(object):
         else:
             copy(resolver, "{}/root/etc/resolv.conf".format(self.path))
 
-    def __generate_vnet_mac__(self, nic):
+    def __start_generate_vnet_mac__(self, nic):
         """
         Generates a random MAC address and checks for uniquness.
         If the jail already has a mac address generated, it will return that
@@ -400,7 +400,7 @@ class IOCStart(object):
         mac = self.get("{}_mac".format(nic))
 
         if mac == "none":
-            jails, paths = IOCList("uuid").get_datasets()
+            jails, paths = IOCList("uuid").list_datasets()
             mac_list = []
 
             for jail in jails:

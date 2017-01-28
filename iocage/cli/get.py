@@ -21,8 +21,8 @@ def get_cmd(prop, jail, recursive, header):
     """Get a list of jails and print the property."""
     lgr = logging.getLogger('ioc_cli_get')
 
-    get_jid = IOCList.get_jid
-    jails, paths = IOCList("uuid").get_datasets()
+    get_jid = IOCList.list_get_jid
+    jails, paths = IOCList("uuid").list_datasets()
     jail_list = []
 
     if recursive is None:
@@ -55,14 +55,14 @@ def get_cmd(prop, jail, recursive, header):
 
             lgr.info(state)
         elif prop == "all":
-            props = IOCJson(path).get_prop_value(prop)
+            props = IOCJson(path).json_get_value(prop)
 
             for p, v in props.iteritems():
                 lgr.info("{}:{}".format(p, v))
 
         else:
             try:
-                lgr.info(IOCJson(path).get_prop_value(prop))
+                lgr.info(IOCJson(path).json_get_value(prop))
             except:
                 raise RuntimeError("{} is not a valid property!".format(prop))
     else:
@@ -83,7 +83,7 @@ def get_cmd(prop, jail, recursive, header):
                     raise
                 else:
                     jail_list.append(
-                        [uuid, j, IOCJson(path).get_prop_value(prop)])
+                        [uuid, j, IOCJson(path).json_get_value(prop)])
             except:
                 raise RuntimeError("{} is not a valid property!".format(prop))
 

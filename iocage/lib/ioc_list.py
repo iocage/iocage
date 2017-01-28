@@ -24,11 +24,11 @@ class IOCList(object):
         self.header = hdr
         self.full = full
         self.return_object = rtrn_object
-        self.pool = IOCJson().get_prop_value("pool")
-        self.iocroot = IOCJson(self.pool).get_prop_value("iocroot")
+        self.pool = IOCJson().json_get_value("pool")
+        self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
         self.lgr = logging.getLogger('ioc_list')
 
-    def get_datasets(self, set=False):
+    def list_datasets(self, set=False):
         """Lists the datasets of given type."""
 
         if self.list_type == "all" or self.list_type == "uuid":
@@ -117,8 +117,8 @@ class IOCList(object):
         for jail in jails:
             conf = IOCJson(jail).load_json()
 
-            uuid = conf['host_hostuuid']
-            full_ip4 = conf['ip4_addr']
+            uuid = conf["host_hostuuid"]
+            full_ip4 = conf["ip4_addr"]
             jail_root = "{}/iocage/jails/{}/root".format(self.pool, uuid)
 
             try:
@@ -126,15 +126,15 @@ class IOCList(object):
             except IndexError:
                 short_ip4 = "-"
 
-            tag = conf['tag']
-            boot = conf['boot']
-            jail_type = conf['type']
             release = conf['release']
+            tag = conf["tag"]
+            boot = conf["boot"]
+            jail_type = conf["type"]
 
             if full_ip4 == "none":
                 full_ip4 = "-"
 
-            status, jid = self.get_jid(uuid)
+            status, jid = self.list_get_jid(uuid)
 
             if status:
                 state = "up"
@@ -198,7 +198,7 @@ class IOCList(object):
                 self.lgr.info("\t".join(base))
 
     @classmethod
-    def get_jid(cls, uuid):
+    def list_get_jid(cls, uuid):
         """Return a tuple containing True or False and the jail's id or '-'."""
         try:
             jid = check_output(["jls", "-j", "ioc-{}".format(uuid)],

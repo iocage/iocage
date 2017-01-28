@@ -19,10 +19,10 @@ def export_cmd(jail):
     """Make a recursive snapshot of the jail and export to a file."""
     lgr = logging.getLogger('ioc_cli_export')
 
-    pool = IOCJson().get_prop_value("pool")
-    iocroot = IOCJson(pool).get_prop_value("iocroot")
+    pool = IOCJson().json_get_value("pool")
+    iocroot = IOCJson(pool).json_get_value("iocroot")
     date = datetime.utcnow().strftime("%F")
-    jails, paths = IOCList("uuid").get_datasets()
+    jails, paths = IOCList("uuid").list_datasets()
     _jail = {tag: uuid for (tag, uuid) in jails.iteritems() if
              uuid.startswith(jail) or tag == jail}
 
@@ -38,7 +38,7 @@ def export_cmd(jail):
     else:
         raise RuntimeError("{} not found!".format(jail))
 
-    status, _ = IOCList().get_jid(uuid)
+    status, _ = IOCList().list_get_jid(uuid)
     if status:
         raise RuntimeError("{} ({}) is runnning, stop the jail before "
                            "exporting!".format(uuid, tag))

@@ -18,7 +18,7 @@ def set_cmd(prop, jail):
     """Get a list of jails and print the property."""
     lgr = logging.getLogger('ioc_cli_set')
 
-    jails, paths = IOCList("uuid").get_datasets(set=True)
+    jails, paths = IOCList("uuid").list_datasets(set=True)
     _jail = {tag: uuid for (tag, uuid) in jails.iteritems() if
              uuid.startswith(jail) or tag == jail}
 
@@ -45,10 +45,10 @@ def set_cmd(prop, jail):
     try:
         # We use this to test if it's a valid property at all.
         _prop = prop.partition("=")[0]
-        iocjson.get_prop_value(_prop)
+        iocjson.json_get_value(_prop)
 
         # The actual setting of the property.
-        iocjson.set_prop_value(prop)
+        iocjson.json_set_value(prop)
     except KeyError:
         _prop = prop.partition("=")[0]
         raise RuntimeError("{} is not a valid property!".format(_prop))

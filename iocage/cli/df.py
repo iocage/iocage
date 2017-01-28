@@ -21,8 +21,8 @@ def df_cmd(header, _long):
     """Allows a user to show resource usage of all jails."""
     lgr = logging.getLogger('ioc_cli_df')
 
-    jails, paths = IOCList("uuid").get_datasets()
-    pool = IOCJson().get_prop_value("pool")
+    jails, paths = IOCList("uuid").list_datasets()
+    pool = IOCJson().json_get_value("pool")
     jail_list = []
 
     for jail in jails:

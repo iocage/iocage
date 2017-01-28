@@ -17,8 +17,8 @@ def import_cmd(jail):
     """Import from an iocage export."""
     lgr = logging.getLogger('ioc_cli_import')
 
-    pool = IOCJson().get_prop_value("pool")
-    iocroot = IOCJson(pool).get_prop_value("iocroot")
+    pool = IOCJson().json_get_value("pool")
+    iocroot = IOCJson(pool).json_get_value("iocroot")
     image_dir = "{}/images".format(iocroot)
     exports = os.listdir(image_dir)
     uuid_matches = fnmatch.filter(exports, "{}*.zip".format(jail))
@@ -71,5 +71,5 @@ def import_cmd(jail):
         raise RuntimeError("ERROR: {}".format(err.output.strip()))
 
     tag = IOCJson("{}/jails/{}".format(iocroot, uuid),
-                  silent=True).set_prop_value("tag={}".format(tag))
+                  silent=True).json_set_value("tag={}".format(tag))
     lgr.info("\nImported: {} ({})".format(uuid, tag))

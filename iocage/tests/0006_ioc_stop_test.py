@@ -4,7 +4,7 @@ from iocage.lib.ioc_stop import IOCStop
 
 
 def test_stop():
-    jails, paths = IOCList("uuid").get_datasets()
+    jails, paths = IOCList("uuid").list_datasets()
 
     uuid = jails["test"]
     uuid_short = jails["test_short"]

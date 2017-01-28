@@ -20,8 +20,8 @@ def destroy_cmd(force, jails):
     lgr = logging.getLogger('ioc_cli_destroy')
 
     if jails:
-        get_jid = IOCList().get_jid
-        jail_list, paths = IOCList("uuid").get_datasets()
+        get_jid = IOCList().list_get_jid
+        jail_list, paths = IOCList("uuid").list_datasets()
 
         for jail in jails:
             _jail = {tag: uuid for (tag, uuid) in jail_list.iteritems() if

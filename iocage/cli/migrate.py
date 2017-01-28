@@ -25,7 +25,7 @@ def migrate_cmd(force, delete):
     """Migrates all the iocage_legacy develop basejails to clone jails."""
     lgr = logging.getLogger('ioc_cli_migrate')
 
-    jails, paths = IOCList("uuid").get_datasets()
+    jails, paths = IOCList("uuid").list_datasets()
 
     if not force:
         lgr.warning("\nWARNING: This will migrate ALL basejails, it can take a"
@@ -34,7 +34,7 @@ def migrate_cmd(force, delete):
             exit()
 
     for tag, uuid in jails.iteritems():
-        pool = IOCJson().get_prop_value("pool")
+        pool = IOCJson().json_get_value("pool")
         iocroot = IOCJson(pool).get_prop_value("iocroot")
         jail = "{}/iocage/jails/{}".format(pool, uuid)
         jail_old = "{}/iocage/jails_old/{}".format(pool, uuid)
@@ -58,7 +58,7 @@ def migrate_cmd(force, delete):
                                  config=conf,
                                  silent=True).create_jail()
             new_prop = IOCJson("{}/jails/{}".format(iocroot, new_uuid),
-                               silent=True).set_prop_value
+                               silent=True).json_set_value
             new_prop("host_hostname={}".format(new_uuid))
             new_prop("host_hostuuid={}".format(new_uuid))
             new_prop("type=jail")

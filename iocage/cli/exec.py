@@ -29,7 +29,7 @@ def exec_cmd(command, jail, host_user, jail_user):
         raise RuntimeError("Please only specify either host_user or"
                            " jail_user, not both!")
 
-    jails, paths = IOCList("uuid").get_datasets()
+    jails, paths = IOCList("uuid").list_datasets()
     _jail = {tag: uuid for (tag, uuid) in jails.iteritems() if
              uuid.startswith(jail) or tag == jail}
 
