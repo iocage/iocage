@@ -272,7 +272,7 @@ class IOCJson(object):
     @staticmethod
     def json_get_version():
         """Sets the iocage configuration version."""
-        version = "2"
+        version = "3"
         return version
 
     def json_check_config(self, conf, version):
@@ -298,6 +298,22 @@ class IOCJson(object):
         conf["sysvmsg"] = sysvmsg
         conf["sysvsem"] = sysvsem
         conf["sysvshm"] = sysvshm
+
+        # Version 3 keys
+        _, iocroot = _get_pool_and_iocroot()
+        freebsd_version = "{}/releases/{}/root/bin/freebsd-version".format(
+            iocroot, conf["release"])
+
+        with open(freebsd_version) as r:
+            for line in r:
+                if line.startswith("USERLAND_VERSION"):
+                    release = line.rstrip().partition("=")[2].strip(
+                        '"')
+        cloned_release = conf["release"]
+
+        # Set all Version 3 keys
+        conf["release"] = release
+        conf["cloned_release"] = cloned_release
 
         conf["CONFIG_VERSION"] = version
         self.json_write(conf)
