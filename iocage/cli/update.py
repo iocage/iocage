@@ -9,6 +9,7 @@ from iocage.lib.ioc_fetch import IOCFetch
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 from iocage.lib.ioc_start import IOCStart
+from iocage.lib.ioc_stop import IOCStop
 
 __cmdname__ = "update_cmd"
 __rootcmd__ = True
@@ -40,14 +41,19 @@ def update_cmd(jail):
     freebsd_version = check_output(["freebsd-version"])
     status, jid = IOCList.list_get_jid(uuid)
     conf = IOCJson(path).load_json()
+    started = False
 
     if "HBSD" in freebsd_version:
         if conf["type"] == "jail":
             if not status:
                 IOCStart(uuid, tag, path, conf, silent=True)
                 status, jid = IOCList.list_get_jid(uuid)
+                started = True
 
             Popen(["hbsd-update", "-j", jid]).communicate()
+
+            if started:
+                IOCStop(uuid, tag, path, conf, silent=True)
         elif conf["type"] == "basejail":
             raise RuntimeError("Please run \"iocage migrate\" before trying"
                                " to update {} ({})".format(uuid, tag))
@@ -59,4 +65,4 @@ def update_cmd(jail):
                 conf["type"]
             ))
     else:
-        IOCFetch(conf["release"]).update_fetch(True, uuid, tag)
+        IOCFetch(conf["cloned_release"]).fetch_update(True, uuid, tag)
