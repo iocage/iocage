@@ -159,8 +159,14 @@ class IOCStart(object):
 
                 if ip4_addr == "none":
                     ip4_addr = ""
+                elif ip4_addr == "inherit":
+                    ip4 = "inherit"
+                    ip4_addr = ""
 
                 if ip6_addr == "none":
+                    ip6_addr = ""
+                elif ip4_addr == "inherit":
+                    ip6 = "inherit"
                     ip6_addr = ""
 
                 net = ["ip4.addr={}".format(ip4_addr),

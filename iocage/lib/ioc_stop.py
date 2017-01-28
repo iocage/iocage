@@ -49,10 +49,15 @@ class IOCStop(object):
             if ip4_addr != "inherit" and vnet == "off":
                 if ip4_addr != "none":
                     for ip4 in ip4_addr.split():
-                        iface, addr = ip4.split("/")[0].split("|")
                         try:
+                            iface, addr = ip4.split("/")[0].split("|")
                             check_output(["ifconfig", iface, addr,
                                           "-alias"], stderr=STDOUT)
+                        except ValueError:
+                            # Likely a misconfigured ip_addr with no interface.
+                            self.lgr.error("  ! IP4 address is missing an"
+                                           " interface, set ip4_addr to"
+                                           " \"INTERFACE|IPADDR\"")
                         except CalledProcessError as err:
                             raise RuntimeError(
                                 "ERROR: {}".format(err.output.strip()))
