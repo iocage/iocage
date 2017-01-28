@@ -229,7 +229,8 @@ class IOCStart(object):
             else:
                 self.lgr.info("  + Started OK")
 
-            if not ospath.isfile("{}/root/dev/log".format(self.path)):
+            os_path = "{}/root/dev/log".format(self.path)
+            if not ospath.isfile(os_path) and not ospath.islink(os_path):
                 original_path = getcwd()
                 chdir("{}/root/dev".format(self.path))
                 symlink("../var/run/log", "log")
