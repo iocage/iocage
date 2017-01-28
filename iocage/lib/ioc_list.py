@@ -126,10 +126,17 @@ class IOCList(object):
             except IndexError:
                 short_ip4 = "-"
 
-            release = conf['release']
             tag = conf["tag"]
             boot = conf["boot"]
             jail_type = conf["type"]
+            full_release = conf["release"]
+
+            if "HBSD" in full_release:
+                full_release = "{}-STABLE-HBSD".format(full_release.split(
+                    ".")[0])
+                short_release = "{}-STABLE".format(full_release.rsplit("-")[0])
+            else:
+                short_release = "-".join(full_release.rsplit("-")[:2])
 
             if full_ip4 == "none":
                 full_ip4 = "-"
@@ -151,25 +158,27 @@ class IOCList(object):
                 except IndexError:
                     template = "-"
 
-            if template == release:
-                # Then it does not have a template.
+            if "release" or "stable" in template.lower():
                 template = "-"
 
             # Append the JID and the UUID to the table
             if self.full:
                 jail_list.append([jid, uuid, boot, state, tag, jail_type,
-                                  full_ip4, release, template])
+                                  full_ip4, full_release, template])
             else:
-                jail_list.append([jid, uuid[:8], state, tag, short_ip4])
+                jail_list.append([jid, uuid[:8], state, tag, short_release,
+                                  short_ip4])
 
         jail_list.sort(key=ioc_common.sort_tag)
+
         # Prints the table
         if self.header:
             if self.full:
                 jail_list.insert(0, ["JID", "UUID", "BOOT", "STATE", "TAG",
                                      "TYPE", "IP4", "RELEASE", "TEMPLATE"])
             else:
-                jail_list.insert(0, ["JID", "UUID", "STATE", "TAG", "IP4"])
+                jail_list.insert(0, ["JID", "UUID", "STATE", "TAG",
+                                     "RELEASE", "IP4"])
 
             self.lgr.info(to_text(jail_list, header=True, hor="-", ver="|",
                                   corners="+"))

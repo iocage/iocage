@@ -51,7 +51,28 @@ class IOCCreate(object):
         if self.migrate:
             config = self.config
         else:
-            config = self.create_config(jail_uuid)
+            if self.template:
+                _type = "templates"
+            else:
+                _type = "releases"
+
+            freebsd_version = "{}/{}/{}/root/bin/freebsd-version".format(
+                self.iocroot, _type, self.release)
+
+            try:
+                with open(freebsd_version) as r:
+                    for line in r:
+                        if line.startswith("USERLAND_VERSION"):
+                            cloned_release = line.rstrip().partition("=")[
+                                2].strip('"')
+                config = self.create_config(jail_uuid, cloned_release)
+            except IOError:
+                if self.template:
+                    raise RuntimeError("Template: {} not found!".format(
+                        self.release))
+                else:
+                    raise RuntimeError("RELEASE: {} not found!".format(
+                        self.release))
 
         jail = "{}/iocage/jails/{}/root".format(self.pool, jail_uuid)
 
@@ -73,6 +94,8 @@ class IOCCreate(object):
             # self.release is actually the templates name
             config["release"] = IOCJson("{}/templates/{}".format(
                 self.iocroot, self.release)).json_get_value("release")
+            config["cloned_release"] = IOCJson("{}/templates/{}".format(
+                self.iocroot, self.release)).json_get_value("cloned_release")
         else:
             try:
                 check_call(["zfs", "snapshot",
@@ -212,7 +235,8 @@ class IOCCreate(object):
             "owner"                : "root",
             "priority"             : "99",
             "last_started"         : "none",
-            "release"              : self.release,
+            "release"              : release,
+            "cloned_release"       : self.release,
             "template"             : "none",
             "hostid"               : hostid,
             "jail_zfs"             : "off",

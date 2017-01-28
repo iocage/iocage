@@ -19,7 +19,7 @@ class IOCDestroy(object):
         self.uuid = uuid
         self.jail = jail
         self.path = path
-        self.release = IOCJson(self.path).get_prop_value("release")
+        self.release = IOCJson(self.path).json_get_value("cloned_release")
         self.lgr = logging.getLogger('ioc_destroy')
 
         if silent:
