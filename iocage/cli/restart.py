@@ -25,7 +25,7 @@ def restart_cmd(jail, soft):
     """
     lgr = logging.getLogger('ioc_cli_restart')
 
-    jails, paths = IOCList("uuid").get_datasets()
+    jails, paths = IOCList("uuid").list_datasets()
     if jail == "ALL":
         for j in jails:
             uuid = jails[j]
@@ -97,7 +97,7 @@ def __soft_restart__(uuid, jail, path, conf):
     Will tear down the jail by running exec_stop and then exec_start, leaving
     the network stack intact, ideal for VIMAGE.
     """
-    getjid = IOCList().get_jid(uuid)
+    getjid = IOCList().list_get_jid(uuid)
     status, jid = getjid
     lgr = logging.getLogger('ioc_cli_restart')
 
@@ -113,7 +113,7 @@ def __soft_restart__(uuid, jail, path, conf):
         Popen(["pkill", "-j", jid]).communicate()
         start_cmd = ["jexec", "ioc-{}".format(uuid)] + exec_start
         Popen(start_cmd, stdout=PIPE, stderr=PIPE).communicate()
-        IOCJson(path, silent=True).set_prop_value("last_started={}".format(
+        IOCJson(path, silent=True).json_set_value("last_started={}".format(
             datetime.utcnow().strftime("%F %T")))
     else:
         raise RuntimeError("{} is not running!".format(jail))

@@ -22,7 +22,7 @@ def console_cmd(jail, force):
     """
     lgr = logging.getLogger('ioc_cli_console')
     # TODO: setfib support
-    jails, paths = IOCList("uuid").get_datasets()
+    jails, paths = IOCList("uuid").list_datasets()
 
     _jail = {tag: uuid for (tag, uuid) in jails.iteritems() if
              uuid.startswith(jail) or tag == jail}
@@ -34,7 +34,7 @@ def console_cmd(jail, force):
         iocjson = IOCJson(path)
         conf = iocjson.load_json()
         login_flags = conf["login_flags"].split()
-        status, _ = IOCList().get_jid(uuid)
+        status, _ = IOCList().list_get_jid(uuid)
     elif len(_jail) > 1:
         lgr.error("Multiple jails found for"
                   " {}:".format(jail))

@@ -18,8 +18,8 @@ def snapremove_cmd(jail, name):
     """Removes a snapshot from a user supplied jail."""
     lgr = logging.getLogger('ioc_cli_snapremove')
 
-    jails, paths = IOCList("uuid").get_datasets()
-    pool = IOCJson().get_prop_value("pool")
+    jails, paths = IOCList("uuid").list_datasets()
+    pool = IOCJson().json_get_value("pool")
     _jail = {tag: uuid for (tag, uuid) in jails.iteritems() if
              uuid.startswith(jail) or tag == jail}
 

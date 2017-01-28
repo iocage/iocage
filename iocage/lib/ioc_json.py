@@ -12,8 +12,8 @@ from iocage.lib.ioc_common import open_atomic
 
 def _get_pool_and_iocroot():
     """For internal setting of pool and iocroot."""
-    pool = IOCJson().get_prop_value("pool")
-    iocroot = IOCJson(pool).get_prop_value("iocroot")
+    pool = IOCJson().json_get_value("pool")
+    iocroot = IOCJson(pool).json_get_value("iocroot")
 
     return (pool, iocroot)
 
@@ -31,7 +31,7 @@ class IOCJson(object):
         if silent:
             self.lgr.disabled = True
 
-    def convert_to_json_ucl(self):
+    def json_convert_from_ucl(self):
         """Convert to JSON. Accepts a location to the ucl configuration."""
         if geteuid() != 0:
             raise RuntimeError("You need to be root to convert the"
@@ -49,9 +49,9 @@ class IOCJson(object):
 
             key_and_value[key] = value
 
-        self.write_json(key_and_value)
+        self.json_write(key_and_value)
 
-    def convert_to_json_zfs(self, uuid):
+    def json_convert_from_zfs(self, uuid):
         """Convert to JSON. Accepts a jail UUID"""
         pool, _ = _get_pool_and_iocroot()
 
@@ -82,18 +82,18 @@ class IOCJson(object):
                     value = "jail"
             key_and_value[key] = value
 
-        self.write_json(key_and_value)
+        self.json_write(key_and_value)
 
     def load_json(self):
         """Load the JSON at the location given. Returns a JSON object."""
-        version = self.iocage_version()
+        version = self.json_get_version()
 
         try:
             with open(self.location + "/config.json") as conf:
                 conf = json.load(conf)
         except IOError:
             if path.isfile(self.location + "/config"):
-                self.convert_to_json_ucl()
+                self.json_convert_from_ucl()
 
                 with open(self.location + "/config.json") as conf:
                     conf = json.load(conf)
@@ -104,7 +104,7 @@ class IOCJson(object):
                     if len(d) == 36:
                         uuid = d
 
-                self.convert_to_json_zfs(uuid)
+                self.json_convert_from_zfs(uuid)
 
                 with open(self.location + "/config.json") as conf:
                     conf = json.load(conf)
@@ -113,19 +113,19 @@ class IOCJson(object):
             conf_version = conf["CONFIG_VERSION"]
 
             if version != conf_version:
-                conf = self.check_config(conf, version)
+                conf = self.json_check_config(conf, version)
         except KeyError:
-            conf = self.check_config(conf, version)
+            conf = self.json_check_config(conf, version)
 
         return conf
 
-    def write_json(self, data):
+    def json_write(self, data):
         """Write a JSON file at the location given with supplied data."""
         with open_atomic(self.location + "/config.json", 'w') as out:
             json.dump(data, out, sort_keys=True, indent=4,
                       ensure_ascii=False)
 
-    def get_prop_value(self, prop):
+    def json_get_value(self, prop):
         """Returns a string with the specified prop's value."""
         if prop == "pool":
             match = 0
@@ -181,7 +181,7 @@ class IOCJson(object):
             else:
                 return conf[prop]
 
-    def set_prop_value(self, prop, create_func=False):
+    def json_set_value(self, prop, create_func=False):
         """Set a property for the specified jail."""
         # TODO: Some value sanitization for any property.
         # Circular dep! Meh.
@@ -192,7 +192,7 @@ class IOCJson(object):
         conf = self.load_json()
         old_tag = conf["tag"]
         uuid = conf["host_hostuuid"]
-        status, jid = IOCList.get_jid(uuid)
+        status, jid = IOCList.list_get_jid(uuid)
         conf[key] = value
         sysctls_cmd = ["sysctl", "-d", "security.jail.param"]
         jail_param_regex = re.compile("security.jail.param.")
@@ -246,7 +246,7 @@ class IOCJson(object):
                                                                     old_tag))
                 self.lgr.disabled = True
 
-        self.write_json(conf)
+        self.json_write(conf)
         self.lgr.info(
             "Property: {} has been updated to {}".format(key, value))
 
@@ -270,12 +270,12 @@ class IOCJson(object):
                     raise RuntimeError("ERROR: {}".format(err.output.strip()))
 
     @staticmethod
-    def iocage_version():
+    def json_get_version():
         """Sets the iocage configuration version."""
         version = "2"
         return version
 
-    def check_config(self, conf, version):
+    def json_check_config(self, conf, version):
         """
         Takes JSON as input and checks to see what is missing and adds the
         new keys with their default values if missing.
@@ -300,6 +300,6 @@ class IOCJson(object):
         conf["sysvshm"] = sysvshm
 
         conf["CONFIG_VERSION"] = version
-        self.write_json(conf)
+        self.json_write(conf)
 
         return conf

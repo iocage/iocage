@@ -30,8 +30,8 @@ class IOCFetch(object):
     def __init__(self, release, server="ftp.freebsd.org", user="anonymous",
                  password="anonymous@", auth=None, root_dir=None, http=False,
                  _file=False, verify=True, hardened=False):
-        self.pool = IOCJson().get_prop_value("pool")
-        self.iocroot = IOCJson(self.pool).get_prop_value("iocroot")
+        self.pool = IOCJson().json_get_value("pool")
+        self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
         self.server = server
         self.user = user
         self.password = password
@@ -64,7 +64,7 @@ class IOCFetch(object):
             requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
     @staticmethod
-    def __eol_release__():
+    def __fetch_eol_check__():
         """Scrapes the FreeBSD website and returns a list of EOL RELEASES"""
         logging.getLogger("requests").setLevel(logging.WARNING)
         _eol = "https://www.freebsd.org/security/unsupported.html"
@@ -87,7 +87,7 @@ class IOCFetch(object):
 
         return eol_releases
 
-    def __validate_release__(self, releases):
+    def __fetch_validate_release__(self, releases):
         """
         Checks if the user supplied an index number and returns the
         RELEASE. If they gave us a full RELEASE, we make sure that exists in
@@ -127,8 +127,8 @@ class IOCFetch(object):
     def fetch_release(self):
         """Small wrapper to choose the right fetch."""
         if self.http:
-            eol = self.__eol_release__()
-            self.http_fetch_release(eol)
+            eol = self.__fetch_eol_check__()
+            self.fetch_http_release(eol)
         elif self._file:
             # Format for file directory should be: root-dir/RELEASE/*.txz
             if not self.root_dir:
@@ -167,12 +167,12 @@ class IOCFetch(object):
                 copy(f, dataset)
 
                 self.lgr.info("Extracting: {}... ".format(f))
-                self.extract_fetch(f)
+                self.fetch_extract(f)
         else:
-            eol = self.__eol_release__()
-            self.ftp_fetch_release(eol)
+            eol = self.__fetch_eol_check__()
+            self.fetch_ftp_release(eol)
 
-    def http_fetch_release(self, eol):
+    def fetch_http_release(self, eol):
         """
         Fetch a user specified RELEASE from FreeBSD's http server or a user
         supplied one. The user can also specify the user, password and
@@ -231,7 +231,7 @@ class IOCFetch(object):
                     self.lgr.info("[{}] {}".format(releases.index(r), r))
                 self.release = raw_input("\nWhich release do you want to fetch?"
                                          " (EXIT) ")
-                self.release = self.__validate_release__(releases)
+                self.release = self.__fetch_validate_release__(releases)
         else:
             if self.auth == "basic":
                 req = requests.get("{}/{}".format(self.server, self.root_dir),
@@ -267,23 +267,23 @@ class IOCFetch(object):
                         self.lgr.info("[{}] {}".format(releases.index(r), r))
                 self.release = raw_input("\nWhich release do you want to fetch?"
                                          " (EXIT) ")
-                self.release = self.__validate_release__(releases)
+                self.release = self.__fetch_validate_release__(releases)
 
         if self.hardened:
             self.root_dir = "{}/hardenedbsd-{}-LAST".format(rdir,
                                                             self.release.lower())
         self.lgr.info("Fetching: {}\n".format(self.release))
-        self.download_fetch(self.files)
-        missing = self.__check_download__(self.files)
+        self.fetch_download(self.files)
+        missing = self.__fetch_check__(self.files)
 
         if missing:
-            self.download_fetch(missing, missing=True)
-            self.__check_download__(missing, _missing=True)
+            self.fetch_download(missing, missing=True)
+            self.__fetch_check__(missing, _missing=True)
 
         if not self.hardened:
-            self.update_fetch()
+            self.fetch_update()
 
-    def ftp_fetch_release(self, eol):
+    def fetch_ftp_release(self, eol):
         """
         Fetch a user specified RELEASE from FreeBSD's ftp server or a user
         supplied one. The user can also specify the user, password and
@@ -318,23 +318,23 @@ class IOCFetch(object):
             self.release = raw_input("\nWhich release do you want to fetch?"
                                      " (EXIT) ")
 
-            self.release = self.__validate_release__(releases)
+            self.release = self.__fetch_validate_release__(releases)
 
         ftp.cwd(self.release)
         ftp_list = ftp.nlst()
 
         self.lgr.info("Fetching: {}\n".format(self.release))
-        self.download_fetch(ftp_list, ftp=ftp)
-        missing = self.__check_download__(ftp_list, ftp=ftp)
+        self.fetch_download(ftp_list, ftp=ftp)
+        missing = self.__fetch_check__(ftp_list, ftp=ftp)
 
         if missing:
-            self.download_fetch(missing, ftp, missing=True)
-            self.__check_download__(missing, ftp, _missing=True)
+            self.fetch_download(missing, ftp, missing=True)
+            self.__fetch_check__(missing, ftp, _missing=True)
 
         ftp.quit()
-        self.update_fetch()
+        self.fetch_update()
 
-    def __check_download__(self, _list, ftp=None, _missing=False):
+    def __fetch_check__(self, _list, ftp=None, _missing=False):
         """
         Will check if every file we need exists, if they do we check the SHA256
         and make sure it matches the files they may already have.
@@ -411,13 +411,13 @@ class IOCFetch(object):
                     self.lgr.info("Extracting: {}... ".format(f))
 
                     try:
-                        self.extract_fetch(f)
+                        self.fetch_extract(f)
                     except:
                         raise
 
             return missing
 
-    def download_fetch(self, _list, ftp=None, missing=False):
+    def fetch_download(self, _list, ftp=None, missing=False):
         """Creates the download dataset and then downloads the RELEASE."""
         dataset = "{}/download/{}".format(self.iocroot, self.release)
         fresh = False
@@ -502,7 +502,7 @@ class IOCFetch(object):
                     else:
                         pass
 
-    def extract_fetch(self, f):
+    def fetch_extract(self, f):
         """
         Takes a src and dest then creates the RELEASE dataset for the data.
         """
@@ -516,7 +516,7 @@ class IOCFetch(object):
             with tarfile.open(fileobj=xz) as tar:
                 tar.extractall(dest)
 
-    def update_fetch(self, cli=False, uuid=None, tag=None):
+    def fetch_update(self, cli=False, uuid=None, tag=None):
         """This calls 'freebsd-update' to update the fetched RELEASE."""
         if cli:
             cmd = ["mount", "-t", "devfs", "devfs",

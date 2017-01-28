@@ -11,13 +11,13 @@ class IOCStop(object):
     """Stops a jail and unmounts the jails mountpoints."""
 
     def __init__(self, uuid, jail, path, conf, silent=False):
-        self.pool = IOCJson(" ").get_prop_value("pool")
-        self.iocroot = IOCJson(self.pool).get_prop_value("iocroot")
+        self.pool = IOCJson(" ").json_get_value("pool")
+        self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
         self.uuid = uuid
         self.jail = jail
         self.path = path
         self.conf = conf
-        self.status, self.jid = IOCList().get_jid(uuid)
+        self.status, self.jid = IOCList().list_get_jid(uuid)
         self.nics = conf["interfaces"]
         self.lgr = logging.getLogger('ioc_stop')
 

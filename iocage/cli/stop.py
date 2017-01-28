@@ -20,7 +20,7 @@ def stop_cmd(jails):
     """
     lgr = logging.getLogger('ioc_cli_stop')
 
-    _jails, paths = IOCList("uuid").get_datasets()
+    _jails, paths = IOCList("uuid").list_datasets()
 
     if jails[0] == "ALL":
         for j in _jails:

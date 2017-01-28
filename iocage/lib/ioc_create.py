@@ -19,8 +19,8 @@ class IOCCreate(object):
     def __init__(self, release, props, num, pkglist=None, plugin=False,
                  migrate=False, config=None, silent=False, template=False,
                  short=False):
-        self.pool = IOCJson().get_prop_value("pool")
-        self.iocroot = IOCJson(self.pool).get_prop_value("iocroot")
+        self.pool = IOCJson().json_get_value("pool")
+        self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
         self.release = release
         self.props = props
         self.num = num
@@ -72,8 +72,7 @@ class IOCCreate(object):
 
             # self.release is actually the templates name
             config["release"] = IOCJson("{}/templates/{}".format(
-                self.iocroot, self.release)).get_prop_value("release")
-
+                self.iocroot, self.release)).json_get_value("release")
         else:
             try:
                 check_call(["zfs", "snapshot",
@@ -89,7 +88,7 @@ class IOCCreate(object):
                        self.pool, self.release, jail_uuid),
                    jail], stdout=PIPE).communicate()
 
-        IOCJson(location).write_json(config)
+        IOCJson(location).json_write(config)
 
         # Just "touch" the fstab file, since it won't exist.
         open("{}/jails/{}/fstab".format(self.iocroot, jail_uuid), 'w').close()
@@ -103,17 +102,17 @@ class IOCCreate(object):
                 self.lgr.error(" ERROR: You need an IP address for the jail"
                                " to install packages!\n")
             else:
-                self.install_packages(jail_uuid, location, _tag, config)
+                self.create_install_packages(jail_uuid, location, _tag, config)
 
         if self.plugin or self.migrate:
             return jail_uuid
 
-    def create_config(self, jail_uuid):
+    def create_config(self, jail_uuid, release):
         """
         This sets up the default configuration for a jail. It also does some
         mild sanity checking on the properties users are supplying.
         """
-        version = IOCJson().iocage_version()
+        version = IOCJson().json_get_version()
 
         with open('/etc/hostid', 'r') as _file:
             hostid = _file.read().strip()
@@ -260,7 +259,7 @@ class IOCCreate(object):
 
         return default_props
 
-    def install_packages(self, jail_uuid, location, _tag, config):
+    def create_install_packages(self, jail_uuid, location, _tag, config):
         """
         Takes a list of pkg's to install into the target jail. The resolver
         property is required for pkg to have network access.
@@ -268,7 +267,7 @@ class IOCCreate(object):
         self.lgr.info("{0}, starting jail.".format(
             "\n{} ({}) is not running".format(jail_uuid, _tag)))
         IOCStart(jail_uuid, _tag, location, config, silent=True)
-        _, jid = IOCList().get_jid(jail_uuid)
+        _, jid = IOCList().list_get_jid(jail_uuid)
         resolver = config["resolver"]
 
         if resolver != "/etc/resolv.conf" and resolver != "none":
@@ -337,7 +336,7 @@ class IOCCreate(object):
 
             os.symlink(jail_location, "{}/tags/{}".format(self.iocroot,
                                                           tag_date))
-            IOCJson(jail_location, silent=True).set_prop_value(
+            IOCJson(jail_location, silent=True).json_set_value(
                 "tag={}".format(tag_date), create_func=True)
 
             return tag_date

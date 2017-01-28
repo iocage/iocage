@@ -19,8 +19,8 @@ def snaplist_cmd(header, jail):
     """Allows a user to show resource usage of all jails."""
     lgr = logging.getLogger('ioc_cli_snaplist')
 
-    jails, paths = IOCList("uuid").get_datasets()
-    pool = IOCJson().get_prop_value("pool")
+    jails, paths = IOCList("uuid").list_datasets()
+    pool = IOCJson().json_get_value("pool")
     snap_list = []
 
     _jail = {tag: uuid for (tag, uuid) in jails.iteritems() if

@@ -18,7 +18,7 @@ def pkg_cmd(command, jail):
     """Runs pkg with the command given inside the specified jail."""
     lgr = logging.getLogger('ioc_cli_pkg')
 
-    jails, paths = IOCList("uuid").get_datasets()
+    jails, paths = IOCList("uuid").list_datasets()
     _jail = {tag: uuid for (tag, uuid) in jails.iteritems() if
              uuid.startswith(jail) or tag == jail}
 

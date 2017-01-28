@@ -34,7 +34,7 @@ class IOCExec(object):
         if self.plugin:
             self.path = self.plugin_dir
 
-        status, _ = IOCList().get_jid(self.uuid)
+        status, _ = IOCList().list_get_jid(self.uuid)
         if not status:
             self.lgr.info("{} ({}) is not running".format(self.uuid, self.tag) +
                           ", starting jail.")

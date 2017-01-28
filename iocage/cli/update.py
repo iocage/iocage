@@ -14,14 +14,14 @@ __cmdname__ = "update_cmd"
 __rootcmd__ = True
 
 
-@click.command(name="update", help="Run freebsd-update inside a specified "
-                                   "jail.")
-@click.argument("jail", required=True, nargs=1)
+@click.command(name="update", help="Run freebsd-update to update a specified "
+                                   "jail to the latest patch level.")
+@click.argument("jail", required=True)
 def update_cmd(jail):
     """Runs update with the command given inside the specified jail."""
     lgr = logging.getLogger('ioc_cli_update')
 
-    jails, paths = IOCList("uuid").get_datasets()
+    jails, paths = IOCList("uuid").list_datasets()
     _jail = {tag: uuid for (tag, uuid) in jails.iteritems() if
              uuid.startswith(jail) or tag == jail}
 
@@ -38,14 +38,14 @@ def update_cmd(jail):
         raise RuntimeError("{} not found!".format(jail))
 
     freebsd_version = check_output(["freebsd-version"])
-    status, jid = IOCList.get_jid(uuid)
+    status, jid = IOCList.list_get_jid(uuid)
     conf = IOCJson(path).load_json()
 
     if "HBSD" in freebsd_version:
         if conf["type"] == "jail":
             if not status:
                 IOCStart(uuid, tag, path, conf, silent=True)
-                status, jid = IOCList.get_jid(uuid)
+                status, jid = IOCList.list_get_jid(uuid)
 
             Popen(["hbsd-update", "-j", jid]).communicate()
         elif conf["type"] == "basejail":

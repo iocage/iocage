@@ -4,7 +4,7 @@ from iocage.lib.ioc_start import IOCStart
 
 
 def test_start():
-    jails, paths = IOCList("uuid").get_datasets()
+    jails, paths = IOCList("uuid").list_datasets()
 
     uuid = jails["test"]
     uuid_short = jails["test_short"]

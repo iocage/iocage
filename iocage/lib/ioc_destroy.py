@@ -14,8 +14,8 @@ class IOCDestroy(object):
     """
 
     def __init__(self, uuid, jail, path, silent=False):
-        self.pool = IOCJson().get_prop_value("pool")
-        self.iocroot = IOCJson(self.pool).get_prop_value("iocroot")
+        self.pool = IOCJson().json_get_value("pool")
+        self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
         self.uuid = uuid
         self.jail = jail
         self.path = path
