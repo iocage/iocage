@@ -20,7 +20,7 @@ def start_cmd(jails):
     """
     lgr = logging.getLogger('ioc_cli_start')
 
-    _jails, paths = IOCList("uuid").get_datasets()
+    _jails, paths = IOCList("uuid").list_datasets()
 
     if jails[0] == "ALL":
         for j in _jails:
