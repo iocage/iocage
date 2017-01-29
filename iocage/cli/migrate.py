@@ -35,7 +35,7 @@ def migrate_cmd(force, delete):
 
     for tag, uuid in jails.iteritems():
         pool = IOCJson().json_get_value("pool")
-        iocroot = IOCJson(pool).get_prop_value("iocroot")
+        iocroot = IOCJson(pool).json_get_value("iocroot")
         jail = "{}/iocage/jails/{}".format(pool, uuid)
         jail_old = "{}/iocage/jails_old/{}".format(pool, uuid)
         path = paths[tag]

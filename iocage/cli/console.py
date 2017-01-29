@@ -58,7 +58,7 @@ def console_cmd(jail, force):
                                " to start {} ({})".format(uuid, tag))
         elif conf["type"] == "template":
             raise RuntimeError("Please convert back to a jail before trying"
-                               " to start {} ({})".format(uuid, j))
+                               " to start {} ({})".format(uuid, tag))
         else:
             raise RuntimeError("{} is not a supported jail type.".format(
                 conf["type"]
