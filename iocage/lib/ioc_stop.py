@@ -59,8 +59,14 @@ class IOCStop(object):
                                            " interface, set ip4_addr to"
                                            " \"INTERFACE|IPADDR\"")
                         except CalledProcessError as err:
-                            raise RuntimeError(
-                                "ERROR: {}".format(err.output.strip()))
+                            if "Can't assign requested address" in err.output:
+                                # They may have a new address that somehow
+                                # didn't set correctly. We shouldn't bail on
+                                # that.
+                                pass
+                            else:
+                                raise RuntimeError(
+                                    "ERROR: {}".format(err.output.strip()))
 
             # TODO: Prestop findscript
             exec_stop = self.conf["exec_stop"].split()
