@@ -85,6 +85,9 @@ def main():
             elif "clean" in arg:
                 skip_check = True
                 IOCCheck(pool, silent=True)
+            elif "activate" in arg:
+                if len(sys.argv) != 3:
+                    raise RuntimeError("Please supply a pool to activate.")
 
         if not skip_check:
             IOCCheck(pool)
