@@ -10,8 +10,17 @@ __cmdname__ = "create_cmd"
 __rootcmd__ = True
 
 
+def validate_count(ctx, param, value):
+    """Takes a string, removes the commas and returns an int."""
+    try:
+        count = value.replace(",", "")
+        return int(count)
+    except ValueError:
+        return int(value)
+
+
 @click.command(name="create", help="Create a jail.")
-@click.option("--count", "-c", default=1)
+@click.option("--count", "-c", callback=validate_count, default="1")
 @click.option("--release", "-r", required=False)
 @click.option("--template", "-t", required=False)
 @click.option("--pkglist", "-p", default=None)

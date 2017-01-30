@@ -9,6 +9,15 @@ __cmdname__ = "fetch_cmd"
 __rootcmd__ = True
 
 
+def validate_count(ctx, param, value):
+    """Takes a string, removes the commas and returns an int."""
+    try:
+        count = value.replace(",", "")
+        return int(count)
+    except ValueError:
+        return int(value)
+
+
 @click.command(name="fetch", help="Fetch a version of FreeBSD for jail usage.")
 @click.option("--http", "-h", default=False,
               help="Have --server define a HTTP server instead.", is_flag=True)
@@ -29,7 +38,7 @@ __rootcmd__ = True
 @click.option("--release", "-r", help="The FreeBSD release to fetch.")
 @click.option("--plugin", "-P", help="The plugin to fetch.")
 @click.argument("props", nargs=-1)
-@click.option("--count", "-c", default=1)
+@click.option("--count", "-c", callback=validate_count, default="1")
 @click.option("--root-dir", "-d", help="Root directory " +
                                        "containing all the RELEASEs.")
 def fetch_cmd(http, _file, server, user, password, auth, verify, release,
