@@ -73,7 +73,7 @@ def main():
                         format='%(message)s')
     pool = sys.argv[-1]
     skip_check = False
-    skip_check_cmds = ["--help", "deactivate", "--version"]
+    skip_check_cmds = ["--help", "activate", "deactivate", "--version"]
 
     try:
         if "iocage" in sys.argv[0] and len(sys.argv) == 1:
@@ -85,9 +85,6 @@ def main():
             elif "clean" in arg:
                 skip_check = True
                 IOCCheck(pool, silent=True)
-            elif "activate" in arg:
-                if len(sys.argv) != 3:
-                    raise RuntimeError("Please supply a pool to activate.")
 
         if not skip_check:
             IOCCheck(pool)
