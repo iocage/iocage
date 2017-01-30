@@ -53,7 +53,7 @@ Template is just another jail where the "template" property is set to "yes".
 
 To turn a jail into a template simply execute:
 
-``iocate set template=yes UUID|TAG``
+``iocage set template=yes UUID|TAG``
 
 After this operation the jail can be listed with:
 
