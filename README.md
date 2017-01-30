@@ -10,9 +10,14 @@ technologies the FreeBSD operating system has to offer. It is geared for ease
 iocage is in the FreeBSD ports tree as sysutils/py-iocage.
 To install using binary packages, simply run: `pkg install py27-iocage`
 
-If cloning the repo directly, cd into the cloned directory and run `pip install .` as root.
+If cloning the repo directly:
+ - cd into the cloned directory and run `pip 
+install .` as root.
+- copy rc.d/iocage to /usr/local/etc/rc.d/iocage
 
 To install subsequent updates: `git pull` and `pip install -U .`
+
+
 
 ## WARNING:
 - This is beta quality software, there be dragons! Please report them.
