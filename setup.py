@@ -19,4 +19,6 @@ setup(name='iocage',
           'console_scripts': [
               'iocage = iocage.main:main'
           ]
-      })
+      },
+      data_files=[('/usr/local/etc/rc.d', ['rc.d/iocage'])]
+      )
