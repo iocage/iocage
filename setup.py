@@ -1,4 +1,11 @@
+import os
+
 from setuptools import find_packages, setup
+
+if os.path.isdir("/usr/local/etc/init.d"):
+    _data = [('/usr/local/etc/init.d', ['rc.d/iocage'])]
+else:
+    _data = [('/usr/local/etc/rc.d', ['rc.d/iocage'])]
 
 setup(name='iocage',
       version='0.9.4.1',
@@ -20,5 +27,5 @@ setup(name='iocage',
               'iocage = iocage.main:main'
           ]
       },
-      data_files=[('/usr/local/etc/rc.d', ['rc.d/iocage'])]
+      data_files=_data
       )
