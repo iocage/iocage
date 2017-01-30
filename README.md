@@ -13,7 +13,6 @@ To install using binary packages, simply run: `pkg install py27-iocage`
 If cloning the repo directly:
 - cd into the cloned directory and run `pip 
 install .` as root.
-- copy `rc.d/iocage` to `/usr/local/etc/rc.d/iocage`
 
 To install subsequent updates: `git pull` and `pip install -U .`
 
