@@ -25,12 +25,13 @@ load_rc_config "$name"
 
 start_cmd="iocage_start"
 stop_cmd="iocage_stop"
+iocage="$(which iocage)"
 
 iocage_start()
 {
     if checkyesno ${rcvar}; then
         echo "* [I|O|C] booting jails... "
-        /usr/local/bin/iocage start --rc
+        $iocage start --rc
     fi
 }
 
@@ -38,7 +39,7 @@ iocage_stop()
 {
     if checkyesno ${rcvar}; then
         echo "* [I|O|C] shutting down jails... "
-        /usr/local/bin/iocage stop --rc
+        $iocage stop --rc
     fi
 }
 
