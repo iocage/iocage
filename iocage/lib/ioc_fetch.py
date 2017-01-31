@@ -581,6 +581,7 @@ class IOCFetch(object):
         with open(_json) as j:
             conf = json.load(j)
         self.release = conf["release"]
+        pkg_repos = conf["fingerprints"]
 
         if num <= 1:
             self.lgr.info("Plugin: {}".format(conf["name"]))
@@ -595,7 +596,7 @@ class IOCFetch(object):
             if os.path.isdir("{}/releases/{}".format(self.iocroot,
                                                      self.release)):
                 self.lgr.info(
-                    " RELEASE: {} already fetched.".format(self.release))
+                    "  RELEASE: {} already fetched.".format(self.release))
             else:
                 self.lgr.info("\nFetching RELEASE: {}".format(self.release))
                 self.fetch_release()
@@ -626,12 +627,62 @@ class IOCFetch(object):
                     value = "{}".format(value)
             new_props[key] = value
 
-        uuid = IOCCreate(self.release, new_props, 0, conf["pkgs"],
-                         True).create_jail()
+        uuid = IOCCreate(self.release, new_props, 0, plugin=True,
+                         pkglist=["pkg"]).create_jail()
+        jaildir = "{}/jails/{}".format(self.iocroot, uuid)
+        repo_dir = "{}/root/usr/local/etc/pkg/repos".format(jaildir)
+
+        try:
+            os.makedirs(repo_dir, 0o755)
+        except OSError:
+            # It exists, that's fine.
+            pass
+
+        for repo in pkg_repos:
+            repo_name = repo
+            repo = pkg_repos[repo]
+            f_dir = "{}/root/usr/local/etc/pkg/fingerprints/{}/trusted".format(
+                jaildir, repo_name)
+            repo_conf = """\
+{reponame}: {{
+            url: "{packagesite}",
+            signature_type: "fingerprints",
+            fingerprints: "/usr/local/etc/pkg/fingerprints/{reponame}",
+            enabled: true
+            }}
+"""
+
+            try:
+                os.makedirs(f_dir, 0o755)
+            except OSError:
+                self.lgr.error("Repo: {} already exists, skipping!".format(
+                    repo_name))
+
+            r_file = "{}/{}.conf".format(repo_dir, repo_name)
+
+            with open(r_file, "w") as r_conf:
+                r_conf.write(repo_conf.format(reponame=repo_name,
+                                              packagesite=conf["packagesite"]))
+
+            f_file = "{}/{}".format(f_dir, repo_name)
+
+            for r in repo:
+                finger_conf = """\
+function: {function}
+fingerprint: {fingerprint}
+"""
+                with open(f_file, "w") as f_conf:
+                    f_conf.write(finger_conf.format(function=r["function"],
+                                                    fingerprint=r[
+                                                        "fingerprint"]))
+        _conf = IOCJson(jaildir).load_json()
+        tag = _conf["tag"]
+        IOCCreate(self.release, new_props, 0,
+                  plugin=True, pkglist=conf["pkgs"]).create_install_packages(
+            uuid, jaildir, tag, _conf, skip=True)
 
         # We need to pipe from tar to the root of the jail.
         if conf["artifact"]:
-            jaildir = "{}/jails/{}".format(self.iocroot, uuid)
             # TODO: Fancier.
             self.lgr.info("Fetching artifact... ")
 
@@ -654,3 +705,4 @@ class IOCFetch(object):
                     jaildir), plugin=True, plugin_dir=jaildir).exec_jail()
             except IOError:
                 pass
+        self.lgr.info("{} ({}) successfully created!".format(uuid, tag))
