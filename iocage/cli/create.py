@@ -1,5 +1,6 @@
 """create module for the CLI."""
 import logging
+import os
 
 import click
 
@@ -39,6 +40,18 @@ def create_cmd(release, template, count, props, pkglist, short):
     if template:
         # We don't really care it's not a RELEASE at this point.
         release = template
+
+    if pkglist:
+        if not os.path.isfile(pkglist):
+            _pkgformat = """
+{
+    "pkgs": [
+    "foo",
+    "bar",
+    ]
+}"""
+            raise RuntimeError("{} does not exist!\nPlease supply a JSON file "
+                               "with the format:{}".format(pkglist, _pkgformat))
 
     if count == 1:
         try:
