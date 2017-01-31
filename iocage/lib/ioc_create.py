@@ -11,6 +11,7 @@ import os
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 from iocage.lib.ioc_start import IOCStart
+from iocage.lib.ioc_stop import IOCStop
 
 
 class IOCCreate(object):
@@ -118,7 +119,9 @@ class IOCCreate(object):
         _tag = self.create_link(jail_uuid, config["tag"])
         self.create_rc(location, config["host_hostname"])
 
-        self.lgr.info("{} ({}) successfully created!".format(jail_uuid, _tag))
+        if not self.plugin:
+            self.lgr.info(
+                "{} ({}) successfully created!".format(jail_uuid, _tag))
 
         if self.pkglist:
             if config["ip4_addr"] == "none":
@@ -283,41 +286,48 @@ class IOCCreate(object):
 
         return default_props
 
-    def create_install_packages(self, jail_uuid, location, _tag, config):
+    def create_install_packages(self, jail_uuid, location, _tag, config,
+                                skip=False):
         """
         Takes a list of pkg's to install into the target jail. The resolver
         property is required for pkg to have network access.
         """
-        self.lgr.info("{0}, starting jail.".format(
-            "\n{} ({}) is not running".format(jail_uuid, _tag)))
-        IOCStart(jail_uuid, _tag, location, config, silent=True)
-        _, jid = IOCList().list_get_jid(jail_uuid)
-        resolver = config["resolver"]
+        status, jid = IOCList().list_get_jid(jail_uuid)
+        if not status:
+            IOCStart(jail_uuid, _tag, location, config, silent=True)
+            resolver = config["resolver"]
 
-        if resolver != "/etc/resolv.conf" and resolver != "none":
-            with open("{}/etc/resolv.conf".format(location),
-                      "w") as resolv_conf:
-                for line in resolver.split(";"):
-                    resolv_conf.write(line + "\n")
-        else:
-            copy(resolver, "{}/root/etc/resolv.conf".format(location))
+            if resolver != "/etc/resolv.conf" and resolver != "none":
+                with open("{}/etc/resolv.conf".format(location),
+                          "w") as resolv_conf:
+                    for line in resolver.split(";"):
+                        resolv_conf.write(line + "\n")
+            else:
+                copy(resolver, "{}/root/etc/resolv.conf".format(location))
+
+            status, jid = IOCList().list_get_jid(jail_uuid)
 
         if not self.plugin:
             with open(self.pkglist) as j:
                 self.pkglist = json.load(j)["pkgs"]
 
-        self.lgr.info("\nUpdating pkg repository... ")
+        if not skip:
+            self.lgr.info("\nUpdating pkg repository... ")
         # We can get some annoying mismatch warnings.
         Popen(["pkg", "-j", jid, "update"], stderr=PIPE,
               stdout=PIPE).communicate()
 
-        self.lgr.info("Installing supplied packages:")
+        if not skip:
+            self.lgr.info("Installing supplied packages:")
         for pkg in self.pkglist:
             self.lgr.info("  - {}... ".format(pkg))
             Popen(["pkg", "-j", jid, "install", "-q", "-y", pkg],
                   stderr=PIPE, stdout=PIPE).communicate()
 
         os.remove("{}/root/etc/resolv.conf".format(location))
+
+        if status:
+            IOCStop(jail_uuid, _tag, location, config, silent=True)
 
     def create_link(self, jail_uuid, tag, old_tag=None):
         """
@@ -368,17 +378,17 @@ class IOCCreate(object):
     def create_rc(self, location, host_hostname):
         """Writes a boilerplate rc.conf file for a jail."""
         rcconf = """\
-host_hostname=\"{hostname}\"
-cron_flags=\"$cron_flags -J 15\"
+host_hostname="{hostname}"
+cron_flags="$cron_flags -J 15"
 
 # Disable Sendmail by default
-sendmail_enable=\"NONE\"
-sendmail_submit_enable=\"NO\"
-sendmail_outbound_enable=\"NO\"
-sendmail_msp_queue_enable=\"NO\"
+sendmail_enable="NONE"
+sendmail_submit_enable="NO"
+sendmail_outbound_enable="NO"
+sendmail_msp_queue_enable="NO"
 
 # Run secure syslog
-syslogd_flags=\"-c -ss\"
+syslogd_flags="-c -ss"
 
 # Enable IPv6
 ipv6_activate_all_interfaces=\"YES\"
