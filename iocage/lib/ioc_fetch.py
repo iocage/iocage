@@ -684,7 +684,6 @@ fingerprint: {fingerprint}
                                                                       tag,
                                                                       _conf,
                                                                       skip=True)
-
         if not err:
             # We need to pipe from tar to the root of the jail.
             if conf["artifact"]:
@@ -713,4 +712,5 @@ fingerprint: {fingerprint}
         else:
             self.lgr.error("ERROR: pkg error, refusing to fetch artifact and "
                            "run post_install.sh!\n")
-            self.lgr.info("{} ({}) successfully created!".format(uuid, tag))
+
+        self.lgr.info("{} ({}) successfully created!".format(uuid, tag))
