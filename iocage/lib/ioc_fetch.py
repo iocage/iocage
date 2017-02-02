@@ -594,11 +594,8 @@ class IOCFetch(object):
             for pkg in conf["pkgs"]:
                 self.lgr.info("    - {}".format(pkg))
 
-            if os.path.isdir("{}/releases/{}".format(self.iocroot,
-                                                     self.release)):
-                self.lgr.info(
-                    "  RELEASE: {} already fetched.".format(self.release))
-            else:
+            if not os.path.isdir("{}/releases/{}".format(self.iocroot,
+                                                         self.release)):
                 self.lgr.info("\nFetching RELEASE: {}".format(self.release))
                 self.fetch_release()
 
