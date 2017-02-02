@@ -702,12 +702,11 @@ fingerprint: {fingerprint}
 
                     self.lgr.info("Running post_install.sh")
                     command = ["sh", "/root/post_install.sh"]
-                    IOCExec(command, uuid, conf["name"], "{}/root".format(
-                        jaildir), plugin=True, plugin_dir=jaildir).exec_jail()
+                    IOCExec(command, uuid, conf["name"], jaildir).exec_jail()
                 except IOError:
                     pass
         else:
             self.lgr.error("ERROR: pkg error, refusing to fetch artifact and "
                            "run post_install.sh!\n")
 
-        self.lgr.info("{} ({}) successfully created!".format(uuid, tag))
+        self.lgr.info("\n{} ({}) successfully created!".format(uuid, tag))

@@ -11,7 +11,7 @@ class IOCExec(object):
     """Run jexec with a user inside the specified jail."""
 
     def __init__(self, command, uuid, tag, path, host_user="root",
-                 jail_user=None, plugin=False, plugin_dir=None):
+                 jail_user=None, plugin=False):
         self.command = command
         self.uuid = uuid
         self.tag = tag
@@ -19,7 +19,6 @@ class IOCExec(object):
         self.host_user = host_user
         self.jail_user = jail_user
         self.plugin = plugin
-        self.plugin_dir = plugin_dir
         self.lgr = logging.getLogger('ioc_exec')
 
     def exec_jail(self):
@@ -30,9 +29,6 @@ class IOCExec(object):
         else:
             flag = "-u"
             user = self.host_user
-
-        if self.plugin:
-            self.path = self.plugin_dir
 
         status, _ = IOCList().list_get_jid(self.uuid)
         if not status:
@@ -64,5 +60,10 @@ class IOCExec(object):
             except CalledProcessError as err:
                 return err.output.rstrip()
         else:
-            Popen(["jexec", flag, user, "ioc-{}".format(self.uuid)] +
-                  list(self.command)).communicate()
+            jexec = Popen(["jexec", flag, user, "ioc-{}".format(self.uuid)] +
+                          list(self.command), stderr=PIPE)
+            msg, err = jexec.communicate()
+
+            if err:
+                return err
+

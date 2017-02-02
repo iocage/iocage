@@ -167,3 +167,10 @@ def open_atomic(filepath, *args, **kwargs):
                     os.fsync(file.fileno())
         os.rename(tmppath, filepath)
         os.chmod(filepath, 0o644)
+
+
+def indent_lines(message):
+    """This will indent all lines except the first by 7 spaces. """
+    indented = message.replace("\n", "\n       ").rstrip()
+
+    return indented
