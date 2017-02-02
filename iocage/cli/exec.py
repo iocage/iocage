@@ -3,9 +3,9 @@ import logging
 
 import click
 
+from iocage.lib.ioc_common import indent_lines
 from iocage.lib.ioc_exec import IOCExec
 from iocage.lib.ioc_list import IOCList
-from iocage.lib.ioc_common import indent_lines
 
 __cmdname__ = "exec_cmd"
 __rootcmd__ = True

@@ -1,6 +1,6 @@
 """iocage exec module."""
 import logging
-from subprocess import Popen, PIPE, STDOUT, check_output, CalledProcessError
+from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_output
 
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
@@ -66,4 +66,3 @@ class IOCExec(object):
 
             if err:
                 return err
-
