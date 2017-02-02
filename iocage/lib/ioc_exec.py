@@ -1,6 +1,6 @@
 """iocage exec module."""
 import logging
-from subprocess import Popen
+from subprocess import Popen, PIPE, STDOUT, check_output, CalledProcessError
 
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
@@ -36,8 +36,9 @@ class IOCExec(object):
 
         status, _ = IOCList().list_get_jid(self.uuid)
         if not status:
-            self.lgr.info("{} ({}) is not running".format(self.uuid, self.tag) +
-                          ", starting jail.")
+            if not self.plugin:
+                self.lgr.info("{} ({}) is not running, starting jail.".format(
+                    self.uuid, self.tag))
             conf = IOCJson(self.path).load_json()
 
             if conf["type"] == "jail" or "plugin":
@@ -56,5 +57,12 @@ class IOCExec(object):
                 ))
             self.lgr.info("\nCommand output:")
 
-        Popen(["jexec", flag, user, "ioc-{}".format(self.uuid)] +
-              list(self.command)).communicate()
+        if self.plugin:
+            try:
+                check_output(["jexec", flag, user, "ioc-{}".format(
+                    self.uuid)] + list(self.command), stderr=STDOUT)
+            except CalledProcessError as err:
+                return err.output.rstrip()
+        else:
+            Popen(["jexec", flag, user, "ioc-{}".format(self.uuid)] +
+                  list(self.command)).communicate()
