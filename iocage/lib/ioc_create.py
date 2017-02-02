@@ -8,11 +8,11 @@ from subprocess import CalledProcessError, PIPE, Popen, check_call
 
 import os
 
+from iocage.lib.ioc_exec import IOCExec
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 from iocage.lib.ioc_start import IOCStart
 from iocage.lib.ioc_stop import IOCStop
-from iocage.lib.ioc_exec import IOCExec
 
 
 class IOCCreate(object):
@@ -322,7 +322,7 @@ class IOCCreate(object):
         os.environ["ASSUME_ALWAYS_YES"] = "yes"
         cmd = ("pkg-static", "upgrade", "-f", "-q", "-y")
         pkg_upgrade = IOCExec(cmd, jail_uuid, _tag, location,
-                  plugin=self.plugin).exec_jail()
+                              plugin=self.plugin).exec_jail()
 
         if pkg_upgrade:
             self.lgr.error("ERROR: {}".format(pkg_upgrade))
@@ -334,7 +334,7 @@ class IOCCreate(object):
             self.lgr.info("  - {}... ".format(pkg))
             cmd = ("pkg", "install", "-q", "-y", pkg)
             pkg_install = IOCExec(cmd, jail_uuid, _tag, location,
-                     plugin=self.plugin).exec_jail()
+                                  plugin=self.plugin).exec_jail()
 
             if pkg_install:
                 self.lgr.error("ERROR: {}".format(pkg_install))
