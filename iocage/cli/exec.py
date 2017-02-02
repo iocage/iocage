@@ -5,6 +5,7 @@ import click
 
 from iocage.lib.ioc_exec import IOCExec
 from iocage.lib.ioc_list import IOCList
+from iocage.lib.ioc_common import indent_lines
 
 __cmdname__ = "exec_cmd"
 __rootcmd__ = True
@@ -21,6 +22,10 @@ __rootcmd__ = True
 def exec_cmd(command, jail, host_user, jail_user):
     """Runs the command given inside the specified jail as the supplied user."""
     lgr = logging.getLogger('ioc_cli_exec')
+
+    # We may be getting ';', '&&' and so forth. Adding the shell for safety.
+    if len(command) == 1:
+        command = ("/bin/sh", "-c") + command
 
     if jail.startswith("-"):
         raise RuntimeError("Please specify a jail first!")
@@ -45,4 +50,9 @@ def exec_cmd(command, jail, host_user, jail_user):
     else:
         raise RuntimeError("{} not found!".format(jail))
 
-    IOCExec(command, uuid, tag, path, host_user, jail_user).exec_jail()
+    msg = IOCExec(command, uuid, tag, path, host_user, jail_user).exec_jail()
+
+    if msg:
+        err = indent_lines(msg)
+
+        raise RuntimeError("ERROR: {}".format(err))
