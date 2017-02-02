@@ -313,14 +313,14 @@ class IOCCreate(object):
             with open(self.pkglist) as j:
                 self.pkglist = json.load(j)["pkgs"]
 
-        if not skip:
-            self.lgr.info("\nInstalling pkg... ")
+        self.lgr.info("\nInstalling pkg... ")
         # To avoid a user being prompted about pkg.
         Popen(["pkg", "-j", jid, "install", "-q", "-y", "pkg"],
               stderr=PIPE, stdout=PIPE).communicate()
 
         # We will have mismatched ABI errors from earlier, this is to be safe.
-        cmd = ("pkg", "upgrade", "-f", "-q", "-y")
+        os.environ["ASSUME_ALWAYS_YES"] = "yes"
+        cmd = ("pkg-static", "upgrade", "-f", "-q", "-y")
         pkg_upgrade = IOCExec(cmd, jail_uuid, _tag, location,
                   plugin=self.plugin).exec_jail()
 

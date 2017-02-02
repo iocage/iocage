@@ -1,4 +1,5 @@
 """iocage fetch module."""
+import collections
 import contextlib
 import hashlib
 import json
@@ -7,7 +8,7 @@ import shutil
 import tarfile
 from ftplib import FTP
 from shutil import copy
-from subprocess import PIPE, Popen
+from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_output
 from tempfile import NamedTemporaryFile
 
 import os
@@ -710,3 +711,81 @@ fingerprint: {fingerprint}
                            "run post_install.sh!\n")
 
         self.lgr.info("\n{} ({}) successfully created!".format(uuid, tag))
+
+    def fetch_plugin_index(self, props):
+        if self.server == "ftp.freebsd.org":
+            self.server = "https://github.com/iXsystems/iocage-ix-plugins.git"
+
+        try:
+            check_output(["git", "clone", self.server,
+                          "{}/.plugin_index".format(self.iocroot)],
+                         stderr=STDOUT)
+        except CalledProcessError as err:
+            if "already exists" in err.output.rstrip():
+                try:
+                    check_output(["git", "-C", "{}/.plugin_index".format(
+                        self.iocroot), "pull"], stderr=STDOUT)
+                except CalledProcessError as err:
+                    raise RuntimeError("ERROR: {}".format(err.output.rstrip()))
+            else:
+                raise RuntimeError("ERROR: {}".format(err.output.rstrip()))
+
+        with open("{}/.plugin_index/INDEX".format(self.iocroot)) as plugins:
+            plugins = json.load(plugins)
+
+        _plugins = self.__fetch_sort_plugin__(plugins)
+        for p in _plugins:
+            self.lgr.info("[{}] {}".format(_plugins.index(p), p))
+
+        plugin = raw_input("\nWhich plugin do you want to create? (EXIT) ")
+        plugin = self.__fetch_validate_plugin__(plugin.lower(), _plugins)
+        self.fetch_plugin("{}/.plugin_index/{}.json".format(self.iocroot,
+                                                            plugin), props, 0)
+
+    def __fetch_validate_plugin__(self, plugin, plugins):
+        """
+        Checks if the user supplied an index number and returns the
+        plugin. If they gave us a plugin name, we make sure that exists in
+        the list at all.
+        """
+        if plugin.lower() == "exit":
+            exit()
+
+        if len(plugin) <= 2:
+            try:
+                plugin = plugins[int(plugin)]
+            except IndexError:
+                raise RuntimeError("[{}] is not in the list!".format(plugin))
+            except ValueError:
+                exit()
+        else:
+            # Quick list validation
+            try:
+                plugin = [i for i, p in enumerate(plugins) if
+                          plugin.capitalize() in p]
+                plugin = plugins[int(plugin[0])]
+            except ValueError as err:
+                raise RuntimeError("{}!".format(err))
+
+        return plugin.split("(")[1].replace(")", "")
+
+    def __fetch_sort_plugin__(self, plugins):
+        """
+        Sort the list by plugin.
+        """
+        p_dict = {}
+        plugin_list = []
+
+        for plugin in plugins:
+            _plugin = "{} - {} ({})".format(plugins[plugin]["name"], plugins[
+                plugin]["description"], plugin)
+            p_dict[plugin] = _plugin
+
+        ordered_p_dict = collections.OrderedDict(sorted(p_dict.iteritems()))
+        index = 0
+
+        for p in ordered_p_dict.itervalues():
+            plugin_list.insert(index, "{}".format(p))
+            index += 1
+
+        return plugin_list
