@@ -12,6 +12,7 @@ from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 from iocage.lib.ioc_start import IOCStart
 from iocage.lib.ioc_stop import IOCStop
+from iocage.lib.ioc_exec import IOCExec
 
 
 class IOCCreate(object):
@@ -293,6 +294,7 @@ class IOCCreate(object):
         property is required for pkg to have network access.
         """
         status, jid = IOCList().list_get_jid(jail_uuid)
+        err = False
         if not status:
             IOCStart(jail_uuid, _tag, location, config, silent=True)
             resolver = config["resolver"]
@@ -312,22 +314,39 @@ class IOCCreate(object):
                 self.pkglist = json.load(j)["pkgs"]
 
         if not skip:
-            self.lgr.info("\nUpdating pkg repository... ")
-        # We can get some annoying mismatch warnings.
-        Popen(["pkg", "-j", jid, "update"], stderr=PIPE,
-              stdout=PIPE).communicate()
+            self.lgr.info("\nInstalling pkg... ")
+        # To avoid a user being prompted about pkg.
+        Popen(["pkg", "-j", jid, "install", "-q", "-y", "pkg"],
+              stderr=PIPE, stdout=PIPE).communicate()
+
+        # We will have mismatched ABI errors from earlier, this is to be safe.
+        cmd = ("pkg", "upgrade", "-f", "-q", "-y")
+        pkg_upgrade = IOCExec(cmd, jail_uuid, _tag, location,
+                  plugin=self.plugin).exec_jail()
+
+        if pkg_upgrade:
+            self.lgr.error("ERROR: {}".format(pkg_upgrade))
+            err = True
 
         if not skip:
             self.lgr.info("Installing supplied packages:")
         for pkg in self.pkglist:
             self.lgr.info("  - {}... ".format(pkg))
-            Popen(["pkg", "-j", jid, "install", "-q", "-y", pkg],
-                  stderr=PIPE, stdout=PIPE).communicate()
+            cmd = ("pkg", "install", "-q", "-y", pkg)
+            pkg_install = IOCExec(cmd, jail_uuid, _tag, location,
+                     plugin=self.plugin).exec_jail()
+
+            if pkg_install:
+                self.lgr.error("ERROR: {}".format(pkg_install))
+                err = True
 
         os.remove("{}/root/etc/resolv.conf".format(location))
 
         if status:
             IOCStop(jail_uuid, _tag, location, config, silent=True)
+
+        if self.plugin and err:
+            return err
 
     def create_link(self, jail_uuid, tag, old_tag=None):
         """

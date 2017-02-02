@@ -22,6 +22,7 @@ from iocage.lib.ioc_common import sort_release
 from iocage.lib.ioc_create import IOCCreate
 from iocage.lib.ioc_exec import IOCExec
 from iocage.lib.ioc_json import IOCJson
+from iocage.lib.ioc_start import IOCStart
 
 
 class IOCFetch(object):
@@ -627,10 +628,12 @@ class IOCFetch(object):
                     value = "{}".format(value)
             new_props[key] = value
 
-        uuid = IOCCreate(self.release, new_props, 0, plugin=True,
-                         pkglist=["pkg"]).create_jail()
+        uuid = IOCCreate(self.release, new_props, 0, plugin=True).create_jail()
         jaildir = "{}/jails/{}".format(self.iocroot, uuid)
         repo_dir = "{}/root/usr/local/etc/pkg/repos".format(jaildir)
+        _conf = IOCJson(jaildir).load_json()
+        tag = _conf["tag"]
+        IOCStart(uuid, tag, jaildir, _conf, silent=True)
 
         try:
             os.makedirs(repo_dir, 0o755)
@@ -675,34 +678,39 @@ fingerprint: {fingerprint}
                     f_conf.write(finger_conf.format(function=r["function"],
                                                     fingerprint=r[
                                                         "fingerprint"]))
-        _conf = IOCJson(jaildir).load_json()
-        tag = _conf["tag"]
-        IOCCreate(self.release, new_props, 0,
-                  plugin=True, pkglist=conf["pkgs"]).create_install_packages(
-            uuid, jaildir, tag, _conf, skip=True)
+        err = IOCCreate(self.release, new_props, 0, plugin=True,
+                        pkglist=conf["pkgs"]).create_install_packages(uuid,
+                                                                      jaildir,
+                                                                      tag,
+                                                                      _conf,
+                                                                      skip=True)
 
-        # We need to pipe from tar to the root of the jail.
-        if conf["artifact"]:
-            # TODO: Fancier.
-            self.lgr.info("Fetching artifact... ")
+        if not err:
+            # We need to pipe from tar to the root of the jail.
+            if conf["artifact"]:
+                # TODO: Fancier.
+                self.lgr.info("Fetching artifact... ")
 
-            Popen(["git", "clone", conf["artifact"],
-                   "{}/plugin".format(jaildir)],
-                  stdout=PIPE, stderr=PIPE).communicate()
-            tar_in = Popen(["tar", "cvf", "-", "-C",
-                            "{}/plugin/overlay/".format(jaildir), "."],
-                           stdout=PIPE, stderr=PIPE).communicate()
-            Popen(["tar", "xf", "-", "-C", "{}/root".format(jaildir)],
-                  stdin=PIPE).communicate(input=tar_in[0])
+                Popen(["git", "clone", conf["artifact"],
+                       "{}/plugin".format(jaildir)],
+                      stdout=PIPE, stderr=PIPE).communicate()
+                tar_in = Popen(["tar", "cvf", "-", "-C",
+                                "{}/plugin/overlay/".format(jaildir), "."],
+                               stdout=PIPE, stderr=PIPE).communicate()
+                Popen(["tar", "xf", "-", "-C", "{}/root".format(jaildir)],
+                      stdin=PIPE).communicate(input=tar_in[0])
 
-            try:
-                copy("{}/plugin/post_install.sh".format(jaildir),
-                     "{}/root/root".format(jaildir))
+                try:
+                    copy("{}/plugin/post_install.sh".format(jaildir),
+                         "{}/root/root".format(jaildir))
 
-                self.lgr.info("Running post_install.sh")
-                command = ["sh", "/root/post_install.sh"]
-                IOCExec(command, uuid, conf["name"], "{}/root".format(
-                    jaildir), plugin=True, plugin_dir=jaildir).exec_jail()
-            except IOError:
-                pass
-        self.lgr.info("{} ({}) successfully created!".format(uuid, tag))
+                    self.lgr.info("Running post_install.sh")
+                    command = ["sh", "/root/post_install.sh"]
+                    IOCExec(command, uuid, conf["name"], "{}/root".format(
+                        jaildir), plugin=True, plugin_dir=jaildir).exec_jail()
+                except IOError:
+                    pass
+        else:
+            self.lgr.error("ERROR: pkg error, refusing to fetch artifact and "
+                           "run post_install.sh!\n")
+            self.lgr.info("{} ({}) successfully created!".format(uuid, tag))
