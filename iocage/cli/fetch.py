@@ -36,14 +36,15 @@ def validate_count(ctx, param, value):
                                                          " verifying SSL cert"
                                                          " for HTTP fetching.")
 @click.option("--release", "-r", help="The FreeBSD release to fetch.")
-@click.option("--plugin", "-P", help="The plugin to fetch.")
+@click.option("--plugin-file", "-P", help="The plugin to fetch.")
+@click.option("--plugins", help="List all available plugins for creation.",
+              is_flag=True)
 @click.argument("props", nargs=-1)
 @click.option("--count", "-c", callback=validate_count, default="1")
 @click.option("--root-dir", "-d", help="Root directory " +
                                        "containing all the RELEASEs.")
 def fetch_cmd(http, _file, server, user, password, auth, verify, release,
-              plugin,
-              root_dir, props, count):
+              plugins, plugin_file, root_dir, props, count):
     """CLI command that calls fetch_release()"""
     freebsd_version = check_output(["freebsd-version"])
 
@@ -53,16 +54,25 @@ def fetch_cmd(http, _file, server, user, password, auth, verify, release,
     else:
         hardened = False
 
-    if plugin:
+    if plugins or plugin_file:
+        ip = [x for x in props if x.startswith("ip4_addr")]
+        if not ip:
+            raise RuntimeError("IP address is needed to fetch a plugin!\n"
+                               "Please specify "
+                               "ip4_addr=\"INTERFACE|IPADDRESS\"!")
+        if plugins:
+            IOCFetch("").fetch_plugin_index(props)
+            exit()
+
         if count == 1:
             IOCFetch("", server, user, password, auth, root_dir,
                      http=http, _file=_file, verify=verify,
-                     hardened=hardened).fetch_plugin(plugin, props, 0)
+                     hardened=hardened).fetch_plugin(plugin_file, props, 0)
         else:
             for j in xrange(1, count + 1):
                 IOCFetch("", server, user, password, auth, root_dir,
                          http=http, _file=_file, verify=verify,
-                         hardened=hardened).fetch_plugin(plugin, props, j)
+                         hardened=hardened).fetch_plugin(plugin_file, props, j)
     else:
         IOCFetch(release, server, user, password, auth, root_dir, http=http,
                  _file=_file, verify=verify, hardened=hardened).fetch_release()
