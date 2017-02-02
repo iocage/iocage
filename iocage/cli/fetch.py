@@ -36,7 +36,7 @@ def validate_count(ctx, param, value):
                                                          " verifying SSL cert"
                                                          " for HTTP fetching.")
 @click.option("--release", "-r", help="The FreeBSD release to fetch.")
-@click.option("--plugin-file", "-P", help="The plugin to fetch.")
+@click.option("--plugin-file", "-P", help="The plugin file to use.")
 @click.option("--plugins", help="List all available plugins for creation.",
               is_flag=True)
 @click.argument("props", nargs=-1)
