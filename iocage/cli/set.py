@@ -11,10 +11,16 @@ __cmdname__ = "set_cmd"
 __rootcmd__ = True
 
 
-@click.command(name="set", help="Sets the specified property.")
+@click.command(context_settings=dict(
+    max_content_width=400, ), name="set", help="Sets the specified property.")
 @click.argument("prop")
 @click.argument("jail")
-def set_cmd(prop, jail):
+@click.option("--plugin", "-P",
+              help="Set the specified key for a plugin jail, if accessing a"
+                   " nested key use . as a separator."
+                   "\n\b Example: iocage set -P foo.bar.baz=VALUE PLUGIN",
+              is_flag=True)
+def set_cmd(prop, jail, plugin):
     """Get a list of jails and print the property."""
     lgr = logging.getLogger('ioc_cli_set')
 
@@ -42,13 +48,17 @@ def set_cmd(prop, jail):
             ))
         elif "template" not in path and prop != "template=yes":
             raise RuntimeError("{} ({}) is already a jail!".format(uuid, tag))
-    try:
-        # We use this to test if it's a valid property at all.
-        _prop = prop.partition("=")[0]
-        iocjson.json_get_value(_prop)
+    if plugin:
+        _prop = prop.split(".")
+        IOCJson(path).json_plugin_set_value(_prop)
+    else:
+        try:
+            # We use this to test if it's a valid property at all.
+            _prop = prop.partition("=")[0]
+            iocjson.json_get_value(_prop)
 
-        # The actual setting of the property.
-        iocjson.json_set_value(prop)
-    except KeyError:
-        _prop = prop.partition("=")[0]
-        raise RuntimeError("{} is not a valid property!".format(_prop))
+            # The actual setting of the property.
+            iocjson.json_set_value(prop)
+        except KeyError:
+            _prop = prop.partition("=")[0]
+            raise RuntimeError("{} is not a valid property!".format(_prop))

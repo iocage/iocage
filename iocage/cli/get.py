@@ -21,7 +21,7 @@ __cmdname__ = "get_cmd"
                                         "jails.", flag_value="recursive")
 @click.option("--plugin", "-P",
               help="Get the specified key for a plugin jail, if accessing a"
-                   " nested key use : as a separator."
+                   " nested key use . as a separator."
                    "\n\b Example: iocage get -P foo.bar.baz PLUGIN",
               is_flag=True)
 def get_cmd(prop, jail, recursive, header, plugin):
