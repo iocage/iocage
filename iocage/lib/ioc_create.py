@@ -287,8 +287,7 @@ class IOCCreate(object):
 
         return default_props
 
-    def create_install_packages(self, jail_uuid, location, _tag, config,
-                                skip=False):
+    def create_install_packages(self, jail_uuid, location, _tag, config):
         """
         Takes a list of pkg's to install into the target jail. The resolver
         property is required for pkg to have network access.
@@ -315,8 +314,8 @@ class IOCCreate(object):
 
         self.lgr.info("\nInstalling pkg... ")
         # To avoid a user being prompted about pkg.
-        Popen(["pkg", "-j", jid, "install", "-q", "-y", "pkg"],
-              stderr=PIPE, stdout=PIPE).communicate()
+        Popen(["pkg-static", "-j", jid, "install", "-q", "-y",
+               "pkg"], stderr=PIPE).communicate()
 
         # We will have mismatched ABI errors from earlier, this is to be safe.
         os.environ["ASSUME_ALWAYS_YES"] = "yes"
@@ -328,8 +327,7 @@ class IOCCreate(object):
             self.lgr.error("ERROR: {}".format(pkg_upgrade))
             err = True
 
-        if not skip:
-            self.lgr.info("Installing supplied packages:")
+        self.lgr.info("Installing supplied packages:")
         for pkg in self.pkglist:
             self.lgr.info("  - {}... ".format(pkg))
             cmd = ("pkg", "install", "-q", "-y", pkg)
