@@ -158,7 +158,7 @@ class IOCList(object):
                 except IndexError:
                     template = "-"
 
-            if "release" or "stable" in template.lower():
+            if "release" in template.lower() or "stable" in template.lower():
                 template = "-"
 
             # Append the JID and the UUID to the table
