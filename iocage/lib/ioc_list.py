@@ -93,7 +93,7 @@ class IOCList(object):
                 self.lgr.error("ERROR: Duplicate tag ({}) detected!".format(
                     tag))
                 for d, t in sorted(dups.iteritems()):
-                    u = d.split("/")[3]
+                    u = [m for m in d.split("/") if len(m) == 36][0]
                     self.lgr.error("  {} ({})".format(u, t))
                 self.lgr.error("\nPlease run \"iocage set tag=NEWTAG "
                                "UUID\" for one of the UUID's.")
