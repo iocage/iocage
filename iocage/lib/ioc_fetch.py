@@ -597,7 +597,6 @@ class IOCFetch(object):
 
             if not os.path.isdir("{}/releases/{}".format(self.iocroot,
                                                          self.release)):
-                self.lgr.info("\nFetching RELEASE: {}".format(self.release))
                 self.fetch_release()
 
         # If no user supplied props exist, we need to add a tag prop as a dict.
