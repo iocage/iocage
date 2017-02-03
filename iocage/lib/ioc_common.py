@@ -174,3 +174,13 @@ def indent_lines(message):
     indented = message.replace("\n", "\n       ").rstrip()
 
     return indented
+
+
+def get_nested_key(_dict, keys=[]):
+    """Gets a nested key from a dictionary."""
+    key = keys.pop(0)
+
+    if len(keys) == 0:
+        return _dict[key]
+
+    return get_nested_key(_dict[key], keys)

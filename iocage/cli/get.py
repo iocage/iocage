@@ -1,4 +1,5 @@
 """This is responsible for getting a jail property."""
+import json
 import logging
 
 import click
@@ -10,14 +11,20 @@ from iocage.lib.ioc_list import IOCList
 __cmdname__ = "get_cmd"
 
 
-@click.command(name="get", help="Gets the specified property.")
+@click.command(context_settings=dict(
+    max_content_width=400, ), name="get", help="Gets the specified property.")
 @click.argument("prop")
 @click.argument("jail", required=True, default="")
 @click.option("--header", "-h", "-H", is_flag=True, default=True,
               help="For scripting, use tabs for separators.")
 @click.option("--recursive", "-r", help="Get the specified property for all " +
                                         "jails.", flag_value="recursive")
-def get_cmd(prop, jail, recursive, header):
+@click.option("--plugin", "-P",
+              help="Get the specified key for a plugin jail, if accessing a"
+                   " nested key use : as a separator."
+                   "\n\b Example: iocage get -P foo.bar.baz PLUGIN",
+              is_flag=True)
+def get_cmd(prop, jail, recursive, header, plugin):
     """Get a list of jails and print the property."""
     lgr = logging.getLogger('ioc_cli_get')
 
@@ -54,12 +61,19 @@ def get_cmd(prop, jail, recursive, header):
                 state = "down"
 
             lgr.info(state)
+        elif plugin:
+            _prop = prop.split(".")
+            props = IOCJson(path).json_plugin_get_value(_prop)
+
+            if isinstance(props, dict):
+                lgr.info(json.dumps(props, indent=4))
+            else:
+                lgr.info(props)
         elif prop == "all":
             props = IOCJson(path).json_get_value(prop)
 
             for p, v in props.iteritems():
                 lgr.info("{}:{}".format(p, v))
-
         else:
             try:
                 lgr.info(IOCJson(path).json_get_value(prop))

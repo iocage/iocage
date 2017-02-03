@@ -119,9 +119,9 @@ class IOCJson(object):
 
         return conf
 
-    def json_write(self, data):
+    def json_write(self, data, _file="/config.json"):
         """Write a JSON file at the location given with supplied data."""
-        with open_atomic(self.location + "/config.json", 'w') as out:
+        with open_atomic(self.location + _file, 'w') as out:
             json.dump(data, out, sort_keys=True, indent=4,
                       ensure_ascii=False)
 
@@ -323,3 +323,28 @@ class IOCJson(object):
         self.json_write(conf)
 
         return conf
+
+    def json_plugin_load(self):
+        try:
+            with open("{}/plugin/settings.json".format(
+                    self.location)) as settings:
+                settings = json.load(settings)
+        except IOError:
+            raise RuntimeError(
+                "No settings.json exists in {}/plugin!".format(self.location))
+
+        return settings
+
+    def json_plugin_get_value(self, prop):
+        settings = self.json_plugin_load()
+
+        try:
+            if prop[0] != "all":
+                if len(prop) > 1:
+                    return get_nested_key(settings, prop)
+                else:
+                    return settings[prop[0]]
+            else:
+                return settings
+        except KeyError:
+            raise RuntimeError("Key: \"{}\" does not exist!".format(prop))
