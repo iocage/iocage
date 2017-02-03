@@ -348,3 +348,33 @@ class IOCJson(object):
                 return settings
         except KeyError:
             raise RuntimeError("Key: \"{}\" does not exist!".format(prop))
+
+    def json_plugin_set_value(self, prop):
+        settings = self.json_plugin_load()
+        keys, _, value = ".".join(prop).partition("=")
+        prop = keys.split(".")
+        setting = settings
+
+        try:
+            while prop:
+                current = prop[0]
+                key = current
+                prop.remove(current)
+
+                if not prop:
+                    if setting[current]:
+                        _prop = setting[current]
+                        if isinstance(_prop, unicode):
+                            setting[current] = value
+                        else:
+                            raise RuntimeError(
+                                "Nested key detected, please specify "
+                                "deeper:\n{}".format(
+                                    json.dumps(_prop, indent=4)))
+                else:
+                    setting = setting[current]
+
+            self.json_write(settings, _file="/plugin/settings.json")
+            self.lgr.info("Key: {} has been updated to {}".format(keys, value))
+        except KeyError:
+            raise RuntimeError("Key: \"{}\" does not exist!".format(key))
