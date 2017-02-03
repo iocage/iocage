@@ -33,7 +33,7 @@ def restart_cmd(jail, soft):
 
             conf = IOCJson(path).json_load()
 
-            if conf["type"] == "jail" or "plugin":
+            if conf["type"] in ("jail", "plugin"):
                 try:
                     if not soft:
                         __hard_restart__(uuid, j, path, conf)
@@ -69,7 +69,7 @@ def restart_cmd(jail, soft):
 
         conf = IOCJson(path).json_load()
 
-        if conf["type"] == "jail" or "plugin":
+        if conf["type"] in ("jail", "plugin"):
             if not soft:
                 __hard_restart__(uuid, tag, path, conf)
             else:
