@@ -34,7 +34,7 @@ def df_cmd(header, _long):
             uuid = full_uuid
 
         path = paths[jail]
-        conf = IOCJson(path).load_json()
+        conf = IOCJson(path).json_load()
         zconf = ["zfs", "get", "-H", "-o", "value"]
         mountpoint = "{}/iocage/jails/{}".format(pool, full_uuid)
 

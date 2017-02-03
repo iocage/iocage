@@ -84,7 +84,7 @@ class IOCJson(object):
 
         self.json_write(key_and_value)
 
-    def load_json(self):
+    def json_load(self):
         """Load the JSON at the location given. Returns a JSON object."""
         version = self.json_get_version()
 
@@ -129,7 +129,6 @@ class IOCJson(object):
         """Returns a string with the specified prop's value."""
         if prop == "pool":
             match = 0
-            # zpools = Popen(["zpool", "list", "-H", "-o", "name"], stdout=PIPE)
             zpools = Popen(["zpool", "list", "-H", "-o", "name"],
                            stdout=PIPE).communicate()[0].split()
 
@@ -170,11 +169,11 @@ class IOCJson(object):
             except CalledProcessError:
                 raise RuntimeError("{} not found!".format(self.location))
         elif prop == "all":
-            conf = self.load_json()
+            conf = self.json_load()
 
             return conf
         else:
-            conf = self.load_json()
+            conf = self.json_load()
 
             if prop == "last_started" and conf[prop] == "none":
                 return "never"
@@ -189,7 +188,7 @@ class IOCJson(object):
         from iocage.lib.ioc_create import IOCCreate
         key, _, value = prop.partition("=")
 
-        conf = self.load_json()
+        conf = self.json_load()
         old_tag = conf["tag"]
         uuid = conf["host_hostuuid"]
         status, jid = IOCList.list_get_jid(uuid)

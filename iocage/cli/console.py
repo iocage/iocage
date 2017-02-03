@@ -32,7 +32,7 @@ def console_cmd(jail, force):
         path = paths[tag]
 
         iocjson = IOCJson(path)
-        conf = iocjson.load_json()
+        conf = iocjson.json_load()
         login_flags = conf["login_flags"].split()
         status, _ = IOCList().list_get_jid(uuid)
     elif len(_jail) > 1:

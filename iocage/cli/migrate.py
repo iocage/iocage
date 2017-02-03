@@ -39,7 +39,7 @@ def migrate_cmd(force, delete):
         jail = "{}/iocage/jails/{}".format(pool, uuid)
         jail_old = "{}/iocage/jails_old/{}".format(pool, uuid)
         path = paths[tag]
-        conf = IOCJson(path).load_json()
+        conf = IOCJson(path).json_load()
         release = conf["release"]
 
         if conf["type"] == "basejail":

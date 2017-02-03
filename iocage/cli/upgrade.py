@@ -44,7 +44,7 @@ def upgrade_cmd(jail, release):
     iocroot = IOCJson(pool).json_get_value("iocroot")
     freebsd_version = check_output(["freebsd-version"])
     status, jid = IOCList.list_get_jid(uuid)
-    conf = IOCJson(path).load_json()
+    conf = IOCJson(path).json_load()
     host_release = os.uname()[2]
     jail_release = conf["release"]
     started = False

@@ -54,7 +54,7 @@ def destroy_cmd(force, jails):
                 raise RuntimeError("{} ({}) is running."
                                    " Please stop it first!".format(uuid, tag))
             elif status and force:
-                conf = IOCJson(path).load_json()
+                conf = IOCJson(path).json_load()
                 lgr.info("Stopping {} ({}).".format(uuid, tag))
                 IOCStop(uuid, tag, path, conf, silent=True)
 

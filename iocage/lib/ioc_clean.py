@@ -97,7 +97,7 @@ class IOCClean(object):
                 jail = jail.rstrip("/root")
                 uuid = jail.split("/")[3]
                 path = jail.replace("{}/iocage".format(self.pool), self.iocroot)
-                conf = IOCJson(path).load_json()
+                conf = IOCJson(path).json_load()
                 tag = conf["tag"]
 
                 IOCDestroy(uuid, tag, path, silent=True).destroy_jail()
@@ -107,7 +107,7 @@ class IOCClean(object):
                 template = template.rstrip("/root")
                 path = template.replace("{}/iocage".format(self.pool),
                                         self.iocroot)
-                conf = IOCJson(path).load_json()
+                conf = IOCJson(path).json_load()
                 uuid = conf["host_hostuuid"]
                 tag = conf["tag"]
 

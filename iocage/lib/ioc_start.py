@@ -406,7 +406,7 @@ class IOCStart(object):
 
             for jail in jails:
                 path = paths[jail]
-                _conf = IOCJson(path).load_json()
+                _conf = IOCJson(path).json_load()
                 mac = _conf["mac_prefix"]
                 mac_list.append(_conf["{}_mac".format(nic)].split(","))
 

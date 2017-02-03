@@ -37,7 +37,7 @@ class IOCExec(object):
             if not self.plugin and not self.skip:
                 self.lgr.info("{} ({}) is not running, starting jail.".format(
                     self.uuid, self.tag))
-            conf = IOCJson(self.path).load_json()
+            conf = IOCJson(self.path).json_load()
 
             if conf["type"] == "jail" or "plugin":
                 IOCStart(self.uuid, self.tag, self.path, conf, silent=True)
