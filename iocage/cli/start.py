@@ -78,7 +78,7 @@ def start_cmd(rc, jails):
 
             conf = IOCJson(path).json_load()
 
-            if conf["type"] == "jail" or "plugin":
+            if conf["type"] in ("jail", "plugin"):
                 IOCStart(uuid, tag, path, conf)
             elif conf["type"] == "basejail":
                 raise RuntimeError("Please run \"iocage migrate\" before trying"

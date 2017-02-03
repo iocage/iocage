@@ -38,7 +38,7 @@ class IOCExec(object):
                     self.uuid, self.tag))
             conf = IOCJson(self.path).json_load()
 
-            if conf["type"] == "jail" or "plugin":
+            if conf["type"] in ("jail", "plugin"):
                 IOCStart(self.uuid, self.tag, self.path, conf, silent=True)
             elif conf["type"] == "basejail":
                 raise RuntimeError("Please run \"iocage migrate\" before trying"
