@@ -680,8 +680,7 @@ fingerprint: {fingerprint}
                         pkglist=conf["pkgs"]).create_install_packages(uuid,
                                                                       jaildir,
                                                                       tag,
-                                                                      _conf,
-                                                                      skip=True)
+                                                                      _conf)
         if not err:
             # We need to pipe from tar to the root of the jail.
             if conf["artifact"]:
@@ -703,7 +702,8 @@ fingerprint: {fingerprint}
 
                     self.lgr.info("Running post_install.sh")
                     command = ["sh", "/root/post_install.sh"]
-                    IOCExec(command, uuid, conf["name"], jaildir).exec_jail()
+                    IOCExec(command, uuid, conf["name"], jaildir,
+                            skip=True).exec_jail()
                 except IOError:
                     pass
         else:
