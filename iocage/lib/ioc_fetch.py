@@ -629,7 +629,7 @@ class IOCFetch(object):
         uuid = IOCCreate(self.release, new_props, 0, plugin=True).create_jail()
         jaildir = "{}/jails/{}".format(self.iocroot, uuid)
         repo_dir = "{}/root/usr/local/etc/pkg/repos".format(jaildir)
-        _conf = IOCJson(jaildir).load_json()
+        _conf = IOCJson(jaildir).json_load()
         tag = _conf["tag"]
         IOCStart(uuid, tag, jaildir, _conf, silent=True)
 

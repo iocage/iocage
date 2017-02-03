@@ -64,7 +64,7 @@ class IOCList(object):
             dups = {}
 
             for jail in datasets:
-                conf = IOCJson(jail).load_json()
+                conf = IOCJson(jail).json_load()
 
                 if not set and conf["tag"] in jails:
                     # Add the original in
@@ -84,7 +84,7 @@ class IOCList(object):
                 template_regex, t)]
 
             for template in template_datasets:
-                conf = IOCJson(template).load_json()
+                conf = IOCJson(template).json_load()
 
                 jails[conf["tag"]] = conf["host_hostuuid"]
                 paths[conf["tag"]] = template
@@ -115,7 +115,7 @@ class IOCList(object):
         jail_list = []
 
         for jail in jails:
-            conf = IOCJson(jail).load_json()
+            conf = IOCJson(jail).json_load()
 
             uuid = conf["host_hostuuid"]
             full_ip4 = conf["ip4_addr"]

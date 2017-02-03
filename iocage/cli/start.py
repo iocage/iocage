@@ -31,7 +31,7 @@ def start_cmd(rc, jails):
         boot_order = {}
         for j in _jails:
             path = paths[j]
-            conf = IOCJson(path).load_json()
+            conf = IOCJson(path).json_load()
             boot = conf["boot"]
             priority = conf["priority"]
 
@@ -43,7 +43,7 @@ def start_cmd(rc, jails):
         for j in boot_order.iterkeys():
             uuid = _jails[j]
             path = paths[j]
-            conf = IOCJson(path).load_json()
+            conf = IOCJson(path).json_load()
             status, _ = IOCList().list_get_jid(uuid)
 
             if not status:
@@ -57,7 +57,7 @@ def start_cmd(rc, jails):
             uuid = _jails[j]
             path = paths[j]
 
-            conf = IOCJson(path).load_json()
+            conf = IOCJson(path).json_load()
             IOCStart(uuid, j, path, conf)
     else:
         for jail in jails:
@@ -76,7 +76,7 @@ def start_cmd(rc, jails):
             else:
                 raise RuntimeError("{} not found!".format(jail))
 
-            conf = IOCJson(path).load_json()
+            conf = IOCJson(path).json_load()
 
             if conf["type"] == "jail" or "plugin":
                 IOCStart(uuid, tag, path, conf)

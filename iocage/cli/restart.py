@@ -31,7 +31,7 @@ def restart_cmd(jail, soft):
             uuid = jails[j]
             path = paths[j]
 
-            conf = IOCJson(path).load_json()
+            conf = IOCJson(path).json_load()
 
             if conf["type"] == "jail" or "plugin":
                 try:
@@ -67,7 +67,7 @@ def restart_cmd(jail, soft):
         else:
             raise RuntimeError("{} not found!".format(jail))
 
-        conf = IOCJson(path).load_json()
+        conf = IOCJson(path).json_load()
 
         if conf["type"] == "jail" or "plugin":
             if not soft:

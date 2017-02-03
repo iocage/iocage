@@ -40,7 +40,7 @@ def update_cmd(jail):
 
     freebsd_version = check_output(["freebsd-version"])
     status, jid = IOCList.list_get_jid(uuid)
-    conf = IOCJson(path).load_json()
+    conf = IOCJson(path).json_load()
     started = False
 
     if "HBSD" in freebsd_version:

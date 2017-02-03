@@ -12,8 +12,8 @@ def test_stop():
     path = paths["test"]
     path_short = paths["test_short"]
 
-    conf = IOCJson(path).load_json()
-    conf_short = IOCJson(path_short).load_json()
+    conf = IOCJson(path).json_load()
+    conf_short = IOCJson(path_short).json_load()
 
     IOCStop(uuid, "test", path, conf)
     IOCStop(uuid_short, "test_short", path_short, conf_short)
