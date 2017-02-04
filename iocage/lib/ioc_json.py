@@ -336,24 +336,61 @@ class IOCJson(object):
         return settings
 
     def json_plugin_get_value(self, prop):
-        settings = self.json_plugin_load()
+        from iocage.lib.ioc_exec import IOCExec
 
+        pool, iocroot = _get_pool_and_iocroot()
+        conf = self.json_load()
+        uuid = conf["host_hostuuid"]
+        tag = conf["tag"]
+        _path = check_output(["zfs", "get", "-H", "-o", "value", "mountpoint",
+                              "{}/iocage/jails/{}".format(pool, uuid)]).rstrip()
+        # Plugin variables
+        settings = self.json_plugin_load()
+        serviceget = settings["serviceget"]
+        prop_error = ".".join(prop)
+
+        if "options" in prop:
+            _prop = prop[1:]
+        else:
+            _prop = prop
+
+        prop_cmd = "{},{}".format(serviceget, ",".join(_prop)).split(",")
         try:
             if prop[0] != "all":
-                if len(prop) > 1:
+                if len(_prop) > 1:
                     return get_nested_key(settings, prop)
                 else:
-                    return settings[prop[0]]
+                    return IOCExec(prop_cmd, uuid, tag, _path).exec_jail()
             else:
                 return settings
         except KeyError:
-            raise RuntimeError("Key: \"{}\" does not exist!".format(prop))
+            raise RuntimeError("Key: \"{}\" does not exist!".format(prop_error))
 
     def json_plugin_set_value(self, prop):
+        from iocage.lib.ioc_exec import IOCExec
+        from iocage.lib.ioc_list import IOCList
+
+        pool, iocroot = _get_pool_and_iocroot()
+        conf = self.json_load()
+        uuid = conf["host_hostuuid"]
+        tag = conf["tag"]
+        _path = check_output(["zfs", "get", "-H", "-o", "value", "mountpoint",
+                              "{}/iocage/jails/{}".format(pool, uuid)]).rstrip()
+        status, _ = IOCList().list_get_jid(uuid)
+
+        # Plugin variables
         settings = self.json_plugin_load()
+        serviceset = settings["serviceset"]
+        servicerestart = settings["servicerestart"].split()
         keys, _, value = ".".join(prop).partition("=")
         prop = keys.split(".")
-        setting = settings
+
+        if "options" in prop:
+            prop = keys.split(".")[1:]
+
+        prop_cmd = "{},{},{}".format(serviceset, ",".join(prop), value).split(
+            ",")
+        setting = settings["options"]
 
         try:
             while prop:
@@ -363,18 +400,24 @@ class IOCJson(object):
 
                 if not prop:
                     if setting[current]:
-                        _prop = setting[current]
-                        if isinstance(_prop, unicode):
-                            setting[current] = value
-                        else:
-                            raise RuntimeError(
-                                "Nested key detected, please specify "
-                                "deeper:\n{}".format(
-                                    json.dumps(_prop, indent=4)))
+                        try:
+                            restart = setting[current]["requirerestart"]
+                        except KeyError:
+                            restart = False
                 else:
                     setting = setting[current]
 
-            self.json_write(settings, _file="/plugin/settings.json")
-            self.lgr.info("Key: {} has been updated to {}".format(keys, value))
+            if status:
+                # IOCExec will not show this if it doesn't start the jail.
+                self.lgr.info("Command output:")
+            IOCExec(prop_cmd, uuid, tag, _path).exec_jail()
+
+            if restart:
+                self.lgr.info("\n-- Restarting service --")
+                self.lgr.info("Command output:")
+                IOCExec(servicerestart, uuid, tag, _path).exec_jail()
+
+            self.lgr.info("\nKey: {} has been updated to {}".format(keys,
+                                                                    value))
         except KeyError:
             raise RuntimeError("Key: \"{}\" does not exist!".format(key))

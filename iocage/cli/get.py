@@ -68,7 +68,7 @@ def get_cmd(prop, jail, recursive, header, plugin):
             if isinstance(props, dict):
                 lgr.info(json.dumps(props, indent=4))
             else:
-                lgr.info(props)
+                pass
         elif prop == "all":
             props = IOCJson(path).json_get_value(prop)
 
