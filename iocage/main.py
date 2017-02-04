@@ -73,7 +73,7 @@ def main():
                         format='%(message)s')
     pool = sys.argv[-1]
     skip_check = False
-    skip_check_cmds = ["--help", "activate", "deactivate", "--version"]
+    skip_check_cmds = ["--help", "activate", "deactivate", "-v", "--version"]
 
     try:
         if "iocage" in sys.argv[0] and len(sys.argv) == 1:
