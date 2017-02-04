@@ -54,5 +54,4 @@ def exec_cmd(command, jail, host_user, jail_user):
 
     if msg:
         err = indent_lines(msg)
-
         raise RuntimeError("ERROR: {}".format(err))
