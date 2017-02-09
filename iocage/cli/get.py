@@ -3,7 +3,7 @@ import json
 import logging
 
 import click
-from tabletext import to_text
+from texttable import Texttable
 
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
@@ -31,6 +31,7 @@ def get_cmd(prop, jail, recursive, header, plugin):
     get_jid = IOCList.list_get_jid
     jails, paths = IOCList("uuid").list_datasets()
     jail_list = []
+    table = Texttable(max_width=0)
 
     if recursive is None:
         if jail == "":
@@ -104,8 +105,8 @@ def get_cmd(prop, jail, recursive, header, plugin):
         # Prints the table
         if header:
             jail_list.insert(0, ["UUID", "TAG", "PROP - {}".format(prop)])
-            lgr.info(to_text(jail_list, header=True, hor="-", ver="|",
-                             corners="+"))
+            table.add_rows(jail_list)
+            lgr.info(table.draw())
         else:
             for jail in jail_list:
                 lgr.info("\t".join(jail))

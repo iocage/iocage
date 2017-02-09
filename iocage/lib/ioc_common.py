@@ -1,11 +1,10 @@
 """Common methods we reuse."""
 import collections
+import os
 import shutil
+import stat
 import tempfile as tmp
 from contextlib import contextmanager
-
-import os
-import stat
 
 
 def sort_tag(tag):
@@ -13,11 +12,11 @@ def sort_tag(tag):
     list_length = len(tag)
 
     # Length 8 is list -l, 7 is df, 5 is list
-    if list_length == 8:
+    if list_length == 9:
         _tag = tag[4]
     elif list_length == 7:
         _tag = tag[6]
-    elif list_length == 5:
+    elif list_length == 6:
         _tag = tag[3]
     else:
         _tag = tag[1]

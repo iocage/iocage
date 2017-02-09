@@ -3,7 +3,7 @@ import logging
 from subprocess import PIPE, Popen
 
 import click
-from tabletext import to_text
+from texttable import Texttable
 
 import iocage.lib.ioc_common as ioc_common
 from iocage.lib.ioc_json import IOCJson
@@ -24,6 +24,7 @@ def df_cmd(header, _long):
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")
     jail_list = []
+    table = Texttable(max_width=0)
 
     for jail in jails:
         full_uuid = jails[jail]
@@ -56,8 +57,8 @@ def df_cmd(header, _long):
     jail_list.sort(key=ioc_common.sort_tag)
     if header:
         jail_list.insert(0, ["UUID", "CRT", "RES", "QTA", "USE", "AVA", "TAG"])
-        lgr.info(to_text(jail_list, header=True, hor="-", ver="|",
-                         corners="+"))
+        table.add_rows(jail_list)
+        lgr.info(table.draw())
     else:
         for jail in jail_list:
             lgr.info("\t".join(jail))

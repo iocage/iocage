@@ -2,10 +2,10 @@
 List all datasets by type
 """
 import logging
+import re
 from subprocess import CalledProcessError, PIPE, Popen, check_output
 
-import re
-from tabletext import to_text
+from texttable import Texttable
 
 import iocage.lib.ioc_common as ioc_common
 from iocage.lib.ioc_json import IOCJson
@@ -112,6 +112,7 @@ class IOCList(object):
 
     def list_all(self, jails):
         """List all jails."""
+        table = Texttable(max_width=0)
         jail_list = []
 
         for jail in jails:
@@ -180,8 +181,8 @@ class IOCList(object):
                 jail_list.insert(0, ["JID", "UUID", "STATE", "TAG",
                                      "RELEASE", "IP4"])
 
-            self.lgr.info(to_text(jail_list, header=True, hor="-", ver="|",
-                                  corners="+"))
+            table.add_rows(jail_list)
+            self.lgr.info(table.draw())
         else:
             if self.return_object:
                 flat_jail = [j[3] for j in jail_list]
@@ -193,11 +194,12 @@ class IOCList(object):
     def list_bases(self, datasets):
         """Lists all bases."""
         base_list = ioc_common.sort_release(datasets, self.iocroot, split=True)
+        table = Texttable(max_width=0)
 
         if self.header:
             base_list.insert(0, ["Bases fetched"])
-            self.lgr.info(to_text(base_list, header=True, hor="-", ver="|",
-                                  corners="+"))
+            table.add_rows(base_list)
+            self.lgr.info(table.draw())
         else:
             if self.return_object:
                 flat_base = [b for b in base_list for b in b]
