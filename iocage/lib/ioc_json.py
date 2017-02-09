@@ -1,11 +1,10 @@
 """Convert, load or write JSON."""
 import json
 import logging
-import sys
-from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_output
-
 import re
+import sys
 from os import geteuid, path
+from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_output
 
 from iocage.lib.ioc_common import get_nested_key, open_atomic
 

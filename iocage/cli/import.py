@@ -1,10 +1,10 @@
+import fnmatch
 import logging
+import os
 import zipfile
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_output
 
 import click
-import fnmatch
-import os
 
 from iocage.lib.ioc_json import IOCJson
 

@@ -1,11 +1,11 @@
 import logging
+import os
 import zipfile
 from datetime import datetime
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call, \
     check_output
 
 import click
-import os
 
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList

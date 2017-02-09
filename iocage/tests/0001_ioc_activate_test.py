@@ -1,6 +1,5 @@
-import subprocess
-
 import os
+import subprocess
 
 
 def test_activate(zpool):

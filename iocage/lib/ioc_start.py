@@ -1,13 +1,12 @@
 """This is responsible for starting jails."""
 import logging
+import re
 from datetime import datetime
+from os import X_OK, access, chdir, getcwd, makedirs, path as ospath, symlink, \
+    uname
 from shutil import copy
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call, \
     check_output
-
-import re
-from os import X_OK, access, chdir, getcwd, makedirs, path as ospath, symlink, \
-    uname
 
 from iocage.lib.ioc_common import open_atomic
 from iocage.lib.ioc_json import IOCJson

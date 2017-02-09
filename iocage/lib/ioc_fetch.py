@@ -4,6 +4,8 @@ import contextlib
 import hashlib
 import json
 import logging
+import os
+import re
 import shutil
 import tarfile
 from ftplib import FTP
@@ -11,8 +13,6 @@ from shutil import copy
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_output
 from tempfile import NamedTemporaryFile
 
-import os
-import re
 import requests
 from backports import lzma
 from requests.auth import HTTPDigestAuth

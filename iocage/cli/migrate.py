@@ -1,11 +1,11 @@
 """migrate module for the cli."""
 import fileinput
 import logging
+import os
 from shutil import copy
 from subprocess import CalledProcessError, STDOUT, check_call, check_output
 
 import click
-import os
 
 from iocage.lib.ioc_common import copytree
 from iocage.lib.ioc_create import IOCCreate
