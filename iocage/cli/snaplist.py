@@ -3,7 +3,7 @@ import logging
 from subprocess import PIPE, Popen
 
 import click
-from tabletext import to_text
+from texttable import Texttable
 
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
@@ -22,6 +22,7 @@ def snaplist_cmd(header, jail):
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")
     snap_list = []
+    table = Texttable(max_width=0)
 
     _jail = {tag: uuid for (tag, uuid) in jails.iteritems() if
              uuid.startswith(jail) or tag == jail}
@@ -60,8 +61,8 @@ def snaplist_cmd(header, jail):
 
     if header:
         snap_list.insert(0, ["NAME", "CREATED", "RSIZE", "USED"])
-        lgr.info(to_text(snap_list, header=True, hor="-", ver="|",
-                         corners="+"))
+        table.add_rows(snap_list)
+        lgr.info(table.draw())
     else:
         for snap in snap_list:
             lgr.info("\t".join(snap))

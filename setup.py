@@ -17,7 +17,7 @@ setup(name='iocage',
       include_package_data=True,
       install_requires=[
           'click',
-          'tabletext',
+          'texttable',
           'backports.lzma',
           'requests',
           'tqdm'
