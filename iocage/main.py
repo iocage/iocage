@@ -4,10 +4,10 @@ from __future__ import print_function
 import glob
 import imp
 import logging
+import os
 import sys
 
 import click
-import os
 
 from iocage.lib.ioc_check import IOCCheck
 

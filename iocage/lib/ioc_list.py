@@ -170,6 +170,7 @@ class IOCList(object):
                 jail_list.append([jid, uuid[:8], state, tag, short_release,
                                   short_ip4])
 
+
         jail_list.sort(key=ioc_common.sort_tag)
 
         # Prints the table

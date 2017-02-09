@@ -1,12 +1,11 @@
 """iocage create module."""
 import json
 import logging
+import os
 import uuid
 from datetime import datetime
 from shutil import copy
 from subprocess import CalledProcessError, PIPE, Popen, check_call
-
-import os
 
 from iocage.lib.ioc_exec import IOCExec
 from iocage.lib.ioc_json import IOCJson

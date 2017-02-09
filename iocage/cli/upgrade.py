@@ -1,10 +1,10 @@
 """Upgrade module for the cli."""
 
 import logging
+import os
 from subprocess import PIPE, Popen, check_output
 
 import click
-import os
 
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList

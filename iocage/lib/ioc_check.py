@@ -1,9 +1,8 @@
 """Check datasets before execution"""
 import logging
+import os
 import sys
 from subprocess import CalledProcessError, PIPE, Popen, check_output
-
-import os
 
 from iocage.lib.ioc_json import IOCJson
 

@@ -1,10 +1,9 @@
 """Destroy all of a dataset type."""
 import logging
+import os
 import shutil
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call, \
     check_output
-
-import os
 
 from iocage.lib.ioc_destroy import IOCDestroy
 from iocage.lib.ioc_json import IOCJson

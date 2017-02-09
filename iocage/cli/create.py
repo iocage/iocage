@@ -1,8 +1,8 @@
 """create module for the CLI."""
 import logging
+import os
 
 import click
-import os
 
 from iocage.lib.ioc_create import IOCCreate
 from iocage.lib.ioc_list import IOCList
