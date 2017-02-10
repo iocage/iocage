@@ -95,7 +95,8 @@ class IOCClean(object):
             if "/jails" in jail:
                 jail = jail.rstrip("/root")
                 uuid = jail.split("/")[3]
-                path = jail.replace("{}/iocage".format(self.pool), self.iocroot)
+                path = jail.replace("{}/iocage".format(self.pool),
+                                    self.iocroot)
                 conf = IOCJson(path).json_load()
                 tag = conf["tag"]
 

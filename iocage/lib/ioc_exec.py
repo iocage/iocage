@@ -41,13 +41,15 @@ class IOCExec(object):
             if conf["type"] in ("jail", "plugin"):
                 IOCStart(self.uuid, self.tag, self.path, conf, silent=True)
             elif conf["type"] == "basejail":
-                raise RuntimeError("Please run \"iocage migrate\" before trying"
-                                   " to start {} ({})".format(self.uuid,
-                                                              self.tag))
+                raise RuntimeError(
+                    "Please run \"iocage migrate\" before trying"
+                    " to start {} ({})".format(self.uuid,
+                                               self.tag))
             elif conf["type"] == "template":
-                raise RuntimeError("Please convert back to a jail before trying"
-                                   " to start {} ({})".format(self.uuid,
-                                                              self.tag))
+                raise RuntimeError(
+                    "Please convert back to a jail before trying"
+                    " to start {} ({})".format(self.uuid,
+                                               self.tag))
             else:
                 raise RuntimeError("{} is not a supported jail type.".format(
                     conf["type"]

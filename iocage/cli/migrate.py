@@ -16,7 +16,8 @@ __cmdname__ = "migrate_cmd"
 __rootcmd__ = True
 
 
-@click.command(name="migrate", help="Migrate all jails to the new jail format.")
+@click.command(name="migrate",
+               help="Migrate all jails to the new jail format.")
 @click.option("--force", "-f", is_flag=True, default=False,
               help="Bypass the interactive question.")
 @click.option("--delete", "-d", is_flag=True, default=False,

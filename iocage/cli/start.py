@@ -81,11 +81,13 @@ def start_cmd(rc, jails):
             if conf["type"] in ("jail", "plugin"):
                 IOCStart(uuid, tag, path, conf)
             elif conf["type"] == "basejail":
-                raise RuntimeError("Please run \"iocage migrate\" before trying"
-                                   " to start {} ({})".format(uuid, tag))
+                raise RuntimeError(
+                    "Please run \"iocage migrate\" before trying"
+                    " to start {} ({})".format(uuid, tag))
             elif conf["type"] == "template":
-                raise RuntimeError("Please convert back to a jail before trying"
-                                   " to start {} ({})".format(uuid, tag))
+                raise RuntimeError(
+                    "Please convert back to a jail before trying"
+                    " to start {} ({})".format(uuid, tag))
             else:
                 raise RuntimeError("{} is not a supported jail type.".format(
                     conf["type"]

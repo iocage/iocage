@@ -26,7 +26,8 @@ def validate_count(ctx, param, value):
 @click.option("--template", "-t", required=False)
 @click.option("--pkglist", "-p", default=None)
 @click.option("--short", "-s", is_flag=True, default=False,
-              help="Use a short UUID of 8 characters instead of the default 36")
+              help="Use a short UUID of 8 characters instead of the default "
+                   "36")
 @click.argument("props", nargs=-1)
 def create_cmd(release, template, count, props, pkglist, short):
     lgr = logging.getLogger('ioc_cli_create')
@@ -51,7 +52,8 @@ def create_cmd(release, template, count, props, pkglist, short):
     ]
 }"""
             raise RuntimeError("{} does not exist!\nPlease supply a JSON file "
-                               "with the format:{}".format(pkglist, _pkgformat))
+                               "with the format:{}".format(pkglist,
+                                                           _pkgformat))
 
     if count == 1:
         try:
