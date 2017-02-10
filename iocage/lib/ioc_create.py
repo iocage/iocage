@@ -38,7 +38,7 @@ class IOCCreate(object):
 
     def create_jail(self):
         """
-        Create a snapshot of the user specified RELEASE dataset and clone a jail
+        Create a snapshot of the user specified RELEASE dataset and clone a
         jail from that. The user can also specify properties to override the
         defaults.
         """

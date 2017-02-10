@@ -75,7 +75,8 @@ def upgrade_cmd(jail, release):
             # 10.3-RELEASE and under lack this flag
             if float(host_release.partition("-")[0][:5]) <= 10.3:
                 raise RuntimeError("Host: {} is too old, please upgrade to "
-                                   "10.3-RELEASE or above".format(host_release))
+                                   "10.3-RELEASE or above".format(
+                    host_release))
 
             os.environ["PAGER"] = "/bin/cat"
             fetch = Popen(["freebsd-update", "-b", root_path, "-d",

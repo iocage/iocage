@@ -41,8 +41,9 @@ class IOCStop(object):
                 for nic in self.nics.split(","):
                     nic = nic.split(":")[0]
                     try:
-                        check_output(["ifconfig", "{}:{}".format(nic, self.jid),
-                                      "destroy"], stderr=STDOUT)
+                        check_output(
+                            ["ifconfig", "{}:{}".format(nic, self.jid),
+                             "destroy"], stderr=STDOUT)
                     except CalledProcessError:
                         pass
 
@@ -124,7 +125,8 @@ class IOCStop(object):
             else:
                 self.lgr.info("  + Removing jail process OK")
 
-            Popen(["umount", "-afF", "{}/fstab".format(self.path)], stderr=PIPE)
+            Popen(["umount", "-afF", "{}/fstab".format(self.path)],
+                  stderr=PIPE)
             Popen(["umount", "-f", "{}/root/dev/fd".format(self.path)],
                   stderr=PIPE).communicate()
             Popen(["umount", "-f", "{}/root/dev".format(self.path)],
@@ -132,5 +134,6 @@ class IOCStop(object):
             Popen(["umount", "-f", "{}/root/proc".format(self.path)],
                   stderr=PIPE).communicate()
             Popen(
-                ["umount", "-f", "{}/root/compat/linux/proc".format(self.path)],
+                ["umount", "-f",
+                 "{}/root/compat/linux/proc".format(self.path)],
                 stderr=PIPE).communicate()

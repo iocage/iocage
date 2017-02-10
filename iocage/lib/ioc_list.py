@@ -19,7 +19,8 @@ class IOCList(object):
         JID UID BOOT STATE TAG TYPE IP4 RELEASE
     """
 
-    def __init__(self, lst_type="all", hdr=True, full=False, rtrn_object=False):
+    def __init__(self, lst_type="all", hdr=True, full=False,
+                 rtrn_object=False):
         self.list_type = lst_type
         self.header = hdr
         self.full = full
@@ -169,7 +170,6 @@ class IOCList(object):
             else:
                 jail_list.append([jid, uuid[:8], state, tag, short_release,
                                   short_ip4])
-
 
         jail_list.sort(key=ioc_common.sort_tag)
 

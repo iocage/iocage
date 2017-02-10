@@ -231,8 +231,9 @@ class IOCFetch(object):
                 releases = sort_release(releases, self.iocroot)
                 for r in releases:
                     self.lgr.info("[{}] {}".format(releases.index(r), r))
-                self.release = raw_input("\nWhich release do you want to fetch?"
-                                         " (EXIT) ")
+                self.release = raw_input(
+                    "\nWhich release do you want to fetch?"
+                    " (EXIT) ")
                 self.release = self.__fetch_validate_release__(releases)
         else:
             if self.auth == "basic":
@@ -267,8 +268,9 @@ class IOCFetch(object):
                             "[{}] {} (EOL)".format(releases.index(r), r))
                     else:
                         self.lgr.info("[{}] {}".format(releases.index(r), r))
-                self.release = raw_input("\nWhich release do you want to fetch?"
-                                         " (EXIT) ")
+                self.release = raw_input(
+                    "\nWhich release do you want to fetch?"
+                    " (EXIT) ")
                 self.release = self.__fetch_validate_release__(releases)
 
         if self.hardened:
@@ -396,7 +398,8 @@ class IOCFetch(object):
                             if hashes[f] != sha256.hexdigest():
                                 if not _missing:
                                     self.lgr.info("{} failed verification,"
-                                                  " will redownload!".format(f))
+                                                  " will redownload!".format(
+                                        f))
                                     missing.append(f)
                                 else:
                                     raise RuntimeError("Too many failed"
@@ -407,7 +410,8 @@ class IOCFetch(object):
                                 "{} missing, will download!".format(f))
                             missing.append(f)
                         else:
-                            raise RuntimeError("Too many failed verifications!")
+                            raise RuntimeError(
+                                "Too many failed verifications!")
 
                 if not missing:
                     self.lgr.info("Extracting: {}... ".format(f))
@@ -441,17 +445,20 @@ class IOCFetch(object):
                         if f == "lib32.txz":
                             continue
                     else:
-                        _file = "{}/{}/{}/{}".format(self.server, self.root_dir,
+                        _file = "{}/{}/{}/{}".format(self.server,
+                                                     self.root_dir,
                                                      self.release, f)
                     if self.auth == "basic":
-                        r = requests.get(_file, auth=(self.user, self.password),
+                        r = requests.get(_file,
+                                         auth=(self.user, self.password),
                                          verify=self.verify, stream=True)
                     elif self.auth == "digest":
                         r = requests.get(_file, auth=HTTPDigestAuth(
                             self.user, self.password), verify=self.verify,
                                          stream=True)
                     else:
-                        r = requests.get(_file, verify=self.verify, stream=True)
+                        r = requests.get(_file, verify=self.verify,
+                                         stream=True)
 
                     status = r.status_code == requests.codes.ok
                     if not status:

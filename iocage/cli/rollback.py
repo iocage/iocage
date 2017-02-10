@@ -1,6 +1,7 @@
 """Rollback module for the cli"""
 import logging
-from subprocess import CalledProcessError, PIPE, Popen, check_call, check_output
+from subprocess import CalledProcessError, PIPE, Popen, check_call, \
+    check_output
 
 import click
 
@@ -61,7 +62,8 @@ def rollback_cmd(jail, name, force):
                          stderr=PIPE).communicate()[0].split()
 
         for dataset in datasets:
-            check_call(["zfs", "rollback", "-r", "{}@{}".format(dataset, name)])
+            check_call(
+                ["zfs", "rollback", "-r", "{}@{}".format(dataset, name)])
 
         lgr.info("Rolled back to: {}.".format(target))
     except CalledProcessError as err:

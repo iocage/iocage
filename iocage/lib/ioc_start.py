@@ -2,8 +2,8 @@
 import logging
 import re
 from datetime import datetime
-from os import X_OK, access, chdir, getcwd, makedirs, path as ospath, symlink, \
-    uname
+from os import X_OK, access, chdir, getcwd, makedirs, path as ospath, \
+    symlink, uname
 from shutil import copy
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call, \
     check_output
@@ -240,9 +240,10 @@ class IOCStart(object):
                                                             jdataset)])
 
                     try:
-                        check_output(["zfs", "jail", "ioc-{}".format(self.uuid),
-                                      "{}/{}".format(self.pool, jdataset)],
-                                     stderr=STDOUT)
+                        check_output(
+                            ["zfs", "jail", "ioc-{}".format(self.uuid),
+                             "{}/{}".format(self.pool, jdataset)],
+                            stderr=STDOUT)
                     except CalledProcessError as err:
                         raise RuntimeError(
                             "ERROR: {}".format(err.output.strip()))
@@ -273,7 +274,8 @@ class IOCStart(object):
             with open("{}/log/{}-console.log".format(self.iocroot,
                                                      self.uuid), "a") as f:
                 services = check_call(["jexec",
-                                       "ioc-{}".format(self.uuid)] + exec_start,
+                                       "ioc-{}".format(
+                                           self.uuid)] + exec_start,
                                       stdout=f, stderr=PIPE)
             if services:
                 self.lgr.info("  + Starting services FAILED")
@@ -315,7 +317,8 @@ class IOCStart(object):
                             equal = True
 
                         if equal:
-                            mac_a, mac_b = self.__start_generate_vnet_mac__(nic)
+                            mac_a, mac_b = self.__start_generate_vnet_mac__(
+                                nic)
                             epair_a_cmd = ["ifconfig", "epair", "create"]
                             epair_a = Popen(epair_a_cmd,
                                             stdout=PIPE).communicate()[0]
@@ -348,7 +351,8 @@ class IOCStart(object):
                                               nic, "mtu", membermtu],
                                              stderr=STDOUT)
                                 check_output(["jexec", "ioc-{}".format(
-                                    self.uuid), "ifconfig", nic, "link", mac_b],
+                                    self.uuid), "ifconfig", nic, "link",
+                                              mac_b],
                                              stderr=STDOUT)
 
                                 check_output(["ifconfig", bridge, "addm",

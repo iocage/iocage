@@ -65,7 +65,8 @@ def import_cmd(jail):
 
     # Cleanup our mess.
     try:
-        target = "{}{}/jails/{}@ioc-export-{}".format(pool, iocroot, uuid, date)
+        target = "{}{}/jails/{}@ioc-export-{}".format(pool, iocroot, uuid,
+                                                      date)
         check_output(["zfs", "destroy", "-r", target], stderr=STDOUT)
     except CalledProcessError as err:
         raise RuntimeError("ERROR: {}".format(err.output.strip()))

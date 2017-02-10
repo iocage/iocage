@@ -20,7 +20,8 @@ __rootcmd__ = True
 @click.argument("jail", required=True, nargs=1)
 @click.argument("command", nargs=-1, type=click.UNPROCESSED)
 def exec_cmd(command, jail, host_user, jail_user):
-    """Runs the command given inside the specified jail as the supplied user."""
+    """Runs the command given inside the specified jail as the supplied
+    user."""
     lgr = logging.getLogger('ioc_cli_exec')
 
     # We may be getting ';', '&&' and so forth. Adding the shell for safety.

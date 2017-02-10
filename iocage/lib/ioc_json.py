@@ -147,7 +147,8 @@ class IOCJson(object):
             elif match >= 2:
                 if "deactivate" not in sys.argv[1:]:
                     raise RuntimeError("You have {} ".format(match) +
-                                       "pools marked active for iocage usage.\n"
+                                       "pools marked active for iocage "
+                                       "usage.\n"
                                        "Run \"ioc deactivate ZPOOL\" on"
                                        " {} of the".format(match - 1) +
                                        " pools.\n")
@@ -304,7 +305,8 @@ class IOCJson(object):
             freebsd_version = "{}/releases/{}/root/bin/freebsd-version".format(
                 iocroot, conf["release"])
         except IOError:
-            freebsd_version = "{}/templates/{}/root/bin/freebsd-version".format(
+            freebsd_version = "{}/templates/{" \
+                              "}/root/bin/freebsd-version".format(
                 iocroot, conf["tag"])
 
         with open(freebsd_version) as r:
@@ -342,7 +344,8 @@ class IOCJson(object):
         uuid = conf["host_hostuuid"]
         tag = conf["tag"]
         _path = check_output(["zfs", "get", "-H", "-o", "value", "mountpoint",
-                              "{}/iocage/jails/{}".format(pool, uuid)]).rstrip()
+                              "{}/iocage/jails/{}".format(pool,
+                                                          uuid)]).rstrip()
         # Plugin variables
         settings = self.json_plugin_load()
         serviceget = settings["serviceget"]
@@ -363,7 +366,8 @@ class IOCJson(object):
             else:
                 return settings
         except KeyError:
-            raise RuntimeError("Key: \"{}\" does not exist!".format(prop_error))
+            raise RuntimeError(
+                "Key: \"{}\" does not exist!".format(prop_error))
 
     def json_plugin_set_value(self, prop):
         from iocage.lib.ioc_exec import IOCExec
@@ -374,7 +378,8 @@ class IOCJson(object):
         uuid = conf["host_hostuuid"]
         tag = conf["tag"]
         _path = check_output(["zfs", "get", "-H", "-o", "value", "mountpoint",
-                              "{}/iocage/jails/{}".format(pool, uuid)]).rstrip()
+                              "{}/iocage/jails/{}".format(pool,
+                                                          uuid)]).rstrip()
         status, _ = IOCList().list_get_jid(uuid)
 
         # Plugin variables
