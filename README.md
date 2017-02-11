@@ -100,8 +100,11 @@ To see a list of commands available to you now, type `iocage` outside the jail.
 - Create bridge0 and bridge1 interfaces for VNET jails to attach to.
 - Use `iocage set` to modify properties and `iocage get` to retrieve property
  values
-- Type `iocage COMMAND --help` to see any flags the command supports and
-their help. *Example: `iocage create --help`*
+- Type `iocage COMMAND --help` to see any flags the command supports and their help, for example:
+
+        iocage create --help
+        iocage fetch --help
+        iocage list --help
 - If using VNET consider adding the following to `/etc/sysctl.conf` on the host:
 
         net.inet.ip.forwarding=1       # Enable IP forwarding between interfaces
