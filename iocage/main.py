@@ -83,7 +83,7 @@ def main():
                 skip_check = True
             elif "clean" in arg:
                 skip_check = True
-                IOCCheck(pool, silent=True)
+                IOCCheck(silent=True)
 
         if not skip_check:
             IOCCheck()
