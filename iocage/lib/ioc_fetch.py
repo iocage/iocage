@@ -520,6 +520,9 @@ class IOCFetch(object):
 
     def fetch_update(self, cli=False, uuid=None, tag=None):
         """This calls 'freebsd-update' to update the fetched RELEASE."""
+        # FreeNAS does not have freebsd-update
+        if not os.access("/usr/sbin/freebsd-update", os.F_OK):
+            return
         if cli:
             cmd = ["mount", "-t", "devfs", "devfs",
                    "{}/jails/{}/root/dev".format(self.iocroot, uuid)]
