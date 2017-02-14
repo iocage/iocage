@@ -730,7 +730,7 @@ fingerprint: {fingerprint}
 
         self.lgr.info("\n{} ({}) successfully created!".format(uuid, tag))
 
-    def fetch_plugin_index(self, props):
+    def fetch_plugin_index(self, props, _list=False):
         if self.server == "ftp.freebsd.org":
             self.server = "https://github.com/iXsystems/iocage-ix-plugins.git"
 
@@ -754,6 +754,9 @@ fingerprint: {fingerprint}
         _plugins = self.__fetch_sort_plugin__(plugins)
         for p in _plugins:
             self.lgr.info("[{}] {}".format(_plugins.index(p), p))
+
+        if _list:
+            return
 
         plugin = raw_input("\nWhich plugin do you want to create? (EXIT) ")
         plugin = self.__fetch_validate_plugin__(plugin.lower(), _plugins)

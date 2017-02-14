@@ -22,9 +22,10 @@ __cmdname__ = "list_cmd"
               help="Show the full uuid and ip4 address.")
 @click.option("--remote", "-R", is_flag=True, help="Show remote's available "
                                                    "RELEASEs.")
+@click.option("--plugins", "-P", is_flag=True, help="Show available plugins.")
 @click.option("--http", "-h", default=False,
               help="Have --remote use HTTP instead.", is_flag=True)
-def list_cmd(dataset_type, header, _long, remote, http):
+def list_cmd(dataset_type, header, _long, remote, http, plugins):
     """This passes the arg and calls the jail_datasets function."""
     freebsd_version = check_output(["freebsd-version"])
 
@@ -37,6 +38,9 @@ def list_cmd(dataset_type, header, _long, remote, http):
         else:
             hardened = False
 
-        IOCFetch("", http=http, hardened=hardened).fetch_release(_list=True)
+        IOCFetch("", http=http, hardened=hardened).fetch_release(
+            _list=True)
+    elif plugins:
+        IOCFetch("").fetch_plugin_index("", _list=True)
     else:
         IOCList(dataset_type, header, _long).list_datasets()
