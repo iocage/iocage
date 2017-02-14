@@ -1,8 +1,11 @@
 """
 List module for the cli.
 """
+from subprocess import check_output
+
 import click
 
+from iocage.lib.ioc_fetch import IOCFetch
 from iocage.lib.ioc_list import IOCList
 
 __cmdname__ = "list_cmd"
@@ -17,8 +20,23 @@ __cmdname__ = "list_cmd"
               help="For scripting, use tabs for separators.")
 @click.option("--long", "-l", "_long", is_flag=True, default=False,
               help="Show the full uuid and ip4 address.")
-def list_cmd(dataset_type, header, _long):
+@click.option("--remote", "-R", is_flag=True, help="Show remote's available "
+                                                   "RELEASEs.")
+@click.option("--http", "-h", default=False,
+              help="Have --remote use HTTP instead.", is_flag=True)
+def list_cmd(dataset_type, header, _long, remote, http):
     """This passes the arg and calls the jail_datasets function."""
+    freebsd_version = check_output(["freebsd-version"])
+
     if dataset_type is None:
         dataset_type = "all"
-    IOCList(dataset_type, header, _long).list_datasets()
+
+    if remote:
+        if "HBSD" in freebsd_version:
+            hardened = True
+        else:
+            hardened = False
+
+        IOCFetch("", http=http, hardened=hardened).fetch_release(_list=True)
+    else:
+        IOCList(dataset_type, header, _long).list_datasets()
