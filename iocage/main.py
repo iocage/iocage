@@ -71,7 +71,6 @@ def main():
 
     logging.basicConfig(filename=log_file, level=logging.DEBUG,
                         format='%(message)s')
-    pool = sys.argv[-1]
     skip_check = False
     skip_check_cmds = ["--help", "activate", "deactivate", "-v", "--version"]
 
@@ -87,7 +86,7 @@ def main():
                 IOCCheck(pool, silent=True)
 
         if not skip_check:
-            IOCCheck(pool)
+            IOCCheck()
 
         cli(obj=MODULES)
     except RuntimeError, err:
