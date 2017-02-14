@@ -523,6 +523,7 @@ class IOCFetch(object):
         # FreeNAS does not have freebsd-update
         if not os.access("/usr/sbin/freebsd-update", os.F_OK):
             return
+
         if cli:
             cmd = ["mount", "-t", "devfs", "devfs",
                    "{}/jails/{}/root/dev".format(self.iocroot, uuid)]
