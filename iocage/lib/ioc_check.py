@@ -10,9 +10,8 @@ from iocage.lib.ioc_json import IOCJson
 class IOCCheck(object):
     """Checks if the required iocage datasets are present"""
 
-    def __init__(self, altpool, silent=False):
+    def __init__(self, silent=False):
         self.pool = IOCJson().json_get_value("pool")
-        self.altpool = altpool
         self.lgr = logging.getLogger('ioc_check')
 
         if silent:
@@ -28,11 +27,6 @@ class IOCCheck(object):
         datasets = ("iocage", "iocage/download", "iocage/images",
                     "iocage/jails", "iocage/log", "iocage/releases",
                     "iocage/templates")
-        if not self.pool:
-            if not self.altpool:
-                raise RuntimeError("Please supply a pool to activate.")
-
-            self.pool = self.altpool
 
         mounts = check_output(["zfs", "get", "-o", "name,value", "-t",
                                "filesystem", "-H",

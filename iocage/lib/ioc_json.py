@@ -156,9 +156,19 @@ class IOCJson(object):
                 if len(sys.argv) >= 2 and "activate" in sys.argv[1:]:
                     pass
                 else:
-                    raise RuntimeError("No pools are marked active for iocage"
-                                       " usage.\nRun \"iocage activate\" on a"
-                                       " zpool.")
+                    # We use the first zpool the user has, they are free to
+                    # change it.
+                    cmd = ["zpool", "list", "-H", "-o", "name"]
+                    zpools = Popen(cmd, stdout=PIPE).communicate()[0].split()
+
+                    self.lgr.info("Setting up zpool [{}] for iocage usage\n"
+                                  "If you wish to change please use "
+                                  "\"iocage activate\"".format(zpools[0]))
+
+                    Popen(["zfs", "set", "org.freebsd.ioc:active=yes",
+                           zpools[0]]).communicate()
+
+                    return zpools[0]
         elif prop == "iocroot":
             # Location in this case is actually the zpool.
             try:
