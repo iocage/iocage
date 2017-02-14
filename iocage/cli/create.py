@@ -5,6 +5,8 @@ import os
 import click
 
 from iocage.lib.ioc_create import IOCCreate
+from iocage.lib.ioc_fetch import IOCFetch
+from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
 __cmdname__ = "create_cmd"
@@ -68,11 +70,15 @@ def create_cmd(release, template, count, props, pkglist, short):
                 for temp in templates:
                     lgr.info("  {}".format(temp))
             else:
-                lgr.info("Fetched RELEASEs:")
-                releases = IOCList("base", hdr=False,
-                                   rtrn_object=True).list_datasets()
-                for rel in releases:
-                    lgr.info("  {}".format(rel))
+                pool = IOCJson().json_get_value("pool")
+                iocroot = IOCJson(pool).json_get_value("iocroot")
+
+                if not os.path.isdir("{}/releases/{}".format(iocroot,
+                                                             release)):
+                    IOCFetch(release).fetch_release()
+
+                IOCCreate(release, props, 0, pkglist,
+                          template=template, short=short).create_jail()
     else:
         for j in xrange(1, count + 1):
             try:
