@@ -126,11 +126,11 @@ class IOCFetch(object):
 
         return self.release
 
-    def fetch_release(self):
+    def fetch_release(self, _list=False):
         """Small wrapper to choose the right fetch."""
         if self.http:
             eol = self.__fetch_eol_check__()
-            self.fetch_http_release(eol)
+            self.fetch_http_release(eol, _list=list)
         elif self._file:
             # Format for file directory should be: root-dir/RELEASE/*.txz
             if not self.root_dir:
@@ -172,9 +172,9 @@ class IOCFetch(object):
                 self.fetch_extract(f)
         else:
             eol = self.__fetch_eol_check__()
-            self.fetch_ftp_release(eol)
+            self.fetch_ftp_release(eol, _list=list)
 
-    def fetch_http_release(self, eol):
+    def fetch_http_release(self, eol, _list=False):
         """
         Fetch a user specified RELEASE from FreeBSD's http server or a user
         supplied one. The user can also specify the user, password and
@@ -268,6 +268,10 @@ class IOCFetch(object):
                             "[{}] {} (EOL)".format(releases.index(r), r))
                     else:
                         self.lgr.info("[{}] {}".format(releases.index(r), r))
+
+                if _list:
+                    return
+
                 self.release = raw_input(
                     "\nWhich release do you want to fetch?"
                     " (EXIT) ")
@@ -287,7 +291,7 @@ class IOCFetch(object):
         if not self.hardened:
             self.fetch_update()
 
-    def fetch_ftp_release(self, eol):
+    def fetch_ftp_release(self, eol, _list=False):
         """
         Fetch a user specified RELEASE from FreeBSD's ftp server or a user
         supplied one. The user can also specify the user, password and
@@ -319,6 +323,10 @@ class IOCFetch(object):
                     self.lgr.info("[{}] {} (EOL)".format(releases.index(r), r))
                 else:
                     self.lgr.info("[{}] {}".format(releases.index(r), r))
+
+            if _list:
+                return
+
             self.release = raw_input("\nWhich release do you want to fetch?"
                                      " (EXIT) ")
 
