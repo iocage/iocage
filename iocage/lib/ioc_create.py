@@ -61,11 +61,15 @@ class IOCCreate(object):
                 self.iocroot, _type, self.release)
 
             try:
-                with open(freebsd_version) as r:
-                    for line in r:
-                        if line.startswith("USERLAND_VERSION"):
-                            cloned_release = line.rstrip().partition("=")[
-                                2].strip('"')
+                if self.release[:4].endswith("-"):
+                    # 9.3-RELEASE and under don't actually have this binary.
+                    cloned_release = self.release
+                else:
+                    with open(freebsd_version) as r:
+                        for line in r:
+                            if line.startswith("USERLAND_VERSION"):
+                                cloned_release = line.rstrip().partition("=")[
+                                    2].strip('"')
                 config = self.create_config(jail_uuid, cloned_release)
             except IOError:
                 if self.template:
