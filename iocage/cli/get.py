@@ -75,6 +75,24 @@ def get_cmd(prop, jail, recursive, header, plugin):
 
             for p, v in props.iteritems():
                 lgr.info("{}:{}".format(p, v))
+        elif prop == "fstab":
+            pool = IOCJson().json_get_value("pool")
+            iocroot = IOCJson(pool).json_get_value("iocroot")
+            index = 0
+
+            with open("{}/jails/{}/fstab".format(iocroot, uuid), "r") as fstab:
+                for line in fstab.readlines():
+                    line = line.rsplit("#")[0].rstrip()
+                    jail_list.append([index, line.replace("\t", " ")])
+                    index += 1
+
+            if header:
+                jail_list.insert(0, ["INDEX", "FSTAB ENTRY"])
+                table.add_rows(jail_list)
+                lgr.info(table.draw())
+            else:
+                for fstab in jail_list:
+                    lgr.info("{}\t{}".format(fstab[0], fstab[1]))
         else:
             try:
                 lgr.info(IOCJson(path).json_get_value(prop))
