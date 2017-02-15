@@ -20,7 +20,8 @@ setup(name='iocage',
           'texttable',
           'backports.lzma',
           'requests',
-          'tqdm'
+          'tqdm',
+          'future'
       ],
       entry_points={
           'console_scripts': [

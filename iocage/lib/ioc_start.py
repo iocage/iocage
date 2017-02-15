@@ -95,7 +95,7 @@ class IOCStart(object):
                             self.path)):
                         original_path = getcwd()
                         chdir("{}/root".format(self.path))
-                        makedirs("compat/linux/proc", 0755)
+                        makedirs("compat/linux/proc", 0o755)
                         chdir(original_path)
                     Popen(["mount", "-t", "linprocfs", "linproc", self.path +
                            "/root/compat/linux/proc"]).communicate()
