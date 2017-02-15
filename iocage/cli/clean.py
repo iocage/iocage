@@ -1,4 +1,4 @@
-"""CLI command to destroy all of a dataset type."""
+"""clean module for the cli."""
 import logging
 
 import click

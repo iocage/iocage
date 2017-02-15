@@ -1,5 +1,4 @@
-"""Upgrade module for the cli."""
-
+"""upgrade module for the cli."""
 import logging
 import os
 from subprocess import PIPE, Popen, check_output

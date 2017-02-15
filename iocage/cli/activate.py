@@ -1,4 +1,4 @@
-"""CLI command to activate a zpool."""
+"""activate module for the cli."""
 import logging
 from subprocess import CalledProcessError, PIPE, Popen, check_call
 

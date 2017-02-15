@@ -1,4 +1,4 @@
-"""Allows a user to console into an iocage jail."""
+"""console module for the cli."""
 import logging
 from subprocess import Popen
 

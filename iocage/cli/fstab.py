@@ -1,4 +1,4 @@
-"""Fstab module for the cli."""
+"""fstab module for the cli."""
 import logging
 
 import click

@@ -1,5 +1,4 @@
-"""Update module for the cli."""
-
+"""update module for the cli."""
 import logging
 from subprocess import Popen, check_output
 

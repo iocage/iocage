@@ -1,3 +1,4 @@
+"""import module for the cli."""
 import fnmatch
 import logging
 import os
@@ -9,6 +10,7 @@ import click
 from iocage.lib.ioc_json import IOCJson
 
 __cmdname__ = "import_cmd"
+__rootcmd__ = True
 
 
 @click.command(name="import", help="Import a specified jail.")

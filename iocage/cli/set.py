@@ -1,5 +1,4 @@
-"""This is responsible for setting a jail property."""
-
+"""set module for the cli."""
 import logging
 
 import click

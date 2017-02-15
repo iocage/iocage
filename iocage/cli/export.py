@@ -1,3 +1,4 @@
+"""export module for the cli."""
 import logging
 import os
 import zipfile
@@ -11,6 +12,7 @@ from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
 __cmdname__ = "export_cmd"
+__rootcmd__ = True
 
 
 @click.command(name="export", help="Exports a specified jail.")

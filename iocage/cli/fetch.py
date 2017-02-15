@@ -1,4 +1,4 @@
-"""CLI command to fetch a jail RELEASE."""
+"""fetch module for the cli."""
 from subprocess import check_output
 
 import click

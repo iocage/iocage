@@ -1,4 +1,4 @@
-"""This is responsible for getting a jail property."""
+"""get module for the cli."""
 import json
 import logging
 

@@ -1,6 +1,4 @@
-"""
-List all datasets by type
-"""
+"""List all datasets by type"""
 import logging
 import re
 from subprocess import CalledProcessError, PIPE, Popen, check_output
