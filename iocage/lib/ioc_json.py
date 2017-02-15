@@ -1,6 +1,7 @@
 """Convert, load or write JSON."""
 import json
 import logging
+import os
 import re
 import sys
 from os import geteuid, path
@@ -160,6 +161,10 @@ class IOCJson(object):
                     # change it.
                     cmd = ["zpool", "list", "-H", "-o", "name"]
                     zpools = Popen(cmd, stdout=PIPE).communicate()[0].split()
+
+                    if os.geteuid() != 0:
+                        raise RuntimeError("Run as root to automatically "
+                                           "activate the first zpool!")
 
                     self.lgr.info("Setting up zpool [{}] for iocage usage\n"
                                   "If you wish to change please use "
