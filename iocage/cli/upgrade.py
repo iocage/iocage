@@ -88,11 +88,15 @@ def upgrade_cmd(jail, release):
             while not __upgrade_install__(root_path, release):
                 pass
 
-            with open(_freebsd_version) as r:
-                for line in r:
-                    if line.startswith("USERLAND_VERSION"):
-                        new_release = line.rstrip().partition("=")[2].strip(
-                            '"')
+            if release[:4].endswith("-"):
+                # 9.3-RELEASE and under don't actually have this binary.
+                new_release = release
+            else:
+                with open(_freebsd_version, "r") as r:
+                    for line in r:
+                        if line.startswith("USERLAND_VERSION"):
+                            new_release = line.rstrip().partition("=")[2].strip(
+                                '"')
 
             IOCJson(path, silent=True).json_set_value("release={}".format(
                 new_release))
