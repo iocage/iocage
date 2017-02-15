@@ -1,4 +1,4 @@
-"""Snapremove module for the cli."""
+"""snapremove module for the cli."""
 import logging
 from subprocess import CalledProcessError, check_call
 

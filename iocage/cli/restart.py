@@ -1,4 +1,4 @@
-"""Restart module for the cli."""
+"""restart module for the cli."""
 import logging
 from datetime import datetime
 from subprocess import PIPE, Popen

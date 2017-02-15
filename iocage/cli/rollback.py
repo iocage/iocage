@@ -1,4 +1,4 @@
-"""Rollback module for the cli"""
+"""rollback module for the cli."""
 import logging
 from subprocess import CalledProcessError, PIPE, Popen, check_call, \
     check_output

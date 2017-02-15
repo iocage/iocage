@@ -1,4 +1,4 @@
-"""create module for the CLI."""
+"""create module for the cli."""
 import logging
 import os
 

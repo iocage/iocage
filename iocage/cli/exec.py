@@ -1,4 +1,4 @@
-"""CLI command to run a command inside a jail."""
+"""exec module for the cli."""
 import logging
 
 import click

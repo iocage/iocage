@@ -1,4 +1,4 @@
-"""Stop module for the cli."""
+"""stop module for the cli."""
 import logging
 from collections import OrderedDict
 from operator import itemgetter

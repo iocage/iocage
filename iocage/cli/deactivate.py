@@ -1,4 +1,4 @@
-"""CLI command to deactivate a zpool."""
+"""deactivate module for the cli."""
 import logging
 from subprocess import CalledProcessError, PIPE, check_call
 

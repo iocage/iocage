@@ -1,4 +1,4 @@
-"""Snapshot module for the cli"""
+"""snapshot module for the cli."""
 import logging
 from datetime import datetime
 from subprocess import CalledProcessError, check_call

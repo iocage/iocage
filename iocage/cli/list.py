@@ -1,6 +1,4 @@
-"""
-List module for the cli.
-"""
+"""list module for the cli."""
 from subprocess import check_output
 
 import click

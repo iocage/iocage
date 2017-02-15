@@ -89,7 +89,7 @@ def main():
             IOCCheck()
 
         cli(obj=MODULES)
-    except RuntimeError, err:
+    except RuntimeError as err:
         exit(err)
 
 

@@ -1,5 +1,4 @@
-"""Pkg module for the cli."""
-
+"""pkg module for the cli."""
 import logging
 
 import click

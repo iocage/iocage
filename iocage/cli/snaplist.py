@@ -1,4 +1,4 @@
-"""Snaplist module for the cli."""
+"""snaplist module for the cli."""
 import logging
 from subprocess import PIPE, Popen
 

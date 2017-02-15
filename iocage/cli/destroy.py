@@ -1,4 +1,4 @@
-"""CLI command to destroy a jail."""
+"""destroy module for the cli."""
 import logging
 
 import click
