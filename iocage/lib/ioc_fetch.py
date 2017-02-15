@@ -589,8 +589,9 @@ class IOCFetch(object):
                    "install"], stderr=PIPE).communicate()
 
         try:
-            # Why this sometimes doesn't exist, we may never know.
-            os.remove("{}/etc/resolv.conf".format(new_root))
+            if not cli:
+                # Why this sometimes doesn't exist, we may never know.
+                os.remove("{}/etc/resolv.conf".format(new_root))
         except OSError:
             pass
 
