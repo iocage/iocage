@@ -42,26 +42,29 @@ def update_cmd(jail):
     conf = IOCJson(path).json_load()
     started = False
 
+    if conf["type"] == "jail":
+        if not status:
+            IOCStart(uuid, tag, path, conf, silent=True)
+            status, jid = IOCList.list_get_jid(uuid)
+            started = True
+    elif conf["type"] == "basejail":
+        raise RuntimeError("Please run \"iocage migrate\" before trying"
+                           " to update {} ({})".format(uuid, tag))
+    elif conf["type"] == "template":
+        raise RuntimeError("Please convert back to a jail before trying"
+                           " to update {} ({})".format(uuid, tag))
+    else:
+        raise RuntimeError("{} is not a supported jail type.".format(
+            conf["type"]
+        ))
+
     if "HBSD" in freebsd_version:
-        if conf["type"] == "jail":
-            if not status:
-                IOCStart(uuid, tag, path, conf, silent=True)
-                status, jid = IOCList.list_get_jid(uuid)
-                started = True
+        Popen(["hbsd-update", "-j", jid]).communicate()
 
-            Popen(["hbsd-update", "-j", jid]).communicate()
-
-            if started:
-                IOCStop(uuid, tag, path, conf, silent=True)
-        elif conf["type"] == "basejail":
-            raise RuntimeError("Please run \"iocage migrate\" before trying"
-                               " to update {} ({})".format(uuid, tag))
-        elif conf["type"] == "template":
-            raise RuntimeError("Please convert back to a jail before trying"
-                               " to update {} ({})".format(uuid, tag))
-        else:
-            raise RuntimeError("{} is not a supported jail type.".format(
-                conf["type"]
-            ))
+        if started:
+            IOCStop(uuid, tag, path, conf, silent=True)
     else:
         IOCFetch(conf["cloned_release"]).fetch_update(True, uuid, tag)
+
+        if started:
+            IOCStop(uuid, tag, path, conf, silent=True)
