@@ -324,15 +324,16 @@ class IOCJson(object):
                               "}/root/bin/freebsd-version".format(
                 iocroot, conf["tag"])
 
-        with open(freebsd_version, "r") as r:
-            if conf["release"][:4].endswith("-"):
-                # 9.3-RELEASE and under don't actually have this binary.
-                release = conf["release"]
-            else:
+        if conf["release"][:4].endswith("-"):
+            # 9.3-RELEASE and under don't actually have this binary.
+            release = conf["release"]
+        else:
+            with open(freebsd_version, "r") as r:
                 for line in r:
                     if line.startswith("USERLAND_VERSION"):
                         release = line.rstrip().partition("=")[2].strip(
                             '"')
+
         cloned_release = conf["release"]
 
         # Set all Version 3 keys
