@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import uuid
+from builtins import object, str
 from datetime import datetime
 from shutil import copy
 from subprocess import CalledProcessError, PIPE, Popen, check_call
@@ -65,13 +66,13 @@ class IOCCreate(object):
                     # 9.3-RELEASE and under don't actually have this binary.
                     cloned_release = self.release
                 else:
-                    with open(freebsd_version) as r:
+                    with open(freebsd_version, "r") as r:
                         for line in r:
                             if line.startswith("USERLAND_VERSION"):
                                 cloned_release = line.rstrip().partition("=")[
                                     2].strip('"')
                 config = self.create_config(jail_uuid, cloned_release)
-            except IOError:
+            except (IOError, OSError):
                 if self.template:
                     raise RuntimeError("Template: {} not found!".format(
                         self.release))
@@ -119,7 +120,7 @@ class IOCCreate(object):
         IOCJson(location).json_write(config)
 
         # Just "touch" the fstab file, since it won't exist.
-        open("{}/jails/{}/fstab".format(self.iocroot, jail_uuid), 'w').close()
+        open("{}/jails/{}/fstab".format(self.iocroot, jail_uuid), "wb").close()
         _tag = self.create_link(jail_uuid, config["tag"])
         self.create_rc(location, config["host_hostname"])
 
@@ -144,7 +145,7 @@ class IOCCreate(object):
         """
         version = IOCJson().json_get_version()
 
-        with open('/etc/hostid', 'r') as _file:
+        with open("/etc/hostid", "r") as _file:
             hostid = _file.read().strip()
 
         default_props = {
@@ -273,13 +274,13 @@ class IOCCreate(object):
         }
 
         if self.plugin:
-            for key, value in self.props.items():
+            for key, value in list(self.props.items()):
                 default_props[key] = value
         else:
             for prop in self.props:
                 key, _, value = prop.partition("=")
 
-                if key in default_props.keys():
+                if key in list(default_props.keys()):
                     if self.num != 0:
                         if key == "tag":
                             value = "{}_{}".format(value, self.num)
@@ -312,7 +313,7 @@ class IOCCreate(object):
             status, jid = IOCList().list_get_jid(jail_uuid)
 
         if not self.plugin:
-            with open(self.pkglist) as j:
+            with open(self.pkglist, "r") as j:
                 self.pkglist = json.load(j)["pkgs"]
 
         self.lgr.info("\nInstalling pkg... ")
@@ -327,7 +328,7 @@ class IOCCreate(object):
                               plugin=self.plugin).exec_jail()
 
         if pkg_upgrade:
-            self.lgr.error("ERROR: {}".format(pkg_upgrade))
+            self.lgr.error("ERROR: {}".format(pkg_upgrade.decode("utf-8")))
             err = True
 
         self.lgr.info("Installing supplied packages:")
@@ -338,7 +339,7 @@ class IOCCreate(object):
                                   plugin=self.plugin).exec_jail()
 
             if pkg_install:
-                self.lgr.error("ERROR: {}".format(pkg_install))
+                self.lgr.error("ERROR: {}".format(pkg_install.decode("utf-8")))
                 err = True
 
         os.remove("{}/root/etc/resolv.conf".format(location))

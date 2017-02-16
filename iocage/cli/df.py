@@ -41,15 +41,17 @@ def df_cmd(header, _long):
 
         tag = conf["tag"]
         compressratio = Popen(zconf + ["compressratio", mountpoint],
-                              stdout=PIPE).communicate()[0].strip()
+                              stdout=PIPE).communicate()[0].decode(
+            "utf-8").strip()
         reservation = Popen(zconf + ["reservation", mountpoint],
-                            stdout=PIPE).communicate()[0].strip()
+                            stdout=PIPE).communicate()[0].decode(
+            "utf-8").strip()
         quota = Popen(zconf + ["quota", mountpoint],
-                      stdout=PIPE).communicate()[0].strip()
+                      stdout=PIPE).communicate()[0].decode("utf-8").strip()
         used = Popen(zconf + ["used", mountpoint],
-                     stdout=PIPE).communicate()[0].strip()
+                     stdout=PIPE).communicate()[0].decode("utf-8").strip()
         available = Popen(zconf + ["available", mountpoint],
-                          stdout=PIPE).communicate()[0].strip()
+                          stdout=PIPE).communicate()[0].decode("utf-8").strip()
 
         jail_list.append([uuid, compressratio, reservation, quota, used,
                           available, tag])
@@ -57,6 +59,8 @@ def df_cmd(header, _long):
     jail_list.sort(key=ioc_common.sort_tag)
     if header:
         jail_list.insert(0, ["UUID", "CRT", "RES", "QTA", "USE", "AVA", "TAG"])
+        # We get an infinite float otherwise.
+        table.set_cols_dtype(["t", "t", "t", "t", "t", "t", "t"])
         table.add_rows(jail_list)
         lgr.info(table.draw())
     else:

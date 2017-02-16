@@ -86,7 +86,7 @@ To see a list of commands available to you now, type `iocage` outside the jail.
 **REQUIREMENTS**
 - FreeBSD 9.3-RELEASE amd64 and higher or HardenedBSD/TrueOS
 - ZFS file system
-- Python 2.7
+- Python 2.7/Python 3.5+
 
 **Optional**
  - Kernel compiled with:

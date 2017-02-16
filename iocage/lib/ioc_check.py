@@ -2,8 +2,10 @@
 import logging
 import os
 import sys
-from subprocess import CalledProcessError, PIPE, Popen, check_output
+from builtins import map, object
+from subprocess import CalledProcessError, PIPE, Popen
 
+from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_json import IOCJson
 
 
@@ -28,17 +30,17 @@ class IOCCheck(object):
                     "iocage/jails", "iocage/log", "iocage/releases",
                     "iocage/templates")
 
-        mounts = check_output(["zfs", "get", "-o", "name,value", "-t",
-                               "filesystem", "-H",
-                               "mountpoint"]).splitlines()
+        mounts = checkoutput(["zfs", "get", "-o", "name,value", "-t",
+                              "filesystem", "-H",
+                              "mountpoint"]).splitlines()
 
-        mounts = dict([map(str, m.split("\t")) for m in mounts])
-        dups = {name: mount for name, mount in mounts.iteritems() if
+        mounts = dict([list(map(str, m.split("\t"))) for m in mounts])
+        dups = {name: mount for name, mount in mounts.items() if
                 mount == "/iocage"}
 
         for dataset in datasets:
             try:
-                check_output(["zfs", "get", "-H", "creation", "{}/{}".format(
+                checkoutput(["zfs", "get", "-H", "creation", "{}/{}".format(
                     self.pool, dataset)], stderr=PIPE)
             except CalledProcessError:
                 if os.geteuid() != 0:

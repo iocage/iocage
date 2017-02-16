@@ -1,5 +1,6 @@
 """fstab module for the cli."""
 import logging
+from builtins import next
 
 import click
 
@@ -37,15 +38,15 @@ def fstab_cmd(action, fstab_string, jail):
     if not fstab_string:
         raise RuntimeError("Please supply a fstab entry!")
 
-    _jail = {tag: uuid for (tag, uuid) in _jails.iteritems() if
+    _jail = {tag: uuid for (tag, uuid) in _jails.items() if
              uuid.startswith(jail) or tag == jail}
 
     if len(_jail) == 1:
-        tag, uuid = next(_jail.iteritems())
+        tag, uuid = next(iter(_jail.items()))
     elif len(_jail) > 1:
         lgr.error("Multiple jails found for"
                   " {}:".format(jail))
-        for t, u in sorted(_jail.iteritems()):
+        for t, u in sorted(_jail.items()):
             lgr.error("  {} ({})".format(u, t))
         raise RuntimeError()
     else:

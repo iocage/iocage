@@ -1,14 +1,15 @@
 """migrate module for the cli."""
 from __future__ import print_function
+
 import fileinput
 import logging
 import os
 from shutil import copy
-from subprocess import CalledProcessError, STDOUT, check_call, check_output
+from subprocess import CalledProcessError, STDOUT, check_call
 
 import click
 
-from iocage.lib.ioc_common import copytree
+from iocage.lib.ioc_common import checkoutput, copytree
 from iocage.lib.ioc_create import IOCCreate
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
@@ -30,12 +31,13 @@ def migrate_cmd(force, delete):
     jails, paths = IOCList("uuid").list_datasets()
 
     if not force:
-        lgr.warning("\nWARNING: This will migrate ALL basejails, it can take a"
-                    " long time!")
+        lgr.warning("\nWARNING: This will migrate ALL basejails to "
+                    "clonejails, it can take a long time!")
+
         if not click.confirm("\nAre you sure?"):
             exit()
 
-    for tag, uuid in jails.iteritems():
+    for tag, uuid in jails.items():
         pool = IOCJson().json_get_value("pool")
         iocroot = IOCJson(pool).json_get_value("iocroot")
         jail = "{}/iocage/jails/{}".format(pool, uuid)
@@ -46,10 +48,11 @@ def migrate_cmd(force, delete):
 
         if conf["type"] == "basejail":
             try:
-                check_output(["zfs", "rename", "-p", jail, jail_old],
-                             stderr=STDOUT)
+                checkoutput(["zfs", "rename", "-p", jail, jail_old],
+                            stderr=STDOUT)
             except CalledProcessError as err:
-                raise RuntimeError("ERROR: {}".format(err.output.strip()))
+                raise RuntimeError("ERROR: {}".format(
+                    err.output.decode("utf-8").strip()))
 
             try:
                 os.remove("{}/tags/{}".format(iocroot, tag))
@@ -85,10 +88,11 @@ def migrate_cmd(force, delete):
 
             if delete:
                 try:
-                    check_output(["zfs", "destroy", "-r", "-f", jail_old],
-                                 stderr=STDOUT)
+                    checkoutput(["zfs", "destroy", "-r", "-f", jail_old],
+                                stderr=STDOUT)
                 except CalledProcessError as err:
-                    raise RuntimeError("ERROR: {}".format(err.output.strip()))
+                    raise RuntimeError("ERROR: {}".format(
+                        err.output.decode("utf-8").rstrip()))
 
                 try:
                     check_call(["zfs", "destroy", "-r", "-f",

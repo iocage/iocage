@@ -1,8 +1,9 @@
 """This stops jails."""
 import logging
-from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call, \
-    check_output
+from builtins import object
+from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
 
+from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
@@ -28,6 +29,7 @@ class IOCStop(object):
 
     def __stop_jail__(self):
         ip4_addr = self.conf["ip4_addr"]
+        ip6_addr = self.conf["ip6_addr"]
         vnet = self.conf["vnet"]
 
         if not self.status:
@@ -41,7 +43,7 @@ class IOCStop(object):
                 for nic in self.nics.split(","):
                     nic = nic.split(":")[0]
                     try:
-                        check_output(
+                        checkoutput(
                             ["ifconfig", "{}:{}".format(nic, self.jid),
                              "destroy"], stderr=STDOUT)
                     except CalledProcessError:
@@ -52,22 +54,48 @@ class IOCStop(object):
                     for ip4 in ip4_addr.split():
                         try:
                             iface, addr = ip4.split("/")[0].split("|")
-                            check_output(["ifconfig", iface, addr,
-                                          "-alias"], stderr=STDOUT)
+                            checkoutput(["ifconfig", iface, addr,
+                                         "-alias"], stderr=STDOUT)
                         except ValueError:
                             # Likely a misconfigured ip_addr with no interface.
                             self.lgr.error("  ! IP4 address is missing an"
                                            " interface, set ip4_addr to"
                                            " \"INTERFACE|IPADDR\"")
                         except CalledProcessError as err:
-                            if "Can't assign requested address" in err.output:
+                            if "Can't assign requested address" in \
+                                    err.output.decode("utf-8"):
                                 # They may have a new address that somehow
                                 # didn't set correctly. We shouldn't bail on
                                 # that.
                                 pass
                             else:
                                 raise RuntimeError(
-                                    "ERROR: {}".format(err.output.strip()))
+                                    "ERROR: {}".format(
+                                        err.output.decode("utf-8").strip()))
+
+            if ip6_addr != "inherit" and vnet == "off":
+                if ip6_addr != "none":
+                    for ip6 in ip6_addr.split():
+                        try:
+                            iface, addr = ip6.split("/")[0].split("|")
+                            checkoutput(["ifconfig", iface, "inet6", addr,
+                                         "-alias"], stderr=STDOUT)
+                        except ValueError:
+                            # Likely a misconfigured ip_addr with no interface.
+                            self.lgr.error("  ! IP6 address is missing an"
+                                           " interface, set ip6_addr to"
+                                           " \"INTERFACE|IPADDR\"")
+                        except CalledProcessError as err:
+                            if "Can't assign requested address" in \
+                                    err.output.decode("utf-8"):
+                                # They may have a new address that somehow
+                                # didn't set correctly. We shouldn't bail on
+                                # that.
+                                pass
+                            else:
+                                raise RuntimeError(
+                                    "ERROR: {}".format(
+                                        err.output.decode("utf-8").strip()))
 
             # TODO: Prestop findscript
             exec_stop = self.conf["exec_stop"].split()
@@ -84,38 +112,40 @@ class IOCStop(object):
             if self.conf["jail_zfs"] == "on":
                 for jdataset in self.conf["jail_zfs_dataset"].split():
                     jdataset = jdataset.strip()
-                    children = check_output(["zfs", "list", "-H", "-r", "-o",
-                                             "name", "-S", "name",
-                                             "{}/{}".format(self.pool,
-                                                            jdataset)])
+                    children = checkoutput(["zfs", "list", "-H", "-r", "-o",
+                                            "name", "-S", "name",
+                                            "{}/{}".format(self.pool,
+                                                           jdataset)])
 
                     for child in children.split():
                         child = child.strip()
 
                         try:
-                            check_output(["jexec", "ioc-{}".format(
+                            checkoutput(["jexec", "ioc-{}".format(
                                 self.uuid), "zfs", "umount", child],
-                                         stderr=STDOUT)
+                                        stderr=STDOUT)
                         except CalledProcessError as err:
-                            mountpoint = check_output(["zfs", "get", "-H",
-                                                       "-o",
-                                                       "value", "mountpoint",
-                                                       "{}/{}".format(
-                                                           self.pool,
-                                                           jdataset)]).strip()
+                            mountpoint = checkoutput(["zfs", "get", "-H",
+                                                      "-o",
+                                                      "value", "mountpoint",
+                                                      "{}/{}".format(
+                                                          self.pool,
+                                                          jdataset)]).strip()
                             if mountpoint == "none":
                                 pass
                             else:
                                 raise RuntimeError(
-                                    "ERROR: {}".format(err.output.strip()))
+                                    "ERROR: {}".format(
+                                        err.output.decode("utf-8").rstrip()))
 
                     try:
-                        check_output(["zfs", "unjail", "ioc-{}".format(
+                        checkoutput(["zfs", "unjail", "ioc-{}".format(
                             self.uuid), "{}/{}".format(self.pool, jdataset)],
-                                     stderr=STDOUT)
+                                    stderr=STDOUT)
                     except CalledProcessError as err:
                         raise RuntimeError(
-                            "ERROR: {}".format(err.output.strip()))
+                            "ERROR: {}".format(
+                                err.output.decode("utf-8").rstrip()))
 
             stop = check_call(["jail", "-r", "ioc-{}".format(self.uuid)],
                               stderr=PIPE)

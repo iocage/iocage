@@ -1,5 +1,6 @@
 """snaplist module for the cli."""
 import logging
+from builtins import next
 from subprocess import PIPE, Popen
 
 import click
@@ -24,16 +25,16 @@ def snaplist_cmd(header, jail):
     snap_list = []
     table = Texttable(max_width=0)
 
-    _jail = {tag: uuid for (tag, uuid) in jails.iteritems() if
+    _jail = {tag: uuid for (tag, uuid) in jails.items() if
              uuid.startswith(jail) or tag == jail}
 
     if len(_jail) == 1:
-        tag, uuid = next(_jail.iteritems())
+        tag, uuid = next(iter(_jail.items()))
         path = paths[tag]
     elif len(_jail) > 1:
         lgr.error("Multiple jails found for"
                   " {}:".format(jail))
-        for t, u in sorted(_jail.iteritems()):
+        for t, u in sorted(_jail.items()):
             lgr.error("  {} ({})".format(u, t))
         raise RuntimeError()
     else:
@@ -65,15 +66,19 @@ def snaplist_cmd(header, jail):
                 continue
 
             creation = Popen(zconf + ["creation", snap[0]],
-                             stdout=PIPE).communicate()[0].strip()
+                             stdout=PIPE).communicate()[0].decode(
+                "utf-8").strip()
             used = snap[1]
             referenced = Popen(zconf + ["referenced", snap[0]],
-                               stdout=PIPE).communicate()[0].strip()
+                               stdout=PIPE).communicate()[0].decode(
+                "utf-8").strip()
 
             snap_list.append([snapname, creation, referenced, used])
 
     if header:
         snap_list.insert(0, ["NAME", "CREATED", "RSIZE", "USED"])
+        # We get an infinite float otherwise.
+        table.set_cols_dtype(["t", "t", "t", "t"])
         table.add_rows(snap_list)
         lgr.info(table.draw())
     else:

@@ -7,10 +7,12 @@ import logging
 import os
 import re
 import shutil
+import sys
 import tarfile
+from builtins import input, object
 from ftplib import FTP
 from shutil import copy
-from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_output
+from subprocess import CalledProcessError, PIPE, Popen, STDOUT
 from tempfile import NamedTemporaryFile
 
 import requests
@@ -19,7 +21,7 @@ from requests.auth import HTTPDigestAuth
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from tqdm import tqdm
 
-from iocage.lib.ioc_common import sort_release
+from iocage.lib.ioc_common import checkoutput, sort_release
 from iocage.lib.ioc_create import IOCCreate
 from iocage.lib.ioc_exec import IOCExec
 from iocage.lib.ioc_json import IOCJson
@@ -76,7 +78,7 @@ class IOCFetch(object):
         if not status:
             req.raise_for_status()
 
-        for eol in req.content.split():
+        for eol in req.content.decode("iso-8859-1").split():
             eol = eol.strip("href=").strip("/").split(">")
             # We want a dynamic EOL
             try:
@@ -231,7 +233,7 @@ class IOCFetch(object):
                 releases = sort_release(releases, self.iocroot)
                 for r in releases:
                     self.lgr.info("[{}] {}".format(releases.index(r), r))
-                self.release = raw_input(
+                self.release = input(
                     "\nWhich release do you want to fetch?"
                     " (EXIT) ")
                 self.release = self.__fetch_validate_release__(releases)
@@ -272,7 +274,7 @@ class IOCFetch(object):
                 if _list:
                     return
 
-                self.release = raw_input(
+                self.release = input(
                     "\nWhich release do you want to fetch?"
                     " (EXIT) ")
                 self.release = self.__fetch_validate_release__(releases)
@@ -327,8 +329,8 @@ class IOCFetch(object):
             if _list:
                 return
 
-            self.release = raw_input("\nWhich release do you want to fetch?"
-                                     " (EXIT) ")
+            self.release = input("\nWhich release do you want to fetch?"
+                                 " (EXIT) ")
 
             self.release = self.__fetch_validate_release__(releases)
 
@@ -361,7 +363,7 @@ class IOCFetch(object):
                 if "MANIFEST" not in files:
                     if ftp and self.server == "ftp.freebsd.org":
                         ftp.retrbinary("RETR MANIFEST", open("MANIFEST",
-                                                             "w").write)
+                                                             "wb").write)
                     elif not ftp and self.server == \
                             "https://download.freebsd.org":
                         r = requests.get("{}/{}/{}/MANIFEST".format(
@@ -372,15 +374,15 @@ class IOCFetch(object):
                         if not status:
                             r.raise_for_status()
 
-                        with open("MANIFEST", "w") as txz:
+                        with open("MANIFEST", "wb") as txz:
                             shutil.copyfileobj(r.raw, txz)
 
             try:
-                with open("MANIFEST") as _manifest:
+                with open("MANIFEST", "r") as _manifest:
                     for line in _manifest:
                         col = line.split("\t")
                         hashes[col[0]] = col[1]
-            except IOError:
+            except (IOError, OSError):
                 raise RuntimeError("MANIFEST file is missing!")
 
             for f in self.files:
@@ -396,7 +398,7 @@ class IOCFetch(object):
 
                 if f in _list:
                     try:
-                        with open(f) as txz:
+                        with open(f, "rb") as txz:
                             buf = txz.read(hash_block)
 
                             while len(buf) > 0:
@@ -412,7 +414,7 @@ class IOCFetch(object):
                                 else:
                                     raise RuntimeError("Too many failed"
                                                        " verifications!")
-                    except IOError:
+                    except (IOError, OSError):
                         if not _missing:
                             self.lgr.error(
                                 "{} missing, will download!".format(f))
@@ -472,7 +474,7 @@ class IOCFetch(object):
                     if not status:
                         r.raise_for_status()
 
-                    with open(f, "w") as txz:
+                    with open(f, "wb") as txz:
                         pbar = tqdm(total=int(r.headers.get('content-length')),
                                     bar_format="{desc}{percentage:3.0f}%"
                                                " {rate_fmt}"
@@ -495,7 +497,7 @@ class IOCFetch(object):
                             ftp.voidcmd('TYPE I')
                             filesize = ftp.size(f)
 
-                            with open(f, "w") as txz:
+                            with open(f, "wb") as txz:
                                 pbar = tqdm(total=filesize,
                                             bar_format="{desc}{"
                                                        "percentage:3.0f}%"
@@ -529,9 +531,19 @@ class IOCFetch(object):
                "{}/iocage/releases/{}/root".format(self.pool,
                                                    self.release)]).communicate()
 
-        with contextlib.closing(lzma.LZMAFile(src)) as xz:
-            with tarfile.open(fileobj=xz) as tar:
-                tar.extractall(dest)
+        if sys.version_info[0] < 3:
+            with contextlib.closing(lzma.LZMAFile(src)) as xz:
+                with tarfile.open(fileobj=xz) as tar:
+                    # Extracting over the same files is much slower then
+                    # removing them first.
+                    member = self.__fetch_extract_remove__(tar)
+                    tar.extractall(dest, members=member)
+        else:
+            with tarfile.open(src) as f:
+                # Extracting over the same files is much slower then
+                # removing them first.
+                member = self.__fetch_extract_remove__(f)
+                f.extractall(dest, members=member)
 
     def fetch_update(self, cli=False, uuid=None, tag=None):
         """This calls 'freebsd-update' to update the fetched RELEASE."""
@@ -567,9 +579,9 @@ class IOCFetch(object):
             if float(self.release.partition("-")[0][:5]) <= 10.1:
                 with NamedTemporaryFile(delete=False) as tmp_conf:
                     conf = "{}/usr/sbin/freebsd-update".format(new_root)
-                    with open(conf) as update_conf:
+                    with open(conf, "r") as update_conf:
                         for line in update_conf:
-                            tmp_conf.write(re.sub("\[ ! -t 0 \]", "false",
+                            tmp_conf.write(re.sub(b"\[ ! -t 0 \]", b"false",
                                                   line))
                 os.chmod(tmp_conf.name, 0o755)
                 Popen([tmp_conf.name, "-b", new_root, "-d",
@@ -600,7 +612,7 @@ class IOCFetch(object):
     def fetch_plugin(self, _json, props, num):
         """Expects an JSON object."""
         prop_dict = False
-        with open(_json) as j:
+        with open(_json, "r") as j:
             conf = json.load(j)
         self.release = conf["release"]
         pkg_repos = conf["fingerprints"]
@@ -628,7 +640,7 @@ class IOCFetch(object):
             prop_dict = True
 
         if prop_dict:
-            for k, v in props.iteritems():
+            for k, v in props.items():
                 new_props[k] = v
         else:
             for p in props:
@@ -637,7 +649,7 @@ class IOCFetch(object):
 
         # If the user supplies some properties but NOT a tag, this is
         # important.
-        for key, value in new_props.iteritems():
+        for key, value in new_props.items():
             if key == "tag":
                 if num != 0:
                     value = "{}_{}".format(value, num)
@@ -723,7 +735,7 @@ fingerprint: {fingerprint}
                     command = ["sh", "/root/post_install.sh"]
                     IOCExec(command, uuid, conf["name"], jaildir,
                             skip=True).exec_jail()
-                except IOError:
+                except (IOError, OSError):
                     pass
         else:
             self.lgr.error("ERROR: pkg error, refusing to fetch artifact and "
@@ -736,20 +748,23 @@ fingerprint: {fingerprint}
             self.server = "https://github.com/iXsystems/iocage-ix-plugins.git"
 
         try:
-            check_output(["git", "clone", self.server,
-                          "{}/.plugin_index".format(self.iocroot)],
-                         stderr=STDOUT)
+            checkoutput(["git", "clone", self.server,
+                         "{}/.plugin_index".format(self.iocroot)],
+                        stderr=STDOUT)
         except CalledProcessError as err:
-            if "already exists" in err.output.rstrip():
+            if "already exists" in err.output.decode("utf-8").rstrip():
                 try:
-                    check_output(["git", "-C", "{}/.plugin_index".format(
+                    checkoutput(["git", "-C", "{}/.plugin_index".format(
                         self.iocroot), "pull"], stderr=STDOUT)
                 except CalledProcessError as err:
-                    raise RuntimeError("ERROR: {}".format(err.output.rstrip()))
+                    raise RuntimeError("ERROR: {}".format(
+                        err.output.decode("utf-8").rstrip()))
             else:
-                raise RuntimeError("ERROR: {}".format(err.output.rstrip()))
+                raise RuntimeError(
+                    "ERROR: {}".format(err.output.decode("utf-8").rstrip()))
 
-        with open("{}/.plugin_index/INDEX".format(self.iocroot)) as plugins:
+        with open("{}/.plugin_index/INDEX".format(self.iocroot), "r") as \
+                plugins:
             plugins = json.load(plugins)
 
         _plugins = self.__fetch_sort_plugin__(plugins)
@@ -759,7 +774,7 @@ fingerprint: {fingerprint}
         if _list:
             return
 
-        plugin = raw_input("\nWhich plugin do you want to create? (EXIT) ")
+        plugin = input("\nWhich plugin do you want to create? (EXIT) ")
         plugin = self.__fetch_validate_plugin__(plugin.lower(), _plugins)
         self.fetch_plugin("{}/.plugin_index/{}.json".format(self.iocroot,
                                                             plugin), props, 0)
@@ -803,11 +818,31 @@ fingerprint: {fingerprint}
                 plugin]["description"], plugin)
             p_dict[plugin] = _plugin
 
-        ordered_p_dict = collections.OrderedDict(sorted(p_dict.iteritems()))
+        ordered_p_dict = collections.OrderedDict(sorted(p_dict.items()))
         index = 0
 
-        for p in ordered_p_dict.itervalues():
+        for p in ordered_p_dict.values():
             plugin_list.insert(index, "{}".format(p))
             index += 1
 
         return plugin_list
+
+    def __fetch_extract_remove__(self, tar):
+        """
+        Tries to remove any file that exists from the archive as overwriting
+        is very slow in tar.
+        """
+        members = []
+
+        for f in tar.getmembers():
+            rel_path = "{}/releases/{}/root/{}".format(self.iocroot,
+                                                       self.release, f.name)
+            try:
+                # . and so forth won't like this.
+                os.remove(rel_path)
+            except (IOError, OSError):
+                pass
+
+            members.append(f)
+
+        return members

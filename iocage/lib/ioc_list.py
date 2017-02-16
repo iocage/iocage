@@ -1,11 +1,12 @@
 """List all datasets by type"""
 import logging
 import re
-from subprocess import CalledProcessError, PIPE, Popen, check_output
+from builtins import object
+from subprocess import CalledProcessError, PIPE, Popen
 
 from texttable import Texttable
 
-import iocage.lib.ioc_common as ioc_common
+from iocage.lib.ioc_common import checkoutput, sort_release, sort_tag
 from iocage.lib.ioc_json import IOCJson
 
 
@@ -52,7 +53,8 @@ class IOCList(object):
 
             regex = re.compile("{}/templates/".format(self.iocroot))
 
-        zfs_list = Popen(cmd, stdout=PIPE).communicate()[0].split()
+        zfs_list = Popen(cmd, stdout=PIPE).communicate()[0].decode(
+            "utf-8").split()
         datasets = [d for d in zfs_list if re.match(regex, d)]
 
         if self.list_type == "all":
@@ -78,7 +80,7 @@ class IOCList(object):
                             "{}/iocage/templates".format(self.pool)]
             template_regex = re.compile("{}/templates/".format(self.iocroot))
             template_zfs_list = Popen(template_cmd, stdout=PIPE).communicate()[
-                0].split()
+                0].decode("utf-8").split()
             template_datasets = [t for t in template_zfs_list if re.match(
                 template_regex, t)]
 
@@ -91,7 +93,7 @@ class IOCList(object):
             if len(dups):
                 self.lgr.error("ERROR: Duplicate tag ({}) detected!".format(
                     tag))
-                for d, t in sorted(dups.iteritems()):
+                for d, t in sorted(dups.items()):
                     u = [m for m in d.split("/") if len(m) == 36][0]
                     self.lgr.error("  {} ({})".format(u, t))
                 self.lgr.error("\nPlease run \"iocage set tag=NEWTAG "
@@ -152,9 +154,9 @@ class IOCList(object):
                 template = "-"
             else:
                 try:
-                    template = check_output(["zfs", "get", "-H", "-o", "value",
-                                             "origin",
-                                             jail_root]).split("/")[3]
+                    template = checkoutput(["zfs", "get", "-H", "-o", "value",
+                                            "origin",
+                                            jail_root]).split("/")[3]
                 except IndexError:
                     template = "-"
 
@@ -169,14 +171,19 @@ class IOCList(object):
                 jail_list.append([jid, uuid[:8], state, tag, short_release,
                                   short_ip4])
 
-        jail_list.sort(key=ioc_common.sort_tag)
+        jail_list.sort(key=sort_tag)
 
         # Prints the table
         if self.header:
             if self.full:
+                # We get an infinite float otherwise.
+                table.set_cols_dtype(["t", "t", "t", "t", "t", "t", "t", "t",
+                                      "t"])
                 jail_list.insert(0, ["JID", "UUID", "BOOT", "STATE", "TAG",
                                      "TYPE", "IP4", "RELEASE", "TEMPLATE"])
             else:
+                # We get an infinite float otherwise.
+                table.set_cols_dtype(["t", "t", "t", "t", "t", "t"])
                 jail_list.insert(0, ["JID", "UUID", "STATE", "TAG",
                                      "RELEASE", "IP4"])
 
@@ -192,12 +199,14 @@ class IOCList(object):
 
     def list_bases(self, datasets):
         """Lists all bases."""
-        base_list = ioc_common.sort_release(datasets, self.iocroot, split=True)
+        base_list = sort_release(datasets, self.iocroot, split=True)
         table = Texttable(max_width=0)
 
         if self.header:
             base_list.insert(0, ["Bases fetched"])
             table.add_rows(base_list)
+            # We get an infinite float otherwise.
+            table.set_cols_dtype(["t"])
             self.lgr.info(table.draw())
         else:
             if self.return_object:
@@ -211,8 +220,8 @@ class IOCList(object):
     def list_get_jid(cls, uuid):
         """Return a tuple containing True or False and the jail's id or '-'."""
         try:
-            jid = check_output(["jls", "-j", "ioc-{}".format(uuid)],
-                               stderr=PIPE).split()[5]
+            jid = checkoutput(["jls", "-j", "ioc-{}".format(uuid)],
+                              stderr=PIPE).split()[5]
             return (True, jid)
         except CalledProcessError:
             return (False, "-")

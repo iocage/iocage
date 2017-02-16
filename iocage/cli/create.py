@@ -1,6 +1,7 @@
 """create module for the cli."""
 import logging
 import os
+from builtins import range
 
 import click
 
@@ -80,7 +81,7 @@ def create_cmd(release, template, count, props, pkglist, short):
                 IOCCreate(release, props, 0, pkglist,
                           template=template, short=short).create_jail()
     else:
-        for j in xrange(1, count + 1):
+        for j in range(1, count + 1):
             try:
                 IOCCreate(release, props, j, pkglist,
                           template=template, short=short).create_jail()

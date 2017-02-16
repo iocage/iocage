@@ -1,10 +1,12 @@
 """upgrade module for the cli."""
 import logging
 import os
-from subprocess import PIPE, Popen, check_output
+from builtins import next
+from subprocess import PIPE, Popen
 
 import click
 
+from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 from iocage.lib.ioc_start import IOCStart
@@ -23,17 +25,17 @@ def upgrade_cmd(jail, release):
     lgr = logging.getLogger('ioc_cli_upgrade')
 
     jails, paths = IOCList("uuid").list_datasets()
-    _jail = {tag: uuid for (tag, uuid) in jails.iteritems() if
+    _jail = {tag: uuid for (tag, uuid) in jails.items() if
              uuid.startswith(jail) or tag == jail}
 
     if len(_jail) == 1:
-        tag, uuid = next(_jail.iteritems())
+        tag, uuid = next(iter(_jail.items()))
         path = paths[tag]
         root_path = "{}/root".format(path)
     elif len(_jail) > 1:
         lgr.error("Multiple jails found for"
                   " {}:".format(jail))
-        for t, u in sorted(_jail.iteritems()):
+        for t, u in sorted(_jail.items()):
             lgr.error("  {} ({})".format(u, t))
         raise RuntimeError()
     else:
@@ -41,7 +43,7 @@ def upgrade_cmd(jail, release):
 
     pool = IOCJson().json_get_value("pool")
     iocroot = IOCJson(pool).json_get_value("iocroot")
-    freebsd_version = check_output(["freebsd-version"])
+    freebsd_version = checkoutput(["freebsd-version"])
     status, jid = IOCList.list_get_jid(uuid)
     conf = IOCJson(path).json_load()
     host_release = os.uname()[2]
@@ -83,7 +85,7 @@ def upgrade_cmd(jail, release):
                            "{}/etc/freebsd-update.conf".format(root_path),
                            "--currently-running {}".format(jail_release), "-r",
                            release, "upgrade"], stdin=PIPE)
-            fetch.communicate("y")
+            fetch.communicate(b"y")
 
             while not __upgrade_install__(root_path, release):
                 pass
@@ -95,7 +97,8 @@ def upgrade_cmd(jail, release):
                 with open(_freebsd_version, "r") as r:
                     for line in r:
                         if line.startswith("USERLAND_VERSION"):
-                            new_release = line.rstrip().partition("=")[2].strip(
+                            new_release = line.rstrip().partition("=")[
+                                2].strip(
                                 '"')
 
             IOCJson(path, silent=True).json_set_value("release={}".format(

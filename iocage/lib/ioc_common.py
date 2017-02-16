@@ -6,6 +6,8 @@ import stat
 import tempfile as tmp
 from contextlib import contextmanager
 
+from future.backports import check_output
+
 
 def sort_tag(tag):
     """Sort the list by tag."""
@@ -28,7 +30,7 @@ def sort_tag(tag):
     if len(_sort) > 1 and _sort[1].isdigit():
         return _sort[0], int(_sort[1])
     else:
-        return _tag, 0
+        return _tag, 1
 
 
 def sort_release(releases, iocroot, split=False):
@@ -59,10 +61,10 @@ def sort_release(releases, iocroot, split=False):
             except ValueError:
                 pass
 
-    ordered_r_dict = collections.OrderedDict(sorted(r_dict.iteritems()))
+    ordered_r_dict = collections.OrderedDict(sorted(r_dict.items()))
     index = 0
 
-    for r, t in ordered_r_dict.iteritems():
+    for r, t in ordered_r_dict.items():
         if split:
             release_list.insert(index, ["{}-{}".format(r, t)])
             index += 1
@@ -183,3 +185,10 @@ def get_nested_key(_dict, keys=[]):
         return _dict[key]
 
     return get_nested_key(_dict[key], keys)
+
+
+def checkoutput(*args, **kwargs):
+    """Just a wrapper to return utf-8 from check_output"""
+    out = check_output(*args, **kwargs).decode("utf-8")
+
+    return out
