@@ -1,7 +1,7 @@
 """snapshot module for the cli."""
 import logging
 from datetime import datetime
-from subprocess import CalledProcessError, check_call
+from subprocess import CalledProcessError, check_call, PIPE
 
 import click
 
@@ -44,10 +44,15 @@ def snapshot_cmd(jail, name):
         name = date
 
     # Looks like foo/iocage/jails/df0ef69a-57b6-4480-b1f8-88f7b6febbdf@BAR
-    target = "{}{}@{}".format(pool, path, name)
+    conf = IOCJson(path).json_load()
+
+    if conf["template"] == "yes":
+        target = "{}/iocage/templates/{}@{}".format(pool, tag, name)
+    else:
+        target = "{}/iocage/jails/{}@{}".format(pool, uuid, name)
 
     try:
-        check_call(["zfs", "snapshot", "-r", target])
+        check_call(["zfs", "snapshot", "-r", target], stderr=PIPE)
         lgr.info("Snapshot: {} created.".format(target))
-    except CalledProcessError as err:
-        lgr.error("ERROR: {}".format(err))
+    except CalledProcessError:
+        lgr.error("ERROR: Snapshot already exists!")

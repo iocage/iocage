@@ -39,17 +39,30 @@ def snaplist_cmd(header, jail):
     else:
         raise RuntimeError("{} not found!".format(jail))
 
-    full_path = "{}{}".format(pool, path)
+    conf = IOCJson(path).json_load()
+
+    if conf["template"] == "yes":
+        full_path = "{}/iocage/templates/{}".format(pool, tag)
+    else:
+        full_path = "{}/iocage/jails/{}".format(pool, uuid)
+
     zconf = ["zfs", "get", "-H", "-o", "value"]
-    snapshots = Popen(["zfs", "list", "-H", "-t", "snapshot", "-d",
-                       "1", full_path], stdout=PIPE,
-                      stderr=PIPE).communicate()[0].split("\n")
+    snapshots = Popen(["zfs", "list", "-r", "-H", "-t", "snapshot",
+                       full_path], stdout=PIPE,
+                      stderr=PIPE).communicate()[0].decode("utf-8").split("\n")
 
     for snap in snapshots:
         # We get an empty list at the end.
         if snap:
             snap = snap.split()
             snapname = snap[0].rsplit("@")[1]
+            root_snapname = snap[0].rsplit("@")[0].split("/")[-1]
+
+            if root_snapname == "root":
+                snapname += "/root"
+            elif root_snapname != uuid and root_snapname != tag:
+                # basejail datasets.
+                continue
 
             creation = Popen(zconf + ["creation", snap[0]],
                              stdout=PIPE).communicate()[0].strip()
