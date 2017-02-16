@@ -36,7 +36,12 @@ def snapremove_cmd(jail, name):
         raise RuntimeError("{} not found!".format(jail))
 
     # Looks like foo/iocage/jails/df0ef69a-57b6-4480-b1f8-88f7b6febbdf@BAR
-    target = "{}{}@{}".format(pool, path, name)
+    conf = IOCJson(path).json_load()
+
+    if conf["template"] == "yes":
+        target = "{}/iocage/templates/{}@{}".format(pool, tag, name)
+    else:
+        target = "{}/iocage/jails/{}@{}".format(pool, uuid, name)
 
     try:
         check_call(["zfs", "destroy", "-r", "-f", target])
