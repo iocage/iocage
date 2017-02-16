@@ -1,6 +1,7 @@
 """iocage destroy module."""
 import logging
 import os
+from builtins import object
 from subprocess import CalledProcessError, PIPE, Popen, check_call
 
 from iocage.lib.ioc_json import IOCJson

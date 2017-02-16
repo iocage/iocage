@@ -1,5 +1,6 @@
 """destroy module for the cli."""
 import logging
+from builtins import next
 
 import click
 
@@ -24,16 +25,16 @@ def destroy_cmd(force, jails):
         jail_list, paths = IOCList("uuid").list_datasets()
 
         for jail in jails:
-            _jail = {tag: uuid for (tag, uuid) in jail_list.iteritems() if
+            _jail = {tag: uuid for (tag, uuid) in jail_list.items() if
                      uuid.startswith(jail) or tag == jail}
 
             if len(_jail) == 1:
-                tag, uuid = next(_jail.iteritems())
+                tag, uuid = next(iter(_jail.items()))
                 path = paths[tag]
             elif len(_jail) > 1:
                 lgr.error("Multiple jails found for"
                           " {}:".format(jail))
-                for t, u in sorted(_jail.iteritems()):
+                for t, u in sorted(_jail.items()):
                     lgr.error("  {} ({})".format(u, t))
                 raise RuntimeError()
             else:

@@ -19,7 +19,8 @@ def activate_cmd(zpool, force):
     try:
         if force:
             zpools = Popen(["zpool", "list", "-H", "-o", "name"],
-                           stdout=PIPE).communicate()[0].split()
+                           stdout=PIPE).communicate()[0].decode(
+                "utf-8").split()
 
             for zfs in zpools:
                 # If they specify force we just want one active pool.

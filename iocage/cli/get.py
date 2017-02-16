@@ -1,6 +1,7 @@
 """get module for the cli."""
 import json
 import logging
+from builtins import next
 
 import click
 from texttable import Texttable
@@ -38,16 +39,16 @@ def get_cmd(prop, jail, recursive, header, plugin):
             lgr.info("Usage: iocage get [OPTIONS] PROP JAIL\n")
             raise RuntimeError("Error: Missing argument \"jail\".")
 
-        _jail = {tag: uuid for (tag, uuid) in jails.iteritems() if
+        _jail = {tag: uuid for (tag, uuid) in jails.items() if
                  uuid.startswith(jail) or tag == jail}
 
         if len(_jail) == 1:
-            tag, uuid = next(_jail.iteritems())
+            tag, uuid = next(iter(_jail.items()))
             path = paths[tag]
         elif len(_jail) > 1:
             lgr.error("Multiple jails found for"
                       " {}:".format(jail))
-            for t, u in sorted(_jail.iteritems()):
+            for t, u in sorted(_jail.items()):
                 lgr.error("  {} ({})".format(u, t))
             raise RuntimeError()
         else:
@@ -73,14 +74,15 @@ def get_cmd(prop, jail, recursive, header, plugin):
         elif prop == "all":
             props = IOCJson(path).json_get_value(prop)
 
-            for p, v in props.iteritems():
+            for p, v in props.items():
                 lgr.info("{}:{}".format(p, v))
         elif prop == "fstab":
             pool = IOCJson().json_get_value("pool")
             iocroot = IOCJson(pool).json_get_value("iocroot")
             index = 0
 
-            with open("{}/jails/{}/fstab".format(iocroot, uuid), "r") as fstab:
+            with open("{}/jails/{}/fstab".format(iocroot, uuid), "r") as \
+                    fstab:
                 for line in fstab.readlines():
                     line = line.rsplit("#")[0].rstrip()
                     jail_list.append([index, line.replace("\t", " ")])
@@ -88,6 +90,8 @@ def get_cmd(prop, jail, recursive, header, plugin):
 
             if header:
                 jail_list.insert(0, ["INDEX", "FSTAB ENTRY"])
+                # We get an infinite float otherwise.
+                table.set_cols_dtype(["t", "t"])
                 table.add_rows(jail_list)
                 lgr.info(table.draw())
             else:
@@ -123,6 +127,8 @@ def get_cmd(prop, jail, recursive, header, plugin):
         # Prints the table
         if header:
             jail_list.insert(0, ["UUID", "TAG", "PROP - {}".format(prop)])
+            # We get an infinite float otherwise.
+            table.set_cols_dtype(["t", "t", "t"])
             table.add_rows(jail_list)
             lgr.info(table.draw())
         else:

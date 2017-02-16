@@ -1,9 +1,11 @@
 """update module for the cli."""
 import logging
-from subprocess import Popen, check_output
+from builtins import next
+from subprocess import Popen
 
 import click
 
+from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_fetch import IOCFetch
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
@@ -22,22 +24,22 @@ def update_cmd(jail):
     lgr = logging.getLogger('ioc_cli_update')
 
     jails, paths = IOCList("uuid").list_datasets()
-    _jail = {tag: uuid for (tag, uuid) in jails.iteritems() if
+    _jail = {tag: uuid for (tag, uuid) in jails.items() if
              uuid.startswith(jail) or tag == jail}
 
     if len(_jail) == 1:
-        tag, uuid = next(_jail.iteritems())
+        tag, uuid = next(iter(_jail.items()))
         path = paths[tag]
     elif len(_jail) > 1:
         lgr.error("Multiple jails found for"
                   " {}:".format(jail))
-        for t, u in sorted(_jail.iteritems()):
+        for t, u in sorted(_jail.items()):
             lgr.error("  {} ({})".format(u, t))
         raise RuntimeError()
     else:
         raise RuntimeError("{} not found!".format(jail))
 
-    freebsd_version = check_output(["freebsd-version"])
+    freebsd_version = checkoutput(["freebsd-version"])
     status, jid = IOCList.list_get_jid(uuid)
     conf = IOCJson(path).json_load()
     started = False

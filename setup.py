@@ -8,7 +8,7 @@ else:
     _data = [('/usr/local/etc/rc.d', ['rc.d/iocage'])]
 
 setup(name='iocage',
-      version='0.9.4.1',
+      version='0.9.5',
       description='A jail manager that uses ZFS.',
       author='Brandon Schneider and Peter Toth',
       author_email='brandon@ixsystems.com',

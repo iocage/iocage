@@ -1,14 +1,14 @@
 """This is responsible for starting jails."""
 import logging
 import re
+from builtins import hex, object, range
 from datetime import datetime
 from os import X_OK, access, chdir, getcwd, makedirs, path as ospath, \
     symlink, uname
 from shutil import copy
-from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call, \
-    check_output
+from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
 
-from iocage.lib.ioc_common import open_atomic
+from iocage.lib.ioc_common import checkoutput, open_atomic
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
@@ -116,19 +116,20 @@ class IOCStart(object):
                                                    jdataset)],
                                    stdout=PIPE, stderr=PIPE)
                     except CalledProcessError:
-                        check_output(["zfs", "create", "-o",
-                                      "compression=lz4", "-o",
-                                      "mountpoint=none",
-                                      "{}/{}".format(self.pool, jdataset)],
-                                     stderr=STDOUT)
+                        checkoutput(["zfs", "create", "-o",
+                                     "compression=lz4", "-o",
+                                     "mountpoint=none",
+                                     "{}/{}".format(self.pool, jdataset)],
+                                    stderr=STDOUT)
 
                     try:
-                        check_output(["zfs", "set", "jailed=on",
-                                      "{}/{}".format(self.pool, jdataset)],
-                                     stderr=STDOUT)
+                        checkoutput(["zfs", "set", "jailed=on",
+                                     "{}/{}".format(self.pool, jdataset)],
+                                    stderr=STDOUT)
                     except CalledProcessError as err:
                         raise RuntimeError(
-                            "ERROR: {}".format(err.output.strip()))
+                            "ERROR: {}".format(
+                                err.output.decode("utf-8").rstrip()))
 
             # FreeBSD 9.3 and under do not support this.
             if userland_version <= 9.3:
@@ -234,37 +235,39 @@ class IOCStart(object):
             if self.conf["jail_zfs"] == "on":
                 for jdataset in self.conf["jail_zfs_dataset"].split():
                     jdataset = jdataset.strip()
-                    children = check_output(["zfs", "list", "-H", "-r", "-o",
-                                             "name", "-S", "name",
-                                             "{}/{}".format(self.pool,
-                                                            jdataset)])
+                    children = checkoutput(["zfs", "list", "-H", "-r", "-o",
+                                            "name", "-S", "name",
+                                            "{}/{}".format(self.pool,
+                                                           jdataset)])
 
                     try:
-                        check_output(
+                        checkoutput(
                             ["zfs", "jail", "ioc-{}".format(self.uuid),
                              "{}/{}".format(self.pool, jdataset)],
                             stderr=STDOUT)
                     except CalledProcessError as err:
                         raise RuntimeError(
-                            "ERROR: {}".format(err.output.strip()))
+                            "ERROR: {}".format(
+                                err.output.decode("utf-8").rstrip()))
 
                     for child in children.split():
                         child = child.strip()
 
                         try:
-                            mountpoint = check_output(["zfs", "get", "-H",
-                                                       "-o",
-                                                       "value", "mountpoint",
-                                                       "{}/{}".format(
-                                                           self.pool,
-                                                           jdataset)]).strip()
+                            mountpoint = checkoutput(["zfs", "get", "-H",
+                                                      "-o",
+                                                      "value", "mountpoint",
+                                                      "{}/{}".format(
+                                                          self.pool,
+                                                          jdataset)]).strip()
                             if mountpoint != "none":
-                                check_output(["jexec", "ioc-{}".format(
+                                checkoutput(["jexec", "ioc-{}".format(
                                     self.uuid), "zfs", "mount", child],
-                                             stderr=STDOUT)
+                                            stderr=STDOUT)
                         except CalledProcessError as err:
                             raise RuntimeError(
-                                "ERROR: {}".format(err.output.strip()))
+                                "ERROR: {}".format(
+                                    err.output.decode("utf-8").rstrip()))
 
             self.start_generate_resolv()
             # TODO: exec_fib support
@@ -302,9 +305,11 @@ class IOCStart(object):
 
                 try:
                     memberif = Popen(["ifconfig", bridge],
-                                     stdout=PIPE).communicate()[0].split()[40]
+                                     stdout=PIPE).communicate()[0].decode(
+                        "utf-8").split()[40]
                     membermtu = Popen(["ifconfig", memberif],
-                                      stdout=PIPE).communicate()[0].split()[5]
+                                      stdout=PIPE).communicate()[0].decode(
+                        "utf-8").split()[5]
 
                     for ip in ip4_addr.split(','):
                         iface, ip4 = ip.split("|")
@@ -323,54 +328,55 @@ class IOCStart(object):
                             epair_a = Popen(epair_a_cmd,
                                             stdout=PIPE).communicate()[0]
                             epair_a = epair_a.strip()
-                            epair_b = re.sub("a$", "b", epair_a)
+                            epair_b = re.sub(b"a$", b"b", epair_a)
 
                             try:
                                 # Host side
-                                check_output(["ifconfig", epair_a, "name",
-                                              "{}:{}".format(nic, jid), "mtu",
-                                              membermtu], stderr=STDOUT)
-                                check_output(["ifconfig", "{}:{}".format(nic,
-                                                                         jid),
-                                              "link", mac_a], stderr=STDOUT)
-                                check_output(["ifconfig", "{}:{}".format(nic,
-                                                                         jid),
-                                              "description",
-                                              "associated with jail:"
-                                              " {} ({})".format(self.uuid,
-                                                                self.conf[
-                                                                    "tag"])],
-                                             stderr=STDOUT)
+                                checkoutput(["ifconfig", epair_a, "name",
+                                             "{}:{}".format(nic, jid), "mtu",
+                                             membermtu], stderr=STDOUT)
+                                checkoutput(["ifconfig", "{}:{}".format(nic,
+                                                                        jid),
+                                             "link", mac_a], stderr=STDOUT)
+                                checkoutput(["ifconfig", "{}:{}".format(nic,
+                                                                        jid),
+                                             "description",
+                                             "associated with jail:"
+                                             " {} ({})".format(self.uuid,
+                                                               self.conf[
+                                                                   "tag"])],
+                                            stderr=STDOUT)
 
                                 # Jail side
-                                check_output(["ifconfig", epair_b, "vnet",
-                                              "ioc-{}".format(self.uuid)],
-                                             stderr=STDOUT)
-                                check_output(["jexec", "ioc-{}".format(
+                                checkoutput(["ifconfig", epair_b, "vnet",
+                                             "ioc-{}".format(self.uuid)],
+                                            stderr=STDOUT)
+                                checkoutput(["jexec", "ioc-{}".format(
                                     self.uuid), "ifconfig", epair_b, "name",
-                                              nic, "mtu", membermtu],
-                                             stderr=STDOUT)
-                                check_output(["jexec", "ioc-{}".format(
+                                             nic, "mtu", membermtu],
+                                            stderr=STDOUT)
+                                checkoutput(["jexec", "ioc-{}".format(
                                     self.uuid), "ifconfig", nic, "link",
-                                              mac_b],
-                                             stderr=STDOUT)
+                                             mac_b],
+                                            stderr=STDOUT)
 
-                                check_output(["ifconfig", bridge, "addm",
-                                              "{}:{}".format(nic, jid), "up"],
-                                             stderr=STDOUT)
-                                check_output(["ifconfig", "{}:{}".format(nic,
-                                                                         jid),
-                                              "up"], stderr=STDOUT)
-                                check_output(
+                                checkoutput(["ifconfig", bridge, "addm",
+                                             "{}:{}".format(nic, jid), "up"],
+                                            stderr=STDOUT)
+                                checkoutput(["ifconfig", "{}:{}".format(nic,
+                                                                        jid),
+                                             "up"], stderr=STDOUT)
+                                checkoutput(
                                     ["jexec", "ioc-{}".format(self.uuid),
                                      "ifconfig", iface, ip4, "up"],
                                     stderr=STDOUT)
-                                check_output(["jexec", "ioc-{}".format(
+                                checkoutput(["jexec", "ioc-{}".format(
                                     self.uuid), "route", "add", "default",
-                                              defaultgw], stderr=STDOUT)
+                                             defaultgw], stderr=STDOUT)
                             except CalledProcessError as err:
                                 raise RuntimeError(
-                                    "ERROR: {}".format(err.output.strip()))
+                                    "ERROR: {}".format(
+                                        err.output.decode("utf-8").rstrip()))
                 except:
                     pass
 
@@ -415,7 +421,7 @@ class IOCStart(object):
 
             # We have to flatten our list of lists.
             mac_list = [m for maclist in mac_list for m in maclist]
-            for number in xrange(16 ** 6):
+            for number in range(16 ** 6):
                 # SO
                 hex_num_a = hex(number)[2:].zfill(6)
                 hex_num_b = hex(number + 1)[2:].zfill(6)

@@ -1,5 +1,6 @@
 """start module for the cli."""
 import logging
+from builtins import next
 from collections import OrderedDict
 from operator import itemgetter
 
@@ -38,9 +39,9 @@ def start_cmd(rc, jails):
             if boot == "on":
                 boot_order[j] = int(priority)
 
-        boot_order = OrderedDict(sorted(boot_order.iteritems(),
+        boot_order = OrderedDict(sorted(iter(boot_order.items()),
                                         key=itemgetter(1)))
-        for j in boot_order.iterkeys():
+        for j in boot_order.keys():
             uuid = _jails[j]
             path = paths[j]
             conf = IOCJson(path).json_load()
@@ -61,16 +62,16 @@ def start_cmd(rc, jails):
             IOCStart(uuid, j, path, conf)
     else:
         for jail in jails:
-            _jail = {tag: uuid for (tag, uuid) in _jails.iteritems() if
+            _jail = {tag: uuid for (tag, uuid) in _jails.items() if
                      uuid.startswith(jail) or tag == jail}
 
             if len(_jail) == 1:
-                tag, uuid = next(_jail.iteritems())
+                tag, uuid = next(iter(_jail.items()))
                 path = paths[tag]
             elif len(_jail) > 1:
                 lgr.error("Multiple jails found for"
                           " {}:".format(jail))
-                for t, u in sorted(_jail.iteritems()):
+                for t, u in sorted(_jail.items()):
                     lgr.error("  {} ({})".format(u, t))
                 raise RuntimeError()
             else:

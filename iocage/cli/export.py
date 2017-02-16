@@ -2,12 +2,13 @@
 import logging
 import os
 import zipfile
+from builtins import next
 from datetime import datetime
-from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call, \
-    check_output
+from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
 
 import click
 
+from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
@@ -25,16 +26,16 @@ def export_cmd(jail):
     iocroot = IOCJson(pool).json_get_value("iocroot")
     date = datetime.utcnow().strftime("%F")
     jails, paths = IOCList("uuid").list_datasets()
-    _jail = {tag: uuid for (tag, uuid) in jails.iteritems() if
+    _jail = {tag: uuid for (tag, uuid) in jails.items() if
              uuid.startswith(jail) or tag == jail}
 
     if len(_jail) == 1:
-        tag, uuid = next(_jail.iteritems())
+        tag, uuid = next(iter(_jail.items()))
         path = paths[tag]
     elif len(_jail) > 1:
         lgr.error("Multiple jails found for"
                   " {}:".format(jail))
-        for t, u in sorted(_jail.iteritems()):
+        for t, u in sorted(_jail.items()):
             lgr.error("  {} ({})".format(u, t))
         raise RuntimeError()
     else:
@@ -55,13 +56,15 @@ def export_cmd(jail):
     target = "{}@ioc-export-{}".format(image_path, date)
 
     try:
-        check_output(["zfs", "snapshot", "-r", target], stderr=STDOUT)
+        checkoutput(["zfs", "snapshot", "-r", target], stderr=STDOUT)
     except CalledProcessError as err:
-        raise RuntimeError("ERROR: {}".format(err.output.strip()))
+        raise RuntimeError(
+            "ERROR: {}".format(err.output.decode("utf-8").rstrip()))
 
     datasets = Popen(["zfs", "list", "-H", "-r",
                       "-o", "name", "{}{}".format(pool, path)],
-                     stdout=PIPE, stderr=PIPE).communicate()[0].split()
+                     stdout=PIPE, stderr=PIPE).communicate()[0].decode(
+        "utf-8").split()
 
     for dataset in datasets:
         if len(dataset) == 54:
@@ -77,7 +80,7 @@ def export_cmd(jail):
         # Sending each individually as sending them recursively to a file does
         # not work how one expects.
         try:
-            with open(_image, "w") as export:
+            with open(_image, "wb") as export:
                 lgr.info("Exporting dataset: {}".format(dataset))
                 check_call(["zfs", "send", target], stdout=export)
         except CalledProcessError as err:
@@ -94,12 +97,13 @@ def export_cmd(jail):
 
     # Cleanup our mess.
     try:
-        check_output(["zfs", "destroy", "-r", target], stderr=STDOUT)
+        checkoutput(["zfs", "destroy", "-r", target], stderr=STDOUT)
 
         for jail in jail_list:
             os.remove(jail)
 
     except CalledProcessError as err:
-        raise RuntimeError("ERROR: {}".format(err.output.strip()))
+        raise RuntimeError(
+            "ERROR: {}".format(err.output.decode("utf-8").rstrip()))
 
     lgr.info("\nExported: {}.zip".format(image))

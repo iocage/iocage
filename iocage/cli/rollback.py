@@ -1,10 +1,11 @@
 """rollback module for the cli."""
 import logging
-from subprocess import CalledProcessError, PIPE, Popen, check_call, \
-    check_output
+from builtins import next
+from subprocess import CalledProcessError, PIPE, Popen, check_call
 
 import click
 
+from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
@@ -25,16 +26,16 @@ def rollback_cmd(jail, name, force):
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")
 
-    _jail = {tag: uuid for (tag, uuid) in jails.iteritems() if
+    _jail = {tag: uuid for (tag, uuid) in jails.items() if
              uuid.startswith(jail) or tag == jail}
 
     if len(_jail) == 1:
-        tag, uuid = next(_jail.iteritems())
+        tag, uuid = next(iter(_jail.items()))
         path = paths[tag]
     elif len(_jail) > 1:
         lgr.error("Multiple jails found for"
                   " {}:".format(jail))
-        for t, u in sorted(_jail.iteritems()):
+        for t, u in sorted(_jail.items()):
             lgr.error("  {} ({})".format(u, t))
         raise RuntimeError()
     else:
@@ -43,7 +44,7 @@ def rollback_cmd(jail, name, force):
     # Looks like foo/iocage/jails/df0ef69a-57b6-4480-b1f8-88f7b6febbdf@BAR
     target = "{}{}@{}".format(pool, path, name)
     try:
-        check_output(["zfs", "get", "-H", "creation", target], stderr=PIPE)
+        checkoutput(["zfs", "get", "-H", "creation", target], stderr=PIPE)
     except CalledProcessError:
         raise RuntimeError("ERROR: Snapshot {} does not exist!".format(target))
 
@@ -59,7 +60,7 @@ def rollback_cmd(jail, name, force):
         datasets = Popen(["zfs", "list", "-H", "-r",
                           "-o", "name", "{}{}".format(pool, path)],
                          stdout=PIPE,
-                         stderr=PIPE).communicate()[0].split()
+                         stderr=PIPE).communicate()[0].decode("utf-8").split()
 
         for dataset in datasets:
             check_call(

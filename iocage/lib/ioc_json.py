@@ -4,10 +4,11 @@ import logging
 import os
 import re
 import sys
+from builtins import object
 from os import geteuid, path
-from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_output
+from subprocess import CalledProcessError, PIPE, Popen, STDOUT
 
-from iocage.lib.ioc_common import get_nested_key, open_atomic
+from iocage.lib.ioc_common import checkoutput, get_nested_key, open_atomic
 
 
 def _get_pool_and_iocroot():
@@ -37,7 +38,7 @@ class IOCJson(object):
             raise RuntimeError("You need to be root to convert the"
                                " configurations to the new format!")
 
-        with open(self.location + "/config") as conf:
+        with open(self.location + "/config", "r") as conf:
             lines = conf.readlines()
 
         key_and_value = {}
@@ -89,13 +90,13 @@ class IOCJson(object):
         version = self.json_get_version()
 
         try:
-            with open(self.location + "/config.json") as conf:
+            with open(self.location + "/config.json", "r") as conf:
                 conf = json.load(conf)
-        except IOError:
+        except (IOError, OSError):
             if path.isfile(self.location + "/config"):
                 self.json_convert_from_ucl()
 
-                with open(self.location + "/config.json") as conf:
+                with open(self.location + "/config.json", "r") as conf:
                     conf = json.load(conf)
             else:
                 dataset = self.location.split("/")
@@ -106,7 +107,7 @@ class IOCJson(object):
 
                 self.json_convert_from_zfs(uuid)
 
-                with open(self.location + "/config.json") as conf:
+                with open(self.location + "/config.json", "r") as conf:
                     conf = json.load(conf)
 
         try:
@@ -130,12 +131,14 @@ class IOCJson(object):
         if prop == "pool":
             match = 0
             zpools = Popen(["zpool", "list", "-H", "-o", "name"],
-                           stdout=PIPE).communicate()[0].split()
+                           stdout=PIPE).communicate()[0].decode(
+                "utf-8").split()
 
             for zfs in zpools:
                 dataset = Popen(["zfs", "get", "-H", "-o", "value",
                                  "org.freebsd.ioc:active", zfs],
-                                stdout=PIPE).communicate()[0].strip()
+                                stdout=PIPE).communicate()[0].decode(
+                    "utf-8").strip()
 
                 if dataset == "yes":
                     _dataset = zfs
@@ -160,7 +163,8 @@ class IOCJson(object):
                     # We use the first zpool the user has, they are free to
                     # change it.
                     cmd = ["zpool", "list", "-H", "-o", "name"]
-                    zpools = Popen(cmd, stdout=PIPE).communicate()[0].split()
+                    zpools = Popen(cmd, stdout=PIPE).communicate()[0].decode(
+                        "utf-8").split()
 
                     if os.geteuid() != 0:
                         raise RuntimeError("Run as root to automatically "
@@ -178,8 +182,8 @@ class IOCJson(object):
             # Location in this case is actually the zpool.
             try:
                 loc = "{}/iocage".format(self.location)
-                mount = check_output(["zfs", "get", "-H", "-o", "value",
-                                      "mountpoint", loc]).strip()
+                mount = checkoutput(["zfs", "get", "-H", "-o", "value",
+                                     "mountpoint", loc]).strip()
                 return mount
             except CalledProcessError:
                 raise RuntimeError("{} not found!".format(self.location))
@@ -210,7 +214,8 @@ class IOCJson(object):
         conf[key] = value
         sysctls_cmd = ["sysctl", "-d", "security.jail.param"]
         jail_param_regex = re.compile("security.jail.param.")
-        sysctls_list = Popen(sysctls_cmd, stdout=PIPE).communicate()[0].split()
+        sysctls_list = Popen(sysctls_cmd, stdout=PIPE).communicate()[0].decode(
+            "utf-8").split()
         jail_params = [p.replace("security.jail.param.", "").replace(":", "")
                        for p in sysctls_list if re.match(jail_param_regex, p)]
         single_period = ["allow_raw_sockets", "allow_socket_af",
@@ -233,28 +238,30 @@ class IOCJson(object):
                                                                    old_tag))
             if value == "yes":
                 try:
-                    check_output(["zfs", "rename", "-p", old_location,
-                                  new_location], stderr=STDOUT)
+                    checkoutput(["zfs", "rename", "-p", old_location,
+                                 new_location], stderr=STDOUT)
                     conf["type"] = "template"
 
                     self.location = new_location.lstrip(pool).replace(
                         "/iocage", iocroot)
                 except CalledProcessError as err:
-                    raise RuntimeError("ERROR: {}".format(err.output.strip()))
+                    raise RuntimeError("ERROR: {}".format(
+                        err.output.decode("utf-8").rstrip()))
 
                 self.lgr.info("{} ({}) converted to a template.".format(uuid,
                                                                         old_tag))
                 self.lgr.disabled = True
             elif value == "no":
                 try:
-                    check_output(["zfs", "rename", "-p", new_location,
-                                  old_location], stderr=STDOUT)
+                    checkoutput(["zfs", "rename", "-p", new_location,
+                                 old_location], stderr=STDOUT)
                     conf["type"] = "jail"
 
                     self.location = old_location.lstrip(pool).replace(
                         "/iocage", iocroot)
                 except CalledProcessError as err:
-                    raise RuntimeError("ERROR: {}".format(err.output.strip()))
+                    raise RuntimeError("ERROR: {}".format(
+                        err.output.decode("utf-8").rstrip()))
 
                 self.lgr.info("{} ({}) converted to a jail.".format(uuid,
                                                                     old_tag))
@@ -278,10 +285,11 @@ class IOCJson(object):
 
             if key in jail_params:
                 try:
-                    check_output(["jail", "-m", "jid={}".format(jid),
-                                  "{}={}".format(key, value)], stderr=STDOUT)
+                    checkoutput(["jail", "-m", "jid={}".format(jid),
+                                 "{}={}".format(key, value)], stderr=STDOUT)
                 except CalledProcessError as err:
-                    raise RuntimeError("ERROR: {}".format(err.output.strip()))
+                    raise RuntimeError("ERROR: {}".format(
+                        err.output.decode("utf-8").rstrip()))
 
     @staticmethod
     def json_get_version():
@@ -319,7 +327,7 @@ class IOCJson(object):
         try:
             freebsd_version = "{}/releases/{}/root/bin/freebsd-version".format(
                 iocroot, conf["release"])
-        except IOError:
+        except (IOError, OSError):
             freebsd_version = "{}/templates/{" \
                               "}/root/bin/freebsd-version".format(
                 iocroot, conf["tag"])
@@ -348,9 +356,9 @@ class IOCJson(object):
     def json_plugin_load(self):
         try:
             with open("{}/plugin/settings.json".format(
-                    self.location)) as settings:
+                    self.location), "rb") as settings:
                 settings = json.load(settings)
-        except IOError:
+        except (IOError, OSError):
             raise RuntimeError(
                 "No settings.json exists in {}/plugin!".format(self.location))
 
@@ -363,9 +371,9 @@ class IOCJson(object):
         conf = self.json_load()
         uuid = conf["host_hostuuid"]
         tag = conf["tag"]
-        _path = check_output(["zfs", "get", "-H", "-o", "value", "mountpoint",
-                              "{}/iocage/jails/{}".format(pool,
-                                                          uuid)]).rstrip()
+        _path = checkoutput(["zfs", "get", "-H", "-o", "value", "mountpoint",
+                             "{}/iocage/jails/{}".format(pool,
+                                                         uuid)]).rstrip()
         # Plugin variables
         settings = self.json_plugin_load()
         serviceget = settings["serviceget"]
@@ -397,9 +405,9 @@ class IOCJson(object):
         conf = self.json_load()
         uuid = conf["host_hostuuid"]
         tag = conf["tag"]
-        _path = check_output(["zfs", "get", "-H", "-o", "value", "mountpoint",
-                              "{}/iocage/jails/{}".format(pool,
-                                                          uuid)]).rstrip()
+        _path = checkoutput(["zfs", "get", "-H", "-o", "value", "mountpoint",
+                             "{}/iocage/jails/{}".format(pool,
+                                                         uuid)]).rstrip()
         status, _ = IOCList().list_get_jid(uuid)
 
         # Plugin variables

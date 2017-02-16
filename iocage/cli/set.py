@@ -1,5 +1,6 @@
 """set module for the cli."""
 import logging
+from builtins import next
 
 import click
 
@@ -24,17 +25,17 @@ def set_cmd(prop, jail, plugin):
     lgr = logging.getLogger('ioc_cli_set')
 
     jails, paths = IOCList("uuid").list_datasets(set=True)
-    _jail = {tag: uuid for (tag, uuid) in jails.iteritems() if
+    _jail = {tag: uuid for (tag, uuid) in jails.items() if
              uuid.startswith(jail) or tag == jail}
 
     if len(_jail) == 1:
-        tag, uuid = next(_jail.iteritems())
+        tag, uuid = next(iter(_jail.items()))
         path = paths[tag]
         iocjson = IOCJson(path)
     elif len(_jail) > 1:
         lgr.error("Multiple jails found for"
                   " {}:".format(jail))
-        for t, u in sorted(_jail.iteritems()):
+        for t, u in sorted(_jail.items()):
             lgr.error("  {} ({})".format(u, t))
         raise RuntimeError()
     else:

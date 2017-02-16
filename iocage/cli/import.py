@@ -3,10 +3,11 @@ import fnmatch
 import logging
 import os
 import zipfile
-from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_output
+from subprocess import CalledProcessError, PIPE, Popen, STDOUT
 
 import click
 
+from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_json import IOCJson
 
 __cmdname__ = "import_cmd"
@@ -69,9 +70,10 @@ def import_cmd(jail):
     try:
         target = "{}{}/jails/{}@ioc-export-{}".format(pool, iocroot, uuid,
                                                       date)
-        check_output(["zfs", "destroy", "-r", target], stderr=STDOUT)
+        checkoutput(["zfs", "destroy", "-r", target], stderr=STDOUT)
     except CalledProcessError as err:
-        raise RuntimeError("ERROR: {}".format(err.output.strip()))
+        raise RuntimeError(
+            "ERROR: {}".format(err.output.decode("utf-8").rstrip()))
 
     tag = IOCJson("{}/jails/{}".format(iocroot, uuid),
                   silent=True).json_set_value("tag={}".format(tag))
