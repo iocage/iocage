@@ -30,7 +30,7 @@ def sort_tag(tag):
     if len(_sort) > 1 and _sort[1].isdigit():
         return _sort[0], int(_sort[1])
     else:
-        return _tag, 1
+        return _tag, 0
 
 
 def sort_release(releases, iocroot, split=False):
