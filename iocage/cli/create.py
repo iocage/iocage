@@ -36,10 +36,11 @@ def create_cmd(release, template, count, props, pkglist, short):
     lgr = logging.getLogger('ioc_cli_create')
 
     if not template and not release:
-        exit("Must supply either --template (-t) or --release (-r)!")
+        raise RuntimeError(
+            "Must supply either --template (-t) or --release (-r)!")
 
     if release and "=" in release:
-        exit("Please supply a valid RELEASE!")
+        raise RuntimeError("Please supply a valid RELEASE!")
 
     if template:
         # We don't really care it's not a RELEASE at this point.
@@ -58,6 +59,13 @@ def create_cmd(release, template, count, props, pkglist, short):
                                "with the format:{}".format(pkglist,
                                                            _pkgformat))
 
+    pool = IOCJson().json_get_value("pool")
+    iocroot = IOCJson(pool).json_get_value("iocroot")
+
+    if not os.path.isdir("{}/releases/{}".format(iocroot,
+                                                 release)):
+        IOCFetch(release).fetch_release()
+
     if count == 1:
         try:
             IOCCreate(release, props, 0, pkglist,
@@ -70,16 +78,6 @@ def create_cmd(release, template, count, props, pkglist, short):
                                     rtrn_object=True).list_datasets()
                 for temp in templates:
                     lgr.info("  {}".format(temp))
-            else:
-                pool = IOCJson().json_get_value("pool")
-                iocroot = IOCJson(pool).json_get_value("iocroot")
-
-                if not os.path.isdir("{}/releases/{}".format(iocroot,
-                                                             release)):
-                    IOCFetch(release).fetch_release()
-
-                IOCCreate(release, props, 0, pkglist,
-                          template=template, short=short).create_jail()
     else:
         for j in range(1, count + 1):
             try:
@@ -93,10 +91,4 @@ def create_cmd(release, template, count, props, pkglist, short):
                                         rtrn_object=True).list_datasets()
                     for temp in templates:
                         lgr.info("  {}".format(temp))
-                else:
-                    lgr.info("Fetched RELEASEs:")
-                    releases = IOCList("base", hdr=False,
-                                       rtrn_object=True).list_datasets()
-                    for rel in releases:
-                        lgr.info("  {}".format(rel))
-                exit()
+                exit(1)
