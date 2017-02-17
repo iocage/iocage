@@ -14,7 +14,7 @@ __cmdname__ = "get_cmd"
 
 @click.command(context_settings=dict(
     max_content_width=400, ), name="get", help="Gets the specified property.")
-@click.argument("prop")
+@click.argument("prop", required=True, default="")
 @click.argument("jail", required=True, default="")
 @click.option("--header", "-h", "-H", is_flag=True, default=True,
               help="For scripting, use tabs for separators.")
@@ -25,7 +25,11 @@ __cmdname__ = "get_cmd"
                    " nested key use . as a separator."
                    "\n\b Example: iocage get -P foo.bar.baz PLUGIN",
               is_flag=True)
-def get_cmd(prop, jail, recursive, header, plugin):
+@click.option("--all", "-a", "_all", help="Get all properties for the "
+                                          "specified jail.", is_flag=True)
+@click.option("--pool", "-p", "_pool", help="Get the currently activated "
+                                            "zpool.", is_flag=True)
+def get_cmd(prop, _all, _pool, jail, recursive, header, plugin):
     """Get a list of jails and print the property."""
     lgr = logging.getLogger('ioc_cli_get')
 
@@ -33,6 +37,17 @@ def get_cmd(prop, jail, recursive, header, plugin):
     jails, paths = IOCList("uuid").list_datasets()
     jail_list = []
     table = Texttable(max_width=0)
+
+    if _all:
+        # Confusing I know.
+        jail = prop
+        prop = "all"
+
+    if _pool:
+        pool = IOCJson().json_get_value("pool")
+
+        lgr.info(pool)
+        exit()
 
     if recursive is None:
         if jail == "":
@@ -115,9 +130,12 @@ def get_cmd(prop, jail, recursive, header, plugin):
                     else:
                         state = "down"
 
-                    jail_list.append([j, state])
+                    jail_list.append([uuid, j, state])
                 elif prop == "all":
-                    raise
+                    props = IOCJson(path).json_get_value(prop)
+
+                    for p, v in props.items():
+                        jail_list.append([uuid, j, "{}:{}".format(p, v)])
                 else:
                     jail_list.append(
                         [uuid, j, IOCJson(path).json_get_value(prop)])
