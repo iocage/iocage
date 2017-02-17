@@ -6,7 +6,7 @@ import re
 import sys
 from builtins import object
 from os import geteuid, path
-from subprocess import CalledProcessError, PIPE, Popen, STDOUT
+from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
 
 from iocage.lib.ioc_common import checkoutput, get_nested_key, open_atomic
 
@@ -128,6 +128,8 @@ class IOCJson(object):
 
     def json_get_value(self, prop):
         """Returns a string with the specified prop's value."""
+        old = False
+
         if prop == "pool":
             match = 0
             zpools = Popen(["zpool", "list", "-H", "-o", "name"],
@@ -140,12 +142,31 @@ class IOCJson(object):
                                 stdout=PIPE).communicate()[0].decode(
                     "utf-8").strip()
 
+                old_dataset = Popen(["zpool", "get", "-H", "-o", "value",
+                                     "comment", zfs],
+                                    stdout=PIPE).communicate()[0].decode(
+                    "utf-8").strip()
+
                 if dataset == "yes":
                     _dataset = zfs
                     match += 1
 
+                if old_dataset == "iocage":
+                    _dataset = zfs
+                    match += 1
+                    old = True
+
             if match == 1:
                 pool = _dataset
+
+                if old:
+                    if os.geteuid() != 0:
+                        raise RuntimeError("Run as root to migrate old pool"
+                                           " activation property!")
+                    check_call(["zpool", "set", "comment=-", pool],
+                               stderr=PIPE, stdout=PIPE)
+                    check_call(["zfs", "set", "org.freebsd.ioc:active=yes",
+                                pool], stderr=PIPE, stdout=PIPE)
 
                 return pool
             elif match >= 2:
@@ -356,7 +377,7 @@ class IOCJson(object):
     def json_plugin_load(self):
         try:
             with open("{}/plugin/settings.json".format(
-                    self.location), "rb") as settings:
+                    self.location), "r") as settings:
                 settings = json.load(settings)
         except (IOError, OSError):
             raise RuntimeError(
