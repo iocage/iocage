@@ -9,7 +9,8 @@ from iocage.lib.ioc_list import IOCList
 __cmdname__ = "list_cmd"
 
 
-@click.command(name="list", help="List a specified dataset type")
+@click.command(name="list", help="List a specified dataset type, by default"
+                                 " lists all jails.")
 @click.option("--release", "--base", "-r", "-b", "dataset_type",
               flag_value="base", help="List all bases.")
 @click.option("--template", "-t", "dataset_type", flag_value="template",
