@@ -11,10 +11,10 @@ iocage is in the FreeBSD ports tree as sysutils/py-iocage.
 To install using binary packages, simply run: `pkg install py35-iocage`
 
 If cloning the repo directly:
-- cd into the cloned directory and run `pip 
+- cd into the cloned directory and run `pip3 
 install .` as root.
 
-To install subsequent updates: `git pull` and `pip install -U .`
+To install subsequent updates: `git pull` and `pip3 install -U .`
 
 
 
