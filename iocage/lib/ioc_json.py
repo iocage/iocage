@@ -98,6 +98,8 @@ class IOCJson(object):
             checkoutput(["zfs", "set", "jailed=on",
                          "{}/data".format(dataset)])
 
+        key_and_value["jail_zfs_dataset"] = "iocage/jails/{}/data".format(uuid)
+
         self.json_write(key_and_value)
 
     def json_load(self):
@@ -130,6 +132,11 @@ class IOCJson(object):
                              "value",
                              "org.freebsd.iocage:host_hostuuid",
                              self.location]).rstrip()
+                        jail_hostname = checkoutput(
+                            ["zfs", "get", "-H", "-o",
+                             "value",
+                             "org.freebsd.iocage:host_hostname",
+                             self.location]).rstrip()
                         short_uuid = full_uuid[:8]
                         full_dataset = "{}/iocage/jails/{}".format(
                             pool, full_uuid)
@@ -154,10 +161,17 @@ class IOCJson(object):
 
                         jail_zfs_prop = "org.freebsd.iocage:jail_zfs_dataset"
                         uuid_prop = "org.freebsd.iocage:host_hostuuid"
+                        host_prop = "org.freebsd.iocage:host_hostname"
 
                         # Set jailed=off and move the jailed dataset.
                         checkoutput(["zfs", "set", "jailed=off",
                                      "{}/data".format(full_dataset)])
+
+                        # We don't want to change a real hostname.
+                        if jail_hostname == full_uuid:
+                            checkoutput(["zfs", "set", "{}={}".format(
+                                host_prop, short_uuid), full_dataset])
+
                         checkoutput(["zfs", "set", "{}={}".format(
                             uuid_prop, short_uuid), full_dataset])
                         checkoutput(["zfs", "set",
