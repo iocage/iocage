@@ -12,6 +12,12 @@ import click
 from iocage.lib.ioc_check import IOCCheck
 
 
+try:
+    os.environ["LANG"]
+except KeyError:
+    exit("Please set a UTF-8 locale before using iocage.")
+
+
 def print_version(ctx, param, value):
     """Prints the version and then exits."""
     if not value or ctx.resilient_parsing:
