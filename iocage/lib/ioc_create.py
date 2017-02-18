@@ -155,9 +155,6 @@ class IOCCreate(object):
             "host_hostname"        : jail_uuid,
             "exec_fib"             : "0",
             "ip4_addr"             : "none",
-            "ip4_autostart"        : "none",
-            "ip4_autoend"          : "none",
-            "ip4_autosubnet"       : "none",
             "ip4_saddrsel"         : "1",
             "ip4"                  : "new",
             "ip6_addr"             : "none",
@@ -250,7 +247,6 @@ class IOCCreate(object):
             "jail_zfs_mountpoint"  : "none",
             "mount_procfs"         : "0",
             "mount_linprocfs"      : "0",
-            "hack88"               : "0",
             "count"                : "1",
             "vnet"                 : "off",
             # Sync properties
@@ -267,8 +263,6 @@ class IOCCreate(object):
             "used"                 : "readonly",
             "dedup"                : "off",
             "reservation"          : "none",
-            # Git properties
-            "gitlocation"          : "https://github.com"
         }
 
         if self.plugin:
