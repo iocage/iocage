@@ -51,20 +51,22 @@ class IOCJson(object):
 
         self.json_write(key_and_value)
 
-    def json_convert_from_zfs(self, uuid):
+    def json_convert_from_zfs(self, uuid, skip=False):
         """Convert to JSON. Accepts a jail UUID"""
         pool, _ = _get_pool_and_iocroot()
+        dataset = "{}/iocage/jails/{}".format(pool, uuid)
+        jail_zfs_prop = "org.freebsd.iocage:jail_zfs_dataset"
 
         if geteuid() != 0:
             raise RuntimeError("You need to be root to convert the"
                                " configurations to the new format!")
 
-        cmd = ["zfs", "get", "-H", "-o", "property,value", "all",
-               "{}/iocage/jails/{}".format(pool, uuid)]
+        cmd = ["zfs", "get", "-H", "-o", "property,value", "all", dataset]
 
         regex = re.compile("org.freebsd.iocage")
 
-        zfs_get = Popen(cmd, stdout=PIPE).communicate()[0].split("\n")
+        zfs_get = Popen(cmd, stdout=PIPE).communicate()[0].decode(
+            "utf-8").split("\n")
 
         # Find each of the props we want to convert.
         props = [p for p in zfs_get if re.search(regex, p)]
@@ -82,11 +84,26 @@ class IOCJson(object):
                     value = "jail"
             key_and_value[key] = value
 
+        if not skip:
+            # Set jailed=off and move the jailed dataset.
+            checkoutput(["zfs", "set", "jailed=off",
+                         "{}/root/data".format(dataset)])
+            checkoutput(["zfs", "rename", "-f",
+                         "{}/root/data".format(dataset),
+                         "{}/data".format(dataset)])
+            checkoutput(["zfs", "set",
+                         "{}=iocage/jails/{}/data".format(
+                             jail_zfs_prop, uuid),
+                         "{}/data".format(dataset)])
+            checkoutput(["zfs", "set", "jailed=on",
+                         "{}/data".format(dataset)])
+
         self.json_write(key_and_value)
 
     def json_load(self):
         """Load the JSON at the location given. Returns a JSON object."""
         version = self.json_get_version()
+        skip = False
 
         try:
             with open(self.location + "/config.json", "r") as conf:
@@ -103,9 +120,61 @@ class IOCJson(object):
                 for d in dataset:
                     if len(d) == 36:
                         uuid = d
+                    elif len(d) == 8:
+                        # Hack88 migration to a perm short UUID.
+                        pool, iocroot = _get_pool_and_iocroot()
+                        from iocage.lib.ioc_list import IOCList
 
-                self.json_convert_from_zfs(uuid)
+                        full_uuid = checkoutput(
+                            ["zfs", "get", "-H", "-o",
+                             "value",
+                             "org.freebsd.iocage:host_hostuuid",
+                             self.location]).rstrip()
+                        short_uuid = full_uuid[:8]
+                        full_dataset = "{}/iocage/jails/{}".format(
+                            pool, full_uuid)
+                        short_dataset = "{}/iocage/jails/{}".format(
+                            pool, short_uuid)
 
+                        self.json_convert_from_zfs(full_uuid)
+                        with open(self.location + "/config.json", "r") as conf:
+                            conf = json.load(conf)
+
+                        self.lgr.info("hack88 is no longer supported."
+                                      "\n{} is being converted to {} "
+                                      "permanently.".format(full_dataset,
+                                                            short_dataset))
+
+                        status, _ = IOCList().list_get_jid(full_uuid)
+                        if status:
+                            self.lgr.info("Stopping jail to migrate UUIDs.")
+                            from iocage.lib.ioc_stop import IOCStop
+                            IOCStop(full_uuid, conf["tag"], self.location,
+                                    conf, silent=True)
+
+                        jail_zfs_prop = "org.freebsd.iocage:jail_zfs_dataset"
+                        uuid_prop = "org.freebsd.iocage:host_hostuuid"
+
+                        # Set jailed=off and move the jailed dataset.
+                        checkoutput(["zfs", "set", "jailed=off",
+                                     "{}/data".format(full_dataset)])
+                        checkoutput(["zfs", "set", "{}={}".format(
+                            uuid_prop, short_uuid), full_dataset])
+                        checkoutput(["zfs", "set",
+                                     "{}=iocage/jails/{}/data".format(
+                                         jail_zfs_prop, short_uuid),
+                                     "{}/data".format(full_dataset)])
+                        checkoutput(["zfs", "rename", "-f", full_dataset,
+                                     short_dataset])
+                        checkoutput(["zfs", "set", "jailed=on",
+                                     "{}/data".format(short_dataset)])
+
+                        uuid = short_uuid
+                        self.location = "{}/jails/{}".format(iocroot,
+                                                             short_uuid)
+                        skip = True
+
+                self.json_convert_from_zfs(uuid, skip=skip)
                 with open(self.location + "/config.json", "r") as conf:
                     conf = json.load(conf)
 
@@ -149,8 +218,7 @@ class IOCJson(object):
                 if dataset == "yes":
                     _dataset = zfs
                     match += 1
-
-                if old_dataset == "iocage":
+                elif old_dataset == "iocage":
                     _dataset = zfs
                     match += 1
                     old = True
@@ -170,10 +238,13 @@ class IOCJson(object):
                 return pool
             elif match >= 2:
                 if "deactivate" not in sys.argv[1:]:
+                    self.lgr.error("Pools:")
+                    for zpool in zpools:
+                        self.lgr.error("  {}".format(zpool))
                     raise RuntimeError("You have {} ".format(match) +
                                        "pools marked active for iocage "
                                        "usage.\n"
-                                       "Run \"ioc deactivate ZPOOL\" on"
+                                       "Run \"iocage deactivate ZPOOL\" on"
                                        " {} of the".format(match - 1) +
                                        " pools.\n")
             else:
