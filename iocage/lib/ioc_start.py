@@ -1,7 +1,6 @@
 """This is responsible for starting jails."""
 import logging
 import re
-from builtins import hex, object, range
 from datetime import datetime
 from os import X_OK, access, chdir, getcwd, makedirs, path as ospath, \
     symlink, uname

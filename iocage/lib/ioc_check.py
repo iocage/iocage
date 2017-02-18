@@ -2,7 +2,6 @@
 import logging
 import os
 import sys
-from builtins import map, object
 from subprocess import CalledProcessError, PIPE, Popen
 
 from iocage.lib.ioc_common import checkoutput

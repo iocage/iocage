@@ -1,7 +1,6 @@
 """get module for the cli."""
 import json
 import logging
-from builtins import next
 
 import click
 from texttable import Texttable

@@ -1,7 +1,6 @@
 """create module for the cli."""
 import logging
 import os
-from builtins import range
 
 import click
 

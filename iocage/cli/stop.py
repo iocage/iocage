@@ -1,6 +1,5 @@
 """stop module for the cli."""
 import logging
-from builtins import next
 from collections import OrderedDict
 from operator import itemgetter
 
@@ -39,7 +38,7 @@ def stop_cmd(rc, jails):
             if boot == "on":
                 boot_order[j] = int(priority)
 
-        boot_order = OrderedDict(sorted(iter(boot_order.items()),
+        boot_order = OrderedDict(sorted(boot_order.items(),
                                         key=itemgetter(1), reverse=True))
         for j in boot_order.keys():
             uuid = _jails[j]

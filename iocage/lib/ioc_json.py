@@ -4,7 +4,6 @@ import logging
 import os
 import re
 import sys
-from builtins import object
 from os import geteuid, path
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
 

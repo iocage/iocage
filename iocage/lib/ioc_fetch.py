@@ -1,22 +1,18 @@
 """iocage fetch module."""
 import collections
-import contextlib
 import hashlib
 import json
 import logging
 import os
 import re
 import shutil
-import sys
 import tarfile
-from builtins import input, object
 from ftplib import FTP
 from shutil import copy
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT
 from tempfile import NamedTemporaryFile
 
 import requests
-from backports import lzma
 from requests.auth import HTTPDigestAuth
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from tqdm import tqdm
@@ -531,19 +527,11 @@ class IOCFetch(object):
                "{}/iocage/releases/{}/root".format(self.pool,
                                                    self.release)]).communicate()
 
-        if sys.version_info[0] < 3:
-            with contextlib.closing(lzma.LZMAFile(src)) as xz:
-                with tarfile.open(fileobj=xz) as tar:
-                    # Extracting over the same files is much slower then
-                    # removing them first.
-                    member = self.__fetch_extract_remove__(tar)
-                    tar.extractall(dest, members=member)
-        else:
-            with tarfile.open(src) as f:
-                # Extracting over the same files is much slower then
-                # removing them first.
-                member = self.__fetch_extract_remove__(f)
-                f.extractall(dest, members=member)
+        with tarfile.open(src) as f:
+            # Extracting over the same files is much slower then
+            # removing them first.
+            member = self.__fetch_extract_remove__(f)
+            f.extractall(dest, members=member)
 
     def fetch_update(self, cli=False, uuid=None, tag=None):
         """This calls 'freebsd-update' to update the fetched RELEASE."""

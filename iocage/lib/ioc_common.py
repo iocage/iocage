@@ -5,8 +5,7 @@ import shutil
 import stat
 import tempfile as tmp
 from contextlib import contextmanager
-
-from future.backports import check_output
+from subprocess import check_output
 
 
 def sort_tag(tag):

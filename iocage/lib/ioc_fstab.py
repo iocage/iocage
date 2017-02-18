@@ -1,6 +1,5 @@
 """Manipulate a jails fstab"""
 import logging
-from builtins import object
 from datetime import datetime
 
 from iocage.lib.ioc_common import open_atomic

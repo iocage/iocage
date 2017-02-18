@@ -1,6 +1,5 @@
 """update module for the cli."""
 import logging
-from builtins import next
 from subprocess import Popen
 
 import click

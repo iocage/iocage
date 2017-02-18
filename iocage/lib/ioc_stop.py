@@ -1,6 +1,5 @@
 """This stops jails."""
 import logging
-from builtins import object
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
 
 from iocage.lib.ioc_common import checkoutput

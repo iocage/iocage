@@ -1,6 +1,5 @@
 """snaplist module for the cli."""
 import logging
-from builtins import next
 from subprocess import PIPE, Popen
 
 import click

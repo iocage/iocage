@@ -3,7 +3,6 @@ import json
 import logging
 import os
 import uuid
-from builtins import object, str
 from datetime import datetime
 from shutil import copy
 from subprocess import CalledProcessError, PIPE, Popen, check_call
@@ -151,7 +150,6 @@ class IOCCreate(object):
         default_props = {
             "CONFIG_VERSION"       : version,
             # Network properties
-            "ipv6"                 : "off",
             "interfaces"           : "vnet0:bridge0,vnet1:bridge1",
             "host_domainname"      : "none",
             "host_hostname"        : jail_uuid,
