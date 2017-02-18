@@ -8,7 +8,7 @@ else:
     _data = [('/usr/local/etc/rc.d', ['rc.d/iocage'])]
 
 setup(name='iocage',
-      version='0.9.5',
+      version='0.9.6',
       description='A jail manager that uses ZFS.',
       author='Brandon Schneider and Peter Toth',
       author_email='brandon@ixsystems.com',
@@ -18,10 +18,8 @@ setup(name='iocage',
       install_requires=[
           'click',
           'texttable',
-          'backports.lzma',
           'requests',
-          'tqdm',
-          'future'
+          'tqdm'
       ],
       entry_points={
           'console_scripts': [

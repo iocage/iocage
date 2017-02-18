@@ -1,6 +1,4 @@
 """migrate module for the cli."""
-from __future__ import print_function
-
 import fileinput
 import logging
 import os

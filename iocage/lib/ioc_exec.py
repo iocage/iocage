@@ -1,6 +1,5 @@
 """iocage exec module."""
 import logging
-from builtins import object
 from subprocess import CalledProcessError, Popen, STDOUT
 
 from iocage.lib.ioc_common import checkoutput

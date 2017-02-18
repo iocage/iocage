@@ -8,7 +8,7 @@ technologies the FreeBSD operating system has to offer. It is geared for ease
  of use with a simple and easy to understand command syntax.
 
 iocage is in the FreeBSD ports tree as sysutils/py-iocage.
-To install using binary packages, simply run: `pkg install py27-iocage`
+To install using binary packages, simply run: `pkg install py35-iocage`
 
 If cloning the repo directly:
 - cd into the cloned directory and run `pip 
@@ -86,7 +86,7 @@ To see a list of commands available to you now, type `iocage` outside the jail.
 **REQUIREMENTS**
 - FreeBSD 9.3-RELEASE amd64 and higher or HardenedBSD/TrueOS
 - ZFS file system
-- Python 2.7/Python 3.5+
+- Python 3.5+
 
 **Optional**
  - Kernel compiled with:

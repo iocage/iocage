@@ -1,7 +1,6 @@
 """upgrade module for the cli."""
 import logging
 import os
-from builtins import next
 from subprocess import PIPE, Popen
 
 import click

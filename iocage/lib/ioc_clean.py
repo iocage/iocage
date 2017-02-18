@@ -2,7 +2,6 @@
 import logging
 import os
 import shutil
-from builtins import map, object
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
 
 from iocage.lib.ioc_common import checkoutput

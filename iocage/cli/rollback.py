@@ -1,6 +1,5 @@
 """rollback module for the cli."""
 import logging
-from builtins import next
 from subprocess import CalledProcessError, PIPE, Popen, check_call
 
 import click

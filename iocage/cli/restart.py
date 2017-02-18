@@ -1,6 +1,5 @@
 """restart module for the cli."""
 import logging
-from builtins import next
 from datetime import datetime
 from subprocess import PIPE, Popen
 

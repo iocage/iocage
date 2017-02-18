@@ -1,6 +1,5 @@
 """set module for the cli."""
 import logging
-from builtins import next
 
 import click
 

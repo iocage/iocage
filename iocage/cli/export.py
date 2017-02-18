@@ -2,7 +2,6 @@
 import logging
 import os
 import zipfile
-from builtins import next
 from datetime import datetime
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
 

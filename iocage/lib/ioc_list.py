@@ -1,7 +1,6 @@
 """List all datasets by type"""
 import logging
 import re
-from builtins import object
 from subprocess import CalledProcessError, PIPE, Popen
 
 from texttable import Texttable

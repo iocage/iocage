@@ -1,5 +1,4 @@
 """fetch module for the cli."""
-from builtins import range
 
 import click
 

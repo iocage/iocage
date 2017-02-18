@@ -1,6 +1,5 @@
 """snapshot module for the cli."""
 import logging
-from builtins import next
 from datetime import datetime
 from subprocess import CalledProcessError, PIPE, check_call
 

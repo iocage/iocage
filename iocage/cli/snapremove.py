@@ -1,6 +1,5 @@
 """snapremove module for the cli."""
 import logging
-from builtins import next
 from subprocess import CalledProcessError, check_call
 
 import click
