@@ -351,7 +351,7 @@ class IOCCreate(object):
             readlink_mount = os.readlink(
                 "{}/tags/{}".format(self.iocroot, tag))
             readlink_uuid = [m for m in readlink_mount.split("/") if len(m)
-                             == 36][0]
+                             == 36 or len(m) == 8][0]
         except OSError:
             pass
 
