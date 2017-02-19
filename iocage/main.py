@@ -58,12 +58,7 @@ for lib in glob.glob("{}/*.py".format(PATH)):
 
 
 def main():
-    log_file = "/dev/stdout"
-    try:
-        if os.environ["IOCAGE_LOGFILE"]:
-            log_file = os.environ["IOCAGE_LOGFILE"]
-    except KeyError:
-        pass
+    log_file = os.environ.get("IOCAGE_LOGFILE", "/dev/stdout")
 
     for arg in sys.argv:
         key, _, val = arg.partition("=")
