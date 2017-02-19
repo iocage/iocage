@@ -27,6 +27,15 @@ def activate_cmd(zpool, force):
                 check_call(["zfs", "set", "org.freebsd.ioc:active=no", zfs],
                            stderr=PIPE, stdout=PIPE)
 
+                old_zfs = Popen(["zpool", "get", "-H", "-o", "value",
+                                 "comment", zfs],
+                                stdout=PIPE).communicate()[0].decode(
+                    "utf-8").strip()
+
+                if old_zfs == "iocage":
+                    check_call(["zpool", "set", "comment=-", zfs], stderr=PIPE,
+                               stdout=PIPE)
+
         check_call(["zfs", "set", "org.freebsd.ioc:active=yes", zpool],
                    stderr=PIPE, stdout=PIPE)
         lgr.info("{} successfully activated.".format(zpool))
