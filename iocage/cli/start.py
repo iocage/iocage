@@ -54,7 +54,7 @@ def start_cmd(rc, jails):
         exit()
 
     if len(jails) >= 1 and jails[0] == "ALL":
-        if len(jails) < 1:
+        if len(_jails) < 1:
             raise RuntimeError("No jails exist to start!")
 
         for j in _jails:
