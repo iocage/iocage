@@ -52,7 +52,11 @@ def stop_cmd(rc, jails):
             else:
                 lgr.info("{} ({}) is not running!".format(uuid, j))
         exit()
-    if jails[0] == "ALL":
+
+    if len(jails) >= 1 and jails[0] == "ALL":
+        if len(_jails) < 1:
+            raise RuntimeError("No jails exist to stop!")
+
         for j in _jails:
             uuid = _jails[j]
             path = paths[j]
@@ -60,6 +64,10 @@ def stop_cmd(rc, jails):
             conf = IOCJson(path).json_load()
             IOCStop(uuid, j, path, conf)
     else:
+        if len(jails) < 1:
+            raise RuntimeError("Please specify either one or more jails or "
+                               "ALL!")
+
         for jail in jails:
             _jail = {tag: uuid for (tag, uuid) in _jails.items() if
                      uuid.startswith(jail) or tag == jail}
