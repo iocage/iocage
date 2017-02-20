@@ -62,7 +62,7 @@ def create_cmd(release, template, count, props, pkglist, short):
     iocroot = IOCJson(pool).json_get_value("iocroot")
 
     if not os.path.isdir("{}/releases/{}".format(iocroot,
-                                                 release)):
+                                                 release)) and not template:
         IOCFetch(release).fetch_release()
 
     if count == 1:
