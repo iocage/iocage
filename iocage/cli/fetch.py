@@ -32,9 +32,8 @@ def validate_count(ctx, param, value):
 @click.option("--auth", "-a", default=None, help="Authentication method for "
                                                  "HTTP fetching. Valid "
                                                  "values: basic, digest")
-@click.option("--verify/--noverify", default=False, help="Enable or disable"
-                                                         " verifying SSL cert"
-                                                         " for HTTP fetching.")
+@click.option("--verify/--noverify", "-V/-NV", default=False,
+              help="Enable or disable verifying SSL cert for HTTP fetching.")
 @click.option("--release", "-r", help="The FreeBSD release to fetch.")
 @click.option("--plugin-file", "-P", help="The plugin file to use.")
 @click.option("--plugins", help="List all available plugins for creation.",
@@ -43,8 +42,11 @@ def validate_count(ctx, param, value):
 @click.option("--count", "-c", callback=validate_count, default="1")
 @click.option("--root-dir", "-d", help="Root directory " +
                                        "containing all the RELEASEs.")
+@click.option("--update/--noupdate", "-U/-NU", default=True,
+              help="Decide whether or not to update the fetch to the latest "
+                   "patch level.")
 def fetch_cmd(http, _file, server, user, password, auth, verify, release,
-              plugins, plugin_file, root_dir, props, count):
+              plugins, plugin_file, root_dir, props, count, update):
     """CLI command that calls fetch_release()"""
     freebsd_version = checkoutput(["freebsd-version"])
 
@@ -68,12 +70,15 @@ def fetch_cmd(http, _file, server, user, password, auth, verify, release,
         if count == 1:
             IOCFetch("", server, user, password, auth, root_dir,
                      http=http, _file=_file, verify=verify,
-                     hardened=hardened).fetch_plugin(plugin_file, props, 0)
+                     hardened=hardened, update=update).fetch_plugin(
+                plugin_file, props, 0)
         else:
             for j in range(1, count + 1):
                 IOCFetch("", server, user, password, auth, root_dir,
                          http=http, _file=_file, verify=verify,
-                         hardened=hardened).fetch_plugin(plugin_file, props, j)
+                         hardened=hardened, update=update).fetch_plugin(
+                    plugin_file, props, j)
     else:
         IOCFetch(release, server, user, password, auth, root_dir, http=http,
-                 _file=_file, verify=verify, hardened=hardened).fetch_release()
+                 _file=_file, verify=verify, hardened=hardened, update=update
+                 ).fetch_release()

@@ -29,7 +29,7 @@ class IOCFetch(object):
 
     def __init__(self, release, server="ftp.freebsd.org", user="anonymous",
                  password="anonymous@", auth=None, root_dir=None, http=False,
-                 _file=False, verify=True, hardened=False):
+                 _file=False, verify=True, hardened=False, update=True):
         self.pool = IOCJson().json_get_value("pool")
         self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
         self.server = server
@@ -50,6 +50,7 @@ class IOCFetch(object):
         self.verify = verify
         self.hardened = hardened
         self.files = ("MANIFEST", "base.txz", "lib32.txz", "doc.txz")
+        self.update = update
 
         if hardened:
             self.http = True
@@ -337,7 +338,8 @@ class IOCFetch(object):
             self.fetch_download(missing, ftp=True, missing=True)
             self.__fetch_check__(missing, ftp=True, _missing=True)
 
-        # self.fetch_update()
+        if self.update:
+            self.fetch_update()
 
     def __fetch_ftp_connect__(self):
         """
