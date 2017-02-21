@@ -7,7 +7,7 @@ import os
 import re
 import shutil
 import tarfile
-from ftplib import FTP
+from ftplib import FTP, error_perm
 from shutil import copy
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT
 from tempfile import NamedTemporaryFile
@@ -298,20 +298,8 @@ class IOCFetch(object):
             - XX.X-RELEASE
             - XX.X_RELEASE
         """
-        ftp = FTP(self.server)
-        ftp.login(user=self.user, passwd=self.password)
 
-        if self.server == "ftp.freebsd.org":
-            try:
-                ftp.cwd("/pub/FreeBSD/releases/{}".format(self.arch))
-            except:
-                raise RuntimeError("{} was not found!".format(self.arch))
-        elif self.root_dir:
-            try:
-                ftp.cwd(self.root_dir)
-            except:
-                raise RuntimeError("{} was not found!".format(self.root_dir))
-
+        ftp = self.__fetch_ftp_connect__()
         ftp_list = ftp.nlst()
 
         if not self.release:
@@ -330,21 +318,49 @@ class IOCFetch(object):
 
             self.release = self.__fetch_validate_release__(releases)
 
-        ftp.cwd(self.release)
+        # This has the benefit of giving us a list of files, but also as a
+        # easy sanity check for the existence of the RELEASE before we reuse
+        #  it below.
+        try:
+            ftp.cwd(self.release)
+        except error_perm:
+            raise RuntimeError("{} was not found!".format(self.release))
+
         ftp_list = ftp.nlst()
+        ftp.quit()
 
         self.lgr.info("Fetching: {}\n".format(self.release))
-        self.fetch_download(ftp_list, ftp=ftp)
-        missing = self.__fetch_check__(ftp_list, ftp=ftp)
+        self.fetch_download(ftp_list, ftp=True)
+        missing = self.__fetch_check__(ftp_list, ftp=True)
 
         if missing:
-            self.fetch_download(missing, ftp, missing=True)
-            self.__fetch_check__(missing, ftp, _missing=True)
+            self.fetch_download(missing, ftp=True, missing=True)
+            self.__fetch_check__(missing, ftp=True, _missing=True)
 
-        ftp.quit()
-        self.fetch_update()
+        # self.fetch_update()
 
-    def __fetch_check__(self, _list, ftp=None, _missing=False):
+    def __fetch_ftp_connect__(self):
+        """
+        Connects to the ftp server and returns the proper cwd for easy
+        reconnection.
+        """
+        ftp = FTP(self.server)
+        ftp.login(user=self.user, passwd=self.password)
+
+        if self.server == "ftp.freebsd.org":
+            try:
+                ftp.cwd("/pub/FreeBSD/releases/{}".format(self.arch))
+            except:
+                raise RuntimeError("{} was not found!".format(self.arch))
+        elif self.root_dir:
+            try:
+                ftp.cwd(self.root_dir)
+            except:
+                raise RuntimeError("{} was not found!".format(self.root_dir))
+
+        return ftp
+
+    def __fetch_check__(self, _list, ftp=False, _missing=False):
         """
         Will check if every file we need exists, if they do we check the SHA256
         and make sure it matches the files they may already have.
@@ -358,8 +374,11 @@ class IOCFetch(object):
             for _, _, files in os.walk("."):
                 if "MANIFEST" not in files:
                     if ftp and self.server == "ftp.freebsd.org":
-                        ftp.retrbinary("RETR MANIFEST", open("MANIFEST",
+                        _ftp = self.__fetch_ftp_connect__()
+                        _ftp.cwd(self.release)
+                        _ftp.retrbinary("RETR MANIFEST", open("MANIFEST",
                                                              "wb").write)
+                        _ftp.quit()
                     elif not ftp and self.server == \
                             "https://download.freebsd.org":
                         r = requests.get("{}/{}/{}/MANIFEST".format(
@@ -429,7 +448,7 @@ class IOCFetch(object):
 
             return missing
 
-    def fetch_download(self, _list, ftp=None, missing=False):
+    def fetch_download(self, _list, ftp=False, missing=False):
         """Creates the download dataset and then downloads the RELEASE."""
         dataset = "{}/download/{}".format(self.iocroot, self.release)
         fresh = False
@@ -486,12 +505,14 @@ class IOCFetch(object):
                         pbar.close()
             elif ftp:
                 for f in _list:
+                    _ftp = self.__fetch_ftp_connect__()
+                    _ftp.cwd(self.release)
+
                     if bool(re.compile(
-                            r"MANIFEST|base.txz|lib32.txz|doc.txz").match(
-                        f)):
+                            r"MANIFEST|base.txz|lib32.txz|doc.txz").match(f)):
                         try:
-                            ftp.voidcmd('TYPE I')
-                            filesize = ftp.size(f)
+                            _ftp.voidcmd('TYPE I')
+                            filesize = _ftp.size(f)
 
                             with open(f, "wb") as txz:
                                 pbar = tqdm(total=filesize,
@@ -510,8 +531,9 @@ class IOCFetch(object):
                                     txz.write(chunk)
                                     pbar.update(len(chunk))
 
-                                ftp.retrbinary("RETR {}".format(f), callback)
+                                _ftp.retrbinary("RETR {}".format(f), callback)
                                 pbar.close()
+                                _ftp.quit()
                         except:
                             raise
                     else:
