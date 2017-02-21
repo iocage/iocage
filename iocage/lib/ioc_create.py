@@ -230,7 +230,6 @@ class IOCCreate(object):
             # Custom properties
             "type"                 : "jail",
             "tag"                  : datetime.utcnow().strftime("%F@%T:%f"),
-            "istemplate"           : "no",
             "bpf"                  : "off",
             "dhcp"                 : "off",
             "boot"                 : "off",
