@@ -521,6 +521,7 @@ class IOCJson(object):
         servicerestart = settings["servicerestart"].split()
         keys, _, value = ".".join(prop).partition("=")
         prop = keys.split(".")
+        restart = False
 
         if "options" in prop:
             prop = keys.split(".")[1:]
@@ -540,7 +541,7 @@ class IOCJson(object):
                         try:
                             restart = setting[current]["requirerestart"]
                         except KeyError:
-                            restart = False
+                            pass
                 else:
                     setting = setting[current]
 
