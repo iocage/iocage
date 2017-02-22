@@ -1,11 +1,15 @@
 import os
 
+import sys
 from setuptools import find_packages, setup
 
 if os.path.isdir("/usr/local/etc/init.d"):
     _data = [('/usr/local/etc/init.d', ['rc.d/iocage'])]
 else:
     _data = [('/usr/local/etc/rc.d', ['rc.d/iocage'])]
+
+if sys.version_info < (3, 6):
+    exit("Only Python 3.6 and higher is supported.")
 
 setup(name='iocage',
       version='0.9.6',
