@@ -24,9 +24,10 @@ class IOCJson(object):
     format, will set and get properties.
     """
 
-    def __init__(self, location="", silent=False):
+    def __init__(self, location="", silent=False, cli=False):
         self.location = location
         self.lgr = logging.getLogger('ioc_json')
+        self.cli = cli
 
         if silent:
             self.lgr.disabled = True
@@ -306,7 +307,6 @@ class IOCJson(object):
 
     def json_set_value(self, prop, create_func=False):
         """Set a property for the specified jail."""
-        # TODO: Some value sanitization for any property.
         # Circular dep! Meh.
         from iocage.lib.ioc_list import IOCList
         from iocage.lib.ioc_create import IOCCreate
@@ -372,6 +372,7 @@ class IOCJson(object):
                                                                     old_tag))
                 self.lgr.disabled = True
 
+        self.json_check_prop(key, value, conf)
         self.json_write(conf)
         self.lgr.info(
             "Property: {} has been updated to {}".format(key, value))
@@ -457,6 +458,176 @@ class IOCJson(object):
         self.json_write(conf)
 
         return conf
+
+    def json_check_prop(self, key, value, conf):
+        """
+        Checks if the property matches known good values, if it's the
+        CLI, deny setting any properties not in this list.
+        """
+        props = {
+            # Network properties
+            "interfaces"           : (":", ","),
+            "host_domainname"      : ("string",),
+            "host_hostname"        : ("string",),
+            "exec_fib"             : ("string",),
+            "ip4_addr"             : ("|",),
+            "ip4_saddrsel"         : ("0", "1",),
+            "ip4"                  : ("new", "inherit", "none"),
+            "ip6_addr"             : ("|",),
+            "ip6_saddrsel"         : ("0", "1"),
+            "ip6"                  : ("new", "inherit", "none"),
+            "defaultrouter"        : ("string",),
+            "defaultrouter6"       : ("string",),
+            "resolver"             : ("string",),
+            "mac_prefix"           : ("string",),
+            "vnet0_mac"            : ("string",),
+            "vnet1_mac"            : ("string",),
+            "vnet2_mac"            : ("string",),
+            "vnet3_mac"            : ("string",),
+            # Jail Properties
+            "devfs_ruleset"        : ("string",),
+            "exec_start"           : ("string",),
+            "exec_stop"            : ("string",),
+            "exec_prestart"        : ("string",),
+            "exec_poststart"       : ("string",),
+            "exec_prestop"         : ("string",),
+            "exec_poststop"        : ("string",),
+            "exec_clean"           : ("0", "1"),
+            "exec_timeout"         : ("string",),
+            "stop_timeout"         : ("string",),
+            "exec_jail_user"       : ("string",),
+            "exec_system_jail_user": ("string",),
+            "exec_system_user"     : ("string",),
+            "mount_devfs"          : ("0", "1"),
+            "mount_fdescfs"        : ("0", "1"),
+            "enforce_statfs"       : ("0", "1", "2"),
+            "children_max"         : ("string",),
+            "login_flags"          : ("string",),
+            "securelevel"          : ("string",),
+            "sysvmsg"              : ("new", "inherit", "disable"),
+            "sysvsem"              : ("new", "inherit", "disable"),
+            "sysvshm"              : ("new", "inherit", "disable"),
+            "allow_set_hostname"   : ("0", "1"),
+            "allow_sysvipc"        : ("0", "1"),
+            "allow_raw_sockets"    : ("0", "1"),
+            "allow_chflags"        : ("0", "1"),
+            "allow_mount"          : ("0", "1"),
+            "allow_mount_devfs"    : ("0", "1"),
+            "allow_mount_nullfs"   : ("0", "1"),
+            "allow_mount_procfs"   : ("0", "1"),
+            "allow_mount_tmpfs"    : ("0", "1"),
+            "allow_mount_zfs"      : ("0", "1"),
+            "allow_quotas"         : ("0", "1"),
+            "allow_socket_af"      : ("0", "1"),
+            # RCTL limits
+            "cpuset"               : ("off", "on"),
+            "rlimits"              : ("off", "on"),
+            "memoryuse"            : ":",
+            "memorylocked"         : ("off", "on"),
+            "vmemoryuse"           : ("off", "on"),
+            "maxproc"              : ("off", "on"),
+            "cputime"              : ("off", "on"),
+            "pcpu"                 : ("off", "on"),
+            "datasize"             : ("off", "on"),
+            "stacksize"            : ("off", "on"),
+            "coredumpsize"         : ("off", "on"),
+            "openfiles"            : ("off", "on"),
+            "pseudoterminals"      : ("off", "on"),
+            "swapuse"              : ("off", "on"),
+            "nthr"                 : ("off", "on"),
+            "msgqqueued"           : ("off", "on"),
+            "msgqsize"             : ("off", "on"),
+            "nmsgq"                : ("off", "on"),
+            "nsemop"               : ("off", "on"),
+            "nshm"                 : ("off", "on"),
+            "shmsize"              : ("off", "on"),
+            "wallclock"            : ("off", "on"),
+            # Custom properties
+            "tag"                  : ("string",),
+            "bpf"                  : ("off", "on"),
+            "dhcp"                 : ("off", "on"),
+            "boot"                 : ("off", "on"),
+            "notes"                : ("string",),
+            "owner"                : ("string",),
+            "priority"             : str(tuple(range(1, 100))),
+            "hostid"               : ("string",),
+            "jail_zfs"             : ("off", "on"),
+            "jail_zfs_dataset"     : ("string",),
+            "jail_zfs_mountpoint"  : ("string",),
+            "mount_procfs"         : ("0", "1"),
+            "mount_linprocfs"      : ("0", "1"),
+            "vnet"                 : ("off", "on")
+        }
+
+        if key in props.keys():
+            # Either it contains what we expect, or it's a string.
+            for k in props[key]:
+                if k in value:
+                    return
+
+            if props[key][0] == "string":
+                return
+            else:
+                err = f"{value} is not a valid value for {key}.\n"
+
+                if self.cli:
+                    self.lgr.error(f"ERROR: {err}")
+                else:
+                    err = f"WARNING: {err}"
+
+                if key not in ("interfaces", "ip4_addr", "ip6_addr",
+                               "memoryuse"):
+                    msg = f"Value must be {' or '.join(props[key])}"
+
+                    if not self.cli:
+                        msg = err + msg
+
+                    raise RuntimeError(msg)
+                elif key == "ip4_addr":
+                    msg = "IP address must contain both an interface and IP " \
+                          "address.\nEXAMPLE: em0|192.168.1.10"
+
+                    if not self.cli:
+                        msg = err + msg
+
+                    raise RuntimeError(msg)
+                elif key == "ip6_addr":
+                    msg = "IP address must contain both an interface and IP " \
+                          "address.\nEXAMPLE: em0|fe80::5400:ff:fe54:1"
+
+                    if not self.cli:
+                        msg = err + msg
+
+                    raise RuntimeError(msg)
+                elif key == "interfaces":
+                    msg = "Interfaces must be specified as a pair.\nEXAMPLE: " \
+                          "" \
+                          "" \
+                          "vnet0:bridge0, vnet1:bridge1"
+
+                    if not self.cli:
+                        msg = err + msg
+
+                    raise RuntimeError(msg)
+                elif key == "memoryuse":
+                    msg = "memoryuse requires at minimum a pair.EXAMPLE: " \
+                          "8g:log"
+
+                    if not self.cli:
+                        msg = err + msg
+
+                    raise RuntimeError(msg)
+                else:
+                    if self.cli:
+                        exit(1)
+        else:
+            if self.cli:
+                raise RuntimeError(
+                    f"ERROR: {key} cannot be changed by the user.")
+            else:
+                if key not in conf.keys():
+                    raise RuntimeError(
+                        f"WARNING: {key} is not a valid property!")
 
     def json_plugin_load(self):
         try:

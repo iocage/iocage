@@ -30,7 +30,7 @@ def set_cmd(prop, jail, plugin):
     if len(_jail) == 1:
         tag, uuid = next(iter(_jail.items()))
         path = paths[tag]
-        iocjson = IOCJson(path)
+        iocjson = IOCJson(path, cli=True)
     elif len(_jail) > 1:
         lgr.error("Multiple jails found for"
                   " {}:".format(jail))
@@ -49,7 +49,7 @@ def set_cmd(prop, jail, plugin):
             raise RuntimeError("{} ({}) is already a jail!".format(uuid, tag))
     if plugin:
         _prop = prop.split(".")
-        IOCJson(path).json_plugin_set_value(_prop)
+        IOCJson(path, cli=True).json_plugin_set_value(_prop)
     else:
         try:
             # We use this to test if it's a valid property at all.

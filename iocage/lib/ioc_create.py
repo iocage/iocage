@@ -116,7 +116,25 @@ class IOCCreate(object):
                        self.pool, self.release, jail_uuid),
                    jail], stdout=PIPE).communicate()
 
-        IOCJson(location).json_write(config)
+        iocjson = IOCJson(location)
+
+        # This test is to avoid the same warnings during install_packages.
+        if not self.plugin:
+            for prop in self.props:
+                key, _, value = prop.partition("=")
+
+                if self.num != 0:
+                    if key == "tag":
+                        config["tag"] = f"{value}_{self.num}"
+                try:
+                    iocjson.json_check_prop(key, value, config)
+
+                    config[key] = value
+                except RuntimeError as err:
+                    # Instead this will stay as default.
+                    self.lgr.warning(f"***\n{err}\n***\n")
+
+            iocjson.json_write(config)
 
         # Just "touch" the fstab file, since it won't exist.
         open("{}/jails/{}/fstab".format(self.iocroot, jail_uuid), "wb").close()
@@ -128,14 +146,13 @@ class IOCCreate(object):
                 "{} ({}) successfully created!".format(jail_uuid, _tag))
 
         if self.pkglist:
-            if config["ip4_addr"] == "none":
+            if config["ip4_addr"] == "none" and config["ip6_addr"] == "none":
                 self.lgr.error(" ERROR: You need an IP address for the jail"
                                " to install packages!\n")
             else:
                 self.create_install_packages(jail_uuid, location, _tag, config)
 
-        if self.plugin or self.migrate:
-            return jail_uuid
+        return jail_uuid
 
     def create_config(self, jail_uuid, release):
         """
@@ -263,22 +280,6 @@ class IOCCreate(object):
             "dedup"                : "off",
             "reservation"          : "none",
         }
-
-        if self.plugin:
-            for key, value in list(self.props.items()):
-                default_props[key] = value
-        else:
-            for prop in self.props:
-                key, _, value = prop.partition("=")
-
-                if key in list(default_props.keys()):
-                    if self.num != 0:
-                        if key == "tag":
-                            value = "{}_{}".format(value, self.num)
-                    default_props[key] = value
-                else:
-                    raise RuntimeError("Invalid property:"
-                                       " {} specified!".format(key))
 
         return default_props
 

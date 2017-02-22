@@ -60,8 +60,8 @@ def fetch_cmd(http, _file, server, user, password, auth, verify, release,
         ip = [x for x in props if x.startswith("ip4_addr") or x.startswith(
             "ip6_addr")]
         if not ip:
-            raise RuntimeError("IP address is needed to fetch a plugin!\n"
-                               "Please specify "
+            raise RuntimeError("ERROR: An IP address is needed to fetch a "
+                               "plugin!\nPlease specify "
                                "ip(4|6)_addr=\"INTERFACE|IPADDRESS\"!")
         if plugins:
             IOCFetch("").fetch_plugin_index(props)

@@ -19,6 +19,7 @@ from tqdm import tqdm
 
 from iocage.lib.ioc_common import checkoutput, sort_release
 from iocage.lib.ioc_create import IOCCreate
+from iocage.lib.ioc_destroy import IOCDestroy
 from iocage.lib.ioc_exec import IOCExec
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_start import IOCStart
@@ -379,7 +380,7 @@ class IOCFetch(object):
                         _ftp = self.__fetch_ftp_connect__()
                         _ftp.cwd(self.release)
                         _ftp.retrbinary("RETR MANIFEST", open("MANIFEST",
-                                                             "wb").write)
+                                                              "wb").write)
                         _ftp.quit()
                     elif not ftp and self.server == \
                             "https://download.freebsd.org":
@@ -623,7 +624,6 @@ class IOCFetch(object):
 
     def fetch_plugin(self, _json, props, num):
         """Expects an JSON object."""
-        prop_dict = False
         with open(_json, "r") as j:
             conf = json.load(j)
         self.release = conf["release"]
@@ -643,37 +643,31 @@ class IOCFetch(object):
                                                          self.release)):
                 self.fetch_release()
 
-        # If no user supplied props exist, we need to add a tag prop as a dict.
-        # Which requires the different for loop below.
-        new_props = dict(release=self.release, type="plugin", tag=conf["name"])
-        if props == ():
-            props = {}
-            props["tag"] = conf["name"]
-            prop_dict = True
+        # We set our properties that we need, and then iterate over the user
+        #  supplied properties replacing ours. Finally we add _1, _2 etc to
+        # the tag with the final iteration if the user supplied count.
+        create_props = [f"release={self.release}", "type=plugin",
+                        f"tag={conf['name']}"]
+        create_props = [f"{k}={v}" for k, v in
+                        (p.split("=") for p in props)] + create_props
+        create_props = [f"{k}_{num}" if k == f"tag={conf['name']}"
+                        and num != 0 else k for k in create_props]
 
-        if prop_dict:
-            for k, v in props.items():
-                new_props[k] = v
-        else:
-            for p in props:
-                key, _, value = p.partition("=")
-                new_props[key] = value
-
-        # If the user supplies some properties but NOT a tag, this is
-        # important.
-        for key, value in new_props.items():
-            if key == "tag":
-                if num != 0:
-                    value = "{}_{}".format(value, num)
-                else:
-                    value = "{}".format(value)
-            new_props[key] = value
-
-        uuid = IOCCreate(self.release, new_props, 0, plugin=True).create_jail()
+        uuid = IOCCreate(self.release, create_props, 0).create_jail()
         jaildir = "{}/jails/{}".format(self.iocroot, uuid)
         repo_dir = "{}/root/usr/local/etc/pkg/repos".format(jaildir)
         _conf = IOCJson(jaildir).json_load()
         tag = _conf["tag"]
+
+        # We do this test again as the user could supply a malformed IP to
+        # fetch that bypasses the more naive check in cli/fetch
+        if _conf["ip4_addr"] == "none" and _conf["ip6_addr"] == "none":
+            self.lgr.error("\nERROR: An IP address is needed to fetch a "
+                           "plugin!\n")
+            self.lgr.error("Destroying partial plugin.")
+            IOCDestroy(uuid, tag, jaildir).destroy_jail()
+            raise RuntimeError()
+
         IOCStart(uuid, tag, jaildir, _conf, silent=True)
 
         try:
@@ -719,7 +713,7 @@ fingerprint: {fingerprint}
                     f_conf.write(finger_conf.format(function=r["function"],
                                                     fingerprint=r[
                                                         "fingerprint"]))
-        err = IOCCreate(self.release, new_props, 0, plugin=True,
+        err = IOCCreate(self.release, create_props, 0, plugin=True,
                         pkglist=conf["pkgs"]).create_install_packages(uuid,
                                                                       jaildir,
                                                                       tag,
@@ -752,8 +746,6 @@ fingerprint: {fingerprint}
         else:
             self.lgr.error("ERROR: pkg error, refusing to fetch artifact and "
                            "run post_install.sh!\n")
-
-        self.lgr.info("\n{} ({}) successfully created!".format(uuid, tag))
 
     def fetch_plugin_index(self, props, _list=False):
         if self.server == "ftp.freebsd.org":
