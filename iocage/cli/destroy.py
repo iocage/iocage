@@ -51,8 +51,8 @@ def destroy_cmd(force, jails):
 
             # If the jail is not running, let's do this thing.
             if status and not force:
-                raise RuntimeError("{} ({}) is running."
-                                   " Please stop it first!".format(uuid, tag))
+                raise RuntimeError(f"{uuid} ({tag}) is running.\nPlease stop "
+                                   "it first!")
             elif status and force:
                 conf = IOCJson(path).json_load()
                 lgr.info("Stopping {} ({}).".format(uuid, tag))
