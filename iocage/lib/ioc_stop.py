@@ -100,7 +100,7 @@ class IOCStop(object):
 
             if ip4_addr != "inherit" and vnet == "off":
                 if ip4_addr != "none":
-                    for ip4 in ip4_addr.split():
+                    for ip4 in ip4_addr.split(","):
                         try:
                             iface, addr = ip4.split("/")[0].split("|")
                             checkoutput(["ifconfig", iface, addr,
