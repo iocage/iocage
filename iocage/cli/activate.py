@@ -1,7 +1,8 @@
 """activate module for the cli."""
 import logging
+from subprocess import PIPE, Popen
+
 import click
-from subprocess import CalledProcessError, PIPE, Popen, check_call
 
 __cmdname__ = "activate_cmd"
 __rootcmd__ = True
@@ -17,12 +18,14 @@ def get_zfs_pools():
     :rtype: list of strings
     :raise RuntimeError: if the underlying zfs command returns errors
     """
-    proc = Popen(["zpool", "list", "-H", "-o", "name"], stdout=PIPE, stderr=PIPE)
+    proc = Popen(["zpool", "list", "-H", "-o", "name"], stdout=PIPE,
+                 stderr=PIPE)
     stdout_data, stderr_data = proc.communicate()
+
     if stderr_data:
-        raise RuntimeError("Cannot get the list of available ZFS pools: {}"
-                           .format(stderr_data.decode('utf-8'))
-                           )
+        raise RuntimeError("Cannot get the list of available ZFS pools:"
+                           f" {stderr_data.decode('utf-8')}")
+
     return stdout_data.decode('utf-8').split()
 
 
@@ -45,21 +48,23 @@ def set_zfs_pool_active_property(zpool_name, activate=True):
         raise ValueError("'activate' must be a boolean")
 
     zfs_cmd = ["zfs", "set"]
+
     if activate:
-        zfs_cmd.append("{}=yes".format(IOCAGE_ZFS_ACTIVE_PROPERTY))
+        zfs_cmd.append(f"{IOCAGE_ZFS_ACTIVE_PROPERTY}=yes")
     else:
-        zfs_cmd.append("{}=no".format(IOCAGE_ZFS_ACTIVE_PROPERTY))
+        zfs_cmd.append(f"{IOCAGE_ZFS_ACTIVE_PROPERTY}=no")
 
     zfs_cmd.append(zpool_name)
     proc = Popen(zfs_cmd, stdout=PIPE, stderr=PIPE)
     stdout_data, stderr_data = proc.communicate()
+
     if stderr_data:
         if activate:
-            raise RuntimeError("Cannot activate ZFS pool '{}': {}"
-                               .format(zpool_name, stderr_data.decode('utf-8')))
+            raise RuntimeError(f"Cannot activate ZFS pool '{zpool_name}':"
+                               f"{stderr_data.decode('utf-8')}")
         else:
-            raise RuntimeError("Cannot deactivate ZFS pool '{}': {}"
-                               .format(zpool_name, stderr_data.decode('utf-8')))
+            raise RuntimeError(f"Cannot deactivate ZFS pool '{zpool_name}':"
+                               f"{stderr_data.decode('utf-8')}")
 
 
 def set_zfs_pool_comment(zpool_name, comment):
@@ -79,13 +84,14 @@ def set_zfs_pool_comment(zpool_name, comment):
     if not isinstance(comment, str) or comment == "":
         raise ValueError("'comment' must be a non-empty string")
 
-    zfs_cmd = ["zpool", "set", "comment={}".format(comment), zpool_name]
-    print(zfs_cmd)
+    zfs_cmd = ["zpool", "set", f"comment={comment}", zpool_name]
     proc = Popen(zfs_cmd, stdout=PIPE, stderr=PIPE)
     stdout_data, stderr_data = proc.communicate()
+
     if stderr_data:
-        raise RuntimeError("Cannot set zpool comment to '{}' on ZFS pool '{}': {}"
-                           .format(comment, zpool_name, stderr_data.decode('utf-8')))
+        raise RuntimeError(f"Cannot set zpool comment to '{comment}' on ZFS"
+                           f" pool '{zpool_name}':"
+                           f" {stderr_data.decode('utf-8')}")
 
 
 @click.command(name="activate", help="Set a zpool active for iocage usage.")
@@ -106,15 +112,18 @@ def activate_cmd(zpool, force):
 
             # Check and clean if necessary iocage_legacy way
             # to mark a ZFS pool as usable (now replaced by ZFS property)
-            proc = Popen(["zpool", "get", "-H", "-o", "value", "comment", pool],
-                            stdout=PIPE, stderr=PIPE)
+            proc = Popen(
+                ["zpool", "get", "-H", "-o", "value", "comment", pool],
+                stdout=PIPE, stderr=PIPE)
             stdout_data, stderr_data = proc.communicate()
             if stderr_data:
-                raise RuntimeError("Cannot retrieve comment for ZFS pool '{}': {}"
-                                   .format(zpool, stderr_data.decode('utf-8')))
+                raise RuntimeError("Cannot retrieve comment for ZFS pool "
+                                   f"'{zpool}': {stderr_data.decode('utf-8')}")
+
             comment = stdout_data.decode('utf-8').strip()
+
             if comment == "iocage":
                 set_zfs_pool_comment(zpool, "-")
 
     set_zfs_pool_active_property(zpool, activate=True)
-    lgr.info("ZFS pool '{}' successfully activated.".format(zpool))
+    lgr.info(f"ZFS pool '{zpool}' successfully activated.")
