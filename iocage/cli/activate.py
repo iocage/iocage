@@ -61,10 +61,10 @@ def set_zfs_pool_active_property(zpool_name, activate=True):
     if stderr_data:
         if activate:
             raise RuntimeError(f"Cannot activate ZFS pool '{zpool_name}':"
-                               f"{stderr_data.decode('utf-8')}")
+                               f" {stderr_data.decode('utf-8')}")
         else:
             raise RuntimeError(f"Cannot deactivate ZFS pool '{zpool_name}':"
-                               f"{stderr_data.decode('utf-8')}")
+                               f" {stderr_data.decode('utf-8')}")
 
 
 def set_zfs_pool_comment(zpool_name, comment):
