@@ -256,7 +256,7 @@ class IOCCreate(object):
             "last_started"         : "none",
             "release"              : release,
             "cloned_release"       : self.release,
-            "template"             : "none",
+            "template"             : "no",
             "hostid"               : hostid,
             "jail_zfs"             : "off",
             "jail_zfs_dataset"     : "iocage/jails/{}/data".format(jail_uuid),

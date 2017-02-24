@@ -338,9 +338,8 @@ class IOCJson(object):
             new_location = "{}/iocage/templates/{}".format(pool, old_tag)
 
             if status:
-                raise RuntimeError("{} ({}) is running."
-                                   " Please stop it first!".format(uuid,
-                                                                   old_tag))
+                raise RuntimeError(f"{uuid} ({old_tag}) is running.\nPlease"
+                                   "stop it first!")
             if value == "yes":
                 try:
                     checkoutput(["zfs", "rename", "-p", old_location,
@@ -556,8 +555,39 @@ class IOCJson(object):
             "jail_zfs_mountpoint"  : ("string",),
             "mount_procfs"         : ("0", "1"),
             "mount_linprocfs"      : ("0", "1"),
-            "vnet"                 : ("off", "on")
+            "vnet"                 : ("off", "on"),
+            "template"             : ("no", "yes")
         }
+
+        zfs_props = {
+            # ZFS Props
+            "compression"          : "lz4",
+            "origin"               : "readonly",
+            "quota"                : "none",
+            "mountpoint"           : "readonly",
+            "compressratio"        : "readonly",
+            "available"            : "readonly",
+            "used"                 : "readonly",
+            "dedup"                : "off",
+            "reservation"          : "none",
+        }
+
+        if key in zfs_props.keys():
+            pool, _ = _get_pool_and_iocroot()
+
+            if conf["template"] == "yes":
+                _type = "templates"
+                uuid = conf["tag"]  # I know, but it's easier this way.
+                print("TEMPLATE")
+            else:
+                print("JAIL")
+                _type = "jails"
+                uuid = conf["host_hostuuid"]
+
+            print(f"{pool}/iocage/{_type}/{uuid}")
+            checkoutput(["zfs", "set", f"{key}={value}",
+                         f"{pool}/iocage/{_type}/{uuid}"])
+            return
 
         if key in props.keys():
             # Either it contains what we expect, or it's a string.
