@@ -19,7 +19,7 @@ class IOCCreate(object):
 
     def __init__(self, release, props, num, pkglist=None, plugin=False,
                  migrate=False, config=None, silent=False, template=False,
-                 short=False):
+                 short=False, basejail=False):
         self.pool = IOCJson().json_get_value("pool")
         self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
         self.release = release
@@ -31,6 +31,7 @@ class IOCCreate(object):
         self.config = config
         self.template = template
         self.short = short
+        self.basejail = basejail
         self.lgr = logging.getLogger('ioc_create')
 
         if silent:
@@ -140,6 +141,20 @@ class IOCCreate(object):
         open("{}/jails/{}/fstab".format(self.iocroot, jail_uuid), "wb").close()
         _tag = self.create_link(jail_uuid, config["tag"])
         self.create_rc(location, config["host_hostname"])
+
+        if self.basejail:
+            from iocage.lib.ioc_fstab import IOCFstab
+            basedirs = ["bin", "boot", "lib", "libexec", "rescue", "sbin",
+                        "usr/bin", "usr/include", "usr/lib",
+                        "usr/libexec", "usr/sbin", "usr/share",
+                        "usr/libdata", "usr/lib32"]
+
+            for bdir in basedirs:
+                source = f"{self.iocroot}/releases/{self.release}/root/{bdir}"
+                destination = f"{self.iocroot}/jails/{jail_uuid}/root/{bdir}"
+
+                IOCFstab(jail_uuid, config["tag"], "add", source, destination,
+                         "nullfs", "ro", "0", "0", silent=True)
 
         if not self.plugin:
             self.lgr.info(

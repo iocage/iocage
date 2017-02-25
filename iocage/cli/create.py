@@ -27,11 +27,12 @@ def validate_count(ctx, param, value):
 @click.option("--release", "-r", required=False)
 @click.option("--template", "-t", required=False)
 @click.option("--pkglist", "-p", default=None)
+@click.option("--basejail", "-b", is_flag=True, default=False)
 @click.option("--short", "-s", is_flag=True, default=False,
               help="Use a short UUID of 8 characters instead of the default "
                    "36")
 @click.argument("props", nargs=-1)
-def create_cmd(release, template, count, props, pkglist, short):
+def create_cmd(release, template, count, props, pkglist, basejail, short):
     lgr = logging.getLogger('ioc_cli_create')
 
     if not template and not release:
@@ -68,7 +69,8 @@ def create_cmd(release, template, count, props, pkglist, short):
     if count == 1:
         try:
             IOCCreate(release, props, 0, pkglist,
-                      template=template, short=short).create_jail()
+                      template=template, short=short,
+                      basejail=basejail).create_jail()
         except RuntimeError as err:
             lgr.error(err)
             if template:
@@ -81,7 +83,8 @@ def create_cmd(release, template, count, props, pkglist, short):
         for j in range(1, count + 1):
             try:
                 IOCCreate(release, props, j, pkglist,
-                          template=template, short=short).create_jail()
+                          template=template, short=short,
+                          basejail=basejail).create_jail()
             except RuntimeError as err:
                 lgr.error(err)
                 if template:
