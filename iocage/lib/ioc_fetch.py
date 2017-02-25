@@ -646,11 +646,20 @@ class IOCFetch(object):
         # We set our properties that we need, and then iterate over the user
         #  supplied properties replacing ours. Finally we add _1, _2 etc to
         # the tag with the final iteration if the user supplied count.
-        create_props = [f"release={self.release}", "type=plugin",
-                        f"tag={conf['name']}"]
+        create_props = [f"release={self.release}", "type=plugin"]
+
+        # If the user supplied a tag, we shouldn't add ours.
+        if "tag" not in [p.split("=")[0] for p in props]:
+            _tag = f"tag={conf['name']}"
+            create_props += [_tag]
+        else:
+            for p in props:
+                _p = p.split("=")[0]
+                _tag = p if _p == "tag" else ""
+
         create_props = [f"{k}={v}" for k, v in
                         (p.split("=") for p in props)] + create_props
-        create_props = [f"{k}_{num}" if k == f"tag={conf['name']}"
+        create_props = [f"{k}_{num}" if k == f"{_tag}"
                         and num != 0 else k for k in create_props]
 
         uuid = IOCCreate(self.release, create_props, 0).create_jail()

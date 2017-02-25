@@ -126,7 +126,7 @@ class IOCCreate(object):
 
                 if self.num != 0:
                     if key == "tag":
-                        config["tag"] = f"{value}_{self.num}"
+                        value = f"{value}_{self.num}"
                 try:
                     iocjson.json_check_prop(key, value, config)
 
@@ -153,8 +153,8 @@ class IOCCreate(object):
                 source = f"{self.iocroot}/releases/{self.release}/root/{bdir}"
                 destination = f"{self.iocroot}/jails/{jail_uuid}/root/{bdir}"
 
-                IOCFstab(jail_uuid, config["tag"], "add", source, destination,
-                         "nullfs", "ro", "0", "0", silent=True)
+                IOCFstab(jail_uuid, _tag, "add", source, destination, "nullfs",
+                         "ro", "0", "0", silent=True)
 
         if not self.plugin:
             self.lgr.info(
