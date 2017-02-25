@@ -26,20 +26,26 @@ def stop_cmd(rc, jails):
     lgr = logging.getLogger('ioc_cli_stop')
 
     _jails, paths = IOCList("uuid").list_datasets()
+    jail_order = {}
+    boot_order = {}
 
+    for j in _jails:
+        path = paths[j]
+        conf = IOCJson(path).json_load()
+        boot = conf["boot"]
+        priority = conf["priority"]
+
+        jail_order[j] = int(priority)
+
+        # This removes having to grab all the JSON again later.
+        if boot == "on":
+            boot_order[j] = int(priority)
+
+    jail_order = OrderedDict(sorted(jail_order.items(),
+                                    key=itemgetter(1), reverse=True) )
+    boot_order = OrderedDict(sorted(boot_order.items(),
+                                    key=itemgetter(1), reverse=True))
     if rc:
-        boot_order = {}
-        for j in _jails:
-            path = paths[j]
-            conf = IOCJson(path).json_load()
-            boot = conf["boot"]
-            priority = conf["priority"]
-
-            if boot == "on":
-                boot_order[j] = int(priority)
-
-        boot_order = OrderedDict(sorted(boot_order.items(),
-                                        key=itemgetter(1), reverse=True))
         for j in boot_order.keys():
             uuid = _jails[j]
             path = paths[j]
@@ -57,7 +63,7 @@ def stop_cmd(rc, jails):
         if len(_jails) < 1:
             raise RuntimeError("No jails exist to stop!")
 
-        for j in _jails:
+        for j in jail_order:
             uuid = _jails[j]
             path = paths[j]
 
