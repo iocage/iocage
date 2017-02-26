@@ -594,6 +594,7 @@ class IOCFetch(object):
                     conf = "{}/usr/sbin/freebsd-update".format(new_root)
                     with open(conf, "r") as update_conf:
                         for line in update_conf:
+                            line = bytes(line, encoding="utf-8")
                             tmp_conf.write(re.sub(b"\[ ! -t 0 \]", b"false",
                                                   line))
                 os.chmod(tmp_conf.name, 0o755)
@@ -628,6 +629,8 @@ class IOCFetch(object):
             conf = json.load(j)
         self.release = conf["release"]
         pkg_repos = conf["fingerprints"]
+        freebsd_version = f"{self.iocroot}/releases/{conf['release']}" \
+                          "/root/bin/freebsd-version"
 
         if num <= 1:
             self.lgr.info("Plugin: {}".format(conf["name"]))
@@ -643,10 +646,21 @@ class IOCFetch(object):
                                                          self.release)):
                 self.fetch_release()
 
+        if conf["release"][:4].endswith("-"):
+            # 9.3-RELEASE and under don't actually have this binary.
+            release = conf["release"]
+        else:
+            with open(freebsd_version, "r") as r:
+                for line in r:
+                    if line.startswith("USERLAND_VERSION"):
+                        release = line.rstrip().partition("=")[2].strip(
+                            '"')
+
         # We set our properties that we need, and then iterate over the user
         #  supplied properties replacing ours. Finally we add _1, _2 etc to
         # the tag with the final iteration if the user supplied count.
-        create_props = [f"release={self.release}", "type=plugin"]
+        create_props = [f"cloned_release={self.release}",
+                        f"release={release}", "type=plugin"]
 
         # If the user supplied a tag, we shouldn't add ours.
         if "tag" not in [p.split("=")[0] for p in props]:
@@ -758,10 +772,12 @@ fingerprint: {fingerprint}
 
     def fetch_plugin_index(self, props, _list=False):
         if self.server == "ftp.freebsd.org":
-            self.server = "https://github.com/iXsystems/iocage-ix-plugins.git"
+            git_server = "https://github.com/iXsystems/iocage-ix-plugins.git"
+        else:
+            git_server = self.server
 
         try:
-            checkoutput(["git", "clone", self.server,
+            checkoutput(["git", "clone", git_server,
                          "{}/.plugin_index".format(self.iocroot)],
                         stderr=STDOUT)
         except CalledProcessError as err:

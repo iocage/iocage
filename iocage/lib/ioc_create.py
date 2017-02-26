@@ -350,7 +350,7 @@ class IOCCreate(object):
                                   plugin=self.plugin).exec_jail()
 
             if pkg_install:
-                self.lgr.error("ERROR: {}".format(pkg_install.decode("utf-8")))
+                self.lgr.error("ERROR: {}".format(pkg_install))
                 err = True
 
         os.remove("{}/root/etc/resolv.conf".format(location))

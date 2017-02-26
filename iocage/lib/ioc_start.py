@@ -46,7 +46,7 @@ class IOCStart(object):
         will be copied into the jail.
         """
         status, _ = IOCList().list_get_jid(self.uuid)
-        userland_version = float(uname()[2][:4])
+        userland_version = float(uname()[2][:4].rstrip("-"))
 
         # If the jail is not running, let's do this thing.
         if not status:
