@@ -1,6 +1,8 @@
 """create module for the cli."""
+import json
 import logging
 import os
+from json import JSONDecodeError
 
 import click
 
@@ -52,12 +54,18 @@ def create_cmd(release, template, count, props, pkglist, basejail, short):
 {
     "pkgs": [
     "foo",
-    "bar",
+    "bar"
     ]
 }"""
             raise RuntimeError("{} does not exist!\nPlease supply a JSON file "
                                "with the format:{}".format(pkglist,
                                                            _pkgformat))
+        else:
+            try:
+                with open(pkglist, "r") as p:
+                    pkglist = json.load(p)["pkgs"]
+            except JSONDecodeError:
+                raise RuntimeError("Please supply a valid JSON file!")
 
     pool = IOCJson().json_get_value("pool")
     iocroot = IOCJson(pool).json_get_value("iocroot")
