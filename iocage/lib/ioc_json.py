@@ -83,6 +83,7 @@ class IOCJson(object):
                 if value == "basejail":
                     # These were just clones on master.
                     value = "jail"
+                    key_and_value["basejail"] = "yes"
             key_and_value[key] = value
 
         if not skip:
@@ -399,7 +400,7 @@ class IOCJson(object):
     @staticmethod
     def json_get_version():
         """Sets the iocage configuration version."""
-        version = "3"
+        version = "4"
         return version
 
     def json_check_config(self, conf, version):
@@ -452,6 +453,15 @@ class IOCJson(object):
         # Set all Version 3 keys
         conf["release"] = release
         conf["cloned_release"] = cloned_release
+
+        # Version 4 keys
+        try:
+            basejail = conf["basejail"]
+        except KeyError:
+            basejail = "no"
+
+        # Set all keys, even if it's the same value.
+        conf["basejail"] = basejail
 
         conf["CONFIG_VERSION"] = version
         self.json_write(conf)

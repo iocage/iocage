@@ -135,8 +135,6 @@ class IOCCreate(object):
                     # Instead this will stay as default.
                     self.lgr.warning(f"***\n{err}\n***\n")
 
-            iocjson.json_write(config)
-
         # Just "touch" the fstab file, since it won't exist.
         open("{}/jails/{}/fstab".format(self.iocroot, jail_uuid), "wb").close()
         _tag = self.create_link(jail_uuid, config["tag"])
@@ -155,6 +153,9 @@ class IOCCreate(object):
 
                 IOCFstab(jail_uuid, _tag, "add", source, destination, "nullfs",
                          "ro", "0", "0", silent=True)
+                config["basejail"] = "yes"
+
+        iocjson.json_write(config)
 
         if not self.plugin:
             self.lgr.info(
@@ -280,6 +281,7 @@ class IOCCreate(object):
             "mount_linprocfs"      : "0",
             "count"                : "1",
             "vnet"                 : "off",
+            "basejail"             : "no",
             # Sync properties
             "sync_state"           : "none",
             "sync_target"          : "none",
