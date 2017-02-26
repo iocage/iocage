@@ -1,4 +1,5 @@
 import pytest
+import os
 
 
 def pytest_addoption(parser):
@@ -29,6 +30,14 @@ def pytest_addoption(parser):
     parser.addoption(
         "--root-dir", action="store",
         help="Root directory containing all the RELEASEs for fetching.")
+
+
+def pytest_runtest_setup(item):
+    if 'require_root' in item.keywords and not os.getuid() == 0:
+        pytest.skip("Need to be root to run")
+
+    if 'require_zpool' in item.keywords and not item.config.getvalue("zpool"):
+        pytest.skip("Need --zpool option to run")
 
 
 @pytest.fixture
