@@ -431,24 +431,27 @@ class IOCJson(object):
 
         # Version 3 keys
         try:
-            freebsd_version = "{}/releases/{}/root/bin/freebsd-version".format(
-                iocroot, conf["release"])
-        except (IOError, OSError):
-            freebsd_version = "{}/templates/{" \
-                              "}/root/bin/freebsd-version".format(
-                iocroot, conf["tag"])
-
-        if conf["release"][:4].endswith("-"):
-            # 9.3-RELEASE and under don't actually have this binary.
             release = conf["release"]
-        else:
-            with open(freebsd_version, "r") as r:
-                for line in r:
-                    if line.startswith("USERLAND_VERSION"):
-                        release = line.rstrip().partition("=")[2].strip(
-                            '"')
+            cloned_release = conf["cloned_release"]
+        except KeyError:
+            try:
+                freebsd_version = f"{iocroot}/releases/{conf['release']}" \
+                                  "/root/bin/freebsd-version"
+            except (IOError, OSError):
+                freebsd_version = f"{iocroot}/templates/{conf['tag']}" \
+                                  "/root/bin/freebsd-version"
 
-        cloned_release = conf["release"]
+            if conf["release"][:4].endswith("-"):
+                # 9.3-RELEASE and under don't actually have this binary.
+                release = conf["release"]
+            else:
+                with open(freebsd_version, "r") as r:
+                    for line in r:
+                        if line.startswith("USERLAND_VERSION"):
+                            release = line.rstrip().partition("=")[2].strip(
+                                '"')
+
+            cloned_release = conf["release"]
 
         # Set all Version 3 keys
         conf["release"] = release
@@ -588,13 +591,10 @@ class IOCJson(object):
             if conf["template"] == "yes":
                 _type = "templates"
                 uuid = conf["tag"]  # I know, but it's easier this way.
-                print("TEMPLATE")
             else:
-                print("JAIL")
                 _type = "jails"
                 uuid = conf["host_hostuuid"]
 
-            print(f"{pool}/iocage/{_type}/{uuid}")
             checkoutput(["zfs", "set", f"{key}={value}",
                          f"{pool}/iocage/{_type}/{uuid}"])
             return
