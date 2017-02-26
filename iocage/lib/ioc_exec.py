@@ -62,7 +62,7 @@ class IOCExec(object):
                 checkoutput(["jexec", flag, user, "ioc-{}".format(
                     self.uuid)] + list(self.command), stderr=STDOUT)
             except CalledProcessError as err:
-                return err.output.decode("utf-8").rstrip()()
+                return err.output.decode("utf-8").rstrip()
         else:
             jexec = Popen(["jexec", flag, user, "ioc-{}".format(self.uuid)] +
                           list(self.command))

@@ -64,7 +64,7 @@ def fetch_cmd(http, _file, server, user, password, auth, verify, release,
                                "plugin!\nPlease specify "
                                "ip(4|6)_addr=\"INTERFACE|IPADDRESS\"!")
         if plugins:
-            IOCFetch("").fetch_plugin_index(props)
+            IOCFetch(release=None).fetch_plugin_index(props)
             exit()
 
         if count == 1:
