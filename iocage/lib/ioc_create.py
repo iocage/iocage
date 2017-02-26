@@ -134,10 +134,12 @@ class IOCCreate(object):
                 except RuntimeError as err:
                     # Instead this will stay as default.
                     self.lgr.warning(f"***\n{err}\n***\n")
+            iocjson.json_write(config)
 
         # Just "touch" the fstab file, since it won't exist.
         open("{}/jails/{}/fstab".format(self.iocroot, jail_uuid), "wb").close()
         _tag = self.create_link(jail_uuid, config["tag"])
+        config["tag"] = _tag
         self.create_rc(location, config["host_hostname"])
 
         if self.basejail:
@@ -155,7 +157,7 @@ class IOCCreate(object):
                          "ro", "0", "0", silent=True)
                 config["basejail"] = "yes"
 
-        iocjson.json_write(config)
+            iocjson.json_write(config)
 
         if not self.plugin:
             self.lgr.info(
