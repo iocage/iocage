@@ -49,23 +49,26 @@ def create_cmd(release, template, count, props, pkglist, basejail, short):
         release = template
 
     if pkglist:
-        if not os.path.isfile(pkglist):
-            _pkgformat = """
+        _pkgformat = """
 {
     "pkgs": [
     "foo",
     "bar"
     ]
 }"""
+
+        if not os.path.isfile(pkglist):
             raise RuntimeError("{} does not exist!\nPlease supply a JSON file "
                                "with the format:{}".format(pkglist,
                                                            _pkgformat))
         else:
             try:
+                # Just try to open the JSON with the right key.
                 with open(pkglist, "r") as p:
-                    pkglist = json.load(p)["pkgs"]
+                    json.load(p)["pkgs"]  # noqa
             except JSONDecodeError:
-                raise RuntimeError("Please supply a valid JSON file!")
+                raise RuntimeError("Please supply a valid JSON file with the"
+                                   f" format:\n{_pkgformat}")
 
     pool = IOCJson().json_get_value("pool")
     iocroot = IOCJson(pool).json_get_value("iocroot")
