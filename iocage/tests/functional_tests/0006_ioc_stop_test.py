@@ -1,9 +1,15 @@
+import pytest
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
-from iocage.lib.ioc_start import IOCStart
+from iocage.lib.ioc_stop import IOCStop
+
+require_root = pytest.mark.require_root
+require_zpool = pytest.mark.require_zpool
 
 
-def test_start():
+@require_root
+@require_zpool
+def test_stop():
     jails, paths = IOCList("uuid").list_datasets()
 
     uuid = jails["test"]
@@ -15,7 +21,7 @@ def test_start():
     conf = IOCJson(path).json_load()
     conf_short = IOCJson(path_short).json_load()
 
-    IOCStart(uuid, "test", path, conf)
-    IOCStart(uuid_short, "test_short", path_short, conf_short)
+    IOCStop(uuid, "test", path, conf)
+    IOCStop(uuid_short, "test_short", path_short, conf_short)
 
     assert True == True

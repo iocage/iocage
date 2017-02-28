@@ -30,5 +30,6 @@ setup(name='iocage',
               'iocage = iocage.main:main'
           ]
       },
-      data_files=_data
+      data_files=_data,
+      tests_require=['pytest', 'pytest-cov', 'pytest-pep8']
       )
