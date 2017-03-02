@@ -49,6 +49,9 @@ def upgrade_cmd(jail, release):
     jail_release = conf["release"]
     started = False
 
+    if conf["release"] == "EMPTY":
+        raise RuntimeError("Upgrading is not supported for empty jails.")
+
     if conf["type"] == "jail":
         if not status:
             IOCStart(uuid, tag, path, conf, silent=True)

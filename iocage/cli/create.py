@@ -30,14 +30,16 @@ def validate_count(ctx, param, value):
 @click.option("--template", "-t", required=False)
 @click.option("--pkglist", "-p", default=None)
 @click.option("--basejail", "-b", is_flag=True, default=False)
+@click.option("--empty", "-e", is_flag=True, default=False)
 @click.option("--short", "-s", is_flag=True, default=False,
               help="Use a short UUID of 8 characters instead of the default "
                    "36")
 @click.argument("props", nargs=-1)
-def create_cmd(release, template, count, props, pkglist, basejail, short):
+def create_cmd(release, template, count, props, pkglist, basejail, empty,
+               short):
     lgr = logging.getLogger('ioc_cli_create')
 
-    if not template and not release:
+    if not template and not release and not empty:
         raise RuntimeError(
             "Must supply either --template (-t) or --release (-r)!")
 
@@ -73,15 +75,18 @@ def create_cmd(release, template, count, props, pkglist, basejail, short):
     pool = IOCJson().json_get_value("pool")
     iocroot = IOCJson(pool).json_get_value("iocroot")
 
-    if not os.path.isdir("{}/releases/{}".format(iocroot,
-                                                 release)) and not template:
+    if not os.path.isdir(
+            f"{iocroot}/releases/{release}") and not template and not empty:
         IOCFetch(release).fetch_release()
+
+    if empty:
+        release = "EMPTY"
 
     if count == 1:
         try:
             IOCCreate(release, props, 0, pkglist,
                       template=template, short=short,
-                      basejail=basejail).create_jail()
+                      basejail=basejail, empty=empty).create_jail()
         except RuntimeError as err:
             lgr.error(err)
             if template:
@@ -94,7 +99,7 @@ def create_cmd(release, template, count, props, pkglist, basejail, short):
             try:
                 IOCCreate(release, props, j, pkglist,
                           template=template, short=short,
-                          basejail=basejail).create_jail()
+                          basejail=basejail, empty=empty).create_jail()
             except RuntimeError as err:
                 lgr.error(err)
                 if template:
