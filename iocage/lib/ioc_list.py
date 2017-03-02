@@ -17,12 +17,10 @@ class IOCList(object):
         JID UID BOOT STATE TAG TYPE IP4 RELEASE
     """
 
-    def __init__(self, lst_type="all", hdr=True, full=False,
-                 rtrn_object=False):
+    def __init__(self, lst_type="all", hdr=True, full=False):
         self.list_type = lst_type
         self.header = hdr
         self.full = full
-        self.return_object = rtrn_object
         self.pool = IOCJson().json_get_value("pool")
         self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
         self.lgr = logging.getLogger('ioc_list')
@@ -57,7 +55,9 @@ class IOCList(object):
         datasets = [d for d in zfs_list if re.match(regex, d)]
 
         if self.list_type == "all":
-            self.list_all(datasets)
+            _all = self.list_all(datasets)
+
+            return _all
         elif self.list_type == "uuid":
             jails = {}
             paths = {}
@@ -104,12 +104,11 @@ class IOCList(object):
         elif self.list_type == "base":
             bases = self.list_bases(datasets)
 
-            if self.return_object:
-                return bases
+            return bases
         elif self.list_type == "template":
             templates = self.list_all(datasets)
-            if self.return_object:
-                return templates
+
+            return templates
 
     def list_all(self, jails):
         """List all jails."""
@@ -188,14 +187,12 @@ class IOCList(object):
                                      "RELEASE", "IP4"])
 
             table.add_rows(jail_list)
-            self.lgr.info(table.draw())
-        else:
-            if self.return_object:
-                flat_jail = [j[3] for j in jail_list]
-                return flat_jail
 
-            for jail in jail_list:
-                self.lgr.info("\t".join(jail))
+            return table.draw()
+        else:
+            flat_jail = [j for j in jail_list]
+
+            return flat_jail
 
     def list_bases(self, datasets):
         """Lists all bases."""
@@ -207,14 +204,12 @@ class IOCList(object):
             table.add_rows(base_list)
             # We get an infinite float otherwise.
             table.set_cols_dtype(["t"])
-            self.lgr.info(table.draw())
-        else:
-            if self.return_object:
-                flat_base = [b for b in base_list for b in b]
-                return flat_base
 
-            for base in base_list:
-                self.lgr.info("\t".join(base))
+            return table.draw()
+        else:
+            flat_base = [b for b in base_list for b in b]
+
+            return flat_base
 
     @classmethod
     def list_get_jid(cls, uuid):
