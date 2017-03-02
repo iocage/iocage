@@ -214,11 +214,14 @@ class IOCStart(object):
                             "allow.dying",
                             "exec.consolelog={}/log/ioc-{}-console.log".format(
                                 self.iocroot, self.uuid),
-                            "persist"] if x != ''])
-            start.communicate()
+                            "persist"] if x != ''], stdout=PIPE, stderr=PIPE)
+
+            stdout_data, stderr_data = start.communicate()
 
             if start.returncode:
-                self.lgr.info("  + Start FAILED")
+                # This is actually fatal.
+                self.lgr.error("  + Start FAILED")
+                raise RuntimeError(f"  ERROR: {stderr_data.decode('utf-8')}")
             else:
                 self.lgr.info("  + Started OK")
 
