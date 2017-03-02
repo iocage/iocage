@@ -7,6 +7,7 @@ from datetime import datetime
 from shutil import copy
 from subprocess import CalledProcessError, PIPE, Popen, check_call
 
+from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_exec import IOCExec
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
@@ -19,7 +20,7 @@ class IOCCreate(object):
 
     def __init__(self, release, props, num, pkglist=None, plugin=False,
                  migrate=False, config=None, silent=False, template=False,
-                 short=False, basejail=False):
+                 short=False, basejail=False, empty=False):
         self.pool = IOCJson().json_get_value("pool")
         self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
         self.release = release
@@ -32,6 +33,7 @@ class IOCCreate(object):
         self.template = template
         self.short = short
         self.basejail = basejail
+        self.empty = empty
         self.lgr = logging.getLogger('ioc_create')
 
         if silent:
@@ -62,15 +64,21 @@ class IOCCreate(object):
                 self.iocroot, _type, self.release)
 
             try:
-                if self.release[:4].endswith("-"):
-                    # 9.3-RELEASE and under don't actually have this binary.
-                    cloned_release = self.release
+                if not self.empty:
+                    if self.release[:4].endswith("-"):
+                        # 9.3-RELEASE and under don't actually have this
+                        # binary.
+                        cloned_release = self.release
+                    else:
+                        with open(freebsd_version, "r") as r:
+                            for line in r:
+                                if line.startswith("USERLAND_VERSION"):
+                                    # Long lines ftw?
+                                    cl = line.rstrip().partition("=")[2]
+                                    cloned_release = cl.strip('"')
                 else:
-                    with open(freebsd_version, "r") as r:
-                        for line in r:
-                            if line.startswith("USERLAND_VERSION"):
-                                cloned_release = line.rstrip().partition("=")[
-                                    2].strip('"')
+                    cloned_release = "EMPTY"
+
                 config = self.create_config(jail_uuid, cloned_release)
             except (IOError, OSError):
                 if self.template:
@@ -103,19 +111,25 @@ class IOCCreate(object):
             config["cloned_release"] = IOCJson("{}/templates/{}".format(
                 self.iocroot, self.release)).json_get_value("cloned_release")
         else:
-            try:
-                check_call(["zfs", "snapshot",
-                            "{}/iocage/releases/{}/root@{}".format(
-                                self.pool, self.release, jail_uuid)],
-                           stderr=PIPE)
-            except CalledProcessError:
-                raise RuntimeError(
-                    "RELEASE: {} not found!".format(self.release))
+            if not self.empty:
+                try:
+                    check_call(["zfs", "snapshot",
+                                "{}/iocage/releases/{}/root@{}".format(
+                                    self.pool, self.release, jail_uuid)],
+                               stderr=PIPE)
+                except CalledProcessError:
+                    raise RuntimeError(
+                        "RELEASE: {} not found!".format(self.release))
 
-            Popen(["zfs", "clone", "-p",
-                   "{}/iocage/releases/{}/root@{}".format(
-                       self.pool, self.release, jail_uuid),
-                   jail], stdout=PIPE).communicate()
+                Popen(["zfs", "clone", "-p",
+                       "{}/iocage/releases/{}/root@{}".format(
+                           self.pool, self.release, jail_uuid),
+                       jail], stdout=PIPE).communicate()
+            else:
+                try:
+                    checkoutput(["zfs", "create", "-p", jail], stderr=PIPE)
+                except CalledProcessError as err:
+                    raise RuntimeError(err.output.decode("utf-8").rstrip())
 
         iocjson = IOCJson(location)
 
@@ -140,7 +154,9 @@ class IOCCreate(object):
         open("{}/jails/{}/fstab".format(self.iocroot, jail_uuid), "wb").close()
         _tag = self.create_link(jail_uuid, config["tag"])
         config["tag"] = _tag
-        self.create_rc(location, config["host_hostname"])
+
+        if not self.empty:
+            self.create_rc(location, config["host_hostname"])
 
         if self.basejail:
             from iocage.lib.ioc_fstab import IOCFstab
@@ -156,6 +172,12 @@ class IOCCreate(object):
                 IOCFstab(jail_uuid, _tag, "add", source, destination, "nullfs",
                          "ro", "0", "0", silent=True)
                 config["basejail"] = "yes"
+
+            iocjson.json_write(config)
+
+        if self.empty:
+            config["release"] = "EMPTY"
+            config["cloned_release"] = "EMPTY"
 
             iocjson.json_write(config)
 
