@@ -5,12 +5,12 @@ import glob
 import imp
 import logging
 import os
+import stat
 import sys
 
 import click
 
 from iocage.lib.ioc_check import IOCCheck
-
 
 try:
     os.environ["LANG"]
@@ -59,6 +59,7 @@ for lib in glob.glob("{}/*.py".format(PATH)):
 
 def main():
     log_file = os.environ.get("IOCAGE_LOGFILE", "/dev/stdout")
+    mode = "a" if not stat.S_ISCHR(os.stat(log_file).st_mode) else "w"
 
     for arg in sys.argv:
         key, _, val = arg.partition("=")
@@ -70,7 +71,7 @@ def main():
             # hilarity ensues. Let's avoid that.
             sys.argv.remove(arg)
 
-    logging.basicConfig(filename=log_file, level=logging.DEBUG,
+    logging.basicConfig(filename=log_file, filemode=mode, level=logging.DEBUG,
                         format='%(message)s')
     skip_check = False
     skip_check_cmds = ["--help", "activate", "deactivate", "-v", "--version"]
