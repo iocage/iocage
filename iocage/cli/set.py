@@ -40,7 +40,7 @@ def set_cmd(prop, jail, plugin):
     else:
         raise RuntimeError("{} not found!".format(jail))
 
-    if "template" in prop:
+    if "template" in prop.split("=")[0]:
         if "template" in path and prop != "template=no":
             raise RuntimeError("{} ({}) is already a template!".format(
                 uuid, tag
