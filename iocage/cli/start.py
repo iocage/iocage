@@ -13,6 +13,34 @@ __cmdname__ = "start_cmd"
 __rootcmd__ = True
 
 
+def start_jail(uuid, tag, path):
+    """
+    Will do a few jail type checks and then start the jail.
+
+    :param uuid: The jails UUID
+    :param tag: The jails tag
+    :param path: The path to the JSON configuration file
+    :type uuid: string
+    :type tag: string
+    :type path: string
+    :return: A tuple (True/False, Message) True if an error has occured.
+    """
+    conf = IOCJson(path).json_load()
+
+    if conf["type"] in ("jail", "plugin"):
+        IOCStart(uuid, tag, path, conf)
+
+        return False, None
+    elif conf["type"] == "basejail":
+        return(True, "Please run \"iocage migrate\" before trying to start"
+                     f" {uuid} ({tag})")
+    elif conf["type"] == "template":
+        return(True, "Please convert back to a jail before trying to start"
+                     f" {uuid} ({tag})")
+    else:
+        return True, f"{conf['type']} is not a supported jail type."
+
+
 @click.command(name="start", help="Starts the specified jails or ALL.")
 @click.option("--rc", default=False, is_flag=True,
               help="Will start all jails with boot=on, in the specified"
@@ -49,12 +77,13 @@ def start_cmd(rc, jails):
         for j in boot_order.keys():
             uuid = _jails[j]
             path = paths[j]
-            conf = IOCJson(path).json_load()
             status, _ = IOCList().list_get_jid(uuid)
 
             if not status:
-                lgr.info("  Starting {} ({})".format(uuid, j))
-                IOCStart(uuid, j, path, conf, silent=True)
+                err, msg = start_jail(uuid, j, path)
+
+                if err:
+                    lgr.error(msg)
             else:
                 lgr.info("{} ({}) is already running!".format(uuid, j))
         exit()
@@ -66,9 +95,10 @@ def start_cmd(rc, jails):
         for j in jail_order:
             uuid = _jails[j]
             path = paths[j]
+            err, msg = start_jail(uuid, j, path)
 
-            conf = IOCJson(path).json_load()
-            IOCStart(uuid, j, path, conf)
+            if err:
+                lgr.error(msg)
     else:
         if len(jails) < 1:
             raise RuntimeError("Please specify either one or more jails or "
@@ -90,19 +120,7 @@ def start_cmd(rc, jails):
             else:
                 raise RuntimeError("{} not found!".format(jail))
 
-            conf = IOCJson(path).json_load()
+            err, msg = start_jail(uuid, tag, path)
 
-            if conf["type"] in ("jail", "plugin"):
-                IOCStart(uuid, tag, path, conf)
-            elif conf["type"] == "basejail":
-                raise RuntimeError(
-                    "Please run \"iocage migrate\" before trying"
-                    " to start {} ({})".format(uuid, tag))
-            elif conf["type"] == "template":
-                raise RuntimeError(
-                    "Please convert back to a jail before trying"
-                    " to start {} ({})".format(uuid, tag))
-            else:
-                raise RuntimeError("{} is not a supported jail type.".format(
-                    conf["type"]
-                ))
+            if err:
+                raise RuntimeError(msg)
