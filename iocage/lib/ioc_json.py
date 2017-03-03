@@ -341,6 +341,26 @@ class IOCJson(object):
             if status:
                 raise RuntimeError(f"{uuid} ({old_tag}) is running.\nPlease"
                                    "stop it first!")
+
+            jails, paths = IOCList("uuid").list_datasets()
+            for j in jails:
+                _uuid = jails[j]
+                _path = f"{paths[j]}/root"
+                t_old_path = f"{old_location}/root@{_uuid}"
+                t_path = f"{new_location}/root@{_uuid}"
+
+                if _uuid == uuid:
+                    continue
+
+                origin = checkoutput(["zfs", "get", "-H", "-o", "value",
+                                      "origin", _path]).rstrip()
+
+                if origin == t_old_path or origin == t_path:
+                    _status, _ = IOCList.list_get_jid(_uuid)
+
+                    if _status:
+                        raise RuntimeError(f"CHILD: {_uuid} ({j}) is"
+                                           f" running.\nPlease stop it first!")
             if value == "yes":
                 try:
                     checkoutput(["zfs", "rename", "-p", old_location,
