@@ -297,6 +297,7 @@ class IOCStart(object):
 
     def start_network(self, vnet):
         if vnet:
+            # TODO: IP6 support here.
             _, jid = IOCList().list_get_jid(self.uuid)
             ip4_addr = self.get("ip4_addr")
             defaultgw = self.get("defaultrouter")

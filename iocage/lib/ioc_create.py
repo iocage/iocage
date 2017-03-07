@@ -345,6 +345,26 @@ class IOCCreate(object):
 
             status, jid = IOCList().list_get_jid(jail_uuid)
 
+        # Connectivity test courtesy David Cottlehuber off Google Group
+        srv_connect_cmd = ["drill", "_http._tcp.pkg.freebsd.org", "SRV"]
+        dnssec_connect_cmd = ["drill", "-D", "pkg.freebsd.org"]
+
+        self.lgr.info("Testing SRV response to FreeBSD")
+        srv_connection = IOCExec(srv_connect_cmd, jail_uuid, _tag, location,
+                                 plugin=self.plugin).exec_jail()
+
+        if srv_connection:
+            raise RuntimeError(f"ERROR: {srv_connection}\n"
+                               f"Command run: {' '.join(srv_connect_cmd)}")
+
+        self.lgr.info("Testing DNSSEC response to FreeBSD")
+        dnssec_connection = IOCExec(dnssec_connect_cmd, jail_uuid, _tag,
+                                    location, plugin=self.plugin).exec_jail()
+
+        if dnssec_connection:
+            raise RuntimeError(f"ERROR: {dnssec_connection}\n"
+                               f"Command run: {' '.join(dnssec_connect_cmd)}")
+
         if not self.plugin:
             with open(self.pkglist, "r") as j:
                 self.pkglist = json.load(j)["pkgs"]
@@ -361,7 +381,7 @@ class IOCCreate(object):
                               plugin=self.plugin).exec_jail()
 
         if pkg_upgrade:
-            self.lgr.error("ERROR: {}".format(pkg_upgrade.decode("utf-8")))
+            self.lgr.error(f"ERROR: {pkg_upgrade}")
             err = True
 
         self.lgr.info("Installing supplied packages:")
