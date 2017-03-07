@@ -296,11 +296,18 @@ class IOCStart(object):
                                                                     "tag"]))
 
     def start_network(self, vnet):
+        """
+        This function is largely a check to see if VNET is true, and then to
+        actually run the correct function, otherwise it passes.
+
+        :param vnet: Boolean
+        """
         if vnet:
-            # TODO: IP6 support here.
             _, jid = IOCList().list_get_jid(self.uuid)
             ip4_addr = self.get("ip4_addr")
+            ip6_addr = self.get("ip6_addr")
             defaultgw = self.get("defaultrouter")
+            defaultgw6 = self.get("defaultrouter6")
             nics = self.get("interfaces").split(",")
 
             for n in nics:
@@ -314,74 +321,84 @@ class IOCStart(object):
                                       stdout=PIPE).communicate()[0].decode(
                         "utf-8").split()[5]
 
-                    for ip in ip4_addr.split(','):
-                        iface, ip4 = ip.split("|")
+                    for _ip4 in ip4_addr.split(','):
+                        iface, ip4 = _ip4.split("|")
                         if nic != iface:
                             err = "\n  ERROR: Invalid interface supplied: {}"
                             self.lgr.error(err.format(iface))
                             self.lgr.error("  Did you mean {}?\n".format(nic))
-                            equal = False
                         else:
-                            equal = True
-
-                        if equal:
-                            mac_a, mac_b = self.__start_generate_vnet_mac__(
-                                nic)
-                            epair_a_cmd = ["ifconfig", "epair", "create"]
-                            epair_a = Popen(epair_a_cmd,
-                                            stdout=PIPE).communicate()[0]
-                            epair_a = epair_a.strip()
-                            epair_b = re.sub(b"a$", b"b", epair_a)
-
-                            try:
-                                # Host side
-                                checkoutput(["ifconfig", epair_a, "name",
-                                             "{}:{}".format(nic, jid), "mtu",
-                                             membermtu], stderr=STDOUT)
-                                checkoutput(["ifconfig", "{}:{}".format(nic,
-                                                                        jid),
-                                             "link", mac_a], stderr=STDOUT)
-                                checkoutput(["ifconfig", "{}:{}".format(nic,
-                                                                        jid),
-                                             "description",
-                                             "associated with jail:"
-                                             " {} ({})".format(self.uuid,
-                                                               self.conf[
-                                                                   "tag"])],
-                                            stderr=STDOUT)
-
-                                # Jail side
-                                checkoutput(["ifconfig", epair_b, "vnet",
-                                             "ioc-{}".format(self.uuid)],
-                                            stderr=STDOUT)
-                                checkoutput(["jexec", "ioc-{}".format(
-                                    self.uuid), "ifconfig", epair_b, "name",
-                                             nic, "mtu", membermtu],
-                                            stderr=STDOUT)
-                                checkoutput(["jexec", "ioc-{}".format(
-                                    self.uuid), "ifconfig", nic, "link",
-                                             mac_b],
-                                            stderr=STDOUT)
-
-                                checkoutput(["ifconfig", bridge, "addm",
-                                             "{}:{}".format(nic, jid), "up"],
-                                            stderr=STDOUT)
-                                checkoutput(["ifconfig", "{}:{}".format(nic,
-                                                                        jid),
-                                             "up"], stderr=STDOUT)
-                                checkoutput(
-                                    ["jexec", "ioc-{}".format(self.uuid),
-                                     "ifconfig", iface, ip4, "up"],
-                                    stderr=STDOUT)
-                                checkoutput(["jexec", "ioc-{}".format(
-                                    self.uuid), "route", "add", "default",
-                                             defaultgw], stderr=STDOUT)
-                            except CalledProcessError as err:
-                                raise RuntimeError(
-                                    "ERROR: {}".format(
-                                        err.output.decode("utf-8").rstrip()))
+                            self.start_network_vnet(nic, bridge, membermtu,
+                                                    iface, ip4, defaultgw, jid)
+                    for _ip6 in ip6_addr.split(','):
+                        iface, ip6 = _ip6.split("|")
+                        if nic != iface:
+                            err = "\n  ERROR: Invalid interface supplied: {}"
+                            self.lgr.error(err.format(iface))
+                            self.lgr.error("  Did you mean {}?\n".format(nic))
+                        else:
+                            self.start_network_vnet(nic, bridge, membermtu,
+                                                    iface, ip6, defaultgw6,
+                                                    jid)
                 except:
                     pass
+
+    def start_network_vnet(self, nic, bridge, mtu, iface, ip, defaultgw, jid):
+        """
+        The real meat and potatoes for starting a VNET interface.
+
+        :param nic: The network interface to assign the IP in the jail
+        :param bridge: The bridge to attach the VNET interface
+        :param mtu: The mtu of the VNET interface
+        :param iface: The interface to use
+        :param ip:  The IP address to assign
+        :param defaultgw: The gateway IP to assign to the nic
+        :param jid: The jails ID
+        :return: If an error occurs it returns the error. Otherwise, it's None
+        """
+
+        # Crude check to see if it's a IPv6 address
+        if ":" in ip:
+            ifconfig = [iface, "inet6", ip, "up"]
+            route = ["add", "-6", "default", defaultgw]
+        else:
+            ifconfig = [iface, ip, "up"]
+            route = ["add", "default", defaultgw]
+
+        mac_a, mac_b = self.__start_generate_vnet_mac__(nic)
+        epair_a_cmd = ["ifconfig", "epair", "create"]
+        epair_a = Popen(epair_a_cmd, stdout=PIPE).communicate()[0]
+        epair_a = epair_a.strip()
+        epair_b = re.sub(b"a$", b"b", epair_a)
+
+        try:
+            # Host side
+            checkoutput(["ifconfig", epair_a, "name",
+                         f"{nic}:{jid}", "mtu", mtu], stderr=STDOUT)
+            checkoutput(["ifconfig", f"{nic}:{jid}", "link", mac_a],
+                        stderr=STDOUT)
+            checkoutput(["ifconfig", f"{nic}:{jid}", "description",
+                         "associated with jail:"
+                         f" {self.uuid} ({self.conf['tag']})"], stderr=STDOUT)
+
+            # Jail side
+            checkoutput(["ifconfig", epair_b, "vnet",
+                         f"ioc-{self.uuid}"], stderr=STDOUT)
+            checkoutput(["jexec", f"ioc-{self.uuid}", "ifconfig", epair_b,
+                         "name", nic, "mtu", mtu], stderr=STDOUT)
+            checkoutput(["jexec", f"ioc-{self.uuid}", "ifconfig", nic, "link",
+                         mac_b], stderr=STDOUT)
+            checkoutput(["ifconfig", bridge, "addm", f"{nic}:{jid}", "up"],
+                        stderr=STDOUT)
+            checkoutput(["ifconfig", f"{nic}:{jid}", "up"], stderr=STDOUT)
+            checkoutput(["jexec", f"ioc-{self.uuid}", "ifconfig"] + ifconfig,
+                        stderr=STDOUT)
+            checkoutput(["jexec", f"ioc-{self.uuid}", "route"] + route,
+                        stderr=STDOUT)
+        except CalledProcessError as err:
+            return f"ERROR: {err.output.decode('utf-8')}".rstrip()
+        else:
+            return
 
     def start_findscript(self, exec_type):
         # TODO: Do something with this.
