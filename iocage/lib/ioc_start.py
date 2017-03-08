@@ -304,44 +304,45 @@ class IOCStart(object):
         """
         if vnet:
             _, jid = IOCList().list_get_jid(self.uuid)
-            ip4_addr = self.get("ip4_addr")
-            ip6_addr = self.get("ip6_addr")
-            defaultgw = self.get("defaultrouter")
-            defaultgw6 = self.get("defaultrouter6")
+            net_configs = ((self.get("ip4_addr"), self.get("defaultrouter")),
+                           (self.get("ip6_addr"), self.get("defaultrouter6")))
             nics = self.get("interfaces").split(",")
 
-            for n in nics:
-                nic, bridge = n.split(":")
+            for nic in nics:
+                self.start_network_interface_vnet(nic, net_configs, jid)
 
-                try:
-                    memberif = Popen(["ifconfig", bridge],
-                                     stdout=PIPE).communicate()[0].decode(
-                        "utf-8").split()[40]
-                    membermtu = Popen(["ifconfig", memberif],
-                                      stdout=PIPE).communicate()[0].decode(
-                        "utf-8").split()[5]
+    def start_network_interface_vnet(self, nic, net_configs, jid):
+        """
+        Start VNET on interface
 
-                    for _ip4 in ip4_addr.split(','):
-                        iface, ip4 = _ip4.split("|")
+        :param nic: The network interface to assign the IP in the jail
+        :param net_configs: Tuple of IP address and router pairs
+        :param jid: The jails ID
+        """
+        nic, bridge = nic.split(":")
+
+        try:
+            memberif = Popen(["ifconfig", bridge],
+                             stdout=PIPE).communicate()[0].decode(
+                                 "utf-8").split()[40]
+            membermtu = Popen(["ifconfig", memberif],
+                              stdout=PIPE).communicate()[0].decode(
+                                  "utf-8").split()[5]
+
+            for addrs, gw in net_configs:
+                if addrs != 'none':
+                    for addr in addrs.split(','):
+                        iface, ip = addr.split("|")
                         if nic != iface:
                             err = "\n  ERROR: Invalid interface supplied: {}"
                             self.lgr.error(err.format(iface))
                             self.lgr.error("  Did you mean {}?\n".format(nic))
                         else:
                             self.start_network_vnet(nic, bridge, membermtu,
-                                                    iface, ip4, defaultgw, jid)
-                    for _ip6 in ip6_addr.split(','):
-                        iface, ip6 = _ip6.split("|")
-                        if nic != iface:
-                            err = "\n  ERROR: Invalid interface supplied: {}"
-                            self.lgr.error(err.format(iface))
-                            self.lgr.error("  Did you mean {}?\n".format(nic))
-                        else:
-                            self.start_network_vnet(nic, bridge, membermtu,
-                                                    iface, ip6, defaultgw6,
-                                                    jid)
-                except:
-                    pass
+                                                    iface, ip, gw, jid)
+
+        except:
+            pass
 
     def start_network_vnet(self, nic, bridge, mtu, iface, ip, defaultgw, jid):
         """
