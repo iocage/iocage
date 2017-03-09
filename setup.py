@@ -12,7 +12,7 @@ if sys.version_info < (3, 6):
     exit("Only Python 3.6 and higher is supported.")
 
 setup(name='iocage',
-      version='0.9.6',
+      version='0.9.7',
       description='A jail manager that uses ZFS.',
       author='Brandon Schneider and Peter Toth',
       author_email='brandon@ixsystems.com',
