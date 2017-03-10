@@ -30,7 +30,8 @@ class IOCFetch(object):
 
     def __init__(self, release, server="ftp.freebsd.org", user="anonymous",
                  password="anonymous@", auth=None, root_dir=None, http=False,
-                 _file=False, verify=True, hardened=False, update=True):
+                 _file=False, verify=True, hardened=False, update=True,
+                 eol=True):
         self.pool = IOCJson().json_get_value("pool")
         self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
         self.server = server
@@ -52,6 +53,7 @@ class IOCFetch(object):
         self.hardened = hardened
         self.files = ("MANIFEST", "base.txz", "lib32.txz", "doc.txz")
         self.update = update
+        self.eol = eol
 
         if hardened:
             self.http = True
@@ -129,7 +131,11 @@ class IOCFetch(object):
     def fetch_release(self, _list=False):
         """Small wrapper to choose the right fetch."""
         if self.http:
-            eol = self.__fetch_eol_check__()
+            if self.eol:
+                eol = self.__fetch_eol_check__()
+            else:
+                eol = []
+
             self.fetch_http_release(eol, _list=_list)
         elif self._file:
             # Format for file directory should be: root-dir/RELEASE/*.txz
@@ -171,7 +177,11 @@ class IOCFetch(object):
                 self.lgr.info("Extracting: {}... ".format(f))
                 self.fetch_extract(f)
         else:
-            eol = self.__fetch_eol_check__()
+            if self.eol:
+                eol = self.__fetch_eol_check__()
+            else:
+                eol = []
+
             self.fetch_ftp_release(eol, _list=_list)
 
     def fetch_http_release(self, eol, _list=False):
