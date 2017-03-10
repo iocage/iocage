@@ -74,7 +74,8 @@ def fstab_cmd(action, fstab_string, jail):
     else:
         if action != "edit":
             try:
-                source, destination, fstype, options, dump, _pass = fstab_string
+                source, destination, fstype, options, dump, _pass = \
+                    fstab_string
             except ValueError:
                 raise RuntimeError("Please specify a valid fstab entry!\n\n"
                                    "Example:\n  /the/source /dest FSTYPE "
