@@ -1,9 +1,12 @@
 """Manipulate a jails fstab"""
 import logging
+import os
 from datetime import datetime
+from subprocess import PIPE, Popen
 
 from iocage.lib.ioc_common import open_atomic
 from iocage.lib.ioc_json import IOCJson
+from iocage.lib.ioc_list import IOCList
 
 
 class IOCFstab(object):
@@ -24,11 +27,8 @@ class IOCFstab(object):
         self.fsdump = fsdump
         self.fspass = fspass
         self.index = index
-        self.mount = "{}\t{}\t{}\t{}\t{}\t{}".format(self.src, self.dest,
-                                                     self.fstype,
-                                                     self.fsoptions,
-                                                     self.fsdump,
-                                                     self.fspass)
+        self.mount = f"{self.src}\t{self.dest}\t{self.fstype}\t" \
+                     f"{self.fsoptions}\t{self.fsdump}\t{self.fspass}"
 
         if silent:
             self.lgr.disabled = True
@@ -36,14 +36,21 @@ class IOCFstab(object):
         self.__fstab_parse__()
 
     def __fstab_parse__(self):
+        """
+        Checks which action the user is asking for and calls the
+        appropriate methods.
+        """
         if self.action == "add":
             self.__fstab_add__()
+            self.__fstab_mount__()
         elif self.action == "remove":
-            self.__fstab_remove__()
+            dest = self.__fstab_remove__()
+            self.__fstab_umount__(dest)
         else:
             raise RuntimeError("Type of operation not specified!")
 
     def __fstab_add__(self):
+        """Adds a users mount to the jails fstab"""
         with open("{}/jails/{}/fstab".format(self.iocroot,
                                              self.uuid), "r") as \
                 fstab:
@@ -62,6 +69,11 @@ class IOCFstab(object):
                                                                  self.tag))
 
     def __fstab_remove__(self):
+        """
+        Removes the users mount by index or matching string.
+
+        :return: The destination of the specified mount
+        """
         removed = False
         index = 0
 
@@ -75,6 +87,7 @@ class IOCFstab(object):
                     if line.rsplit("#")[0].rstrip() == self.mount or index \
                             == self.index and not removed:
                         removed = True
+                        dest = line.split()[1]
                         continue
                     else:
                         _fstab.write(line)
@@ -84,5 +97,35 @@ class IOCFstab(object):
             self.lgr.info(
                 "Successfully removed mount from {} ({})'s fstab".format(
                     self.uuid, self.tag))
+            return dest  # Needed for umounting, otherwise we lack context.
         else:
-            self.lgr.info("No fstab entry matching: {}".format(self.mount))
+            self.lgr.info("No matching fstab entry.")
+            exit()
+
+    def __fstab_mount__(self):
+        """Mounts the users mount if the jail is running."""
+        status, _ = IOCList().list_get_jid(self.uuid)
+
+        os.makedirs(self.dest, exist_ok=True)
+        if status:
+            proc = Popen(["mount", "-t", self.fstype, "-o", self.fsoptions,
+                          self.src, self.dest], stdout=PIPE, stderr=PIPE)
+            stdout_data, stderr_data = proc.communicate()
+
+            if stderr_data:
+                raise RuntimeError(f"ERROR: {stderr_data.decode('utf-8')}")
+
+    def __fstab_umount__(self, dest):
+        """
+        Umounts the users mount if the jail is running.
+
+        :param dest: The destination to umount.
+        """
+        status, _ = IOCList().list_get_jid(self.uuid)
+
+        if status:
+            proc = Popen(["umount", "-f", dest], stdout=PIPE, stderr=PIPE)
+            stdout_data, stderr_data = proc.communicate()
+
+            if stderr_data:
+                raise RuntimeError(f"ERROR: {stderr_data.decode('utf-8')}")
