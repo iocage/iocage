@@ -20,6 +20,9 @@ __rootcmd__ = True
 @click.option("--remove", "-r", "action",
               help="Removes an entry from the jails fstab and unmounts it.",
               flag_value="remove")
+@click.option("--edit", "-e", "action",
+              help="Opens up the fstab file in your environments EDITOR.",
+              flag_value="edit")
 def fstab_cmd(action, fstab_string, jail):
     """
     Looks for the jail supplied and passes the uuid, path and configuration
@@ -34,7 +37,7 @@ def fstab_cmd(action, fstab_string, jail):
 
     _jails, paths = IOCList("uuid").list_datasets()
 
-    if not fstab_string:
+    if not fstab_string and action != "edit":
         raise RuntimeError("Please supply a fstab entry!")
 
     _jail = {tag: uuid for (tag, uuid) in _jails.items() if
@@ -69,12 +72,17 @@ def fstab_cmd(action, fstab_string, jail):
             source, destination, fstype, options, dump, _pass = "", "", "", \
                                                                 "", "", ""
     else:
-        try:
-            source, destination, fstype, options, dump, _pass = fstab_string
-        except ValueError:
-            raise RuntimeError("Please specify a valid fstab entry!\n\n"
-                               "Example:\n  /the/source /dest FSTYPE "
-                               "FSOPTIONS FSDUMP FSPASS")
+        if action != "edit":
+            try:
+                source, destination, fstype, options, dump, _pass = fstab_string
+            except ValueError:
+                raise RuntimeError("Please specify a valid fstab entry!\n\n"
+                                   "Example:\n  /the/source /dest FSTYPE "
+                                   "FSOPTIONS FSDUMP FSPASS")
+        else:
+            source, destination, fstype, options, dump, _pass = "", "", \
+                                                                "", "", \
+                                                                "", ""
 
     if not _index and action == "add":
         destination = "{}/jails/{}/root".format(iocroot, uuid) + destination

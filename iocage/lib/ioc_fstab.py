@@ -1,8 +1,10 @@
 """Manipulate a jails fstab"""
 import logging
 import os
+import shutil
+import tempfile
 from datetime import datetime
-from subprocess import PIPE, Popen
+from subprocess import PIPE, Popen, call
 
 from iocage.lib.ioc_common import open_atomic
 from iocage.lib.ioc_json import IOCJson
@@ -46,6 +48,8 @@ class IOCFstab(object):
         elif self.action == "remove":
             dest = self.__fstab_remove__()
             self.__fstab_umount__(dest)
+        elif self.action == "edit":
+            self.__fstab_edit__()
         else:
             raise RuntimeError("Type of operation not specified!")
 
@@ -129,3 +133,23 @@ class IOCFstab(object):
 
             if stderr_data:
                 raise RuntimeError(f"ERROR: {stderr_data.decode('utf-8')}")
+
+    def __fstab_edit__(self):
+        """
+        Opens up the users EDITOR, or vi and replaces the jail's fstab
+        with the new content.
+        """
+        editor = os.environ.get("EDITOR", "/usr/bin/vi")
+        err_editor = editor.split("/")[-1]
+        jail_fstab = f"{self.iocroot}/jails/{self.uuid}/fstab"
+        tmp_fstab = tempfile.NamedTemporaryFile(suffix=".iocage")
+
+        shutil.copy2(jail_fstab, tmp_fstab.name)
+        proc = call([editor, tmp_fstab.name])
+
+        if proc == 0:
+            with open(jail_fstab, "w") as fstab:
+                for line in tmp_fstab.readlines():
+                    fstab.write(line.decode("utf-8"))
+        else:
+            raise RuntimeError(f"An error occurred within {err_editor}!")
