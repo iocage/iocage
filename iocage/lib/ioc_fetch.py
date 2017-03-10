@@ -130,7 +130,7 @@ class IOCFetch(object):
         """Small wrapper to choose the right fetch."""
         if self.http:
             eol = self.__fetch_eol_check__()
-            self.fetch_http_release(eol, _list=list)
+            self.fetch_http_release(eol, _list=_list)
         elif self._file:
             # Format for file directory should be: root-dir/RELEASE/*.txz
             if not self.root_dir:
@@ -172,7 +172,7 @@ class IOCFetch(object):
                 self.fetch_extract(f)
         else:
             eol = self.__fetch_eol_check__()
-            self.fetch_ftp_release(eol, _list=list)
+            self.fetch_ftp_release(eol, _list=_list)
 
     def fetch_http_release(self, eol, _list=False):
         """
@@ -255,6 +255,7 @@ class IOCFetch(object):
 
             if not self.release:
                 for rel in req.content.split():
+                    rel = rel.decode("utf-8")
                     rel = rel.strip("href=").strip("/").split(">")
                     if "-RELEASE" in rel[0]:
                         rel = rel[0].strip('"').strip("/").strip("/</a")
