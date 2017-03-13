@@ -25,6 +25,7 @@ setup(name='iocage',
           'requests',
           'tqdm'
       ],
+      setup_requires=['pytest-runner'],
       entry_points={
           'console_scripts': [
               'iocage = iocage.main:main'
