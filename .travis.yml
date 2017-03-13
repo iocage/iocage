@@ -6,16 +6,16 @@ notifications:
   email: never
 before_install:
   - "sudo mkdir -p /usr/local/etc/rc.d/iocage"
-install:
   - sudo apt-get update -qq
   - sudo apt-get install -y python-software-properties
   - sudo add-apt-repository ppa:zfs-native/stable -y
   - sudo apt-get update -qq
   - sudo apt-get install ubuntu-zfs
+install:
   - pip install pytest-cov pytest-pep8
   - pip install coveralls
   - pip install .
 script:
-  - coverage run --source iocage setup.py test
+  - pytest
 after_success:
   coveralls
