@@ -11,5 +11,8 @@ install:
   - sudo apt-get update -qq
   - sudo apt-get install ubuntu-zfs
   - pip install pytest-cov pytest-pep8
+  - pip install coveralls
   - pip install .
 script: pytest
+after_success:
+  coveralls
