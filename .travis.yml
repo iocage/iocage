@@ -2,6 +2,8 @@ language: python
 python:
   - "3.6"
 sudo: required
+notifications:
+  email: never
 before_install:
   - "sudo mkdir -p /usr/local/etc/rc.d/iocage"
 install:
@@ -13,6 +15,7 @@ install:
   - pip install pytest-cov pytest-pep8
   - pip install coveralls
   - pip install .
-script: pytest
+script:
+  - coverage run --source iocage setup.py test
 after_success:
   coveralls
