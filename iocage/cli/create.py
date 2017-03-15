@@ -43,8 +43,8 @@ def create_cmd(release, template, count, props, pkglist, basejail, empty,
 
     if short and uuid:
         raise RuntimeError(
-            "Can't use --short (-s) and --uuid (-u) at the same time!!")
-    
+            "Can't use --short (-s) and --uuid (-u) at the same time!")
+
     if not template and not release and not empty:
         raise RuntimeError(
             "Must supply either --template (-t) or --release (-r)!")
