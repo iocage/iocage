@@ -86,7 +86,7 @@ def create_cmd(release, template, count, props, pkglist, basejail, empty,
     if count == 1:
         try:
             IOCCreate(release, props, 0, pkglist,
-                      template=template, short=short, uuid=uuid
+                      template=template, short=short, uuid=uuid,
                       basejail=basejail, empty=empty).create_jail()
         except RuntimeError as err:
             lgr.error(err)
