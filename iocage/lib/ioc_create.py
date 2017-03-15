@@ -20,7 +20,7 @@ class IOCCreate(object):
 
     def __init__(self, release, props, num, pkglist=None, plugin=False,
                  migrate=False, config=None, silent=False, template=False,
-                 short=False, basejail=False, empty=False):
+                 short=False, basejail=False, empty=False, uuid=None):
         self.pool = IOCJson().json_get_value("pool")
         self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
         self.release = release
@@ -34,6 +34,7 @@ class IOCCreate(object):
         self.short = short
         self.basejail = basejail
         self.empty = empty
+        self.uuid = uuid
         self.lgr = logging.getLogger('ioc_create')
 
         if silent:
@@ -45,7 +46,10 @@ class IOCCreate(object):
         jail from that. The user can also specify properties to override the
         defaults.
         """
-        jail_uuid = str(uuid.uuid4())
+        if self.uuid:
+            jail_uuid = self.uuid
+        else:
+            jail_uuid = str(uuid.uuid4())
 
         if self.short:
             jail_uuid = jail_uuid[:8]
