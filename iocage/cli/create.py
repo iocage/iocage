@@ -29,7 +29,8 @@ def validate_count(ctx, param, value):
 @click.option("--release", "-r", required=False)
 @click.option("--template", "-t", required=False)
 @click.option("--pkglist", "-p", default=None)
-@click.option("--uuid", "-u", default=None)
+@click.option("--uuid", "-u", default=None,
+              help="Provide a specific UUID for this jail")
 @click.option("--basejail", "-b", is_flag=True, default=False)
 @click.option("--empty", "-e", is_flag=True, default=False)
 @click.option("--short", "-s", is_flag=True, default=False,
@@ -40,6 +41,10 @@ def create_cmd(release, template, count, props, pkglist, basejail, empty,
                short, uuid):
     lgr = logging.getLogger('ioc_cli_create')
 
+    if short and uuid:
+        raise RuntimeError(
+            "Can't use --short (-s) and --uuid (-u) at the same time!!")
+    
     if not template and not release and not empty:
         raise RuntimeError(
             "Must supply either --template (-t) or --release (-r)!")
