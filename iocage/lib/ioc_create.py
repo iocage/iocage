@@ -56,6 +56,9 @@ class IOCCreate(object):
 
         location = "{}/jails/{}".format(self.iocroot, jail_uuid)
 
+        if os.path.isdir(location):
+            raise RuntimeError("The UUID is already in use by another jail.")
+
         if self.migrate:
             config = self.config
         else:
