@@ -643,7 +643,7 @@ class IOCJson(object):
                 if self.cli:
                     self.lgr.error(f"ERROR: {err}")
                 else:
-                    err = f"WARNING: {err}"
+                    err = f"ERROR: {err}"
 
                 if key not in ("interfaces", "ip4_addr", "ip6_addr",
                                "memoryuse"):
