@@ -10,7 +10,7 @@ before_install:
   - sudo apt-get install -y python-software-properties
   - sudo add-apt-repository ppa:zfs-native/stable -y
   - sudo apt-get update -qq
-  - sudo apt-get install ubuntu-zfs
+  - sudo apt-get install --force-yes ubuntu-zfs
 install:
   - pip install pytest-cov pytest-pep8
   - pip install coveralls
