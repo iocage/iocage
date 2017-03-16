@@ -146,8 +146,12 @@ class IOCCreate(object):
 
                     config[key] = value
                 except RuntimeError as err:
-                    # Instead this will stay as default.
-                    self.lgr.warning(f"***\n{err}\n***\n")
+                    from iocage.lib.ioc_destroy import IOCDestroy
+                    iocjson.json_write(config)  # Destroy counts on this.
+                    IOCDestroy(jail_uuid, "", location,
+                               silent=True).destroy_jail()
+                    raise RuntimeError(f"***\n{err}\n***\n")
+
             iocjson.json_write(config)
 
         # Just "touch" the fstab file, since it won't exist.
@@ -187,8 +191,8 @@ class IOCCreate(object):
 
         if self.pkglist:
             if config["ip4_addr"] == "none" and config["ip6_addr"] == "none":
-                self.lgr.error(" ERROR: You need an IP address for the jail"
-                               " to install packages!\n")
+                self.lgr.warning(" WARNING: You need an IP address for the"
+                                 " jail to install packages!\n")
             else:
                 self.create_install_packages(jail_uuid, location, _tag, config)
 
