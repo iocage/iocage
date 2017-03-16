@@ -420,7 +420,7 @@ class IOCJson(object):
     @staticmethod
     def json_get_version():
         """Sets the iocage configuration version."""
-        version = "4"
+        version = "5"
         return version
 
     def json_check_config(self, conf, version):
@@ -485,6 +485,15 @@ class IOCJson(object):
 
         # Set all keys, even if it's the same value.
         conf["basejail"] = basejail
+
+        # Version 5 keys
+        try:
+            comment = conf["comment"]
+        except KeyError:
+            comment = "none"
+
+        # Set all keys, even if it's the same value.
+        conf["comment"] = comment
 
         conf["CONFIG_VERSION"] = version
         self.json_write(conf)
@@ -589,20 +598,21 @@ class IOCJson(object):
             "mount_procfs"         : ("0", "1"),
             "mount_linprocfs"      : ("0", "1"),
             "vnet"                 : ("off", "on"),
-            "template"             : ("no", "yes")
+            "template"             : ("no", "yes"),
+            "comment"              : ("string",)
         }
 
         zfs_props = {
             # ZFS Props
-            "compression"          : "lz4",
-            "origin"               : "readonly",
-            "quota"                : "none",
-            "mountpoint"           : "readonly",
-            "compressratio"        : "readonly",
-            "available"            : "readonly",
-            "used"                 : "readonly",
-            "dedup"                : "off",
-            "reservation"          : "none",
+            "compression"  : "lz4",
+            "origin"       : "readonly",
+            "quota"        : "none",
+            "mountpoint"   : "readonly",
+            "compressratio": "readonly",
+            "available"    : "readonly",
+            "used"         : "readonly",
+            "dedup"        : "off",
+            "reservation"  : "none",
         }
 
         if key in zfs_props.keys():
@@ -660,10 +670,8 @@ class IOCJson(object):
 
                     raise RuntimeError(msg)
                 elif key == "interfaces":
-                    msg = "Interfaces must be specified as a pair.\nEXAMPLE: " \
-                          "" \
-                          "" \
-                          "vnet0:bridge0, vnet1:bridge1"
+                    msg = "Interfaces must be specified as a pair.\n" \
+                          "EXAMPLE: vnet0:bridge0, vnet1:bridge1"
 
                     if not self.cli:
                         msg = err + msg
