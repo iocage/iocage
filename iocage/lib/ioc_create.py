@@ -306,6 +306,7 @@ class IOCCreate(object):
             "count"                : "1",
             "vnet"                 : "off",
             "basejail"             : "no",
+            "comment"              : "none",
             # Sync properties
             "sync_state"           : "none",
             "sync_target"          : "none",
