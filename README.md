@@ -7,7 +7,7 @@ iocage
 [![GitHub issues](https://img.shields.io/github/issues/iocage/iocage.svg)](https://github.com/iocage/iocage/issues)
 [![GitHub forks](https://img.shields.io/github/forks/iocage/iocage.svg)](https://github.com/iocage/iocage/network)
 [![GitHub stars](https://img.shields.io/github/stars/iocage/iocage.svg)](https://github.com/iocage/iocage/stargazers)
-[![Twitter](https://img.shields.io/twitter/url/https/github.com/iocage/iocage.svg?style=social)](https://twitter.com/intent/tweet?text=@iocage &url=%5Bobject%20Object%5D)
+[![Twitter](https://img.shields.io/twitter/url/https/github.com/iocage/iocage.svg?style=social)](https://twitter.com/intent/tweet?text=@iocage)
 
 **A FreeBSD jail manager.**
 
