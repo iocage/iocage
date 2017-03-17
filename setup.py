@@ -1,6 +1,7 @@
 import os
 
 import sys
+import fastentrypoints
 from setuptools import find_packages, setup
 
 if os.path.isdir("/usr/local/etc/init.d"):
