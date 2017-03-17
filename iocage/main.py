@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import glob
 import imp
+import locale
 import logging
 import os
 import stat
@@ -12,11 +13,11 @@ import click
 
 from iocage.lib.ioc_check import IOCCheck
 
-try:
-    os.environ["LANG"]
-except KeyError:
-    exit("Please set a UTF-8 locale before using iocage.")
-
+# This prevents it from getting in our way.
+from click import core
+core._verify_python3_env = lambda: None
+user_locale = os.environ.get("LANG", "en_US.UTF-8")
+locale.setlocale(locale.LC_ALL, user_locale)
 
 def print_version(ctx, param, value):
     """Prints the version and then exits."""
