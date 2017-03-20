@@ -31,7 +31,8 @@ class IOCFetch(object):
     def __init__(self, release, server="ftp.freebsd.org", user="anonymous",
                  password="anonymous@", auth=None, root_dir=None, http=False,
                  _file=False, verify=True, hardened=False, update=True,
-                 eol=True):
+                 eol=True, files=("MANIFEST", "base.txz", "lib32.txz",
+                                  "doc.txz")):
         self.pool = IOCJson().json_get_value("pool")
         self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
         self.server = server
@@ -51,7 +52,7 @@ class IOCFetch(object):
         self._file = _file
         self.verify = verify
         self.hardened = hardened
-        self.files = ("MANIFEST", "base.txz", "lib32.txz", "doc.txz")
+        self.files = files
         self.update = update
         self.eol = eol
 
@@ -339,7 +340,7 @@ class IOCFetch(object):
         except error_perm:
             raise RuntimeError("{} was not found!".format(self.release))
 
-        ftp_list = ftp.nlst()
+        ftp_list = self.files
         ftp.quit()
 
         self.lgr.info("Fetching: {}\n".format(self.release))

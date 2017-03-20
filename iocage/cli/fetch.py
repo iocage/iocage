@@ -1,4 +1,5 @@
 """fetch module for the cli."""
+import os
 
 import click
 
@@ -24,6 +25,8 @@ def validate_count(ctx, param, value):
 @click.option("--file", "-f", "_file", default=False,
               help="Use a local file directory for root-dir instead of FTP or"
                    " HTTP.", is_flag=True)
+@click.option("--files", "-F", multiple=True,
+              help="Specify the files to fetch from the mirror.")
 @click.option("--server", "-s", default="ftp.freebsd.org",
               help="FTP server to login to.")
 @click.option("--user", "-u", default="anonymous", help="The user to use.")
@@ -48,9 +51,17 @@ def validate_count(ctx, param, value):
 @click.option("--eol/--noeol", "-E/-NE", default=True,
               help="Enable or disable EOL checking with upstream.")
 def fetch_cmd(http, _file, server, user, password, auth, verify, release,
-              plugins, plugin_file, root_dir, props, count, update, eol):
+              plugins, plugin_file, root_dir, props, count, update, eol,
+              files):
     """CLI command that calls fetch_release()"""
     freebsd_version = checkoutput(["freebsd-version"])
+    arch = os.uname()[4]
+
+    if not files:
+        if arch == "arm64":
+            files = ("MANIFEST", "base.txz", "doc.txz")
+        else:
+            files = ("MANIFEST", "base.txz", "lib32.txz", "doc.txz")
 
     if "HBSD" in freebsd_version:
         if server == "ftp.freebsd.org":
@@ -74,15 +85,17 @@ def fetch_cmd(http, _file, server, user, password, auth, verify, release,
         if count == 1:
             IOCFetch("", server, user, password, auth, root_dir,
                      http=http, _file=_file, verify=verify,
-                     hardened=hardened, update=update, eol=eol).fetch_plugin(
+                     hardened=hardened, update=update, eol=eol,
+                     files=files).fetch_plugin(
                 plugin_file, props, 0)
         else:
             for j in range(1, count + 1):
                 IOCFetch("", server, user, password, auth, root_dir,
                          http=http, _file=_file, verify=verify,
                          hardened=hardened, update=update,
-                         eol=eol).fetch_plugin(plugin_file, props, j)
+                         eol=eol, files=files).fetch_plugin(plugin_file,
+                                                            props, j)
     else:
         IOCFetch(release, server, user, password, auth, root_dir, http=http,
                  _file=_file, verify=verify, hardened=hardened, update=update,
-                 eol=eol).fetch_release()
+                 eol=eol, files=files).fetch_release()
