@@ -1,4 +1,4 @@
-import unittest.mock as mock
+import mock
 import pytest
 from iocage.lib.ioc_start import find_bridge_mtu
 
