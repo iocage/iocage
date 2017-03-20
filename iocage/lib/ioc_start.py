@@ -322,12 +322,7 @@ class IOCStart(object):
         nic, bridge = nic.split(":")
 
         try:
-            memberif = Popen(["ifconfig", bridge],
-                             stdout=PIPE).communicate()[0].decode(
-                                 "utf-8").split()[40]
-            membermtu = Popen(["ifconfig", memberif],
-                              stdout=PIPE).communicate()[0].decode(
-                                  "utf-8").split()[5]
+            membermtu = find_bridge_mtu(bridge)
 
             for addrs, gw in net_configs:
                 if addrs != 'none':
@@ -341,8 +336,8 @@ class IOCStart(object):
                             self.start_network_vnet(nic, bridge, membermtu,
                                                     iface, ip, gw, jid)
 
-        except:
-            pass
+        except CalledProcessError as err:
+            self.lgr.warning(f"Network failed to start: {err.output.decode('utf-8')}".rstrip())
 
     def start_network_vnet(self, nic, bridge, mtu, iface, ip, defaultgw, jid):
         """
@@ -458,3 +453,14 @@ class IOCStart(object):
         else:
             mac_a, mac_b = mac.split(",")
             return mac_a, mac_b
+
+def find_bridge_mtu(bridge):
+    memberif = [x for x in
+                    checkoutput(["ifconfig", bridge]).splitlines()
+                    if x.strip().startswith("member")]
+    if not memberif:
+        return '1500'
+
+    membermtu = checkoutput(["ifconfig", memberif[0].split()[1]]).split()
+    return membermtu[5]
+
