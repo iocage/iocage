@@ -678,7 +678,7 @@ class IOCJson(object):
 
                     raise RuntimeError(msg)
                 elif key == "memoryuse":
-                    msg = "memoryuse requires at minimum a pair.EXAMPLE: " \
+                    msg = "memoryuse requires at minimum a pair.\nEXAMPLE: " \
                           "8g:log"
 
                     if not self.cli:
