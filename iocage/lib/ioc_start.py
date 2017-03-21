@@ -337,7 +337,8 @@ class IOCStart(object):
                                                     iface, ip, gw, jid)
 
         except CalledProcessError as err:
-            self.lgr.warning(f"Network failed to start: {err.output.decode('utf-8')}".rstrip())
+            self.lgr.warning("Network failed to start:"
+                             f" {err.output.decode('utf-8')}".rstrip())
 
     def start_network_vnet(self, nic, bridge, mtu, iface, ip, defaultgw, jid):
         """

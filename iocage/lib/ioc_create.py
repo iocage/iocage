@@ -218,7 +218,7 @@ class IOCCreate(object):
         default_props = {
             "CONFIG_VERSION"       : version,
             # Network properties
-            "interfaces"           : "vnet0:bridge0,vnet1:bridge1",
+            "interfaces"           : "vnet0:bridge0",
             "host_domainname"      : "none",
             "host_hostname"        : jail_uuid,
             "exec_fib"             : "0",
