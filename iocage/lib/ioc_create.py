@@ -280,7 +280,7 @@ class IOCCreate(object):
             "vmemoryuse"           : "off",
             "maxproc"              : "off",
             "cputime"              : "off",
-            "pcpu"                 : "off",
+            "pcpu"                 : "100:log",
             "datasize"             : "off",
             "stacksize"            : "off",
             "coredumpsize"         : "off",
