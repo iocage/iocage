@@ -568,7 +568,7 @@ class IOCJson(object):
             "vmemoryuse"           : ("off", "on"),
             "maxproc"              : ("off", "on"),
             "cputime"              : ("off", "on"),
-            "pcpu"                 : ("off", "on"),
+            "pcpu"                 : ":",
             "datasize"             : ("off", "on"),
             "stacksize"            : ("off", "on"),
             "coredumpsize"         : ("off", "on"),
