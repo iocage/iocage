@@ -275,7 +275,7 @@ class IOCCreate(object):
             # RCTL limits
             "cpuset"               : "off",
             "rlimits"              : "off",
-            "memoryuse"            : "8G:log",
+            "memoryuse"            : "off",
             "memorylocked"         : "off",
             "vmemoryuse"           : "off",
             "maxproc"              : "off",
