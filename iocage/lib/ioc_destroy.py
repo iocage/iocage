@@ -86,9 +86,9 @@ class IOCDestroy(object):
                     tags = f"{self.iocroot}/tags"
 
                     for file in glob.glob(f"{tags}/*"):
-                        if os.readlink(file) == f"{self.iocroot}/jails/{" \
-                                                f"uuid}" \
-                                or file == f"{self.iocroot}/tags/{uuid}":
+                        if os.readlink(file) == f"{self.iocroot}/jails/" \
+                                                f"{uuid}" or file == \
+                                f"{self.iocroot}/tags/{uuid}":
                             os.remove(file)
 
                     for file in glob.glob(f"{self.iocroot}/log/*"):
