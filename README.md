@@ -19,7 +19,8 @@ iocage is in the FreeBSD ports tree as sysutils/py-iocage.
 To install using binary packages, simply run: `pkg install py36-iocage`(not in ports yet, only older Python 2.7 version is)
 
 # Installation
-#####GitHub
+
+##### GitHub:
 */usr/src is required to build from GitHub*
 - `pkg install python36`
 - `python3.6 -m ensurepip`
@@ -28,7 +29,8 @@ To install using binary packages, simply run: `pkg install py36-iocage`(not in p
 - `cd .. && pip3 install .`
 
 To install subsequent updates: `git pull` and `pip3 install -U .`
-#####Ports
+
+##### Ports:
 - Not available yet
 
 
@@ -39,7 +41,7 @@ To install subsequent updates: `git pull` and `pip3 install -U .`
 - **[DOCUMENTATION (Old documentation, some still applies)](http://iocage.readthedocs.org/en/latest/index.html)**
 - **Mailing list**: https://groups.google.com/forum/#!forum/iocage
 
-####Raising an issue:
+#### Raising an issue:
 
 We _like_ issues! If you are having trouble with `iocage` please open a GitHub [issue](https://github.com/iocage/iocage/issues) and we will ~~run around with our hair on fire~~ look into it. Before doing so, please give us some information about the situation:
 - Tell us what version of FreeBSD you are using with something like `uname -ro`
@@ -47,7 +49,7 @@ We _like_ issues! If you are having trouble with `iocage` please open a GitHub [
 - Most importantly, try to be detailed. Simply stating "I tried consoling into a jail and it broke" will not help us very much.
 - Use the [Markdown Basics](https://help.github.com/articles/markdown-basics/#code-formatting) GitHub page for more information on how to paste lines of code and terminal output.
 
-####Submitting a pull request:
+#### Submitting a pull request:
 Please be detailed on the exact use case of your change and a short demo of
 it. Make sure it conforms with PEP-8 and that you supply a test with it if
 relevant. Lines may not be longer then 80 characters.
