@@ -6,7 +6,6 @@ import click
 from iocage.lib.ioc_destroy import IOCDestroy
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
-from iocage.lib.ioc_stop import IOCStop
 
 __cmdname__ = "destroy_cmd"
 __rootcmd__ = True
@@ -54,10 +53,8 @@ def destroy_cmd(force, jails):
                 raise RuntimeError(f"{uuid} ({tag}) is running.\nPlease stop "
                                    "it first!")
             elif status and force:
-                conf = IOCJson(path).json_load()
                 lgr.info("Stopping {} ({}).".format(uuid, tag))
-                IOCStop(uuid, tag, path, conf, silent=True)
 
-            IOCDestroy(uuid, tag, path).destroy_jail()
+            IOCDestroy().destroy_jail(path)
     else:
         raise RuntimeError("Please specify one or more jails!")

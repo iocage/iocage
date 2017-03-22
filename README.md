@@ -18,14 +18,18 @@ technologies the FreeBSD operating system has to offer. It is geared for ease
 iocage is in the FreeBSD ports tree as sysutils/py-iocage.
 To install using binary packages, simply run: `pkg install py36-iocage`(not in ports yet, only older Python 2.7 version is)
 
-If cloning the repo directly make sure you have Python 3.6 and pip installed:
-- `pkg install python3.6`
+# Installation
+#####GitHub
+*/usr/src is required to build from GitHub*
+- `pkg install python36`
 - `python3.6 -m ensurepip`
-
-Then cd into the cloned directory and run as root:
-- `pip3 install .`
+- `git clone --recursive https://github.com/iocage/iocage`
+- `cd iocage/py-libzfs && python3.6 setup.py build && python 3.6 setup.py install`
+- `cd .. && pip3 install .`
 
 To install subsequent updates: `git pull` and `pip3 install -U .`
+#####Ports
+- Not available yet
 
 
 

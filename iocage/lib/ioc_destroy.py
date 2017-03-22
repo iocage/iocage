@@ -1,7 +1,12 @@
 """iocage destroy module."""
+import glob
+import json
 import logging
 import os
+import shutil
 from subprocess import CalledProcessError, PIPE, Popen, check_call
+
+import libzfs
 
 from iocage.lib.ioc_json import IOCJson
 
@@ -12,58 +17,114 @@ class IOCDestroy(object):
     destroy that as well.
     """
 
-    def __init__(self, uuid, jail, path, silent=False):
+    def __init__(self):
         self.pool = IOCJson().json_get_value("pool")
         self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
-        self.uuid = uuid
-        self.jail = jail
-        self.path = path
-        self.release = IOCJson(self.path).json_get_value("cloned_release")
         self.lgr = logging.getLogger('ioc_destroy')
+        self.zfs = libzfs.ZFS()
+        self.ds = self.zfs.get_dataset
 
-        if silent:
-            self.lgr.disabled = True
+    @staticmethod
+    def __stop_jails__(path=None):
+        """Stops every jail running forcefully."""
 
-    def destroy_jail(self):
-        """Destroys a jail and then attempts to destroy the snapshot"""
-        self.lgr.info("Destroying {} ({})".format(self.uuid, self.jail))
-        self.path = self.path.replace(self.iocroot, "/iocage")
-        Popen(["zfs", "destroy", "-r", self.pool + self.path]).communicate()
+        if path:
+            # We got ourselves a template child!
+            jls = Popen(["jls", "jid", "path", "--libxo", "json"],
+                        stdout=PIPE).communicate()[0]
+            jls = json.loads(jls)["jail-information"]["jail"]
+            jid = [jail["jid"] for jail in jls if path in jail["path"]]
 
-        try:
-            self.destroy_snapshot()
-            self.destroy_tag()
-        except CalledProcessError:
-            pass
+            if jid:
+                try:
+                    check_call(["jail", "-r", jid[0]])
+                except CalledProcessError as err:
+                    raise RuntimeError("ERROR: {}".format(err))
+        else:
+            jid = Popen(["jls", "jid"], stdout=PIPE).communicate()[0].decode(
+                "utf-8").split()
 
-    def destroy_snapshot(self):
-        """Destroys a snapshot for a jail."""
-        try:
-            check_call(["zfs", "destroy", "-R",
-                        "{}/iocage/releases/{}@{}".format(self.pool,
-                                                          self.release,
-                                                          self.uuid)],
-                       stdout=PIPE, stderr=PIPE)
-        except CalledProcessError:
-            pass
+            for j in jid:
+                try:
+                    check_call(["jail", "-r", j])
+                except CalledProcessError as err:
+                    raise RuntimeError("ERROR: {}".format(err))
 
-        try:
-            # Old basejails.
-            check_call(["zfs", "destroy", "-R",
-                        "{}/iocage/base/{}@{}".format(self.pool,
-                                                      self.release,
-                                                      self.uuid)],
-                       stdout=PIPE, stderr=PIPE)
-            check_call(["zfs", "destroy", "-R",
-                        "{}/iocage/base@{}".format(self.pool, self.uuid)],
-                       stdout=PIPE, stderr=PIPE)
-        except CalledProcessError:
-            pass
+    def __destroy_datasets__(self, path, clean=False):
+        """Destroys the given datasets and snapshots."""
+        datasets = self.ds(path)
 
-    def destroy_tag(self):
-        """Destroys the tag associated with the jail."""
-        tags = "{}/tags".format(self.iocroot)
-        try:
-            os.remove("{}/{}".format(tags, self.jail))
-        except OSError:
-            pass
+        for dataset in datasets.dependents:
+            if "templates" in path:
+                self.__stop_jails__(dataset.name.replace(self.pool, ""))
+
+            if dataset.type == libzfs.DatasetType.FILESYSTEM:
+                origin = dataset.properties["origin"].value
+
+                try:
+                    snap_dataset, snap = origin.split("@")
+                    self.ds(snap_dataset).destroy_snapshot(snap)
+                except ValueError:
+                    pass  # This means we don't have an origin.
+
+                dataset.umount(force=True)
+
+            dataset.delete()
+
+            if clean:
+                if "templates" in path:
+                    if "jails" in dataset.name:
+                        # The jails parent won't show in the list.
+                        j_parent = self.ds(
+                            f"{dataset.name.replace('/root','')}")
+
+                        j_parent.umount(force=True)
+                        j_parent.delete()
+
+                    # In the case of a template this will actually be the tag.
+                    uuid = dataset.name.rsplit("/root")[0].split("/")[-1]
+                    tags = f"{self.iocroot}/tags"
+
+                    for file in glob.glob(f"{tags}/*"):
+                        if os.readlink(file) == f"{self.iocroot}/jails/{" \
+                                                f"uuid}" \
+                                or file == f"{self.iocroot}/tags/{uuid}":
+                            os.remove(file)
+
+                    for file in glob.glob(f"{self.iocroot}/log/*"):
+                        if file == f"{self.iocroot}/log/{uuid}-console.log":
+                            os.remove(file)
+                elif "jails" in path:
+                    shutil.rmtree(f"{self.iocroot}/tags", ignore_errors=True)
+                    os.mkdir(f"{self.iocroot}/tags")
+
+                    shutil.rmtree(f"{self.iocroot}/log", ignore_errors=True)
+            else:
+                if "jails" in dataset.name or "templates" in dataset.name:
+                    # The jails parent won't show in the list.
+                    j_parent = self.ds(
+                        f"{dataset.name.replace('/root','')}")
+
+                    j_parent.umount(force=True)
+                    j_parent.delete()
+
+                uuid = dataset.name.rsplit("/root")[0].split("/")[-1]
+                tags = f"{self.iocroot}/tags"
+
+                for file in glob.glob(f"{tags}/*"):
+                    if os.readlink(file) == f"{self.iocroot}/jails/{uuid}":
+                        os.remove(file)
+
+                for file in glob.glob(f"{self.iocroot}/log/*"):
+                    if file == f"{self.iocroot}/log/{uuid}-console.log":
+                        os.remove(file)
+
+    def destroy_jail(self, path):
+        """
+        A convenience wrapper to call __stop_jails__ and  __destroy_datasets__
+        """
+        dataset_type = path.rsplit("/")[-2]
+        uuid = path.rsplit("/")[-1]  # Is a tag if dataset_type is template
+
+        self.__stop_jails__(path)
+        self.__destroy_datasets__(f"{self.pool}/iocage/{dataset_type}/{uuid}")

@@ -1,0 +1,3 @@
+[submodule "py-libzfs"]
+	path = py-libzfs
+	url = https://github.com/freenas/py-libzfs

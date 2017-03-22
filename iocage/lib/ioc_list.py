@@ -1,8 +1,8 @@
 """List all datasets by type"""
 import logging
-import re
-from subprocess import CalledProcessError, PIPE, Popen
+from subprocess import CalledProcessError, PIPE
 
+import libzfs
 from texttable import Texttable
 
 from iocage.lib.ioc_common import checkoutput, sort_release, sort_tag
@@ -27,32 +27,18 @@ class IOCList(object):
 
     def list_datasets(self, set=False):
         """Lists the datasets of given type."""
+        zfs = libzfs.ZFS()
 
         if self.list_type == "all" or self.list_type == "uuid":
             # List the datasets underneath self.POOL/iocroot/jails
-            cmd = ["zfs", "list", "-rHd", "1",
-                   "{}/iocage/jails".format(self.pool)]
-
-            # UUIDS are 12345678-1234-1234-1234-123456789012
-            regex = re.compile("{}/jails/".format(self.iocroot) + "\\w{8}")
+            datasets = zfs.get_dataset(f"{self.pool}/iocage/jails").children
         elif self.list_type == "base":
             # List the datasets underneath self.POOL/iocroot/releases
-            cmd = ["zfs", "list", "-rHd", "1",
-                   "{}/iocage/releases".format(self.pool)]
-
-            # Format is Major.Minor-{RELEASE,STABLE,CURRENT,BETA,ALPHA,RC}
-            regex = re.compile("{}/releases/".format(self.iocroot) +
-                               "\\w*.\\w")
+            datasets = zfs.get_dataset(f"{self.pool}/iocage/releases").children
         elif self.list_type == "template":
             # List the datasets underneath self.POOL/iocroot/releases
-            cmd = ["zfs", "list", "-rHd", "1",
-                   "{}/iocage/templates".format(self.pool)]
-
-            regex = re.compile("{}/templates/".format(self.iocroot))
-
-        zfs_list = Popen(cmd, stdout=PIPE).communicate()[0].decode(
-            "utf-8").split()
-        datasets = [d for d in zfs_list if re.match(regex, d)]
+            datasets = zfs.get_dataset(
+                f"{self.pool}/iocage/templates").children
 
         if self.list_type == "all":
             _all = self.list_all(datasets)
@@ -64,6 +50,7 @@ class IOCList(object):
             dups = {}
 
             for jail in datasets:
+                jail = jail.name.strip(self.pool)
                 conf = IOCJson(jail).json_load()
 
                 if not set and conf["tag"] in jails:
@@ -75,23 +62,19 @@ class IOCList(object):
                 jails[conf["tag"]] = conf["host_hostuuid"]
                 paths[conf["tag"]] = jail
 
-            template_cmd = ["zfs", "list", "-rHd", "1",
-                            "{}/iocage/templates".format(self.pool)]
-            template_regex = re.compile("{}/templates/".format(self.iocroot))
-            template_zfs_list = Popen(template_cmd, stdout=PIPE).communicate()[
-                0].decode("utf-8").split()
-            template_datasets = [t for t in template_zfs_list if re.match(
-                template_regex, t)]
+            template_datasets = zfs.get_dataset(
+                f"{self.pool}/iocage/templates")
+            template_datasets = template_datasets.children
 
             for template in template_datasets:
+                template = template.name.strip(self.pool)
                 conf = IOCJson(template).json_load()
 
                 jails[conf["tag"]] = conf["host_hostuuid"]
                 paths[conf["tag"]] = template
 
             if len(dups):
-                self.lgr.error("ERROR: Duplicate tag ({}) detected!".format(
-                    tag))
+                self.lgr.error(f"ERROR: Duplicate tag ({tag}) detected!")
                 for d, t in sorted(dups.items()):
                     u = [m for m in d.split("/") if len(m) == 36 or len(m)
                          == 8][0]
@@ -116,6 +99,7 @@ class IOCList(object):
         jail_list = []
 
         for jail in jails:
+            jail = jail.name.strip(self.pool)
             conf = IOCJson(jail).json_load()
 
             uuid = conf["host_hostuuid"]
