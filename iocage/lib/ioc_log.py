@@ -13,8 +13,8 @@ def getLogger(name):
     return logger
 
 
-def init(debug):
-    if debug:
+def init(dbg):
+    if dbg:
         log_level = logging.DEBUG
     else:
         log_level = logging.WARNING

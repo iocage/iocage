@@ -28,7 +28,7 @@ def print_version(ctx, param, value):
 
 
 @click.group(help="A jail manager.")
-@click.option("--debug", is_flag=True, callback=print_version,
+@click.option("--debug", "-d", is_flag=True, callback=print_version,
               help="Show debug output.")
 @click.option("--version", "-v", is_flag=True, callback=print_version,
               help="Display iocage's version and exit.")
@@ -73,11 +73,11 @@ def main():
             # If IOCAGE_LOGFILE is supplied on activate AFTER the pool name,
             # hilarity ensues. Let's avoid that.
             sys.argv.remove(arg)
+    ioc_log.init("--debug" in sys.argv[1:] or "-d" in sys.argv[1:])
 
-    ioc_log:init("--debug" not in sys.argv[1:])
-    
     skip_check = False
-    skip_check_cmds = ["--debug", "--help", "activate", "deactivate", "-v", "--version"]
+    skip_check_cmds = ["--debug", "-d" "--help", "activate", "deactivate", "-v",
+                       "--version"]
 
     try:
         if "iocage" in sys.argv[0] and len(sys.argv) == 1:
