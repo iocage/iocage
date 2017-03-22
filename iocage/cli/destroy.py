@@ -20,7 +20,22 @@ def destroy_cmd(force, jails):
 
     if jails:
         get_jid = IOCList().list_get_jid
-        jail_list, paths = IOCList("uuid").list_datasets()
+
+        try:
+            jail_list, paths = IOCList("uuid").list_datasets()
+        except RuntimeError as err:
+            err = str(err)
+
+            if "Configuration is missing" in err:
+                uuid = err.split()[6]
+                pool = IOCJson().json_get_value("pool")
+                path = f"{pool}/iocage/jails/{uuid}"
+
+                IOCDestroy().__stop_jails__(path.replace(pool, ""))
+                IOCDestroy().__destroy_datasets__(path)
+                exit()
+            else:
+                raise RuntimeError(err)
 
         for jail in jails:
             _jail = {tag: uuid for (tag, uuid) in jail_list.items() if
