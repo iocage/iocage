@@ -4,7 +4,6 @@ from __future__ import print_function
 import glob
 import imp
 import locale
-import logging
 import os
 import stat
 import sys
@@ -12,6 +11,7 @@ import sys
 import click
 
 from iocage.lib.ioc_check import IOCCheck
+import iocage.lib.ioc_log as ioc_log
 
 # This prevents it from getting in our way.
 from click import core
@@ -28,6 +28,8 @@ def print_version(ctx, param, value):
 
 
 @click.group(help="A jail manager.")
+@click.option("--debug", is_flag=True, callback=print_version,
+              help="Show debug output.")
 @click.option("--version", "-v", is_flag=True, callback=print_version,
               help="Display iocage's version and exit.")
 @click.pass_context
@@ -72,10 +74,10 @@ def main():
             # hilarity ensues. Let's avoid that.
             sys.argv.remove(arg)
 
-    logging.basicConfig(filename=log_file, filemode=mode, level=logging.DEBUG,
-                        format='%(message)s')
+    ioc_log:init("--debug" not in sys.argv[1:])
+    
     skip_check = False
-    skip_check_cmds = ["--help", "activate", "deactivate", "-v", "--version"]
+    skip_check_cmds = ["--debug", "--help", "activate", "deactivate", "-v", "--version"]
 
     try:
         if "iocage" in sys.argv[0] and len(sys.argv) == 1:

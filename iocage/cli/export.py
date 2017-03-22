@@ -1,5 +1,4 @@
 """export module for the cli."""
-import logging
 import os
 import zipfile
 from datetime import datetime
@@ -10,6 +9,7 @@ import click
 from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_log as ioc_log
 
 __cmdname__ = "export_cmd"
 __rootcmd__ = True
@@ -19,7 +19,7 @@ __rootcmd__ = True
 @click.argument("jail", required=True)
 def export_cmd(jail):
     """Make a recursive snapshot of the jail and export to a file."""
-    lgr = logging.getLogger('ioc_cli_export')
+    lgr = ioc_log.getLogger('ioc_cli_export')
 
     pool = IOCJson().json_get_value("pool")
     iocroot = IOCJson(pool).json_get_value("iocroot")

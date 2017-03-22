@@ -1,10 +1,9 @@
 """pkg module for the cli."""
-import logging
-
 import click
 
 from iocage.lib.ioc_exec import IOCExec
 from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_log as ioc_log
 
 __cmdname__ = "pkg_cmd"
 __rootcmd__ = True
@@ -15,7 +14,7 @@ __rootcmd__ = True
 @click.argument("command", nargs=-1, type=click.UNPROCESSED)
 def pkg_cmd(command, jail):
     """Runs pkg with the command given inside the specified jail."""
-    lgr = logging.getLogger('ioc_cli_pkg')
+    lgr = ioc_log.getLogger('ioc_cli_pkg')
 
     jails, paths = IOCList("uuid").list_datasets()
     _jail = {tag: uuid for (tag, uuid) in jails.items() if

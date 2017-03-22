@@ -1,12 +1,12 @@
 """get module for the cli."""
 import json
-import logging
 
 import click
 from texttable import Texttable
 
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_log as ioc_log
 
 __cmdname__ = "get_cmd"
 
@@ -30,7 +30,7 @@ __cmdname__ = "get_cmd"
                                             "zpool.", is_flag=True)
 def get_cmd(prop, _all, _pool, jail, recursive, header, plugin):
     """Get a list of jails and print the property."""
-    lgr = logging.getLogger('ioc_cli_get')
+    lgr = ioc_log.getLogger('ioc_cli_get')
 
     get_jid = IOCList.list_get_jid
     jails, paths = IOCList("uuid").list_datasets()

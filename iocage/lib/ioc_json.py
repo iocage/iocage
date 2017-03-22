@@ -1,6 +1,5 @@
 """Convert, load or write JSON."""
 import json
-import logging
 import os
 import re
 import sys
@@ -8,6 +7,7 @@ from os import geteuid, path
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
 
 from iocage.lib.ioc_common import checkoutput, get_nested_key, open_atomic
+import iocage.lib.ioc_log as ioc_log
 
 
 def _get_pool_and_iocroot():
@@ -26,7 +26,7 @@ class IOCJson(object):
 
     def __init__(self, location="", silent=False, cli=False):
         self.location = location
-        self.lgr = logging.getLogger('ioc_json')
+        self.lgr = ioc_log.getLogger('ioc_json')
         self.cli = cli
 
         if silent:

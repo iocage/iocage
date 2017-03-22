@@ -13,7 +13,7 @@ from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 from iocage.lib.ioc_start import IOCStart
 from iocage.lib.ioc_stop import IOCStop
-import iocage.lib.ioc_log
+import iocage.lib.ioc_log as ioc_log
 
 
 class IOCCreate(object):

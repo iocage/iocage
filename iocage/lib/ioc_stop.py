@@ -1,10 +1,10 @@
 """This stops jails."""
-import logging
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
 
 from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_log as ioc_log
 
 
 class IOCStop(object):
@@ -19,7 +19,7 @@ class IOCStop(object):
         self.conf = conf
         self.status, self.jid = IOCList().list_get_jid(uuid)
         self.nics = conf["interfaces"]
-        self.lgr = logging.getLogger('ioc_stop')
+        self.lgr = ioc_log.getLogger('ioc_stop')
 
         if silent:
             self.lgr.disabled = True

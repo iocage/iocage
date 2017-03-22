@@ -1,6 +1,5 @@
 """create module for the cli."""
 import json
-import logging
 import os
 from json import JSONDecodeError
 
@@ -10,6 +9,7 @@ from iocage.lib.ioc_create import IOCCreate
 from iocage.lib.ioc_fetch import IOCFetch
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_log as ioc_log
 
 __cmdname__ = "create_cmd"
 __rootcmd__ = True
@@ -39,7 +39,7 @@ def validate_count(ctx, param, value):
 @click.argument("props", nargs=-1)
 def create_cmd(release, template, count, props, pkglist, basejail, empty,
                short, uuid):
-    lgr = logging.getLogger('ioc_cli_create')
+    lgr = ioc_log.getLogger('ioc_cli_create')
 
     if short and uuid:
         raise RuntimeError(

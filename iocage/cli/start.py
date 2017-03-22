@@ -1,5 +1,4 @@
 """start module for the cli."""
-import logging
 from collections import OrderedDict
 from operator import itemgetter
 
@@ -8,6 +7,7 @@ import click
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 from iocage.lib.ioc_start import IOCStart
+import iocage.lib.ioc_log as ioc_log
 
 __cmdname__ = "start_cmd"
 __rootcmd__ = True
@@ -51,7 +51,7 @@ def start_cmd(rc, jails):
     Looks for the jail supplied and passes the uuid, path and configuration
     location to start_jail.
     """
-    lgr = logging.getLogger('ioc_cli_start')
+    lgr = ioc_log.getLogger('ioc_cli_start')
 
     _jails, paths = IOCList("uuid").list_datasets()
     jail_order = {}

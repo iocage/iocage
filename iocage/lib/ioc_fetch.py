@@ -2,11 +2,11 @@
 import collections
 import hashlib
 import json
-import logging
 import os
 import re
 import shutil
 import tarfile
+import logging
 from ftplib import FTP, error_perm
 from shutil import copy
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT
@@ -23,6 +23,7 @@ from iocage.lib.ioc_destroy import IOCDestroy
 from iocage.lib.ioc_exec import IOCExec
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_start import IOCStart
+import iocage.lib.ioc_log as ioc_log
 
 
 class IOCFetch(object):
@@ -46,7 +47,7 @@ class IOCFetch(object):
             self.release = release
 
         self.root_dir = root_dir
-        self.lgr = logging.getLogger('ioc_fetch')
+        self.lgr = ioc_log.getLogger('ioc_fetch')
         self.arch = os.uname()[4]
         self.http = http
         self._file = _file
@@ -71,7 +72,7 @@ class IOCFetch(object):
     @staticmethod
     def __fetch_eol_check__():
         """Scrapes the FreeBSD website and returns a list of EOL RELEASES"""
-        logging.getLogger("requests").setLevel(logging.WARNING)
+        ioc_log.getLogger("requests").setLevel(logging.WARNING)
         _eol = "https://www.freebsd.org/security/unsupported.html"
         req = requests.get(_eol)
         status = req.status_code == requests.codes.ok
@@ -209,7 +210,7 @@ class IOCFetch(object):
         elif "http" not in self.server:
             self.server = "http://" + self.server
 
-        logging.getLogger("requests").setLevel(logging.WARNING)
+        ioc_log.getLogger("requests").setLevel(logging.WARNING)
 
         if self.hardened:
             if self.auth == "basic":

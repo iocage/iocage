@@ -1,6 +1,6 @@
 """activate module for the cli."""
-import logging
 from subprocess import PIPE, Popen
+import iocage.lib.ioc_log as ioc_log
 
 import click
 
@@ -9,7 +9,7 @@ __rootcmd__ = True
 
 IOCAGE_ZFS_ACTIVE_PROPERTY = "org.freebsd.ioc:active"
 
-lgr = logging.getLogger('ioc_cli_activate')
+lgr = ioc_log.getLogger('ioc_cli_activate')
 
 
 def get_zfs_pools():

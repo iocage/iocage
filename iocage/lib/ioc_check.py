@@ -1,11 +1,11 @@
 """Check datasets before execution"""
-import logging
 import os
 import sys
 from subprocess import CalledProcessError, PIPE, Popen
 
 from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_json import IOCJson
+import iocage.lib.ioc_log as ioc_log
 
 
 class IOCCheck(object):
@@ -13,7 +13,7 @@ class IOCCheck(object):
 
     def __init__(self, silent=False):
         self.pool = IOCJson().json_get_value("pool")
-        self.lgr = logging.getLogger('ioc_check')
+        self.lgr = ioc_log.getLogger('ioc_check')
 
         if silent:
             self.lgr.disabled = True

@@ -1,5 +1,4 @@
 """console module for the cli."""
-import logging
 from subprocess import Popen
 
 import click
@@ -7,6 +6,7 @@ import click
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 from iocage.lib.ioc_start import IOCStart
+import iocage.lib.ioc_log as ioc_log
 
 __cmdname__ = "console_cmd"
 __rootcmd__ = True
@@ -20,7 +20,7 @@ def console_cmd(jail, force):
     Runs jexec to login into the specified jail. Accepts a force flag that
     will attempt to start the jail if it is not already running.
     """
-    lgr = logging.getLogger('ioc_cli_console')
+    lgr = ioc_log.getLogger('ioc_cli_console')
     # TODO: setfib support
     jails, paths = IOCList("uuid").list_datasets()
 

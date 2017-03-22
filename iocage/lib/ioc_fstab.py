@@ -1,5 +1,4 @@
 """Manipulate a jails fstab"""
-import logging
 import os
 import shutil
 import tempfile
@@ -9,14 +8,14 @@ from subprocess import PIPE, Popen, call
 from iocage.lib.ioc_common import open_atomic
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
-
+import iocage.lib.ioc_log as ioc_log
 
 class IOCFstab(object):
     """Will add or remove an entry, and mount or umount the filesystem."""
 
     def __init__(self, uuid, tag, action, source, destination, fstype,
                  fsoptions, fsdump, fspass, index=None, silent=False):
-        self.lgr = logging.getLogger('ioc_fstab')
+        self.lgr = ioc_log.getLogger('ioc_fstab')
         self.pool = IOCJson().json_get_value("pool")
         self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
         self.uuid = uuid

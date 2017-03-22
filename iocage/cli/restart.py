@@ -1,5 +1,4 @@
 """restart module for the cli."""
-import logging
 from datetime import datetime
 from subprocess import PIPE, Popen
 
@@ -9,6 +8,7 @@ from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 from iocage.lib.ioc_start import IOCStart
 from iocage.lib.ioc_stop import IOCStop
+import iocage.lib.ioc_log as ioc_log
 
 __cmdname__ = "restart_cmd"
 __rootcmd__ = True
@@ -23,7 +23,7 @@ def restart_cmd(jail, soft):
     Looks for the jail supplied and passes the uuid, path and configuration
     location to stop_jail and start_jail.
     """
-    lgr = logging.getLogger('ioc_cli_restart')
+    lgr = ioc_log.getLogger('ioc_cli_restart')
 
     jails, paths = IOCList("uuid").list_datasets()
     if jail == "ALL":
@@ -100,7 +100,7 @@ def __soft_restart__(uuid, jail, path, conf):
     """
     getjid = IOCList().list_get_jid(uuid)
     status, jid = getjid
-    lgr = logging.getLogger('ioc_cli_restart')
+    lgr = ioc_log.getLogger('ioc_cli_restart')
 
     # These needs to be a list.
     exec_start = conf["exec_start"].split()

@@ -1,5 +1,4 @@
 """stop module for the cli."""
-import logging
 from collections import OrderedDict
 from operator import itemgetter
 
@@ -8,6 +7,7 @@ import click
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 from iocage.lib.ioc_stop import IOCStop
+import iocage.lib.ioc_log as ioc_log
 
 __cmdname__ = "stop_cmd"
 __rootcmd__ = True
@@ -23,7 +23,7 @@ def stop_cmd(rc, jails):
     Looks for the jail supplied and passes the uuid, path and configuration
     location to stop_jail.
     """
-    lgr = logging.getLogger('ioc_cli_stop')
+    lgr = ioc_log.getLogger('ioc_cli_stop')
 
     _jails, paths = IOCList("uuid").list_datasets()
     jail_order = {}

@@ -1,6 +1,5 @@
 """migrate module for the cli."""
 import fileinput
-import logging
 import os
 from shutil import copy
 from subprocess import CalledProcessError, STDOUT, check_call
@@ -11,6 +10,7 @@ from iocage.lib.ioc_common import checkoutput, copytree
 from iocage.lib.ioc_create import IOCCreate
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_log as ioc_log
 
 __cmdname__ = "migrate_cmd"
 __rootcmd__ = True
@@ -24,7 +24,7 @@ __rootcmd__ = True
               help="Delete the old dataset after it has been migrated.")
 def migrate_cmd(force, delete):
     """Migrates all the iocage_legacy develop basejails to clone jails."""
-    lgr = logging.getLogger('ioc_cli_migrate')
+    lgr = ioc_log.getLogger('ioc_cli_migrate')
 
     jails, paths = IOCList("uuid").list_datasets()
 

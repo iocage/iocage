@@ -1,11 +1,11 @@
 """iocage exec module."""
-import logging
 from subprocess import CalledProcessError, Popen, STDOUT
 
 from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 from iocage.lib.ioc_start import IOCStart
+import iocage.lib.ioc_log as ioc_log
 
 
 class IOCExec(object):
@@ -21,7 +21,7 @@ class IOCExec(object):
         self.jail_user = jail_user
         self.plugin = plugin
         self.skip = skip
-        self.lgr = logging.getLogger('ioc_exec')
+        self.lgr = ioc_log.getLogger('ioc_exec')
 
     def exec_jail(self):
         # TODO: Exec fib support
