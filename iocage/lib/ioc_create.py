@@ -46,6 +46,8 @@ class IOCCreate(object):
         jail from that. The user can also specify properties to override the
         defaults.
         """
+        start = False
+
         if self.uuid:
             jail_uuid = self.uuid
         else:
@@ -148,6 +150,9 @@ class IOCCreate(object):
                 if self.num != 0:
                     if key == "tag":
                         value = f"{value}_{self.num}"
+                elif key == "boot" and value == "on":
+                    start = True
+
                 try:
                     iocjson.json_check_prop(key, value, config)
 
@@ -202,6 +207,11 @@ class IOCCreate(object):
                                  " jail to install packages!\n")
             else:
                 self.create_install_packages(jail_uuid, location, _tag, config)
+
+        if start:
+            from iocage.lib.ioc_start import IOCStart
+
+            IOCStart(jail_uuid, _tag, location, config)
 
         return jail_uuid
 
