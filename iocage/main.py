@@ -32,7 +32,7 @@ def print_version(ctx, param, value):
 @click.option("--version", "-v", is_flag=True, callback=print_version,
               help="Display iocage's version and exit.")
 @click.pass_context
-def cli(ctx, version):
+def cli(ctx, version, debug):
     """The placeholder for the calls."""
     mod = ctx.obj[ctx.invoked_subcommand]
     try:
