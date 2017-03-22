@@ -89,16 +89,16 @@ class IOCJson(object):
         if not skip:
             # Set jailed=off and move the jailed dataset.
             checkoutput(["zfs", "set", "jailed=off",
-                         "{}/root/data".format(dataset)])
+                         "{}/root/data".format(dataset)], stderr=PIPE)
             checkoutput(["zfs", "rename", "-f",
                          "{}/root/data".format(dataset),
-                         "{}/data".format(dataset)])
+                         "{}/data".format(dataset)], stderr=PIPE)
             checkoutput(["zfs", "set",
                          "{}=iocage/jails/{}/data".format(
                              jail_zfs_prop, uuid),
-                         "{}/data".format(dataset)])
+                         "{}/data".format(dataset)], stderr=PIPE)
             checkoutput(["zfs", "set", "jailed=on",
-                         "{}/data".format(dataset)])
+                         "{}/data".format(dataset)], stderr=PIPE)
 
         key_and_value["jail_zfs_dataset"] = "iocage/jails/{}/data".format(uuid)
 
@@ -112,87 +112,97 @@ class IOCJson(object):
         try:
             with open(self.location + "/config.json", "r") as conf:
                 conf = json.load(conf)
-        except (IOError, OSError):
+        except FileNotFoundError:
             if path.isfile(self.location + "/config"):
                 self.json_convert_from_ucl()
 
                 with open(self.location + "/config.json", "r") as conf:
                     conf = json.load(conf)
             else:
-                dataset = self.location.split("/")
+                try:
+                    dataset = self.location.split("/")
 
-                for d in dataset:
-                    if len(d) == 36:
-                        uuid = d
-                    elif len(d) == 8:
-                        # Hack88 migration to a perm short UUID.
-                        pool, iocroot = _get_pool_and_iocroot()
-                        from iocage.lib.ioc_list import IOCList
+                    for d in dataset:
+                        if len(d) == 36:
+                            uuid = d
+                        elif len(d) == 8:
+                            # Hack88 migration to a perm short UUID.
+                            pool, iocroot = _get_pool_and_iocroot()
+                            from iocage.lib.ioc_list import IOCList
 
-                        full_uuid = checkoutput(
-                            ["zfs", "get", "-H", "-o",
-                             "value",
-                             "org.freebsd.iocage:host_hostuuid",
-                             self.location]).rstrip()
-                        jail_hostname = checkoutput(
-                            ["zfs", "get", "-H", "-o",
-                             "value",
-                             "org.freebsd.iocage:host_hostname",
-                             self.location]).rstrip()
-                        short_uuid = full_uuid[:8]
-                        full_dataset = "{}/iocage/jails/{}".format(
-                            pool, full_uuid)
-                        short_dataset = "{}/iocage/jails/{}".format(
-                            pool, short_uuid)
+                            full_uuid = checkoutput(
+                                ["zfs", "get", "-H", "-o",
+                                 "value",
+                                 "org.freebsd.iocage:host_hostuuid",
+                                 self.location]).rstrip()
+                            jail_hostname = checkoutput(
+                                ["zfs", "get", "-H", "-o",
+                                 "value",
+                                 "org.freebsd.iocage:host_hostname",
+                                 self.location]).rstrip()
+                            short_uuid = full_uuid[:8]
+                            full_dataset = "{}/iocage/jails/{}".format(
+                                pool, full_uuid)
+                            short_dataset = "{}/iocage/jails/{}".format(
+                                pool, short_uuid)
 
-                        self.json_convert_from_zfs(full_uuid)
-                        with open(self.location + "/config.json", "r") as conf:
-                            conf = json.load(conf)
+                            self.json_convert_from_zfs(full_uuid)
+                            with open(self.location + "/config.json",
+                                      "r") as conf:
+                                conf = json.load(conf)
 
-                        self.lgr.info("hack88 is no longer supported."
-                                      "\n{} is being converted to {} "
-                                      "permanently.".format(full_dataset,
-                                                            short_dataset))
+                            self.lgr.info("hack88 is no longer supported."
+                                          "\n{} is being converted to {} "
+                                          "permanently.".format(full_dataset,
+                                                                short_dataset))
 
-                        status, _ = IOCList().list_get_jid(full_uuid)
-                        if status:
-                            self.lgr.info("Stopping jail to migrate UUIDs.")
-                            from iocage.lib.ioc_stop import IOCStop
-                            IOCStop(full_uuid, conf["tag"], self.location,
-                                    conf, silent=True)
+                            status, _ = IOCList().list_get_jid(full_uuid)
+                            if status:
+                                self.lgr.info(
+                                    "Stopping jail to migrate UUIDs.")
+                                from iocage.lib.ioc_stop import IOCStop
+                                IOCStop(full_uuid, conf["tag"], self.location,
+                                        conf, silent=True)
 
-                        jail_zfs_prop = "org.freebsd.iocage:jail_zfs_dataset"
-                        uuid_prop = "org.freebsd.iocage:host_hostuuid"
-                        host_prop = "org.freebsd.iocage:host_hostname"
+                            jail_zfs_prop = \
+                                "org.freebsd.iocage:jail_zfs_dataset"
+                            uuid_prop = "org.freebsd.iocage:host_hostuuid"
+                            host_prop = "org.freebsd.iocage:host_hostname"
 
-                        # Set jailed=off and move the jailed dataset.
-                        checkoutput(["zfs", "set", "jailed=off",
-                                     "{}/data".format(full_dataset)])
+                            # Set jailed=off and move the jailed dataset.
+                            checkoutput(["zfs", "set", "jailed=off",
+                                         "{}/data".format(full_dataset)])
 
-                        # We don't want to change a real hostname.
-                        if jail_hostname == full_uuid:
+                            # We don't want to change a real hostname.
+                            if jail_hostname == full_uuid:
+                                checkoutput(["zfs", "set", "{}={}".format(
+                                    host_prop, short_uuid), full_dataset])
+
                             checkoutput(["zfs", "set", "{}={}".format(
-                                host_prop, short_uuid), full_dataset])
+                                uuid_prop, short_uuid), full_dataset])
+                            checkoutput(["zfs", "set",
+                                         "{}=iocage/jails/{}/data".format(
+                                             jail_zfs_prop, short_uuid),
+                                         "{}/data".format(full_dataset)])
+                            checkoutput(["zfs", "rename", "-f", full_dataset,
+                                         short_dataset])
+                            checkoutput(["zfs", "set", "jailed=on",
+                                         "{}/data".format(short_dataset)])
 
-                        checkoutput(["zfs", "set", "{}={}".format(
-                            uuid_prop, short_uuid), full_dataset])
-                        checkoutput(["zfs", "set",
-                                     "{}=iocage/jails/{}/data".format(
-                                         jail_zfs_prop, short_uuid),
-                                     "{}/data".format(full_dataset)])
-                        checkoutput(["zfs", "rename", "-f", full_dataset,
-                                     short_dataset])
-                        checkoutput(["zfs", "set", "jailed=on",
-                                     "{}/data".format(short_dataset)])
+                            uuid = short_uuid
+                            self.location = "{}/jails/{}".format(iocroot,
+                                                                 short_uuid)
+                            skip = True
 
-                        uuid = short_uuid
-                        self.location = "{}/jails/{}".format(iocroot,
-                                                             short_uuid)
-                        skip = True
+                    self.json_convert_from_zfs(uuid, skip=skip)
 
-                self.json_convert_from_zfs(uuid, skip=skip)
-                with open(self.location + "/config.json", "r") as conf:
-                    conf = json.load(conf)
+                    with open(self.location + "/config.json", "r") as conf:
+                        conf = json.load(conf)
+                except CalledProcessError:
+                    # At this point it should be a real misconfigured jail
+                    raise RuntimeError("ERROR: Configuration is missing!"
+                                       f" Please destroy {uuid} and recreate"
+                                       " it.")
 
         try:
             conf_version = conf["CONFIG_VERSION"]
@@ -624,6 +634,13 @@ class IOCJson(object):
             else:
                 _type = "jails"
                 uuid = conf["host_hostuuid"]
+
+            if key == "quota":
+                if value != "none" and not value.upper().endswith(("M", "G",
+                                                                   "T")):
+                    err = f"ERROR: {value} should have a suffix ending in" \
+                          " M, G, or T."
+                    raise RuntimeError(err)
 
             checkoutput(["zfs", "set", f"{key}={value}",
                          f"{pool}/iocage/{_type}/{uuid}"])
