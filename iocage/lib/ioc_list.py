@@ -50,7 +50,7 @@ class IOCList(object):
             dups = {}
 
             for jail in datasets:
-                jail = jail.name.strip(self.pool)
+                jail = jail.properties["mountpoint"].value
                 conf = IOCJson(jail).json_load()
 
                 if not set and conf["tag"] in jails:
@@ -67,7 +67,7 @@ class IOCList(object):
             template_datasets = template_datasets.children
 
             for template in template_datasets:
-                template = template.name.strip(self.pool)
+                template = template.properties["mountpoint"].value
                 conf = IOCJson(template).json_load()
 
                 jails[conf["tag"]] = conf["host_hostuuid"]
@@ -99,7 +99,7 @@ class IOCList(object):
         jail_list = []
 
         for jail in jails:
-            jail = jail.name.strip(self.pool)
+            jail = jail.properties["mountpoint"].value
             conf = IOCJson(jail).json_load()
 
             uuid = conf["host_hostuuid"]

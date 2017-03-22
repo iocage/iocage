@@ -11,13 +11,10 @@ require_zpool = pytest.mark.require_zpool
 def test_destroy():
     jails, paths = IOCList("uuid").list_datasets()
 
-    uuid = jails["newtest"]
-    uuid_short = jails["newtest_short"]
-
     path = paths["newtest"]
     path_short = paths["newtest_short"]
 
-    IOCDestroy(uuid, "newtest", path).destroy_jail()
-    IOCDestroy(uuid_short, "newtest_short", path_short).destroy_jail()
+    IOCDestroy().destroy_jail(path)
+    IOCDestroy().destroy_jail(path_short)
 
     assert True == True

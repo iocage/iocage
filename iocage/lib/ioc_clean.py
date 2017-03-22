@@ -29,7 +29,15 @@ class IOCClean(object):
         datasets = self.ds(f"{self.pool}/iocage")
 
         for dataset in datasets.dependents:
-            dataset.umount()
+            try:
+                if dataset.type == libzfs.DatasetType.FILESYSTEM:
+                    dataset.umount(force=True)
+            except libzfs.ZFSException as err:
+                # This is either not mounted or doesn't exist anymore,
+                # we don't care either way.
+                if err.code == libzfs.Error.NOENT:
+                    continue
+
             dataset.delete()
 
     def clean_templates(self):

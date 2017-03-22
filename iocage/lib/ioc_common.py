@@ -42,7 +42,8 @@ def sort_release(releases, iocroot, split=False):
 
     if split:
         for rel in releases:
-            rel, r_type = rel.name.split(iocroot)[1].split("/")[2].split("-")
+            rel, r_type = rel.properties["mountpoint"].value.rsplit("/")[
+                -1].split("-")
 
             if len(rel) > 2:
                 rel = float(rel)
