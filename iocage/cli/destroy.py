@@ -56,7 +56,6 @@ def destroy_cmd(force, jails):
             if not force:
                 lgr.warning("\nWARNING: This will destroy"
                             " jail {} ({})".format(uuid, tag))
-                lgr.info("Dataset: {}".format(path))
 
                 if not click.confirm("\nAre you sure?"):
                     continue  # no, continue to next jail

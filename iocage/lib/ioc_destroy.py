@@ -119,12 +119,18 @@ class IOCDestroy(object):
                     if file == f"{self.iocroot}/log/{uuid}-console.log":
                         os.remove(file)
 
-    def destroy_jail(self, path):
+    def destroy_jail(self, path, clean=False):
         """
         A convenience wrapper to call __stop_jails__ and  __destroy_datasets__
         """
-        dataset_type = path.rsplit("/")[-2]
-        uuid = path.rsplit("/")[-1]  # Is a tag if dataset_type is template
+        dataset_type, uuid = path.rsplit("/")[-2:]
 
-        self.__stop_jails__(path)
+        if clean:
+            self.__stop_jails__(path)
+        else:
+            from iocage.lib.ioc_stop import IOCStop
+            conf = IOCJson(path).json_load()
+
+            IOCStop(uuid, "", path, conf, silent=True)
+
         self.__destroy_datasets__(f"{self.pool}/iocage/{dataset_type}/{uuid}")
