@@ -28,8 +28,7 @@ def print_version(ctx, param, value):
 
 
 @click.group(help="A jail manager.")
-@click.option("--debug", "-d", is_flag=True, callback=print_version,
-              help="Show debug output.")
+@click.option("--debug", "-d", is_flag=True, help="Show debug output.")
 @click.option("--version", "-v", is_flag=True, callback=print_version,
               help="Display iocage's version and exit.")
 @click.pass_context
@@ -76,8 +75,7 @@ def main():
     ioc_log.init(log_file, mode, "--debug" in sys.argv[1:] or "-d" in sys.argv[1:])
 
     skip_check = False
-    skip_check_cmds = ["--debug", "-d" "--help", "activate", "deactivate", "-v",
-                       "--version"]
+    skip_check_cmds = ["--help", "activate", "deactivate", "-v", "--version"]
 
     try:
         if "iocage" in sys.argv[0] and len(sys.argv) == 1:
