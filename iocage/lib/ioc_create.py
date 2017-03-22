@@ -1,6 +1,6 @@
 """iocage create module."""
 import json
-import logging
+
 import os
 import uuid
 from datetime import datetime
@@ -13,6 +13,7 @@ from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 from iocage.lib.ioc_start import IOCStart
 from iocage.lib.ioc_stop import IOCStop
+import iocage.lib.ioc_log
 
 
 class IOCCreate(object):
@@ -35,7 +36,7 @@ class IOCCreate(object):
         self.basejail = basejail
         self.empty = empty
         self.uuid = uuid
-        self.lgr = logging.getLogger('ioc_create')
+        self.lgr = ioc_log.getLogger('ioc_create')
 
         if silent:
             self.lgr.disabled = True
