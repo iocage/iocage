@@ -13,7 +13,7 @@ def getLogger(name):
     return logger
 
 
-def init(dbg):
+def init(log_file, mode, dbg):
     if dbg:
         log_level = logging.DEBUG
     else:
