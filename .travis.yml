@@ -16,6 +16,6 @@ install:
   - pip install coveralls
   - pip install .
 script:
-  - "python -m pytest --ignore='iocage/tests/functional_tests'"
+  - "IOCAGE_ALT_LOGFILE='/tmp/iocage.log 'python -m pytest --ignore='iocage/tests/functional_tests'"
 after_success:
   coveralls
