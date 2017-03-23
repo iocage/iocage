@@ -1,6 +1,7 @@
 """iocage logging module."""
 
 import logging
+import os
 
 def getLogger(name):
     log_file = os.environ.get("IOCAGE_ALT_LOGFILE", "/var/log/iocage.log")
