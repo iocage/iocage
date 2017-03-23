@@ -37,6 +37,8 @@ class IOCClean(object):
                 # we don't care either way.
                 if err.code == libzfs.Error.NOENT:
                     continue
+                else:
+                    raise
 
             dataset.delete()
 
