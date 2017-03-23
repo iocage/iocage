@@ -96,10 +96,10 @@ def create_cmd(release, template, count, props, pkglist, basejail, empty,
         except RuntimeError as err:
             lgr.error(err)
             if template:
-                lgr.info("Created Templates:")
+                print("Created Templates:")
                 templates = IOCList("template", hdr=False).list_datasets()
                 for temp in templates:
-                    lgr.info("  {}".format(temp[3]))
+                    print("  {}".format(temp[3]))
     else:
         for j in range(1, count + 1):
             try:
@@ -109,8 +109,8 @@ def create_cmd(release, template, count, props, pkglist, basejail, empty,
             except RuntimeError as err:
                 lgr.error(err)
                 if template:
-                    lgr.info("Created Templates:")
+                    print("Created Templates:")
                     templates = IOCList("template", hdr=False).list_datasets()
                     for temp in templates:
-                        lgr.info("  {}".format(temp[3]))
+                        print("  {}".format(temp[3]))
                 exit(1)

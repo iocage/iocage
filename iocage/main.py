@@ -72,6 +72,7 @@ def main():
             # If IOCAGE_LOGFILE is supplied on activate AFTER the pool name,
             # hilarity ensues. Let's avoid that.
             sys.argv.remove(arg)
+
     ioc_log.init(log_file, mode, "--debug" in sys.argv[1:] or "-d" in sys.argv[1:])
 
     skip_check = False

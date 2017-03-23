@@ -65,6 +65,6 @@ def rollback_cmd(jail, name, force):
             check_call(
                 ["zfs", "rollback", "-r", "{}@{}".format(dataset, name)])
 
-        lgr.info("Rolled back to: {}.".format(target))
+        print("Rolled back to: {}.".format(target))
     except CalledProcessError as err:
         lgr.error("ERROR: {}".format(err))

@@ -67,7 +67,7 @@ class IOCFstab(object):
                 _fstab.write("{} # Added by iocage on {}\n".format(
                     self.mount, datetime.utcnow().strftime("%F %T")))
 
-        self.lgr.info(
+        print(
             "Successfully added mount to {} ({})'s fstab".format(self.uuid,
                                                                  self.tag))
 
@@ -97,12 +97,12 @@ class IOCFstab(object):
 
                     index += 1
         if removed:
-            self.lgr.info(
+            print(
                 "Successfully removed mount from {} ({})'s fstab".format(
                     self.uuid, self.tag))
             return dest  # Needed for umounting, otherwise we lack context.
         else:
-            self.lgr.info("No matching fstab entry.")
+            print("No matching fstab entry.")
             exit()
 
     def __fstab_mount__(self):

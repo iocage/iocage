@@ -80,12 +80,12 @@ def export_cmd(jail):
         # not work how one expects.
         try:
             with open(_image, "wb") as export:
-                lgr.info("Exporting dataset: {}".format(dataset))
+                print("Exporting dataset: {}".format(dataset))
                 check_call(["zfs", "send", target], stdout=export)
         except CalledProcessError as err:
             raise RuntimeError("ERROR: {}".format(err))
 
-    lgr.info("\nPreparing zip file: {}.zip.".format(image))
+    print("\nPreparing zip file: {}.zip.".format(image))
     with zipfile.ZipFile("{}.zip".format(image), "w",
                          compression=zipfile.ZIP_DEFLATED,
                          allowZip64=True) as final:
@@ -105,4 +105,4 @@ def export_cmd(jail):
         raise RuntimeError(
             "ERROR: {}".format(err.output.decode("utf-8").rstrip()))
 
-    lgr.info("\nExported: {}.zip".format(image))
+    print("\nExported: {}.zip".format(image))

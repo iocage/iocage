@@ -62,7 +62,7 @@ def df_cmd(header, _long):
         # We get an infinite float otherwise.
         table.set_cols_dtype(["t", "t", "t", "t", "t", "t", "t"])
         table.add_rows(jail_list)
-        lgr.info(table.draw())
+        print(table.draw())
     else:
         for jail in jail_list:
-            lgr.info("\t".join(jail))
+            print("\t".join(jail))

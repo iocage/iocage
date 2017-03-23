@@ -45,6 +45,6 @@ def snapremove_cmd(jail, name):
 
     try:
         check_call(["zfs", "destroy", "-r", "-f", target])
-        lgr.info("Snapshot: {} destroyed.".format(target))
+        print("Snapshot: {} destroyed.".format(target))
     except CalledProcessError as err:
         lgr.error("ERROR: {}".format(err))

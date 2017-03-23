@@ -107,7 +107,7 @@ def __soft_restart__(uuid, jail, path, conf):
     exec_stop = conf["exec_stop"].split()
 
     if status:
-        lgr.info("Soft restarting {} ({})".format(uuid, jail))
+        print("Soft restarting {} ({})".format(uuid, jail))
         stop_cmd = ["jexec", "ioc-{}".format(uuid)] + exec_stop
         Popen(stop_cmd, stdout=PIPE, stderr=PIPE).communicate()
 

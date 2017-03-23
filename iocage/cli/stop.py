@@ -53,10 +53,10 @@ def stop_cmd(rc, jails):
             status, _ = IOCList().list_get_jid(uuid)
 
             if status:
-                lgr.info("  Stopping {} ({})".format(uuid, j))
+                print("  Stopping {} ({})".format(uuid, j))
                 IOCStop(uuid, j, path, conf, silent=True)
             else:
-                lgr.info("{} ({}) is not running!".format(uuid, j))
+                print("{} ({}) is not running!".format(uuid, j))
         exit()
 
     if len(jails) >= 1 and jails[0] == "ALL":

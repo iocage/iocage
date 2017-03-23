@@ -85,7 +85,7 @@ def start_cmd(rc, jails):
                 if err:
                     lgr.error(msg)
             else:
-                lgr.info("{} ({}) is already running!".format(uuid, j))
+                print("{} ({}) is already running!".format(uuid, j))
         exit()
 
     if len(jails) >= 1 and jails[0] == "ALL":

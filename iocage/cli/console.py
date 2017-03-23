@@ -48,7 +48,7 @@ def console_cmd(jail, force):
         raise RuntimeError("{} ({}) is not running!".format(uuid, tag))
 
     if not status and force:
-        lgr.info("{} ({}) is not running".format(uuid, tag) +
+        print("{} ({}) is not running".format(uuid, tag) +
                  ", starting jail.")
         if conf["type"] == "jail":
             IOCStart(uuid, jail, path, conf, silent=True)

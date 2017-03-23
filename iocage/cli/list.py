@@ -49,9 +49,9 @@ def list_cmd(dataset_type, header, _long, remote, http, plugins):
         if not header:
             if dataset_type == "base":
                 for item in _list:
-                    lgr.info(item)
+                    print(item)
             else:
                 for item in _list:
-                    lgr.info("\t".join(item))
+                    print("\t".join(item))
         else:
-            lgr.info(_list)
+            print(_list)

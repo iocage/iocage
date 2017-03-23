@@ -67,7 +67,7 @@ def destroy_cmd(force, jails):
                 raise RuntimeError(f"{uuid} ({tag}) is running.\nPlease stop "
                                    "it first!")
             elif status and force:
-                lgr.info("Stopping {} ({}).".format(uuid, tag))
+                print("Stopping {} ({}).".format(uuid, tag))
 
             IOCDestroy().destroy_jail(path)
     else:

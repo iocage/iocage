@@ -19,6 +19,6 @@ def deactivate_cmd(zpool):
     try:
         check_call(["zfs", "set", "org.freebsd.ioc:active=no", zpool],
                    stderr=PIPE, stdout=PIPE)
-        lgr.info("{} successfully deactivated.".format(zpool))
+        print("{} successfully deactivated.".format(zpool))
     except CalledProcessError:
         raise RuntimeError("Pool: {} does not exist!".format(zpool))

@@ -69,7 +69,7 @@ def migrate_cmd(force, delete):
                 "jail_zfs_dataset={}/jails/{}/data".format(iocroot,
                                                            new_uuid))
 
-            lgr.info("Copying files for {} ({}), please wait...".format(
+            print("Copying files for {} ({}), please wait...".format(
                 uuid, tag
             ))
 
@@ -99,5 +99,5 @@ def migrate_cmd(force, delete):
                     # We just want the top level dataset gone, no big deal.
                     pass
 
-            lgr.info("{} ({}) migrated to {} ({})!\n".format(uuid, tag,
+            print("{} ({}) migrated to {} ({})!\n".format(uuid, tag,
                                                              new_uuid, tag))

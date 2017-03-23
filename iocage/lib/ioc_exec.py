@@ -35,7 +35,7 @@ class IOCExec(object):
         status, _ = IOCList().list_get_jid(self.uuid)
         if not status:
             if not self.plugin and not self.skip:
-                self.lgr.info("{} ({}) is not running, starting jail.".format(
+                print("{} ({}) is not running, starting jail.".format(
                     self.uuid, self.tag))
             conf = IOCJson(self.path).json_load()
 
@@ -55,7 +55,7 @@ class IOCExec(object):
                 raise RuntimeError("{} is not a supported jail type.".format(
                     conf["type"]
                 ))
-            self.lgr.info("\nCommand output:")
+            print("\nCommand output:")
 
         if self.plugin:
             try:

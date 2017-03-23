@@ -173,10 +173,10 @@ class IOCFetch(object):
                             self.root_dir, self.release)
                     raise RuntimeError(error)
 
-                self.lgr.info("Copying: {}... ".format(f))
+                print("Copying: {}... ".format(f))
                 copy(f, dataset)
 
-                self.lgr.info("Extracting: {}... ".format(f))
+                print("Extracting: {}... ".format(f))
                 self.fetch_extract(f)
         else:
             if self.eol:
@@ -242,7 +242,7 @@ class IOCFetch(object):
 
                 releases = sort_release(releases, self.iocroot)
                 for r in releases:
-                    self.lgr.info("[{}] {}".format(releases.index(r), r))
+                    print("[{}] {}".format(releases.index(r), r))
                 self.release = input(
                     "\nWhich release do you want to fetch?"
                     " (EXIT) ")
@@ -277,10 +277,10 @@ class IOCFetch(object):
                 releases = sort_release(releases, self.iocroot)
                 for r in releases:
                     if r in eol:
-                        self.lgr.info(
+                        print(
                             "[{}] {} (EOL)".format(releases.index(r), r))
                     else:
-                        self.lgr.info("[{}] {}".format(releases.index(r), r))
+                        print("[{}] {}".format(releases.index(r), r))
 
                 if _list:
                     return
@@ -293,7 +293,7 @@ class IOCFetch(object):
         if self.hardened:
             self.root_dir = "{}/hardenedbsd-{}-LAST".format(rdir,
                                                             self.release.lower())
-        self.lgr.info("Fetching: {}\n".format(self.release))
+        print("Fetching: {}\n".format(self.release))
         self.fetch_download(self.files)
         missing = self.__fetch_check__(self.files)
 
@@ -321,9 +321,9 @@ class IOCFetch(object):
             releases = sort_release(ftp_list, self.iocroot)
             for r in releases:
                 if r in eol:
-                    self.lgr.info("[{}] {} (EOL)".format(releases.index(r), r))
+                    print("[{}] {} (EOL)".format(releases.index(r), r))
                 else:
-                    self.lgr.info("[{}] {}".format(releases.index(r), r))
+                    print("[{}] {}".format(releases.index(r), r))
 
             if _list:
                 return
@@ -344,7 +344,7 @@ class IOCFetch(object):
         ftp_list = self.files
         ftp.quit()
 
-        self.lgr.info("Fetching: {}\n".format(self.release))
+        print("Fetching: {}\n".format(self.release))
         self.fetch_download(ftp_list, ftp=True)
         missing = self.__fetch_check__(ftp_list, ftp=True)
 
@@ -438,7 +438,7 @@ class IOCFetch(object):
 
                             if hashes[f] != sha256.hexdigest():
                                 if not _missing:
-                                    self.lgr.info("{} failed verification,"
+                                    print("{} failed verification,"
                                                   " will redownload!".format(
                                         f))
                                     missing.append(f)
@@ -455,7 +455,7 @@ class IOCFetch(object):
                                 "Too many failed verifications!")
 
                 if not missing:
-                    self.lgr.info("Extracting: {}... ".format(f))
+                    print("Extracting: {}... ".format(f))
 
                     try:
                         self.fetch_extract(f)
@@ -582,7 +582,7 @@ class IOCFetch(object):
                    "{}/jails/{}/root/dev".format(self.iocroot, uuid)]
             new_root = "{}/jails/{}/root".format(self.iocroot, uuid)
 
-            self.lgr.info(
+            print(
                 "\n* Updating {} ({}) to the latest patch level... ".format(
                     uuid, tag))
         else:
@@ -591,7 +591,7 @@ class IOCFetch(object):
                                                     self.release)]
             new_root = "{}/releases/{}/root".format(self.iocroot, self.release)
 
-            self.lgr.info(
+            print(
                 "\n* Updating {} to the latest patch level... ".format(
                     self.release))
 
@@ -646,14 +646,14 @@ class IOCFetch(object):
                           "/root/bin/freebsd-version"
 
         if num <= 1:
-            self.lgr.info("Plugin: {}".format(conf["name"]))
-            self.lgr.info("  Using RELEASE: {}".format(self.release))
-            self.lgr.info(
+            print("Plugin: {}".format(conf["name"]))
+            print("  Using RELEASE: {}".format(self.release))
+            print(
                 "  Post-install Artifact: {}".format(conf["artifact"]))
-            self.lgr.info("  These pkgs will be installed:")
+            print("  These pkgs will be installed:")
 
             for pkg in conf["pkgs"]:
-                self.lgr.info("    - {}".format(pkg))
+                print("    - {}".format(pkg))
 
             if not os.path.isdir("{}/releases/{}".format(self.iocroot,
                                                          self.release)):
@@ -758,7 +758,7 @@ fingerprint: {fingerprint}
             # We need to pipe from tar to the root of the jail.
             if conf["artifact"]:
                 # TODO: Fancier.
-                self.lgr.info("Fetching artifact... ")
+                print("Fetching artifact... ")
 
                 Popen(["git", "clone", conf["artifact"],
                        "{}/plugin".format(jaildir)],
@@ -773,7 +773,7 @@ fingerprint: {fingerprint}
                     copy("{}/plugin/post_install.sh".format(jaildir),
                          "{}/root/root".format(jaildir))
 
-                    self.lgr.info("Running post_install.sh")
+                    print("Running post_install.sh")
                     command = ["sh", "/root/post_install.sh"]
                     IOCExec(command, uuid, conf["name"], jaildir,
                             skip=True).exec_jail()
@@ -811,7 +811,7 @@ fingerprint: {fingerprint}
 
         _plugins = self.__fetch_sort_plugin__(plugins)
         for p in _plugins:
-            self.lgr.info("[{}] {}".format(_plugins.index(p), p))
+            print("[{}] {}".format(_plugins.index(p), p))
 
         if _list:
             return

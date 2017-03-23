@@ -109,7 +109,7 @@ def upgrade_cmd(jail, release):
             if started:
                 IOCStop(uuid, tag, path, conf, silent=True)
 
-            lgr.info("\n{} ({}) successfully upgraded from {} to {}!".format(
+            print("\n{} ({}) successfully upgraded from {} to {}!".format(
                 uuid, tag, jail_release, new_release))
 
 

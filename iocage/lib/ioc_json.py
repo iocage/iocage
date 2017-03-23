@@ -151,14 +151,14 @@ class IOCJson(object):
                                       "r") as conf:
                                 conf = json.load(conf)
 
-                            self.lgr.info("hack88 is no longer supported."
+                            print("hack88 is no longer supported."
                                           "\n{} is being converted to {} "
                                           "permanently.".format(full_dataset,
                                                                 short_dataset))
 
                             status, _ = IOCList().list_get_jid(full_uuid)
                             if status:
-                                self.lgr.info(
+                                print(
                                     "Stopping jail to migrate UUIDs.")
                                 from iocage.lib.ioc_stop import IOCStop
                                 IOCStop(full_uuid, conf["tag"], self.location,
@@ -287,7 +287,7 @@ class IOCJson(object):
                         raise RuntimeError("Run as root to automatically "
                                            "activate the first zpool!")
 
-                    self.lgr.info("Setting up zpool [{}] for iocage usage\n"
+                    print("Setting up zpool [{}] for iocage usage\n"
                                   "If you wish to change please use "
                                   "\"iocage activate\"".format(zpools[0]))
 
@@ -383,7 +383,7 @@ class IOCJson(object):
                     raise RuntimeError("ERROR: {}".format(
                         err.output.decode("utf-8").rstrip()))
 
-                self.lgr.info("{} ({}) converted to a template.".format(uuid,
+                print("{} ({}) converted to a template.".format(uuid,
                                                                         old_tag))
                 self.lgr.disabled = True
             elif value == "no":
@@ -398,13 +398,13 @@ class IOCJson(object):
                     raise RuntimeError("ERROR: {}".format(
                         err.output.decode("utf-8").rstrip()))
 
-                self.lgr.info("{} ({}) converted to a jail.".format(uuid,
+                print("{} ({}) converted to a jail.".format(uuid,
                                                                     old_tag))
                 self.lgr.disabled = True
 
         self.json_check_prop(key, value, conf)
         self.json_write(conf)
-        self.lgr.info(
+        print(
             "Property: {} has been updated to {}".format(key, value))
 
         # Used for import
@@ -803,15 +803,15 @@ class IOCJson(object):
 
             if status:
                 # IOCExec will not show this if it doesn't start the jail.
-                self.lgr.info("Command output:")
+                print("Command output:")
             IOCExec(prop_cmd, uuid, tag, _path).exec_jail()
 
             if restart:
-                self.lgr.info("\n-- Restarting service --")
-                self.lgr.info("Command output:")
+                print("\n-- Restarting service --")
+                print("Command output:")
                 IOCExec(servicerestart, uuid, tag, _path).exec_jail()
 
-            self.lgr.info("\nKey: {} has been updated to {}".format(keys,
+            print("\nKey: {} has been updated to {}".format(keys,
                                                                     value))
         except KeyError:
             raise RuntimeError("Key: \"{}\" does not exist!".format(key))

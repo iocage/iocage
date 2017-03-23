@@ -47,7 +47,7 @@ class IOCCheck(object):
                                        " datasets!")
 
                 if "deactivate" not in sys.argv[1:]:
-                    self.lgr.info("Creating {}/{}".format(self.pool, dataset))
+                    print("Creating {}/{}".format(self.pool, dataset))
                     if dataset == "iocage":
                         if len(dups) != 0:
                             mount = "mountpoint=/{}/iocage".format(self.pool)

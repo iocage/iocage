@@ -59,7 +59,7 @@ def import_cmd(jail):
             z_split_str = "/".join(z_split)
             _z = z_split_str.replace("iocage/images/", "")
 
-            lgr.info("Importing dataset: {}".format(_z))
+            print("Importing dataset: {}".format(_z))
             dataset = _import.read(z)
             recv = Popen(cmd, stdin=PIPE)
             recv.stdin.write(dataset)
@@ -77,4 +77,4 @@ def import_cmd(jail):
 
     tag = IOCJson("{}/jails/{}".format(iocroot, uuid),
                   silent=True).json_set_value("tag={}".format(tag))
-    lgr.info("\nImported: {} ({})".format(uuid, tag))
+    print("\nImported: {} ({})".format(uuid, tag))

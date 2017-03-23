@@ -79,7 +79,7 @@ def snaplist_cmd(header, jail):
         # We get an infinite float otherwise.
         table.set_cols_dtype(["t", "t", "t", "t"])
         table.add_rows(snap_list)
-        lgr.info(table.draw())
+        print(table.draw())
     else:
         for snap in snap_list:
-            lgr.info("\t".join(snap))
+            print("\t".join(snap))

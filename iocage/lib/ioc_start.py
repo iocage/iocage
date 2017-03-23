@@ -174,7 +174,7 @@ class IOCStart(object):
                 net = ["vnet"]
                 vnet = True
 
-            self.lgr.info("* Starting {} ({})".format(self.uuid, self.conf[
+            print("* Starting {} ({})".format(self.uuid, self.conf[
                 "tag"]))
             start = Popen([x for x in ["jail", "-c"] + net +
                            ["name=ioc-{}".format(self.uuid),
@@ -223,7 +223,7 @@ class IOCStart(object):
                 self.lgr.error("  + Start FAILED")
                 raise RuntimeError(f"  ERROR: {stderr_data.decode('utf-8')}")
             else:
-                self.lgr.info("  + Started OK")
+                print("  + Started OK")
 
             os_path = "{}/root/dev/log".format(self.path)
             if not ospath.isfile(os_path) and not ospath.islink(os_path):
@@ -283,9 +283,9 @@ class IOCStart(object):
                                            self.uuid)] + exec_start,
                                       stdout=f, stderr=PIPE)
             if services:
-                self.lgr.info("  + Starting services FAILED")
+                print("  + Starting services FAILED")
             else:
-                self.lgr.info("  + Starting services OK")
+                print("  + Starting services OK")
 
             self.set("last_started={}".format(datetime.utcnow().strftime(
                 "%F %T")))
