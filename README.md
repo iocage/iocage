@@ -31,8 +31,14 @@ To install using binary packages, simply run: `pkg install py36-iocage`(not in p
 To install subsequent updates: `git pull` and `pip3.6 install -U .`
 
 ##### Ports:
-- Not available yet
+- To be able to use the ports tree and build `sysutils/py3-iocage` you need to follow the steps below.
+- Create/Edit the following file: `/etc/make.conf`
+- Added at the end of the file the following line: `DEFAULT_VERSIONS= python3=3.6`
+- Build the port as follow: `cd /usr/ports/sysutils/py3-iocage/ ; make install clean`
 
+*Note: `sysutils/py3-iocage` will conflict with other previous versions of iocage included into the ports tree. We suggest you first uninstall any other previous version of iocage prior to install this one.*
+
+*Note1: The default version of Python3 on FreeBSD is 3.5 and for this reason it is not possible to provide pre-built packages using Python 3.6.*
 
 
 ## WARNING:
