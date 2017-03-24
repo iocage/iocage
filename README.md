@@ -25,6 +25,7 @@ To install using binary packages, simply run: `pkg install py36-iocage`(not in p
 - `pkg install python36`
 - `python3.6 -m ensurepip`
 - `git clone --recursive https://github.com/iocage/iocage`
+- `pip3.6 install Cython`
 - `cd iocage/py-libzfs && python3.6 setup.py build && python 3.6 setup.py install`
 - `cd .. && pip3.6 install .`
 
