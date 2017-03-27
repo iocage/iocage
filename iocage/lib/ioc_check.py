@@ -1,9 +1,9 @@
 """Check datasets before execution"""
-import logging
 import os
 import sys
 from subprocess import CalledProcessError, PIPE, Popen
 
+import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_json import IOCJson
 
@@ -13,7 +13,8 @@ class IOCCheck(object):
 
     def __init__(self, silent=False):
         self.pool = IOCJson().json_get_value("pool")
-        self.lgr = logging.getLogger('ioc_check')
+        self.lgr = ioc_logger.Logger('ioc_check')
+        self.lgr = self.lgr.getLogger()
 
         if silent:
             self.lgr.disabled = True
@@ -43,8 +44,8 @@ class IOCCheck(object):
                     self.pool, dataset)], stderr=PIPE)
             except CalledProcessError:
                 if os.geteuid() != 0:
-                    raise RuntimeError("Run as root to create missing"
-                                       " datasets!")
+                    self.lgr.error("Run as root to create missing datasets!")
+                    exit(1)
 
                 if "deactivate" not in sys.argv[1:]:
                     self.lgr.info("Creating {}/{}".format(self.pool, dataset))

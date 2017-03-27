@@ -1,10 +1,10 @@
 """get module for the cli."""
 import json
-import logging
 
 import click
 from texttable import Texttable
 
+import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
@@ -30,7 +30,8 @@ __cmdname__ = "get_cmd"
                                             "zpool.", is_flag=True)
 def get_cmd(prop, _all, _pool, jail, recursive, header, plugin):
     """Get a list of jails and print the property."""
-    lgr = logging.getLogger('ioc_cli_get')
+    lgr = ioc_logger.Logger('ioc_cli_get')
+    lgr = lgr.getLogger()
 
     get_jid = IOCList.list_get_jid
     jails, paths = IOCList("uuid").list_datasets()
@@ -51,7 +52,8 @@ def get_cmd(prop, _all, _pool, jail, recursive, header, plugin):
     if recursive is None:
         if jail == "":
             lgr.info("Usage: iocage get [OPTIONS] PROP JAIL\n")
-            raise RuntimeError("Error: Missing argument \"jail\".")
+            lgr.error("Missing argument \"jail\".")
+            exit(1)
 
         _jail = {tag: uuid for (tag, uuid) in jails.items() if
                  uuid.startswith(jail) or tag == jail}
@@ -66,7 +68,8 @@ def get_cmd(prop, _all, _pool, jail, recursive, header, plugin):
                 lgr.error("  {} ({})".format(u, t))
             raise RuntimeError()
         else:
-            raise RuntimeError("{} not found!".format(jail))
+            lgr.critical("{} not found!".format(jail))
+            exit(1)
 
         if prop == "state":
             status, _ = get_jid(path.split("/")[3])
@@ -115,7 +118,8 @@ def get_cmd(prop, _all, _pool, jail, recursive, header, plugin):
             try:
                 lgr.info(IOCJson(path).json_get_value(prop))
             except:
-                raise RuntimeError("{} is not a valid property!".format(prop))
+                lgr.warning("{} is not a valid property!".format(prop))
+                exit(1)
     else:
         for j in jails:
             uuid = jails[j]
@@ -139,7 +143,8 @@ def get_cmd(prop, _all, _pool, jail, recursive, header, plugin):
                     jail_list.append(
                         [uuid, j, IOCJson(path).json_get_value(prop)])
             except:
-                raise RuntimeError("{} is not a valid property!".format(prop))
+                lgr.warning("{} is not a valid property!".format(prop))
+                exit(1)
 
         # Prints the table
         if header:

@@ -1,8 +1,7 @@
 """exec module for the cli."""
-import logging
-
 import click
 
+import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_common import indent_lines
 from iocage.lib.ioc_exec import IOCExec
 from iocage.lib.ioc_list import IOCList
@@ -22,18 +21,21 @@ __rootcmd__ = True
 def exec_cmd(command, jail, host_user, jail_user):
     """Runs the command given inside the specified jail as the supplied
     user."""
-    lgr = logging.getLogger('ioc_cli_exec')
+    lgr = ioc_logger.Logger('ioc_cli_exec')
+    lgr = lgr.getLogger()
 
     # We may be getting ';', '&&' and so forth. Adding the shell for safety.
     if len(command) == 1:
         command = ("/bin/sh", "-c") + command
 
     if jail.startswith("-"):
-        raise RuntimeError("Please specify a jail first!")
+        lgr.warning("Please specify a jail first!")
+        exit(1)
 
     if host_user and jail_user:
-        raise RuntimeError("Please only specify either host_user or"
-                           " jail_user, not both!")
+        lgr.warning("Please only specify either host_user or"
+                    " jail_user, not both!")
+        exit(1)
 
     jails, paths = IOCList("uuid").list_datasets()
     _jail = {tag: uuid for (tag, uuid) in jails.items() if
@@ -49,10 +51,11 @@ def exec_cmd(command, jail, host_user, jail_user):
             lgr.error("  {} ({})".format(u, t))
         raise RuntimeError()
     else:
-        raise RuntimeError("{} not found!".format(jail))
+        lgr.critical("{} not found!".format(jail))
+        exit(1)
 
     msg = IOCExec(command, uuid, tag, path, host_user, jail_user).exec_jail()
 
     if msg:
         err = indent_lines(msg)
-        raise RuntimeError("ERROR: {}".format(err))
+        lgr.error("{}".format(err))

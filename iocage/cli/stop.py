@@ -1,10 +1,10 @@
 """stop module for the cli."""
-import logging
 from collections import OrderedDict
 from operator import itemgetter
 
 import click
 
+import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 from iocage.lib.ioc_stop import IOCStop
@@ -23,7 +23,8 @@ def stop_cmd(rc, jails):
     Looks for the jail supplied and passes the uuid, path and configuration
     location to stop_jail.
     """
-    lgr = logging.getLogger('ioc_cli_stop')
+    lgr = ioc_logger.Logger('ioc_cli_stop')
+    lgr = lgr.getLogger()
 
     _jails, paths = IOCList("uuid").list_datasets()
     jail_order = {}
@@ -61,7 +62,8 @@ def stop_cmd(rc, jails):
 
     if len(jails) >= 1 and jails[0] == "ALL":
         if len(_jails) < 1:
-            raise RuntimeError("No jails exist to stop!")
+            lgr.error("No jails exist to stop!")
+            exit(1)
 
         for j in jail_order:
             uuid = _jails[j]
@@ -71,8 +73,8 @@ def stop_cmd(rc, jails):
             IOCStop(uuid, j, path, conf)
     else:
         if len(jails) < 1:
-            raise RuntimeError("Please specify either one or more jails or "
-                               "ALL!")
+            lgr.warning("Please specify either one or more jails or ALL!")
+            exit(1)
 
         for jail in jails:
             _jail = {tag: uuid for (tag, uuid) in _jails.items() if
@@ -88,7 +90,8 @@ def stop_cmd(rc, jails):
                     lgr.error("  {} ({})".format(u, t))
                 raise RuntimeError()
             else:
-                raise RuntimeError("{} not found!".format(jail))
+                lgr.critical("{} not found!".format(jail))
+                exit(1)
 
             conf = IOCJson(path).json_load()
             IOCStop(uuid, tag, path, conf)

@@ -1,11 +1,11 @@
 """Manipulate a jails fstab"""
-import logging
 import os
 import shutil
 import tempfile
 from datetime import datetime
 from subprocess import PIPE, Popen, call
 
+import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_common import open_atomic
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
@@ -16,7 +16,8 @@ class IOCFstab(object):
 
     def __init__(self, uuid, tag, action, source, destination, fstype,
                  fsoptions, fsdump, fspass, index=None, silent=False):
-        self.lgr = logging.getLogger('ioc_fstab')
+        self.lgr = ioc_logger.Logger('ioc_fstab')
+        self.lgr = self.lgr.getLogger()
         self.pool = IOCJson().json_get_value("pool")
         self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
         self.uuid = uuid
@@ -117,7 +118,8 @@ class IOCFstab(object):
             stdout_data, stderr_data = proc.communicate()
 
             if stderr_data:
-                raise RuntimeError(f"ERROR: {stderr_data.decode('utf-8')}")
+                self.lgr.error(f"ERROR: {stderr_data.decode('utf-8')}")
+                exit(1)
 
     def __fstab_umount__(self, dest):
         """
@@ -132,7 +134,8 @@ class IOCFstab(object):
             stdout_data, stderr_data = proc.communicate()
 
             if stderr_data:
-                raise RuntimeError(f"ERROR: {stderr_data.decode('utf-8')}")
+                self.lgr.error(f"ERROR: {stderr_data.decode('utf-8')}")
+                exit(1)
 
     def __fstab_edit__(self):
         """
@@ -152,4 +155,5 @@ class IOCFstab(object):
                 for line in tmp_fstab.readlines():
                     fstab.write(line.decode("utf-8"))
         else:
-            raise RuntimeError(f"An error occurred within {err_editor}!")
+            self.lgr.critical(f"An error occurred within {err_editor}!")
+            exit(1)

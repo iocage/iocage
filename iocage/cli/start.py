@@ -1,10 +1,10 @@
 """start module for the cli."""
-import logging
 from collections import OrderedDict
 from operator import itemgetter
 
 import click
 
+import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 from iocage.lib.ioc_start import IOCStart
@@ -51,7 +51,8 @@ def start_cmd(rc, jails):
     Looks for the jail supplied and passes the uuid, path and configuration
     location to start_jail.
     """
-    lgr = logging.getLogger('ioc_cli_start')
+    lgr = ioc_logger.Logger('ioc_cli_start')
+    lgr = lgr.getLogger()
 
     _jails, paths = IOCList("uuid").list_datasets()
     jail_order = {}
@@ -90,7 +91,8 @@ def start_cmd(rc, jails):
 
     if len(jails) >= 1 and jails[0] == "ALL":
         if len(_jails) < 1:
-            raise RuntimeError("No jails exist to start!")
+            lgr.warning("No jails exist to start!")
+            exit(1)
 
         for j in jail_order:
             uuid = _jails[j]
@@ -101,8 +103,8 @@ def start_cmd(rc, jails):
                 lgr.error(msg)
     else:
         if len(jails) < 1:
-            raise RuntimeError("Please specify either one or more jails or "
-                               "ALL!")
+            lgr.warning("Please specify either one or more jails or ALL!")
+            exit(1)
 
         for jail in jails:
             _jail = {tag: uuid for (tag, uuid) in _jails.items() if
@@ -118,9 +120,11 @@ def start_cmd(rc, jails):
                     lgr.error("  {} ({})".format(u, t))
                 raise RuntimeError()
             else:
-                raise RuntimeError("{} not found!".format(jail))
+                lgr.error("{} not found!".format(jail))
+                exit(1)
 
             err, msg = start_jail(uuid, tag, path)
 
             if err:
-                raise RuntimeError(msg)
+                lgr.critical(msg)
+                exit(1)

@@ -1,8 +1,7 @@
 """set module for the cli."""
-import logging
-
 import click
 
+import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
@@ -21,7 +20,8 @@ __rootcmd__ = True
               is_flag=True)
 def set_cmd(prop, jail, plugin):
     """Get a list of jails and print the property."""
-    lgr = logging.getLogger('ioc_cli_set')
+    lgr = ioc_logger.Logger('ioc_cli_set')
+    lgr = lgr.getLogger()
 
     jails, paths = IOCList("uuid").list_datasets(set=True)
     _jail = {tag: uuid for (tag, uuid) in jails.items() if
@@ -38,15 +38,16 @@ def set_cmd(prop, jail, plugin):
             lgr.error("  {} ({})".format(u, t))
         raise RuntimeError()
     else:
-        raise RuntimeError("{} not found!".format(jail))
+        lgr.critical("{} not found!".format(jail))
+        exit(1)
 
     if "template" in prop.split("=")[0]:
         if "template" in path and prop != "template=no":
-            raise RuntimeError("{} ({}) is already a template!".format(
-                uuid, tag
-            ))
+            lgr.warning("{} ({}) is already a template!".format(uuid, tag))
+            exit(1)
         elif "template" not in path and prop != "template=yes":
-            raise RuntimeError("{} ({}) is already a jail!".format(uuid, tag))
+            lgr.warning("{} ({}) is already a jail!".format(uuid, tag))
+            exit(1)
     if plugin:
         _prop = prop.split(".")
         IOCJson(path, cli=True).json_plugin_set_value(_prop)
@@ -60,4 +61,5 @@ def set_cmd(prop, jail, plugin):
             iocjson.json_set_value(prop)
         except KeyError:
             _prop = prop.partition("=")[0]
-            raise RuntimeError("{} is not a valid property!".format(_prop))
+            lgr.error("{} is not a valid property!".format(_prop))
+            exit(1)

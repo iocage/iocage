@@ -1,5 +1,4 @@
 """This is responsible for starting jails."""
-import logging
 import re
 from datetime import datetime
 from os import X_OK, access, chdir, getcwd, makedirs, path as ospath, \
@@ -7,6 +6,7 @@ from os import X_OK, access, chdir, getcwd, makedirs, path as ospath, \
 from shutil import copy
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
 
+import iocage.lib.ioc_logger as logger
 from iocage.lib.ioc_common import checkoutput, open_atomic
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
@@ -27,7 +27,8 @@ class IOCStart(object):
         self.conf = conf
         self.get = IOCJson(self.path, silent=True).json_get_value
         self.set = IOCJson(self.path, silent=True).json_set_value
-        self.lgr = logging.getLogger('ioc_start')
+        self.lgr = ioc_logger.Logger('ioc_start')
+        self.lgr = self.lgr.getLogger()
 
         if silent:
             self.lgr.disabled = True
@@ -126,9 +127,9 @@ class IOCStart(object):
                                      "{}/{}".format(self.pool, jdataset)],
                                     stderr=STDOUT)
                     except CalledProcessError as err:
-                        raise RuntimeError(
-                            "ERROR: {}".format(
+                        self.lgr.error("ERROR: {}".format(
                                 err.output.decode("utf-8").rstrip()))
+                        exit(1)
 
             # FreeBSD 9.3 and under do not support this.
             if userland_version <= 9.3:
@@ -220,8 +221,9 @@ class IOCStart(object):
 
             if start.returncode:
                 # This is actually fatal.
-                self.lgr.error("  + Start FAILED")
-                raise RuntimeError(f"  ERROR: {stderr_data.decode('utf-8')}")
+                self.lgr.critical("  + Start FAILED")
+                self.lgr.critical(f"  ERROR: {stderr_data.decode('utf-8')}")
+                exit(1)
             else:
                 self.lgr.info("  + Started OK")
 
@@ -267,9 +269,9 @@ class IOCStart(object):
                                     self.uuid), "zfs", "mount", child],
                                             stderr=STDOUT)
                         except CalledProcessError as err:
-                            raise RuntimeError(
-                                "ERROR: {}".format(
+                            self.lgr.error("ERROR: {}".format(
                                     err.output.decode("utf-8").rstrip()))
+                            exit(1)
 
             self.start_generate_resolv()
             # TODO: exec_fib support

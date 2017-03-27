@@ -1,12 +1,12 @@
 """Convert, load or write JSON."""
 import json
-import logging
 import os
 import re
 import sys
 from os import geteuid, path
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
 
+import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_common import checkoutput, get_nested_key, open_atomic
 
 
@@ -26,7 +26,8 @@ class IOCJson(object):
 
     def __init__(self, location="", silent=False, cli=False):
         self.location = location
-        self.lgr = logging.getLogger('ioc_json')
+        self.lgr = ioc_logger.Logger('ioc_json')
+        self.lgr = self.lgr.getLogger()
         self.cli = cli
 
         if silent:
@@ -35,8 +36,9 @@ class IOCJson(object):
     def json_convert_from_ucl(self):
         """Convert to JSON. Accepts a location to the ucl configuration."""
         if geteuid() != 0:
-            raise RuntimeError("You need to be root to convert the"
-                               " configurations to the new format!")
+            self.lgr.critical("You need to be root to convert the"
+                              " configurations to the new format!")
+            exit(1)
 
         with open(self.location + "/config", "r") as conf:
             lines = conf.readlines()
@@ -59,8 +61,9 @@ class IOCJson(object):
         jail_zfs_prop = "org.freebsd.iocage:jail_zfs_dataset"
 
         if geteuid() != 0:
-            raise RuntimeError("You need to be root to convert the"
-                               " configurations to the new format!")
+            self.lgr.critical("You need to be root to convert the"
+                              " configurations to the new format!")
+            exit(1)
 
         cmd = ["zfs", "get", "-H", "-o", "property,value", "all", dataset]
 
@@ -200,9 +203,10 @@ class IOCJson(object):
                         conf = json.load(conf)
                 except CalledProcessError:
                     # At this point it should be a real misconfigured jail
-                    raise RuntimeError("ERROR: Configuration is missing!"
-                                       f" Please destroy {uuid} and recreate"
-                                       " it.")
+                    self.lgr.error("ERROR: Configuration is missing!"
+                                   f" Please destroy {uuid} and recreate"
+                                   " it.")
+                    exit(1)
 
         try:
             conf_version = conf["CONFIG_VERSION"]
@@ -254,8 +258,10 @@ class IOCJson(object):
 
                 if old:
                     if os.geteuid() != 0:
-                        raise RuntimeError("Run as root to migrate old pool"
-                                           " activation property!")
+                        self.lgr.critical("Run as root to migrate old pool"
+                                          " activation property!")
+                        exit(1)
+
                     check_call(["zpool", "set", "comment=-", pool],
                                stderr=PIPE, stdout=PIPE)
                     check_call(["zfs", "set", "org.freebsd.ioc:active=yes",
@@ -267,12 +273,12 @@ class IOCJson(object):
                     self.lgr.error("Pools:")
                     for zpool in zpools:
                         self.lgr.error("  {}".format(zpool))
-                    raise RuntimeError("You have {} ".format(match) +
-                                       "pools marked active for iocage "
-                                       "usage.\n"
-                                       "Run \"iocage deactivate ZPOOL\" on"
-                                       " {} of the".format(match - 1) +
-                                       " pools.\n")
+                    self.lgr.error("You have {} ".format(match) +
+                                   "pools marked active for iocage "
+                                   "usage.\n"
+                                   "Run \"iocage deactivate ZPOOL\" on"
+                                   " {} of the".format(match - 1) +
+                                   " pools.\n")
             else:
                 if len(sys.argv) >= 2 and "activate" in sys.argv[1:]:
                     pass
@@ -284,8 +290,9 @@ class IOCJson(object):
                         "utf-8").split()
 
                     if os.geteuid() != 0:
-                        raise RuntimeError("Run as root to automatically "
-                                           "activate the first zpool!")
+                        self.lgr.critical("Run as root to automatically "
+                                          "activate the first zpool!")
+                        exit(1)
 
                     self.lgr.info("Setting up zpool [{}] for iocage usage\n"
                                   "If you wish to change please use "
@@ -303,7 +310,8 @@ class IOCJson(object):
                                      "mountpoint", loc]).strip()
                 return mount
             except CalledProcessError:
-                raise RuntimeError("{} not found!".format(self.location))
+                self.lgr.error("{} not found!".format(self.location))
+                exit(1)
         elif prop == "all":
             conf = self.json_load()
 
@@ -349,8 +357,9 @@ class IOCJson(object):
             new_location = "{}/iocage/templates/{}".format(pool, old_tag)
 
             if status:
-                raise RuntimeError(f"{uuid} ({old_tag}) is running.\nPlease"
-                                   "stop it first!")
+                self.lgr.error(f"{uuid} ({old_tag}) is running.\nPlease"
+                               "stop it first!")
+                exit(1)
 
             jails, paths = IOCList("uuid").list_datasets()
             for j in jails:
@@ -369,8 +378,10 @@ class IOCJson(object):
                     _status, _ = IOCList.list_get_jid(_uuid)
 
                     if _status:
-                        raise RuntimeError(f"CHILD: {_uuid} ({j}) is"
-                                           f" running.\nPlease stop it first!")
+                        self.lgr.error(f"CHILD: {_uuid} ({j}) is"
+                                       f" running.\nPlease stop it first!")
+                        exit(1)
+
             if value == "yes":
                 try:
                     checkoutput(["zfs", "rename", "-p", old_location,
@@ -380,8 +391,9 @@ class IOCJson(object):
                     self.location = new_location.lstrip(pool).replace(
                         "/iocage", iocroot)
                 except CalledProcessError as err:
-                    raise RuntimeError("ERROR: {}".format(
+                    self.lgr.error("ERROR: {}".format(
                         err.output.decode("utf-8").rstrip()))
+                    exit(1)
 
                 self.lgr.info("{} ({}) converted to a template.".format(uuid,
                                                                         old_tag))
@@ -395,8 +407,9 @@ class IOCJson(object):
                     self.location = old_location.lstrip(pool).replace(
                         "/iocage", iocroot)
                 except CalledProcessError as err:
-                    raise RuntimeError("ERROR: {}".format(
+                    self.lgr.error("ERROR: {}".format(
                         err.output.decode("utf-8").rstrip()))
+                    exit(1)
 
                 self.lgr.info("{} ({}) converted to a jail.".format(uuid,
                                                                     old_tag))
@@ -424,8 +437,9 @@ class IOCJson(object):
                     checkoutput(["jail", "-m", "jid={}".format(jid),
                                  "{}={}".format(key, value)], stderr=STDOUT)
                 except CalledProcessError as err:
-                    raise RuntimeError("ERROR: {}".format(
+                    self.lgr.error("ERROR: {}".format(
                         err.output.decode("utf-8").rstrip()))
+                    exit(1)
 
     @staticmethod
     def json_get_version():
@@ -439,8 +453,9 @@ class IOCJson(object):
         new keys with their default values if missing.
         """
         if geteuid() != 0:
-            raise RuntimeError("You need to be root to convert the"
-                               " configurations to the new format!")
+            self.lgr.critical("You need to be root to convert the"
+                              " configurations to the new format!")
+            exit(1)
 
         _, iocroot = _get_pool_and_iocroot()
 
@@ -640,7 +655,8 @@ class IOCJson(object):
                                                                    "T")):
                     err = f"ERROR: {value} should have a suffix ending in" \
                           " M, G, or T."
-                    raise RuntimeError(err)
+                    self.lgr.critical(err)
+                    exit(1)
 
             checkoutput(["zfs", "set", f"{key}={value}",
                          f"{pool}/iocage/{_type}/{uuid}"])
@@ -668,51 +684,56 @@ class IOCJson(object):
 
                     if not self.cli:
                         msg = err + msg
+                    self.lgr.error(msg)
+                    exit(1)
 
-                    raise RuntimeError(msg)
                 elif key == "ip4_addr":
                     msg = "IP address must contain both an interface and IP " \
                           "address.\nEXAMPLE: em0|192.168.1.10"
 
                     if not self.cli:
                         msg = err + msg
+                    self.lgr.error(msg)
+                    exit(1)
 
-                    raise RuntimeError(msg)
                 elif key == "ip6_addr":
                     msg = "IP address must contain both an interface and IP " \
                           "address.\nEXAMPLE: em0|fe80::5400:ff:fe54:1"
 
                     if not self.cli:
                         msg = err + msg
+                    self.lgr.error(msg)
+                    exit(1)
 
-                    raise RuntimeError(msg)
                 elif key == "interfaces":
                     msg = "Interfaces must be specified as a pair.\n" \
                           "EXAMPLE: vnet0:bridge0, vnet1:bridge1"
 
                     if not self.cli:
                         msg = err + msg
+                    self.lgr.error(msg)
+                    exit(1)
 
-                    raise RuntimeError(msg)
                 elif key == "memoryuse":
                     msg = "memoryuse requires at minimum a pair.\nEXAMPLE: " \
                           "8g:log"
 
                     if not self.cli:
                         msg = err + msg
+                    self.lgr.error(msg)
+                    exit(1)
 
-                    raise RuntimeError(msg)
                 else:
                     if self.cli:
                         exit(1)
         else:
             if self.cli:
-                raise RuntimeError(
-                    f"ERROR: {key} cannot be changed by the user.")
+                self.lgr.error(f"ERROR: {key} cannot be changed by the user.")
+                exit(1)
             else:
                 if key not in conf.keys():
-                    raise RuntimeError(
-                        f"WARNING: {key} is not a valid property!")
+                    self.lgr.error(f"WARNING: {key} is not a valid property!")
+                    exit(1)
 
     def json_plugin_load(self):
         try:
@@ -720,8 +741,8 @@ class IOCJson(object):
                     self.location), "r") as settings:
                 settings = json.load(settings)
         except (IOError, OSError):
-            raise RuntimeError(
-                "No settings.json exists in {}/plugin!".format(self.location))
+            self.lgr.error("No settings.json exists in {}/plugin!".format(self.location))
+            exit(1)
 
         return settings
 
@@ -755,8 +776,8 @@ class IOCJson(object):
             else:
                 return settings
         except KeyError:
-            raise RuntimeError(
-                "Key: \"{}\" does not exist!".format(prop_error))
+            self.lgr.error("Key: \"{}\" does not exist!".format(prop_error))
+            exit(1)
 
     def json_plugin_set_value(self, prop):
         from iocage.lib.ioc_exec import IOCExec
@@ -814,4 +835,5 @@ class IOCJson(object):
             self.lgr.info("\nKey: {} has been updated to {}".format(keys,
                                                                     value))
         except KeyError:
-            raise RuntimeError("Key: \"{}\" does not exist!".format(key))
+            self.lgr.error("Key: \"{}\" does not exist!".format(key))
+            exit(1)

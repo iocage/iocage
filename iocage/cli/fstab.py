@@ -1,8 +1,7 @@
 """fstab module for the cli."""
-import logging
-
 import click
 
+import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_fstab import IOCFstab
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
@@ -28,7 +27,8 @@ def fstab_cmd(action, fstab_string, jail):
     Looks for the jail supplied and passes the uuid, path and configuration
     location to manipulate the fstab.
     """
-    lgr = logging.getLogger('ioc_cli_fstab')
+    lgr = ioc_logger.Logger('ioc_cli_fstab')
+    lgr = lgr.getLogger()
     pool = IOCJson().json_get_value("pool")
     iocroot = IOCJson(pool).json_get_value("iocroot")
     index = None
@@ -38,7 +38,8 @@ def fstab_cmd(action, fstab_string, jail):
     _jails, paths = IOCList("uuid").list_datasets()
 
     if not fstab_string and action != "edit":
-        raise RuntimeError("Please supply a fstab entry!")
+        lgr.warning("Please supply a fstab entry!")
+        exit(1)
 
     _jail = {tag: uuid for (tag, uuid) in _jails.items() if
              uuid.startswith(jail) or tag == jail}
@@ -52,7 +53,8 @@ def fstab_cmd(action, fstab_string, jail):
             lgr.error("  {} ({})".format(u, t))
         raise RuntimeError()
     else:
-        raise RuntimeError("{} not found!".format(jail))
+        lgr.critical("{} not found!".format(jail))
+        exit(1)
 
     # The user will expect to supply a string, the API would prefer these
     # separate. If the user supplies a quoted string, we will split it,
@@ -66,8 +68,9 @@ def fstab_cmd(action, fstab_string, jail):
             try:
                 index = int(fstab_string[0])
             except TypeError:
-                raise RuntimeError("Please specify either a valid fstab "
-                                   "entry or an index number.")
+                lgr.warning("Please specify either a valid fstab "
+                            "entry or an index number.")
+                exit(1)
             _index = True
             source, destination, fstype, options, dump, _pass = "", "", "", \
                                                                 "", "", ""
@@ -77,9 +80,10 @@ def fstab_cmd(action, fstab_string, jail):
                 source, destination, fstype, options, dump, _pass = \
                     fstab_string
             except ValueError:
-                raise RuntimeError("Please specify a valid fstab entry!\n\n"
-                                   "Example:\n  /the/source /dest FSTYPE "
-                                   "FSOPTIONS FSDUMP FSPASS")
+                lgr.warning("Please specify a valid fstab entry!\n\n"
+                            "Example:\n  /the/source /dest FSTYPE "
+                            "FSOPTIONS FSDUMP FSPASS")
+                exit(1)
         else:
             source, destination, fstype, options, dump, _pass = "", "", \
                                                                 "", "", \

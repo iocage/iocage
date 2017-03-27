@@ -1,12 +1,12 @@
 """migrate module for the cli."""
 import fileinput
-import logging
 import os
 from shutil import copy
 from subprocess import CalledProcessError, STDOUT, check_call
 
 import click
 
+import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_common import checkoutput, copytree
 from iocage.lib.ioc_create import IOCCreate
 from iocage.lib.ioc_json import IOCJson
@@ -24,12 +24,13 @@ __rootcmd__ = True
               help="Delete the old dataset after it has been migrated.")
 def migrate_cmd(force, delete):
     """Migrates all the iocage_legacy develop basejails to clone jails."""
-    lgr = logging.getLogger('ioc_cli_migrate')
+    lgr = ioc_logger.Logger('ioc_cli_migrate')
+    lgr = lgr.getLogger()
 
     jails, paths = IOCList("uuid").list_datasets()
 
     if not force:
-        lgr.warning("\nWARNING: This will migrate ALL basejails to "
+        lgr.warning("\nThis will migrate ALL basejails to "
                     "clonejails, it can take a long time!")
 
         if not click.confirm("\nAre you sure?"):
@@ -49,8 +50,8 @@ def migrate_cmd(force, delete):
                 checkoutput(["zfs", "rename", "-p", jail, jail_old],
                             stderr=STDOUT)
             except CalledProcessError as err:
-                raise RuntimeError("ERROR: {}".format(
-                    err.output.decode("utf-8").strip()))
+                lgr.error("{}".format(err.output.decode("utf-8").strip()))
+                exit(1)
 
             try:
                 os.remove("{}/tags/{}".format(iocroot, tag))

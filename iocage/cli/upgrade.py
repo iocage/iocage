@@ -1,10 +1,10 @@
 """upgrade module for the cli."""
-import logging
 import os
 from subprocess import PIPE, Popen
 
 import click
 
+import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
@@ -21,7 +21,8 @@ __rootcmd__ = True
 @click.option("--release", "-r", required=True, help="RELEASE to upgrade to")
 def upgrade_cmd(jail, release):
     """Runs upgrade with the command given inside the specified jail."""
-    lgr = logging.getLogger('ioc_cli_upgrade')
+    lgr = ioc_logger.Logger('ioc_cli_upgrade')
+    lgr = lgr.getLogger()
 
     jails, paths = IOCList("uuid").list_datasets()
     _jail = {tag: uuid for (tag, uuid) in jails.items() if
@@ -38,7 +39,8 @@ def upgrade_cmd(jail, release):
             lgr.error("  {} ({})".format(u, t))
         raise RuntimeError()
     else:
-        raise RuntimeError("{} not found!".format(jail))
+        lgr.error("{} not found!".format(jail))
+        exit(1)
 
     pool = IOCJson().json_get_value("pool")
     iocroot = IOCJson(pool).json_get_value("iocroot")
@@ -50,7 +52,8 @@ def upgrade_cmd(jail, release):
     started = False
 
     if conf["release"] == "EMPTY":
-        raise RuntimeError("Upgrading is not supported for empty jails.")
+        lgr.critical("Upgrading is not supported for empty jails.")
+        exit(1)
 
     if conf["type"] == "jail":
         if not status:
@@ -58,15 +61,16 @@ def upgrade_cmd(jail, release):
             status, jid = IOCList.list_get_jid(uuid)
             started = True
     elif conf["type"] == "basejail":
-        raise RuntimeError("Please run \"iocage migrate\" before trying"
-                           " to upgrade {} ({})".format(uuid, tag))
+        lgr.error("Please run \"iocage migrate\" before trying"
+                  " to upgrade {} ({})".format(uuid, tag))
+        exit(1)
     elif conf["type"] == "template":
-        raise RuntimeError("Please convert back to a jail before trying"
-                           " to upgrade {} ({})".format(uuid, tag))
+        lgr.error("Please convert back to a jail before trying"
+                  " to upgrade {} ({})".format(uuid, tag))
+        exit(1)
     else:
-        raise RuntimeError("{} is not a supported jail type.".format(
-            conf["type"]
-        ))
+        lgr.critical("{} is not a supported jail type.".format(conf["type"]))
+        exit(1)
 
     _freebsd_version = "{}/releases/{}/root/bin/freebsd-version".format(
         iocroot, release)
@@ -77,9 +81,9 @@ def upgrade_cmd(jail, release):
         if os.path.isfile("{}/etc/freebsd-update.conf".format(root_path)):
             # 10.3-RELEASE and under lack this flag
             if float(host_release.partition("-")[0][:5]) <= 10.3:
-                raise RuntimeError("Host: {} is too old, please upgrade to "
-                                   "10.3-RELEASE or above".format(
-                    host_release))
+                lgr.critical("Host: {} is too old, please upgrade to "
+                             "10.3-RELEASE or above".format(host_release))
+                exit(1)
 
             os.environ["PAGER"] = "/bin/cat"
             fetch = Popen(["freebsd-update", "-b", root_path, "-d",

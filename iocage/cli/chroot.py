@@ -1,6 +1,6 @@
 """chroot module for the cli."""
-import logging
 from subprocess import PIPE, Popen
+import iocage.lib.ioc_logger as ioc_logger
 
 import click
 
@@ -39,7 +39,8 @@ def umount(path, _type):
 @click.argument("command", nargs=-1, type=click.UNPROCESSED)
 def chroot_cmd(jail, command):
     """Will chroot into a jail regardless if it's running."""
-    lgr = logging.getLogger('ioc_cli_chroot')
+    lgr = ioc_logger.Logger('ioc_cli_chroot')
+    lgr = lgr.getLogger()
     jails, paths = IOCList("uuid").list_datasets()
     command = list(command)
 
@@ -64,24 +65,28 @@ def chroot_cmd(jail, command):
             lgr.error("  {} ({})".format(u, t))
         raise RuntimeError()
     else:
-        raise RuntimeError("{} not found!".format(jail))
+        lgr.error("{} not found!".format(jail))
+        exit(1)
 
     devfs_stderr = mount(f"{path}/root/dev", "devfs")
 
     if devfs_stderr:
-        raise RuntimeError("ERROR: Mounting devfs failed!")
+        lgr.critical("Mounting devfs failed!")
+        exit(1)
 
     fstab_stderr = mount(f"{path}/fstab", "fstab")
 
     if fstab_stderr:
-        raise RuntimeError("ERROR: Mounting devfs failed!")
+        lgr.critical("Mounting devfs failed!")
+        exit(1)
 
     chroot = Popen(["chroot", f"{path}/root"] + command)
     chroot.communicate()
 
     udevfs_stderr = umount(f"{path}/root/dev", "devfs")
     if udevfs_stderr:
-        raise RuntimeError("ERROR: Unmounting devfs failed!")
+        lgr.critical("Unmounting devfs failed!")
+        exit(1)
 
     ufstab_stderr = umount(f"{path}/fstab", "fstab")
     if ufstab_stderr:
@@ -89,7 +94,7 @@ def chroot_cmd(jail, command):
             # By default our fstab is empty and will throw this error.
             pass
         else:
-            raise RuntimeError("ERROR: Unmounting fstab failed!")
+            lgr.critical("Unmounting fstab failed!")
 
     if chroot.returncode:
-        lgr.warning("WARNING: Chroot had a non-zero exit code!")
+        lgr.error("Chroot had a non-zero exit code!")

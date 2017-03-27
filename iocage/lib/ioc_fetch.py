@@ -2,7 +2,6 @@
 import collections
 import hashlib
 import json
-import logging
 import os
 import re
 import shutil
@@ -17,6 +16,7 @@ from requests.auth import HTTPDigestAuth
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from tqdm import tqdm
 
+import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_common import checkoutput, sort_release
 from iocage.lib.ioc_create import IOCCreate
 from iocage.lib.ioc_destroy import IOCDestroy
@@ -46,7 +46,8 @@ class IOCFetch(object):
             self.release = release
 
         self.root_dir = root_dir
-        self.lgr = logging.getLogger('ioc_fetch')
+        self.lgr = ioc_logger.Logger('ioc_fetch')
+        self.lgr = self.lgr.getLogger()
         self.arch = os.uname()[4]
         self.http = http
         self._file = _file
@@ -71,7 +72,6 @@ class IOCFetch(object):
     @staticmethod
     def __fetch_eol_check__():
         """Scrapes the FreeBSD website and returns a list of EOL RELEASES"""
-        logging.getLogger("requests").setLevel(logging.WARNING)
         _eol = "https://www.freebsd.org/security/unsupported.html"
         req = requests.get(_eol)
         status = req.status_code == requests.codes.ok
@@ -105,8 +105,9 @@ class IOCFetch(object):
             try:
                 self.release = releases[int(self.release)]
             except IndexError:
-                raise RuntimeError("[{}] is not in the list!".format(
+                self.lgr.error("[{}] is not in the list!".format(
                     self.release))
+                exit(1)
             except ValueError:
                 rel = os.uname()[2]
                 if "-RELEASE" in rel:
@@ -117,15 +118,18 @@ class IOCFetch(object):
                     try:
                         releases.index(self.release)
                     except ValueError:
-                        raise RuntimeError("Please select an item!")
+                        self.lgr.warning("Please select an item!")
+                        exit(1)
                 else:
-                    raise RuntimeError("Please select an item!")
+                    self.lgr.warning("Please select an item!")
+                    exit(1)
         else:
             # Quick list validation
             try:
                 releases.index(self.release)
             except ValueError as err:
-                raise RuntimeError(err)
+                self.lgr.critical(err)
+                exit(1)
 
         return self.release
 
@@ -141,12 +145,14 @@ class IOCFetch(object):
         elif self._file:
             # Format for file directory should be: root-dir/RELEASE/*.txz
             if not self.root_dir:
-                raise RuntimeError("Please supply --root-dir or -d.")
+                self.lgr.warning("Please supply --root-dir or -d.")
+                exit(1)
 
             try:
                 os.chdir("{}/{}".format(self.root_dir, self.release))
             except OSError as err:
-                raise RuntimeError("ERROR: {}".format(err))
+                self.lgr.error("ERROR: {}".format(err))
+                exit(1)
 
             if os.path.isdir(
                     "{}/download/{}".format(self.iocroot, self.release)):
@@ -170,7 +176,8 @@ class IOCFetch(object):
                         error = "ERROR: {}.txz is a required file!".format(f) \
                                 + "\nPlease place it in {}/{}".format(
                             self.root_dir, self.release)
-                    raise RuntimeError(error)
+                    self.lgr.error(error)
+                    exit(1)
 
                 self.lgr.info("Copying: {}... ".format(f))
                 copy(f, dataset)
@@ -208,8 +215,6 @@ class IOCFetch(object):
             self.server = "https://" + self.server
         elif "http" not in self.server:
             self.server = "http://" + self.server
-
-        logging.getLogger("requests").setLevel(logging.WARNING)
 
         if self.hardened:
             if self.auth == "basic":
@@ -338,7 +343,8 @@ class IOCFetch(object):
         try:
             ftp.cwd(self.release)
         except error_perm:
-            raise RuntimeError("{} was not found!".format(self.release))
+            self.lgr.warning("{} was not found!".format(self.release))
+            exit(1)
 
         ftp_list = self.files
         ftp.quit()
@@ -366,12 +372,14 @@ class IOCFetch(object):
             try:
                 ftp.cwd("/pub/FreeBSD/releases/{}".format(self.arch))
             except:
-                raise RuntimeError("{} was not found!".format(self.arch))
+                self.lgr.error("{} was not found!".format(self.arch))
+                exit(1)
         elif self.root_dir:
             try:
                 ftp.cwd(self.root_dir)
             except:
-                raise RuntimeError("{} was not found!".format(self.root_dir))
+                self.lgr.error("{} was not found!".format(self.root_dir))
+                exit(1)
 
         return ftp
 
@@ -413,7 +421,8 @@ class IOCFetch(object):
                         col = line.split("\t")
                         hashes[col[0]] = col[1]
             except (IOError, OSError):
-                raise RuntimeError("MANIFEST file is missing!")
+                self.lgr.error("MANIFEST file is missing!")
+                exit(1)
 
             for f in self.files:
                 if f == "MANIFEST":
@@ -442,16 +451,17 @@ class IOCFetch(object):
                                         f))
                                     missing.append(f)
                                 else:
-                                    raise RuntimeError("Too many failed"
-                                                       " verifications!")
+                                    self.lgr.critical("Too many failed"
+                                                      " verifications!")
+                                    exit(1)
                     except (IOError, OSError):
                         if not _missing:
                             self.lgr.error(
                                 "{} missing, will download!".format(f))
                             missing.append(f)
                         else:
-                            raise RuntimeError(
-                                "Too many failed verifications!")
+                            self.lgr.critical("Too many failed verifications!")
+                            exit(1)
 
                 if not missing:
                     self.lgr.info("Extracting: {}... ".format(f))
@@ -697,7 +707,7 @@ class IOCFetch(object):
         # We do this test again as the user could supply a malformed IP to
         # fetch that bypasses the more naive check in cli/fetch
         if _conf["ip4_addr"] == "none" and _conf["ip6_addr"] == "none":
-            self.lgr.error("\nERROR: An IP address is needed to fetch a "
+            self.lgr.error("\nAn IP address is needed to fetch a "
                            "plugin!\n")
             self.lgr.error("Destroying partial plugin.")
             IOCDestroy(uuid, tag, jaildir).destroy_jail()
@@ -798,11 +808,12 @@ fingerprint: {fingerprint}
                     checkoutput(["git", "-C", "{}/.plugin_index".format(
                         self.iocroot), "pull"], stderr=STDOUT)
                 except CalledProcessError as err:
-                    raise RuntimeError("ERROR: {}".format(
+                    self.lgr.error("ERROR: {}".format(
                         err.output.decode("utf-8").rstrip()))
+                    exit(1)
             else:
-                raise RuntimeError(
-                    "ERROR: {}".format(err.output.decode("utf-8").rstrip()))
+                self.lgr.error("ERROR: {}".format(err.output.decode("utf-8").rstrip()))
+                exit(1)
 
         with open("{}/.plugin_index/INDEX".format(self.iocroot), "r") as \
                 plugins:
@@ -843,7 +854,8 @@ fingerprint: {fingerprint}
                           plugin.capitalize() in p]
                 plugin = plugins[int(plugin[0])]
             except ValueError as err:
-                raise RuntimeError("{}!".format(err))
+                self.lgr.error("{}!".format(err))
+                exit(1)
 
         return plugin.split("(")[1].replace(")", "")
 

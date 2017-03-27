@@ -1,9 +1,9 @@
 """console module for the cli."""
-import logging
 from subprocess import Popen
 
 import click
 
+import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 from iocage.lib.ioc_start import IOCStart
@@ -20,7 +20,8 @@ def console_cmd(jail, force):
     Runs jexec to login into the specified jail. Accepts a force flag that
     will attempt to start the jail if it is not already running.
     """
-    lgr = logging.getLogger('ioc_cli_console')
+    lgr = ioc_logger.Logger('ioc_cli_console')
+    lgr = lgr.getLogger()
     # TODO: setfib support
     jails, paths = IOCList("uuid").list_datasets()
 
@@ -42,10 +43,12 @@ def console_cmd(jail, force):
             lgr.error("  {} ({})".format(u, t))
         raise RuntimeError()
     else:
-        raise RuntimeError("{} not found!".format(jail))
+        lgr.error("{} not found!".format(jail))
+        exit(1)
 
     if not status and not force:
-        raise RuntimeError("{} ({}) is not running!".format(uuid, tag))
+        lgr.warning("{} ({}) is not running!".format(uuid, tag))
+        exit(1)
 
     if not status and force:
         lgr.info("{} ({}) is not running".format(uuid, tag) +
@@ -54,15 +57,18 @@ def console_cmd(jail, force):
             IOCStart(uuid, jail, path, conf, silent=True)
             status = True
         elif conf["type"] == "basejail":
-            raise RuntimeError("Please run \"iocage migrate\" before trying"
-                               " to start {} ({})".format(uuid, tag))
+            lgr.critical("Please run \"iocage migrate\" before trying"
+                         " to start {} ({})".format(uuid, tag))
+            exit(1)
         elif conf["type"] == "template":
-            raise RuntimeError("Please convert back to a jail before trying"
-                               " to start {} ({})".format(uuid, tag))
+            lgr.warning("Please convert back to a jail before trying"
+                        " to start {} ({})".format(uuid, tag))
+            exit(1)
         else:
-            raise RuntimeError("{} is not a supported jail type.".format(
-                conf["type"]
+            lgr.critical("{} is not a supported jail type.".format(
+                         conf["type"]
             ))
+            exit(1)
 
     if status:
         Popen(["jexec", "ioc-{}".format(uuid), "login"] +

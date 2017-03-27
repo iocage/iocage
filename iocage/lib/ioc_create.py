@@ -1,12 +1,12 @@
 """iocage create module."""
 import json
-import logging
 import os
 import uuid
 from datetime import datetime
 from shutil import copy
 from subprocess import CalledProcessError, PIPE, Popen, check_call
 
+import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_exec import IOCExec
 from iocage.lib.ioc_json import IOCJson
@@ -35,7 +35,8 @@ class IOCCreate(object):
         self.basejail = basejail
         self.empty = empty
         self.uuid = uuid
-        self.lgr = logging.getLogger('ioc_create')
+        self.lgr = ioc_logger.Logger('ioc_create')
+        self.lgr = self.lgr.getLogger()
 
         if silent:
             self.lgr.disabled = True
@@ -59,7 +60,8 @@ class IOCCreate(object):
         location = "{}/jails/{}".format(self.iocroot, jail_uuid)
 
         if os.path.isdir(location):
-            raise RuntimeError("The UUID is already in use by another jail.")
+            self.lgr.error("The UUID is already in use by another jail.")
+            exit(1)
 
         if self.migrate:
             config = self.config
@@ -91,11 +93,13 @@ class IOCCreate(object):
                 config = self.create_config(jail_uuid, cloned_release)
             except (IOError, OSError):
                 if self.template:
-                    raise RuntimeError("Template: {} not found!".format(
+                    self.lgr.error("Template: {} not found!".format(
                         self.release))
+                    exit(1)
                 else:
-                    raise RuntimeError("RELEASE: {} not found!".format(
+                    self.lgr.error("RELEASE: {} not found!".format(
                         self.release))
+                    exit(1)
 
         jail = "{}/iocage/jails/{}/root".format(self.pool, jail_uuid)
 
@@ -106,8 +110,9 @@ class IOCCreate(object):
                                 self.pool, self.release, jail_uuid)],
                            stderr=PIPE)
             except CalledProcessError:
-                raise RuntimeError("Template: {} not found!".format(
+                self.lgr.error("Template: {} not found!".format(
                     self.release))
+                exit(1)
 
             Popen(["zfs", "clone", "-p",
                    "{}/iocage/templates/{}/root@{}".format(
@@ -127,8 +132,8 @@ class IOCCreate(object):
                                     self.pool, self.release, jail_uuid)],
                                stderr=PIPE)
                 except CalledProcessError:
-                    raise RuntimeError(
-                        "RELEASE: {} not found!".format(self.release))
+                    self.lgr.error("RELEASE: {} not found!".format(self.release))
+                    exit(1)
 
                 Popen(["zfs", "clone", "-p",
                        "{}/iocage/releases/{}/root@{}".format(
@@ -138,7 +143,8 @@ class IOCCreate(object):
                 try:
                     checkoutput(["zfs", "create", "-p", jail], stderr=PIPE)
                 except CalledProcessError as err:
-                    raise RuntimeError(err.output.decode("utf-8").rstrip())
+                    self.lgr.critical(err.output.decode("utf-8").rstrip())
+                    exit(1)
 
         iocjson = IOCJson(location)
 
@@ -162,7 +168,8 @@ class IOCCreate(object):
                     iocjson.json_write(config)  # Destroy counts on this.
                     IOCDestroy(jail_uuid, "", location,
                                silent=True).destroy_jail()
-                    raise RuntimeError(f"***\n{err}\n***\n")
+                    self.lgr.critical(f"***\n{err}\n***\n")
+                    exit(1)
 
             iocjson.json_write(config)
 
@@ -203,7 +210,7 @@ class IOCCreate(object):
 
         if self.pkglist:
             if config["ip4_addr"] == "none" and config["ip6_addr"] == "none":
-                self.lgr.warning(" WARNING: You need an IP address for the"
+                self.lgr.warning(" You need an IP address for the"
                                  " jail to install packages!\n")
             else:
                 self.create_install_packages(jail_uuid, location, _tag, config)
@@ -376,16 +383,18 @@ class IOCCreate(object):
                                  plugin=self.plugin).exec_jail()
 
         if srv_connection:
-            raise RuntimeError(f"ERROR: {srv_connection}\n"
-                               f"Command run: {' '.join(srv_connect_cmd)}")
+            self.lgr.error(f"ERROR: {srv_connection}\n"
+                           f"Command run: {' '.join(srv_connect_cmd)}")
+            exit(1)
 
         self.lgr.info("Testing DNSSEC response to FreeBSD")
         dnssec_connection = IOCExec(dnssec_connect_cmd, jail_uuid, _tag,
                                     location, plugin=self.plugin).exec_jail()
 
         if dnssec_connection:
-            raise RuntimeError(f"ERROR: {dnssec_connection}\n"
-                               f"Command run: {' '.join(dnssec_connect_cmd)}")
+            self.lgr.error(f"ERROR: {dnssec_connection}\n"
+                           f"Command run: {' '.join(dnssec_connect_cmd)}")
+            exit(1)
 
         if not self.plugin:
             with open(self.pkglist, "r") as j:
