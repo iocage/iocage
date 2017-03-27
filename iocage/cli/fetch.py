@@ -35,7 +35,7 @@ def validate_count(ctx, param, value):
 @click.option("--auth", "-a", default=None, help="Authentication method for "
                                                  "HTTP fetching. Valid "
                                                  "values: basic, digest")
-@click.option("--verify/--noverify", "-V/-NV", default=False,
+@click.option("--verify/--noverify", "-V/-NV", default=True,
               help="Enable or disable verifying SSL cert for HTTP fetching.")
 @click.option("--release", "-r", help="The FreeBSD release to fetch.")
 @click.option("--plugin-file", "-P", help="The plugin file to use.")
