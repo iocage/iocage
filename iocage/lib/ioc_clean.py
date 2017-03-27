@@ -13,7 +13,7 @@ class IOCClean(object):
     def __init__(self):
         self.pool = IOCJson().json_get_value("pool")
         self.lgr = logging.getLogger('ioc_clean')
-        self.zfs = libzfs.ZFS()
+        self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.ds = self.zfs.get_dataset
 
     def clean_jails(self):

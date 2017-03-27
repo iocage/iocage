@@ -23,25 +23,25 @@ class IOCList(object):
         self.full = full
         self.pool = IOCJson().json_get_value("pool")
         self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
+        self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.lgr = logging.getLogger('ioc_list')
 
     def list_datasets(self, set=False):
         """Lists the datasets of given type."""
-        zfs = libzfs.ZFS()
 
         if self.list_type == "all" or self.list_type == "uuid":
             # List the datasets underneath self.POOL/iocroot/jails
-            datasets = zfs.get_dataset(f"{self.pool}/iocage/jails").children
+            ds = self.zfs.get_dataset(f"{self.pool}/iocage/jails").children
         elif self.list_type == "base":
             # List the datasets underneath self.POOL/iocroot/releases
-            datasets = zfs.get_dataset(f"{self.pool}/iocage/releases").children
+            ds = self.zfs.get_dataset(f"{self.pool}/iocage/releases").children
         elif self.list_type == "template":
             # List the datasets underneath self.POOL/iocroot/releases
-            datasets = zfs.get_dataset(
+            ds = self.zfs.get_dataset(
                 f"{self.pool}/iocage/templates").children
 
         if self.list_type == "all":
-            _all = self.list_all(datasets)
+            _all = self.list_all(ds)
 
             return _all
         elif self.list_type == "uuid":
@@ -49,7 +49,7 @@ class IOCList(object):
             paths = {}
             dups = {}
 
-            for jail in datasets:
+            for jail in ds:
                 jail = jail.properties["mountpoint"].value
                 conf = IOCJson(jail).json_load()
 
@@ -62,7 +62,7 @@ class IOCList(object):
                 jails[conf["tag"]] = conf["host_hostuuid"]
                 paths[conf["tag"]] = jail
 
-            template_datasets = zfs.get_dataset(
+            template_datasets = self.zfs.get_dataset(
                 f"{self.pool}/iocage/templates")
             template_datasets = template_datasets.children
 
@@ -85,11 +85,11 @@ class IOCList(object):
 
             return jails, paths
         elif self.list_type == "base":
-            bases = self.list_bases(datasets)
+            bases = self.list_bases(ds)
 
             return bases
         elif self.list_type == "template":
-            templates = self.list_all(datasets)
+            templates = self.list_all(ds)
 
             return templates
 

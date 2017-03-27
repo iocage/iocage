@@ -21,7 +21,7 @@ class IOCDestroy(object):
         self.pool = IOCJson().json_get_value("pool")
         self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
         self.lgr = logging.getLogger('ioc_destroy')
-        self.zfs = libzfs.ZFS()
+        self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.ds = self.zfs.get_dataset
 
     @staticmethod
