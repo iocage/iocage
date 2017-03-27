@@ -95,6 +95,7 @@ def chroot_cmd(jail, command):
             pass
         else:
             lgr.critical("Unmounting fstab failed!")
+            exit(1)
 
     if chroot.returncode:
         lgr.warning("Chroot had a non-zero exit code!")

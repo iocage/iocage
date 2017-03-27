@@ -71,3 +71,4 @@ def rollback_cmd(jail, name, force):
         lgr.info("Rolled back to: {}.".format(target))
     except CalledProcessError as err:
         lgr.error("{}".format(err))
+        exit(1)
