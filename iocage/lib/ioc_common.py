@@ -52,7 +52,7 @@ def sort_release(releases, iocroot, split=False):
     else:
         for release in releases:
             try:
-                release, r_type = release.name.split("-")
+                release, r_type = release.split("-")
 
                 if len(release) > 2:
                     release = float(release)
