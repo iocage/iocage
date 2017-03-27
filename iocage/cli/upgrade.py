@@ -36,8 +36,8 @@ def upgrade_cmd(jail, release):
         lgr.error("Multiple jails found for"
                   " {}:".format(jail))
         for t, u in sorted(_jail.items()):
-            lgr.error("  {} ({})".format(u, t))
-        raise RuntimeError()
+            lgr.critical("  {} ({})".format(u, t))
+        exit(1)
     else:
         lgr.critical("{} not found!".format(jail))
         exit(1)

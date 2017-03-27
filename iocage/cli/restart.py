@@ -78,11 +78,11 @@ def restart_cmd(jail, soft):
             else:
                 __soft_restart__(uuid, tag, path, conf)
         elif conf["type"] == "basejail":
-            lgr.error("Please run \"iocage migrate\" before trying"
+            lgr.critical("Please run \"iocage migrate\" before trying"
                       " to restart {} ({})".format(uuid, tag))
             exit(1)
         elif conf["type"] == "template":
-            lgr.error("Please convert back to a jail before trying"
+            lgr.critical("Please convert back to a jail before trying"
                       " to restart {} ({})".format(uuid, tag))
             exit(1)
         else:
@@ -121,5 +121,5 @@ def __soft_restart__(uuid, jail, path, conf):
         IOCJson(path, silent=True).json_set_value("last_started={}".format(
             datetime.utcnow().strftime("%F %T")))
     else:
-        lgr.error("{} is not running!".format(jail))
+        lgr.critical("{} is not running!".format(jail))
         exit(1)

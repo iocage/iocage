@@ -29,7 +29,7 @@ def exec_cmd(command, jail, host_user, jail_user):
         command = ("/bin/sh", "-c") + command
 
     if jail.startswith("-"):
-        lgr.warning("Please specify a jail first!")
+        lgr.critical("Please specify a jail first!")
         exit(1)
 
     if host_user and jail_user:
