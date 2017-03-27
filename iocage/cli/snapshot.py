@@ -57,4 +57,5 @@ def snapshot_cmd(jail, name):
         check_call(["zfs", "snapshot", "-r", target], stderr=PIPE)
         lgr.info("Snapshot: {} created.".format(target))
     except CalledProcessError:
-        lgr.error("Snapshot already exists!")
+        lgr.critical("Snapshot already exists!")
+        exit(1)

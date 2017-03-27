@@ -43,10 +43,10 @@ def set_cmd(prop, jail, plugin):
 
     if "template" in prop.split("=")[0]:
         if "template" in path and prop != "template=no":
-            lgr.warning("{} ({}) is already a template!".format(uuid, tag))
+            lgr.critical("{} ({}) is already a template!".format(uuid, tag))
             exit(1)
         elif "template" not in path and prop != "template=yes":
-            lgr.warning("{} ({}) is already a jail!".format(uuid, tag))
+            lgr.critical("{} ({}) is already a jail!".format(uuid, tag))
             exit(1)
     if plugin:
         _prop = prop.split(".")
@@ -61,5 +61,5 @@ def set_cmd(prop, jail, plugin):
             iocjson.json_set_value(prop)
         except KeyError:
             _prop = prop.partition("=")[0]
-            lgr.error("{} is not a valid property!".format(_prop))
+            lgr.critical("{} is not a valid property!".format(_prop))
             exit(1)

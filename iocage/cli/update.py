@@ -34,10 +34,10 @@ def update_cmd(jail):
         lgr.error("Multiple jails found for"
                   " {}:".format(jail))
         for t, u in sorted(_jail.items()):
-            lgr.error("  {} ({})".format(u, t))
-        raise RuntimeError()
+            lgr.critical("  {} ({})".format(u, t))
+        exit(1)
     else:
-        lgr.error("{} not found!".format(jail))
+        lgr.critical("{} not found!".format(jail))
         exit(1)
 
     freebsd_version = checkoutput(["freebsd-version"])
@@ -51,12 +51,12 @@ def update_cmd(jail):
             status, jid = IOCList.list_get_jid(uuid)
             started = True
     elif conf["type"] == "basejail":
-        lgr.error("Please run \"iocage migrate\" before trying"
-                  " to update {} ({})".format(uuid, tag))
+        lgr.critical("Please run \"iocage migrate\" before trying"
+                     " to update {} ({})".format(uuid, tag))
         exit(1)
     elif conf["type"] == "template":
-        lgr.error("Please convert back to a jail before trying"
-                  " to update {} ({})".format(uuid, tag))
+        lgr.critical("Please convert back to a jail before trying"
+                     " to update {} ({})".format(uuid, tag))
         exit(1)
     else:
         lgr.critical("{} is not a supported jail type.".format(conf["type"]))

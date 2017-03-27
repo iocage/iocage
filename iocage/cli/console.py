@@ -40,14 +40,14 @@ def console_cmd(jail, force):
         lgr.error("Multiple jails found for"
                   " {}:".format(jail))
         for t, u in sorted(_jail.items()):
-            lgr.error("  {} ({})".format(u, t))
-        raise RuntimeError()
+            lgr.critical("  {} ({})".format(u, t))
+        exit(1)
     else:
-        lgr.error("{} not found!".format(jail))
+        lgr.critical("{} not found!".format(jail))
         exit(1)
 
     if not status and not force:
-        lgr.warning("{} ({}) is not running!".format(uuid, tag))
+        lgr.critical("{} ({}) is not running!".format(uuid, tag))
         exit(1)
 
     if not status and force:
@@ -61,7 +61,7 @@ def console_cmd(jail, force):
                          " to start {} ({})".format(uuid, tag))
             exit(1)
         elif conf["type"] == "template":
-            lgr.warning("Please convert back to a jail before trying"
+            lgr.critical("Please convert back to a jail before trying"
                         " to start {} ({})".format(uuid, tag))
             exit(1)
         else:

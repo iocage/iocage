@@ -62,7 +62,7 @@ def stop_cmd(rc, jails):
 
     if len(jails) >= 1 and jails[0] == "ALL":
         if len(_jails) < 1:
-            lgr.error("No jails exist to stop!")
+            lgr.critical("No jails exist to stop!")
             exit(1)
 
         for j in jail_order:
@@ -73,7 +73,7 @@ def stop_cmd(rc, jails):
             IOCStop(uuid, j, path, conf)
     else:
         if len(jails) < 1:
-            lgr.warning("Please specify either one or more jails or ALL!")
+            lgr.critical("Please specify either one or more jails or ALL!")
             exit(1)
 
         for jail in jails:
@@ -87,8 +87,8 @@ def stop_cmd(rc, jails):
                 lgr.error("Multiple jails found for"
                           " {}:".format(jail))
                 for t, u in sorted(_jail.items()):
-                    lgr.error("  {} ({})".format(u, t))
-                raise RuntimeError()
+                    lgr.critical("  {} ({})".format(u, t))
+                exit(1)
             else:
                 lgr.critical("{} not found!".format(jail))
                 exit(1)

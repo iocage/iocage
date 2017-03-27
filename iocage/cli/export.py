@@ -44,8 +44,8 @@ def export_cmd(jail):
 
     status, _ = IOCList().list_get_jid(uuid)
     if status:
-        lgr.warning("{} ({}) is runnning, stop the jail before "
-                    "exporting!".format(uuid, tag))
+        lgr.critical("{} ({}) is runnning, stop the jail before "
+                     "exporting!".format(uuid, tag))
         exit(1)
 
     images = "{}/images".format(iocroot)
@@ -60,7 +60,7 @@ def export_cmd(jail):
     try:
         checkoutput(["zfs", "snapshot", "-r", target], stderr=STDOUT)
     except CalledProcessError as err:
-        lgr.error("{}".format(err.output.decode("utf-8").rstrip()))
+        lgr.critical("{}".format(err.output.decode("utf-8").rstrip()))
         exit(1)
 
     datasets = Popen(["zfs", "list", "-H", "-r",
@@ -106,7 +106,7 @@ def export_cmd(jail):
             os.remove(jail)
 
     except CalledProcessError as err:
-        lgr.error("{}".format(err.output.decode("utf-8").rstrip()))
+        lgr.critical("{}".format(err.output.decode("utf-8").rstrip()))
         exit(1)
 
     lgr.info("\nExported: {}.zip".format(image))

@@ -35,7 +35,7 @@ def destroy_cmd(force, jails):
                 IOCDestroy().__destroy_datasets__(path)
                 exit()
             else:
-                lgr.error(err)
+                lgr.critical(err)
                 exit(1)
 
         for jail in jails:
@@ -49,10 +49,10 @@ def destroy_cmd(force, jails):
                 lgr.error("Multiple jails found for"
                           " {}:".format(jail))
                 for t, u in sorted(_jail.items()):
-                    lgr.error("  {} ({})".format(u, t))
-                raise RuntimeError()
+                    lgr.critical("  {} ({})".format(u, t))
+                exit(1)
             else:
-                lgr.error("{} not found!".format(jail))
+                lgr.critical("{} not found!".format(jail))
                 exit(1)
 
             if not force:
@@ -66,13 +66,13 @@ def destroy_cmd(force, jails):
 
             # If the jail is not running, let's do this thing.
             if status and not force:
-                lgr.warning(f"{uuid} ({tag}) is running.\nPlease stop "
-                            "it first!")
+                lgr.critical(f"{uuid} ({tag}) is running.\nPlease stop "
+                             "it first!")
                 exit(1)
             elif status and force:
                 lgr.info("Stopping {} ({}).".format(uuid, tag))
 
             IOCDestroy().destroy_jail(path)
     else:
-        lgr.warning("Please specify one or more jails!")
+        lgr.critical("Please specify one or more jails!")
         exit(1)

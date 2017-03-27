@@ -52,7 +52,7 @@ def get_cmd(prop, _all, _pool, jail, recursive, header, plugin):
     if recursive is None:
         if jail == "":
             lgr.info("Usage: iocage get [OPTIONS] PROP JAIL\n")
-            lgr.error("Missing argument \"jail\".")
+            lgr.critical("Missing argument \"jail\".")
             exit(1)
 
         _jail = {tag: uuid for (tag, uuid) in jails.items() if
@@ -118,7 +118,7 @@ def get_cmd(prop, _all, _pool, jail, recursive, header, plugin):
             try:
                 lgr.info(IOCJson(path).json_get_value(prop))
             except:
-                lgr.warning("{} is not a valid property!".format(prop))
+                lgr.critical("{} is not a valid property!".format(prop))
                 exit(1)
     else:
         for j in jails:
@@ -143,7 +143,7 @@ def get_cmd(prop, _all, _pool, jail, recursive, header, plugin):
                     jail_list.append(
                         [uuid, j, IOCJson(path).json_get_value(prop)])
             except:
-                lgr.warning("{} is not a valid property!".format(prop))
+                lgr.critical("{} is not a valid property!".format(prop))
                 exit(1)
 
         # Prints the table

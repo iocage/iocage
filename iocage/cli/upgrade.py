@@ -39,7 +39,7 @@ def upgrade_cmd(jail, release):
             lgr.error("  {} ({})".format(u, t))
         raise RuntimeError()
     else:
-        lgr.error("{} not found!".format(jail))
+        lgr.critical("{} not found!".format(jail))
         exit(1)
 
     pool = IOCJson().json_get_value("pool")
@@ -61,12 +61,12 @@ def upgrade_cmd(jail, release):
             status, jid = IOCList.list_get_jid(uuid)
             started = True
     elif conf["type"] == "basejail":
-        lgr.error("Please run \"iocage migrate\" before trying"
-                  " to upgrade {} ({})".format(uuid, tag))
+        lgr.critical("Please run \"iocage migrate\" before trying"
+                     " to upgrade {} ({})".format(uuid, tag))
         exit(1)
     elif conf["type"] == "template":
-        lgr.error("Please convert back to a jail before trying"
-                  " to upgrade {} ({})".format(uuid, tag))
+        lgr.critical("Please convert back to a jail before trying"
+                     " to upgrade {} ({})".format(uuid, tag))
         exit(1)
     else:
         lgr.critical("{} is not a supported jail type.".format(conf["type"]))

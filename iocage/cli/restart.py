@@ -43,14 +43,14 @@ def restart_cmd(jail, soft):
                 except RuntimeError as err:
                     lgr.error(err)
             elif conf["type"] == "basejail":
-                lgr.error("Please run \"iocage migrate\" before trying"
+                lgr.critical("Please run \"iocage migrate\" before trying"
                           " to restart {} ({})".format(uuid, j))
             elif conf["type"] == "template":
                 lgr.critical("Please convert back to a jail before trying"
                              " to restart {} ({})".format(uuid, j))
                 exit(1)
             else:
-                lgr.error("{} is not a supported jail type.".format(
+                lgr.critical("{} is not a supported jail type.".format(
                     conf["type"]
                 ))
     else:

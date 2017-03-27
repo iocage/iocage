@@ -38,7 +38,7 @@ def fstab_cmd(action, fstab_string, jail):
     _jails, paths = IOCList("uuid").list_datasets()
 
     if not fstab_string and action != "edit":
-        lgr.warning("Please supply a fstab entry!")
+        lgr.critical("Please supply a fstab entry!")
         exit(1)
 
     _jail = {tag: uuid for (tag, uuid) in _jails.items() if
@@ -68,8 +68,8 @@ def fstab_cmd(action, fstab_string, jail):
             try:
                 index = int(fstab_string[0])
             except TypeError:
-                lgr.warning("Please specify either a valid fstab "
-                            "entry or an index number.")
+                lgr.critical("Please specify either a valid fstab "
+                             "entry or an index number.")
                 exit(1)
             _index = True
             source, destination, fstype, options, dump, _pass = "", "", "", \
@@ -80,7 +80,7 @@ def fstab_cmd(action, fstab_string, jail):
                 source, destination, fstype, options, dump, _pass = \
                     fstab_string
             except ValueError:
-                lgr.warning("Please specify a valid fstab entry!\n\n"
+                lgr.critical("Please specify a valid fstab entry!\n\n"
                             "Example:\n  /the/source /dest FSTYPE "
                             "FSOPTIONS FSDUMP FSPASS")
                 exit(1)

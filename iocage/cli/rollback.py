@@ -39,7 +39,7 @@ def rollback_cmd(jail, name, force):
             lgr.error("  {} ({})".format(u, t))
         raise RuntimeError()
     else:
-        lgr.error("{} not found!".format(jail))
+        lgr.critical("{} not found!".format(jail))
         exit(1)
 
     # Looks like foo/iocage/jails/df0ef69a-57b6-4480-b1f8-88f7b6febbdf@BAR
@@ -47,7 +47,7 @@ def rollback_cmd(jail, name, force):
     try:
         checkoutput(["zfs", "get", "-H", "creation", target], stderr=PIPE)
     except CalledProcessError:
-        lgr.error("ERROR: Snapshot {} does not exist!".format(target))
+        lgr.critical("ERROR: Snapshot {} does not exist!".format(target))
         exit(1)
 
     if not force:

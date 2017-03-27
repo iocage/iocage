@@ -31,10 +31,10 @@ def snapremove_cmd(jail, name):
         lgr.error("Multiple jails found for"
                   " {}:".format(jail))
         for t, u in sorted(_jail.items()):
-            lgr.error("  {} ({})".format(u, t))
-        raise RuntimeError()
+            lgr.critical("  {} ({})".format(u, t))
+        exit(1)
     else:
-        lgr.error("{} not found!".format(jail))
+        lgr.critical("{} not found!".format(jail))
         exit(1)
 
     # Looks like foo/iocage/jails/df0ef69a-57b6-4480-b1f8-88f7b6febbdf@BAR

@@ -50,7 +50,7 @@ def migrate_cmd(force, delete):
                 checkoutput(["zfs", "rename", "-p", jail, jail_old],
                             stderr=STDOUT)
             except CalledProcessError as err:
-                lgr.error("{}".format(err.output.decode("utf-8").strip()))
+                lgr.critical("{}".format(err.output.decode("utf-8").strip()))
                 exit(1)
 
             try:

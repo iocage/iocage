@@ -24,8 +24,8 @@ def get_zfs_pools():
     stdout_data, stderr_data = proc.communicate()
 
     if stderr_data:
-        lgr.error("Cannot get the list of available ZFS pools:"
-                  f" {stderr_data.decode('utf-8')}")
+        lgr.critical("Cannot get the list of available ZFS pools:"
+                     f" {stderr_data.decode('utf-8')}")
         exit(1)
 
     return stdout_data.decode('utf-8').split()
@@ -44,7 +44,7 @@ def set_zfs_pool_active_property(zpool_name, activate=True):
     """
 
     if not isinstance(zpool_name, str) or zpool_name == "":
-        lgr.warn("'zpool_name' must be a non-empty string")
+        lgr.critical("'zpool_name' must be a non-empty string")
         exit(1)
 
     if not isinstance(activate, bool):
@@ -64,11 +64,11 @@ def set_zfs_pool_active_property(zpool_name, activate=True):
 
     if stderr_data:
         if activate:
-            lgr.error(f"Cannot activate ZFS pool '{zpool_name}':"
+            lgr.critical(f"Cannot activate ZFS pool '{zpool_name}':"
                       f" {stderr_data.decode('utf-8')}")
             exit(1)
         else:
-            lgr.error(f"Cannot deactivate ZFS pool '{zpool_name}':"
+            lgr.critical(f"Cannot deactivate ZFS pool '{zpool_name}':"
                       f" {stderr_data.decode('utf-8')}")
             exit(1)
 
@@ -85,11 +85,11 @@ def set_zfs_pool_comment(zpool_name, comment):
     """
 
     if not isinstance(zpool_name, str) or zpool_name == "":
-        lgr.warn("'zpool_name' must be a non-empty string")
+        lgr.critical("'zpool_name' must be a non-empty string")
         exit(1)
 
     if not isinstance(comment, str) or comment == "":
-        lgr.warn("'comment' must be a non-empty string")
+        lgr.critical("'comment' must be a non-empty string")
         exit(1)
 
     zfs_cmd = ["zpool", "set", f"comment={comment}", zpool_name]
@@ -97,7 +97,7 @@ def set_zfs_pool_comment(zpool_name, comment):
     stdout_data, stderr_data = proc.communicate()
 
     if stderr_data:
-        lgr.error(f"Cannot set zpool comment to '{comment}' on ZFS"
+        lgr.critical(f"Cannot set zpool comment to '{comment}' on ZFS"
                   f" pool '{zpool_name}':"
                   f" {stderr_data.decode('utf-8')}")
         exit(1)
@@ -126,7 +126,7 @@ def activate_cmd(zpool, force):
                 stdout=PIPE, stderr=PIPE)
             stdout_data, stderr_data = proc.communicate()
             if stderr_data:
-                lgr.error("Cannot retrieve comment for ZFS pool "
+                lgr.critical("Cannot retrieve comment for ZFS pool "
                           f"'{zpool}': {stderr_data.decode('utf-8')}")
                 exit(1)
 

@@ -62,10 +62,10 @@ def chroot_cmd(jail, command):
         lgr.error("Multiple jails found for"
                   " {}:".format(jail))
         for t, u in sorted(_jail.items()):
-            lgr.error("  {} ({})".format(u, t))
-        raise RuntimeError()
+            lgr.critical("  {} ({})".format(u, t))
+        exit(1)
     else:
-        lgr.error("{} not found!".format(jail))
+        lgr.critical("{} not found!".format(jail))
         exit(1)
 
     devfs_stderr = mount(f"{path}/root/dev", "devfs")
@@ -97,4 +97,4 @@ def chroot_cmd(jail, command):
             lgr.critical("Unmounting fstab failed!")
 
     if chroot.returncode:
-        lgr.error("Chroot had a non-zero exit code!")
+        lgr.warning("Chroot had a non-zero exit code!")
