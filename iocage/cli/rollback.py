@@ -1,9 +1,9 @@
 """rollback module for the cli."""
-import logging
 from subprocess import CalledProcessError, PIPE, Popen, check_call
 
 import click
 
+import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
@@ -20,7 +20,8 @@ __rootcmd__ = True
               default=False, is_flag=True)
 def rollback_cmd(jail, name, force):
     """Get a list of jails and print the property."""
-    lgr = logging.getLogger('ioc_cli_rollback')
+    lgr = ioc_logger.Logger('ioc_cli_rollback')
+    lgr = lgr.getLogger()
 
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")
@@ -38,18 +39,20 @@ def rollback_cmd(jail, name, force):
             lgr.error("  {} ({})".format(u, t))
         raise RuntimeError()
     else:
-        raise RuntimeError("{} not found!".format(jail))
+        lgr.critical("{} not found!".format(jail))
+        exit(1)
 
     # Looks like foo/iocage/jails/df0ef69a-57b6-4480-b1f8-88f7b6febbdf@BAR
     target = "{}{}@{}".format(pool, path, name)
     try:
         checkoutput(["zfs", "get", "-H", "creation", target], stderr=PIPE)
     except CalledProcessError:
-        raise RuntimeError("ERROR: Snapshot {} does not exist!".format(target))
+        lgr.critical("ERROR: Snapshot {} does not exist!".format(target))
+        exit(1)
 
     if not force:
         lgr.warning(
-            "\nWARNING: This will destroy ALL data created since"
+            "\nThis will destroy ALL data created since"
             " {} was taken.".format(
                 name) + "\nIncluding ALL snapshots taken after"
                         " {} for {} ({}).".format(name, uuid, tag))
@@ -67,4 +70,5 @@ def rollback_cmd(jail, name, force):
 
         lgr.info("Rolled back to: {}.".format(target))
     except CalledProcessError as err:
-        lgr.error("ERROR: {}".format(err))
+        lgr.error("{}".format(err))
+        exit(1)

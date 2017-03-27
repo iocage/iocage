@@ -1,11 +1,11 @@
 """df module for the cli."""
-import logging
 from subprocess import PIPE, Popen
 
 import click
 from texttable import Texttable
 
 import iocage.lib.ioc_common as ioc_common
+import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
@@ -19,7 +19,8 @@ __cmdname__ = "df_cmd"
               help="Show the full uuid.")
 def df_cmd(header, _long):
     """Allows a user to show resource usage of all jails."""
-    lgr = logging.getLogger('ioc_cli_df')
+    lgr = ioc_logger.Logger('ioc_cli_df')
+    lgr = lgr.getLogger()
 
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")
@@ -62,7 +63,7 @@ def df_cmd(header, _long):
         # We get an infinite float otherwise.
         table.set_cols_dtype(["t", "t", "t", "t", "t", "t", "t"])
         table.add_rows(jail_list)
-        lgr.info(table.draw())
+        print(table.draw())
     else:
         for jail in jail_list:
-            lgr.info("\t".join(jail))
+            print("\t".join(jail))

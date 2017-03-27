@@ -1,11 +1,11 @@
 """create module for the cli."""
 import json
-import logging
 import os
 from json import JSONDecodeError
 
 import click
 
+import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_create import IOCCreate
 from iocage.lib.ioc_fetch import IOCFetch
 from iocage.lib.ioc_json import IOCJson
@@ -39,18 +39,20 @@ def validate_count(ctx, param, value):
 @click.argument("props", nargs=-1)
 def create_cmd(release, template, count, props, pkglist, basejail, empty,
                short, uuid):
-    lgr = logging.getLogger('ioc_cli_create')
+    lgr = ioc_logger.Logger('ioc_cli_create')
+    lgr = lgr.getLogger()
 
     if short and uuid:
-        raise RuntimeError(
-            "Can't use --short (-s) and --uuid (-u) at the same time!")
+        lgr.critical("Can't use --short (-s) and --uuid (-u) at the same time!")
+        exit(1)
 
     if not template and not release and not empty:
-        raise RuntimeError(
-            "Must supply either --template (-t) or --release (-r)!")
+        lgr.critical("Must supply either --template (-t) or --release (-r)!")
+        exit(1)
 
     if release and "=" in release:
-        raise RuntimeError("Please supply a valid RELEASE!")
+        lgr.critical("Please supply a valid RELEASE!")
+        exit(1)
 
     if template:
         # We don't really care it's not a RELEASE at this point.
@@ -66,17 +68,18 @@ def create_cmd(release, template, count, props, pkglist, basejail, empty,
 }"""
 
         if not os.path.isfile(pkglist):
-            raise RuntimeError("{} does not exist!\nPlease supply a JSON file "
-                               "with the format:{}".format(pkglist,
-                                                           _pkgformat))
+            lgr.critical("{} does not exist!\nPlease supply a JSON file "
+                        "with the format:{}".format(pkglist, _pkgformat))
+            exit(1)
         else:
             try:
                 # Just try to open the JSON with the right key.
                 with open(pkglist, "r") as p:
                     json.load(p)["pkgs"]  # noqa
             except JSONDecodeError:
-                raise RuntimeError("Please supply a valid JSON file with the"
-                                   f" format:\n{_pkgformat}")
+                lgr.critical("Please supply a valid JSON file with the"
+                             f" format:\n{_pkgformat}")
+                exit(1)
 
     pool = IOCJson().json_get_value("pool")
     iocroot = IOCJson(pool).json_get_value("iocroot")

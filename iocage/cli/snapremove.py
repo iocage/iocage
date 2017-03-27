@@ -1,9 +1,9 @@
 """snapremove module for the cli."""
-import logging
 from subprocess import CalledProcessError, check_call
 
 import click
 
+import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
@@ -16,7 +16,8 @@ __cmdname__ = "snapremove_cmd"
                                    " after @", required=True)
 def snapremove_cmd(jail, name):
     """Removes a snapshot from a user supplied jail."""
-    lgr = logging.getLogger('ioc_cli_snapremove')
+    lgr = ioc_logger.Logger('ioc_cli_snapremove')
+    lgr = lgr.getLogger()
 
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")
@@ -30,10 +31,11 @@ def snapremove_cmd(jail, name):
         lgr.error("Multiple jails found for"
                   " {}:".format(jail))
         for t, u in sorted(_jail.items()):
-            lgr.error("  {} ({})".format(u, t))
-        raise RuntimeError()
+            lgr.critical("  {} ({})".format(u, t))
+        exit(1)
     else:
-        raise RuntimeError("{} not found!".format(jail))
+        lgr.critical("{} not found!".format(jail))
+        exit(1)
 
     # Looks like foo/iocage/jails/df0ef69a-57b6-4480-b1f8-88f7b6febbdf@BAR
     conf = IOCJson(path).json_load()

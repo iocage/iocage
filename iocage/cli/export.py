@@ -1,5 +1,4 @@
 """export module for the cli."""
-import logging
 import os
 import zipfile
 from datetime import datetime
@@ -7,6 +6,7 @@ from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
 
 import click
 
+import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
@@ -19,7 +19,8 @@ __rootcmd__ = True
 @click.argument("jail", required=True)
 def export_cmd(jail):
     """Make a recursive snapshot of the jail and export to a file."""
-    lgr = logging.getLogger('ioc_cli_export')
+    lgr = ioc_logger.Logger('ioc_cli_export')
+    lgr = lgr.getLogger()
 
     pool = IOCJson().json_get_value("pool")
     iocroot = IOCJson(pool).json_get_value("iocroot")
@@ -38,12 +39,14 @@ def export_cmd(jail):
             lgr.error("  {} ({})".format(u, t))
         raise RuntimeError()
     else:
-        raise RuntimeError("{} not found!".format(jail))
+        lgr.critical("{} not found!".format(jail))
+        exit(1)
 
     status, _ = IOCList().list_get_jid(uuid)
     if status:
-        raise RuntimeError("{} ({}) is runnning, stop the jail before "
-                           "exporting!".format(uuid, tag))
+        lgr.critical("{} ({}) is runnning, stop the jail before "
+                     "exporting!".format(uuid, tag))
+        exit(1)
 
     images = "{}/images".format(iocroot)
     name = "{}_{}".format(uuid, date)
@@ -57,8 +60,8 @@ def export_cmd(jail):
     try:
         checkoutput(["zfs", "snapshot", "-r", target], stderr=STDOUT)
     except CalledProcessError as err:
-        raise RuntimeError(
-            "ERROR: {}".format(err.output.decode("utf-8").rstrip()))
+        lgr.critical("{}".format(err.output.decode("utf-8").rstrip()))
+        exit(1)
 
     datasets = Popen(["zfs", "list", "-H", "-r",
                       "-o", "name", "{}{}".format(pool, path)],
@@ -83,7 +86,8 @@ def export_cmd(jail):
                 lgr.info("Exporting dataset: {}".format(dataset))
                 check_call(["zfs", "send", target], stdout=export)
         except CalledProcessError as err:
-            raise RuntimeError("ERROR: {}".format(err))
+            lgr.critical("{}".format(err))
+            exit(1)
 
     lgr.info("\nPreparing zip file: {}.zip.".format(image))
     with zipfile.ZipFile("{}.zip".format(image), "w",
@@ -102,7 +106,7 @@ def export_cmd(jail):
             os.remove(jail)
 
     except CalledProcessError as err:
-        raise RuntimeError(
-            "ERROR: {}".format(err.output.decode("utf-8").rstrip()))
+        lgr.critical("{}".format(err.output.decode("utf-8").rstrip()))
+        exit(1)
 
     lgr.info("\nExported: {}.zip".format(image))
