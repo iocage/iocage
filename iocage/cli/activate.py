@@ -48,7 +48,7 @@ def set_zfs_pool_active_property(zpool_name, activate=True):
         exit(1)
 
     if not isinstance(activate, bool):
-        lgr.error("'activate' must be a boolean")
+        lgr.critical("'activate' must be a boolean")
         exit(1)
 
     zfs_cmd = ["zfs", "set"]
