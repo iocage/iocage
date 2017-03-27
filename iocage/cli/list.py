@@ -46,7 +46,7 @@ def list_cmd(dataset_type, header, _long, remote, http, plugins):
         if not header:
             if dataset_type == "base":
                 for item in _list:
-                    print(f"{item}")
+                    print(item)
             else:
                 for item in _list:
                     print("\t".join(item))
