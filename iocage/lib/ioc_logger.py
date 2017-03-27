@@ -1,6 +1,6 @@
-import os
 import logging
 import logging.handlers
+import os
 from logging.config import dictConfig
 
 
@@ -105,12 +105,15 @@ class Logger(object):
 
         log_format = "(%(levelname)s) %(message)s"
         time_format = "%Y/%m/%d %H:%M:%S"
-        console_handler.setFormatter(LoggerFormatter(log_format, datefmt=time_format))
+        console_handler.setFormatter(LoggerFormatter(log_format,
+                                                     datefmt=time_format))
 
         logging.root.addHandler(console_handler)
 
     def configure_logging(self):
-        self._set_output_file()
+        if os.geteuid() == 0:
+            self._set_output_file()
+
         self._set_output_console()
         logging.root.setLevel(logging.DEBUG)
 
