@@ -132,7 +132,7 @@ class IOCFetch(object):
     def fetch_release(self, _list=False):
         """Small wrapper to choose the right fetch."""
         if self.http:
-            if self.eol:
+            if self.eol and self.verify:
                 eol = self.__fetch_eol_check__()
             else:
                 eol = []
@@ -178,7 +178,7 @@ class IOCFetch(object):
                 self.lgr.info("Extracting: {}... ".format(f))
                 self.fetch_extract(f)
         else:
-            if self.eol:
+            if self.eol and self.verify:
                 eol = self.__fetch_eol_check__()
             else:
                 eol = []
