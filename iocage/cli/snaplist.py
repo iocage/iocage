@@ -1,5 +1,4 @@
 """snaplist module for the cli."""
-import logging
 from subprocess import PIPE, Popen
 
 import click
@@ -7,6 +6,7 @@ from texttable import Texttable
 
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_log as ioc_log
 
 __cmdname__ = "snaplist_cmd"
 
@@ -17,7 +17,7 @@ __cmdname__ = "snaplist_cmd"
 @click.argument("jail")
 def snaplist_cmd(header, jail):
     """Allows a user to show resource usage of all jails."""
-    lgr = logging.getLogger('ioc_cli_snaplist')
+    lgr = ioc_log.getLogger('ioc_cli_snaplist')
 
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")
@@ -79,7 +79,7 @@ def snaplist_cmd(header, jail):
         # We get an infinite float otherwise.
         table.set_cols_dtype(["t", "t", "t", "t"])
         table.add_rows(snap_list)
-        lgr.info(table.draw())
+        print(table.draw())
     else:
         for snap in snap_list:
-            lgr.info("\t".join(snap))
+            print("\t".join(snap))

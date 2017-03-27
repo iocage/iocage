@@ -1,10 +1,10 @@
 """This stops jails."""
-import logging
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
 
 from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_log as ioc_log
 
 
 class IOCStop(object):
@@ -19,7 +19,7 @@ class IOCStop(object):
         self.conf = conf
         self.status, self.jid = IOCList().list_get_jid(uuid)
         self.nics = conf["interfaces"]
-        self.lgr = logging.getLogger('ioc_stop')
+        self.lgr = ioc_log.getLogger('ioc_stop')
 
         if silent:
             self.lgr.disabled = True
@@ -35,7 +35,7 @@ class IOCStop(object):
             self.lgr.error("{} ({}) is not running!".format(self.uuid,
                                                             self.conf["tag"]))
         else:
-            self.lgr.info(
+            print(
                 "* Stopping {} ({})".format(self.uuid, self.conf["tag"]))
 
             # TODO: Prestop findscript
@@ -46,9 +46,9 @@ class IOCStop(object):
                                        "ioc-{}".format(self.uuid)] +
                                       exec_stop, stdout=f, stderr=PIPE)
             if services:
-                self.lgr.info("  + Stopping services FAILED")
+                print("  + Stopping services FAILED")
             else:
-                self.lgr.info("  + Stopping services OK")
+                print("  + Stopping services OK")
 
             if self.conf["jail_zfs"] == "on":
                 for jdataset in self.conf["jail_zfs_dataset"].split():
@@ -150,9 +150,9 @@ class IOCStop(object):
                               stderr=PIPE)
 
             if stop:
-                self.lgr.info("  + Removing jail process FAILED")
+                print("  + Removing jail process FAILED")
             else:
-                self.lgr.info("  + Removing jail process OK")
+                print("  + Removing jail process OK")
 
             Popen(["umount", "-afF", "{}/fstab".format(self.path)],
                   stderr=PIPE)

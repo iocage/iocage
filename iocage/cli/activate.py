@@ -1,6 +1,6 @@
 """activate module for the cli."""
-import logging
 from subprocess import PIPE, Popen
+import iocage.lib.ioc_log as ioc_log
 
 import click
 
@@ -9,7 +9,7 @@ __rootcmd__ = True
 
 IOCAGE_ZFS_ACTIVE_PROPERTY = "org.freebsd.ioc:active"
 
-lgr = logging.getLogger('ioc_cli_activate')
+lgr = ioc_log.getLogger('ioc_cli_activate')
 
 
 def get_zfs_pools():
@@ -102,7 +102,7 @@ def activate_cmd(zpool, force):
     """Calls ZFS set to change the property org.freebsd.ioc:active to yes."""
 
     if force:
-        lgr.info("'--force' specified, all other ZFS pools will be"
+        print("'--force' specified, all other ZFS pools will be"
                  " deactivated for iocage usage")
         # Here we just want one active pool, so we 'deactivate' all
         # the ZFS pools, to ensure only one stays 'activated'
@@ -126,4 +126,4 @@ def activate_cmd(zpool, force):
                 set_zfs_pool_comment(zpool, "-")
 
     set_zfs_pool_active_property(zpool, activate=True)
-    lgr.info(f"ZFS pool '{zpool}' successfully activated.")
+    print(f"ZFS pool '{zpool}' successfully activated.")

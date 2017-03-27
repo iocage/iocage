@@ -1,9 +1,8 @@
 """clean module for the cli."""
-import logging
-
 import click
 
 from iocage.lib.ioc_clean import IOCClean
+import iocage.lib.ioc_log as ioc_log
 
 __cmdname__ = "clean_cmd"
 __rootcmd__ = True
@@ -21,7 +20,7 @@ __rootcmd__ = True
               help="Destroy all templates.")
 def clean_cmd(force, dataset_type):
     """Calls the correct destroy function."""
-    lgr = logging.getLogger('ioc_cli_clean')
+    lgr = ioc_log.getLogger('ioc_cli_clean')
 
     if dataset_type == "jails":
         if not force:
@@ -32,7 +31,7 @@ def clean_cmd(force, dataset_type):
                 exit()
 
         IOCClean().clean_jails()
-        lgr.info("All iocage jail datasets have been destroyed.")
+        print("All iocage jail datasets have been destroyed.")
     elif dataset_type == "all":
         if not force:
             lgr.warning("\nWARNING: This will destroy ALL iocage data!")
@@ -40,7 +39,7 @@ def clean_cmd(force, dataset_type):
                 exit()
 
         IOCClean().clean_all()
-        lgr.info("All iocage datasets have been destroyed.")
+        print("All iocage datasets have been destroyed.")
     elif dataset_type == "release":
         pass
     elif dataset_type == "template":
@@ -51,7 +50,7 @@ def clean_cmd(force, dataset_type):
                 exit()
 
         IOCClean().clean_templates()
-        lgr.info("All iocage template datasets have been destroyed.")
+        print("All iocage template datasets have been destroyed.")
         pass
     else:
         raise RuntimeError("Please specify a dataset type to clean!")

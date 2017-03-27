@@ -1,5 +1,4 @@
 """upgrade module for the cli."""
-import logging
 import os
 from subprocess import PIPE, Popen
 
@@ -10,6 +9,7 @@ from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 from iocage.lib.ioc_start import IOCStart
 from iocage.lib.ioc_stop import IOCStop
+import iocage.lib.ioc_log as ioc_log
 
 __cmdname__ = "upgrade_cmd"
 __rootcmd__ = True
@@ -21,7 +21,7 @@ __rootcmd__ = True
 @click.option("--release", "-r", required=True, help="RELEASE to upgrade to")
 def upgrade_cmd(jail, release):
     """Runs upgrade with the command given inside the specified jail."""
-    lgr = logging.getLogger('ioc_cli_upgrade')
+    lgr = ioc_log.getLogger('ioc_cli_upgrade')
 
     jails, paths = IOCList("uuid").list_datasets()
     _jail = {tag: uuid for (tag, uuid) in jails.items() if
@@ -109,7 +109,7 @@ def upgrade_cmd(jail, release):
             if started:
                 IOCStop(uuid, tag, path, conf, silent=True)
 
-            lgr.info("\n{} ({}) successfully upgraded from {} to {}!".format(
+            print("\n{} ({}) successfully upgraded from {} to {}!".format(
                 uuid, tag, jail_release, new_release))
 
 

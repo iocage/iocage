@@ -1,11 +1,11 @@
 """destroy module for the cli."""
-import logging
 
 import click
 
 from iocage.lib.ioc_destroy import IOCDestroy
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_log as ioc_log
 
 __cmdname__ = "destroy_cmd"
 __rootcmd__ = True
@@ -16,7 +16,7 @@ __rootcmd__ = True
 @click.argument("jails", nargs=-1)
 def destroy_cmd(force, jails):
     """Destroys the jail's 2 datasets and the snapshot from the RELEASE."""
-    lgr = logging.getLogger('ioc_cli_destroy')
+    lgr = ioc_log.getLogger('ioc_cli_destroy')
 
     if jails:
         get_jid = IOCList().list_get_jid
@@ -67,7 +67,7 @@ def destroy_cmd(force, jails):
                 raise RuntimeError(f"{uuid} ({tag}) is running.\nPlease stop "
                                    "it first!")
             elif status and force:
-                lgr.info("Stopping {} ({}).".format(uuid, tag))
+                print("Stopping {} ({}).".format(uuid, tag))
 
             IOCDestroy().destroy_jail(path)
     else:

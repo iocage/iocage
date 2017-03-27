@@ -1,11 +1,10 @@
 """exec module for the cli."""
-import logging
-
 import click
 
 from iocage.lib.ioc_common import indent_lines
 from iocage.lib.ioc_exec import IOCExec
 from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_log as ioc_log
 
 __cmdname__ = "exec_cmd"
 __rootcmd__ = True
@@ -22,7 +21,7 @@ __rootcmd__ = True
 def exec_cmd(command, jail, host_user, jail_user):
     """Runs the command given inside the specified jail as the supplied
     user."""
-    lgr = logging.getLogger('ioc_cli_exec')
+    lgr = ioc_log.getLogger('ioc_cli_exec')
 
     # We may be getting ';', '&&' and so forth. Adding the shell for safety.
     if len(command) == 1:

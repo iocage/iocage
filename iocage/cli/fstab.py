@@ -1,11 +1,10 @@
 """fstab module for the cli."""
-import logging
-
 import click
 
 from iocage.lib.ioc_fstab import IOCFstab
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_log as ioc_log
 
 __cmdname__ = "fstab_cmd"
 __rootcmd__ = True
@@ -28,7 +27,7 @@ def fstab_cmd(action, fstab_string, jail):
     Looks for the jail supplied and passes the uuid, path and configuration
     location to manipulate the fstab.
     """
-    lgr = logging.getLogger('ioc_cli_fstab')
+    lgr = ioc_log.getLogger('ioc_cli_fstab')
     pool = IOCJson().json_get_value("pool")
     iocroot = IOCJson(pool).json_get_value("iocroot")
     index = None

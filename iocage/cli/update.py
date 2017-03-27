@@ -1,5 +1,4 @@
 """update module for the cli."""
-import logging
 from subprocess import Popen
 
 import click
@@ -10,6 +9,7 @@ from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 from iocage.lib.ioc_start import IOCStart
 from iocage.lib.ioc_stop import IOCStop
+import iocage.lib.ioc_log as ioc_log
 
 __cmdname__ = "update_cmd"
 __rootcmd__ = True
@@ -20,7 +20,7 @@ __rootcmd__ = True
 @click.argument("jail", required=True)
 def update_cmd(jail):
     """Runs update with the command given inside the specified jail."""
-    lgr = logging.getLogger('ioc_cli_update')
+    lgr = ioc_log.getLogger('ioc_cli_update')
 
     jails, paths = IOCList("uuid").list_datasets()
     _jail = {tag: uuid for (tag, uuid) in jails.items() if

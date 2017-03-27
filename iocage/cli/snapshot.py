@@ -1,5 +1,4 @@
 """snapshot module for the cli."""
-import logging
 from datetime import datetime
 from subprocess import CalledProcessError, PIPE, check_call
 
@@ -7,6 +6,7 @@ import click
 
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_log as ioc_log
 
 __cmdname__ = "snapshot_cmd"
 __rootcmd__ = True
@@ -18,7 +18,7 @@ __rootcmd__ = True
                                    " after @", required=False)
 def snapshot_cmd(jail, name):
     """Get a list of jails and print the property."""
-    lgr = logging.getLogger('ioc_cli_snapshot')
+    lgr = ioc_log.getLogger('ioc_cli_snapshot')
 
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")
@@ -53,6 +53,6 @@ def snapshot_cmd(jail, name):
 
     try:
         check_call(["zfs", "snapshot", "-r", target], stderr=PIPE)
-        lgr.info("Snapshot: {} created.".format(target))
+        print("Snapshot: {} created.".format(target))
     except CalledProcessError:
         lgr.error("ERROR: Snapshot already exists!")

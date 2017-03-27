@@ -1,5 +1,4 @@
 """Manipulate a jails fstab"""
-import logging
 import os
 import shutil
 import tempfile
@@ -9,14 +8,14 @@ from subprocess import PIPE, Popen, call
 from iocage.lib.ioc_common import open_atomic
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
-
+import iocage.lib.ioc_log as ioc_log
 
 class IOCFstab(object):
     """Will add or remove an entry, and mount or umount the filesystem."""
 
     def __init__(self, uuid, tag, action, source, destination, fstype,
                  fsoptions, fsdump, fspass, index=None, silent=False):
-        self.lgr = logging.getLogger('ioc_fstab')
+        self.lgr = ioc_log.getLogger('ioc_fstab')
         self.pool = IOCJson().json_get_value("pool")
         self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
         self.uuid = uuid
@@ -68,7 +67,7 @@ class IOCFstab(object):
                 _fstab.write("{} # Added by iocage on {}\n".format(
                     self.mount, datetime.utcnow().strftime("%F %T")))
 
-        self.lgr.info(
+        print(
             "Successfully added mount to {} ({})'s fstab".format(self.uuid,
                                                                  self.tag))
 
@@ -98,12 +97,12 @@ class IOCFstab(object):
 
                     index += 1
         if removed:
-            self.lgr.info(
+            print(
                 "Successfully removed mount from {} ({})'s fstab".format(
                     self.uuid, self.tag))
             return dest  # Needed for umounting, otherwise we lack context.
         else:
-            self.lgr.info("No matching fstab entry.")
+            print("No matching fstab entry.")
             exit()
 
     def __fstab_mount__(self):

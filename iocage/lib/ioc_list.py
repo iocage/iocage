@@ -1,5 +1,4 @@
 """List all datasets by type"""
-import logging
 from subprocess import CalledProcessError, PIPE
 
 import libzfs
@@ -7,6 +6,7 @@ from texttable import Texttable
 
 from iocage.lib.ioc_common import checkoutput, sort_release, sort_tag
 from iocage.lib.ioc_json import IOCJson
+import iocage.lib.ioc_log as ioc_log
 
 
 class IOCList(object):
@@ -23,7 +23,8 @@ class IOCList(object):
         self.full = full
         self.pool = IOCJson().json_get_value("pool")
         self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
-        self.lgr = logging.getLogger('ioc_list')
+
+        self.lgr = ioc_log.getLogger('ioc_list')
 
     def list_datasets(self, set=False):
         """Lists the datasets of given type."""

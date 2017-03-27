@@ -1,6 +1,6 @@
 """iocage create module."""
 import json
-import logging
+
 import os
 import uuid
 from datetime import datetime
@@ -13,6 +13,7 @@ from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 from iocage.lib.ioc_start import IOCStart
 from iocage.lib.ioc_stop import IOCStop
+import iocage.lib.ioc_log as ioc_log
 
 
 class IOCCreate(object):
@@ -35,7 +36,7 @@ class IOCCreate(object):
         self.basejail = basejail
         self.empty = empty
         self.uuid = uuid
-        self.lgr = logging.getLogger('ioc_create')
+        self.lgr = ioc_log.getLogger('ioc_create')
 
         if silent:
             self.lgr.disabled = True
@@ -198,7 +199,7 @@ class IOCCreate(object):
             iocjson.json_write(config)
 
         if not self.plugin:
-            self.lgr.info(
+            print(
                 "{} ({}) successfully created!".format(jail_uuid, _tag))
 
         if self.pkglist:
@@ -371,7 +372,7 @@ class IOCCreate(object):
         srv_connect_cmd = ["drill", "_http._tcp.pkg.freebsd.org", "SRV"]
         dnssec_connect_cmd = ["drill", "-D", "pkg.freebsd.org"]
 
-        self.lgr.info("Testing SRV response to FreeBSD")
+        print("Testing SRV response to FreeBSD")
         srv_connection = IOCExec(srv_connect_cmd, jail_uuid, _tag, location,
                                  plugin=self.plugin).exec_jail()
 
@@ -379,7 +380,7 @@ class IOCCreate(object):
             raise RuntimeError(f"ERROR: {srv_connection}\n"
                                f"Command run: {' '.join(srv_connect_cmd)}")
 
-        self.lgr.info("Testing DNSSEC response to FreeBSD")
+        print("Testing DNSSEC response to FreeBSD")
         dnssec_connection = IOCExec(dnssec_connect_cmd, jail_uuid, _tag,
                                     location, plugin=self.plugin).exec_jail()
 
@@ -391,7 +392,7 @@ class IOCCreate(object):
             with open(self.pkglist, "r") as j:
                 self.pkglist = json.load(j)["pkgs"]
 
-        self.lgr.info("\nInstalling pkg... ")
+        print("\nInstalling pkg... ")
         # To avoid a user being prompted about pkg.
         Popen(["pkg-static", "-j", jid, "install", "-q", "-y",
                "pkg"], stderr=PIPE).communicate()
@@ -406,9 +407,9 @@ class IOCCreate(object):
             self.lgr.error(f"ERROR: {pkg_upgrade}")
             err = True
 
-        self.lgr.info("Installing supplied packages:")
+        print("Installing supplied packages:")
         for pkg in self.pkglist:
-            self.lgr.info("  - {}... ".format(pkg))
+            print("  - {}... ".format(pkg))
             cmd = ("pkg", "install", "-q", "-y", pkg)
             pkg_install = IOCExec(cmd, jail_uuid, _tag, location,
                                   plugin=self.plugin).exec_jail()

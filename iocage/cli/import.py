@@ -1,6 +1,5 @@
 """import module for the cli."""
 import fnmatch
-import logging
 import os
 import zipfile
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT
@@ -9,6 +8,7 @@ import click
 
 from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_json import IOCJson
+import iocage.lib.ioc_log as ioc_log
 
 __cmdname__ = "import_cmd"
 __rootcmd__ = True
@@ -18,7 +18,7 @@ __rootcmd__ = True
 @click.argument("jail", required=True)
 def import_cmd(jail):
     """Import from an iocage export."""
-    lgr = logging.getLogger('ioc_cli_import')
+    lgr = ioc_log.getLogger('ioc_cli_import')
 
     pool = IOCJson().json_get_value("pool")
     iocroot = IOCJson(pool).json_get_value("iocroot")
@@ -59,7 +59,7 @@ def import_cmd(jail):
             z_split_str = "/".join(z_split)
             _z = z_split_str.replace("iocage/images/", "")
 
-            lgr.info("Importing dataset: {}".format(_z))
+            print("Importing dataset: {}".format(_z))
             dataset = _import.read(z)
             recv = Popen(cmd, stdin=PIPE)
             recv.stdin.write(dataset)
@@ -77,4 +77,4 @@ def import_cmd(jail):
 
     tag = IOCJson("{}/jails/{}".format(iocroot, uuid),
                   silent=True).json_set_value("tag={}".format(tag))
-    lgr.info("\nImported: {} ({})".format(uuid, tag))
+    print("\nImported: {} ({})".format(uuid, tag))

@@ -1,5 +1,4 @@
 """This is responsible for starting jails."""
-import logging
 import re
 from datetime import datetime
 from os import X_OK, access, chdir, getcwd, makedirs, path as ospath, \
@@ -10,6 +9,7 @@ from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
 from iocage.lib.ioc_common import checkoutput, open_atomic
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_log as ioc_log
 
 
 class IOCStart(object):
@@ -27,7 +27,7 @@ class IOCStart(object):
         self.conf = conf
         self.get = IOCJson(self.path, silent=True).json_get_value
         self.set = IOCJson(self.path, silent=True).json_set_value
-        self.lgr = logging.getLogger('ioc_start')
+        self.lgr = ioc_log.getLogger('ioc_start')
 
         if silent:
             self.lgr.disabled = True
@@ -174,7 +174,7 @@ class IOCStart(object):
                 net = ["vnet"]
                 vnet = True
 
-            self.lgr.info("* Starting {} ({})".format(self.uuid, self.conf[
+            print("* Starting {} ({})".format(self.uuid, self.conf[
                 "tag"]))
             start = Popen([x for x in ["jail", "-c"] + net +
                            ["name=ioc-{}".format(self.uuid),
@@ -223,7 +223,7 @@ class IOCStart(object):
                 self.lgr.error("  + Start FAILED")
                 raise RuntimeError(f"  ERROR: {stderr_data.decode('utf-8')}")
             else:
-                self.lgr.info("  + Started OK")
+                print("  + Started OK")
 
             os_path = "{}/root/dev/log".format(self.path)
             if not ospath.isfile(os_path) and not ospath.islink(os_path):
@@ -283,9 +283,9 @@ class IOCStart(object):
                                            self.uuid)] + exec_start,
                                       stdout=f, stderr=PIPE)
             if services:
-                self.lgr.info("  + Starting services FAILED")
+                print("  + Starting services FAILED")
             else:
-                self.lgr.info("  + Starting services OK")
+                print("  + Starting services OK")
 
             self.set("last_started={}".format(datetime.utcnow().strftime(
                 "%F %T")))

@@ -1,6 +1,5 @@
 """migrate module for the cli."""
 import fileinput
-import logging
 import os
 from shutil import copy
 from subprocess import CalledProcessError, STDOUT, check_call
@@ -11,6 +10,7 @@ from iocage.lib.ioc_common import checkoutput, copytree
 from iocage.lib.ioc_create import IOCCreate
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_log as ioc_log
 
 __cmdname__ = "migrate_cmd"
 __rootcmd__ = True
@@ -24,7 +24,7 @@ __rootcmd__ = True
               help="Delete the old dataset after it has been migrated.")
 def migrate_cmd(force, delete):
     """Migrates all the iocage_legacy develop basejails to clone jails."""
-    lgr = logging.getLogger('ioc_cli_migrate')
+    lgr = ioc_log.getLogger('ioc_cli_migrate')
 
     jails, paths = IOCList("uuid").list_datasets()
 
@@ -69,7 +69,7 @@ def migrate_cmd(force, delete):
                 "jail_zfs_dataset={}/jails/{}/data".format(iocroot,
                                                            new_uuid))
 
-            lgr.info("Copying files for {} ({}), please wait...".format(
+            print("Copying files for {} ({}), please wait...".format(
                 uuid, tag
             ))
 
@@ -99,5 +99,5 @@ def migrate_cmd(force, delete):
                     # We just want the top level dataset gone, no big deal.
                     pass
 
-            lgr.info("{} ({}) migrated to {} ({})!\n".format(uuid, tag,
+            print("{} ({}) migrated to {} ({})!\n".format(uuid, tag,
                                                              new_uuid, tag))

@@ -1,11 +1,11 @@
 """iocage exec module."""
-import logging
 from subprocess import CalledProcessError, Popen, STDOUT
 
 from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 from iocage.lib.ioc_start import IOCStart
+import iocage.lib.ioc_log as ioc_log
 
 
 class IOCExec(object):
@@ -21,7 +21,7 @@ class IOCExec(object):
         self.jail_user = jail_user
         self.plugin = plugin
         self.skip = skip
-        self.lgr = logging.getLogger('ioc_exec')
+        self.lgr = ioc_log.getLogger('ioc_exec')
 
     def exec_jail(self):
         # TODO: Exec fib support
@@ -35,7 +35,7 @@ class IOCExec(object):
         status, _ = IOCList().list_get_jid(self.uuid)
         if not status:
             if not self.plugin and not self.skip:
-                self.lgr.info("{} ({}) is not running, starting jail.".format(
+                print("{} ({}) is not running, starting jail.".format(
                     self.uuid, self.tag))
             conf = IOCJson(self.path).json_load()
 
@@ -55,7 +55,7 @@ class IOCExec(object):
                 raise RuntimeError("{} is not a supported jail type.".format(
                     conf["type"]
                 ))
-            self.lgr.info("\nCommand output:")
+            print("\nCommand output:")
 
         if self.plugin:
             try:

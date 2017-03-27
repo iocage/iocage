@@ -1,12 +1,12 @@
 """get module for the cli."""
 import json
-import logging
 
 import click
 from texttable import Texttable
 
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_log as ioc_log
 
 __cmdname__ = "get_cmd"
 
@@ -30,7 +30,7 @@ __cmdname__ = "get_cmd"
                                             "zpool.", is_flag=True)
 def get_cmd(prop, _all, _pool, jail, recursive, header, plugin):
     """Get a list of jails and print the property."""
-    lgr = logging.getLogger('ioc_cli_get')
+    lgr = ioc_log.getLogger('ioc_cli_get')
 
     get_jid = IOCList.list_get_jid
     jails, paths = IOCList("uuid").list_datasets()
@@ -45,12 +45,12 @@ def get_cmd(prop, _all, _pool, jail, recursive, header, plugin):
     if _pool:
         pool = IOCJson().json_get_value("pool")
 
-        lgr.info(pool)
+        print(pool)
         exit()
 
     if recursive is None:
         if jail == "":
-            lgr.info("Usage: iocage get [OPTIONS] PROP JAIL\n")
+            print("Usage: iocage get [OPTIONS] PROP JAIL\n")
             raise RuntimeError("Error: Missing argument \"jail\".")
 
         _jail = {tag: uuid for (tag, uuid) in jails.items() if
@@ -76,20 +76,20 @@ def get_cmd(prop, _all, _pool, jail, recursive, header, plugin):
             else:
                 state = "down"
 
-            lgr.info(state)
+            print(state)
         elif plugin:
             _prop = prop.split(".")
             props = IOCJson(path).json_plugin_get_value(_prop)
 
             if isinstance(props, dict):
-                lgr.info(json.dumps(props, indent=4))
+                print(json.dumps(props, indent=4))
             else:
                 pass
         elif prop == "all":
             props = IOCJson(path).json_get_value(prop)
 
             for p, v in props.items():
-                lgr.info("{}:{}".format(p, v))
+                print("{}:{}".format(p, v))
         elif prop == "fstab":
             pool = IOCJson().json_get_value("pool")
             iocroot = IOCJson(pool).json_get_value("iocroot")
@@ -107,13 +107,13 @@ def get_cmd(prop, _all, _pool, jail, recursive, header, plugin):
                 # We get an infinite float otherwise.
                 table.set_cols_dtype(["t", "t"])
                 table.add_rows(jail_list)
-                lgr.info(table.draw())
+                print(table.draw())
             else:
                 for fstab in jail_list:
-                    lgr.info("{}\t{}".format(fstab[0], fstab[1]))
+                    print("{}\t{}".format(fstab[0], fstab[1]))
         else:
             try:
-                lgr.info(IOCJson(path).json_get_value(prop))
+                print(IOCJson(path).json_get_value(prop))
             except:
                 raise RuntimeError("{} is not a valid property!".format(prop))
     else:
@@ -147,7 +147,7 @@ def get_cmd(prop, _all, _pool, jail, recursive, header, plugin):
             # We get an infinite float otherwise.
             table.set_cols_dtype(["t", "t", "t"])
             table.add_rows(jail_list)
-            lgr.info(table.draw())
+            print(table.draw())
         else:
             for jail in jail_list:
-                lgr.info("\t".join(jail))
+                print("\t".join(jail))

@@ -1,7 +1,6 @@
 """iocage destroy module."""
 import glob
 import json
-import logging
 import os
 import shutil
 from subprocess import CalledProcessError, PIPE, Popen, check_call
@@ -9,6 +8,7 @@ from subprocess import CalledProcessError, PIPE, Popen, check_call
 import libzfs
 
 from iocage.lib.ioc_json import IOCJson
+import iocage.lib.ioc_log as ioc_log
 
 
 class IOCDestroy(object):
@@ -20,7 +20,7 @@ class IOCDestroy(object):
     def __init__(self):
         self.pool = IOCJson().json_get_value("pool")
         self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
-        self.lgr = logging.getLogger('ioc_destroy')
+        self.lgr = ioc_log.getLogger('ioc_destroy')
         self.zfs = libzfs.ZFS()
         self.ds = self.zfs.get_dataset
 
