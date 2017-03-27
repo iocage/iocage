@@ -1,7 +1,7 @@
 """iocage exec module."""
+import logging
 from subprocess import CalledProcessError, Popen, STDOUT
 
-import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
@@ -21,8 +21,7 @@ class IOCExec(object):
         self.jail_user = jail_user
         self.plugin = plugin
         self.skip = skip
-        self.lgr = ioc_logger.Logger('ioc_exec')
-        self.lgr = self.lgr.getLogger()
+        self.lgr = logging.getLogger('ioc_exec')
 
     def exec_jail(self):
         # TODO: Exec fib support
@@ -43,20 +42,19 @@ class IOCExec(object):
             if conf["type"] in ("jail", "plugin"):
                 IOCStart(self.uuid, self.tag, self.path, conf, silent=True)
             elif conf["type"] == "basejail":
-                self.lgr.error("Please run \"iocage migrate\" before trying"
-                               " to start {} ({})".format(self.uuid,
-                                                          self.tag))
-                exit(1)
+                raise RuntimeError(
+                    "Please run \"iocage migrate\" before trying"
+                    " to start {} ({})".format(self.uuid,
+                                               self.tag))
             elif conf["type"] == "template":
-                self.lgr.error("Please convert back to a jail before trying"
-                               " to start {} ({})".format(self.uuid,
-                                                          self.tag))
-                exit(1)
+                raise RuntimeError(
+                    "Please convert back to a jail before trying"
+                    " to start {} ({})".format(self.uuid,
+                                               self.tag))
             else:
-                self.lgr.warning("{} is not a supported jail type.".format(
+                raise RuntimeError("{} is not a supported jail type.".format(
                     conf["type"]
                 ))
-                exit(1)
             self.lgr.info("\nCommand output:")
 
         if self.plugin:

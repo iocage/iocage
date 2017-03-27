@@ -1,7 +1,7 @@
 """This stops jails."""
+import logging
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
 
-import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
@@ -19,8 +19,7 @@ class IOCStop(object):
         self.conf = conf
         self.status, self.jid = IOCList().list_get_jid(uuid)
         self.nics = conf["interfaces"]
-        self.lgr = ioc_logger.Logger('ioc_stop')
-        self.lgr = self.lgr.getLogger()
+        self.lgr = logging.getLogger('ioc_stop')
 
         if silent:
             self.lgr.disabled = True
@@ -37,7 +36,7 @@ class IOCStop(object):
                                                             self.conf["tag"]))
         else:
             self.lgr.info(
-                " Stopping {} ({})".format(self.uuid, self.conf["tag"]))
+                "* Stopping {} ({})".format(self.uuid, self.conf["tag"]))
 
             # TODO: Prestop findscript
             exec_stop = self.conf["exec_stop"].split()
@@ -76,18 +75,18 @@ class IOCStop(object):
                             if mountpoint == "none":
                                 pass
                             else:
-                                self.lgr.error("ERROR: {}".format(
+                                raise RuntimeError(
+                                    "ERROR: {}".format(
                                         err.output.decode("utf-8").rstrip()))
-                                exit(1)
 
                     try:
                         checkoutput(["zfs", "unjail", "ioc-{}".format(
                             self.uuid), "{}/{}".format(self.pool, jdataset)],
                                     stderr=STDOUT)
                     except CalledProcessError as err:
-                        self.lgr.error("ERROR: {}".format(
+                        raise RuntimeError(
+                            "ERROR: {}".format(
                                 err.output.decode("utf-8").rstrip()))
-                        exit(1)
 
             if vnet == "on":
                 for nic in self.nics.split(","):
@@ -119,9 +118,9 @@ class IOCStop(object):
                                 # that.
                                 pass
                             else:
-                                self.lgr.error("ERROR: {}".format(
+                                raise RuntimeError(
+                                    "ERROR: {}".format(
                                         err.output.decode("utf-8").strip()))
-                                exit(1)
 
             if ip6_addr != "inherit" and vnet == "off":
                 if ip6_addr != "none":
@@ -143,9 +142,9 @@ class IOCStop(object):
                                 # that.
                                 pass
                             else:
-                                self.lgr.error("ERROR: {}".format(
+                                raise RuntimeError(
+                                    "ERROR: {}".format(
                                         err.output.decode("utf-8").strip()))
-                                exit(1)
 
             stop = check_call(["jail", "-r", "ioc-{}".format(self.uuid)],
                               stderr=PIPE)
