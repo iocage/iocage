@@ -1,9 +1,9 @@
 """update module for the cli."""
-import logging
 from subprocess import Popen
 
 import click
 
+import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_fetch import IOCFetch
 from iocage.lib.ioc_json import IOCJson
@@ -20,7 +20,8 @@ __rootcmd__ = True
 @click.argument("jail", required=True)
 def update_cmd(jail):
     """Runs update with the command given inside the specified jail."""
-    lgr = logging.getLogger('ioc_cli_update')
+    lgr = ioc_logger.Logger('ioc_cli_update')
+    lgr = lgr.getLogger()
 
     jails, paths = IOCList("uuid").list_datasets()
     _jail = {tag: uuid for (tag, uuid) in jails.items() if
@@ -33,10 +34,11 @@ def update_cmd(jail):
         lgr.error("Multiple jails found for"
                   " {}:".format(jail))
         for t, u in sorted(_jail.items()):
-            lgr.error("  {} ({})".format(u, t))
-        raise RuntimeError()
+            lgr.critical("  {} ({})".format(u, t))
+        exit(1)
     else:
-        raise RuntimeError("{} not found!".format(jail))
+        lgr.critical("{} not found!".format(jail))
+        exit(1)
 
     freebsd_version = checkoutput(["freebsd-version"])
     status, jid = IOCList.list_get_jid(uuid)
@@ -49,15 +51,16 @@ def update_cmd(jail):
             status, jid = IOCList.list_get_jid(uuid)
             started = True
     elif conf["type"] == "basejail":
-        raise RuntimeError("Please run \"iocage migrate\" before trying"
-                           " to update {} ({})".format(uuid, tag))
+        lgr.critical("Please run \"iocage migrate\" before trying"
+                     " to update {} ({})".format(uuid, tag))
+        exit(1)
     elif conf["type"] == "template":
-        raise RuntimeError("Please convert back to a jail before trying"
-                           " to update {} ({})".format(uuid, tag))
+        lgr.critical("Please convert back to a jail before trying"
+                     " to update {} ({})".format(uuid, tag))
+        exit(1)
     else:
-        raise RuntimeError("{} is not a supported jail type.".format(
-            conf["type"]
-        ))
+        lgr.critical("{} is not a supported jail type.".format(conf["type"]))
+        exit(1)
 
     if "HBSD" in freebsd_version:
         Popen(["hbsd-update", "-j", jid]).communicate()

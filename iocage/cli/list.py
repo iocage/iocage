@@ -1,6 +1,4 @@
 """list module for the cli."""
-import logging
-
 import click
 
 from iocage.lib.ioc_common import checkoutput
@@ -27,7 +25,6 @@ __cmdname__ = "list_cmd"
               help="Have --remote use HTTP instead.", is_flag=True)
 def list_cmd(dataset_type, header, _long, remote, http, plugins):
     """This passes the arg and calls the jail_datasets function."""
-    lgr = logging.getLogger('ioc_cli_list')
     freebsd_version = checkoutput(["freebsd-version"])
 
     if dataset_type is None:
@@ -49,9 +46,9 @@ def list_cmd(dataset_type, header, _long, remote, http, plugins):
         if not header:
             if dataset_type == "base":
                 for item in _list:
-                    lgr.info(item)
+                    print(item)
             else:
                 for item in _list:
-                    lgr.info("\t".join(item))
+                    print("\t".join(item))
         else:
-            lgr.info(_list)
+            print(_list)

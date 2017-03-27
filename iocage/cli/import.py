@@ -1,12 +1,12 @@
 """import module for the cli."""
 import fnmatch
-import logging
 import os
 import zipfile
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT
 
 import click
 
+import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_json import IOCJson
 
@@ -18,7 +18,8 @@ __rootcmd__ = True
 @click.argument("jail", required=True)
 def import_cmd(jail):
     """Import from an iocage export."""
-    lgr = logging.getLogger('ioc_cli_import')
+    lgr = ioc_logger.Logger('ioc_cli_import')
+    lgr = lgr.getLogger()
 
     pool = IOCJson().json_get_value("pool")
     iocroot = IOCJson(pool).json_get_value("iocroot")
@@ -46,7 +47,8 @@ def import_cmd(jail):
             lgr.error("  {}".format(j))
         raise RuntimeError()
     else:
-        raise RuntimeError("{} not found!".format(jail))
+        lgr.critical("{} not found!".format(jail))
+        exit(1)
 
     with zipfile.ZipFile(image_target, "r") as _import:
         for z in _import.namelist():
@@ -72,8 +74,8 @@ def import_cmd(jail):
                                                       date)
         checkoutput(["zfs", "destroy", "-r", target], stderr=STDOUT)
     except CalledProcessError as err:
-        raise RuntimeError(
-            "ERROR: {}".format(err.output.decode("utf-8").rstrip()))
+        lgr.critical("ERROR: {}".format(err.output.decode("utf-8").rstrip()))
+        exit(1)
 
     tag = IOCJson("{}/jails/{}".format(iocroot, uuid),
                   silent=True).json_set_value("tag={}".format(tag))

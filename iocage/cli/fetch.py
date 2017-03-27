@@ -3,6 +3,7 @@ import os
 
 import click
 
+import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_fetch import IOCFetch
 
@@ -57,6 +58,9 @@ def fetch_cmd(http, _file, server, user, password, auth, verify, release,
     freebsd_version = checkoutput(["freebsd-version"])
     arch = os.uname()[4]
 
+    lgr = ioc_logger.Logger("ioc_cli_fetch")
+    lgr = lgr.getLogger()
+
     if not files:
         if arch == "arm64":
             files = ("MANIFEST", "base.txz", "doc.txz")
@@ -75,9 +79,10 @@ def fetch_cmd(http, _file, server, user, password, auth, verify, release,
         ip = [x for x in props if x.startswith("ip4_addr") or x.startswith(
             "ip6_addr")]
         if not ip:
-            raise RuntimeError("ERROR: An IP address is needed to fetch a "
-                               "plugin!\nPlease specify "
-                               "ip(4|6)_addr=\"INTERFACE|IPADDRESS\"!")
+            lgr.critical("ERROR: An IP address is needed to fetch a "
+                         "plugin!\nPlease specify "
+                         "ip(4|6)_addr=\"INTERFACE|IPADDRESS\"!")
+            exit(1)
         if plugins:
             IOCFetch(release=None).fetch_plugin_index(props)
             exit()
