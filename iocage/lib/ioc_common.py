@@ -32,7 +32,7 @@ def sort_tag(tag):
         return _tag, 0
 
 
-def sort_release(releases, iocroot, split=False):
+def sort_release(releases, split=False):
     """
     Sort the list by RELEASE, if split is true it's expecting full
     datasets.
