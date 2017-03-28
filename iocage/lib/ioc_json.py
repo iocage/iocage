@@ -301,7 +301,11 @@ class IOCJson(object):
                 loc = "{}/iocage".format(self.location)
                 mount = checkoutput(["zfs", "get", "-H", "-o", "value",
                                      "mountpoint", loc]).strip()
-                return mount
+
+                if mount != "none":
+                    return mount
+                else:
+                    raise RuntimeError(f"Please set a mountpoint on {loc}")
             except CalledProcessError:
                 raise RuntimeError("{} not found!".format(self.location))
         elif prop == "all":
