@@ -50,78 +50,108 @@ class IOCDestroy(object):
                 except CalledProcessError as err:
                     raise RuntimeError("ERROR: {}".format(err))
 
-    def __destroy_datasets__(self, path, clean=False):
-        """Destroys the given datasets and snapshots."""
-        datasets = self.ds(path)
+    def __destroy_leftovers__(self, dataset, clean=False):
+        """Removes tags, parent datasets and logs."""
+        uuid = dataset.name.rsplit("/root")[0].split("/")[-1]
+        tags = f"{self.iocroot}/tags"
+        snapshot = False
 
-        for dataset in datasets.dependents:
-            if "templates" in path:
-                self.__stop_jails__(dataset.name.replace(self.pool, ""))
+        try:
+            path = dataset.properties["mountpoint"].value
+            umount_path = path.rstrip('/root')
+        except libzfs.ZFSException as err:
+            # This is either not mounted or doesn't exist anymore,
+            # we don't care either way.
+            if err.code == libzfs.Error.NOENT:
+                path = None
+            else:
+                raise
+        except KeyError:
+            # This is a snapshot
+            path = None
+            snapshot = True
 
-            if dataset.type == libzfs.DatasetType.FILESYSTEM:
-                origin = dataset.properties["origin"].value
-
-                try:
-                    snap_dataset, snap = origin.split("@")
-                    self.ds(snap_dataset).destroy_snapshot(snap)
-                except ValueError:
-                    pass  # This means we don't have an origin.
-
-                dataset.umount(force=True)
-
-            dataset.delete()
-
-            if clean:
-                if "templates" in path:
-                    if "jails" in dataset.name:
-                        # The jails parent won't show in the list.
-                        j_parent = self.ds(
-                            f"{dataset.name.replace('/root','')}")
-
-                        j_parent.umount(force=True)
-                        j_parent.delete()
-
-                    # In the case of a template this will actually be the tag.
-                    uuid = dataset.name.rsplit("/root")[0].split("/")[-1]
-                    tags = f"{self.iocroot}/tags"
-
-                    for file in glob.glob(f"{tags}/*"):
-                        if os.readlink(file) == f"{self.iocroot}/jails/" \
-                                                f"{uuid}" or file == \
-                                f"{self.iocroot}/tags/{uuid}":
-                            os.remove(file)
-
-                    for file in glob.glob(f"{self.iocroot}/log/*"):
-                        if file == f"{self.iocroot}/log/{uuid}-console.log":
-                            os.remove(file)
-                elif "jails" in path:
+        if path:
+            if "templates" in path and clean:
+                for file in glob.glob(f"{tags}/*"):
+                    if os.readlink(file) == f"{self.iocroot}/jails/" \
+                                            f"{uuid}" or file == \
+                            f"{self.iocroot}/tags/{uuid}":
+                        os.remove(file)
+            elif "jails" in path and clean:
                     shutil.rmtree(f"{self.iocroot}/tags", ignore_errors=True)
                     os.mkdir(f"{self.iocroot}/tags")
 
                     shutil.rmtree(f"{self.iocroot}/log", ignore_errors=True)
             else:
-                if "jails" in dataset.name or "templates" in dataset.name:
-                    # The jails parent won't show in the list.
-                    j_parent = self.ds(
-                        f"{dataset.name.replace('/root','')}")
-
-                    j_parent.umount(force=True)
-                    j_parent.delete()
-
-                uuid = dataset.name.rsplit("/root")[0].split("/")[-1]
-                tags = f"{self.iocroot}/tags"
-
                 for file in glob.glob(f"{tags}/*"):
-                    if os.readlink(file) == f"{self.iocroot}/jails/{uuid}":
+                    if os.readlink(file) == path:
                         os.remove(file)
 
                 for file in glob.glob(f"{self.iocroot}/log/*"):
                     if file == f"{self.iocroot}/log/{uuid}-console.log":
                         os.remove(file)
 
+            # Dangling mounts are bad...mmkay?
+            Popen(["umount", "-afF", f"{umount_path}/fstab"],
+                  stderr=PIPE).communicate()
+            Popen(["umount", "-f", f"{umount_path}/root/dev/fd"],
+                  stderr=PIPE).communicate()
+            Popen(["umount", "-f", f"{umount_path}/root/dev"],
+                  stderr=PIPE).communicate()
+            Popen(["umount", "-f", f"{umount_path}/root/proc"],
+                  stderr=PIPE).communicate()
+            Popen(["umount", "-f", f"{umount_path}/root/compat/linux/proc"],
+                  stderr=PIPE).communicate()
+
+        if not clean and not snapshot:
+            if any(_type in dataset.name for _type in ("jails", "templates",
+                                                       "releases")):
+                # The jails parent won't show in the list.
+                j_parent = self.ds(f"{dataset.name.replace('/root','')}")
+
+                j_parent.umount(force=True)
+                j_parent.delete()
+
+    def __destroy_dataset__(self, dataset):
+        """Destroys the given datasets and snapshots."""
+        if dataset.type == libzfs.DatasetType.FILESYSTEM:
+            origin = dataset.properties["origin"].value
+
+            try:
+                snap_dataset, snap = origin.split("@")
+                self.ds(snap_dataset).destroy_snapshot(snap)
+            except ValueError:
+                pass  # This means we don't have an origin.
+
+            dataset.umount(force=True)
+
+        dataset.delete()
+
+    def __destroy_parse_datasets__(self, path, clean=False):
+        """
+        Parses the datasets before calling __destroy_dataset__ with each 
+        entry.
+        """
+        datasets = self.ds(path)
+        single = True if len(list(datasets.dependents)) == 0 else False
+        dependents = datasets.dependents
+
+        if single:
+            # Is actually a single dataset.
+            self.__destroy_dataset__(datasets)
+        else:
+            for dataset in dependents:
+                if "templates" in path or "release" in path:
+                    self.__stop_jails__(dataset.name.replace(self.pool, ""))
+
+                self.__destroy_dataset__(dataset)
+                self.__destroy_leftovers__(dataset, clean=clean)
+
     def destroy_jail(self, path, clean=False):
         """
-        A convenience wrapper to call __stop_jails__ and  __destroy_datasets__
+        A convenience wrapper to call __stop_jails__ and  
+        __destroy_parse_datasets__
         """
         dataset_type, uuid = path.rsplit("/")[-2:]
 
@@ -133,4 +163,5 @@ class IOCDestroy(object):
 
             IOCStop(uuid, "", path, conf, silent=True)
 
-        self.__destroy_datasets__(f"{self.pool}/iocage/{dataset_type}/{uuid}")
+        self.__destroy_parse_datasets__(
+            f"{self.pool}/iocage/{dataset_type}/{uuid}")

@@ -19,8 +19,8 @@ class IOCClean(object):
     def clean_jails(self):
         """Cleans all jails and their respective snapshots."""
         IOCDestroy().__stop_jails__()
-        IOCDestroy().__destroy_datasets__(f"{self.pool}/iocage/jails",
-                                          clean=True)
+        IOCDestroy().__destroy_parse_datasets__(f"{self.pool}/iocage/jails",
+                                                clean=True)
 
     def clean_all(self):
         """Cleans everything related to iocage."""
@@ -44,5 +44,6 @@ class IOCClean(object):
 
     def clean_templates(self):
         """Cleans all templates and their respective children."""
-        IOCDestroy().__destroy_datasets__(f"{self.pool}/iocage/templates",
-                                          clean=True)
+        IOCDestroy().__destroy_parse_datasets__(
+            f"{self.pool}/iocage/templates",
+            clean=True)
