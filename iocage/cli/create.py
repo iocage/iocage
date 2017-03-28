@@ -41,6 +41,14 @@ def create_cmd(release, template, count, props, pkglist, basejail, empty,
                short, uuid):
     lgr = ioc_logger.Logger('ioc_cli_create')
     lgr = lgr.getLogger()
+    # import uuid
+    # for prop in props:
+    #     prop, val = prop.split("=")
+    #     print(prop, val)
+    #     jail_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, val))
+    #     print(jail_uuid)
+    #
+    # exit()
 
     if short and uuid:
         lgr.critical("Can't use --short (-s) and --uuid (-u) at the same time!")
