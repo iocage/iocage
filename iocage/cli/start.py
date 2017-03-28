@@ -32,11 +32,11 @@ def start_jail(uuid, tag, path):
 
         return False, None
     elif conf["type"] == "basejail":
-        return(True, "Please run \"iocage migrate\" before trying to start"
-                     f" {uuid} ({tag})")
+        return (True, "Please run \"iocage migrate\" before trying to start"
+                      f" {uuid} ({tag})")
     elif conf["type"] == "template":
-        return(True, "Please convert back to a jail before trying to start"
-                     f" {uuid} ({tag})")
+        return (True, "Please convert back to a jail before trying to start"
+                      f" {uuid} ({tag})")
     else:
         return True, f"{conf['type']} is not a supported jail type."
 

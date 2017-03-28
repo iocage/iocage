@@ -455,13 +455,14 @@ class IOCStart(object):
             mac_a, mac_b = mac.split(",")
             return mac_a, mac_b
 
+
 def find_bridge_mtu(bridge):
     memberif = [x for x in
-                    checkoutput(["ifconfig", bridge]).splitlines()
-                    if x.strip().startswith("member")]
+                checkoutput(["ifconfig", bridge]).splitlines()
+                if x.strip().startswith("member")]
+
     if not memberif:
         return '1500'
 
     membermtu = checkoutput(["ifconfig", memberif[0].split()[1]]).split()
     return membermtu[5]
-

@@ -43,7 +43,7 @@ def stop_cmd(rc, jails):
             boot_order[j] = int(priority)
 
     jail_order = OrderedDict(sorted(jail_order.items(),
-                                    key=itemgetter(1), reverse=True) )
+                                    key=itemgetter(1), reverse=True))
     boot_order = OrderedDict(sorted(boot_order.items(),
                                     key=itemgetter(1), reverse=True))
     if rc:

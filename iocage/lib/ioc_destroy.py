@@ -79,10 +79,10 @@ class IOCDestroy(object):
                             f"{self.iocroot}/tags/{uuid}":
                         os.remove(file)
             elif "jails" in path and clean:
-                    shutil.rmtree(f"{self.iocroot}/tags", ignore_errors=True)
-                    os.mkdir(f"{self.iocroot}/tags")
+                shutil.rmtree(f"{self.iocroot}/tags", ignore_errors=True)
+                os.mkdir(f"{self.iocroot}/tags")
 
-                    shutil.rmtree(f"{self.iocroot}/log", ignore_errors=True)
+                shutil.rmtree(f"{self.iocroot}/log", ignore_errors=True)
             else:
                 for file in glob.glob(f"{tags}/*"):
                     if os.readlink(file) == path:

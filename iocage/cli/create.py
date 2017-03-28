@@ -51,7 +51,8 @@ def create_cmd(release, template, count, props, pkglist, basejail, empty,
     # exit()
 
     if short and uuid:
-        lgr.critical("Can't use --short (-s) and --uuid (-u) at the same time!")
+        lgr.critical(
+            "Can't use --short (-s) and --uuid (-u) at the same time!")
         exit(1)
 
     if not template and not release and not empty:
@@ -77,7 +78,7 @@ def create_cmd(release, template, count, props, pkglist, basejail, empty,
 
         if not os.path.isfile(pkglist):
             lgr.critical("{} does not exist!\nPlease supply a JSON file "
-                        "with the format:{}".format(pkglist, _pkgformat))
+                         "with the format:{}".format(pkglist, _pkgformat))
             exit(1)
         else:
             try:

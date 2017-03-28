@@ -1,8 +1,9 @@
 """activate module for the cli."""
 from subprocess import PIPE, Popen
-import iocage.lib.ioc_logger as ioc_logger
 
 import click
+
+import iocage.lib.ioc_logger as ioc_logger
 
 __cmdname__ = "activate_cmd"
 __rootcmd__ = True
@@ -65,11 +66,11 @@ def set_zfs_pool_active_property(zpool_name, activate=True):
     if stderr_data:
         if activate:
             lgr.critical(f"Cannot activate ZFS pool '{zpool_name}':"
-                      f" {stderr_data.decode('utf-8')}")
+                         f" {stderr_data.decode('utf-8')}")
             exit(1)
         else:
             lgr.critical(f"Cannot deactivate ZFS pool '{zpool_name}':"
-                      f" {stderr_data.decode('utf-8')}")
+                         f" {stderr_data.decode('utf-8')}")
             exit(1)
 
 
@@ -98,8 +99,8 @@ def set_zfs_pool_comment(zpool_name, comment):
 
     if stderr_data:
         lgr.critical(f"Cannot set zpool comment to '{comment}' on ZFS"
-                  f" pool '{zpool_name}':"
-                  f" {stderr_data.decode('utf-8')}")
+                     f" pool '{zpool_name}':"
+                     f" {stderr_data.decode('utf-8')}")
         exit(1)
 
 
@@ -127,7 +128,7 @@ def activate_cmd(zpool, force):
             stdout_data, stderr_data = proc.communicate()
             if stderr_data:
                 lgr.critical("Cannot retrieve comment for ZFS pool "
-                          f"'{zpool}': {stderr_data.decode('utf-8')}")
+                             f"'{zpool}': {stderr_data.decode('utf-8')}")
                 exit(1)
 
             comment = stdout_data.decode('utf-8').strip()

@@ -34,7 +34,7 @@ def exec_cmd(command, jail, host_user, jail_user):
 
     if host_user and jail_user:
         lgr.critical("Please only specify either host_user or"
-                    " jail_user, not both!")
+                     " jail_user, not both!")
         exit(1)
 
     jails, paths = IOCList("uuid").list_datasets()

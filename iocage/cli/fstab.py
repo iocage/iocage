@@ -81,8 +81,8 @@ def fstab_cmd(action, fstab_string, jail):
                     fstab_string
             except ValueError:
                 lgr.critical("Please specify a valid fstab entry!\n\n"
-                            "Example:\n  /the/source /dest FSTYPE "
-                            "FSOPTIONS FSDUMP FSPASS")
+                             "Example:\n  /the/source /dest FSTYPE "
+                             "FSOPTIONS FSDUMP FSPASS")
                 exit(1)
         else:
             source, destination, fstype, options, dump, _pass = "", "", \
