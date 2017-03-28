@@ -32,7 +32,7 @@ def destroy_cmd(force, jails):
                 path = f"{pool}/iocage/jails/{uuid}"
 
                 IOCDestroy().__stop_jails__(path.replace(pool, ""))
-                IOCDestroy().__destroy_datasets__(path)
+                IOCDestroy().__destroy_parse_datasets__(path)
                 exit()
             else:
                 lgr.critical(err)
