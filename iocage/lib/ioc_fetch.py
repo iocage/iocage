@@ -685,8 +685,8 @@ class IOCFetch(object):
 
         create_props = [f"{k}={v}" for k, v in
                         (p.split("=") for p in props)] + create_props
-        create_props = [f"{k}_{num}" if k == f"{_tag}"
-                        and num != 0 else k for k in create_props]
+        create_props = [f"{k}_{num}" if k == f"{_tag}" and num != 0 else k
+                        for k in create_props]
 
         uuid = IOCCreate(self.release, create_props, 0).create_jail()
         jaildir = "{}/jails/{}".format(self.iocroot, uuid)

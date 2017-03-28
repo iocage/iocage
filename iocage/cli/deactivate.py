@@ -2,6 +2,7 @@
 from subprocess import CalledProcessError, PIPE, check_call
 
 import click
+
 import iocage.lib.ioc_logger as ioc_logger
 
 __cmdname__ = "deactivate_cmd"

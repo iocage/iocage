@@ -62,11 +62,11 @@ def console_cmd(jail, force):
             exit(1)
         elif conf["type"] == "template":
             lgr.critical("Please convert back to a jail before trying"
-                        " to start {} ({})".format(uuid, tag))
+                         " to start {} ({})".format(uuid, tag))
             exit(1)
         else:
             lgr.critical("{} is not a supported jail type.".format(
-                         conf["type"]
+                conf["type"]
             ))
             exit(1)
 

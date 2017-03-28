@@ -1,9 +1,9 @@
 """chroot module for the cli."""
 from subprocess import PIPE, Popen
-import iocage.lib.ioc_logger as ioc_logger
 
 import click
 
+import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_list import IOCList
 
 __cmdname__ = "chroot_cmd"
