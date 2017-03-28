@@ -22,7 +22,6 @@ class IOCList(object):
         self.header = hdr
         self.full = full
         self.pool = IOCJson().json_get_value("pool")
-        self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.lgr = logging.getLogger('ioc_list')
 
@@ -30,13 +29,10 @@ class IOCList(object):
         """Lists the datasets of given type."""
 
         if self.list_type == "all" or self.list_type == "uuid":
-            # List the datasets underneath self.POOL/iocroot/jails
             ds = self.zfs.get_dataset(f"{self.pool}/iocage/jails").children
         elif self.list_type == "base":
-            # List the datasets underneath self.POOL/iocroot/releases
             ds = self.zfs.get_dataset(f"{self.pool}/iocage/releases").children
         elif self.list_type == "template":
-            # List the datasets underneath self.POOL/iocroot/releases
             ds = self.zfs.get_dataset(
                 f"{self.pool}/iocage/templates").children
 
@@ -180,7 +176,7 @@ class IOCList(object):
 
     def list_bases(self, datasets):
         """Lists all bases."""
-        base_list = sort_release(datasets, self.iocroot, split=True)
+        base_list = sort_release(datasets, split=True)
         table = Texttable(max_width=0)
 
         if self.header:
