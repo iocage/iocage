@@ -1,6 +1,6 @@
+import os
 import logging
 import logging.handlers
-import os
 from logging.config import dictConfig
 
 
@@ -11,8 +11,9 @@ class LoggerFormatter(logging.Formatter):
         'YELLOW': '\033[1;33m',  # (warning)
         'GREEN': '\033[1;32m',  # (info)
         'RED': '\033[1;31m',  # (error)
-        'HIGHRED': '\033[1;41m',  # (critical)
+        'HIGHRED': '\033[1;49;31m',  # (critical)
         'RESET': '\033[1;m',  # Reset
+        'MSG': '\033[1;40;97m', # General message
     }
     LOGGING_LEVEL = {
         'CRITICAL': 50,
@@ -45,7 +46,8 @@ class LoggerFormatter(logging.Formatter):
 
         color_reset = self.CONSOLE_COLOR_FORMATTER['RESET']
 
-        record.levelname = color_start + record.levelname + color_reset
+        record.levelname = color_start + '*' + color_reset
+        record.msg = self.CONSOLE_COLOR_FORMATTER['MSG'] + record.msg + color_reset
 
         return logging.Formatter.format(self, record)
 
@@ -103,17 +105,15 @@ class Logger(object):
         console_handler = logging.StreamHandler()
         console_handler.setLevel(logging.DEBUG)
 
-        log_format = "(%(levelname)s) %(message)s"
+        log_format = "%(levelname)s %(message)s"
         time_format = "%Y/%m/%d %H:%M:%S"
-        console_handler.setFormatter(LoggerFormatter(log_format,
-                                                     datefmt=time_format))
+        console_handler.setFormatter(LoggerFormatter(log_format, datefmt=time_format))
 
         logging.root.addHandler(console_handler)
 
     def configure_logging(self):
         if os.geteuid() == 0:
             self._set_output_file()
-
         self._set_output_console()
         logging.root.setLevel(logging.DEBUG)
 
