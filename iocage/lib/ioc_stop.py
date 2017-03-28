@@ -155,7 +155,7 @@ class IOCStop(object):
                 self.lgr.info("  + Removing jail process OK")
 
             Popen(["umount", "-afF", "{}/fstab".format(self.path)],
-                  stderr=PIPE)
+                  stderr=PIPE).communicate()
             Popen(["umount", "-f", "{}/root/dev/fd".format(self.path)],
                   stderr=PIPE).communicate()
             Popen(["umount", "-f", "{}/root/dev".format(self.path)],
