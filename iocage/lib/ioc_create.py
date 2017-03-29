@@ -203,7 +203,7 @@ class IOCCreate(object):
 
         if self.pkglist:
             if config["ip4_addr"] == "none" and config["ip6_addr"] == "none":
-                self.lgr.warning(" WARNING: You need an IP address for the"
+                self.lgr.warning(" You need an IP address for the"
                                  " jail to install packages!\n")
             else:
                 self.create_install_packages(jail_uuid, location, _tag, config)
@@ -376,7 +376,7 @@ class IOCCreate(object):
                                  plugin=self.plugin).exec_jail()
 
         if srv_connection:
-            raise RuntimeError(f"ERROR: {srv_connection}\n"
+            raise RuntimeError(f"{srv_connection}\n"
                                f"Command run: {' '.join(srv_connect_cmd)}")
 
         self.lgr.info("Testing DNSSEC response to FreeBSD")
@@ -384,7 +384,7 @@ class IOCCreate(object):
                                     location, plugin=self.plugin).exec_jail()
 
         if dnssec_connection:
-            raise RuntimeError(f"ERROR: {dnssec_connection}\n"
+            raise RuntimeError(f"{dnssec_connection}\n"
                                f"Command run: {' '.join(dnssec_connect_cmd)}")
 
         if not self.plugin:
@@ -403,7 +403,7 @@ class IOCCreate(object):
                               plugin=self.plugin).exec_jail()
 
         if pkg_upgrade:
-            self.lgr.error(f"ERROR: {pkg_upgrade}")
+            self.lgr.error(f"{pkg_upgrade}")
             err = True
 
         self.lgr.info("Installing supplied packages:")
@@ -414,7 +414,7 @@ class IOCCreate(object):
                                   plugin=self.plugin).exec_jail()
 
             if pkg_install:
-                self.lgr.error("ERROR: {}".format(pkg_install))
+                self.lgr.error("{}".format(pkg_install))
                 err = True
 
         os.remove("{}/root/etc/resolv.conf".format(location))
@@ -461,7 +461,7 @@ class IOCCreate(object):
 
                 return tag
         else:
-            self.lgr.warning("\n  WARNING: tag: \"{}\" in use by {}!\n".format(
+            self.lgr.warning("\n  tag: \"{}\" in use by {}!\n".format(
                 tag, readlink_uuid) + "  Renaming {}'s tag to {}.\n".format(
                 jail_uuid, tag_date))
 

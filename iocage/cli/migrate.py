@@ -90,7 +90,7 @@ def migrate_cmd(force, delete):
                     checkoutput(["zfs", "destroy", "-r", "-f", jail_old],
                                 stderr=STDOUT)
                 except CalledProcessError as err:
-                    raise RuntimeError("ERROR: {}".format(
+                    raise RuntimeError("{}".format(
                         err.output.decode("utf-8").rstrip()))
 
                 try:

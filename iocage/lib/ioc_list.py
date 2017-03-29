@@ -70,7 +70,7 @@ class IOCList(object):
                 paths[conf["tag"]] = template
 
             if len(dups):
-                self.lgr.error(f"ERROR: Duplicate tag ({tag}) detected!")
+                self.lgr.error(f"Duplicate tag ({tag}) detected!")
                 for d, t in sorted(dups.items()):
                     u = [m for m in d.split("/") if len(m) == 36 or len(m)
                          == 8][0]

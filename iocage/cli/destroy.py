@@ -63,7 +63,7 @@ def destroy_cmd(force, release, download, jails):
                 exit(1)
 
             if not force:
-                lgr.warning("\nWARNING: This will destroy"
+                lgr.warning("\nThis will destroy"
                             " jail {} ({})".format(uuid, tag))
 
                 if not click.confirm("\nAre you sure?"):
@@ -87,7 +87,7 @@ def destroy_cmd(force, release, download, jails):
             path = f"{pool}/iocage/releases/{release}"
 
             if not force:
-                lgr.warning(f"\nWARNING: This will destroy RELEASE: {release}")
+                lgr.warning(f"\nThis will destroy RELEASE: {release}")
                 lgr.warning("       and any jail that was created with it.")
 
                 if not click.confirm("\nAre you sure?"):
