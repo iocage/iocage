@@ -146,7 +146,7 @@ class IOCFetch(object):
             try:
                 os.chdir("{}/{}".format(self.root_dir, self.release))
             except OSError as err:
-                raise RuntimeError("ERROR: {}".format(err))
+                raise RuntimeError("{}".format(err))
 
             if os.path.isdir(
                     "{}/download/{}".format(self.iocroot, self.release)):
@@ -163,11 +163,11 @@ class IOCFetch(object):
                     Popen(["zfs", "destroy", "-r", "-f", "{}{}".format(
                         self.pool, dataset)])
                     if f == "MANIFEST":
-                        error = "ERROR: {} is a required file!".format(f) + \
+                        error = "{} is a required file!".format(f) + \
                                 "\nPlease place it in {}/{}".format(
                                     self.root_dir, self.release)
                     else:
-                        error = "ERROR: {}.txz is a required file!".format(f) \
+                        error = "{}.txz is a required file!".format(f) \
                                 + "\nPlease place it in {}/{}".format(
                             self.root_dir, self.release)
                     raise RuntimeError(error)
@@ -697,7 +697,7 @@ class IOCFetch(object):
         # We do this test again as the user could supply a malformed IP to
         # fetch that bypasses the more naive check in cli/fetch
         if _conf["ip4_addr"] == "none" and _conf["ip6_addr"] == "none":
-            self.lgr.error("\nERROR: An IP address is needed to fetch a "
+            self.lgr.error("\nAn IP address is needed to fetch a "
                            "plugin!\n")
             self.lgr.error("Destroying partial plugin.")
             IOCDestroy(uuid, tag, jaildir).destroy_jail()
@@ -779,7 +779,7 @@ fingerprint: {fingerprint}
                 except (IOError, OSError):
                     pass
         else:
-            self.lgr.error("ERROR: pkg error, refusing to fetch artifact and "
+            self.lgr.error("pkg error, refusing to fetch artifact and "
                            "run post_install.sh!\n")
 
     def fetch_plugin_index(self, props, _list=False):
@@ -798,11 +798,11 @@ fingerprint: {fingerprint}
                     checkoutput(["git", "-C", "{}/.plugin_index".format(
                         self.iocroot), "pull"], stderr=STDOUT)
                 except CalledProcessError as err:
-                    raise RuntimeError("ERROR: {}".format(
+                    raise RuntimeError("{}".format(
                         err.output.decode("utf-8").rstrip()))
             else:
                 raise RuntimeError(
-                    "ERROR: {}".format(err.output.decode("utf-8").rstrip()))
+                    "{}".format(err.output.decode("utf-8").rstrip()))
 
         with open("{}/.plugin_index/INDEX".format(self.iocroot), "r") as \
                 plugins:

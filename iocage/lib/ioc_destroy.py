@@ -39,7 +39,7 @@ class IOCDestroy(object):
                 try:
                     check_call(["jail", "-r", jid[0]])
                 except CalledProcessError as err:
-                    raise RuntimeError("ERROR: {}".format(err))
+                    raise RuntimeError("{}".format(err))
         else:
             jid = Popen(["jls", "jid"], stdout=PIPE).communicate()[0].decode(
                 "utf-8").split()
@@ -48,7 +48,7 @@ class IOCDestroy(object):
                 try:
                     check_call(["jail", "-r", j])
                 except CalledProcessError as err:
-                    raise RuntimeError("ERROR: {}".format(err))
+                    raise RuntimeError("{}".format(err))
 
     def __destroy_leftovers__(self, dataset, clean=False):
         """Removes tags, parent datasets and logs."""

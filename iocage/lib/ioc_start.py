@@ -127,7 +127,7 @@ class IOCStart(object):
                                     stderr=STDOUT)
                     except CalledProcessError as err:
                         raise RuntimeError(
-                            "ERROR: {}".format(
+                            "{}".format(
                                 err.output.decode("utf-8").rstrip()))
 
             # FreeBSD 9.3 and under do not support this.
@@ -221,7 +221,7 @@ class IOCStart(object):
             if start.returncode:
                 # This is actually fatal.
                 self.lgr.error("  + Start FAILED")
-                raise RuntimeError(f"  ERROR: {stderr_data.decode('utf-8')}")
+                raise RuntimeError(f"  {stderr_data.decode('utf-8')}")
             else:
                 self.lgr.info("  + Started OK")
 
@@ -249,7 +249,7 @@ class IOCStart(object):
                             stderr=STDOUT)
                     except CalledProcessError as err:
                         raise RuntimeError(
-                            "ERROR: {}".format(
+                            "{}".format(
                                 err.output.decode("utf-8").rstrip()))
 
                     for child in children.split():
@@ -268,7 +268,7 @@ class IOCStart(object):
                                             stderr=STDOUT)
                         except CalledProcessError as err:
                             raise RuntimeError(
-                                "ERROR: {}".format(
+                                "{}".format(
                                     err.output.decode("utf-8").rstrip()))
 
             self.start_generate_resolv()
@@ -329,7 +329,7 @@ class IOCStart(object):
                     for addr in addrs.split(','):
                         iface, ip = addr.split("|")
                         if nic != iface:
-                            err = "\n  ERROR: Invalid interface supplied: {}"
+                            err = "\n  Invalid interface supplied: {}"
                             self.lgr.error(err.format(iface))
                             self.lgr.error("  Did you mean {}?\n".format(nic))
                         else:
@@ -393,7 +393,7 @@ class IOCStart(object):
             checkoutput(["jexec", f"ioc-{self.uuid}", "route"] + route,
                         stderr=STDOUT)
         except CalledProcessError as err:
-            return f"ERROR: {err.output.decode('utf-8')}".rstrip()
+            return f"{err.output.decode('utf-8')}".rstrip()
         else:
             return
 

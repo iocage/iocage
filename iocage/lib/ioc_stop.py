@@ -76,7 +76,7 @@ class IOCStop(object):
                                 pass
                             else:
                                 raise RuntimeError(
-                                    "ERROR: {}".format(
+                                    "{}".format(
                                         err.output.decode("utf-8").rstrip()))
 
                     try:
@@ -85,7 +85,7 @@ class IOCStop(object):
                                     stderr=STDOUT)
                     except CalledProcessError as err:
                         raise RuntimeError(
-                            "ERROR: {}".format(
+                            "{}".format(
                                 err.output.decode("utf-8").rstrip()))
 
             if vnet == "on":
@@ -119,7 +119,7 @@ class IOCStop(object):
                                 pass
                             else:
                                 raise RuntimeError(
-                                    "ERROR: {}".format(
+                                    "{}".format(
                                         err.output.decode("utf-8").strip()))
 
             if ip6_addr != "inherit" and vnet == "off":
@@ -143,7 +143,7 @@ class IOCStop(object):
                                 pass
                             else:
                                 raise RuntimeError(
-                                    "ERROR: {}".format(
+                                    "{}".format(
                                         err.output.decode("utf-8").strip()))
 
             stop = check_call(["jail", "-r", "ioc-{}".format(self.uuid)],

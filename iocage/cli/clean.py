@@ -25,7 +25,7 @@ def clean_cmd(force, dataset_type):
 
     if dataset_type == "jails":
         if not force:
-            lgr.warning("\nWARNING: This will destroy ALL jails"
+            lgr.warning("\nThis will destroy ALL jails"
                         " and any snapshots on a RELEASE, including "
                         "templates!")
             if not click.confirm("\nAre you sure?"):
@@ -45,7 +45,7 @@ def clean_cmd(force, dataset_type):
         pass
     elif dataset_type == "template":
         if not force:
-            lgr.warning("WARNING: This will destroy ALL templates"
+            lgr.warning("This will destroy ALL templates"
                         " and jails created from them!")
             if not click.confirm("\nAre you sure?"):
                 exit()

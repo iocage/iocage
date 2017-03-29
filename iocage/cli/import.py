@@ -74,7 +74,7 @@ def import_cmd(jail):
                                                       date)
         checkoutput(["zfs", "destroy", "-r", target], stderr=STDOUT)
     except CalledProcessError as err:
-        lgr.critical("ERROR: {}".format(err.output.decode("utf-8").rstrip()))
+        lgr.critical("{}".format(err.output.decode("utf-8").rstrip()))
         exit(1)
 
     tag = IOCJson("{}/jails/{}".format(iocroot, uuid),

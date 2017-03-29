@@ -47,7 +47,7 @@ def rollback_cmd(jail, name, force):
     try:
         checkoutput(["zfs", "get", "-H", "creation", target], stderr=PIPE)
     except CalledProcessError:
-        lgr.critical("ERROR: Snapshot {} does not exist!".format(target))
+        lgr.critical("Snapshot {} does not exist!".format(target))
         exit(1)
 
     if not force:

@@ -200,7 +200,7 @@ class IOCJson(object):
                         conf = json.load(conf)
                 except CalledProcessError:
                     # At this point it should be a real misconfigured jail
-                    raise RuntimeError("ERROR: Configuration is missing!"
+                    raise RuntimeError("Configuration is missing!"
                                        f" Please destroy {uuid} and recreate"
                                        " it.")
 
@@ -384,7 +384,7 @@ class IOCJson(object):
                     self.location = new_location.lstrip(pool).replace(
                         "/iocage", iocroot)
                 except CalledProcessError as err:
-                    raise RuntimeError("ERROR: {}".format(
+                    raise RuntimeError("{}".format(
                         err.output.decode("utf-8").rstrip()))
 
                 self.lgr.info("{} ({}) converted to a template.".format(uuid,
@@ -399,7 +399,7 @@ class IOCJson(object):
                     self.location = old_location.lstrip(pool).replace(
                         "/iocage", iocroot)
                 except CalledProcessError as err:
-                    raise RuntimeError("ERROR: {}".format(
+                    raise RuntimeError("{}".format(
                         err.output.decode("utf-8").rstrip()))
 
                 self.lgr.info("{} ({}) converted to a jail.".format(uuid,
@@ -428,7 +428,7 @@ class IOCJson(object):
                     checkoutput(["jail", "-m", "jid={}".format(jid),
                                  "{}={}".format(key, value)], stderr=STDOUT)
                 except CalledProcessError as err:
-                    raise RuntimeError("ERROR: {}".format(
+                    raise RuntimeError("{}".format(
                         err.output.decode("utf-8").rstrip()))
 
     @staticmethod
@@ -642,7 +642,7 @@ class IOCJson(object):
             if key == "quota":
                 if value != "none" and not value.upper().endswith(("M", "G",
                                                                    "T")):
-                    err = f"ERROR: {value} should have a suffix ending in" \
+                    err = f"{value} should have a suffix ending in" \
                           " M, G, or T."
                     raise RuntimeError(err)
 
@@ -662,9 +662,9 @@ class IOCJson(object):
                 err = f"{value} is not a valid value for {key}.\n"
 
                 if self.cli:
-                    self.lgr.error(f"ERROR: {err}")
+                    self.lgr.error(f"{err}")
                 else:
-                    err = f"ERROR: {err}"
+                    err = f"{err}"
 
                 if key not in ("interfaces", "ip4_addr", "ip6_addr",
                                "memoryuse"):
@@ -712,11 +712,11 @@ class IOCJson(object):
         else:
             if self.cli:
                 raise RuntimeError(
-                    f"ERROR: {key} cannot be changed by the user.")
+                    f"{key} cannot be changed by the user.")
             else:
                 if key not in conf.keys():
                     raise RuntimeError(
-                        f"WARNING: {key} is not a valid property!")
+                        f"{key} is not a valid property!")
 
     def json_plugin_load(self):
         try:

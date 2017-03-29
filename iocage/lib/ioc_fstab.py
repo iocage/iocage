@@ -117,7 +117,7 @@ class IOCFstab(object):
             stdout_data, stderr_data = proc.communicate()
 
             if stderr_data:
-                raise RuntimeError(f"ERROR: {stderr_data.decode('utf-8')}")
+                raise RuntimeError(f"{stderr_data.decode('utf-8')}")
 
     def __fstab_umount__(self, dest):
         """
@@ -132,7 +132,7 @@ class IOCFstab(object):
             stdout_data, stderr_data = proc.communicate()
 
             if stderr_data:
-                raise RuntimeError(f"ERROR: {stderr_data.decode('utf-8')}")
+                raise RuntimeError(f"{stderr_data.decode('utf-8')}")
 
     def __fstab_edit__(self):
         """
