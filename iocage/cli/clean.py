@@ -52,7 +52,6 @@ def clean_cmd(force, dataset_type):
 
         IOCClean().clean_templates()
         lgr.info("All iocage template datasets have been destroyed.")
-        pass
     else:
         lgr.critical("Please specify a dataset type to clean!")
         exit(1)
