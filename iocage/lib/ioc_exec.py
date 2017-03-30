@@ -1,6 +1,6 @@
 """iocage exec module."""
 import logging
-from subprocess import CalledProcessError, Popen, STDOUT
+from subprocess import CalledProcessError, Popen, STDOUT, PIPE
 
 from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_json import IOCJson
@@ -65,8 +65,7 @@ class IOCExec(object):
                 return err.output.decode("utf-8").rstrip()
         else:
             jexec = Popen(["jexec", flag, user, "ioc-{}".format(self.uuid)] +
-                          list(self.command))
+                          list(self.command), stdout=PIPE, stderr=PIPE)
             msg, err = jexec.communicate()
 
-            if err:
-                return err
+            return msg, err
