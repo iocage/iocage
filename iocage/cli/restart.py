@@ -48,7 +48,6 @@ def restart_cmd(jail, soft):
             elif conf["type"] == "template":
                 lgr.critical("Please convert back to a jail before trying"
                              " to restart {} ({})".format(uuid, j))
-                exit(1)
             else:
                 lgr.critical("{} is not a supported jail type.".format(
                     conf["type"]
