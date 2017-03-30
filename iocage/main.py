@@ -1,10 +1,7 @@
 """The main CLI for ioc."""
-from __future__ import print_function
-
 import glob
 import imp
 import locale
-import logging
 import os
 import stat
 import sys
@@ -18,6 +15,7 @@ from click import core
 core._verify_python3_env = lambda: None
 user_locale = os.environ.get("LANG", "en_US.UTF-8")
 locale.setlocale(locale.LC_ALL, user_locale)
+
 
 def print_version(ctx, param, value):
     """Prints the version and then exits."""
@@ -72,8 +70,6 @@ def main():
             # hilarity ensues. Let's avoid that.
             sys.argv.remove(arg)
 
-    logging.basicConfig(filename=log_file, filemode=mode, level=logging.DEBUG,
-                        format='%(message)s')
     skip_check = False
     skip_check_cmds = ["--help", "activate", "deactivate", "-v", "--version"]
 
