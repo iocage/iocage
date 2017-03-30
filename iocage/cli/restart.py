@@ -13,6 +13,38 @@ from iocage.lib.ioc_stop import IOCStop
 __cmdname__ = "restart_cmd"
 __rootcmd__ = True
 
+lgr = ioc_logger.Logger('ioc_cli_restart')
+lgr = lgr.getLogger()
+
+
+def check_type(uuid, tag, path, _all, soft):
+    """
+    Checks the jail type and spits out an error or does the specified 
+    restart method.
+    """
+    conf = IOCJson(path).json_load()
+
+    if conf["type"] in ("jail", "plugin"):
+        if not soft:
+            __hard_restart__(uuid, tag, path, conf)
+        else:
+            __soft_restart__(uuid, tag, path, conf)
+    elif conf["type"] == "basejail":
+        lgr.critical("Please run \"iocage migrate\" before trying"
+                     f" to restart {uuid} ({tag})")
+        if not _all:
+            exit(1)
+    elif conf["type"] == "template":
+        lgr.critical("Please convert back to a jail before trying"
+                     f" to restart {uuid} ({tag})")
+        if not _all:
+            exit(1)
+    else:
+        lgr.critical(f"{conf['type']} is not a supported jail type.")
+
+        if not _all:
+            exit(1)
+
 
 @click.command(name="restart", help="Restarts the specified jails or ALL.")
 @click.option("--soft", "-s", help="Restarts the jail but does not tear"
@@ -23,35 +55,14 @@ def restart_cmd(jail, soft):
     Looks for the jail supplied and passes the uuid, path and configuration
     location to stop_jail and start_jail.
     """
-    lgr = ioc_logger.Logger('ioc_cli_restart')
-    lgr = lgr.getLogger()
-
     jails, paths = IOCList("uuid").list_datasets()
+
     if jail == "ALL":
         for j in jails:
             uuid = jails[j]
             path = paths[j]
 
-            conf = IOCJson(path).json_load()
-
-            if conf["type"] in ("jail", "plugin"):
-                try:
-                    if not soft:
-                        __hard_restart__(uuid, j, path, conf)
-                    else:
-                        __soft_restart__(uuid, j, path, conf)
-                except RuntimeError as err:
-                    lgr.error(err)
-            elif conf["type"] == "basejail":
-                lgr.critical("Please run \"iocage migrate\" before trying"
-                             " to restart {} ({})".format(uuid, j))
-            elif conf["type"] == "template":
-                lgr.critical("Please convert back to a jail before trying"
-                             " to restart {} ({})".format(uuid, j))
-            else:
-                lgr.critical("{} is not a supported jail type.".format(
-                    conf["type"]
-                ))
+            check_type(uuid, j, path, True, soft)
     else:
         _jail = {tag: uuid for (tag, uuid) in jails.items() if
                  uuid.startswith(jail) or tag == jail}
@@ -59,6 +70,8 @@ def restart_cmd(jail, soft):
         if len(_jail) == 1:
             tag, uuid = next(iter(_jail.items()))
             path = paths[tag]
+
+            check_type(uuid, tag, path, False, soft)
         elif len(_jail) > 1:
             lgr.error("Multiple jails found for"
                       " {}:".format(jail))
@@ -67,26 +80,6 @@ def restart_cmd(jail, soft):
             raise RuntimeError()
         else:
             lgr.critical("{} not found!".format(jail))
-            exit(1)
-
-        conf = IOCJson(path).json_load()
-
-        if conf["type"] in ("jail", "plugin"):
-            if not soft:
-                __hard_restart__(uuid, tag, path, conf)
-            else:
-                __soft_restart__(uuid, tag, path, conf)
-        elif conf["type"] == "basejail":
-            lgr.critical("Please run \"iocage migrate\" before trying"
-                         " to restart {} ({})".format(uuid, tag))
-            exit(1)
-        elif conf["type"] == "template":
-            lgr.critical("Please convert back to a jail before trying"
-                         " to restart {} ({})".format(uuid, tag))
-            exit(1)
-        else:
-            lgr.critical(
-                "{} is not a supported jail type.".format(conf["type"]))
             exit(1)
 
 
