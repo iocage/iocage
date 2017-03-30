@@ -9,11 +9,11 @@ class LoggerFormatter(logging.Formatter):
 
     CONSOLE_COLOR_FORMATTER = {
         'YELLOW' : '\033[1;33m',  # (warning)
-        'GREEN'  : '\033[1;32m',  # (info)
+        'GREEN'    : '\033[1;40;97m',  # (info)
         'RED'    : '\033[1;31m',  # (error)
         'HIGHRED': '\033[1;49;31m',  # (critical)
         'RESET'  : '\033[1;m',  # Reset
-        'MSG'    : '\033[1;40;97m',  # General message
+        'MSG'  : '\033[1;32m',  # General message
     }
     LOGGING_LEVEL = {
         'CRITICAL': 50,
