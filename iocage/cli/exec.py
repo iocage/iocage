@@ -54,8 +54,11 @@ def exec_cmd(command, jail, host_user, jail_user):
         lgr.critical("{} not found!".format(jail))
         exit(1)
 
-    msg = IOCExec(command, uuid, tag, path, host_user, jail_user).exec_jail()
+    msg, err = IOCExec(command, uuid, tag, path, host_user,
+                       jail_user).exec_jail()
 
-    if msg:
+    if err:
         err = indent_lines(msg)
         lgr.error("{}".format(err))
+    else:
+        lgr.info(msg.decode("utf-8"))
