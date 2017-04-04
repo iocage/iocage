@@ -104,7 +104,7 @@ class Logger(object):
         console_handler = logging.StreamHandler()
         console_handler.setLevel(logging.DEBUG)
 
-        log_format = "%(levelname)s %(message)s"
+        log_format = "%(levelname)s%(message)s"
         time_format = "%Y/%m/%d %H:%M:%S"
         console_handler.setFormatter(
             LoggerFormatter(log_format, datefmt=time_format))

@@ -82,8 +82,8 @@ def migrate_cmd(force, delete):
                  "{}/jails/{}/fstab".format(iocroot, new_uuid))
             for line in fileinput.input("{}/jails/{}/root/etc/rc.conf".format(
                     iocroot, new_uuid), inplace=1):
-                print(line.replace('hostname="{}"'.format(uuid),
-                                   'hostname="{}"'.format(new_uuid)).rstrip())
+                lgr.info(line.replace(f'hostname="{uuid}"',
+                                      f'hostname="{new_uuid}"').rstrip())
 
             if delete:
                 try:
