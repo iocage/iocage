@@ -114,6 +114,10 @@ class Logger(object):
     def configure_logging(self):
         if os.geteuid() == 0:
             self._set_output_file()
+        else:
+            for handler in logging.root.handlers:
+                if isinstance(handler, logging.StreamHandler):
+                    logging.root.removeHandler(handler)
 
         self._set_output_console()
         logging.root.setLevel(logging.DEBUG)
