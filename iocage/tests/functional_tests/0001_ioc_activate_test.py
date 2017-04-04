@@ -1,16 +1,15 @@
 import pytest
-import subprocess
+from iocage.cli.activate import activate_cmd
+from click.testing import CliRunner
 
 require_root = pytest.mark.require_root
 require_zpool = pytest.mark.require_zpool
 
+
 @require_root
 @require_zpool
 def test_activate(zpool):
-    try:
-        subprocess.check_call(["zfs", "set", "org.freebsd.ioc:active=yes",
-                               zpool], stdout=subprocess.PIPE)
-    except subprocess.CalledProcessError:
-        exit("Pool: {} does not exist!".format(zpool))
+    runner = CliRunner()
+    result = runner.invoke(activate_cmd, [zpool])
 
-    assert True == True
+    assert result.exit_code == 0
