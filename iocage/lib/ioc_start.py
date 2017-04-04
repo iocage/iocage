@@ -324,6 +324,7 @@ class IOCStart(object):
         try:
             membermtu = find_bridge_mtu(bridge)
 
+            ifaces = []
             for addrs, gw in net_configs:
                 if addrs != 'none':
                     for addr in addrs.split(','):
@@ -332,35 +333,27 @@ class IOCStart(object):
                             err = "\n  Invalid interface supplied: {}"
                             self.lgr.error(err.format(iface))
                             self.lgr.error("  Did you mean {}?\n".format(nic))
-                        else:
-                            self.start_network_vnet(nic, bridge, membermtu,
-                                                    iface, ip, gw, jid)
+                            continue
+                        if iface not in ifaces:
+                            self.start_network_vnet_iface(nic, bridge, membermtu, jid)
+                            ifaces.append(iface)
+
+                        self.start_network_vnet_addr(iface, ip, gw)
 
         except CalledProcessError as err:
             self.lgr.warning("Network failed to start:"
                              f" {err.output.decode('utf-8')}".rstrip())
 
-    def start_network_vnet(self, nic, bridge, mtu, iface, ip, defaultgw, jid):
+    def start_network_vnet_iface(self, nic, bridge, mtu, jid):
         """
         The real meat and potatoes for starting a VNET interface.
 
         :param nic: The network interface to assign the IP in the jail
         :param bridge: The bridge to attach the VNET interface
         :param mtu: The mtu of the VNET interface
-        :param iface: The interface to use
-        :param ip:  The IP address to assign
-        :param defaultgw: The gateway IP to assign to the nic
         :param jid: The jails ID
         :return: If an error occurs it returns the error. Otherwise, it's None
         """
-
-        # Crude check to see if it's a IPv6 address
-        if ":" in ip:
-            ifconfig = [iface, "inet6", ip, "up"]
-            route = ["add", "-6", "default", defaultgw]
-        else:
-            ifconfig = [iface, ip, "up"]
-            route = ["add", "default", defaultgw]
 
         mac_a, mac_b = self.__start_generate_vnet_mac__(nic)
         epair_a_cmd = ["ifconfig", "epair", "create"]
@@ -388,6 +381,31 @@ class IOCStart(object):
             checkoutput(["ifconfig", bridge, "addm", f"{nic}:{jid}", "up"],
                         stderr=STDOUT)
             checkoutput(["ifconfig", f"{nic}:{jid}", "up"], stderr=STDOUT)
+        except CalledProcessError as err:
+            return f"{err.output.decode('utf-8')}".rstrip()
+        else:
+            return
+
+    def start_network_vnet_addr(self, iface, ip, defaultgw):
+        """
+        Add an IP address to a vnet interface inside the jail.
+
+        :param iface: The interface to use
+        :param ip:  The IP address to assign
+        :param defaultgw: The gateway IP to assign to the nic
+        :return: If an error occurs it returns the error. Otherwise, it's None
+        """
+
+        # Crude check to see if it's a IPv6 address
+        if ":" in ip:
+            ifconfig = [iface, "inet6", ip, "up"]
+            route = ["add", "-6", "default", defaultgw]
+        else:
+            ifconfig = [iface, ip, "up"]
+            route = ["add", "default", defaultgw]
+
+        try:
+            # Jail side
             checkoutput(["jexec", f"ioc-{self.uuid}", "ifconfig"] + ifconfig,
                         stderr=STDOUT)
             checkoutput(["jexec", f"ioc-{self.uuid}", "route"] + route,
