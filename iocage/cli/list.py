@@ -26,8 +26,7 @@ __cmdname__ = "list_cmd"
               help="Have --remote use HTTP instead.", is_flag=True)
 def list_cmd(dataset_type, header, _long, remote, http, plugins):
     """This passes the arg and calls the jail_datasets function."""
-    lgr = ioc_logger.Logger('ioc_cli_list')
-    lgr = lgr.getLogger()
+    lgr = ioc_logger.Logger('ioc_cli_list').getLogger()
     freebsd_version = checkoutput(["freebsd-version"])
 
     if dataset_type is None:

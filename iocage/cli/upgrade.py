@@ -18,8 +18,7 @@ __rootcmd__ = True
 @click.option("--release", "-r", required=True, help="RELEASE to upgrade to")
 def upgrade_cmd(jail, release):
     """Runs upgrade with the command given inside the specified jail."""
-    lgr = ioc_logger.Logger('ioc_cli_upgrade')
-    lgr = lgr.getLogger()
+    lgr = ioc_logger.Logger('ioc_cli_upgrade').getLogger()
 
     jails, paths = IOCList("uuid").list_datasets()
     _jail = {tag: uuid for (tag, uuid) in jails.items() if

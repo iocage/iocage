@@ -39,8 +39,7 @@ def validate_count(ctx, param, value):
 @click.argument("props", nargs=-1)
 def create_cmd(release, template, count, props, pkglist, basejail, empty,
                short, uuid):
-    lgr = ioc_logger.Logger('ioc_cli_create')
-    lgr = lgr.getLogger()
+    lgr = ioc_logger.Logger('ioc_cli_create').getLogger()
 
     if short and uuid:
         lgr.critical(

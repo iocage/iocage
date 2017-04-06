@@ -39,8 +39,7 @@ def umount(path, _type):
 @click.argument("command", nargs=-1, type=click.UNPROCESSED)
 def chroot_cmd(jail, command):
     """Will chroot into a jail regardless if it's running."""
-    lgr = ioc_logger.Logger('ioc_cli_chroot')
-    lgr = lgr.getLogger()
+    lgr = ioc_logger.Logger('ioc_cli_chroot').getLogger()
     jails, paths = IOCList("uuid").list_datasets()
     command = list(command)
 

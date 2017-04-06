@@ -20,8 +20,7 @@ __rootcmd__ = True
               help="Destroy all templates.")
 def clean_cmd(force, dataset_type):
     """Calls the correct destroy function."""
-    lgr = ioc_logger.Logger('ioc_cli_clean')
-    lgr = lgr.getLogger()
+    lgr = ioc_logger.Logger('ioc_cli_clean').getLogger()
 
     if dataset_type == "jails":
         if not force:

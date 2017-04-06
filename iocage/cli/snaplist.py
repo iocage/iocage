@@ -17,8 +17,7 @@ __cmdname__ = "snaplist_cmd"
 @click.argument("jail")
 def snaplist_cmd(header, jail):
     """Allows a user to show resource usage of all jails."""
-    lgr = ioc_logger.Logger('ioc_cli_snaplist')
-    lgr = lgr.getLogger()
+    lgr = ioc_logger.Logger('ioc_cli_snaplist').getLogger()
 
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")

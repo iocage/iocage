@@ -20,8 +20,7 @@ __rootcmd__ = True
               default=False, is_flag=True)
 def rollback_cmd(jail, name, force):
     """Get a list of jails and print the property."""
-    lgr = ioc_logger.Logger('ioc_cli_rollback')
-    lgr = lgr.getLogger()
+    lgr = ioc_logger.Logger('ioc_cli_rollback').getLogger()
 
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")

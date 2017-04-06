@@ -18,8 +18,7 @@ __rootcmd__ = True
                                    " after @", required=False)
 def snapshot_cmd(jail, name):
     """Get a list of jails and print the property."""
-    lgr = ioc_logger.Logger('ioc_cli_snapshot')
-    lgr = lgr.getLogger()
+    lgr = ioc_logger.Logger('ioc_cli_snapshot').getLogger()
 
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")

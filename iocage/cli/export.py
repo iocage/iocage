@@ -8,8 +8,7 @@ from iocage.lib.ioc_list import IOCList
 __cmdname__ = "export_cmd"
 __rootcmd__ = True
 
-lgr = ioc_logger.Logger("ioc_cli_export")
-lgr = lgr.getLogger()
+lgr = ioc_logger.Logger("ioc_cli_export").getLogger()
 
 
 def callback(message):

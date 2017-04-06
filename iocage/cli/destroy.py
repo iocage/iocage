@@ -19,8 +19,7 @@ __rootcmd__ = True
 @click.argument("jails", nargs=-1)
 def destroy_cmd(force, release, download, jails):
     """Destroys the jail's 2 datasets and the snapshot from the RELEASE."""
-    lgr = ioc_logger.Logger('ioc_cli_destroy')
-    lgr = lgr.getLogger()
+    lgr = ioc_logger.Logger('ioc_cli_destroy').getLogger()
 
     if download and not release:
         exit("--release (-r) must be specified as well!")

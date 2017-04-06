@@ -21,8 +21,7 @@ __rootcmd__ = True
 def exec_cmd(command, jail, host_user, jail_user):
     """Runs the command given inside the specified jail as the supplied
     user."""
-    lgr = ioc_logger.Logger('ioc_cli_exec')
-    lgr = lgr.getLogger()
+    lgr = ioc_logger.Logger('ioc_cli_exec').getLogger()
 
     # We may be getting ';', '&&' and so forth. Adding the shell for safety.
     if len(command) == 1:

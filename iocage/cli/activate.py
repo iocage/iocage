@@ -9,8 +9,7 @@ __rootcmd__ = True
 
 IOCAGE_ZFS_ACTIVE_PROPERTY = "org.freebsd.ioc:active"
 
-lgr = ioc_logger.Logger('ioc_cli_activate')
-lgr = lgr.getLogger()
+lgr = ioc_logger.Logger('ioc_cli_activate').getLogger()
 
 
 @click.command(name="activate", help="Set a zpool active for iocage usage.")

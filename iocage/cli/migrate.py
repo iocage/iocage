@@ -24,8 +24,7 @@ __rootcmd__ = True
               help="Delete the old dataset after it has been migrated.")
 def migrate_cmd(force, delete):
     """Migrates all the iocage_legacy develop basejails to clone jails."""
-    lgr = ioc_logger.Logger('ioc_cli_migrate')
-    lgr = lgr.getLogger()
+    lgr = ioc_logger.Logger('ioc_cli_migrate').getLogger()
 
     jails, paths = IOCList("uuid").list_datasets()
 

@@ -13,8 +13,7 @@ from iocage.lib.ioc_stop import IOCStop
 __cmdname__ = "restart_cmd"
 __rootcmd__ = True
 
-lgr = ioc_logger.Logger('ioc_cli_restart')
-lgr = lgr.getLogger()
+lgr = ioc_logger.Logger('ioc_cli_restart').getLogger()
 
 
 def check_type(uuid, tag, path, _all, soft):
@@ -96,8 +95,7 @@ def __soft_restart__(uuid, jail, path, conf):
     """
     getjid = IOCList().list_get_jid(uuid)
     status, jid = getjid
-    lgr = ioc_logger.Logger('ioc_cli_restart')
-    lgr = lgr.getLogger()
+    lgr = ioc_logger.Logger('ioc_cli_restart').getLogger()
 
     # These needs to be a list.
     exec_start = conf["exec_start"].split()

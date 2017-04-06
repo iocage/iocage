@@ -51,8 +51,7 @@ def start_cmd(rc, jails):
     Looks for the jail supplied and passes the uuid, path and configuration
     location to start_jail.
     """
-    lgr = ioc_logger.Logger('ioc_cli_start')
-    lgr = lgr.getLogger()
+    lgr = ioc_logger.Logger('ioc_cli_start').getLogger()
 
     _jails, paths = IOCList("uuid").list_datasets()
     jail_order = {}
