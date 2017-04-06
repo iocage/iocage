@@ -20,8 +20,7 @@ __rootcmd__ = True
               is_flag=True)
 def set_cmd(prop, jail, plugin):
     """Get a list of jails and print the property."""
-    lgr = ioc_logger.Logger('ioc_cli_set')
-    lgr = lgr.getLogger()
+    lgr = ioc_logger.Logger('ioc_cli_set').getLogger()
 
     jails, paths = IOCList("uuid").list_datasets(set=True)
     _jail = {tag: uuid for (tag, uuid) in jails.items() if

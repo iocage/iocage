@@ -14,8 +14,7 @@ __rootcmd__ = True
 @click.argument("command", nargs=-1, type=click.UNPROCESSED)
 def pkg_cmd(command, jail):
     """Runs pkg with the command given inside the specified jail."""
-    lgr = ioc_logger.Logger('ioc_cli_pkg')
-    lgr = lgr.getLogger()
+    lgr = ioc_logger.Logger('ioc_cli_pkg').getLogger()
 
     jails, paths = IOCList("uuid").list_datasets()
     _jail = {tag: uuid for (tag, uuid) in jails.items() if

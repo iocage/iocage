@@ -20,8 +20,7 @@ __rootcmd__ = True
 @click.argument("jail", required=True)
 def update_cmd(jail):
     """Runs update with the command given inside the specified jail."""
-    lgr = ioc_logger.Logger('ioc_cli_update')
-    lgr = lgr.getLogger()
+    lgr = ioc_logger.Logger('ioc_cli_update').getLogger()
 
     jails, paths = IOCList("uuid").list_datasets()
     _jail = {tag: uuid for (tag, uuid) in jails.items() if

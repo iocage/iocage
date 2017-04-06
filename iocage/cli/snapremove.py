@@ -16,8 +16,7 @@ __cmdname__ = "snapremove_cmd"
                                    " after @", required=True)
 def snapremove_cmd(jail, name):
     """Removes a snapshot from a user supplied jail."""
-    lgr = ioc_logger.Logger('ioc_cli_snapremove')
-    lgr = lgr.getLogger()
+    lgr = ioc_logger.Logger('ioc_cli_snapremove').getLogger()
 
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")

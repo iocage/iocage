@@ -9,8 +9,7 @@ __rootcmd__ = True
 
 
 def callback(message):
-    lgr = ioc_logger.Logger('ioc_cli_import')
-    lgr = lgr.getLogger()
+    lgr = ioc_logger.Logger('ioc_cli_import').getLogger()
 
     lgr.info(message)
 

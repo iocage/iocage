@@ -23,8 +23,7 @@ def stop_cmd(rc, jails):
     Looks for the jail supplied and passes the uuid, path and configuration
     location to stop_jail.
     """
-    lgr = ioc_logger.Logger('ioc_cli_stop')
-    lgr = lgr.getLogger()
+    lgr = ioc_logger.Logger('ioc_cli_stop').getLogger()
 
     _jails, paths = IOCList("uuid").list_datasets()
     jail_order = {}

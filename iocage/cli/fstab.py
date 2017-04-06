@@ -27,8 +27,7 @@ def fstab_cmd(action, fstab_string, jail):
     Looks for the jail supplied and passes the uuid, path and configuration
     location to manipulate the fstab.
     """
-    lgr = ioc_logger.Logger('ioc_cli_fstab')
-    lgr = lgr.getLogger()
+    lgr = ioc_logger.Logger('ioc_cli_fstab').getLogger()
     pool = IOCJson().json_get_value("pool")
     iocroot = IOCJson(pool).json_get_value("iocroot")
     index = None

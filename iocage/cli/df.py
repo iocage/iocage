@@ -19,8 +19,7 @@ __cmdname__ = "df_cmd"
               help="Show the full uuid.")
 def df_cmd(header, _long):
     """Allows a user to show resource usage of all jails."""
-    lgr = ioc_logger.Logger('ioc_cli_df')
-    lgr = lgr.getLogger()
+    lgr = ioc_logger.Logger('ioc_cli_df').getLogger()
 
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")

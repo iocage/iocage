@@ -20,8 +20,7 @@ def console_cmd(jail, force):
     Runs jexec to login into the specified jail. Accepts a force flag that
     will attempt to start the jail if it is not already running.
     """
-    lgr = ioc_logger.Logger('ioc_cli_console')
-    lgr = lgr.getLogger()
+    lgr = ioc_logger.Logger('ioc_cli_console').getLogger()
     # TODO: setfib support
     jails, paths = IOCList("uuid").list_datasets()
 

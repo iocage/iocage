@@ -58,8 +58,7 @@ def fetch_cmd(http, _file, server, user, password, auth, verify, release,
     freebsd_version = checkoutput(["freebsd-version"])
     arch = os.uname()[4]
 
-    lgr = ioc_logger.Logger("ioc_cli_fetch")
-    lgr = lgr.getLogger()
+    lgr = ioc_logger.Logger("ioc_cli_fetch").getLogger()
 
     if not files:
         if arch == "arm64":
