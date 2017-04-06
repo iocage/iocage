@@ -11,6 +11,7 @@ from ftplib import FTP, error_perm
 from shutil import copy
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT
 from tempfile import NamedTemporaryFile
+from urllib.request import urlopen
 
 import requests
 from requests.auth import HTTPDigestAuth
@@ -572,10 +573,6 @@ class IOCFetch(object):
 
     def fetch_update(self, cli=False, uuid=None, tag=None):
         """This calls 'freebsd-update' to update the fetched RELEASE."""
-        # FreeNAS does not have freebsd-update
-        if not os.access("/usr/sbin/freebsd-update", os.F_OK):
-            return
-
         if cli:
             cmd = ["mount", "-t", "devfs", "devfs",
                    "{}/jails/{}/root/dev".format(self.iocroot, uuid)]
@@ -599,33 +596,33 @@ class IOCFetch(object):
 
         os.environ["UNAME_r"] = self.release
         os.environ["PAGER"] = "/bin/cat"
-        if os.path.isfile("{}/etc/freebsd-update.conf".format(new_root)):
-            # 10.1-RELEASE and under have a interactive check
-            if float(self.release.partition("-")[0][:5]) <= 10.1:
-                with NamedTemporaryFile(delete=False) as tmp_conf:
-                    conf = "{}/usr/sbin/freebsd-update".format(new_root)
-                    with open(conf, "r") as update_conf:
-                        for line in update_conf:
-                            line = bytes(line, encoding="utf-8")
-                            tmp_conf.write(re.sub(b"\[ ! -t 0 \]", b"false",
-                                                  line))
-                os.chmod(tmp_conf.name, 0o755)
-                Popen([tmp_conf.name, "-b", new_root, "-d",
-                       "{}/var/db/freebsd-update/".format(new_root), "-f",
-                       "{}/etc/freebsd-update.conf".format(new_root),
-                       "fetch"], stderr=PIPE).communicate()
-                os.remove(tmp_conf.name)
-            else:
-                Popen(["freebsd-update", "-b", new_root, "-d",
+        if os.path.isfile(f"{new_root}/etc/freebsd-update.conf"):
+            f = "https://raw.githubusercontent.com/freebsd/freebsd" \
+                "/master/usr.sbin/freebsd-update/freebsd-update.sh"
+
+            tmp = None
+            try:
+                tmp = NamedTemporaryFile(delete=False)
+                with urlopen(f) as fbsd_update:
+                    tmp.write(fbsd_update.read())
+                tmp.close()
+                os.chmod(tmp.name, 0o755)
+
+                Popen([tmp.name, "-b", new_root, "-d",
                        "{}/var/db/freebsd-update/".format(new_root), "-f",
                        "{}/etc/freebsd-update.conf".format(new_root),
                        "fetch"], stderr=PIPE).communicate()
 
-            Popen(["freebsd-update", "-b", new_root, "-d",
-                   "{}/var/db/freebsd-update/".format(new_root), "-f",
-                   "{}/etc/freebsd-update.conf".format(new_root),
-                   "install"], stderr=PIPE).communicate()
+                Popen([tmp.name, "-b", new_root, "-d",
+                       "{}/var/db/freebsd-update/".format(new_root), "-f",
+                       "{}/etc/freebsd-update.conf".format(new_root),
+                       "install"], stderr=PIPE).communicate()
+            finally:
+                if tmp:
+                    if not tmp.closed:
+                        tmp.close()
 
+                    os.remove(tmp.name)
         try:
             if not cli:
                 # Why this sometimes doesn't exist, we may never know.
