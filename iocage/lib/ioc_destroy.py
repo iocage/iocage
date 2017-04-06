@@ -109,6 +109,13 @@ class IOCDestroy(object):
                                                        "releases")):
                 # The jails parent won't show in the list.
                 j_parent = self.ds(f"{dataset.name.replace('/root','')}")
+                j_dependents = j_parent.dependents
+
+                for j_dependent in j_dependents:
+                    if j_dependent.type == libzfs.DatasetType.FILESYSTEM:
+                        j_dependent.umount(force=True)
+
+                    j_dependent.delete()
 
                 j_parent.umount(force=True)
                 j_parent.delete()
