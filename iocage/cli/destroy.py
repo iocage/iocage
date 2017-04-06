@@ -34,7 +34,7 @@ def destroy_cmd(force, release, download, jails):
             err = str(err)
 
             if "Configuration is missing" in err:
-                uuid = err.split()[6]
+                uuid = err.split()[5]
                 pool = IOCJson().json_get_value("pool")
                 path = f"{pool}/iocage/jails/{uuid}"
 
