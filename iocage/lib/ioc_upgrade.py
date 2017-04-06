@@ -1,6 +1,9 @@
+"""iocage upgrade module"""
 import logging
 import os
 from subprocess import PIPE, Popen
+from tempfile import NamedTemporaryFile
+from urllib.request import urlopen
 
 from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_json import IOCJson
@@ -29,44 +32,54 @@ class IOCUpgrade(object):
         if "HBSD" in self.freebsd_version:
             Popen(["hbsd-upgrade", "-j", self.jid]).communicate()
         else:
-            if os.path.isfile("{}/etc/freebsd-update.conf".format(self.path)):
-                # 10.3-RELEASE and under lack this flag
-                if float(self.host_release.partition("-")[0][:5]) <= 10.3:
-                    raise RuntimeError(f"Host: {self.host_release} is too"
-                                       " old, please upgrade to"
-                                       " 10.3-RELEASE or above")
+            os.environ["PAGER"] = "/bin/cat"
+            if os.path.isfile(f"{self.path}/etc/freebsd-update.conf"):
+                f = "https://raw.githubusercontent.com/freebsd/freebsd" \
+                    "/master/usr.sbin/freebsd-update/freebsd-update.sh"
 
-                os.environ["PAGER"] = "/bin/cat"
-                fetch = Popen(["freebsd-update", "-b", self.path, "-d",
-                               f"{self.path}/var/db/freebsd-update/",
-                               "-f",
-                               f"{self.path}/etc/freebsd-update.conf",
-                               f"--currently-running {self.jail_release}",
-                               "-r",
-                               self.new_release, "upgrade"], stdin=PIPE)
-                fetch.communicate(b"y")
+                tmp = None
+                try:
+                    tmp = NamedTemporaryFile(delete=False)
+                    with urlopen(f) as fbsd_update:
+                        tmp.write(fbsd_update.read())
+                    tmp.close()
+                    os.chmod(tmp.name, 0o755)
 
-                while not self.__upgrade_install__():
-                    pass
+                    fetch = Popen([tmp.name, "-b", self.path, "-d",
+                                   f"{self.path}/var/db/freebsd-update/",
+                                   "-f",
+                                   f"{self.path}/etc/freebsd-update.conf",
+                                   f"--currently-running {self.jail_release}",
+                                   "-r",
+                                   self.new_release, "upgrade"], stdin=PIPE)
+                    fetch.communicate(b"y")
 
-                if self.new_release[:4].endswith("-"):
-                    # 9.3-RELEASE and under don't actually have this binary.
-                    new_release = self.new_release
-                else:
-                    with open(self._freebsd_version, "r") as r:
-                        for line in r:
-                            if line.startswith("USERLAND_VERSION"):
-                                new_release = \
-                                    line.rstrip().partition("=")[2].strip('"')
+                    while not self.__upgrade_install__(tmp.name):
+                        pass
+
+                    if self.new_release[:4].endswith("-"):
+                        # 9.3-RELEASE and under don't actually have this binary.
+                        new_release = self.new_release
+                    else:
+                        with open(self._freebsd_version, "r") as r:
+                            for line in r:
+                                if line.startswith("USERLAND_VERSION"):
+                                    new_release = line.rstrip().partition(
+                                        "=")[2].strip('"')
+                finally:
+                    if tmp:
+                        if not tmp.closed:
+                            tmp.close()
+                        os.remove(tmp.name)
 
                 IOCJson(f"{self.path.replace('/root', '')}",
                         silent=True).json_set_value(f"release={new_release}")
 
                 return new_release
 
-    def __upgrade_install__(self):
+    def __upgrade_install__(self, name):
         """Installs the upgrade and returns the exit code."""
-        install = Popen(["freebsd-update", "-b", self.path, "-d",
+        install = Popen([name, "-b", self.path, "-d",
                          f"{self.path}/var/db/freebsd-update/",
                          "-f",
                          f"{self.path}/etc/freebsd-update.conf",
