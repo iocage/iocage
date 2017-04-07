@@ -17,4 +17,4 @@ def start_cmd(rc, jails):
     Looks for the jail supplied and passes the uuid, path and configuration
     location to start_jail.
     """
-    libiocage.IOCageMng().mng_jail(rc, jails, 'start')
+    libiocage.IOCageMng(callback=True).mng_jail(rc, jails, 'start')

@@ -17,4 +17,4 @@ def stop_cmd(rc, jails):
     Looks for the jail supplied and passes the uuid, path and configuration
     location to stop_jail.
     """
-    libiocage.IOCageMng().mng_jail(rc, jails, 'stop')
+    libiocage.IOCageMng(callback=True).mng_jail(rc, jails, 'stop')
