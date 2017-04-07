@@ -608,15 +608,21 @@ class IOCFetch(object):
                 tmp.close()
                 os.chmod(tmp.name, 0o755)
 
-                Popen([tmp.name, "-b", new_root, "-d",
-                       "{}/var/db/freebsd-update/".format(new_root), "-f",
-                       "{}/etc/freebsd-update.conf".format(new_root),
-                       "fetch"], stderr=PIPE).communicate()
+                fetch = Popen([tmp.name, "-b", new_root, "-d",
+                               "{}/var/db/freebsd-update/".format(new_root),
+                               "-f",
+                               "{}/etc/freebsd-update.conf".format(new_root),
+                               "fetch"], stderr=PIPE)
+                fetch.communicate()
 
-                Popen([tmp.name, "-b", new_root, "-d",
-                       "{}/var/db/freebsd-update/".format(new_root), "-f",
-                       "{}/etc/freebsd-update.conf".format(new_root),
-                       "install"], stderr=PIPE).communicate()
+                if not fetch.returncode:
+                    Popen([tmp.name, "-b", new_root, "-d",
+                           "{}/var/db/freebsd-update/".format(new_root), "-f",
+                           "{}/etc/freebsd-update.conf".format(new_root),
+                           "install"], stderr=PIPE).communicate()
+                else:
+                    self.lgr.warning(f"Error occured, {self.release} was not "
+                                     "updated to the latest patch level.")
             finally:
                 if tmp:
                     if not tmp.closed:
