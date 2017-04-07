@@ -53,8 +53,24 @@ class PoolAndDataset(object):
 class IOCageMng(object):
     """Parent class to manage a jails lifecycle."""
 
-    def __init__(self):
+    def __init__(self, callback=False):
         self.jails, self.paths = ioc_list.IOCList("uuid").list_datasets()
+        self.callback = False if not callback else True
+
+    def __callback__(self, log):
+        """Helper to call the appropriate logging level"""
+        lgr = ioc_logger.Logger('mng_jail').getLogger()
+
+        if log['level'] == 'CRITICAL':
+            lgr.critical(log['message'])
+        elif log['level'] == 'ERROR':
+            lgr.error(log['message'])
+        elif log['level'] == 'WARNING':
+            lgr.warning(log['message'])
+        elif log['level'] == 'INFO':
+            lgr.info(log['message'])
+        elif log['level'] == 'DEBUG':
+            lgr.debug(log['message'])
 
     def __check_jail_existence__(self, jail):
         """
@@ -71,7 +87,12 @@ class IOCageMng(object):
 
             return tag, uuid, path
         elif len(_jail) > 1:
-            raise RuntimeError("Multiple jails found for {}:".format(jail))
+            msg = f"Multiple jails found for {jail}:"
+
+            for j in sorted(_jail.items()):
+                msg += f"\n  {j}"
+
+            raise RuntimeError(msg)
         else:
             raise RuntimeError("{} not found!".format(jail))
 
@@ -118,14 +139,16 @@ class IOCageMng(object):
         jail_order = {}
         boot_order = {}
 
-        lgr = ioc_logger.Logger('mng_jail').getLogger()
         _reverse = True if action == 'stop' else False
-        jails = self.jails if rc else jails
+        _all = True if 'ALL' in jails else False
+        jails = self.jails if rc or _all else jails
 
         if len(jails) < 1:
-            lgr.critical("Please specify either one or more jails or"
-                         "ALL!")
-            exit(1)
+            if self.callback:
+                message = "Please specify either one or more jails or ALL!"
+                self.__callback__({'level': 'CRITICAL', 'message': message})
+
+                exit(1)
         else:
             for jail in jails:
                 tag, uuid, path = self.__check_jail_existence__(jail)
@@ -145,42 +168,52 @@ class IOCageMng(object):
                                                 key=itemgetter(1),
                                                 reverse=_reverse))
 
-                if rc:
-                    for j in boot_order.keys():
-                        tag, uuid, path = self.__check_jail_existence__(j)
-                        status, _ = ioc_list.IOCList().list_get_jid(uuid)
+            if rc:
+                for j in boot_order.keys():
+                    tag, uuid, path = self.__check_jail_existence__(j)
+                    status, _ = ioc_list.IOCList().list_get_jid(uuid)
 
-                        if action == 'stop':
-                            if status:
-                                lgr.info("  Stopping {} ({})".format(uuid, j))
-                                self.__jail_stop__(j, True)
-                            else:
-                                lgr.info("{} ({}) is not running!".format(uuid, j))
-                        elif action == 'start':
-                            if not status:
-                                err, msg = self.__jail_start__(j)
+                    if action == 'stop':
+                        if status:
+                            message = f"  Stopping {uuid} ({j})"
+                            self.__callback__({'level': 'INFO', 'message':
+                                               message})
+                            self.__jail_stop__(j, True)
+                        else:
+                            message = f"{uuid} ({j}) is not running!"
+                            self.__callback__({'level': 'INFO', 'message':
+                                               message})
+                    elif action == 'start':
+                        if not status:
+                            err, msg = self.__jail_start__(j)
 
-                                if err:
-                                    lgr.error(msg)
-                            else:
-                                lgr.info("{} ({}) is already running!".format(j))
-                    exit()
+                            if err:
+                                self.__callback__({'level': 'ERROR',
+                                                   'message': msg})
+                        else:
+                            message = f"{uuid} ({j}) is already running!"
+                            self.__callback__({'level': 'WARNING',
+                                               'message': message})
+                exit()
 
-                if len(jails) >= 1 and jails[0] == 'ALL':
+            else:
+                if _all:
                     for j in jail_order:
                         if action == 'stop':
-                            self.__jail_stop__(j, True)
+                            self.__jail_stop__(j)
                         elif action == 'start':
                             err, msg = self.__jail_start__(j)
 
                             if err:
-                                lgr.error(msg)
+                                self.__callback__({'level': 'WARNING',
+                                                   'message': msg})
                 else:
                     if action == 'start':
                         err, msg = self.__jail_start__(jail)
 
                         if err and msg:
-                            lgr.critical(msg)
+                            self.__callback__({'level': 'CRITICAL',
+                                               'message': msg})
                             exit(1)
                     elif action == 'stop':
                         self.__jail_stop__(jail)
