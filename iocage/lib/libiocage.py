@@ -1,13 +1,13 @@
-import libzfs
-import iocage.lib.ioc_json as ioc_json
-import iocage.lib.ioc_start as ioc_start
-import iocage.lib.ioc_list as ioc_list
-import iocage.lib.ioc_start as ioc_start
-import iocage.lib.ioc_stop as ioc_stop
-import iocage.lib.ioc_logger as ioc_logger
-
 from collections import OrderedDict
 from operator import itemgetter
+
+import libzfs
+
+import iocage.lib.ioc_json as ioc_json
+import iocage.lib.ioc_list as ioc_list
+import iocage.lib.ioc_logger as ioc_logger
+import iocage.lib.ioc_start as ioc_start
+import iocage.lib.ioc_stop as ioc_stop
 
 
 class PoolAndDataset(object):
@@ -50,28 +50,65 @@ class PoolAndDataset(object):
 
 
 class IOCageMng(object):
+    """Parent class to manage a jails lifecycle."""
 
+    def __check_jail_existence__(self, jail):
+        """
+        Helper to check if jail dataset exists
+        Return: 
+                tuple: The jails tag, uuid, path
+        """
+        jails, paths = ioc_list.IOCList("uuid").list_datasets()
+        _jail = {tag: uuid for (tag, uuid) in jails.items() if
+                 uuid.startswith(jail) or tag == jail}
 
-    def __jail_start__(self, uuid, tag, path):
-        conf = ioc_json.IOCJson(path).json_load()
+        if len(_jail) == 1:
+            tag, uuid = next(iter(_jail.items()))
+            path = paths[tag]
 
-        if conf['type'] in ('jail', 'plugin'):
-            ioc_start.IOCStart(uuid, tag, path, conf)
-            return (False, None)
-        elif conf['type'] == 'basejail':
-            return (True, "Please run \"iocage migrate\" before trying to start"
-                          f" {uuid} ({tag})")
-        elif conf['type'] == 'template':
-            return (True, "Please convert back to a jail before trying to start"
-                          f" {uuid} ({tag})")
+            return tag, uuid, path
+        elif len(_jail) > 1:
+            raise RuntimeError("Multiple jails found for {}:".format(jail))
         else:
-            return (True, f"{conf['type']} is not a supported jail type.")
+            raise RuntimeError("{} not found!".format(jail))
 
+    def __check_jail_type__(self, conf, uuid, tag):
+        """
+        Return: 
+            tuple: True if error with a message, or False/None
+        """
+        if conf['type'] in ('jail', 'plugin'):
+            return False, None
+        elif conf['type'] == 'basejail':
+            return (True, "Please run \"iocage migrate\" before trying to"
+                          f" start {uuid} ({tag})")
+        elif conf['type'] == 'template':
+            return (True, "Please convert back to a jail before trying to"
+                          f" start {uuid} ({tag})")
+        else:
+            return True, f"{conf['type']} is not a supported jail type."
 
-    def __jail_stop__(self, uuid, j, path, conf, silent=False):
-        ioc_stop.IOCStop(uuid, j, path, conf, silent)
+    def __jail_start__(self, jail, silent=False):
+        """Checks jails type and existence, then starts the jail"""
+        tag, uuid, path = self.__check_jail_existence__(jail)
+        conf = ioc_json.IOCJson(path).json_load()
+        err, msg = self.__check_jail_type__(conf, uuid, tag)
+
+        if not err:
+            ioc_start.IOCStart(uuid, tag, path, conf, silent)
+
+            return False, None
+        else:
+            return err, msg
+
+    def __jail_stop__(self, jail, silent=False):
+        """Stops the jail."""
+        tag, uuid, path = self.__check_jail_existence__(jail)
+        conf = ioc_json.IOCJson(path).json_load()
+        ioc_stop.IOCStop(uuid, tag, path, conf, silent)
 
     def mng_jail(self, rc, jails, action):
+        """Starts and stops jails."""
         if action.lower() not in ('start', 'stop'):
             raise ValueError('You must specify [start|stop] as an action.')
 
@@ -79,95 +116,67 @@ class IOCageMng(object):
         boot_order = {}
 
         lgr = ioc_logger.Logger('mng_jail').getLogger()
-        _jails, paths = ioc_list.IOCList('uuid').list_datasets()
-
         _reverse = True if action == 'stop' else False
 
-        for jail_name in _jails:
-            path = paths[jail_name]
+        for jail in jails:
+            tag, uuid, path = self.__check_jail_existence__(jail)
             conf = ioc_json.IOCJson(path).json_load()
             boot = conf['boot']
             priority = conf['priority']
-            jail_order[jail_name] = int(priority)
+            jail_order[jail] = int(priority)
 
             # This removes having to grab all the JSON again later.
             if boot == 'on':
-                boot_order[jail_name] = int(priority)
-
+                boot_order[jail] = int(priority)
 
             jail_order = OrderedDict(sorted(jail_order.items(),
-                                            key=itemgetter(1), reverse=_reverse))
+                                            key=itemgetter(1),
+                                            reverse=_reverse))
             boot_order = OrderedDict(sorted(boot_order.items(),
-                                            key=itemgetter(1), reverse=_reverse))
+                                            key=itemgetter(1),
+                                            reverse=_reverse))
 
             if rc:
                 for j in boot_order.keys():
-                    uuid = _jails[j]
-                    path = paths[j]
+                    tag, uuid, path = self.__check_jail_existence__(j)
                     status, _ = ioc_list.IOCList().list_get_jid(uuid)
 
                     if action == 'stop':
                         if status:
                             lgr.info("  Stopping {} ({})".format(uuid, j))
-                            conf = ioc_json.IOCJson(path).json_load()
-                            self.__jail_stop__(uuid, j, path, conf, True)
+                            self.__jail_stop__(j, True)
                         else:
                             lgr.info("{} ({}) is not running!".format(uuid, j))
                     elif action == 'start':
                         if not status:
-                            err, msg = self.__jail_start__(uuid, j, path)
+                            err, msg = self.__jail_start__(j)
 
                             if err:
                                 lgr.error(msg)
                         else:
-                            lgr.info("{} ({}) is already running!".format(uuid, j))
+                            lgr.info("{} ({}) is already running!".format(j))
                 exit()
 
             if len(jails) >= 1 and jails[0] == 'ALL':
-                if len(_jails) < 1:
-                    lgr.critical(f'No jails exist to {action}')
-                    exit(1)
-
                 for j in jail_order:
-                    uuid = _jails[j]
-                    path = paths[j]
                     if action == 'stop':
-                        conf = ioc_json.IOCJson(path).json_load()
-                        self.__jail_stop__(uuid, j, path, conf, True)
+                        self.__jail_stop__(j, True)
                     elif action == 'start':
-                        err, msg = self.__jail_start__(uuid, j, path)
+                        err, msg = self.__jail_start__(j)
 
                         if err:
                             lgr.error(msg)
             else:
                 if len(jails) < 1:
-                    lgr.critical("Please specify either one or more jails or ALL!")
+                    lgr.critical("Please specify either one or more jails or"
+                                 "ALL!")
                     exit(1)
 
-                for jail in jails:
-                    _jail = {tag: uuid for (tag, uuid) in _jails.items() if
-                             uuid.startswith(jail) or tag == jail}
+                if action == 'start':
+                    err, msg = self.__jail_start__(jail)
 
-                    if len(_jail) == 1:
-                        tag, uuid = next(iter(_jail.items()))
-                        path = paths[tag]
-                    elif len(_jail) > 1:
-                        lgr.error("Multiple jails found for"
-                                  " {}:".format(jail))
-                        for t, u in sorted(_jail.items()):
-                            lgr.critical("  {} ({})".format(u, t))
+                    if err and msg:
+                        lgr.critical(msg)
                         exit(1)
-                    else:
-                        lgr.critical("{} not found!".format(jail))
-                        exit(1)
-
-
-                    if action == 'start':
-                        err, msg = self.__jail_start__(uuid, tag, path)
-
-                        if err:
-                            lgr.critical(msg)
-                            exit(1)
-                    elif action == 'stop':
-                        conf = ioc_json.IOCJson(path).json_load()
-                        self.__jail_stop__(uuid, tag, path, conf)
+                elif action == 'stop':
+                    self.__jail_stop__(jail)
