@@ -37,7 +37,8 @@ class PoolAndDataset(object):
                    'root': '/iocage',
                   }
         if option_type in __types.keys():
-            return self.zfs.get_dataset(f"{self.pool}{__types[option_type]}").children
+            return self.zfs.get_dataset(
+                f"{self.pool}{__types[option_type]}").children
 
     def get_iocroot(self):
         """
