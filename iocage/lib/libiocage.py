@@ -121,65 +121,65 @@ class IOCageMng(object):
         _reverse = True if action == 'stop' else False
         jails = self.jails if rc else jails
 
-        for jail in jails:
-            tag, uuid, path = self.__check_jail_existence__(jail)
-            conf = ioc_json.IOCJson(path).json_load()
-            boot = conf['boot']
-            priority = conf['priority']
-            jail_order[jail] = int(priority)
+        if len(jails) < 1:
+            lgr.critical("Please specify either one or more jails or"
+                         "ALL!")
+            exit(1)
+        else:
+            for jail in jails:
+                tag, uuid, path = self.__check_jail_existence__(jail)
+                conf = ioc_json.IOCJson(path).json_load()
+                boot = conf['boot']
+                priority = conf['priority']
+                jail_order[jail] = int(priority)
 
-            # This removes having to grab all the JSON again later.
-            if boot == 'on':
-                boot_order[jail] = int(priority)
+                # This removes having to grab all the JSON again later.
+                if boot == 'on':
+                    boot_order[jail] = int(priority)
 
-            jail_order = OrderedDict(sorted(jail_order.items(),
-                                            key=itemgetter(1),
-                                            reverse=_reverse))
-            boot_order = OrderedDict(sorted(boot_order.items(),
-                                            key=itemgetter(1),
-                                            reverse=_reverse))
+                jail_order = OrderedDict(sorted(jail_order.items(),
+                                                key=itemgetter(1),
+                                                reverse=_reverse))
+                boot_order = OrderedDict(sorted(boot_order.items(),
+                                                key=itemgetter(1),
+                                                reverse=_reverse))
 
-            if rc:
-                for j in boot_order.keys():
-                    tag, uuid, path = self.__check_jail_existence__(j)
-                    status, _ = ioc_list.IOCList().list_get_jid(uuid)
+                if rc:
+                    for j in boot_order.keys():
+                        tag, uuid, path = self.__check_jail_existence__(j)
+                        status, _ = ioc_list.IOCList().list_get_jid(uuid)
 
-                    if action == 'stop':
-                        if status:
-                            lgr.info("  Stopping {} ({})".format(uuid, j))
+                        if action == 'stop':
+                            if status:
+                                lgr.info("  Stopping {} ({})".format(uuid, j))
+                                self.__jail_stop__(j, True)
+                            else:
+                                lgr.info("{} ({}) is not running!".format(uuid, j))
+                        elif action == 'start':
+                            if not status:
+                                err, msg = self.__jail_start__(j)
+
+                                if err:
+                                    lgr.error(msg)
+                            else:
+                                lgr.info("{} ({}) is already running!".format(j))
+                    exit()
+
+                if len(jails) >= 1 and jails[0] == 'ALL':
+                    for j in jail_order:
+                        if action == 'stop':
                             self.__jail_stop__(j, True)
-                        else:
-                            lgr.info("{} ({}) is not running!".format(uuid, j))
-                    elif action == 'start':
-                        if not status:
+                        elif action == 'start':
                             err, msg = self.__jail_start__(j)
 
                             if err:
                                 lgr.error(msg)
-                        else:
-                            lgr.info("{} ({}) is already running!".format(j))
-                exit()
+                else:
+                    if action == 'start':
+                        err, msg = self.__jail_start__(jail)
 
-            if len(jails) >= 1 and jails[0] == 'ALL':
-                for j in jail_order:
-                    if action == 'stop':
-                        self.__jail_stop__(j, True)
-                    elif action == 'start':
-                        err, msg = self.__jail_start__(j)
-
-                        if err:
-                            lgr.error(msg)
-            else:
-                if len(jails) < 1:
-                    lgr.critical("Please specify either one or more jails or"
-                                 "ALL!")
-                    exit(1)
-
-                if action == 'start':
-                    err, msg = self.__jail_start__(jail)
-
-                    if err and msg:
-                        lgr.critical(msg)
-                        exit(1)
-                elif action == 'stop':
-                    self.__jail_stop__(jail)
+                        if err and msg:
+                            lgr.critical(msg)
+                            exit(1)
+                    elif action == 'stop':
+                        self.__jail_stop__(jail)
