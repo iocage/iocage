@@ -52,19 +52,21 @@ class PoolAndDataset(object):
 class IOCageMng(object):
     """Parent class to manage a jails lifecycle."""
 
+    def __init__(self):
+        self.jails, self.paths = ioc_list.IOCList("uuid").list_datasets()
+
     def __check_jail_existence__(self, jail):
         """
         Helper to check if jail dataset exists
         Return: 
                 tuple: The jails tag, uuid, path
         """
-        jails, paths = ioc_list.IOCList("uuid").list_datasets()
-        _jail = {tag: uuid for (tag, uuid) in jails.items() if
+        _jail = {tag: uuid for (tag, uuid) in self.jails.items() if
                  uuid.startswith(jail) or tag == jail}
 
         if len(_jail) == 1:
             tag, uuid = next(iter(_jail.items()))
-            path = paths[tag]
+            path = self.paths[tag]
 
             return tag, uuid, path
         elif len(_jail) > 1:
@@ -117,6 +119,7 @@ class IOCageMng(object):
 
         lgr = ioc_logger.Logger('mng_jail').getLogger()
         _reverse = True if action == 'stop' else False
+        jails = self.jails if rc else jails
 
         for jail in jails:
             tag, uuid, path = self.__check_jail_existence__(jail)
