@@ -1,7 +1,4 @@
 """start module for the cli."""
-from collections import OrderedDict
-from operator import itemgetter
-
 import click
 
 import iocage.lib.libiocage as libiocage
