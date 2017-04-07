@@ -5,8 +5,6 @@ import zipfile
 from datetime import datetime
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
 
-import logging
-
 from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_json import IOCJson
 
