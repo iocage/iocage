@@ -5,6 +5,13 @@
 .Nm iocage
 .Nd jail manager using ZFS and VNET
 .Sh SYNOPSIS
+.\" == VERSION ==
+.Nm
+.Fl v | Fl -version
+.\" == HELP ==
+.Nm
+.Fl -help
+.Pp
 .\" == ACTIVATE ==
 .Nm
 .Cm activate
@@ -58,9 +65,6 @@
 .Nm
 .Cm get
 .Ar property | Ar all Ar UUID | Ar TAG
-."\ == HELP ==
-.Nm
-.Cm help
 .\" == IMPORT ==
 .Nm
 .Cm import
@@ -117,17 +121,14 @@
 .Cm upgrade
 .Ar UUID | Ar TAG
 .Op Cm release Ns = Ns Ar RELEASE
-.\" == VERSION ==
-.Nm
-.Fl v | Fl -version
 .Sh DESCRIPTION
 .Nm
-is a system administration tool for jails designed to simplify jail
+is a system administration tool for jails, designed to simplify jail
 management tasks.
 It abstracts away the management of ZFS-backed jails running VNET or
 shared IP networking.
 .Pp
-Both shared IP-based jails and VNET-enabled jails are supported.
+Both shared IP jails and VNET jails are supported.
 .Pp
 Each jail has a unique ID (UUID) automatically generated at creation time.
 Using the UUID as a jail identifier means that a jail can be replicated
@@ -189,9 +190,12 @@ The pool can be activated for
 jails without requiring user input.
 .\" == CHROOT ==
 .It Cm chroot
-Chroot into jail, without actually starting the jail itself.
-Useful for initial setup (set root password, configure networking).
-A command can be specified just like with the normal system chroot tool.
+Chroot into a jail without actually starting the jail itself.
+Useful for initial setup like setting a root password or configuring
+networking.
+A command can be specified as with the normal system
+.Xr chroot 8 .
+.\" == CLEAN ==
 It Cm clean
 Remove the ZFS datasets associated with the flag called. EWTF?
 .Fl a
@@ -307,11 +311,6 @@ updates applied.
 Get a named property or if the
 .Ar ALL
 keyword is specified, dump all properties known.
-.\" == HELP ==
-.It Cm help
-Show the built-in
-.Nm
-help file.
 .\" == IMPORT ==
 .It Cm import
 Import full jail images or differential packages.
