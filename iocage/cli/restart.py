@@ -100,14 +100,15 @@ def __soft_restart__(uuid, jail, path, conf):
     # These needs to be a list.
     exec_start = conf["exec_start"].split()
     exec_stop = conf["exec_stop"].split()
+    exec_fib = conf["exec_fib"]
 
     if status:
         lgr.info("Soft restarting {} ({})".format(uuid, jail))
-        stop_cmd = ["jexec", "ioc-{}".format(uuid)] + exec_stop
+        stop_cmd = ["setfib", exec_fib, "jexec", f"ioc-{uuid}"] + exec_stop
         Popen(stop_cmd, stdout=PIPE, stderr=PIPE).communicate()
 
         Popen(["pkill", "-j", jid]).communicate()
-        start_cmd = ["jexec", "ioc-{}".format(uuid)] + exec_start
+        start_cmd = ["setfib", exec_fib, "jexec", f"ioc-{uuid}"] + exec_start
         Popen(start_cmd, stdout=PIPE, stderr=PIPE).communicate()
         IOCJson(path, silent=True).json_set_value("last_started={}".format(
             datetime.utcnow().strftime("%F %T")))

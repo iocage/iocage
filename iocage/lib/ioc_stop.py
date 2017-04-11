@@ -30,6 +30,7 @@ class IOCStop(object):
         ip4_addr = self.conf["ip4_addr"]
         ip6_addr = self.conf["ip6_addr"]
         vnet = self.conf["vnet"]
+        exec_fib = self.conf["exec_fib"]
 
         if not self.status:
             self.lgr.error("{} ({}) is not running!".format(self.uuid,
@@ -42,9 +43,9 @@ class IOCStop(object):
             exec_stop = self.conf["exec_stop"].split()
             with open("{}/log/{}-console.log".format(self.iocroot,
                                                      self.uuid), "a") as f:
-                services = check_call(["jexec",
-                                       "ioc-{}".format(self.uuid)] +
-                                      exec_stop, stdout=f, stderr=PIPE)
+                services = check_call(["setfib", exec_fib, "jexec",
+                                       f"ioc-{self.uuid}"] + exec_stop,
+                                      stdout=f, stderr=PIPE)
             if services:
                 self.lgr.info("  + Stopping services FAILED")
             else:
@@ -62,9 +63,9 @@ class IOCStop(object):
                         child = child.strip()
 
                         try:
-                            checkoutput(["jexec", "ioc-{}".format(
-                                self.uuid), "zfs", "umount", child],
-                                        stderr=STDOUT)
+                            checkoutput(["setfib", exec_fib, "jexec",
+                                         f"ioc-{self.uuid}", "zfs", "umount",
+                                         child], stderr=STDOUT)
                         except CalledProcessError as err:
                             mountpoint = checkoutput(["zfs", "get", "-H",
                                                       "-o",
