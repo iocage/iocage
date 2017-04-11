@@ -27,6 +27,7 @@ class IOCStart(object):
         self.conf = conf
         self.get = IOCJson(self.path, silent=True).json_get_value
         self.set = IOCJson(self.path, silent=True).json_set_value
+        self.exec_fib = self.conf["exec_fib"]
         self.lgr = logging.getLogger('ioc_start')
 
         if silent:
@@ -263,24 +264,22 @@ class IOCStart(object):
                                                           self.pool,
                                                           jdataset)]).strip()
                             if mountpoint != "none":
-                                checkoutput(["jexec", "ioc-{}".format(
-                                    self.uuid), "zfs", "mount", child],
-                                            stderr=STDOUT)
+                                checkoutput(["setfib", self.exec_fib, "jexec",
+                                             f"ioc-{self.uuid}", "zfs",
+                                             "mount", child], stderr=STDOUT)
                         except CalledProcessError as err:
                             raise RuntimeError(
                                 "{}".format(
                                     err.output.decode("utf-8").rstrip()))
 
             self.start_generate_resolv()
-            # TODO: exec_fib support
             # This needs to be a list.
             exec_start = self.conf["exec_start"].split()
 
             with open("{}/log/{}-console.log".format(self.iocroot,
                                                      self.uuid), "a") as f:
-                services = check_call(["jexec",
-                                       "ioc-{}".format(
-                                           self.uuid)] + exec_start,
+                services = check_call(["setfib", self.exec_fib, "jexec",
+                                       f"ioc-{self.uuid}"] + exec_start,
                                       stdout=f, stderr=PIPE)
             if services:
                 self.lgr.info("  + Starting services FAILED")
@@ -374,10 +373,11 @@ class IOCStart(object):
             # Jail side
             checkoutput(["ifconfig", epair_b, "vnet",
                          f"ioc-{self.uuid}"], stderr=STDOUT)
-            checkoutput(["jexec", f"ioc-{self.uuid}", "ifconfig", epair_b,
-                         "name", nic, "mtu", mtu], stderr=STDOUT)
-            checkoutput(["jexec", f"ioc-{self.uuid}", "ifconfig", nic, "link",
-                         mac_b], stderr=STDOUT)
+            checkoutput(["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
+                         "ifconfig", epair_b, "name", nic, "mtu", mtu],
+                        stderr=STDOUT)
+            checkoutput(["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
+                         "ifconfig", nic, "link",mac_b], stderr=STDOUT)
             checkoutput(["ifconfig", bridge, "addm", f"{nic}:{jid}", "up"],
                         stderr=STDOUT)
             checkoutput(["ifconfig", f"{nic}:{jid}", "up"], stderr=STDOUT)
@@ -406,10 +406,10 @@ class IOCStart(object):
 
         try:
             # Jail side
-            checkoutput(["jexec", f"ioc-{self.uuid}", "ifconfig"] + ifconfig,
-                        stderr=STDOUT)
-            checkoutput(["jexec", f"ioc-{self.uuid}", "route"] + route,
-                        stderr=STDOUT)
+            checkoutput(["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
+                         "ifconfig"] + ifconfig, stderr=STDOUT)
+            checkoutput(["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
+                         "route"] + route, stderr=STDOUT)
         except CalledProcessError as err:
             return f"{err.output.decode('utf-8')}".rstrip()
         else:
