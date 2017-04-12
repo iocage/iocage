@@ -20,10 +20,10 @@ def activate_cmd(zpool):
     for _pool in pools:
         if _pool.name == zpool:
             ds = zfs.get_dataset(_pool.name)
-            ds.properties[prop].value = "yes"
+            ds.properties[prop] = libzfs.ZFSUserProperty("yes")
         else:
             ds = zfs.get_dataset(_pool.name)
-            ds.properties[prop].value = "no"
+            ds.properties[prop] = libzfs.ZFSUserProperty("no")
 
         # Check and clean if necessary iocage_legacy way
         # to mark a ZFS pool as usable (now replaced by ZFS property)
