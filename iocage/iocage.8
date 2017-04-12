@@ -319,6 +319,15 @@ iocage fetch release=10.1-RELEASE
 This example applies the latest patches to 10.1-RELEASE base.
 Newly created jails or basejails will automatically have the latest
 updates applied.
+.\" == FSTAB ==
+.It Cm fstab
+Manipulates the fstab settings of a specific jail. Use
+.Fl -add
+to add an entry to the specific jail fstab and mount it. Use
+.Fl -remove
+to remove an entry from a specific jail fstab and unmount it. The
+.Fl -edit
+option opens the fstab file in the default environments editor.
 .\" == GET ==
 .It Cm get
 Get a named property or if the
@@ -354,6 +363,9 @@ bypass interactive questions.
 With
 .Fl d ,
 delete the old dataset after migration.
+.\" == PKG ==
+.It Cm pkg
+Runs pkg with a specific command in a desired jail command.
 .\" == RESTART ==
 .It Cm restart
 Soft restart a jail, leaving the jail's networking and the jail process
@@ -423,6 +435,11 @@ iocage set release=10.1-RELEASE UUID|TAG
 For this, the release must be locally available.
 The basejail will re-clone its filesystems from the new release either
 by issuing the upgrade command or at then next jail start.
+.\" == Help ==
+.It Fl -help
+Display
+.Nm
+help text.
 .\" == VERSION ==
 .It Fl -version
 Display the
