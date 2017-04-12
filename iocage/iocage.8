@@ -61,6 +61,14 @@
 .Op Cm ftphost Ns = Ns Ar ftp.hostname.org
 .Op Cm ftpdir Ns = Ns Ar /dir/
 .Op Cm ftpfiles Ns = Ns Ar "base.txz doc.txz lib32.txz src.txz"
+.\" == FSTAB ==
+.Nm
+.Cm fstab
+.Ar JAIL
+.Op Ar FSTAB_STRING
+.Op Fl -add | a | Ar action
+.Op Fl -remove | r | Ar action
+.Op Fl -edit | e | Ar action
 .\" == GET ==
 .Nm
 .Cm get
@@ -78,6 +86,11 @@
 .Nm
 .Cm migrate
 .Op Fl f | Fl d
+.\" == PKG ==
+.Nm
+.Cm pkg
+.Ar JAIL
+.Ar COMMAND
 .\" == RESTART ==
 .Nm
 .Cm restart
