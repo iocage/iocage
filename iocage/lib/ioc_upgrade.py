@@ -45,7 +45,6 @@ class IOCUpgrade(object):
                     tmp.close()
                     os.chmod(tmp.name, 0o755)
 
-                    print("HERE")
                     fetch = Popen([tmp.name, "-b", self.path, "-d",
                                    f"{self.path}/var/db/freebsd-update/",
                                    "-f",
