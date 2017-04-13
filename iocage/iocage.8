@@ -10,7 +10,7 @@
 .Fl v | Fl -version
 .\" == HELP ==
 .Nm
-.Fl -help
+.Fl -help | Ar SUBCOMMAND Fl -help
 .Pp
 .\" == ACTIVATE ==
 .Nm
@@ -199,7 +199,10 @@ options         RCTL
 .It Fl -help
 Display
 .Nm
-help text.
+help text. Using
+.Fl -help
+after a specific subcommand displays help text for that particular
+command.
 .\" == VERSION ==
 .It Fl -version
 Display the
