@@ -195,6 +195,16 @@ options         RCTL
 .Ed
 .Sh SUBCOMMANDS
 .Bl -tag -width ".Cm activate"
+.\" == Help ==
+.It Fl -help
+Display
+.Nm
+help text.
+.\" == VERSION ==
+.It Fl -version
+Display the
+.Nm
+version number.
 .\" == ACTIVATE ==
 .It Cm activate
 Intended for automation tools.
@@ -435,16 +445,6 @@ iocage set release=10.1-RELEASE UUID|TAG
 For this, the release must be locally available.
 The basejail will re-clone its filesystems from the new release either
 by issuing the upgrade command or at then next jail start.
-.\" == Help ==
-.It Fl -help
-Display
-.Nm
-help text.
-.\" == VERSION ==
-.It Fl -version
-Display the
-.Nm
-version number.
 .El
 .Sh PROPERTIES
 The "Source" listed with each property shows whether it is a local
