@@ -4,17 +4,25 @@ import imp
 import locale
 import os
 import stat
+import subprocess as su
 import sys
 
 import click
+# This prevents it from getting in our way.
+from click import core
 
 from iocage.lib.ioc_check import IOCCheck
 
-# This prevents it from getting in our way.
-from click import core
 core._verify_python3_env = lambda: None
 user_locale = os.environ.get("LANG", "en_US.UTF-8")
 locale.setlocale(locale.LC_ALL, user_locale)
+
+try:
+    su.check_call(["sysctl", "vfs.zfs.version.spa"],
+                  stdout=su.PIPE, stderr=su.PIPE)
+except su.CalledProcessError:
+    sys.exit("ZFS is required to use iocage.\n"
+             "Try calling 'kldload zfs' as root.")
 
 
 def print_version(ctx, param, value):
