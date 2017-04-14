@@ -84,6 +84,17 @@ class IOCJson(object):
                     # These were just clones on master.
                     value = "jail"
                     key_and_value["basejail"] = "yes"
+            elif key == "hostname":
+                hostname = key_and_value["host_hostname"]
+
+                if value != hostname:
+                    # This is safe to replace at this point.
+                    # The user changed the wrong hostname key, we will move
+                    # it to the right one now.
+                    if hostname == uuid:
+                        key_and_value["host_hostname"] = value
+
+                continue
             key_and_value[key] = value
 
         if not skip:
