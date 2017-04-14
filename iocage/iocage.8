@@ -7,7 +7,7 @@
 .Sh SYNOPSIS
 .\" == VERSION ==
 .Nm
-.Fl v | Fl -version
+.Fl v | -version
 .\" == HELP ==
 .Nm
 .Fl -help | Ar SUBCOMMAND Fl -help
@@ -20,7 +20,7 @@
 .Nm
 .Cm chroot
 .Ar UUID | Ar TAG
-.Op Ar command
+.Op Ar COMMAND
 .\" == CLEAN ==
 .Nm
 .Cm clean
@@ -45,8 +45,8 @@
 .Op Fl s | -short
 .Op Fl t | -template Ar TEXT
 .Op Cm release Ns = Ns Ar RELEASE
-.Op Cm pkglist Ns = Ns Ar file
-.Op Cm property Ns = Ns Ar value
+.Op Cm pkglist Ns = Ns Ar FILE
+.Op Cm property Ns = Ns Ar VALUE
 .\" == DESTROY ==
 .Nm
 .Cm destroy
@@ -62,10 +62,10 @@
 .\" == EXEC ==
 .Nm
 .Cm exec
-.Op Fl u | -host_user Ar TEXT
-.Op Fl U | -jail_user Ar TEXT
-.Ar UUID | TAG | ALL
-.Ar command Op Ar arg ...
+.Op Fl u | -host_user Ar NAME
+.Op Fl U | -jail_user Ar NAME
+.Ar ALL | TAG | UUID
+.Cm COMMAND Op Ar ARGS
 .\" == EXPORT ==
 .Nm
 .Cm export
@@ -97,11 +97,11 @@
 .\" == FSTAB ==
 .Nm
 .Cm fstab
-.Ar JAIL
-.Op Ar FSTAB_STRING
 .Op Fl a | -add
 .Op Fl e | -edit
 .Op Fl r | -remove
+.Ar JAIL
+.Op Ar FSTAB_STRING
 .\" == GET ==
 .Nm
 .Cm get
@@ -110,12 +110,13 @@
 .Op Fl H | h | -header
 .Op Fl p | -pool
 .Op Fl r | -recursive
-.Ar property | Ar all Ar UUID | Ar TAG
+.Ar PROPERTY
+.Op Ar all | Ar UUID | Ar TAG
 .\" == IMPORT ==
 .Nm
 .Cm import
-.Ar UUID
-.Op Cm property Ns = Ns Ar value
+.Ar JAIL
+.Op Cm Ar Jail_value
 .\" == LIST ==
 .Nm
 .Cm list
@@ -140,55 +141,53 @@
 .Nm
 .Cm restart
 .Op Fl s | -soft
-.Ar UUID | Ar TAG
+.Op Ar UUID | Ar TAG
 .\" == ROLLBACK ==
 .Nm
 .Cm rollback
 .Op Fl f | -force
-.Op Fl n | -name Ar TEXT
-.Ar UUID | Ar TAG@snapshotname
+.Op Fl n | -name Ar SNAPSHOT
+.Op Ar UUID | Ar TAG@snapshotname
 .\" == SET ==
 .Nm
 .Cm set
-.Op Fl P | -plugin
-.Cm property Ns = Ns Ar value
-.Ar UUID | Ar TAG
+.Op Fl P | -plugin Ar KEY
+.Cm Ar property_value
+.Op Ar UUID | Ar TAG
 .\" == SNAPLIST ==
 .Nm
 .Cm snaplist
 .Op Fl H | h | -header
-.Ar UUID | Ar TAG
+.Op Ar UUID | Ar TAG
 .\" == SNAPREMOVE ==
 .Nm
 .Cm snapremove
-.Op Fl n | -name Ar TEXT
-.Ar UUID | Ar TAG@snapshotname | Ar ALL
+.Op Fl n | -name
+.Op Ar UUID | Ar TAG@snapshotname | Ar ALL
 .\" == SNAPSHOT ==
 .Nm
 .Cm snapshot
-.Op Fl n | -name Ar TEXT
-.Ar UUID | Ar TAG
-.Op Ar UUID | Ar TAG@snapshotname
+.Op Fl n | -name Ar SNAPSHOT
+.Op Ar UUID | Ar TAG | Ar TAG@snapshotname
 .\" == START ==
 .Nm
 .Cm start
 .Op Fl -rc
-.Ar UUID | Ar TAG
+.Op Ar UUID | Ar TAG
 .\" == STOP ==
 .Nm
 .Cm stop
 .Op Fl -rc
-.Ar UUID | Ar TAG
+.Op Ar UUID | Ar TAG
 .\" == UPDATE ==
 .Nm
 .Cm update
-.Ar UUID | Ar TAG
+.Op Ar UUID | Ar TAG
 .\" == UPGRADE ==
 .Nm
 .Cm upgrade
-.Op Fl r | -release Ar TEXT
-.Ar UUID | Ar TAG
-.Op Cm release Ns = Ns Ar RELEASE
+.Op Fl r | -release Ar RELEASE
+.Op Ar UUID | Ar TAG
 .Sh DESCRIPTION
 .Nm
 is a system administration tool for jails, designed to simplify jail
