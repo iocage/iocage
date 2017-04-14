@@ -24,30 +24,46 @@
 .\" == CLEAN ==
 .Nm
 .Cm clean
-.Op Fl a | Fl r | Fl j
+.Op Fl a | -add
+.Op Fl b | -base | r
+.Op Fl f | -force
+.Op Fl j | -jails
+.Op Fl t | -template
 .\" == CONSOLE ==
 .Nm
 .Cm console
-.Ar UUID|TAG
+.Op Fl f | -force
+.Ar UUID | TAG
 .\" == CREATE ==
 .Nm
 .Cm create
-.Op Fl b | Fl c | Fl e
+.Op Fl b | -basejail
+.Op Fl c | -count Ar TEXT
+.Op Fl e | -empty
+.Op Fl p | -pkglist Ar TEXT
+.Op Fl r | -release Ar TEXT
+.Op Fl s | -short
+.Op Fl t | -template Ar TEXT
 .Op Cm release Ns = Ns Ar RELEASE
 .Op Cm pkglist Ns = Ns Ar file
 .Op Cm property Ns = Ns Ar value
 .\" == DESTROY ==
 .Nm
 .Cm destroy
-.Op Fl f
+.Op Fl d | -download
+.Op Fl f | -force
+.Op Fl r | -release
 .Ar UUID | Ar TAG
 .\" == DF ==
 .Nm
 .Cm df
+.Op Fl h | H | -header
+.Op Fl l | -long
 .\" == EXEC ==
 .Nm
 .Cm exec
-.Op Fl u Ar username | Fl U Ar username
+.Op Fl u | -host_user Ar TEXT
+.Op Fl U | -jail_user Ar TEXT
 .Ar UUID | TAG | ALL
 .Ar command Op Ar arg ...
 .\" == EXPORT ==
@@ -57,6 +73,23 @@
 .\" == FETCH ==
 .Nm
 .Cm fetch
+.Op Fl -plugins
+.Op Fl E | -eol
+.Op Fl NE | -noeol
+.Op Fl NU | -noupdate
+.Op Fl NV | -noverify
+.Op Fl P | -plugin-file Ar TEXT
+.Op Fl U | -update
+.Op Fl V | -verify
+.Op Fl a | -auth Ar TEXT
+.Op Fl c | -count Ar TEXT
+.Op Fl d | -root-dir Ar TEXT
+.Op Fl f | -file
+.Op Fl h | -http
+.Op Fl p | -password Ar TEXT
+.Op Fl r  | -release Ar TEXT
+.Op Fl s | -server Ar TEXT
+.Op Fl u | -user Ar TEXT
 .Op Cm release Ns = Ns Ar RELEASE
 .Op Cm ftphost Ns = Ns Ar ftp.hostname.org
 .Op Cm ftpdir Ns = Ns Ar /dir/
@@ -66,12 +99,17 @@
 .Cm fstab
 .Ar JAIL
 .Op Ar FSTAB_STRING
-.Op Fl -add | a | Ar action
-.Op Fl -remove | r | Ar action
-.Op Fl -edit | e | Ar action
+.Op Fl a | -add
+.Op Fl e | -edit
+.Op Fl r | -remove
 .\" == GET ==
 .Nm
 .Cm get
+.Op Fl P | -plugin
+.Op Fl a | -all
+.Op Fl H | h | -header
+.Op Fl p | -pool
+.Op Fl r | -recursive
 .Ar property | Ar all Ar UUID | Ar TAG
 .\" == IMPORT ==
 .Nm
@@ -81,11 +119,18 @@
 .\" == LIST ==
 .Nm
 .Cm list
-.Op Fl t | Fl r
+.Op Fl H | h | -header
+.Op Fl P | -plugins
+.Op Fl R | -remote
+.Op Fl b | -base | r | -release
+.Op Fl h | -http
+.Op Fl l | -long
+.Op Fl t | -template
 .\" == MIGRATE ==
 .Nm
 .Cm migrate
-.Op Fl f | Fl d
+.Op Fl d | -delete
+.Op Fl f | -force
 .\" == PKG ==
 .Nm
 .Cm pkg
@@ -94,36 +139,45 @@
 .\" == RESTART ==
 .Nm
 .Cm restart
+.Op Fl s | -soft
 .Ar UUID | Ar TAG
 .\" == ROLLBACK ==
 .Nm
 .Cm rollback
+.Op Fl f | -force
+.Op Fl n | -name Ar TEXT
 .Ar UUID | Ar TAG@snapshotname
 .\" == SET ==
 .Nm
 .Cm set
+.Op Fl P | -plugin
 .Cm property Ns = Ns Ar value
 .Ar UUID | Ar TAG
 .\" == SNAPLIST ==
 .Nm
 .Cm snaplist
+.Op Fl H | h | -header
 .Ar UUID | Ar TAG
 .\" == SNAPREMOVE ==
 .Nm
 .Cm snapremove
+.Op Fl n | -name Ar TEXT
 .Ar UUID | Ar TAG@snapshotname | Ar ALL
 .\" == SNAPSHOT ==
 .Nm
 .Cm snapshot
+.Op Fl n | -name Ar TEXT
 .Ar UUID | Ar TAG
 .Op Ar UUID | Ar TAG@snapshotname
 .\" == START ==
 .Nm
 .Cm start
+.Op Fl -rc
 .Ar UUID | Ar TAG
 .\" == STOP ==
 .Nm
 .Cm stop
+.Op Fl -rc
 .Ar UUID | Ar TAG
 .\" == UPDATE ==
 .Nm
@@ -132,6 +186,7 @@
 .\" == UPGRADE ==
 .Nm
 .Cm upgrade
+.Op Fl r | -release Ar TEXT
 .Ar UUID | Ar TAG
 .Op Cm release Ns = Ns Ar RELEASE
 .Sh DESCRIPTION
