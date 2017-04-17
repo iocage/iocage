@@ -303,7 +303,7 @@ class IOCJson(object):
                     if zpool == "freenas-boot":
                         try:
                             zpool = zpools[1]
-                        except KeyError:
+                        except IndexError:
                             raise RuntimeError("Please specify a pool to "
                                                "activate with iocage activate "
                                                "POOL")
