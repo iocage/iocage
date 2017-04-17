@@ -214,16 +214,16 @@ class IOCFetch(object):
 
         if self.hardened:
             if self.auth == "basic":
-                req = requests.get("{}/releases".format(self.server),
+                req = requests.get(f"{self.server}/{rdir}",
                                    auth=(self.user, self.password),
                                    verify=self.verify)
             elif self.auth == "digest":
-                req = requests.get("{}/releases".format(self.server),
+                req = requests.get(f"{self.server}/{rdir}",
                                    auth=HTTPDigestAuth(self.user,
                                                        self.password),
                                    verify=self.verify)
             else:
-                req = requests.get("{}/releases".format(self.server))
+                req = requests.get(f"{self.server}/{rdir}")
 
             releases = []
             status = req.status_code == requests.codes.ok
@@ -232,15 +232,19 @@ class IOCFetch(object):
 
             if not self.release:
                 for rel in req.content.split():
+                    rel = rel.decode()
                     rel = rel.strip("href=").strip("/").split(">")
-                    if "_stable" in rel[0]:
-                        rel = rel[0].strip('"').strip("/").strip("/</a")
-                        rel = rel.replace("hardened_", "").replace(
-                            "_master-LAST", "").replace("_", "-").upper()
+
+                    if "-STABLE" in rel[0]:
+                        rel = rel[0].strip('"').strip("/").strip(
+                            "HardenedBSD-").rsplit("-")
+                        rel = f"{rel[0]}-{rel[1]}"
+
                         if rel not in releases:
                             releases.append(rel)
 
                 releases = sort_release(releases)
+
                 for r in releases:
                     self.lgr.info("[{}] {}".format(releases.index(r), r))
                 self.release = input(
@@ -267,7 +271,7 @@ class IOCFetch(object):
 
             if not self.release:
                 for rel in req.content.split():
-                    rel = rel.decode("utf-8")
+                    rel = rel.decode()
                     rel = rel.strip("href=").strip("/").split(">")
                     if "-RELEASE" in rel[0]:
                         rel = rel[0].strip('"').strip("/").strip("/</a")
