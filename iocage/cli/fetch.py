@@ -1,4 +1,5 @@
 """fetch module for the cli."""
+import json
 import os
 
 import click
@@ -75,6 +76,18 @@ def fetch_cmd(http, _file, server, user, password, auth, verify, release,
         hardened = False
 
     if plugins or plugin_file:
+        if plugin_file:
+            try:
+                with open(plugin_file) as f:
+                    return json.load(f)
+            except FileNotFoundError:
+                lgr.critical("Please supply a file before any properties.")
+                exit(1)
+            except json.decoder.JSONDecodeError:
+                lgr.critical("Invalid JSON file supplied, please supply a "
+                             "correctly formatted JSON file.")
+                exit(1)
+
         ip = [x for x in props if x.startswith("ip4_addr") or x.startswith(
             "ip6_addr")]
         if not ip:
