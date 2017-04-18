@@ -5,12 +5,12 @@
 .Nm iocage
 .Nd jail manager using ZFS and VNET
 .Sh SYNOPSIS
-.\" == VERSION ==
-.Nm
-.Fl v | -version
 .\" == HELP ==
 .Nm
-.Fl -help | Ar SUBCOMMAND Fl -help
+.Op Fl -help | Ar SUBCOMMAND Fl -help
+.\" == VERSION ==
+.Nm
+.Op Fl -version | v
 .Pp
 .\" == ACTIVATE ==
 .Nm
@@ -19,99 +19,117 @@
 .\" == CHROOT ==
 .Nm
 .Cm chroot
-.Ar UUID | Ar TAG
+.Ar UUID | TAG
 .Op Ar COMMAND
 .\" == CLEAN ==
 .Nm
 .Cm clean
-.Op Fl a | -add
-.Op Fl b | -base | r
-.Op Fl f | -force
-.Op Fl j | -jails
-.Op Fl t | -template
+.Op Fl -all | a
+.Op Fl -base | b | r
+.Op Fl -force | f
+.Op Fl -jails | j
+.Op Fl -template | t
 .\" == CONSOLE ==
 .Nm
 .Cm console
-.Op Fl f | -force
+.Op Fl -force | f
 .Ar UUID | TAG
 .\" == CREATE ==
 .Nm
 .Cm create
-.Op Fl b | -basejail
-.Op Fl c | -count Ar TEXT
-.Op Fl e | -empty
-.Op Fl p | -pkglist Ar TEXT
-.Op Fl r | -release Ar TEXT
-.Op Fl s | -short
-.Op Fl t | -template Ar TEXT
-.Op Cm release Ns = Ns Ar RELEASE
-.Op Cm pkglist Ns = Ns Ar FILE
-.Op Cm property Ns = Ns Ar VALUE
+.Op Fl -basejail | b
+.Op Fl -count | c
+.Ar TEXT
+.Op Fl -empty | e
+.Op Fl -pkglist | p
+.Ar TEXT
+.Op Fl -release | r
+.Ar TEXT
+.Op Fl -short | s
+.Op Fl -template | t
+.Ar TEXT
+.Op Fl -uuid | u
+.Ar TEXT
+.Op Cm release Ns = Ns Ar RELEASE <REVIEW>
+.Op Cm pkglist Ns = Ns Ar FILE <REVIEW>
+.Op Cm property Ns = Ns Ar VALUE <REVIEW>
 .\" == DESTROY ==
 .Nm
 .Cm destroy
-.Op Fl d | -download
-.Op Fl f | -force
-.Op Fl r | -release
-.Ar UUID | Ar TAG
+.Op Fl -download | d
+.Op Fl -force | f
+.Op Fl -release | r
+.Ar UUID | TAG
 .\" == DF ==
 .Nm
 .Cm df
-.Op Fl h | H | -header
-.Op Fl l | -long
+.Op Fl -header | H | h
+.Op Fl -long | l
 .\" == EXEC ==
 .Nm
 .Cm exec
-.Op Fl u | -host_user Ar NAME
-.Op Fl U | -jail_user Ar NAME
+.Op Fl -host_user | u
+.Ar NAME
+.Op Fl -jail_user | U
+.Ar NAME
 .Ar ALL | TAG | UUID
-.Cm COMMAND Op Ar ARGS
+.Cm COMMAND Op Ar ARGS <REVIEW>
 .\" == EXPORT ==
 .Nm
 .Cm export
-.Ar UUID | Ar TAG
+.Ar UUID | TAG <REVIEW>
 .\" == FETCH ==
 .Nm
 .Cm fetch
+.Op Fl -auth | a
+.Ar TEXT
+.Op Fl -count | c
+.Ar TEXT
+.Op Fl -eol | E
+.Op Fl -file | f
+.Op Fl -files | F
+.Ar TEXT
+.Op Fl -http | h
+.Op Fl -noeol | NE
+.Op Fl -noupdate | NU
+.Op Fl -noverify | NV
+.Op Fl -password | p
+.Ar TEXT
+.Op Fl -plugin-file | P
+.Ar TEXT
 .Op Fl -plugins
-.Op Fl E | -eol
-.Op Fl NE | -noeol
-.Op Fl NU | -noupdate
-.Op Fl NV | -noverify
-.Op Fl P | -plugin-file Ar TEXT
-.Op Fl U | -update
-.Op Fl V | -verify
-.Op Fl a | -auth Ar TEXT
-.Op Fl c | -count Ar TEXT
-.Op Fl d | -root-dir Ar TEXT
-.Op Fl f | -file
-.Op Fl h | -http
-.Op Fl p | -password Ar TEXT
-.Op Fl r  | -release Ar TEXT
-.Op Fl s | -server Ar TEXT
-.Op Fl u | -user Ar TEXT
-.Op Cm release Ns = Ns Ar RELEASE
-.Op Cm ftphost Ns = Ns Ar ftp.hostname.org
-.Op Cm ftpdir Ns = Ns Ar /dir/
-.Op Cm ftpfiles Ns = Ns Ar "base.txz doc.txz lib32.txz src.txz"
+.Op Fl -release | r
+.Ar TEXT
+.Op Fl -root-dir | d
+.Ar TEXT
+.Op Fl -server | s
+.Ar TEXT
+.Op Fl -update | U
+.Op Fl -user | u
+.Ar TEXT
+.Op Fl -verify | V
+.Op Cm release Ns = Ns Ar RELEASE <REVIEW>
+.Op Cm ftphost Ns = Ns Ar ftp.hostname.org <REVIEW>
+.Op Cm ftpdir Ns = Ns Ar /dir/ <REVIEW>
+.Op Cm ftpfiles Ns = Ns Ar "base.txz doc.txz lib32.txz src.txz" <REVIEW>
 .\" == FSTAB ==
 .Nm
 .Cm fstab
-.Op Fl a | -add
-.Op Fl e | -edit
-.Op Fl r | -remove
+.Op Fl -add | a
+.Op Fl -edit | e
+.Op Fl -remove | r
 .Ar JAIL
 .Op Ar FSTAB_STRING
 .\" == GET ==
 .Nm
 .Cm get
-.Op Fl P | -plugin
-.Op Fl a | -all
-.Op Fl H | h | -header
-.Op Fl p | -pool
-.Op Fl r | -recursive
+.Op Fl -all | a
+.Op Fl -header | H | h
+.Op Fl -plugin | P
+.Op Fl -pool | p
+.Op Fl -recursive | r
 .Ar PROPERTY
-.Op Ar all | Ar UUID | Ar TAG
+.Op Ar all | UUID | TAG
 .\" == IMPORT ==
 .Nm
 .Cm import
@@ -120,18 +138,18 @@
 .\" == LIST ==
 .Nm
 .Cm list
-.Op Fl H | h | -header
-.Op Fl P | -plugins
-.Op Fl R | -remote
-.Op Fl b | -base | r | -release
-.Op Fl h | -http
-.Op Fl l | -long
-.Op Fl t | -template
+.Op Fl -base | -release | b | r
+.Op Fl -header | H | h
+.Op Fl -http | h
+.Op Fl -long | l
+.Op Fl -plugins | P
+.Op Fl -remote | R
+.Op Fl -template | t
 .\" == MIGRATE ==
 .Nm
 .Cm migrate
-.Op Fl d | -delete
-.Op Fl f | -force
+.Op Fl -delete | d
+.Op Fl -force | f
 .\" == PKG ==
 .Nm
 .Cm pkg
@@ -140,54 +158,57 @@
 .\" == RESTART ==
 .Nm
 .Cm restart
-.Op Fl s | -soft
-.Op Ar UUID | Ar TAG
+.Op Fl -soft | s
+.Op Ar UUID | TAG
 .\" == ROLLBACK ==
 .Nm
 .Cm rollback
-.Op Fl f | -force
-.Op Fl n | -name Ar SNAPSHOT
-.Op Ar UUID | Ar TAG@snapshotname
+.Op Fl -force | f
+.Op Fl -name | n
+.Ar SNAPSHOT
+.Op Ar UUID | TAG@snapshotname
 .\" == SET ==
 .Nm
 .Cm set
-.Op Fl P | -plugin Ar KEY
+.Op Fl -plugin | P
+.Ar KEY
 .Cm Ar property_value
-.Op Ar UUID | Ar TAG
+.Op Ar UUID | TAG
 .\" == SNAPLIST ==
 .Nm
 .Cm snaplist
-.Op Fl H | h | -header
-.Op Ar UUID | Ar TAG
+.Op Fl -header | H | h
+.Op Ar UUID | TAG
 .\" == SNAPREMOVE ==
 .Nm
 .Cm snapremove
-.Op Fl n | -name
-.Op Ar UUID | Ar TAG@snapshotname | Ar ALL
+.Op Fl -name | n
+.Op Ar UUID | TAG@snapshotname | ALL
 .\" == SNAPSHOT ==
 .Nm
 .Cm snapshot
-.Op Fl n | -name Ar SNAPSHOT
-.Op Ar UUID | Ar TAG | Ar TAG@snapshotname
+.Op Fl -name | n
+.Op Ar UUID | TAG | TAG@snapshotname
 .\" == START ==
 .Nm
 .Cm start
 .Op Fl -rc
-.Op Ar UUID | Ar TAG
+.Op Ar UUID | TAG
 .\" == STOP ==
 .Nm
 .Cm stop
 .Op Fl -rc
-.Op Ar UUID | Ar TAG
+.Op Ar UUID | TAG
 .\" == UPDATE ==
 .Nm
 .Cm update
-.Op Ar UUID | Ar TAG
+.Op Ar UUID | TAG
 .\" == UPGRADE ==
 .Nm
 .Cm upgrade
-.Op Fl r | -release Ar RELEASE
-.Op Ar UUID | Ar TAG
+.Op Fl -release | r
+.Ar RELEASE
+.Op Ar UUID | TAG
 .Sh DESCRIPTION
 .Nm
 is a system administration tool for jails, designed to simplify jail
@@ -264,48 +285,71 @@ Display the
 version number.
 .\" == ACTIVATE ==
 .It Cm activate
-Intended for automation tools.
-The pool can be activated for
+Intended for automation tools. The pool can be activated for
 .Nm
-jails without requiring user input.
+jails without requiring user input. By default, all other pools are
+deactivated.
 .\" == CHROOT ==
 .It Cm chroot
-Chroot into a jail without actually starting the jail itself.
-Useful for initial setup like setting a root password or configuring
-networking.
-A command can be specified as with the normal system
+Chroot into a jail without actually starting the jail itself. Useful
+for initial setup like setting a root password or configuring
+networking. A command can be specified as with the normal
+system
 .Xr chroot 8 .
 .\" == CLEAN ==
 .It Cm clean
-Remove the ZFS datasets associated with the flag called. EWTF?
-.Fl a
-destroys everything associated with
-.Nm .
-.Fl r
-destroys all releases that have been fetched.
-Basejails rely on these to exist.
-.Fl j
-destroys the jail dataset.
+Remove ZFS datasets.
+.Pp
+Options:
+.Bl -tag -width "[-b | --base | -r]"
+.It Op Fl -all | a
+Deletes all created iocage data.
+.It Op Fl -base | b | r
+Deletes all fetched RELEASE jails.
+.It Op Fl -force | f
+Runs the command without any further user interaction.
+.It Op Fl -jails | j
+Deletes all created jails.
+.It Op Fl -template | t
+Deletes all templates.
+.El
 .\" == CONSOLE ==
 .It Cm console
-Execute login to have a shell inside the jail.
+Execute login to have a shell inside the jail. Use the
+.Op Fl -force | f
+option to run the command with no further user input.
 .\" == CREATE ==
 .It Cm create
 Deploy a new jail based on the host operating system's release.
 The default can be overridden by specifying the release option.
-If
-.Fl c
-is specified, the jail will be cloned from the current host's release as
-shown by
-.Cm uname Fl r .
-The default is to create a fully independent jail set.
-.Fl e
-creates an empty jail which can be used for unsupported or
-custom jails.
-.Fl b
-creates a so-called "basejail" with a common shared base.
+Also, the default is to create a fully independent jail set.
 .Pp
-Example:
+Options:
+.Pp
+.Bl -tag -width "[-b | --basejail]"
+.It Op Fl -basejail | b
+Create a new "basejail" with a common shared base.
+.It Op Fl -count | c
+Clones the jail from the current host's release, as shown
+by the
+.Cm uname Fl r
+command.
+.It Op Fl -empty | e
+Creates an empty jail, which is used for unsupported or
+custom jails.
+.It Op Fl -pkglist | p
+<REVIEW>.
+.It Op Fl -release | r
+Designates which release to use for the new jail.
+.It Op Fl -short | s
+Uses a short UUID of 8 characters instead of the default 36.
+.It Op Fl -template | t
+Creates a template style jail <REVIEW>. Use the
+.It Op Fl -uuid | u
+option to add a specific UUID to the new jail.
+.El
+.Pp
+Examples:
 .Bd -literal -offset indent
 iocage create tag=www01 pkglist=$HOME/my-pkgs.txt
 iocage create -b tag=mybasejail
@@ -313,22 +357,27 @@ iocage create -b tag=mybasejail
 .Pp
 .\" == DESTROY ==
 .It Cm destroy
-Destroy given jail.
-This is irreversible, so use with caution.
-If the jail is running, the destroy action fails.
+Destroy the specified jail. This is irreversible, so use with
+caution. If the jail is running, the destroy action fails.
 .Pp
-With
-.Fl f ,
-the jail will be destroyed without confirmation.
-.Pp
-The keyword
-.Cm ALL
-destroys all jails and templates irreversibly!
+Options:
+.Bl -tag -width "[-d | --download]"
+.It Op Fl -download | d
+Deletes the download of the specified RELEASE as well.
+.It Op Fl -force | f
+Destroys the jail with no further warnings or user input. Use
+.It Op Fl -release | r
+Delete a specified RELEASE dataset <REVIEW>.
+.El
 .\" == DF ==
 .It Cm df
-List disk space related information.
-Available fields:
-.Bl -tag -width "CRT" -compact -offset indent
+Show resource usage of all jails. Invoking
+.Cm df
+displays a table with a number of fields:
+.Pp
+.Bl -tag -width "UUID" -compact -offset indent
+.It UUID
+unique jail ID
 .It CRT
 compression ratio
 .It RES
@@ -342,19 +391,37 @@ available space
 .It TAG
 jail name
 .El
+.Pp
+Options:
+.Pp
+.Bl -tag -width "[-H | -h | --header]"
+.It Op Fl -header | H | h
+Use when scripting, using tabs for separators.
+.It Op Fl -long | l
+Shows the full UUID.
+.El
 .\" == EXEC ==
 .It Cm exec
-Execute a command inside the jail.
-This is just an
+Executes a command inside the specified jail.
+This is an
 .Nm
 UUID/tag wrapper for
 .Xr jexec 8 .
+.Pp
+Options:
+.Pp
+.Bl -tag -width "[-u | --host_user]"
+.It Op Fl -host_user | u
+to specify the host user.
+.It Op Fl -jail_user | U
+specifies which jail user runs the command.
+.El
 .\" == EXPORT ==
 .It Cm export
-Export a complete jail.
+Exports the specified jail.
 An archive file is created in
 .Pa /iocage/images
-with a SHA256 checksum.
+with a SHA256 checksum<REVIEW>.
 The jail must be in a stopped state before exporting.
 .\" == FETCH ==
 .It Cm fetch
@@ -367,7 +434,51 @@ If other releases are required, this can be changed by supplying the
 required release property or just selecting the appropriate RELEASE from
 the menu list.
 .Pp
-Example:
+Options:
+.Pp
+.Bl -tag -width "[-P | --plugin-file text]"
+.It Op Fl -auth | a
+Specifies the authentication method for HTTP fetching. Current values are
+basic and digest.
+.It Op Fl -count | c
+<REVIEW>.
+.It Op Fl -eol | E
+Enables End Of Life (EOL) checking upstream.
+.It Op Fl -file | f
+Uses a local file directory for the root directory instead of FTP or HTTP.
+.It Op Fl -files | F
+Specifies the files to fetch from the mirror.
+.It Op Fl -http | h
+Changes
+.Op Fl s | -server
+to define an HTTP server instead of the default FTP.
+.It Op Fl -noeol | NE
+Disables EOL checking upstream.
+.It Op Fl -noupdate | NU
+Disables updating the fetch item to the latest patch level.
+.It Op Fl -noverify | NV
+Disables verifying the SSL cert for HTTP fetching.
+.It Op Fl -password | p
+Add a password, if required.
+.It Op Fl -plugin-file | P
+Specifies which plugin file to use.
+.It Op Fl -plugins
+Lists all available plugins for creation.
+.It Op Fl -release | r
+Defines the FreeBSD release to fetch.
+.It Op Fl -root-dir | d
+Specifies the root directory containing all RELEASE files.
+.It Op Fl -server | s
+Defines which FTP server to log into.
+.It Op Fl -update | U
+Updates the fetch to the latest patch level.
+.It Op Fl -user | u
+Define the user.
+.It Op Fl -verify | V
+Enables verifying the SSL cert for HTTP fetching.
+.El
+.Pp
+Examples:
 .Bd -literal -offset indent
 iocage fetch release=10.1-RELEASE
 .Ed
@@ -388,69 +499,120 @@ Newly created jails or basejails will automatically have the latest
 updates applied.
 .\" == FSTAB ==
 .It Cm fstab
-Manipulates the fstab settings of a specific jail. Use
-.Fl -add
-to add an entry to the specific jail fstab and mount it. Use
-.Fl -remove
-to remove an entry from a specific jail fstab and unmount it. The
-.Fl -edit
-option opens the fstab file in the default environments editor.
+Manipulates the fstab settings of a specific jail.
+.Pp
+Options:
+.Bl -tag -width "[-r | --remove]"
+.It Op Fl -add | a
+Adds an entry to the specific jail fstab and mounts it.
+.It Op Fl -edit | e
+Opens the fstab file in the default environments editor.
+.It Op Fl -remove | r
+Removes an entry from a specific jail fstab and unmount it.
+.El
 .\" == GET ==
 .It Cm get
-Get a named property or if the
-.Ar ALL
-keyword is specified, dump all properties known.
+Displays the specified property.
+.Pp
+Options:
+.Bl -tag -width "[-H | -h | --header]"
+.It Op Fl -all | a
+Get all properties for the specified jail.
+.It Op Fl -header | H | h
+Used in scripting. Use tabs for separators.
+.It Op Fl -plugin | P
+Get the specified key for a plugin jail. If accessing a nested
+key, use "." as a seperator.
+.It Op Fl -pool | p
+Get the currently activated zpool.
+.It Op Fl -recursive | r
+Get the specified property for all jails.
+.El
 .\" == IMPORT ==
 .It Cm import
-Import full jail images or differential packages.
-Images must be present in
-.Pa /iocage/images
-and package in
-.Pa /iocage/packages
-along with checksum files. EWTF?
-Short UUIDs can be used.
-Do not specify the full filename, only the UUID.
+Import a specific jail image. Short UUIDs can be used, but
+do not specify the full filename, only the UUID.
 .\" == LIST ==
 .It Cm list
-List all jails.
-If
-.Fl t
-is specified, list only templates.
-With
-.Fl r ,
-list downloaded releases.
-All active jails are listed, including jails not created with
-.Nm if those jails are in the UP state. EWTF?
+List a specified dataset type. By default, all jails are listed.
+.Pp
+Options:
+.Bl -tag -width "[-H | -h | --header]"
+.It Op Fl -base | -release | b | r
+List all bases.
+.It Op Fl -header | H | h
+Used in scripting. Use tabs for separators.
+.It Op Fl -http | h
+Tells
+.Op Fl R | -remote
+to use HTTP.
+.It Op Fl -long | l
+Shows the full UUID and ip4 address.
+.It Op Fl -plugins | P
+Shows available plugins.
+.It Op Fl -remote | R
+Shows available RELEASE options for remote.
+.It Op Fl -template | t
+Lists all templates.
+.El
 .\" == MIGRATE ==
 .It Cm migrate
-Migrate all jails to the new jail format.
-With
-.Fl f ,
-bypass interactive questions.
-With
-.Fl d ,
-delete the old dataset after migration.
+Migrate all jails to a new jail format.
+.Pp
+Options:
+.Bl -tag -width "[-d | --delete]"
+.It Op Fl -delete | d
+Delete the old dataset after migration.
+.It Op Fl -force | f
+Bypasses any further warning or required user interaction.
+.El
 .\" == PKG ==
 .It Cm pkg
-Runs pkg with a specific command in a desired jail command.
+Runs desired
+.Cm pkg
+commands in the specified jail.
 .\" == RESTART ==
 .It Cm restart
-Soft restart a jail, leaving the jail's networking and the jail process
-unchanged.
-All processes are gracefully restarted inside the jail.
-This is useful for quick and graceful restarts.
+Restarts the specified jail. Use ALL to restart all jails.
+.Pp
+Options:
+.Bl -tag -width "[-s | --soft]"
+.It Op Fl -soft | s
+Restarts the jail, but does not tear down the network stack.
+.El
 .\" == ROLLBACK ==
 .It Cm rollback
-Roll back to an existing snapshot.
-Any intermediate snapshots will be destroyed.
-For more information on this functionality, please see
+Roll back a jail to an existing snapshot. Any intermediate
+snapshots are destroyed in the process.<REVIEW> For more
+information on this functionality, please see
 .Xr zfs 8 .
+.Pp
+Options:
+.Bl -tag -width "[-f | --force]"
+.It Op Fl -force | f
+Runs the command, skipping any warnings or further user
+ interaction.
+.It Op Fl -name | n
+[Required] Used to specify the snapshot name.
+.El
 .\" == SET ==
 .It Cm set
-Set a property to a value.
+Set the specified property in the desired jail.
+.Pp
+Options:
+.Bl -tag -width "[-P | --plugin]"
+.It Op Fl -plugin | P
+Set the specified key for a plugin jail. If accessing a nested key,
+use "." as a separator.
+.El
+.Pp
+Example:
+.Cm iocage set -P foo.bar.baz=VALUE PLUGIN
 .\" == SNAPLIST ==
 .It Cm snaplist
-List all snapshots belonging to a jail.
+Shows snapshots of a specific jail. A number of different fields
+are displayed:
+.Pp
 .Bl -tag -width "CREATED" -compact -offset indent
 .It NAME
 snapshot name
@@ -461,37 +623,73 @@ referenced size
 .It USED
 used space
 .El
+.Pp
+Options:
+.Bl -tag -width "[-H | -h | --delete]"
+.It Op Fl -header | H | h
+Used for scripting. Use tabs for separators.
+.El
 .\" == SNAPREMOVE ==
 .It Cm snapremove
-Destroy specified jail snapshot.
-If the keyword
+Deletes specified snapshots off the desired jail. If the keyword
 .Ar ALL
-is specified, all snapshots will be destroyed for the jail.
+is used, all snapshots are deleted for the specific jail.
+.Pp
+Options:
+.Bl -tag -width "[-n | --name]"
+.It Op Fl -name | n
+[Required] The snapshot name <REVIEW>.
+.El
 .\" == SNAPSHOT ==
 .It Cm snapshot
-Create a ZFS snapshot for a jail.
-If a snapshot name is not specified, defaults to an automatic snapshot
-name based on the current date and time.
+Creates a ZFS snapshot for the desired jail.
+If a snapshot name is not specified, a name based on the current
+date and time is generated.
+.Pp
+Options:
+.Bl -tag -width "[-n | --name]"
+.It Op Fl -name | n
+The user created snapshot name.
+.El
 .\" == START ==
 .It Cm start
 Start a jail identified by
 .Ar UUID
 or
-.Ar TAG .
+.Ar TAG
+ . Use ALL to start all installed jails.
+.Pp
+Options:
+.Bl -tag -width "[--rc]"
+.It Op Fl -rc
+Starts all jails with boot=on in a specific order. Smaller value for
+priority starts first <REVIEW>.
+.El
 .\" == STOP ==
 .It Cm stop
 Stop a jail identified by
 .Ar UUID
 or
-.Ar TAG .
+.Ar TAG
+ . Use ALL to stop all active jails.
+.Pp
+Options:
+.Bl -tag -width "[--rc]"
+.It Op Fl -rc
+Stops all jails with boot=on in a specific order. Higher values for
+priority stop first <REVIEW>.
+.El
 .\" == UPDATE ==
 .It Cm update
-Update a jail to the latest patch level.
-A back-out snapshot is created to allow safe update or rollback.
+Runs
+.Cm freebsd-update
+to update the specified jail to the latest patch level. A backup
+snapshot is automatically created, providing a rollback option.
 .\" == UPGRADE ==
 .It Cm upgrade
-Upgrade jail release to match the host's release unless another
-version is specified with the release property.
+Runs
+.Cm freebsd-update to upgrade a jail RELEASE to the specified
+RELEASE.
 .Pp
 Please note: basejails are upgraded by setting the jail's release
 property to the required new release:
@@ -500,8 +698,14 @@ iocage set release=10.1-RELEASE UUID|TAG
 .Ed
 .Pp
 For this, the release must be locally available.
-The basejail will re-clone its filesystems from the new release either
-by issuing the upgrade command or at then next jail start.
+The basejail re-clones its filesystems from the new release either
+by issuing the upgrade command or at next jail start.
+.Pp
+Options:
+.Bl -tag -width "[-r | --release TEXT]"
+.It Op Fl -release | r
+[Required] RELEASE the jail uses for upgrading.
+.El
 .El
 .Sh PROPERTIES
 The "Source" listed with each property shows whether it is a local
