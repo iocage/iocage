@@ -298,20 +298,20 @@ system
 .Xr chroot 8 .
 .\" == CLEAN ==
 .It Cm clean
-Remove ZFS datasets.
+Destroy ZFS datasets.
 .Pp
 Options:
 .Bl -tag -width "[-b | --base | -r]"
 .It Op Fl -all | a
-Deletes all created iocage data.
+Destroys all created iocage data.
 .It Op Fl -base | b | r
-Deletes all fetched RELEASE jails.
+Destroys all fetched RELEASE jails.
 .It Op Fl -force | f
 Runs the command without any further user interaction.
 .It Op Fl -jails | j
-Deletes all created jails.
+Destroys all created jails.
 .It Op Fl -template | t
-Deletes all templates.
+Destroys all templates.
 .El
 .\" == CONSOLE ==
 .It Cm console
@@ -367,7 +367,7 @@ Deletes the download of the specified RELEASE as well.
 .It Op Fl -force | f
 Destroys the jail with no further warnings or user input. Use
 .It Op Fl -release | r
-Delete a specified RELEASE dataset <REVIEW>.
+Destroy a specified RELEASE dataset <REVIEW>.
 .El
 .\" == DF ==
 .It Cm df
@@ -562,7 +562,7 @@ Migrate all jails to a new jail format.
 Options:
 .Bl -tag -width "[-d | --delete]"
 .It Op Fl -delete | d
-Delete the old dataset after migration.
+Destroy the old dataset after migration.
 .It Op Fl -force | f
 Bypasses any further warning or required user interaction.
 .El
