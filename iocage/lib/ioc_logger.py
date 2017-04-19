@@ -82,6 +82,8 @@ class LoggerStream(object):
 
 class Logger(object):
     """Pseudo-Class for Logger - Wrapper for logging module"""
+    log_file = os.environ.get("IOCAGE_LOGFILE", "/var/log/iocage.log")
+
     DEFAULT_LOGGING = {
         'version'                 : 1,
         'disable_existing_loggers': True,
@@ -93,7 +95,7 @@ class Logger(object):
             'file': {
                 'level'      : 'DEBUG',
                 'class'      : 'logging.handlers.RotatingFileHandler',
-                'filename'   : '/var/log/iocage.log',
+                'filename'   : f'{log_file}',
                 'mode'       : 'a',
                 'maxBytes'   : 10485760,
                 'backupCount': 5,

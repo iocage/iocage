@@ -65,19 +65,6 @@ for lib in glob.glob("{}/*.py".format(PATH)):
 
 
 def main():
-    log_file = os.environ.get("IOCAGE_LOGFILE", "/dev/stdout")
-    mode = "a" if not stat.S_ISCHR(os.stat(log_file).st_mode) else "w"
-
-    for arg in sys.argv:
-        key, _, val = arg.partition("=")
-        if "IOCAGE_LOGFILE" in key:
-            if val:
-                log_file = val
-
-            # If IOCAGE_LOGFILE is supplied on activate AFTER the pool name,
-            # hilarity ensues. Let's avoid that.
-            sys.argv.remove(arg)
-
     skip_check = False
     skip_check_cmds = ["--help", "activate", "deactivate", "-v", "--version"]
 
