@@ -365,6 +365,7 @@ class IOCFetch(object):
         reconnection.
         """
         ftp = FTP(self.server)
+        ftp.connect()
         ftp.login(user=self.user, passwd=self.password)
 
         if self.server == "ftp.freebsd.org":
