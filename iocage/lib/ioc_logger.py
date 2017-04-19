@@ -48,7 +48,11 @@ class LoggerFormatter(logging.Formatter):
         color_reset = self.CONSOLE_COLOR_FORMATTER['RESET']
 
         record.levelname = color_start
-        record.msg = record.msg + color_reset
+
+        try:
+            record.msg = record.msg + color_reset
+        except TypeError:
+            pass
 
         return logging.Formatter.format(self, record)
 
