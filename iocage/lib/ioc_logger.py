@@ -5,6 +5,19 @@ import sys
 from logging.config import dictConfig
 
 
+class SingleLevelFilter(logging.Filter):
+    # http://stackoverflow.com/questions/1383254/logging-streamhandler-and-standard-streams
+    def __init__(self, passlevel, reject):
+        self.passlevel = passlevel
+        self.reject = reject
+
+    def filter(self, record):
+        if self.reject:
+            return record.levelno != self.passlevel
+        else:
+            return record.levelno == self.passlevel
+
+
 class LoggerFormatter(logging.Formatter):
     """Format the console log messages"""
 
@@ -90,7 +103,7 @@ class Logger(object):
         },
         'formatters'              : {
             'file': {
-                'format' : '(%(levelname)s) %(message)s',
+                'format' : '%(asctime)s (%(levelname)s) %(message)s',
                 'datefmt': '%Y/%m/%d %H:%M:%S',
             },
         },
@@ -105,18 +118,25 @@ class Logger(object):
 
     def _set_output_console(self):
         """Set the output format for console."""
+        console_handler_stdout = logging.StreamHandler(sys.stdout)
+        console_handler_stdout_filter = SingleLevelFilter(logging.INFO, False)
+        console_handler_stdout.addFilter(console_handler_stdout_filter)
 
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.DEBUG)
+        console_handler_stderr = logging.StreamHandler(sys.stderr)
+        console_handler_stderr_filter = SingleLevelFilter(logging.INFO, True)
+        console_handler_stderr.addFilter(console_handler_stderr_filter)
 
         log_format = "%(levelname)s%(message)s"
         time_format = "%Y/%m/%d %H:%M:%S"
 
         if os.isatty(sys.stdout.fileno()):
-            console_handler.setFormatter(
+            console_handler_stdout.setFormatter(
+                LoggerFormatter(log_format, datefmt=time_format))
+            console_handler_stderr.setFormatter(
                 LoggerFormatter(log_format, datefmt=time_format))
 
-        logging.root.addHandler(console_handler)
+        logging.root.addHandler(console_handler_stdout)
+        logging.root.addHandler(console_handler_stderr)
 
     def configure_logging(self):
         if os.geteuid() == 0:
