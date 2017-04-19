@@ -1,6 +1,7 @@
 import logging
 import logging.handlers
 import os
+import sys
 from logging.config import dictConfig
 
 
@@ -106,8 +107,10 @@ class Logger(object):
 
         log_format = "%(levelname)s%(message)s"
         time_format = "%Y/%m/%d %H:%M:%S"
-        console_handler.setFormatter(
-            LoggerFormatter(log_format, datefmt=time_format))
+
+        if os.isatty(sys.stdout.fileno()):
+            console_handler.setFormatter(
+                LoggerFormatter(log_format, datefmt=time_format))
 
         logging.root.addHandler(console_handler)
 
