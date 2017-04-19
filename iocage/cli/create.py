@@ -6,6 +6,7 @@ from json import JSONDecodeError
 import click
 
 import iocage.lib.ioc_logger as ioc_logger
+from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_create import IOCCreate
 from iocage.lib.ioc_fetch import IOCFetch
 from iocage.lib.ioc_json import IOCJson
@@ -86,7 +87,14 @@ def create_cmd(release, template, count, props, pkglist, basejail, empty,
 
     if not os.path.isdir(
             f"{iocroot}/releases/{release}") and not template and not empty:
-        IOCFetch(release).fetch_release()
+        freebsd_version = checkoutput(["freebsd-version"])
+
+        if "HBSD" in freebsd_version:
+            hardened = True
+        else:
+            hardened = False
+
+        IOCFetch(release, hardened=hardened).fetch_release()
 
     if empty:
         release = "EMPTY"
