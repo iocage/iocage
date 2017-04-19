@@ -152,8 +152,16 @@ class IOCDestroy(object):
                 if "templates" in path or "release" in path:
                     self.__stop_jails__(dataset.name.replace(self.pool, ""))
 
-                self.__destroy_dataset__(dataset)
-                self.__destroy_leftovers__(dataset, clean=clean)
+                try:
+                    self.__destroy_dataset__(dataset)
+                    self.__destroy_leftovers__(dataset, clean=clean)
+                except libzfs.ZFSException as err:
+                    # This is either not mounted or doesn't exist anymore,
+                    # we don't care either way.
+                    if err.code == libzfs.Error.NOENT:
+                        continue
+                    else:
+                        raise
 
     def destroy_jail(self, path, clean=False):
         """
@@ -163,12 +171,13 @@ class IOCDestroy(object):
         dataset_type, uuid = path.rsplit("/")[-2:]
 
         if clean:
-            self.__stop_jails__(path)
+            self.__stop_jails__()
+            self.__destroy_parse_datasets__(path)
         else:
             from iocage.lib.ioc_stop import IOCStop
             conf = IOCJson(path).json_load()
 
             IOCStop(uuid, "", path, conf, silent=True)
 
-        self.__destroy_parse_datasets__(
-            f"{self.pool}/iocage/{dataset_type}/{uuid}")
+            self.__destroy_parse_datasets__(
+                f"{self.pool}/iocage/{dataset_type}/{uuid}")
