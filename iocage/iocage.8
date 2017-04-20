@@ -1,4 +1,4 @@
-.Dd April 10, 2017
+.Dd April 20, 2017
 .Dt IOCAGE 8
 .Os
 .Sh NAME
@@ -134,7 +134,7 @@
 .Nm
 .Cm import
 .Ar JAIL
-.Op Cm Ar Jail_value
+.Op Ar Jail_value
 .\" == LIST ==
 .Nm
 .Cm list
@@ -172,7 +172,7 @@
 .Cm set
 .Op Fl -plugin | P
 .Ar KEY
-.Cm Ar property_value
+.Ar property_value
 .Op Ar UUID | TAG
 .\" == SNAPLIST ==
 .Nm
@@ -211,16 +211,17 @@
 .Op Ar UUID | TAG
 .Sh DESCRIPTION
 .Nm
-is a system administration tool for jails, designed to simplify jail
-management tasks.
-It abstracts away the management of ZFS-backed jails running VNET or
+is a system administration tool designed to simplify jail management
+tasks.
+It abstracts out the management of ZFS-backed jails running VNET or
 shared IP networking.
 .Pp
 Both shared IP jails and VNET jails are supported.
 .Pp
-Each jail has a unique ID (UUID) automatically generated at creation time.
-Using the UUID as a jail identifier means that a jail can be replicated
-in a distributed environment with greater flexibility.
+Each jail has a unique ID (UUID) which is automatically generated at
+creation time.
+Using the UUID as a jail identifier makes it possible to replicate a
+jail in a distributed environment with greater flexibility.
 This also eliminates potential naming clashes on large scale deployments
 and helps reduce operator error.
 .Pp
@@ -239,12 +240,12 @@ can be set to any string (hostname, label, note, etc.).
 If unset, the TAG field contains the creation date and time stamp by
 default.
 .Pp
-Properties are stored inside ZFS custom fields.
-This eliminates the need for any configuration files and jails can be
-easily moved with ZFS
+Properties are stored inside ZFS custom fields, eliminating the need
+for separate configuration files.
+Jails can be easily moved with ZFS
 .Cm send
 and
-.Cm receive
+.Cm receive ,
 preserving all of their properties automatically.
 .Pp
 .Nm
@@ -274,10 +275,10 @@ options         RCTL
 .It Fl -help
 Display
 .Nm
-help text. Using
+help text.
+Including
 .Fl -help
-after a specific subcommand displays help text for that particular
-command.
+after a specific subcommand displays help text for that command.
 .\" == VERSION ==
 .It Fl -version
 Display the
@@ -285,16 +286,17 @@ Display the
 version number.
 .\" == ACTIVATE ==
 .It Cm activate
-Intended for automation tools. The pool can be activated for
+Intended for use by automation tools.
+The pool can be activated for
 .Nm
-jails without requiring user input. By default, all other pools are
-deactivated.
+jails without requiring user input.
+By default, all other pools are deactivated.
 .\" == CHROOT ==
 .It Cm chroot
-Chroot into a jail without actually starting the jail itself. Useful
-for initial setup like setting a root password or configuring
-networking. A command can be specified as with the normal
-system
+Chroot into a jail without actually starting the jail itself.
+Useful for initial setup like setting a root password or configuring
+networking.
+A command can be specified as with the normal system
 .Xr chroot 8 .
 .\" == CLEAN ==
 .It Cm clean
@@ -315,65 +317,70 @@ Destroys all templates.
 .El
 .\" == CONSOLE ==
 .It Cm console
-Execute login to have a shell inside the jail. Use the
+Execute login to have a shell inside the jail.
+Use the
 .Op Fl -force | f
 option to run the command with no further user input.
 .\" == CREATE ==
 .It Cm create
 Deploy a new jail based on the host operating system's release.
 The default can be overridden by specifying the release option.
-Also, the default is to create a fully independent jail set.
+A fully independent jail set is created by default.
 .Pp
 Options:
-.Pp
 .Bl -tag -width "[-b | --basejail]"
 .It Op Fl -basejail | b
 Create a new "basejail" with a common shared base.
 .It Op Fl -count | c
-Clones the jail from the current host's release, as shown
-by the
+Clone the jail from the current host's release, as determined by the
 .Cm uname Fl r
 command.
 .It Op Fl -empty | e
-Creates an empty jail, which is used for unsupported or
-custom jails.
+Create an empty jail, which is used for unsupported or custom jails.
 .It Op Fl -pkglist | p
 <REVIEW>.
 .It Op Fl -release | r
-Designates which release to use for the new jail.
+Specify which release to use for the new jail.
 .It Op Fl -short | s
-Uses a short UUID of 8 characters instead of the default 36.
+Use a short UUID of 8 characters instead of the default 36.
 .It Op Fl -template | t
-Creates a template style jail <REVIEW>. Use the
+Create a template style jail <REVIEW>.
+Use the
 .It Op Fl -uuid | u
 option to add a specific UUID to the new jail.
 .El
 .Pp
 Examples:
-.Bd -literal -offset indent
-iocage create tag=www01 pkglist=$HOME/my-pkgs.txt
-iocage create -b tag=mybasejail
-.Ed
+.Bd
 .Pp
+.Nm
+create tag=www01 pkglist=$HOME/my-pkgs.txt
+.Pp
+.Nm
+create -b tag=mybasejail
+.Ed
 .\" == DESTROY ==
 .It Cm destroy
-Destroy the specified jail. This is irreversible, so use with
-caution. If the jail is running, the destroy action fails.
+Destroy the specified jail.
+This is not reversible, so use with caution.
+If the jail is running, the destroy action fails.
 .Pp
 Options:
 .Bl -tag -width "[-d | --download]"
 .It Op Fl -download | d
-Deletes the download of the specified RELEASE as well.
+Delete the download of the specified RELEASE as well.
 .It Op Fl -force | f
-Destroys the jail with no further warnings or user input. Use
+Destroy the jail with no further warnings or user input.
+Use
 .It Op Fl -release | r
 Destroy a specified RELEASE dataset <REVIEW>.
 .El
 .\" == DF ==
 .It Cm df
-Show resource usage of all jails. Invoking
+Show resource usage of all jails.
+Invoking
 .Cm df
-displays a table with a number of fields:
+displays a table with several fields:
 .Pp
 .Bl -tag -width "UUID" -compact -offset indent
 .It UUID
@@ -393,7 +400,6 @@ jail name
 .El
 .Pp
 Options:
-.Pp
 .Bl -tag -width "[-H | -h | --header]"
 .It Op Fl -header | H | h
 Use when scripting, using tabs for separators.
@@ -402,14 +408,13 @@ Shows the full UUID.
 .El
 .\" == EXEC ==
 .It Cm exec
-Executes a command inside the specified jail.
+Execute a command inside the specified jail.
 This is an
 .Nm
 UUID/tag wrapper for
 .Xr jexec 8 .
 .Pp
 Options:
-.Pp
 .Bl -tag -width "[-u | --host_user]"
 .It Op Fl -host_user | u
 to specify the host user.
@@ -422,10 +427,10 @@ Exports the specified jail.
 An archive file is created in
 .Pa /iocage/images
 with a SHA256 checksum<REVIEW>.
-The jail must be in a stopped state before exporting.
+The jail must be stopped before exporting.
 .\" == FETCH ==
 .It Cm fetch
-Downloads and updates/patches releases.
+Download and updates/patches releases.
 .Pp
 .Cm fetch
 must be executed as the first command on a pristine system.
@@ -435,63 +440,69 @@ required release property or just selecting the appropriate RELEASE from
 the menu list.
 .Pp
 Options:
-.Pp
 .Bl -tag -width "[-P | --plugin-file text]"
 .It Op Fl -auth | a
-Specifies the authentication method for HTTP fetching. Current values are
-basic and digest.
+Specifies the authentication method for HTTP fetching.
+Current values are basic and digest.
 .It Op Fl -count | c
 <REVIEW>.
 .It Op Fl -eol | E
-Enables End Of Life (EOL) checking upstream.
+Enable End Of Life (EOL) checking upstream.
 .It Op Fl -file | f
-Uses a local file directory for the root directory instead of FTP or HTTP.
+Use a local file directory for the root directory instead of FTP or HTTP.
 .It Op Fl -files | F
-Specifies the files to fetch from the mirror.
+Specify the files to fetch from the mirror.
 .It Op Fl -http | h
-Changes
+Change
 .Op Fl s | -server
 to define an HTTP server instead of the default FTP.
 .It Op Fl -noeol | NE
-Disables EOL checking upstream.
+Disable EOL checking upstream.
 .It Op Fl -noupdate | NU
-Disables updating the fetch item to the latest patch level.
+Disable updating the fetch item to the latest patch level.
 .It Op Fl -noverify | NV
-Disables verifying the SSL cert for HTTP fetching.
+Disable verifying the SSL cert for HTTP fetching.
 .It Op Fl -password | p
 Add a password, if required.
 .It Op Fl -plugin-file | P
-Specifies which plugin file to use.
+Specify which plugin file to use.
 .It Op Fl -plugins
-Lists all available plugins for creation.
+List all available plugins for creation.
 .It Op Fl -release | r
-Defines the FreeBSD release to fetch.
+Define the
+.Fx
+release to fetch.
 .It Op Fl -root-dir | d
-Specifies the root directory containing all RELEASE files.
+Specify the root directory containing all RELEASE files.
 .It Op Fl -server | s
-Defines which FTP server to log into.
+Define which FTP server to log into.
 .It Op Fl -update | U
-Updates the fetch to the latest patch level.
+Update the fetch to the latest patch level.
 .It Op Fl -user | u
 Define the user.
 .It Op Fl -verify | V
-Enables verifying the SSL cert for HTTP fetching.
+Enable verifying the SSL cert for HTTP fetching.
 .El
 .Pp
 Examples:
-.Bd -literal -offset indent
-iocage fetch release=10.1-RELEASE
+.Bd
+.Pp
+.Nm
+fetch release=10.1-RELEASE
 .Ed
 .Pp
 .Cm fetch
 is also used to update already downloaded releases.
-To update a local release already present in iocage
+To update a local release already present in
+.Nm
 .Po
 .Cm iocage list -r
 .Pc ,
 run:
-.Bd -literal -offset indent
-iocage fetch release=10.1-RELEASE
+.Bd
+.Pp
+.Nm
+fetch release=10.1-RELEASE
 .Ed
 .Pp
 This example applies the latest patches to 10.1-RELEASE base.
@@ -504,25 +515,30 @@ Manipulates the fstab settings of a specific jail.
 Options:
 .Bl -tag -width "[-r | --remove]"
 .It Op Fl -add | a
-Adds an entry to the specific jail fstab and mounts it.
+Adds an entry to the specific jail
+.Pa fstab
+and mount it.
 .It Op Fl -edit | e
-Opens the fstab file in the default environments editor.
+Open the
+.Pa fstab
+file in the default editor.
 .It Op Fl -remove | r
-Removes an entry from a specific jail fstab and unmount it.
+Remove an entry from a specific jail fstab and unmount it.
 .El
 .\" == GET ==
 .It Cm get
-Displays the specified property.
+Display the specified property.
 .Pp
 Options:
 .Bl -tag -width "[-H | -h | --header]"
 .It Op Fl -all | a
 Get all properties for the specified jail.
 .It Op Fl -header | H | h
-Used in scripting. Use tabs for separators.
+Used in scripting.
+Use tabs for separators.
 .It Op Fl -plugin | P
-Get the specified key for a plugin jail. If accessing a nested
-key, use "." as a seperator.
+Get the specified key for a plugin jail.
+If accessing a nested key, use "." as a separator.
 .It Op Fl -pool | p
 Get the currently activated zpool.
 .It Op Fl -recursive | r
@@ -530,18 +546,21 @@ Get the specified property for all jails.
 .El
 .\" == IMPORT ==
 .It Cm import
-Import a specific jail image. Short UUIDs can be used, but
-do not specify the full filename, only the UUID.
+Import a specific jail image.
+Short UUIDs can be used, but do not specify the full filename, only the
+UUID.
 .\" == LIST ==
 .It Cm list
-List a specified dataset type. By default, all jails are listed.
+List a specified dataset type.
+By default, all jails are listed.
 .Pp
 Options:
 .Bl -tag -width "[-H | -h | --header]"
 .It Op Fl -base | -release | b | r
 List all bases.
 .It Op Fl -header | H | h
-Used in scripting. Use tabs for separators.
+Used in scripting.
+Use tabs for separators.
 .It Op Fl -http | h
 Tells
 .Op Fl R | -remote
@@ -564,34 +583,34 @@ Options:
 .It Op Fl -delete | d
 Destroy the old dataset after migration.
 .It Op Fl -force | f
-Bypasses any further warning or required user interaction.
+Bypass any further warning or required user interaction.
 .El
 .\" == PKG ==
 .It Cm pkg
-Runs desired
+Run desired
 .Cm pkg
 commands in the specified jail.
 .\" == RESTART ==
 .It Cm restart
-Restarts the specified jail. Use ALL to restart all jails.
+Restart the specified jail.
+Use ALL to restart all jails.
 .Pp
 Options:
 .Bl -tag -width "[-s | --soft]"
 .It Op Fl -soft | s
-Restarts the jail, but does not tear down the network stack.
+Restart the jail, but do not tear down the network stack.
 .El
 .\" == ROLLBACK ==
 .It Cm rollback
-Roll back a jail to an existing snapshot. Any intermediate
-snapshots are destroyed in the process.<REVIEW> For more
-information on this functionality, please see
+Roll back a jail to an existing snapshot.
+Any intermediate snapshots are destroyed in the process.<REVIEW>
+For more information on this functionality, please see
 .Xr zfs 8 .
 .Pp
 Options:
 .Bl -tag -width "[-f | --force]"
 .It Op Fl -force | f
-Runs the command, skipping any warnings or further user
- interaction.
+Run the command, skipping any warnings or further user interaction.
 .It Op Fl -name | n
 [Required] Used to specify the snapshot name.
 .El
@@ -602,16 +621,20 @@ Set the specified property in the desired jail.
 Options:
 .Bl -tag -width "[-P | --plugin]"
 .It Op Fl -plugin | P
-Set the specified key for a plugin jail. If accessing a nested key,
-use "." as a separator.
+Set the specified key for a plugin jail.
+If accessing a nested key, use "." as a separator.
 .El
 .Pp
 Example:
-.Cm iocage set -P foo.bar.baz=VALUE PLUGIN
+.Bd
+.Pp
+.Nm
+set -P foo.bar.baz=VALUE PLUGIN
+.Ed
 .\" == SNAPLIST ==
 .It Cm snaplist
-Shows snapshots of a specific jail. A number of different fields
-are displayed:
+List snapshots of a jail.
+A number of different fields are displayed:
 .Pp
 .Bl -tag -width "CREATED" -compact -offset indent
 .It NAME
@@ -627,13 +650,15 @@ used space
 Options:
 .Bl -tag -width "[-H | -h | --delete]"
 .It Op Fl -header | H | h
-Used for scripting. Use tabs for separators.
+Used for scripting.
+Tabs are used as separators.
 .El
 .\" == SNAPREMOVE ==
 .It Cm snapremove
-Deletes specified snapshots off the desired jail. If the keyword
+Delete snapshots of the specified jail.
+If the keyword
 .Ar ALL
-is used, all snapshots are deleted for the specific jail.
+is used, all snapshots the specified jail are deleted.
 .Pp
 Options:
 .Bl -tag -width "[-n | --name]"
@@ -642,7 +667,7 @@ Options:
 .El
 .\" == SNAPSHOT ==
 .It Cm snapshot
-Creates a ZFS snapshot for the desired jail.
+Create a ZFS snapshot of the specified jail.
 If a snapshot name is not specified, a name based on the current
 date and time is generated.
 .Pp
@@ -662,8 +687,8 @@ or
 Options:
 .Bl -tag -width "[--rc]"
 .It Op Fl -rc
-Starts all jails with boot=on in a specific order. Smaller value for
-priority starts first <REVIEW>.
+Start all jails with boot=on in a specific order.
+Jails with lower priority start first <REVIEW>.
 .El
 .\" == STOP ==
 .It Cm stop
@@ -676,30 +701,32 @@ or
 Options:
 .Bl -tag -width "[--rc]"
 .It Op Fl -rc
-Stops all jails with boot=on in a specific order. Higher values for
-priority stop first <REVIEW>.
+Stop all jails with boot=on in a specific order.
+Jails with higher priority values stop first <REVIEW>.
 .El
 .\" == UPDATE ==
 .It Cm update
-Runs
+Run
 .Cm freebsd-update
-to update the specified jail to the latest patch level. A backup
-snapshot is automatically created, providing a rollback option.
+to update the specified jail to the latest patch level.
+A backup snapshot is automatically created to provide a rollback
+option.
 .\" == UPGRADE ==
 .It Cm upgrade
-Runs
+Run
 .Cm freebsd-update to upgrade a jail RELEASE to the specified
 RELEASE.
 .Pp
 Please note: basejails are upgraded by setting the jail's release
 property to the required new release:
-.Bd -literal -offset indent
-iocage set release=10.1-RELEASE UUID|TAG
+.Bd
+.Pp
+.Nm set release=10.1-RELEASE UUID|TAG
 .Ed
 .Pp
 For this, the release must be locally available.
 The basejail re-clones its filesystems from the new release either
-by issuing the upgrade command or at next jail start.
+by issuing the upgrade command or at the next jail start.
 .Pp
 Options:
 .Bl -tag -width "[-r | --release TEXT]"
@@ -708,13 +735,13 @@ Options:
 .El
 .El
 .Sh PROPERTIES
-The "Source" listed with each property shows whether it is a local
+The Source listed with each property shows whether it is a local
 .Nm
 property or where more information can be located.
 .Bl -tag -width "pkglist=none"
 .It pkglist=none | path-to-file
-A text file containing one package per line.
-These will be auto installed when a jail is created.
+A text file listing one package per line.
+Packages are automatically installed when a jail is created.
 Works only in combination with the
 .Cm create
 subcommand.
@@ -723,10 +750,10 @@ Default: none
 .Pp
 Source: local
 .It vnet=on | off
-This controls whether to start the jail with VNET or a shared IP
+Controls whether the jail is started with a VNET or a shared IP
 configuration.
 The default is to auto-guess from a sysctl.
-If a fully virtualized per-jail network stack is not needed, set it
+If a fully virtualized per-jail network stack is not needed, set this
 to off.
 .Pp
 Default: auto-guess
@@ -735,37 +762,50 @@ Source: local
 .It ip4_addr="interface|ip-address/netmask"
 The IPv4 address for VNET and shared IP jails.
 .Pp
-Single interface format: interface|ip-address/netmask
+Single interface format:
+.Pp
+interface|ip-address/netmask
 .Pp
 Multiple interface format:
-"interface|ip-address/netmask,interface|ip-address/netmask"
+.Pp
+interface|ip-address/netmask,interface|ip-address/netmask
 .Pp
 On shared IP jails, an interface name given before the IP address
-adds an alias to that interface. If the DEFAULT keyword is given
-instead of an interface name, the interface is automatically assigned
-based on the system's default interface.
+adds an alias to that interface.
+If the DEFAULT keyword is given instead of an interface name, the
+interface is automatically assigned based on the system's default
+interface.
 .Pp
 A netmask in either dotted-quad or CIDR form given after the IP
 address is used when adding the IP alias.
 .Pp
-AUTOIP4 can be used in place of an IP address. The IP address is
-automatically assigned at the first start of the jail.
-This requires that the ip4_autostart and ip4_autoend variables are set
-on the "default" property source.
+AUTOIP4 can be used in place of an IP address.
+The IP address is automatically assigned at the first start of the jail.
+This requires that the
+.Dv ip4_autostart
+and
+.Dv ip4_autoend
+variables are set on the "default" property source.
 If used, the IP4 address is set to the first available based upon the
 given range and existing jails.
 .Pp
 Example:
 .Bd -literal -offset indent
-iocage set ip4_autostart="100" default
-iocage set ip4_autoend="150" default
-iocage set ip4_autosubnet="24" default
+.Pp
+.Nm
+set ip4_autostart="100" default
+.Pp
+.Nm
+set ip4_autoend="150" default
+.Pp
+.Nm
+set ip4_autosubnet="24" default
 .Ed
 .Pp
 This results in the automatic IPv4 address being assigned in the base
-range of the default network interface. That is, if the local default
-NIC is set to 192.168.0.XXX, then the new address will be
-192.168.0.[100-150]/24.
+range of the default network interface.
+That is, if the local default NIC is set to 192.168.0.XXX, then the new
+address will be 192.168.0.[100-150]/24.
 .Pp
 In VNET jails, the interface is configured with the IP addresses listed.
 .Pp
@@ -774,8 +814,8 @@ Example:
 "vnet0|192.168.0.10/24,vnet1|10.1.1.10/24"
 .Ed
 .Pp
-Interfaces vnet0 and vnet1 are configured in a VNET jail. In this case,
-no network configuration is necessary in the jail's
+Interfaces vnet0 and vnet1 are configured in a VNET jail.
+In this case, no network configuration is necessary in the jail's
 .Pa rc.conf
 file.
 .Pp
@@ -801,8 +841,8 @@ Only applies when vnet=off.
 Control the availability of IPv4 addresses.
 Possible values are "inherit" to allow unrestricted access to all
 system addresses, "new" to restrict addresses via ip4.addr above,
-and "disable" to stop the jail from using IPv4 entirely.  Setting
-the ip4.addr parameter implies a value of "new".
+and "disable" to stop the jail from using IPv4 entirely.
+Setting the ip4.addr parameter implies a value of "new".
 .Pp
 Default: new
 .Pp
@@ -815,10 +855,10 @@ default route inside a VNET jail.
 Setting this property to anything other than none configures a
 default IPv6 route inside a VNET jail.
 .It resolver=none | nameserver IP;nameserver IP;search domain.local
-Sets the jail's resolver
+Set the jail's resolver
 .Pq resolv.conf .
-Fields must be delimited with a semicolon. Semicolons are
-translated to newlines in
+Fields must be delimited with a semicolon.
+Semicolons are translated to newlines in
 .Pa resolv.conf .
 .Pp
 If the resolver is set to none (default) the jail inherits the
@@ -879,7 +919,7 @@ See
 .Xr devfs 8
 for information on how to use devfs rules to limit access to entries
 in the per-jail devfs.
-A simple devfs ruleset for jails is available as ruleset #4 in
+A simple devfs ruleset for jails is available as ruleset 4 in
 .Pa /etc/defaults/devfs.rules
 .Pp
 Default: 4
@@ -898,7 +938,7 @@ visible inside the jail.
 Default: 1
 .Pp
 Source:
-.Xr jail 9
+.Xr jail 8
 .It exec_start="/bin/sh /etc/rc"
 Commands to run in the prison environment when a jail is created.
 A typical command to run is
@@ -982,14 +1022,16 @@ Default: 30
 Source:
 .Xr jail 8
 .It exec_jail_user=root
-The user to run commands as, when running in the jail environment.
+In the jail environment, commands are run as this user.
 .Pp
 Default: root
 .Pp
 Source:
 .Xr jail 8
 .It exec_system_jail_user=0 | 1
-This boolean option looks for the exec_jail_user in the system
+This boolean option looks for the
+.Dv exec_jail_user
+in the system
 .Xr passwd 5
 file rather than the jail's file.
 .Pp
@@ -1011,7 +1053,8 @@ Mount a
 filesystem in the jail's
 .Pa /dev/fd
 directory.
-Note: This is not supported on FreeBSD 9.3.
+Note: This is not supported on
+.Fx 9.3 .
 .Pp
 Default: 1
 .Pp
@@ -1030,7 +1073,7 @@ Source: local
 .It enforce_statfs=2 | 1 | 0
 Determine which information processes in a jail are able to obtain
 about mount points.
-It affects the behaviour of these syscalls:
+The behavior of these syscalls is affected:
 .Xr statfs 2 ,
 .Xr fstatfs 2 ,
 .Xr getfsstat 2 ,
@@ -1087,7 +1130,8 @@ Takes the ZFS filesystem name without pool name.
 .Pp
 NOTE: only valid if jail_zfs=on.
 By default, the mountpoint is set to none.
-To mount this dataset, set its mountpoint inside the jail. For example,
+To mount this dataset, set its mountpoint inside the jail.
+For example,
 .Bd -literal -offset indent
 zfs set mountpoint=/data full-dataset-name
 mount -a
@@ -1124,9 +1168,9 @@ across the host and jail environments, meaning that processes within a
 jail would be able to communicate with, and potentially interfere with,
 processes outside of the jail, or in other jails.
 In
-.Fx
-11.0 and later, this setting is deprecated. Use sysvmsg, sysvsem, and
-sysvshm instead.
+.Fx 11.0
+and later, this setting is deprecated.
+Use sysvmsg, sysvsem, and sysvshm instead.
 .Pp
 Default: 0
 .Pp
@@ -1166,8 +1210,8 @@ Source:
 Allow access to SYSV IPC shared memory primitives in the same manner
 as sysvmsg.
 Ignored in
-.Fx
-10.3 and earlier.
+.Fx 10.3
+and earlier.
 .Pp
 Default: disable
 Source:
@@ -1264,7 +1308,8 @@ Source:
 Allow privileged users inside the jail to mount and unmount the ZFS
 filesystem.
 This permission is effective only together with allow.mount and if
-enforce_statfs is set to a value lower than 2.
+.Dv enforce_statfs
+is set to a value lower than 2.
 See
 .Xr zfs 8
 for information on how to configure the ZFS filesystem to operate from
@@ -1330,13 +1375,15 @@ Default: none
 .Pp
 Source: local
 .It owner=root
-The owner of the jail, can be any string.
+The owner of the jail.
+Can be any string.
 .Pp
 Default: root
 .Pp
 Source: local
 .It priority=99 | 50 ..
-Start priority at boot time. Smaller values mean higher priority.
+Start priority at boot time.
+Smaller values mean higher priority.
 For shutdown, the order is reversed.
 .Pp
 Default: 99.
@@ -1363,7 +1410,8 @@ the host node.
 This is to safeguard jails from being started on different nodes in
 case they are periodically replicated to different systems.
 .Pp
-Default: UUID of the host (taken from /etc/hostid)
+Default: UUID of the host (taken from
+.Pa /etc/hostid )
 .Pp
 Source: local
 .It release=10.0-RELEASE | 9.2-RELEASE
@@ -1418,9 +1466,9 @@ Source:
 .Xr zfs 8
 .It quota=15G | 50G | ..
 Quota for the jail.
-Limits the amount of space a dataset and its descendents can consume.
+Limit the amount of space a dataset and its descendants can consume.
 This property enforces a hard limit on the amount of space used.
-This includes all space consumed by descendents, including file systems
+This includes all space consumed by descendants, including file systems
 and snapshots.
 Setting a quota on a descendent of a dataset that already has a quota
 does not override the ancestor's quota, but rather imposes an additional
@@ -1428,10 +1476,11 @@ limit.
 .Pp
 Default: none
 .Pp
-Source: zfs(8)
+Source:
+.Xr zfs 8
 .It mountpoint
 Path for the jail's root filesystem.
-Don't tweak this or jail will not start!
+Do not tweak this or the jail will not start!
 .Pp
 Default: set to jail's root
 .Pp
@@ -1501,6 +1550,7 @@ If
 Default: none
 .Pp
 Source: local
+.El
 .Sh EXAMPLES
 Set up
 .Nm
@@ -1574,16 +1624,16 @@ net.link.bridge.pfil_member=0
 For more information, please see
 .Lk https://github.com/iocage/iocage
 .Sh SEE ALSO
-.Xr cpuset 1
-.Xr bridge 4
-.Xr epair 4
-.Xr freebsd-update 8
-.Xr ifconfig 8
-.Xr jail 8
-.Xr jexec 8
-.Xr rctl 8
-.Xr sysctl 8
-.Xr zfs 8
+.Xr cpuset 1 ,
+.Xr bridge 4 ,
+.Xr epair 4 ,
+.Xr freebsd-update 8 ,
+.Xr ifconfig 8 ,
+.Xr jail 8 ,
+.Xr jexec 8 ,
+.Xr rctl 8 ,
+.Xr sysctl 8 ,
+.Xr zfs 8 ,
 .Xr zpool 8
 .Sh BUGS
 Please report bugs, issues, and feature requests at
