@@ -351,14 +351,14 @@ option to add a specific UUID to the new jail.
 .El
 .Pp
 Examples:
-.Bd
-.Pp
+.Bl -item
+.It
 .Nm
 create tag=www01 pkglist=$HOME/my-pkgs.txt
-.Pp
+.It
 .Nm
 create -b tag=mybasejail
-.Ed
+.El
 .\" == DESTROY ==
 .It Cm destroy
 Destroy the specified jail.
@@ -485,11 +485,11 @@ Enable verifying the SSL cert for HTTP fetching.
 .El
 .Pp
 Examples:
-.Bd
-.Pp
+.Bl -item
+.It
 .Nm
 fetch release=10.1-RELEASE
-.Ed
+.El
 .Pp
 .Cm fetch
 is also used to update already downloaded releases.
@@ -499,11 +499,11 @@ To update a local release already present in
 .Cm iocage list -r
 .Pc ,
 run:
-.Bd
-.Pp
+.Bl -item
+.It
 .Nm
 fetch release=10.1-RELEASE
-.Ed
+.El
 .Pp
 This example applies the latest patches to 10.1-RELEASE base.
 Newly created jails or basejails will automatically have the latest
@@ -626,11 +626,11 @@ If accessing a nested key, use "." as a separator.
 .El
 .Pp
 Example:
-.Bd
-.Pp
+.Bl -item
+.It
 .Nm
 set -P foo.bar.baz=VALUE PLUGIN
-.Ed
+.El
 .\" == SNAPLIST ==
 .It Cm snaplist
 List snapshots of a jail.
@@ -719,10 +719,11 @@ RELEASE.
 .Pp
 Please note: basejails are upgraded by setting the jail's release
 property to the required new release:
-.Bd
-.Pp
-.Nm set release=10.1-RELEASE UUID|TAG
-.Ed
+.Bl -item
+.It
+.Nm
+set release=10.1-RELEASE UUID|TAG
+.El
 .Pp
 For this, the release must be locally available.
 The basejail re-clones its filesystems from the new release either
