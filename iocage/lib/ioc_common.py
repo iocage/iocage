@@ -1,5 +1,7 @@
 """Common methods we reuse."""
 import collections
+import ipaddress
+import logging
 import os
 import shutil
 import stat
@@ -8,12 +10,175 @@ from contextlib import contextmanager
 from subprocess import check_output
 
 
+def raise_sort_error(lgr, sort_list):
+    msg = "Invalid sort type specified, use one of:\n"
+
+    for s in sort_list:
+        msg += f"  {s}\n"
+
+    lgr.critical(msg.rstrip())
+
+    raise RuntimeError()
+
+
+def ioc_sort(caller, s_type, data=None):
+    try:
+        s_type = s_type.lower()
+    except AttributeError:
+        # When a failed template is attempted, it will set s_type to None.
+        s_type = "tag"
+
+    lgr = logging.getLogger(
+        'ioc_cli_list') if caller == "list_full" or caller == "list_short" \
+        else logging.getLogger('ioc_cli_df')
+
+    sort_funcs = {
+        "jid"     : sort_jid,
+        "uuid"    : sort_uuid,
+        "boot"    : sort_boot,
+        "state"   : sort_state,
+        "tag"     : sort_tag,
+        "type"    : sort_type,
+        "release" : sort_release,
+        "ip4"     : sort_ip,
+        "ip6"     : sort_ip6,
+        "template": sort_template,
+        "crt"     : sort_crt,
+        "res"     : sort_res,
+        "qta"     : sort_qta,
+        "use"     : sort_use,
+        "ava"     : sort_ava
+    }
+
+    list_full_sorts = ["jid", "uuid", "boot", "state", "tag", "type",
+                       "release", "ip4", "ip6", "template"]
+    list_short_sorts = ["jid", "uuid", "state", "tag", "release", "ip4"]
+    df_sorts = ["uuid", "crt", "res", "qta", "use", "ava", "tag"]
+
+    if caller == "list_full" and s_type not in list_full_sorts:
+        raise_sort_error(lgr, list_full_sorts)
+    elif caller == "list_short" and s_type not in list_short_sorts:
+        raise_sort_error(lgr, list_short_sorts)
+    elif caller == "df" and s_type not in df_sorts:
+        raise_sort_error(lgr, df_sorts)
+
+    # Most calls will use this
+    if caller == "list_release" and s_type == "release":
+        return sort_release(data, split=True)
+
+    return sort_funcs.get(s_type)
+
+
+def sort_crt(crt):
+    """Sort df by CRT"""
+    return crt[1]
+
+
+def sort_res(res):
+    """Sort df by RES"""
+    return res[2]
+
+
+def sort_qta(qta):
+    """Sort df by QTA"""
+    return qta[3]
+
+
+def sort_use(use):
+    """Sort df by USE"""
+    return use[4]
+
+
+def sort_ava(ava):
+    """Sort df by AVA"""
+    return ava[5]
+
+
+def sort_ip6(ip):
+    """Helper for sort_ip"""
+    return sort_ip(ip, version="6")
+
+
+def sort_ip(ip, version="4"):
+    """Sort the list by IP address."""
+    list_length = len(ip)
+
+    # Length 10 is list -l, 5 is list
+    if list_length == 10:
+        try:
+            ip = ip[7] if version == "4" else ip[8]
+            _ip = str(ipaddress.ip_address(ip.rsplit("|")[1]))
+        except (ValueError, IndexError):
+            # Lame hack to have "-" last.
+            _ip = "Z"
+    elif list_length == 6:
+        try:
+            _ip = str(ipaddress.ip_address(ip[5]))
+        except ValueError:
+            # Lame hack to have "-" last.
+            _ip = "Z"
+    else:
+        _ip = ip
+
+    return _ip
+
+
+def sort_type(jail_type):
+    """Sort the list by jail type."""
+    return jail_type[5]
+
+
+def sort_state(state):
+    """Sort the list by state."""
+    list_length = len(state)
+
+    # Length 10 is list -l, 5 is list
+    if list_length == 10:
+        _state = 0 if state[3] != "down" else 1
+    elif list_length == 6:
+        _state = 0 if state[2] != "down" else 1
+    else:
+        _state = state
+
+    # 0 is up, 1 is down, lame hack to get running jails on top.
+    return _state
+
+
+def sort_boot(boot):
+    """Sort the list by boot."""
+    # Lame hack to get on above off.
+    return 0 if boot[2] != "off" else 1
+
+
+def sort_jid(jid):
+    """Sort the list by JID."""
+    # Lame hack to have jails not runnig below running jails.
+    return jid[0] if jid[0] != "-" else "a"
+
+
+def sort_uuid(uuid):
+    """Sort the list by UUID."""
+    list_length = len(uuid)
+
+    return uuid[1] if list_length != 7 else uuid[0]
+
+
+def sort_template(template):
+    """Helper function for templates to be sorted in sort_name"""
+    # Ugly hack to have templates listed first, this assumes they will not
+    # name their template with this string, it would be *remarkable* if they
+    # did.
+    _template = template[9] if template[9] != "-" else "z" * 999999
+
+    return sort_name(_template)
+
+
 def sort_tag(tag):
-    """Sort the list by tag."""
+    """Helper function for tags to be sorted in sort_name"""
+    # Length 10 is list -l, 7 is df, 6 is list
     list_length = len(tag)
 
-    # Length 8 is list -l, 7 is df, 5 is list
-    if list_length == 9:
+    if list_length == 10:
         _tag = tag[4]
     elif list_length == 7:
         _tag = tag[6]
@@ -22,14 +187,19 @@ def sort_tag(tag):
     else:
         _tag = tag[1]
 
-    _sort = _tag.rsplit('_', 1)
+    return sort_name(_tag)
 
-    # We want to sort tags that have been created with count > 1. But not
+
+def sort_name(name):
+    """Sort the list by name."""
+    _sort = name.rsplit('_', 1)
+
+    # We want to sort names that have been created with count > 1. But not
     # foo_bar
     if len(_sort) > 1 and _sort[1].isdigit():
         return _sort[0], int(_sort[1])
     else:
-        return _tag, 0
+        return name, 0
 
 
 def sort_release(releases, split=False):
@@ -39,27 +209,48 @@ def sort_release(releases, split=False):
     """
     r_dict = {}
     release_list = []
+    list_sort = False
+
+    try:
+        length = len(releases)
+
+        if length == 10:
+            # We don't want the -p* stuff.
+            releases = releases[6].rsplit("-", 1)[0]
+        elif length == 6:
+            releases = releases[4]
+
+        list_sort = True
+    except TypeError:
+        # This is list -r
+        pass
 
     if split:
         for rel in releases:
             rel, r_type = rel.properties["mountpoint"].value.rsplit("/")[
-                -1].split("-")
+                -1].split("-", 1)
 
             if len(rel) > 2:
                 rel = float(rel)
 
             r_dict[rel] = r_type
     else:
-        for release in releases:
-            try:
-                release, r_type = release.split("-")
+        if list_sort:
+            if len(releases.split(".")[0]) < 2:
+                releases = f"0{releases}"
 
-                if len(release) > 2:
-                    release = float(release)
+            return releases
+        else:
+            for release in releases:
+                try:
+                    release, r_type = release.split("-", 1)
 
-                r_dict[release] = r_type
-            except ValueError:
-                pass
+                    if len(release) > 2:
+                        release = float(release)
+
+                    r_dict[release] = r_type
+                except ValueError:
+                    pass
 
     ordered_r_dict = collections.OrderedDict(sorted(r_dict.items()))
     index = 0
