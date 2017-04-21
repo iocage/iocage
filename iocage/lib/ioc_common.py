@@ -170,13 +170,6 @@ def open_atomic(filepath, *args, **kwargs):
         os.chmod(filepath, 0o644)
 
 
-def indent_lines(message):
-    """This will indent all lines except the first by 7 spaces. """
-    indented = message.replace("\n", "\n       ").rstrip()
-
-    return indented
-
-
 def get_nested_key(_dict, keys=[]):
     """Gets a nested key from a dictionary."""
     key = keys.pop(0)

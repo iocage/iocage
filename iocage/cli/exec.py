@@ -2,7 +2,6 @@
 import click
 
 import iocage.lib.ioc_logger as ioc_logger
-from iocage.lib.ioc_common import indent_lines
 from iocage.lib.ioc_exec import IOCExec
 from iocage.lib.ioc_list import IOCList
 
@@ -57,7 +56,6 @@ def exec_cmd(command, jail, host_user, jail_user):
                        jail_user).exec_jail()
 
     if err:
-        err = indent_lines(msg)
-        lgr.error("{}".format(err))
+        lgr.error(err.decode())
     else:
         lgr.info(msg.decode("utf-8"))
