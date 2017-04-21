@@ -37,9 +37,14 @@ def df_cmd(header, _long):
         path = paths[jail]
         conf = IOCJson(path).json_load()
         zconf = ["zfs", "get", "-H", "-o", "value"]
-        mountpoint = "{}/iocage/jails/{}".format(pool, full_uuid)
+        mountpoint = f"{pool}/iocage/jails/{full_uuid}"
 
         tag = conf["tag"]
+        template = conf["type"]
+
+        if template == "template":
+            mountpoint = f"{pool}/iocage/templates/{tag}"
+
         compressratio = Popen(zconf + ["compressratio", mountpoint],
                               stdout=PIPE).communicate()[0].decode(
             "utf-8").strip()
