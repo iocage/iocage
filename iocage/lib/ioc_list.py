@@ -5,7 +5,7 @@ from subprocess import CalledProcessError, PIPE
 import libzfs
 from texttable import Texttable
 
-from iocage.lib.ioc_common import checkoutput, sort_release, sort_tag
+from iocage.lib.ioc_common import checkoutput, ioc_sort
 from iocage.lib.ioc_json import IOCJson
 
 
@@ -17,12 +17,13 @@ class IOCList(object):
         JID UID BOOT STATE TAG TYPE IP4 RELEASE
     """
 
-    def __init__(self, lst_type="all", hdr=True, full=False):
+    def __init__(self, lst_type="all", hdr=True, full=False, _sort=None):
         self.list_type = lst_type
         self.header = hdr
         self.full = full
         self.pool = IOCJson().json_get_value("pool")
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
+        self.sort = _sort
         self.lgr = logging.getLogger('ioc_list')
 
     def list_datasets(self, set=False):
@@ -151,7 +152,9 @@ class IOCList(object):
                 jail_list.append([jid, uuid[:8], state, tag, short_release,
                                   short_ip4])
 
-        jail_list.sort(key=sort_tag)
+        list_type = "list_full" if self.full else "list_short"
+        sort = ioc_sort(list_type, self.sort, data=jail_list)
+        jail_list.sort(key=sort)
 
         # Prints the table
         if self.header:
@@ -178,7 +181,7 @@ class IOCList(object):
 
     def list_bases(self, datasets):
         """Lists all bases."""
-        base_list = sort_release(datasets, split=True)
+        base_list = ioc_sort("list_release", "release", data=datasets)
         table = Texttable(max_width=0)
 
         if self.header:

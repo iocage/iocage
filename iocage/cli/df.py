@@ -17,7 +17,9 @@ __cmdname__ = "df_cmd"
               help="For scripting, use tabs for separators.")
 @click.option("--long", "-l", "_long", is_flag=True, default=False,
               help="Show the full uuid.")
-def df_cmd(header, _long):
+@click.option("--sort", "-s", "_sort", default="tag", nargs=1,
+              help="Sorts the list by the given type")
+def df_cmd(header, _long, _sort):
     """Allows a user to show resource usage of all jails."""
     lgr = ioc_logger.Logger('ioc_cli_df').getLogger()
 
@@ -61,7 +63,8 @@ def df_cmd(header, _long):
         jail_list.append([uuid, compressratio, reservation, quota, used,
                           available, tag])
 
-    jail_list.sort(key=ioc_common.sort_tag)
+    sort = ioc_common.ioc_sort("df", _sort)
+    jail_list.sort(key=sort)
     if header:
         jail_list.insert(0, ["UUID", "CRT", "RES", "QTA", "USE", "AVA", "TAG"])
         # We get an infinite float otherwise.

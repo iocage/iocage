@@ -24,7 +24,9 @@ __cmdname__ = "list_cmd"
 @click.option("--plugins", "-P", is_flag=True, help="Show available plugins.")
 @click.option("--http", "-h", default=False,
               help="Have --remote use HTTP instead.", is_flag=True)
-def list_cmd(dataset_type, header, _long, remote, http, plugins):
+@click.option("--sort", "-s", "_sort", default="tag", nargs=1,
+              help="Sorts the list by the given type")
+def list_cmd(dataset_type, header, _long, remote, http, plugins, _sort):
     """This passes the arg and calls the jail_datasets function."""
     lgr = ioc_logger.Logger('ioc_cli_list').getLogger()
     freebsd_version = checkoutput(["freebsd-version"])
@@ -43,7 +45,7 @@ def list_cmd(dataset_type, header, _long, remote, http, plugins):
     elif plugins:
         IOCFetch("").fetch_plugin_index("", _list=True)
     else:
-        _list = IOCList(dataset_type, header, _long).list_datasets()
+        _list = IOCList(dataset_type, header, _long, _sort).list_datasets()
 
         if not header:
             if dataset_type == "base":
