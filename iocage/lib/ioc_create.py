@@ -64,32 +64,36 @@ class IOCCreate(object):
         if self.migrate:
             config = self.config
         else:
-            if self.template:
-                _type = "templates"
-            else:
-                _type = "releases"
-
-            freebsd_version = "{}/{}/{}/root/bin/freebsd-version".format(
-                self.iocroot, _type, self.release)
-
             try:
-                if not self.empty:
-                    if self.release[:4].endswith("-"):
-                        # 9.3-RELEASE and under don't actually have this
-                        # binary.
-                        cloned_release = self.release
-                    else:
-                        with open(freebsd_version, "r") as r:
-                            for line in r:
-                                if line.startswith("USERLAND_VERSION"):
-                                    # Long lines ftw?
-                                    cl = line.rstrip().partition("=")[2]
-                                    cloned_release = cl.strip('"')
+                if self.template:
+                    _type = "templates"
+                    temp_path = f"{self.iocroot}/{_type}/{self.release}"
+                    template_config = IOCJson(f"{temp_path}").json_get_value
+                    cloned_release = template_config("cloned_release")
                 else:
-                    cloned_release = "EMPTY"
+                    _type = "releases"
+                    rel_path = f"{self.iocroot}/{_type}/{self.release}"
 
-                config = self.create_config(jail_uuid, cloned_release)
-            except (IOError, OSError):
+                    freebsd_version = f"{rel_path}/root/bin/freebsd-version"
+
+                    if not self.empty:
+                        if self.release[:4].endswith("-"):
+                            # 9.3-RELEASE and under don't actually have this
+                            # binary.
+                            cloned_release = self.release
+                        else:
+                            with open(freebsd_version, "r") as r:
+                                for line in r:
+                                    if line.startswith("USERLAND_VERSION"):
+                                        # Long lines ftw?
+                                        cl = line.rstrip().partition("=")[2]
+                                        cloned_release = cl.strip('"')
+                    else:
+                        cloned_release = "EMPTY"
+            except (IOError, OSError, FileNotFoundError, UnboundLocalError):
+                # Unintuitevly a missing template will throw a
+                # UnboundLocalError as the missing file will kick the
+                # migration routine for zfs props. We don't need that :)
                 if self.template:
                     raise RuntimeError("Template: {} not found!".format(
                         self.release))
@@ -97,6 +101,7 @@ class IOCCreate(object):
                     raise RuntimeError("RELEASE: {} not found!".format(
                         self.release))
 
+            config = self.create_config(jail_uuid, cloned_release)
         jail = "{}/iocage/jails/{}/root".format(self.pool, jail_uuid)
 
         if self.template:
