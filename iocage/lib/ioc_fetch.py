@@ -617,6 +617,7 @@ class IOCFetch(object):
                                "{}/var/db/freebsd-update/".format(new_root),
                                "-f",
                                "{}/etc/freebsd-update.conf".format(new_root),
+                               "--not-running-from-cron",
                                "fetch"], stderr=PIPE)
                 fetch.communicate()
 
