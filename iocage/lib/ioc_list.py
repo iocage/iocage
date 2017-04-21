@@ -100,6 +100,7 @@ class IOCList(object):
 
             uuid = conf["host_hostuuid"]
             full_ip4 = conf["ip4_addr"]
+            ip6 = conf["ip6_addr"]
             jail_root = "{}/iocage/jails/{}/root".format(self.pool, uuid)
 
             try:
@@ -145,7 +146,7 @@ class IOCList(object):
             # Append the JID and the UUID to the table
             if self.full:
                 jail_list.append([jid, uuid, boot, state, tag, jail_type,
-                                  full_ip4, full_release, template])
+                                  full_release, full_ip4, ip6, template])
             else:
                 jail_list.append([jid, uuid[:8], state, tag, short_release,
                                   short_ip4])
@@ -157,9 +158,10 @@ class IOCList(object):
             if self.full:
                 # We get an infinite float otherwise.
                 table.set_cols_dtype(["t", "t", "t", "t", "t", "t", "t", "t",
-                                      "t"])
+                                      "t", "t"])
                 jail_list.insert(0, ["JID", "UUID", "BOOT", "STATE", "TAG",
-                                     "TYPE", "IP4", "RELEASE", "TEMPLATE"])
+                                     "TYPE", "RELEASE", "IP4", "IP6",
+                                     "TEMPLATE"])
             else:
                 # We get an infinite float otherwise.
                 table.set_cols_dtype(["t", "t", "t", "t", "t", "t"])
