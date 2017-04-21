@@ -45,14 +45,11 @@ To install subsequent updates: `git pull` and `pip3.6 install -U .`
 
 This repository replaces `iocage_legacy`. To upgrade to the current version:
 
-1. Back up your data
-2. Stop the jails (`service iocage stop`)
+1. Stop the jails (`service iocage stop; iocage stop ALL`)
+2. Back up your data
 3. Remove the old `iocage` package if it is installed (`pkg delete iocage`)
 4. Install `py3-iocage` using one of the methods above
-5. Migrate the jails. This can be done by running `iocage list` as root. If you
-   used `iocage-legacy`'s `develop` branch, then you will have to run
-   `iocage migrate` first. If you previously had basejails, they will be
-   promoted to ____
+5. Migrate the jails. This can be done by running `iocage list` as root
 6. Start the jails (`service iocage onestart`)
 
 ## WARNING:
