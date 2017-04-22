@@ -104,8 +104,9 @@ class IOCStop(object):
                     for ip4 in ip4_addr.split(","):
                         try:
                             iface, addr = ip4.split("/")[0].split("|")
-                            checkoutput(["ifconfig", iface, addr,
-                                         "-alias"], stderr=STDOUT)
+                            addr = addr.split()
+                            checkoutput(["ifconfig", iface] + addr +
+                                         ["-alias"], stderr=STDOUT)
                         except ValueError:
                             # Likely a misconfigured ip_addr with no interface.
                             self.lgr.error("  ! IP4 address is missing an"
@@ -128,8 +129,9 @@ class IOCStop(object):
                     for ip6 in ip6_addr.split(","):
                         try:
                             iface, addr = ip6.split("/")[0].split("|")
-                            checkoutput(["ifconfig", iface, "inet6", addr,
-                                         "-alias"], stderr=STDOUT)
+                            addr = addr.split()
+                            checkoutput(["ifconfig", iface, "inet6"] + addr +
+                                         ["-alias"], stderr=STDOUT)
                         except ValueError:
                             # Likely a misconfigured ip_addr with no interface.
                             self.lgr.error("  ! IP6 address is missing an"
