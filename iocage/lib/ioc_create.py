@@ -186,7 +186,12 @@ class IOCCreate(object):
                         "usr/libdata", "usr/lib32"]
 
             for bdir in basedirs:
-                source = f"{self.iocroot}/releases/{self.release}/root/{bdir}"
+                if "-RELEASE" not in self.release:
+                    _type = "templates"
+                else:
+                    _type = "releases"
+
+                source = f"{self.iocroot}/{_type}/{self.release}/root/{bdir}"
                 destination = f"{self.iocroot}/jails/{jail_uuid}/root/{bdir}"
 
                 IOCFstab(jail_uuid, _tag, "add", source, destination, "nullfs",
