@@ -322,7 +322,9 @@ class IOCFetch(object):
         ftp_list = ftp.nlst()
 
         if not self.release:
+            ftp_list = [rel for rel in ftp_list if "-RELEASE" in rel]
             releases = sort_release(ftp_list)
+
             for r in releases:
                 if r in eol:
                     self.lgr.info("[{}] {} (EOL)".format(releases.index(r), r))
