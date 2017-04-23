@@ -217,10 +217,10 @@ def sort_release(releases, split=False):
         if length == 10:
             # We don't want the -p* stuff.
             releases = releases[6].rsplit("-", 1)[0]
+            list_sort = True
         elif length == 6:
             releases = releases[4]
-
-        list_sort = True
+            list_sort = True
     except TypeError:
         # This is list -r
         pass
@@ -236,9 +236,7 @@ def sort_release(releases, split=False):
             r_dict[rel] = r_type
     else:
         if list_sort:
-            if isinstance(releases, str):
-                releases = releases.split(".")
-            if len(releases[0]) < 2:
+            if len(releases.split(".")[0]) < 2:
                 releases = f"0{releases}"
 
             return releases
