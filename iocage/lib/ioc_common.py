@@ -236,6 +236,8 @@ def sort_release(releases, split=False):
             r_dict[rel] = r_type
     else:
         if list_sort:
+            if isinstance(releases, str):
+                releases = releases.split(".")
             if len(releases[0]) < 2:
                 releases = f"0{releases}"
 
