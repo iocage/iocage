@@ -66,13 +66,23 @@ def fstab_cmd(action, fstab_string, jail):
             # We're going to assume this is an index number.
             try:
                 index = int(fstab_string[0])
+
+                _index = True
+                source, destination, fstype, options, dump, _pass = "", "", "", \
+                                                                    "", "", ""
             except TypeError:
                 lgr.critical("Please specify either a valid fstab "
                              "entry or an index number.")
                 exit(1)
-            _index = True
-            source, destination, fstype, options, dump, _pass = "", "", "", \
-                                                                "", "", ""
+            except ValueError:
+                # We will assume this is just a source, and will do a readonly
+                # nullfs mount
+                source = fstab_string[0]
+                destination = source
+                fstype = "nullfs"
+                options = "ro"
+                dump = "0"
+                _pass = "0"
     else:
         if action != "edit":
             try:
