@@ -21,7 +21,6 @@ def console_cmd(jail, force):
     will attempt to start the jail if it is not already running.
     """
     lgr = ioc_logger.Logger('ioc_cli_console').getLogger()
-    # TODO: setfib support
     jails, paths = IOCList("uuid").list_datasets()
 
     _jail = {tag: uuid for (tag, uuid) in jails.items() if
@@ -34,6 +33,7 @@ def console_cmd(jail, force):
         iocjson = IOCJson(path)
         conf = iocjson.json_load()
         login_flags = conf["login_flags"].split()
+        exec_fib = conf["exec_fib"]
         status, _ = IOCList().list_get_jid(uuid)
     elif len(_jail) > 1:
         lgr.error("Multiple jails found for"
@@ -70,5 +70,5 @@ def console_cmd(jail, force):
             exit(1)
 
     if status:
-        Popen(["jexec", "ioc-{}".format(uuid), "login"] +
+        Popen(["setfib", exec_fib, "jexec", f"ioc-{uuid}", "login"] +
               login_flags).communicate()

@@ -84,6 +84,17 @@ class IOCJson(object):
                     # These were just clones on master.
                     value = "jail"
                     key_and_value["basejail"] = "yes"
+            elif key == "hostname":
+                hostname = key_and_value["host_hostname"]
+
+                if value != hostname:
+                    # This is safe to replace at this point.
+                    # The user changed the wrong hostname key, we will move
+                    # it to the right one now.
+                    if hostname == uuid:
+                        key_and_value["host_hostname"] = value
+
+                continue
             key_and_value[key] = value
 
         if not skip:
@@ -283,18 +294,28 @@ class IOCJson(object):
                     zpools = Popen(cmd, stdout=PIPE).communicate()[0].decode(
                         "utf-8").split()
 
+                    zpool = zpools[0]
+
                     if os.geteuid() != 0:
                         raise RuntimeError("Run as root to automatically "
                                            "activate the first zpool!")
 
-                    self.lgr.info("Setting up zpool [{}] for iocage usage\n"
-                                  "If you wish to change please use "
-                                  "\"iocage activate\"".format(zpools[0]))
+                    if zpool == "freenas-boot":
+                        try:
+                            zpool = zpools[1]
+                        except IndexError:
+                            raise RuntimeError("Please specify a pool to "
+                                               "activate with iocage activate "
+                                               "POOL")
+
+                    self.lgr.info(f"Setting up zpool [{zpool}] for"
+                                  " iocage usage\n If you wish to change"
+                                  " please use \"iocage activate\"")
 
                     Popen(["zfs", "set", "org.freebsd.ioc:active=yes",
-                           zpools[0]]).communicate()
+                           zpool]).communicate()
 
-                    return zpools[0]
+                    return zpool
         elif prop == "iocroot":
             # Location in this case is actually the zpool.
             try:

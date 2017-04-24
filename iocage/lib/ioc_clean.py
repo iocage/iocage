@@ -13,20 +13,17 @@ class IOCClean(object):
     def __init__(self):
         self.pool = IOCJson().json_get_value("pool")
         self.lgr = logging.getLogger('ioc_clean')
-        self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
-        self.ds = self.zfs.get_dataset
 
     def clean_jails(self):
         """Cleans all jails and their respective snapshots."""
-        IOCDestroy().__stop_jails__()
-        IOCDestroy().__destroy_parse_datasets__(f"{self.pool}/iocage/jails",
-                                                clean=True)
+        IOCDestroy().destroy_jail(f"{self.pool}/iocage/jails", clean=True)
 
     def clean_all(self):
         """Cleans everything related to iocage."""
         IOCDestroy().__stop_jails__()
 
-        datasets = self.ds(f"{self.pool}/iocage")
+        zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
+        datasets = zfs.get_dataset(f"{self.pool}/iocage")
 
         for dataset in datasets.dependents:
             try:
@@ -41,6 +38,9 @@ class IOCClean(object):
                     raise
 
             dataset.delete()
+
+        datasets.umount(force=True)
+        datasets.delete()
 
     def clean_templates(self):
         """Cleans all templates and their respective children."""

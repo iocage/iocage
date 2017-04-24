@@ -1,7 +1,21 @@
 import logging
 import logging.handlers
 import os
+import sys
 from logging.config import dictConfig
+
+
+class SingleLevelFilter(logging.Filter):
+    # http://stackoverflow.com/questions/1383254/logging-streamhandler-and-standard-streams
+    def __init__(self, passlevel, reject):
+        self.passlevel = passlevel
+        self.reject = reject
+
+    def filter(self, record):
+        if self.reject:
+            return record.levelno != self.passlevel
+        else:
+            return record.levelno == self.passlevel
 
 
 class LoggerFormatter(logging.Formatter):
@@ -47,7 +61,11 @@ class LoggerFormatter(logging.Formatter):
         color_reset = self.CONSOLE_COLOR_FORMATTER['RESET']
 
         record.levelname = color_start
-        record.msg = record.msg + color_reset
+
+        try:
+            record.msg = record.msg + color_reset
+        except TypeError:
+            pass
 
         return logging.Formatter.format(self, record)
 
@@ -64,6 +82,8 @@ class LoggerStream(object):
 
 class Logger(object):
     """Pseudo-Class for Logger - Wrapper for logging module"""
+    log_file = os.environ.get("IOCAGE_LOGFILE", "/var/log/iocage.log")
+
     DEFAULT_LOGGING = {
         'version'                 : 1,
         'disable_existing_loggers': True,
@@ -75,7 +95,7 @@ class Logger(object):
             'file': {
                 'level'      : 'DEBUG',
                 'class'      : 'logging.handlers.RotatingFileHandler',
-                'filename'   : '/var/log/iocage.log',
+                'filename'   : f'{log_file}',
                 'mode'       : 'a',
                 'maxBytes'   : 10485760,
                 'backupCount': 5,
@@ -85,7 +105,7 @@ class Logger(object):
         },
         'formatters'              : {
             'file': {
-                'format' : '(%(levelname)s) %(message)s',
+                'format' : '%(asctime)s (%(levelname)s) %(message)s',
                 'datefmt': '%Y/%m/%d %H:%M:%S',
             },
         },
@@ -100,16 +120,25 @@ class Logger(object):
 
     def _set_output_console(self):
         """Set the output format for console."""
+        console_handler_stdout = logging.StreamHandler(sys.stdout)
+        console_handler_stdout_filter = SingleLevelFilter(logging.INFO, False)
+        console_handler_stdout.addFilter(console_handler_stdout_filter)
 
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.DEBUG)
+        console_handler_stderr = logging.StreamHandler(sys.stderr)
+        console_handler_stderr_filter = SingleLevelFilter(logging.INFO, True)
+        console_handler_stderr.addFilter(console_handler_stderr_filter)
 
         log_format = "%(levelname)s%(message)s"
         time_format = "%Y/%m/%d %H:%M:%S"
-        console_handler.setFormatter(
-            LoggerFormatter(log_format, datefmt=time_format))
 
-        logging.root.addHandler(console_handler)
+        if os.isatty(sys.stdout.fileno()):
+            console_handler_stdout.setFormatter(
+                LoggerFormatter(log_format, datefmt=time_format))
+            console_handler_stderr.setFormatter(
+                LoggerFormatter(log_format, datefmt=time_format))
+
+        logging.root.addHandler(console_handler_stdout)
+        logging.root.addHandler(console_handler_stderr)
 
     def configure_logging(self):
         if os.geteuid() == 0:

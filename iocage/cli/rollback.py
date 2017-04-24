@@ -33,41 +33,46 @@ def rollback_cmd(jail, name, force):
         path = paths[tag]
     elif len(_jail) > 1:
         lgr.error("Multiple jails found for"
-                  " {}:".format(jail))
+                  f" {jail}:")
         for t, u in sorted(_jail.items()):
-            lgr.error("  {} ({})".format(u, t))
+            lgr.error(f"  {u} ({t})")
         raise RuntimeError()
     else:
-        lgr.critical("{} not found!".format(jail))
+        lgr.critical(f"{jail} not found!")
         exit(1)
 
     # Looks like foo/iocage/jails/df0ef69a-57b6-4480-b1f8-88f7b6febbdf@BAR
-    target = "{}{}@{}".format(pool, path, name)
+    conf = IOCJson(path).json_load()
+
+    if conf["template"] == "yes":
+        target = f"{pool}/iocage/templates/{tag}"
+    else:
+        target = f"{pool}/iocage/jails/{uuid}"
+
     try:
         checkoutput(["zfs", "get", "-H", "creation", target], stderr=PIPE)
     except CalledProcessError:
-        lgr.critical("Snapshot {} does not exist!".format(target))
+        lgr.critical(f"Snapshot {target} does not exist!")
         exit(1)
 
     if not force:
         lgr.warning(
             "\nThis will destroy ALL data created since"
-            " {} was taken.".format(
-                name) + "\nIncluding ALL snapshots taken after"
-                        " {} for {} ({}).".format(name, uuid, tag))
+            f" {name} was taken.\nIncluding ALL snapshots taken after"
+            f" {name} for {uuid} ({tag})")
         if not click.confirm("\nAre you sure?"):
             exit()
     try:
         datasets = Popen(["zfs", "list", "-H", "-r",
-                          "-o", "name", "{}{}".format(pool, path)],
+                          "-o", "name", target],
                          stdout=PIPE,
                          stderr=PIPE).communicate()[0].decode("utf-8").split()
 
         for dataset in datasets:
             check_call(
-                ["zfs", "rollback", "-r", "{}@{}".format(dataset, name)])
+                ["zfs", "rollback", "-r", f"{dataset}@{name}"])
 
-        lgr.info("Rolled back to: {}.".format(target))
+        lgr.info(f"Rolled back to: {target}")
     except CalledProcessError as err:
-        lgr.error("{}".format(err))
+        lgr.error(f"{err}")
         exit(1)

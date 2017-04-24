@@ -41,6 +41,16 @@ To install subsequent updates: `git pull` and `pip3.6 install -U .`
 
 *Note1: The default version of Python3 on FreeBSD is 3.5 and for this reason it is not possible to provide pre-built packages using Python 3.6.*
 
+###### Upgrading from `iocage_legacy`:
+
+This repository replaces `iocage_legacy`. To upgrade to the current version:
+
+1. Stop the jails (`service iocage stop; iocage stop ALL`)
+2. Back up your data
+3. Remove the old `iocage` package if it is installed (`pkg delete iocage`)
+4. Install `py3-iocage` using one of the methods above
+5. Migrate the jails. This can be done by running `iocage list` as root
+6. Start the jails (`service iocage onestart`)
 
 ## WARNING:
 - This is beta quality software, there be dragons! Please report them.
@@ -78,7 +88,7 @@ Activate a zpool:
 
 `iocage activate ZPOOL`
 
-*NOTE: ZPOOL is a placeholder. Use `zpool list` and substitue it for the 
+*NOTE: ZPOOL is a placeholder. Use `zpool list` and substitute it for the
 zpool you wish to use.*
 
 Fetch a release:
@@ -89,7 +99,7 @@ Create a jail:
 
 `iocage create tag=myjail ip4_addr="em0|192.168.1.10/24" -r 11.0-RELEASE`
 
-*NOTE: em0 and 11.0-RELEASE are placeholders. Please replace them with your 
+*NOTE: em0 and 11.0-RELEASE are placeholders. Please replace them with your
 real interface (`ifconfig`) and RELEASE chosen during `iocage fetch`.*
 
 Start the jail:
@@ -100,7 +110,7 @@ Start the jail:
 
 Congratulations, you have created your first jail with iocage!
 You can now use it like you would a real system.
-Since SSH won't be available by default, `iocage console myjail` is a useful 
+Since SSH won't be available by default, `iocage console myjail` is a useful
 spot to begin configuration of your jail.
 
 To see a list of commands available to you now, type `iocage` outside the jail.

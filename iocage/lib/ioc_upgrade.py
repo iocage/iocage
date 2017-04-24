@@ -45,11 +45,11 @@ class IOCUpgrade(object):
                     tmp.close()
                     os.chmod(tmp.name, 0o755)
 
-                    print("HERE")
                     fetch = Popen([tmp.name, "-b", self.path, "-d",
                                    f"{self.path}/var/db/freebsd-update/",
                                    "-f",
                                    f"{self.path}/etc/freebsd-update.conf",
+                                   "--not-running-from-cron",
                                    f"--currently-running {self.jail_release}",
                                    "-r",
                                    self.new_release, "upgrade"], stdin=PIPE)

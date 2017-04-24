@@ -214,16 +214,16 @@ class IOCFetch(object):
 
         if self.hardened:
             if self.auth == "basic":
-                req = requests.get("{}/releases".format(self.server),
+                req = requests.get(f"{self.server}/{rdir}",
                                    auth=(self.user, self.password),
                                    verify=self.verify)
             elif self.auth == "digest":
-                req = requests.get("{}/releases".format(self.server),
+                req = requests.get(f"{self.server}/{rdir}",
                                    auth=HTTPDigestAuth(self.user,
                                                        self.password),
                                    verify=self.verify)
             else:
-                req = requests.get("{}/releases".format(self.server))
+                req = requests.get(f"{self.server}/{rdir}")
 
             releases = []
             status = req.status_code == requests.codes.ok
@@ -232,15 +232,19 @@ class IOCFetch(object):
 
             if not self.release:
                 for rel in req.content.split():
+                    rel = rel.decode()
                     rel = rel.strip("href=").strip("/").split(">")
-                    if "_stable" in rel[0]:
-                        rel = rel[0].strip('"').strip("/").strip("/</a")
-                        rel = rel.replace("hardened_", "").replace(
-                            "_master-LAST", "").replace("_", "-").upper()
+
+                    if "-STABLE" in rel[0]:
+                        rel = rel[0].strip('"').strip("/").strip(
+                            "HardenedBSD-").rsplit("-")
+                        rel = f"{rel[0]}-{rel[1]}"
+
                         if rel not in releases:
                             releases.append(rel)
 
                 releases = sort_release(releases)
+
                 for r in releases:
                     self.lgr.info("[{}] {}".format(releases.index(r), r))
                 self.release = input(
@@ -267,7 +271,7 @@ class IOCFetch(object):
 
             if not self.release:
                 for rel in req.content.split():
-                    rel = rel.decode("utf-8")
+                    rel = rel.decode()
                     rel = rel.strip("href=").strip("/").split(">")
                     if "-RELEASE" in rel[0]:
                         rel = rel[0].strip('"').strip("/").strip("/</a")
@@ -318,7 +322,9 @@ class IOCFetch(object):
         ftp_list = ftp.nlst()
 
         if not self.release:
+            ftp_list = [rel for rel in ftp_list if "-RELEASE" in rel]
             releases = sort_release(ftp_list)
+
             for r in releases:
                 if r in eol:
                     self.lgr.info("[{}] {} (EOL)".format(releases.index(r), r))
@@ -361,6 +367,7 @@ class IOCFetch(object):
         reconnection.
         """
         ftp = FTP(self.server)
+        ftp.connect()
         ftp.login(user=self.user, passwd=self.password)
 
         if self.server == "ftp.freebsd.org":
@@ -612,6 +619,7 @@ class IOCFetch(object):
                                "{}/var/db/freebsd-update/".format(new_root),
                                "-f",
                                "{}/etc/freebsd-update.conf".format(new_root),
+                               "--not-running-from-cron",
                                "fetch"], stderr=PIPE)
                 fetch.communicate()
 

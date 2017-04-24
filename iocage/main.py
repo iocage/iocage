@@ -4,24 +4,32 @@ import imp
 import locale
 import os
 import stat
+import subprocess as su
 import sys
 
 import click
+# This prevents it from getting in our way.
+from click import core
 
 from iocage.lib.ioc_check import IOCCheck
 
-# This prevents it from getting in our way.
-from click import core
 core._verify_python3_env = lambda: None
 user_locale = os.environ.get("LANG", "en_US.UTF-8")
 locale.setlocale(locale.LC_ALL, user_locale)
+
+try:
+    su.check_call(["sysctl", "vfs.zfs.version.spa"],
+                  stdout=su.PIPE, stderr=su.PIPE)
+except su.CalledProcessError:
+    sys.exit("ZFS is required to use iocage.\n"
+             "Try calling 'kldload zfs' as root.")
 
 
 def print_version(ctx, param, value):
     """Prints the version and then exits."""
     if not value or ctx.resilient_parsing:
         return
-    print("Version\t0.9.7 2017/03/08")
+    print("Version\t0.9.8 BETA")
     sys.exit()
 
 
@@ -57,19 +65,6 @@ for lib in glob.glob("{}/*.py".format(PATH)):
 
 
 def main():
-    log_file = os.environ.get("IOCAGE_LOGFILE", "/dev/stdout")
-    mode = "a" if not stat.S_ISCHR(os.stat(log_file).st_mode) else "w"
-
-    for arg in sys.argv:
-        key, _, val = arg.partition("=")
-        if "IOCAGE_LOGFILE" in key:
-            if val:
-                log_file = val
-
-            # If IOCAGE_LOGFILE is supplied on activate AFTER the pool name,
-            # hilarity ensues. Let's avoid that.
-            sys.argv.remove(arg)
-
     skip_check = False
     skip_check_cmds = ["--help", "activate", "deactivate", "-v", "--version"]
 

@@ -24,7 +24,6 @@ class IOCExec(object):
         self.lgr = logging.getLogger('ioc_exec')
 
     def exec_jail(self):
-        # TODO: Exec fib support
         if self.jail_user:
             flag = "-U"
             user = self.jail_user
@@ -33,11 +32,12 @@ class IOCExec(object):
             user = self.host_user
 
         status, _ = IOCList().list_get_jid(self.uuid)
+        conf = IOCJson(self.path).json_load()
+        exec_fib = conf["exec_fib"]
         if not status:
             if not self.plugin and not self.skip:
                 self.lgr.info("{} ({}) is not running, starting jail.".format(
                     self.uuid, self.tag))
-            conf = IOCJson(self.path).json_load()
 
             if conf["type"] in ("jail", "plugin"):
                 IOCStart(self.uuid, self.tag, self.path, conf, silent=True)
@@ -59,13 +59,15 @@ class IOCExec(object):
 
         if self.plugin:
             try:
-                checkoutput(["jexec", flag, user, "ioc-{}".format(
-                    self.uuid)] + list(self.command), stderr=STDOUT)
+                checkoutput(["setfib", exec_fib, "jexec", flag, user,
+                             f"ioc-{self.uuid}"] + list(self.command),
+                            stderr=STDOUT)
             except CalledProcessError as err:
                 return err.output.decode("utf-8").rstrip()
         else:
-            jexec = Popen(["jexec", flag, user, "ioc-{}".format(self.uuid)] +
-                          list(self.command), stdout=PIPE, stderr=PIPE)
+            jexec = Popen(["setfib", exec_fib, "jexec", flag, user,
+                           f"ioc-{self.uuid}"] + list(self.command),
+                          stdout=PIPE, stderr=PIPE)
             msg, err = jexec.communicate()
 
             return msg, err
