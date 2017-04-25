@@ -1,9 +1,9 @@
 """set module for the cli."""
 import click
 
-import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
+from iocage.lib.ioc_logger import IOCLogger
 
 __cmdname__ = "set_cmd"
 __rootcmd__ = True
@@ -20,7 +20,7 @@ __rootcmd__ = True
               is_flag=True)
 def set_cmd(prop, jail, plugin):
     """Get a list of jails and print the property."""
-    lgr = ioc_logger.Logger('ioc_cli_set').getLogger()
+    lgr = IOCLogger().cli_log()
 
     jails, paths = IOCList("uuid").list_datasets(set=True)
     _jail = {tag: uuid for (tag, uuid) in jails.items() if

@@ -3,9 +3,9 @@ from subprocess import CalledProcessError, check_call
 
 import click
 
-import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
+from iocage.lib.ioc_logger import IOCLogger
 
 __cmdname__ = "snapremove_cmd"
 
@@ -16,7 +16,7 @@ __cmdname__ = "snapremove_cmd"
                                    " after @", required=True)
 def snapremove_cmd(jail, name):
     """Removes a snapshot from a user supplied jail."""
-    lgr = ioc_logger.Logger('ioc_cli_snapremove').getLogger()
+    lgr = IOCLogger().cli_log()
 
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")

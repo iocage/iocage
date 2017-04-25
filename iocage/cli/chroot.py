@@ -3,8 +3,8 @@ from subprocess import PIPE, Popen
 
 import click
 
-import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_list import IOCList
+from iocage.lib.ioc_logger import IOCLogger
 
 __cmdname__ = "chroot_cmd"
 __rootcmd__ = True
@@ -39,7 +39,7 @@ def umount(path, _type):
 @click.argument("command", nargs=-1, type=click.UNPROCESSED)
 def chroot_cmd(jail, command):
     """Will chroot into a jail regardless if it's running."""
-    lgr = ioc_logger.Logger('ioc_cli_chroot').getLogger()
+    lgr = IOCLogger().cli_log()
     jails, paths = IOCList("uuid").list_datasets()
     command = list(command)
 

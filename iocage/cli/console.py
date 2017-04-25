@@ -3,9 +3,9 @@ from subprocess import Popen
 
 import click
 
-import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
+from iocage.lib.ioc_logger import IOCLogger
 from iocage.lib.ioc_start import IOCStart
 
 __cmdname__ = "console_cmd"
@@ -20,7 +20,7 @@ def console_cmd(jail, force):
     Runs jexec to login into the specified jail. Accepts a force flag that
     will attempt to start the jail if it is not already running.
     """
-    lgr = ioc_logger.Logger('ioc_cli_console').getLogger()
+    lgr = IOCLogger().cli_log()
     jails, paths = IOCList("uuid").list_datasets()
 
     _jail = {tag: uuid for (tag, uuid) in jails.items() if

@@ -1,15 +1,15 @@
 """import module for the cli."""
 import click
 
-import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_image import IOCImage
+from iocage.lib.ioc_logger import IOCLogger
 
 __cmdname__ = "import_cmd"
 __rootcmd__ = True
 
 
 def callback(message):
-    lgr = ioc_logger.Logger('ioc_cli_import').getLogger()
+    lgr = IOCLogger().cli_log()
 
     lgr.info(message)
 

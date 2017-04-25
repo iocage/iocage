@@ -5,9 +5,9 @@ import click
 from texttable import Texttable
 
 import iocage.lib.ioc_common as ioc_common
-import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
+from iocage.lib.ioc_logger import IOCLogger
 
 __cmdname__ = "df_cmd"
 
@@ -21,7 +21,7 @@ __cmdname__ = "df_cmd"
               help="Sorts the list by the given type")
 def df_cmd(header, _long, _sort):
     """Allows a user to show resource usage of all jails."""
-    lgr = ioc_logger.Logger('ioc_cli_df').getLogger()
+    lgr = IOCLogger().cli_log()
 
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")
