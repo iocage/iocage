@@ -3,16 +3,14 @@ from operator import itemgetter
 
 import libzfs
 
+import iocage.lib.ioc_common as ioc_common
 import iocage.lib.ioc_json as ioc_json
 import iocage.lib.ioc_list as ioc_list
-import iocage.lib.ioc_logger as ioc_logger
 import iocage.lib.ioc_start as ioc_start
 import iocage.lib.ioc_stop as ioc_stop
-import iocage.lib.ioc_common as ioc_common
 
 
 class PoolAndDataset(object):
-
     def __init__(self):
         self.pool = ioc_json.IOCJson().json_get_value("pool")
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
@@ -33,10 +31,12 @@ class PoolAndDataset(object):
         Return:
                 generator: from libzfs.ZFSDataset.
         """
-        __types = {'all': '/iocage/jails', 'base': '/iocage/releases',
-                   'template': '/iocage/templates', 'uuid': '/iocage/jails',
-                   'root': '/iocage',
-                  }
+        __types = {
+            'all'     : '/iocage/jails', 'base': '/iocage/releases',
+            'template': '/iocage/templates', 'uuid': '/iocage/jails',
+            'root'    : '/iocage',
+        }
+
         if option_type in __types.keys():
             return self.zfs.get_dataset(
                 f"{self.pool}{__types[option_type]}").children
@@ -218,4 +218,3 @@ class IOCage(object):
                 else:
                     message = f"{uuid} ({j}) is already running!"
                     self.callback({'level': 'WARNING', 'message': message})
-
