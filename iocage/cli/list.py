@@ -1,7 +1,7 @@
 """list module for the cli."""
 import click
 
-from iocage.lib import ioc_logger
+from iocage.lib.ioc_logger import IOCLogger
 from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_fetch import IOCFetch
 from iocage.lib.ioc_list import IOCList
@@ -28,7 +28,7 @@ __cmdname__ = "list_cmd"
               help="Sorts the list by the given type")
 def list_cmd(dataset_type, header, _long, remote, http, plugins, _sort):
     """This passes the arg and calls the jail_datasets function."""
-    lgr = ioc_logger.Logger('ioc_cli_list').getLogger()
+    lgr = IOCLogger().cli_log()
     freebsd_version = checkoutput(["freebsd-version"])
 
     if dataset_type is None:
