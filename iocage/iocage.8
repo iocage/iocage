@@ -10,7 +10,7 @@
 .Op Fl -help | Ar SUBCOMMAND Fl -help
 .\" == VERSION ==
 .Nm
-.Op Fl -version | v
+.Op Fl v | -version
 .Pp
 .\" == ACTIVATE ==
 .Nm
@@ -24,31 +24,31 @@
 .\" == CLEAN ==
 .Nm
 .Cm clean
-.Op Fl -all | a
-.Op Fl -base | b | r
-.Op Fl -force | f
-.Op Fl -jails | j
-.Op Fl -template | t
+.Op Fl a | -all
+.Op Fl b | r | -base
+.Op Fl f | -force
+.Op Fl j | -jails
+.Op Fl t | -template
 .\" == CONSOLE ==
 .Nm
 .Cm console
-.Op Fl -force | f
+.Op Fl f | -force
 .Ar UUID | TAG
 .\" == CREATE ==
 .Nm
 .Cm create
-.Op Fl -basejail | b
-.Op Fl -count | c
+.Op Fl b | -basejail
+.Op Fl c | -count
 .Ar TEXT
-.Op Fl -empty | e
-.Op Fl -pkglist | p
+.Op Fl e | -empty
+.Op Fl p | -pkglist
 .Ar TEXT
-.Op Fl -release | r
+.Op Fl r | -release
 .Ar TEXT
-.Op Fl -short | s
-.Op Fl -template | t
+.Op Fl s | -short
+.Op Fl t | -template
 .Ar TEXT
-.Op Fl -uuid | u
+.Op Fl u | -uuid
 .Ar TEXT
 .Op Cm release Ns = Ns Ar RELEASE <REVIEW>
 .Op Cm pkglist Ns = Ns Ar FILE <REVIEW>
@@ -56,21 +56,21 @@
 .\" == DESTROY ==
 .Nm
 .Cm destroy
-.Op Fl -download | d
-.Op Fl -force | f
-.Op Fl -release | r
+.Op Fl d | -download
+.Op Fl f | -force
+.Op Fl r | -release
 .Ar UUID | TAG
 .\" == DF ==
 .Nm
 .Cm df
-.Op Fl -header | H | h
-.Op Fl -long | l
+.Op Fl H | h | -header
+.Op Fl l | -long
 .\" == EXEC ==
 .Nm
 .Cm exec
-.Op Fl -host_user | u
+.Op Fl U | -jail_user
 .Ar NAME
-.Op Fl -jail_user | U
+.Op Fl u | -host_user
 .Ar NAME
 .Ar ALL | TAG | UUID
 .Cm COMMAND Op Ar ARGS <REVIEW>
@@ -81,33 +81,33 @@
 .\" == FETCH ==
 .Nm
 .Cm fetch
-.Op Fl -auth | a
-.Ar TEXT
-.Op Fl -count | c
-.Ar TEXT
-.Op Fl -eol | E
-.Op Fl -file | f
-.Op Fl -files | F
-.Ar TEXT
-.Op Fl -http | h
-.Op Fl -noeol | NE
-.Op Fl -noupdate | NU
-.Op Fl -noverify | NV
-.Op Fl -password | p
-.Ar TEXT
-.Op Fl -plugin-file | P
-.Ar TEXT
 .Op Fl -plugins
-.Op Fl -release | r
+.Op Fl E | -eol
+.Op Fl F | -files
 .Ar TEXT
-.Op Fl -root-dir | d
+.Op Fl NE | -noeol
+.Op Fl NU | -noupdate
+.Op Fl NV | -noverify
+.Op Fl P | -plugin-file
 .Ar TEXT
-.Op Fl -server | s
+.Op Fl U | -update
+.Op Fl V | -verify
+.Op Fl a | -auth
 .Ar TEXT
-.Op Fl -update | U
-.Op Fl -user | u
+.Op Fl c | -count
 .Ar TEXT
-.Op Fl -verify | V
+.Op Fl d | -root-dir
+.Ar TEXT
+.Op Fl f | -file
+.Op Fl h | -http
+.Op Fl p | -password
+.Ar TEXT
+.Op Fl r | -release
+.Ar TEXT
+.Op Fl s | -server
+.Ar TEXT
+.Op Fl u | -user
+.Ar TEXT
 .Op Cm release Ns = Ns Ar RELEASE <REVIEW>
 .Op Cm ftphost Ns = Ns Ar ftp.hostname.org <REVIEW>
 .Op Cm ftpdir Ns = Ns Ar /dir/ <REVIEW>
@@ -115,19 +115,19 @@
 .\" == FSTAB ==
 .Nm
 .Cm fstab
-.Op Fl -add | a
-.Op Fl -edit | e
-.Op Fl -remove | r
+.Op Fl a | -add
+.Op Fl e | -edit
+.Op Fl r | -remove
 .Ar JAIL
 .Op Ar FSTAB_STRING
 .\" == GET ==
 .Nm
 .Cm get
-.Op Fl -all | a
-.Op Fl -header | H | h
-.Op Fl -plugin | P
-.Op Fl -pool | p
-.Op Fl -recursive | r
+.Op Fl H | h | -header
+.Op Fl P | -plugin
+.Op Fl a | -all
+.Op Fl p | -pool
+.Op Fl r | -recursive
 .Ar PROPERTY
 .Op Ar all | UUID | TAG
 .\" == IMPORT ==
@@ -138,18 +138,18 @@
 .\" == LIST ==
 .Nm
 .Cm list
-.Op Fl -base | -release | b | r
-.Op Fl -header | H | h
-.Op Fl -http | h
-.Op Fl -long | l
-.Op Fl -plugins | P
-.Op Fl -remote | R
-.Op Fl -template | t
+.Op Fl H | h | -header
+.Op Fl P | -plugins
+.Op Fl R | -remote
+.Op Fl b | r | -base | -release
+.Op Fl h | -http
+.Op Fl l | -long
+.Op Fl t | -template
 .\" == MIGRATE ==
 .Nm
 .Cm migrate
-.Op Fl -delete | d
-.Op Fl -force | f
+.Op Fl d | -delete
+.Op Fl f | -force
 .\" == PKG ==
 .Nm
 .Cm pkg
@@ -158,36 +158,36 @@
 .\" == RESTART ==
 .Nm
 .Cm restart
-.Op Fl -soft | s
+.Op Fl s | -soft
 .Op Ar UUID | TAG
 .\" == ROLLBACK ==
 .Nm
 .Cm rollback
-.Op Fl -force | f
-.Op Fl -name | n
+.Op Fl f | -force
+.Op Fl n | -name
 .Ar SNAPSHOT
 .Op Ar UUID | TAG@snapshotname
 .\" == SET ==
 .Nm
 .Cm set
-.Op Fl -plugin | P
+.Op Fl P | -plugin
 .Ar KEY
 .Ar property_value
 .Op Ar UUID | TAG
 .\" == SNAPLIST ==
 .Nm
 .Cm snaplist
-.Op Fl -header | H | h
+.Op Fl H | h | -header
 .Op Ar UUID | TAG
 .\" == SNAPREMOVE ==
 .Nm
 .Cm snapremove
-.Op Fl -name | n
+.Op Fl n | -name
 .Op Ar UUID | TAG@snapshotname | ALL
 .\" == SNAPSHOT ==
 .Nm
 .Cm snapshot
-.Op Fl -name | n
+.Op Fl n | -name
 .Op Ar UUID | TAG | TAG@snapshotname
 .\" == START ==
 .Nm
@@ -206,7 +206,7 @@
 .\" == UPGRADE ==
 .Nm
 .Cm upgrade
-.Op Fl -release | r
+.Op Fl r | -release
 .Ar RELEASE
 .Op Ar UUID | TAG
 .Sh DESCRIPTION
@@ -304,22 +304,22 @@ Destroy ZFS datasets.
 .Pp
 Options:
 .Bl -tag -width "[-b | --base | -r]"
-.It Op Fl -all | a
+.It Op Fl a | -all
 Destroys all created iocage data.
-.It Op Fl -base | b | r
+.It Op Fl b | r | -base
 Destroys all fetched RELEASE jails.
-.It Op Fl -force | f
+.It Op Fl f | -force
 Runs the command without any further user interaction.
-.It Op Fl -jails | j
+.It Op Fl j | -jails
 Destroys all created jails.
-.It Op Fl -template | t
+.It Op Fl t | -template
 Destroys all templates.
 .El
 .\" == CONSOLE ==
 .It Cm console
 Execute login to have a shell inside the jail.
 Use the
-.Op Fl -force | f
+.Op Fl f | -force
 option to run the command with no further user input.
 .\" == CREATE ==
 .It Cm create
@@ -329,24 +329,24 @@ A fully independent jail set is created by default.
 .Pp
 Options:
 .Bl -tag -width "[-b | --basejail]"
-.It Op Fl -basejail | b
+.It Op Fl b | -basejail
 Create a new "basejail" with a common shared base.
-.It Op Fl -count | c
+.It Op Fl c | -count
 Clone the jail from the current host's release, as determined by the
 .Cm uname Fl r
 command.
-.It Op Fl -empty | e
+.It Op Fl e | -empty
 Create an empty jail, which is used for unsupported or custom jails.
-.It Op Fl -pkglist | p
+.It Op Fl p | -pkglist
 <REVIEW>.
-.It Op Fl -release | r
+.It Op Fl r | -release
 Specify which release to use for the new jail.
-.It Op Fl -short | s
+.It Op Fl s | -short
 Use a short UUID of 8 characters instead of the default 36.
-.It Op Fl -template | t
+.It Op Fl t | -template
 Create a template style jail <REVIEW>.
 Use the
-.It Op Fl -uuid | u
+.It Op Fl u | -uuid
 option to add a specific UUID to the new jail.
 .El
 .Pp
@@ -367,12 +367,11 @@ If the jail is running, the destroy action fails.
 .Pp
 Options:
 .Bl -tag -width "[-d | --download]"
-.It Op Fl -download | d
+.It Op Fl d | -download
 Delete the download of the specified RELEASE as well.
-.It Op Fl -force | f
+.It Op Fl f | -force
 Destroy the jail with no further warnings or user input.
-Use
-.It Op Fl -release | r
+.It Op Fl r | -release
 Destroy a specified RELEASE dataset <REVIEW>.
 .El
 .\" == DF ==
@@ -401,9 +400,9 @@ jail name
 .Pp
 Options:
 .Bl -tag -width "[-H | -h | --header]"
-.It Op Fl -header | H | h
+.It Op Fl H | h | -header
 Use when scripting, using tabs for separators.
-.It Op Fl -long | l
+.It Op Fl l | -long
 Shows the full UUID.
 .El
 .\" == EXEC ==
@@ -416,10 +415,10 @@ UUID/tag wrapper for
 .Pp
 Options:
 .Bl -tag -width "[-u | --host_user]"
-.It Op Fl -host_user | u
-to specify the host user.
-.It Op Fl -jail_user | U
-specifies which jail user runs the command.
+.It Op Fl U | -jail_user
+Specifies which jail user runs the command.
+.It Op Fl u | -host_user
+Specify which host user runs the command.
 .El
 .\" == EXPORT ==
 .It Cm export
@@ -441,47 +440,47 @@ the menu list.
 .Pp
 Options:
 .Bl -tag -width "[-P | --plugin-file text]"
-.It Op Fl -auth | a
+.It Op Fl -plugins
+List all available plugins for creation.
+.It Op Fl E | -eol
+Enable End Of Life (EOL) checking upstream.
+.It Op Fl F | -files
+Specify the files to fetch from the mirror.
+.It Op Fl NE | -noeol
+Disable EOL checking upstream.
+.It Op Fl NU | -noupdate
+Disable updating the fetch item to the latest patch level.
+.It Op Fl NV | -noverify
+Disable verifying the SSL cert for HTTP fetching.
+.It Op Fl P | -plugin-file
+Specify which plugin file to use.
+.It Op Fl U | -update
+Update the fetch to the latest patch level.
+.It Op Fl V | -verify
+Enable verifying the SSL cert for HTTP fetching.
+.It Op Fl a | -auth
 Specifies the authentication method for HTTP fetching.
 Current values are basic and digest.
-.It Op Fl -count | c
+.It Op Fl c | -count
 <REVIEW>.
-.It Op Fl -eol | E
-Enable End Of Life (EOL) checking upstream.
-.It Op Fl -file | f
+.It Op Fl d | -root-dir
+Specify the root directory containing all RELEASE files.
+.It Op Fl f | -file
 Use a local file directory for the root directory instead of FTP or HTTP.
-.It Op Fl -files | F
-Specify the files to fetch from the mirror.
-.It Op Fl -http | h
+.It Op Fl h | -http
 Change
 .Op Fl s | -server
 to define an HTTP server instead of the default FTP.
-.It Op Fl -noeol | NE
-Disable EOL checking upstream.
-.It Op Fl -noupdate | NU
-Disable updating the fetch item to the latest patch level.
-.It Op Fl -noverify | NV
-Disable verifying the SSL cert for HTTP fetching.
-.It Op Fl -password | p
+.It Op Fl p | -password
 Add a password, if required.
-.It Op Fl -plugin-file | P
-Specify which plugin file to use.
-.It Op Fl -plugins
-List all available plugins for creation.
-.It Op Fl -release | r
+.It Op Fl r |-release
 Define the
 .Fx
 release to fetch.
-.It Op Fl -root-dir | d
-Specify the root directory containing all RELEASE files.
-.It Op Fl -server | s
+.It Op Fl s | -server
 Define which FTP server to log into.
-.It Op Fl -update | U
-Update the fetch to the latest patch level.
-.It Op Fl -user | u
+.It Op Fl u | -user
 Define the user.
-.It Op Fl -verify | V
-Enable verifying the SSL cert for HTTP fetching.
 .El
 .Pp
 Examples:
@@ -514,15 +513,15 @@ Manipulates the fstab settings of a specific jail.
 .Pp
 Options:
 .Bl -tag -width "[-r | --remove]"
-.It Op Fl -add | a
+.It Op Fl a | -add
 Adds an entry to the specific jail
 .Pa fstab
 and mount it.
-.It Op Fl -edit | e
+.It Op Fl e | -edit
 Open the
 .Pa fstab
 file in the default editor.
-.It Op Fl -remove | r
+.It Op Fl r | -remove
 Remove an entry from a specific jail fstab and unmount it.
 .El
 .\" == GET ==
@@ -531,17 +530,17 @@ Display the specified property.
 .Pp
 Options:
 .Bl -tag -width "[-H | -h | --header]"
-.It Op Fl -all | a
-Get all properties for the specified jail.
-.It Op Fl -header | H | h
+.It Op Fl H | h | -header
 Used in scripting.
 Use tabs for separators.
-.It Op Fl -plugin | P
+.It Op Fl P | -plugin
 Get the specified key for a plugin jail.
+.It Op Fl a | -all
+Get all properties for the specified jail.
 If accessing a nested key, use "." as a separator.
-.It Op Fl -pool | p
+.It Op Fl p | -pool
 Get the currently activated zpool.
-.It Op Fl -recursive | r
+.It Op Fl r | -recursive
 Get the specified property for all jails.
 .El
 .\" == IMPORT ==
@@ -556,22 +555,22 @@ By default, all jails are listed.
 .Pp
 Options:
 .Bl -tag -width "[-H | -h | --header]"
-.It Op Fl -base | -release | b | r
-List all bases.
-.It Op Fl -header | H | h
+.It Op Fl H | h | -header
 Used in scripting.
 Use tabs for separators.
-.It Op Fl -http | h
-Tells
+.It Op Fl P | -plugins
+Shows available plugins.
+.It Op Fl R | -remote
+Shows available RELEASE options for remote.
+.It Op Fl b | r | -base | -release
+List all bases.
+.It Op Fl h | -http
+Changes
 .Op Fl R | -remote
 to use HTTP.
-.It Op Fl -long | l
+.It Op Fl l | -long
 Shows the full UUID and ip4 address.
-.It Op Fl -plugins | P
-Shows available plugins.
-.It Op Fl -remote | R
-Shows available RELEASE options for remote.
-.It Op Fl -template | t
+.It Op Fl t | -template
 Lists all templates.
 .El
 .\" == MIGRATE ==
@@ -580,9 +579,9 @@ Migrate all jails to a new jail format.
 .Pp
 Options:
 .Bl -tag -width "[-d | --delete]"
-.It Op Fl -delete | d
+.It Op Fl d | -delete
 Destroy the old dataset after migration.
-.It Op Fl -force | f
+.It Op Fl f | -force
 Bypass any further warning or required user interaction.
 .El
 .\" == PKG ==
@@ -597,7 +596,7 @@ Use ALL to restart all jails.
 .Pp
 Options:
 .Bl -tag -width "[-s | --soft]"
-.It Op Fl -soft | s
+.It Op Fl s | -soft
 Restart the jail, but do not tear down the network stack.
 .El
 .\" == ROLLBACK ==
@@ -609,9 +608,9 @@ For more information on this functionality, please see
 .Pp
 Options:
 .Bl -tag -width "[-f | --force]"
-.It Op Fl -force | f
+.It Op Fl f | -force
 Run the command, skipping any warnings or further user interaction.
-.It Op Fl -name | n
+.It Op Fl n | -name
 [Required] Used to specify the snapshot name.
 .El
 .\" == SET ==
@@ -620,7 +619,7 @@ Set the specified property in the desired jail.
 .Pp
 Options:
 .Bl -tag -width "[-P | --plugin]"
-.It Op Fl -plugin | P
+.It Op Fl P | -plugin
 Set the specified key for a plugin jail.
 If accessing a nested key, use "." as a separator.
 .El
@@ -649,7 +648,7 @@ used space
 .Pp
 Options:
 .Bl -tag -width "[-H | -h | --delete]"
-.It Op Fl -header | H | h
+.It Op Fl H | h | -header
 Used for scripting.
 Tabs are used as separators.
 .El
@@ -662,7 +661,7 @@ is used, all snapshots the specified jail are deleted.
 .Pp
 Options:
 .Bl -tag -width "[-n | --name]"
-.It Op Fl -name | n
+.It Op Fl n | -name
 [Required] The snapshot name <REVIEW>.
 .El
 .\" == SNAPSHOT ==
@@ -673,7 +672,7 @@ date and time is generated.
 .Pp
 Options:
 .Bl -tag -width "[-n | --name]"
-.It Op Fl -name | n
+.It Op Fl n | -name
 The user created snapshot name.
 .El
 .\" == START ==
@@ -682,7 +681,7 @@ Start a jail identified by
 .Ar UUID
 or
 .Ar TAG
- . Use ALL to start all installed jails.
+.  Use ALL to start all installed jails.
 .Pp
 Options:
 .Bl -tag -width "[--rc]"
@@ -696,7 +695,7 @@ Stop a jail identified by
 .Ar UUID
 or
 .Ar TAG
- . Use ALL to stop all active jails.
+.  Use ALL to stop all active jails.
 .Pp
 Options:
 .Bl -tag -width "[--rc]"
@@ -731,7 +730,7 @@ by issuing the upgrade command or at the next jail start.
 .Pp
 Options:
 .Bl -tag -width "[-r | --release TEXT]"
-.It Op Fl -release | r
+.It Op Fl r | -release
 [Required] RELEASE the jail uses for upgrading.
 .El
 .El
