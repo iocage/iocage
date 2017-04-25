@@ -1,9 +1,9 @@
 """upgrade module for the cli."""
 import click
 
-import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
+from iocage.lib.ioc_logger import IOCLogger
 from iocage.lib.ioc_start import IOCStart
 from iocage.lib.ioc_stop import IOCStop
 from iocage.lib.ioc_upgrade import IOCUpgrade
@@ -18,7 +18,7 @@ __rootcmd__ = True
 @click.option("--release", "-r", required=True, help="RELEASE to upgrade to")
 def upgrade_cmd(jail, release):
     """Runs upgrade with the command given inside the specified jail."""
-    lgr = ioc_logger.Logger('ioc_cli_upgrade').getLogger()
+    lgr = IOCLogger().cli_log()
 
     jails, paths = IOCList("uuid").list_datasets()
     _jail = {tag: uuid for (tag, uuid) in jails.items() if

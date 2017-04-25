@@ -5,12 +5,12 @@ from json import JSONDecodeError
 
 import click
 
-import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_create import IOCCreate
 from iocage.lib.ioc_fetch import IOCFetch
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
+from iocage.lib.ioc_logger import IOCLogger
 
 __cmdname__ = "create_cmd"
 __rootcmd__ = True
@@ -40,7 +40,7 @@ def validate_count(ctx, param, value):
 @click.argument("props", nargs=-1)
 def create_cmd(release, template, count, props, pkglist, basejail, empty,
                short, uuid):
-    lgr = ioc_logger.Logger('ioc_cli_create').getLogger()
+    lgr = IOCLogger().cli_log()
 
     if short and uuid:
         lgr.critical(

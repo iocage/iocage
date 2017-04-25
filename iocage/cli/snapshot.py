@@ -4,9 +4,9 @@ from subprocess import CalledProcessError, PIPE, check_call
 
 import click
 
-import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
+from iocage.lib.ioc_logger import IOCLogger
 
 __cmdname__ = "snapshot_cmd"
 __rootcmd__ = True
@@ -18,7 +18,7 @@ __rootcmd__ = True
                                    " after @", required=False)
 def snapshot_cmd(jail, name):
     """Get a list of jails and print the property."""
-    lgr = ioc_logger.Logger('ioc_cli_snapshot').getLogger()
+    lgr = IOCLogger().cli_log()
 
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")

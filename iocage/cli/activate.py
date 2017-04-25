@@ -2,7 +2,7 @@
 import click
 import libzfs
 
-import iocage.lib.ioc_logger as ioc_logger
+from iocage.lib.ioc_logger import IOCLogger
 
 __cmdname__ = "activate_cmd"
 __rootcmd__ = True
@@ -12,7 +12,7 @@ __rootcmd__ = True
 @click.argument("zpool")
 def activate_cmd(zpool):
     """Calls ZFS set to change the property org.freebsd.ioc:active to yes."""
-    lgr = ioc_logger.Logger('ioc_cli_activate').getLogger()
+    lgr = IOCLogger().cli_log()
     zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
     pools = zfs.pools
     prop = "org.freebsd.ioc:active"

@@ -1,14 +1,14 @@
 """export module for the cli."""
 import click
 
-import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_image import IOCImage
 from iocage.lib.ioc_list import IOCList
+from iocage.lib.ioc_logger import IOCLogger
 
 __cmdname__ = "export_cmd"
 __rootcmd__ = True
 
-lgr = ioc_logger.Logger("ioc_cli_export").getLogger()
+lgr = IOCLogger().cli_log()
 
 
 def callback(message):

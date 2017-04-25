@@ -4,16 +4,16 @@ from subprocess import PIPE, Popen
 
 import click
 
-import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
+from iocage.lib.ioc_logger import IOCLogger
 from iocage.lib.ioc_start import IOCStart
 from iocage.lib.ioc_stop import IOCStop
 
 __cmdname__ = "restart_cmd"
 __rootcmd__ = True
 
-lgr = ioc_logger.Logger('ioc_cli_restart').getLogger()
+lgr = IOCLogger().cli_log()
 
 
 def check_type(uuid, tag, path, _all, soft):

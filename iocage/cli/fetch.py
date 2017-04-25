@@ -4,9 +4,9 @@ import os
 
 import click
 
-import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_fetch import IOCFetch
+from iocage.lib.ioc_logger import IOCLogger
 
 __cmdname__ = "fetch_cmd"
 __rootcmd__ = True
@@ -59,7 +59,7 @@ def fetch_cmd(http, _file, server, user, password, auth, verify, release,
     freebsd_version = checkoutput(["freebsd-version"])
     arch = os.uname()[4]
 
-    lgr = ioc_logger.Logger("ioc_cli_fetch").getLogger()
+    lgr = IOCLogger().cli_log()
 
     if not files:
         if arch == "arm64":

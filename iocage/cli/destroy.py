@@ -1,10 +1,10 @@
 """destroy module for the cli."""
 import click
 
-import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_destroy import IOCDestroy
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
+from iocage.lib.ioc_logger import IOCLogger
 
 __cmdname__ = "destroy_cmd"
 __rootcmd__ = True
@@ -19,7 +19,7 @@ __rootcmd__ = True
 @click.argument("jails", nargs=-1)
 def destroy_cmd(force, release, download, jails):
     """Destroys the jail's 2 datasets and the snapshot from the RELEASE."""
-    lgr = ioc_logger.Logger('ioc_cli_destroy').getLogger()
+    lgr = IOCLogger().cli_log()
 
     if download and not release:
         exit("--release (-r) must be specified as well!")

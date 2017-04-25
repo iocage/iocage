@@ -1,8 +1,8 @@
 """clean module for the cli."""
 import click
 
-import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_clean import IOCClean
+from iocage.lib.ioc_logger import IOCLogger
 
 __cmdname__ = "clean_cmd"
 __rootcmd__ = True
@@ -20,7 +20,7 @@ __rootcmd__ = True
               help="Destroy all templates.")
 def clean_cmd(force, dataset_type):
     """Calls the correct destroy function."""
-    lgr = ioc_logger.Logger('ioc_cli_clean').getLogger()
+    lgr = IOCLogger().cli_log()
 
     if dataset_type == "jails":
         if not force:

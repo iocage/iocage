@@ -3,10 +3,10 @@ from subprocess import CalledProcessError, PIPE, Popen, check_call
 
 import click
 
-import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_common import checkoutput
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
+from iocage.lib.ioc_logger import IOCLogger
 
 __cmdname__ = "rollback_cmd"
 __rootcmd__ = True
@@ -20,7 +20,7 @@ __rootcmd__ = True
               default=False, is_flag=True)
 def rollback_cmd(jail, name, force):
     """Get a list of jails and print the property."""
-    lgr = ioc_logger.Logger('ioc_cli_rollback').getLogger()
+    lgr = IOCLogger().cli_log()
 
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")

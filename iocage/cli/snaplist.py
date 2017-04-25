@@ -4,9 +4,9 @@ from subprocess import PIPE, Popen
 import click
 from texttable import Texttable
 
-import iocage.lib.ioc_logger as ioc_logger
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
+from iocage.lib.ioc_logger import IOCLogger
 
 __cmdname__ = "snaplist_cmd"
 
@@ -17,7 +17,7 @@ __cmdname__ = "snaplist_cmd"
 @click.argument("jail")
 def snaplist_cmd(header, jail):
     """Allows a user to show resource usage of all jails."""
-    lgr = ioc_logger.Logger('ioc_cli_snaplist').getLogger()
+    lgr = IOCLogger().cli_log()
 
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")
