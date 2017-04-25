@@ -240,8 +240,6 @@ can be set to any string (hostname, label, note, etc.).
 If unset, the TAG field contains the creation date and time stamp by
 default.
 .Pp
-Properties are stored inside ZFS custom fields, eliminating the need
-for separate configuration files.
 Jails can be easily moved with ZFS
 .Cm send
 and
@@ -575,7 +573,7 @@ Lists all templates.
 .El
 .\" == MIGRATE ==
 .It Cm migrate
-Migrate all jails to a new jail format.
+Migrate from the development version of iocage-legacy to the current jail format.
 .Pp
 Options:
 .Bl -tag -width "[-d | --delete]"
@@ -716,8 +714,6 @@ Run
 .Cm freebsd-update to upgrade a jail RELEASE to the specified
 RELEASE.
 .Pp
-Please note: basejails are upgraded by setting the jail's release
-property to the required new release:
 .Bl -item
 .It
 .Nm
@@ -725,8 +721,6 @@ set release=10.1-RELEASE UUID|TAG
 .El
 .Pp
 For this, the release must be locally available.
-The basejail re-clones its filesystems from the new release either
-by issuing the upgrade command or at the next jail start.
 .Pp
 Options:
 .Bl -tag -width "[-r | --release TEXT]"
@@ -740,7 +734,7 @@ The Source listed with each property shows whether it is a local
 property or where more information can be located.
 .Bl -tag -width "pkglist=none"
 .It pkglist=none | path-to-file
-A text file listing one package per line.
+A json file listing one package per entry.
 Packages are automatically installed when a jail is created.
 Works only in combination with the
 .Cm create
@@ -779,7 +773,6 @@ interface.
 A netmask in either dotted-quad or CIDR form given after the IP
 address is used when adding the IP alias.
 .Pp
-AUTOIP4 can be used in place of an IP address.
 The IP address is automatically assigned at the first start of the jail.
 This requires that the
 .Dv ip4_autostart
@@ -1360,9 +1353,9 @@ Default: no
 Source: local
 .It boot=on | off
 If set to "on", the jail is auto-started at boot time with
-.Cm rcboot
+.Cm start --rc
 and stopped at shutdown time with
-.Cm rcshutdown .
+.Cm stop --rc .
 Jails are started and stopped based on their priority value.
 .Pp
 Default: off
@@ -1396,22 +1389,10 @@ Automatically set every time the jail starts.
 Default: timestamp
 .Pp
 Source: local
-.It type=jail
-Currently only jail is supported.
-This is for future use.
+.It type=basejail,empty,normal
+Set the jail type to basejail, empty or normal.
 .Pp
-Default: jail
-.Pp
-Source: local
-.It hostid=UUID
-The UUID of the host node.
-Jails will not start if this property differs from the actual UUID of
-the host node.
-This is to safeguard jails from being started on different nodes in
-case they are periodically replicated to different systems.
-.Pp
-Default: UUID of the host (taken from
-.Pa /etc/hostid )
+Default: normal
 .Pp
 Source: local
 .It release=10.0-RELEASE | 9.2-RELEASE
@@ -1538,18 +1519,6 @@ Default: off
 .Pp
 Source:
 .Xr cpuset 1
-.It volumes=/host/dir[:/jail/dir[:mount_options]]
-Mounts and unmounts directories from the host into the jail root using
-.Xr nullfs 5 .
-.Ar mount_options
-are passed direcly to the mount command and defaults to "rw" if omitted.
-If
-.Ar /jail/dir is also omitted, then the same value as
-.Ar /host/dir is used inside the jail's root.
-.Pp
-Default: none
-.Pp
-Source: local
 .El
 .Sh EXAMPLES
 Set up
@@ -1561,7 +1530,7 @@ iocage fetch
 .Pp
 Create first jail:
 .Bd -literal -offset indent
-iocage create tag=myjail
+iocage create -r 11.0-RELEASE tag=myjail
 .Ed
 .Pp
 List jails:
@@ -1639,7 +1608,7 @@ For more information, please see
 Please report bugs, issues, and feature requests at
 .Lk https://github.com/iocage/iocage/issues
 .Sh AUTHORS
-.An Peter Toth Aq Mt peter.toth198@gmail.com
-.An Brandon Schneider Aq Mt brandonschneider89@gmail.com
+.An Peter Toth
+.An Brandon Schneider
 .Sh SPECIAL THANKS
 Sichendra Bista - for his ever willing attitude and ideas.
