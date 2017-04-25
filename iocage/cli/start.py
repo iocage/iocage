@@ -1,7 +1,7 @@
 """start module for the cli."""
 import click
 
-import iocage.lib.libiocage as libiocage
+from iocage.lib.iocage import IOCage
 
 __cmdname__ = "start_cmd"
 __rootcmd__ = True
@@ -17,4 +17,13 @@ def start_cmd(rc, jails):
     Looks for the jail supplied and passes the uuid, path and configuration
     location to start_jail.
     """
-    libiocage.IOCageMng(callback=True).mng_jail(rc, jails, 'start')
+    if not jails and not rc:
+        print('Usage: iocage start [OPTIONS] JAILS...\n'
+              '\nError: Missing argument "jails".')
+        exit(1)
+
+    if rc:
+        IOCage(rc=rc, silent=True).start()
+    else:
+        for jail in jails:
+            IOCage(jail, rc=rc).start()
