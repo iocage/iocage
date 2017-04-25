@@ -24,7 +24,8 @@ setup(name='iocage',
           'click',
           'texttable',
           'requests',
-          'tqdm'
+          'tqdm',
+          'coloredlogs'
       ],
       setup_requires=['pytest-runner'],
       entry_points={
