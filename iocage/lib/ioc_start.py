@@ -7,7 +7,7 @@ from os import X_OK, access, chdir, getcwd, makedirs, path as ospath, \
 from shutil import copy
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
 
-from iocage.lib.ioc_common import checkoutput, open_atomic
+from iocage.lib.ioc_common import checkoutput, open_atomic, logit
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
@@ -18,7 +18,7 @@ class IOCStart(object):
     for them. It also finds any scripts the user supplies for exec_*
     """
 
-    def __init__(self, uuid, jail, path, conf, silent=False):
+    def __init__(self, uuid, jail, path, conf, silent=False, callback=None):
         self.pool = IOCJson(" ").json_get_value("pool")
         self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
         self.uuid = uuid
@@ -29,6 +29,7 @@ class IOCStart(object):
         self.set = IOCJson(self.path, silent=True).json_set_value
         self.exec_fib = self.conf["exec_fib"]
         self.lgr = logging.getLogger('ioc_start')
+        self.callback = callback
 
         if silent:
             self.lgr.disabled = True
@@ -175,8 +176,9 @@ class IOCStart(object):
                 net = ["vnet"]
                 vnet = True
 
-            self.lgr.info("* Starting {} ({})".format(self.uuid, self.conf[
-                "tag"]))
+            msg = f"* Starting {self.uuid} ({self.conf['tag']})"
+            logit({"level": "INFO", "message": msg}, self.callback)
+
             start = Popen([x for x in ["jail", "-c"] + net +
                            ["name=ioc-{}".format(self.uuid),
                             "host.domainname={}".format(host_domainname),
@@ -221,10 +223,13 @@ class IOCStart(object):
 
             if start.returncode:
                 # This is actually fatal.
-                self.lgr.error("  + Start FAILED")
+                msg = "  + Start FAILED"
+                logit({"level": "ERROR", "message": msg}, self.callback)
+
                 raise RuntimeError(f"  {stderr_data.decode('utf-8')}")
             else:
-                self.lgr.info("  + Started OK")
+                logit({"level": "INFO", "message": "  + Started OK"},
+                      self.callback)
 
             os_path = "{}/root/dev/log".format(self.path)
             if not ospath.isfile(os_path) and not ospath.islink(os_path):
@@ -282,17 +287,18 @@ class IOCStart(object):
                                        f"ioc-{self.uuid}"] + exec_start,
                                       stdout=f, stderr=PIPE)
             if services:
-                self.lgr.info("  + Starting services FAILED")
+                msg = "  + Starting services FAILED"
+                logit({"level": "ERROR", "message": msg}, self.callback)
             else:
-                self.lgr.info("  + Starting services OK")
+                msg = "  + Starting services OK"
+                logit({"level": "INFO", "message": msg}, self.callback)
 
             self.set("last_started={}".format(datetime.utcnow().strftime(
                 "%F %T")))
             # TODO: DHCP/BPF
         else:
-            self.lgr.error("{} ({}) is already running!".format(self.uuid,
-                                                                self.conf[
-                                                                    "tag"]))
+            msg = f"{self.uuid} ({self.conf['tag']}) is already running!"
+            logit({"level": "ERROR", "message": msg}, self.callback)
 
     def start_network(self, vnet):
         """
@@ -329,19 +335,22 @@ class IOCStart(object):
                     for addr in addrs.split(','):
                         iface, ip = addr.split("|")
                         if nic != iface:
-                            err = "\n  Invalid interface supplied: {}"
-                            self.lgr.error(err.format(iface))
-                            self.lgr.error("  Did you mean {}?\n".format(nic))
+                            err = f"\n  Invalid interface supplied: {iface}"
+                            logit({"level": "ERROR", "message": f"{err}"})
+
+                            err = f"  Did you mean {nic}?\n"
+                            logit({"level": "ERROR", "message": f"{err}"})
                             continue
                         if iface not in ifaces:
-                            self.start_network_vnet_iface(nic, bridge, membermtu, jid)
+                            self.start_network_vnet_iface(nic, bridge,
+                                                          membermtu, jid)
                             ifaces.append(iface)
 
                         self.start_network_vnet_addr(iface, ip, gw)
 
         except CalledProcessError as err:
-            self.lgr.warning("Network failed to start:"
-                             f" {err.output.decode('utf-8')}".rstrip())
+            logit({"level": "WARNING", "message": "Network failed to start:"
+                   f" {err.output.decode('utf-8')}".rstrip()})
 
     def start_network_vnet_iface(self, nic, bridge, mtu, jid):
         """
