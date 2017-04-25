@@ -2,7 +2,7 @@
 import logging
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
 
-from iocage.lib.ioc_common import checkoutput
+from iocage.lib.ioc_common import checkoutput, logit
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
@@ -10,7 +10,7 @@ from iocage.lib.ioc_list import IOCList
 class IOCStop(object):
     """Stops a jail and unmounts the jails mountpoints."""
 
-    def __init__(self, uuid, jail, path, conf, silent=False):
+    def __init__(self, uuid, jail, path, conf, silent=False, callback=None):
         self.pool = IOCJson(" ").json_get_value("pool")
         self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
         self.uuid = uuid
@@ -20,6 +20,7 @@ class IOCStop(object):
         self.status, self.jid = IOCList().list_get_jid(uuid)
         self.nics = conf["interfaces"]
         self.lgr = logging.getLogger('ioc_stop')
+        self.callback = callback
 
         if silent:
             self.lgr.disabled = True
@@ -33,11 +34,11 @@ class IOCStop(object):
         exec_fib = self.conf["exec_fib"]
 
         if not self.status:
-            self.lgr.error("{} ({}) is not running!".format(self.uuid,
-                                                            self.conf["tag"]))
+            msg = f"{self.uuid} ({self.conf['tag']}) is not running!"
+            logit({"level": "ERROR", "message": msg}, self.callback)
         else:
-            self.lgr.info(
-                "* Stopping {} ({})".format(self.uuid, self.conf["tag"]))
+            msg = f"* Stopping {self.uuid} ({self.conf['tag']})"
+            logit({"level": "INFO", "message": msg}, self.callback)
 
             # TODO: Prestop findscript
             exec_stop = self.conf["exec_stop"].split()
@@ -47,9 +48,11 @@ class IOCStop(object):
                                        f"ioc-{self.uuid}"] + exec_stop,
                                       stdout=f, stderr=PIPE)
             if services:
-                self.lgr.info("  + Stopping services FAILED")
+                msg = "  + Stopping services FAILED"
+                logit({"level": "ERROR", "message": msg}, self.callback)
             else:
-                self.lgr.info("  + Stopping services OK")
+                msg = "  + Stopping services OK"
+                logit({"level": "INFO", "message": msg}, self.callback)
 
             if self.conf["jail_zfs"] == "on":
                 for jdataset in self.conf["jail_zfs_dataset"].split():
@@ -109,9 +112,10 @@ class IOCStop(object):
                                          ["-alias"], stderr=STDOUT)
                         except ValueError:
                             # Likely a misconfigured ip_addr with no interface.
-                            self.lgr.error("  ! IP4 address is missing an"
-                                           " interface, set ip4_addr to"
-                                           " \"INTERFACE|IPADDR\"")
+                            msg = "  ! IP4 address is missing an interface," \
+                                  " set ip4_addr to \"INTERFACE|IPADDR\""
+                            logit({"level": "INFO", "message": msg},
+                                  self.callback)
                         except CalledProcessError as err:
                             if "Can't assign requested address" in \
                                     err.output.decode("utf-8"):
@@ -134,9 +138,10 @@ class IOCStop(object):
                                          ["-alias"], stderr=STDOUT)
                         except ValueError:
                             # Likely a misconfigured ip_addr with no interface.
-                            self.lgr.error("  ! IP6 address is missing an"
-                                           " interface, set ip6_addr to"
-                                           " \"INTERFACE|IPADDR\"")
+                            msg = "  ! IP6 address is missing an interface," \
+                                  " set ip6_addr to \"INTERFACE|IPADDR\""
+                            logit({"level": "INFO", "message": msg},
+                                  self.callback)
                         except CalledProcessError as err:
                             if "Can't assign requested address" in \
                                     err.output.decode("utf-8"):
@@ -153,9 +158,11 @@ class IOCStop(object):
                               stderr=PIPE)
 
             if stop:
-                self.lgr.info("  + Removing jail process FAILED")
+                msg = "  + Removing jail process FAILED"
+                logit({"level": "ERROR", "message": msg}, self.callback)
             else:
-                self.lgr.info("  + Removing jail process OK")
+                msg = "  + Removing jail process OK"
+                logit({"level": "INFO", "message": msg}, self.callback)
 
             Popen(["umount", "-afF", "{}/fstab".format(self.path)],
                   stderr=PIPE).communicate()
