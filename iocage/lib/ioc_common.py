@@ -9,6 +9,36 @@ import tempfile as tmp
 from contextlib import contextmanager
 from subprocess import check_output
 
+from iocage.lib import ioc_logger
+
+
+def callback(log):
+    """Helper to call the appropriate logging level"""
+    lgr = ioc_logger.IOCLogger().cli_log()
+
+    if log['level'] == 'CRITICAL':
+        lgr.critical(log['message'])
+    elif log['level'] == 'ERROR':
+        lgr.error(log['message'])
+    elif log['level'] == 'WARNING':
+        lgr.warning(log['message'])
+    elif log['level'] == 'INFO':
+        lgr.info(log['message'])
+    elif log['level'] == 'DEBUG':
+        lgr.debug(log['message'])
+
+
+def logit(content, _callback=None):
+    """Helper to check callable status of callback or call ours."""
+    msg = content["message"]
+    level = content["level"]
+
+    if callable(_callback):
+        _callback({"level": level, "message": msg})
+    else:
+        # This will log with our callback method if they didn't supply one.
+        callback(content)
+
 
 def raise_sort_error(lgr, sort_list):
     msg = "Invalid sort type specified, use one of:\n"
