@@ -50,9 +50,9 @@
 .Ar TEXT
 .Op Fl u | -uuid
 .Ar TEXT
-.Op Cm release Ns = Ns Ar RELEASE <REVIEW>
-.Op Cm pkglist Ns = Ns Ar FILE <REVIEW>
-.Op Cm property Ns = Ns Ar VALUE <REVIEW>
+.Op Cm release Ns = Ns Ar RELEASE
+.Op Cm pkglist Ns = Ns Ar FILE
+.Op Cm property Ns = Ns Ar VALUE
 .\" == DESTROY ==
 .Nm
 .Cm destroy
@@ -73,11 +73,11 @@
 .Op Fl u | -host_user
 .Ar NAME
 .Ar ALL | TAG | UUID
-.Cm COMMAND Op Ar ARGS <REVIEW>
+.Cm COMMAND Op Ar ARGS
 .\" == EXPORT ==
 .Nm
 .Cm export
-.Ar UUID | TAG <REVIEW>
+.Ar UUID | TAG
 .\" == FETCH ==
 .Nm
 .Cm fetch
@@ -108,10 +108,10 @@
 .Ar TEXT
 .Op Fl u | -user
 .Ar TEXT
-.Op Cm release Ns = Ns Ar RELEASE <REVIEW>
-.Op Cm ftphost Ns = Ns Ar ftp.hostname.org <REVIEW>
-.Op Cm ftpdir Ns = Ns Ar /dir/ <REVIEW>
-.Op Cm ftpfiles Ns = Ns Ar "base.txz doc.txz lib32.txz src.txz" <REVIEW>
+.Op Cm release Ns = Ns Ar RELEASE
+.Op Cm ftphost Ns = Ns Ar ftp.hostname.org
+.Op Cm ftpdir Ns = Ns Ar /dir/
+.Op Cm ftpfiles Ns = Ns Ar "base.txz doc.txz lib32.txz src.txz"
 .\" == FSTAB ==
 .Nm
 .Cm fstab
@@ -336,13 +336,12 @@ command.
 .It Op Fl e | -empty
 Create an empty jail, which is used for unsupported or custom jails.
 .It Op Fl p | -pkglist
-<REVIEW>.
 .It Op Fl r | -release
 Specify which release to use for the new jail.
 .It Op Fl s | -short
 Use a short UUID of 8 characters instead of the default 36.
 .It Op Fl t | -template
-Create a template style jail <REVIEW>.
+Create a template style jail.
 Use the
 .It Op Fl u | -uuid
 option to add a specific UUID to the new jail.
@@ -370,7 +369,7 @@ Delete the download of the specified RELEASE as well.
 .It Op Fl f | -force
 Destroy the jail with no further warnings or user input.
 .It Op Fl r | -release
-Destroy a specified RELEASE dataset <REVIEW>.
+Destroy a specified RELEASE dataset.
 .El
 .\" == DF ==
 .It Cm df
@@ -423,7 +422,7 @@ Specify which host user runs the command.
 Exports the specified jail.
 An archive file is created in
 .Pa /iocage/images
-with a SHA256 checksum<REVIEW>.
+with a SHA256 checksum
 The jail must be stopped before exporting.
 .\" == FETCH ==
 .It Cm fetch
@@ -460,7 +459,6 @@ Enable verifying the SSL cert for HTTP fetching.
 Specifies the authentication method for HTTP fetching.
 Current values are basic and digest.
 .It Op Fl c | -count
-<REVIEW>.
 .It Op Fl d | -root-dir
 Specify the root directory containing all RELEASE files.
 .It Op Fl f | -file
@@ -471,7 +469,7 @@ Change
 to define an HTTP server instead of the default FTP.
 .It Op Fl p | -password
 Add a password, if required.
-.It Op Fl r | -release
+.It Op Fl r |-release
 Define the
 .Fx
 release to fetch.
@@ -600,7 +598,7 @@ Restart the jail, but do not tear down the network stack.
 .\" == ROLLBACK ==
 .It Cm rollback
 Roll back a jail to an existing snapshot.
-Any intermediate snapshots are destroyed in the process.<REVIEW>
+Any intermediate snapshots are destroyed in the process.
 For more information on this functionality, please see
 .Xr zfs 8 .
 .Pp
@@ -660,7 +658,7 @@ is used, all snapshots the specified jail are deleted.
 Options:
 .Bl -tag -width "[-n | --name]"
 .It Op Fl n | -name
-[Required] The snapshot name <REVIEW>.
+[Required] The snapshot name.
 .El
 .\" == SNAPSHOT ==
 .It Cm snapshot
@@ -685,7 +683,7 @@ Options:
 .Bl -tag -width "[--rc]"
 .It Op Fl -rc
 Start all jails with boot=on in a specific order.
-Jails with lower priority start first <REVIEW>.
+Jails with lower priority start first.
 .El
 .\" == STOP ==
 .It Cm stop
@@ -699,7 +697,7 @@ Options:
 .Bl -tag -width "[--rc]"
 .It Op Fl -rc
 Stop all jails with boot=on in a specific order.
-Jails with higher priority values stop first <REVIEW>.
+Jails with higher priority values stop first.
 .El
 .\" == UPDATE ==
 .It Cm update
