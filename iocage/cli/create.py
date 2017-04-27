@@ -16,12 +16,20 @@ __cmdname__ = "create_cmd"
 __rootcmd__ = True
 
 
+lgr = IOCLogger().cli_log()
+
+
 def validate_count(ctx, param, value):
     """Takes a string, removes the commas and returns an int."""
-    try:
-        count = value.replace(",", "")
-        return int(count)
-    except ValueError:
+    if isinstance(value, str):
+        try:
+            value = value.replace(",", "")
+
+            return int(value)
+        except ValueError:
+            lgr.error(f"{value} is not a valid integer.")
+            exit(1)
+    else:
         return int(value)
 
 
@@ -40,8 +48,6 @@ def validate_count(ctx, param, value):
 @click.argument("props", nargs=-1)
 def create_cmd(release, template, count, props, pkglist, basejail, empty,
                short, uuid):
-    lgr = IOCLogger().cli_log()
-
     if short and uuid:
         lgr.critical(
             "Can't use --short (-s) and --uuid (-u) at the same time!")
