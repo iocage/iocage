@@ -1,5 +1,4 @@
 """This is responsible for starting jails."""
-import logging
 import re
 from datetime import datetime
 from os import X_OK, access, chdir, getcwd, makedirs, path as ospath, \
@@ -28,11 +27,8 @@ class IOCStart(object):
         self.get = IOCJson(self.path, silent=True).json_get_value
         self.set = IOCJson(self.path, silent=True).json_set_value
         self.exec_fib = self.conf["exec_fib"]
-        self.lgr = logging.getLogger('ioc_start')
         self.callback = callback
-
-        if silent:
-            self.lgr.disabled = True
+        self.silent = silent
 
         self.__start_jail__()
 
@@ -177,7 +173,8 @@ class IOCStart(object):
                 vnet = True
 
             msg = f"* Starting {self.uuid} ({self.conf['tag']})"
-            logit({"level": "INFO", "message": msg}, self.callback)
+            logit({"level": "INFO", "message": msg}, self.callback,
+                  silent=self.silent)
 
             start = Popen([x for x in ["jail", "-c"] + net +
                            ["name=ioc-{}".format(self.uuid),
@@ -224,12 +221,13 @@ class IOCStart(object):
             if start.returncode:
                 # This is actually fatal.
                 msg = "  + Start FAILED"
-                logit({"level": "ERROR", "message": msg}, self.callback)
+                logit({"level": "ERROR", "message": msg}, self.callback,
+                      silent=self.silent)
 
                 raise RuntimeError(f"  {stderr_data.decode('utf-8')}")
             else:
                 logit({"level": "INFO", "message": "  + Started OK"},
-                      self.callback)
+                      self.callback, silent=self.silent)
 
             os_path = "{}/root/dev/log".format(self.path)
             if not ospath.isfile(os_path) and not ospath.islink(os_path):
@@ -288,17 +286,20 @@ class IOCStart(object):
                                       stdout=f, stderr=PIPE)
             if services:
                 msg = "  + Starting services FAILED"
-                logit({"level": "ERROR", "message": msg}, self.callback)
+                logit({"level": "ERROR", "message": msg}, self.callback,
+                      silent=self.silent)
             else:
                 msg = "  + Starting services OK"
-                logit({"level": "INFO", "message": msg}, self.callback)
+                logit({"level": "INFO", "message": msg}, self.callback,
+                      silent=self.silent)
 
             self.set("last_started={}".format(datetime.utcnow().strftime(
                 "%F %T")))
             # TODO: DHCP/BPF
         else:
             msg = f"{self.uuid} ({self.conf['tag']}) is already running!"
-            logit({"level": "ERROR", "message": msg}, self.callback)
+            logit({"level": "ERROR", "message": msg}, self.callback,
+                  silent=self.silent)
 
     def start_network(self, vnet):
         """
@@ -336,10 +337,12 @@ class IOCStart(object):
                         iface, ip = addr.split("|")
                         if nic != iface:
                             err = f"\n  Invalid interface supplied: {iface}"
-                            logit({"level": "ERROR", "message": f"{err}"})
+                            logit({"level": "ERROR", "message": f"{err}"},
+                                  silent=self.silent)
 
                             err = f"  Did you mean {nic}?\n"
-                            logit({"level": "ERROR", "message": f"{err}"})
+                            logit({"level": "ERROR", "message": f"{err}"},
+                                  silent=self.silent)
                             continue
                         if iface not in ifaces:
                             self.start_network_vnet_iface(nic, bridge,
@@ -350,7 +353,8 @@ class IOCStart(object):
 
         except CalledProcessError as err:
             logit({"level": "WARNING", "message": "Network failed to start:"
-                   f" {err.output.decode('utf-8')}".rstrip()})
+                   f" {err.output.decode('utf-8')}".rstrip()},
+                  silent=self.silent)
 
     def start_network_vnet_iface(self, nic, bridge, mtu, jid):
         """

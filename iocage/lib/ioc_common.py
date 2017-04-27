@@ -28,10 +28,13 @@ def callback(log):
         lgr.debug(log['message'])
 
 
-def logit(content, _callback=None):
+def logit(content, _callback=None, silent=False):
     """Helper to check callable status of callback or call ours."""
-    msg = content["message"]
+    if silent:
+        return
+
     level = content["level"]
+    msg = content["message"]
 
     if callable(_callback):
         _callback({"level": level, "message": msg})
