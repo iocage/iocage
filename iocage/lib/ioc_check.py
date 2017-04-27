@@ -1,10 +1,9 @@
 """Check datasets before execution"""
-import logging
 import os
 import sys
 from subprocess import CalledProcessError, PIPE, Popen
 
-from iocage.lib.ioc_common import checkoutput
+from iocage.lib.ioc_common import checkoutput, logit
 from iocage.lib.ioc_json import IOCJson
 
 
@@ -48,7 +47,9 @@ class IOCCheck(object):
                     logit({
                         "level"  : "INFO",
                         "message": f"Creating f{self.pool}/{dataset}"
-                    })
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
                     if dataset == "iocage":
                         if len(dups) != 0:
                             mount = "mountpoint=/{}/iocage".format(self.pool)

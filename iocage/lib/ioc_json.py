@@ -25,13 +25,12 @@ class IOCJson(object):
     format, will set and get properties.
     """
 
-    def __init__(self, location="", silent=False, cli=False):
+    def __init__(self, location="", silent=False, cli=False, callback=None):
         self.location = location
         self.lgr = logging.getLogger('ioc_json')
         self.cli = cli
-
-        if silent:
-            self.lgr.disabled = True
+        self.silent = silent
+        self.callback = callback
 
     def json_convert_from_ucl(self):
         """Convert to JSON. Accepts a location to the ucl configuration."""
@@ -166,7 +165,9 @@ class IOCJson(object):
                                            f"\n{full_dataset} is being "
                                            f"converted to {short_dataset}"
                                            f" permanently."
-                            })
+                            },
+                                _callback=self.callback,
+                                silent=self.silent)
 
                             status, _ = IOCList().list_get_jid(full_uuid)
                             if status:
@@ -174,7 +175,9 @@ class IOCJson(object):
                                     "level"  : "INFO",
                                     "message":
                                         "Stopping jail to migrate UUIDs."
-                                })
+                                },
+                                    _callback=self.callback,
+                                    silent=self.silent)
                                 from iocage.lib.ioc_stop import IOCStop
                                 IOCStop(full_uuid, conf["tag"], self.location,
                                         conf, silent=True)
@@ -283,12 +286,16 @@ class IOCJson(object):
                     logit({
                         "level"  : "ERROR",
                         "message": "Pools:"
-                    })
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
                     for zpool in zpools:
                         logit({
                             "level"  : "ERROR",
                             "message": f"  {zpool}"
-                        })
+                        },
+                            _callback=self.callback,
+                            silent=self.silent)
                     raise RuntimeError(f"You have {match} pools marked active"
                                        " for iocage usage.\n Run \"iocage"
                                        f" deactivate ZPOOL\" on {match - 1}"
@@ -322,7 +329,9 @@ class IOCJson(object):
                         "message": f"Setting up zpool [{zpool}] for"
                                    " iocage usage\n If you wish to change"
                                    " please use \"iocage activate\""
-                    })
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
 
                     Popen(["zfs", "set", "org.freebsd.ioc:active=yes",
                            zpool]).communicate()
@@ -423,7 +432,9 @@ class IOCJson(object):
                 logit({
                     "level"  : "INFO",
                     "message": f"{uuid} ({old_tag}) converted to a template."
-                })
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
                 self.lgr.disabled = True
             elif value == "no":
                 try:
@@ -440,7 +451,9 @@ class IOCJson(object):
                 logit({
                     "level"  : "INFO",
                     "message": f"{uuid} ({old_tag}) converted to a jail."
-                })
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
                 self.lgr.disabled = True
 
         self.json_check_prop(key, value, conf)
@@ -449,7 +462,9 @@ class IOCJson(object):
             "level"  : "INFO",
             "message":
                 f"Property: {key} has been updated to {value}"
-        })
+        },
+            _callback=self.callback,
+            silent=self.silent)
 
         # Used for import
         if not create_func:
@@ -705,7 +720,9 @@ class IOCJson(object):
                     logit({
                         "level"  : "ERROR",
                         "message": f"{err}"
-                    })
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
                 else:
                     err = f"{err}"
 
@@ -851,23 +868,31 @@ class IOCJson(object):
                 logit({
                     "level"  : "INFO",
                     "message": "Command output:"
-                })
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
             IOCExec(prop_cmd, uuid, tag, _path).exec_jail()
 
             if restart:
                 logit({
                     "level"  : "INFO",
                     "message": "\n-- Restarting service --"
-                })
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
                 logit({
                     "level"  : "INFO",
                     "message": "Command output:"
-                })
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
                 IOCExec(servicerestart, uuid, tag, _path).exec_jail()
 
             logit({
                 "level"  : "INFO",
                 "message": f"\nKey: {keys} has been updated to {value}"
-            })
+            },
+                _callback=self.callback,
+                silent=self.silent)
         except KeyError:
             raise RuntimeError(f"Key: \"{key}\" does not exist!")
