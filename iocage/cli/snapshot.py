@@ -1,12 +1,12 @@
 """snapshot module for the cli."""
 from datetime import datetime
-from subprocess import CalledProcessError, PIPE, check_call
+from subprocess import PIPE, check_call, CalledProcessError
 
 import click
 
+from iocage.lib.ioc_common import logit
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
-from iocage.lib.ioc_logger import IOCLogger
 
 __cmdname__ = "snapshot_cmd"
 __rootcmd__ = True
@@ -18,8 +18,6 @@ __rootcmd__ = True
                                    " after @", required=False)
 def snapshot_cmd(jail, name):
     """Get a list of jails and print the property."""
-    lgr = IOCLogger().cli_log()
-
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")
     date = datetime.utcnow().strftime("%F_%T")
@@ -31,13 +29,21 @@ def snapshot_cmd(jail, name):
         tag, uuid = next(iter(_jail.items()))
         path = paths[tag]
     elif len(_jail) > 1:
-        lgr.error("Multiple jails found for"
-                  " {}:".format(jail))
+        logit({
+            "level"  : "ERROR",
+            "message": f"Multiple jails found for {jail}:"
+        })
         for t, u in sorted(_jail.items()):
-            lgr.error("  {} ({})".format(u, t))
-        raise RuntimeError()
+            logit({
+                "level"  : "ERROR",
+                "message": f"  {u} ({t})"
+            })
+        exit(1)
     else:
-        lgr.critical("{} not found!".format(jail))
+        logit({
+            "level"  : "ERROR",
+            "message": f"{jail} not found!"
+        })
         exit(1)
 
     # If they don't supply a snapshot name, we will use the date.
@@ -48,13 +54,19 @@ def snapshot_cmd(jail, name):
     conf = IOCJson(path).json_load()
 
     if conf["template"] == "yes":
-        target = "{}/iocage/templates/{}@{}".format(pool, tag, name)
+        target = f"{pool}/iocage/templates/{tag}@{name}"
     else:
-        target = "{}/iocage/jails/{}@{}".format(pool, uuid, name)
+        target = f"{pool}/iocage/jails/{uuid}@{name}"
 
     try:
         check_call(["zfs", "snapshot", "-r", target], stderr=PIPE)
-        lgr.info("Snapshot: {} created.".format(target))
+        logit({
+            "level"  : "INFO",
+            "message": f"Snapshot: {target} created."
+        })
     except CalledProcessError:
-        lgr.critical("Snapshot already exists!")
+        logit({
+            "level"  : "ERROR",
+            "message": "Snapshot already exists!"
+        })
         exit(1)

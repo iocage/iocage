@@ -4,9 +4,9 @@ import json
 import click
 from texttable import Texttable
 
+from iocage.lib.ioc_common import logit
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
-from iocage.lib.ioc_logger import IOCLogger
 
 __cmdname__ = "get_cmd"
 
@@ -30,8 +30,6 @@ __cmdname__ = "get_cmd"
                                             "zpool.", is_flag=True)
 def get_cmd(prop, _all, _pool, jail, recursive, header, plugin):
     """Get a list of jails and print the property."""
-    lgr = IOCLogger().cli_log()
-
     get_jid = IOCList.list_get_jid
     jails, paths = IOCList("uuid").list_datasets()
     jail_list = []
@@ -45,13 +43,19 @@ def get_cmd(prop, _all, _pool, jail, recursive, header, plugin):
     if _pool:
         pool = IOCJson().json_get_value("pool")
 
-        lgr.info(pool)
+        logit({
+            "level"  : "INFO",
+            "message": pool
+        })
         exit()
 
     if recursive is None:
         if jail == "":
-            lgr.info("Usage: iocage get [OPTIONS] PROP JAIL\n")
-            lgr.critical("Missing argument \"jail\".")
+            logit({
+                "level"  : "ERROR",
+                "message": 'Usage: iocage get [OPTIONS] PROP JAIL\n'
+                           'Missing argument "jail".'
+            })
             exit(1)
 
         _jail = {tag: uuid for (tag, uuid) in jails.items() if
@@ -61,13 +65,21 @@ def get_cmd(prop, _all, _pool, jail, recursive, header, plugin):
             tag, uuid = next(iter(_jail.items()))
             path = paths[tag]
         elif len(_jail) > 1:
-            lgr.error("Multiple jails found for"
-                      " {}:".format(jail))
+            logit({
+                "level"  : "ERROR",
+                "message": f"Multiple jails found for {jail}:"
+            })
             for t, u in sorted(_jail.items()):
-                lgr.error("  {} ({})".format(u, t))
-            raise RuntimeError()
+                logit({
+                    "level"  : "ERROR",
+                    "message": f"  {u} ({t})"
+                })
+            exit(1)
         else:
-            lgr.critical("{} not found!".format(jail))
+            logit({
+                "level"  : "ERROR",
+                "message": f"{jail} not found!"
+            })
             exit(1)
 
         if prop == "state":
@@ -78,27 +90,35 @@ def get_cmd(prop, _all, _pool, jail, recursive, header, plugin):
             else:
                 state = "down"
 
-            lgr.info(state)
+            logit({
+                "level"  : "INFO",
+                "message": state
+            })
         elif plugin:
             _prop = prop.split(".")
             props = IOCJson(path).json_plugin_get_value(_prop)
 
             if isinstance(props, dict):
-                lgr.info(json.dumps(props, indent=4))
+                logit({
+                    "level"  : "INFO",
+                    "message": json.dumps(props, indent=4)
+                })
             else:
                 pass
         elif prop == "all":
             props = IOCJson(path).json_get_value(prop)
 
             for p, v in props.items():
-                lgr.info("{}:{}".format(p, v))
+                logit({
+                    "level"  : "INFO",
+                    "message": f"{p}:{v}"
+                })
         elif prop == "fstab":
             pool = IOCJson().json_get_value("pool")
             iocroot = IOCJson(pool).json_get_value("iocroot")
             index = 0
 
-            with open("{}/jails/{}/fstab".format(iocroot, uuid), "r") as \
-                    fstab:
+            with open(f"{iocroot}/jails/{uuid}/fstab", "r") as fstab:
                 for line in fstab.readlines():
                     line = line.rsplit("#")[0].rstrip()
                     jail_list.append([index, line.replace("\t", " ")])
@@ -109,15 +129,27 @@ def get_cmd(prop, _all, _pool, jail, recursive, header, plugin):
                 # We get an infinite float otherwise.
                 table.set_cols_dtype(["t", "t"])
                 table.add_rows(jail_list)
-                lgr.info(table.draw())
+                logit({
+                    "level"  : "INFO",
+                    "message": table.draw()
+                })
             else:
                 for fstab in jail_list:
-                    lgr.info("{}\t{}".format(fstab[0], fstab[1]))
+                    logit({
+                        "level"  : "INFO",
+                        "message": f"{fstab[0]}\t{fstab[1]}"
+                    })
         else:
             try:
-                lgr.info(IOCJson(path).json_get_value(prop))
+                logit({
+                    "level"  : "INFO",
+                    "message": IOCJson(path).json_get_value(prop)
+                })
             except:
-                lgr.critical("{} is not a valid property!".format(prop))
+                logit({
+                    "level"  : "ERROR",
+                    "message": f"{prop} is not a valid property!"
+                })
                 exit(1)
     else:
         for j in jails:
@@ -137,21 +169,30 @@ def get_cmd(prop, _all, _pool, jail, recursive, header, plugin):
                     props = IOCJson(path).json_get_value(prop)
 
                     for p, v in props.items():
-                        jail_list.append([uuid, j, "{}:{}".format(p, v)])
+                        jail_list.append([uuid, j, f"{p}:{v}"])
                 else:
                     jail_list.append(
                         [uuid, j, IOCJson(path).json_get_value(prop)])
             except:
-                lgr.critical("{} is not a valid property!".format(prop))
+                logit({
+                    "level"  : "ERROR",
+                    "message": f"{prop} is not a valid property!"
+                })
                 exit(1)
 
         # Prints the table
         if header:
-            jail_list.insert(0, ["UUID", "TAG", "PROP - {}".format(prop)])
+            jail_list.insert(0, ["UUID", "TAG", f"PROP - {prop}"])
             # We get an infinite float otherwise.
             table.set_cols_dtype(["t", "t", "t"])
             table.add_rows(jail_list)
-            lgr.info(table.draw())
+            logit({
+                "level"  : "INFO",
+                "message": table.draw()
+            })
         else:
             for jail in jail_list:
-                lgr.info("\t".join(jail))
+                logit({
+                    "level"  : "INFO",
+                    "message": "\t".join(jail)
+                })

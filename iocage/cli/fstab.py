@@ -1,10 +1,10 @@
 """fstab module for the cli."""
 import click
 
+from iocage.lib.ioc_common import logit
 from iocage.lib.ioc_fstab import IOCFstab
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
-from iocage.lib.ioc_logger import IOCLogger
 
 __cmdname__ = "fstab_cmd"
 __rootcmd__ = True
@@ -27,7 +27,6 @@ def fstab_cmd(action, fstab_string, jail):
     Looks for the jail supplied and passes the uuid, path and configuration
     location to manipulate the fstab.
     """
-    lgr = IOCLogger().cli_log()
     pool = IOCJson().json_get_value("pool")
     iocroot = IOCJson(pool).json_get_value("iocroot")
     index = None
@@ -37,7 +36,10 @@ def fstab_cmd(action, fstab_string, jail):
     _jails, paths = IOCList("uuid").list_datasets()
 
     if not fstab_string and action != "edit":
-        lgr.critical("Please supply a fstab entry!")
+        logit({
+            "level"  : "ERROR",
+            "message": "Please supply a fstab entry!"
+        })
         exit(1)
 
     _jail = {tag: uuid for (tag, uuid) in _jails.items() if
@@ -46,13 +48,21 @@ def fstab_cmd(action, fstab_string, jail):
     if len(_jail) == 1:
         tag, uuid = next(iter(_jail.items()))
     elif len(_jail) > 1:
-        lgr.error("Multiple jails found for"
-                  " {}:".format(jail))
+        logit({
+            "level"  : "ERROR",
+            "message": f"Multiple jails found for {jail}:"
+        })
         for t, u in sorted(_jail.items()):
-            lgr.error("  {} ({})".format(u, t))
-        raise RuntimeError()
+            logit({
+                "level"  : "ERROR",
+                "message": f"  {u} ({t})"
+            })
+        exit(1)
     else:
-        lgr.critical("{} not found!".format(jail))
+        logit({
+            "level"  : "ERROR",
+            "message": "{} not found!".format(jail)
+        })
         exit(1)
 
     # The user will expect to supply a string, the API would prefer these
@@ -71,8 +81,11 @@ def fstab_cmd(action, fstab_string, jail):
                 source, destination, fstype, options, dump, _pass = "", "", "", \
                                                                     "", "", ""
             except TypeError:
-                lgr.critical("Please specify either a valid fstab "
-                             "entry or an index number.")
+                logit({
+                    "level"  : "ERROR",
+                    "message": "Please specify either a valid fstab "
+                               "entry or an index number."
+                })
                 exit(1)
             except ValueError:
                 # We will assume this is just a source, and will do a readonly
@@ -89,9 +102,12 @@ def fstab_cmd(action, fstab_string, jail):
                 source, destination, fstype, options, dump, _pass = \
                     fstab_string
             except ValueError:
-                lgr.critical("Please specify a valid fstab entry!\n\n"
-                             "Example:\n  /the/source /dest FSTYPE "
-                             "FSOPTIONS FSDUMP FSPASS")
+                logit({
+                    "level"  : "ERROR",
+                    "message": "Please specify a valid fstab entry!\n\n"
+                               "Example:\n  /the/source /dest FSTYPE "
+                               "FSOPTIONS FSDUMP FSPASS"
+                })
                 exit(1)
         else:
             source, destination, fstype, options, dump, _pass = "", "", \
@@ -99,7 +115,7 @@ def fstab_cmd(action, fstab_string, jail):
                                                                 "", ""
 
     if not _index and action == "add":
-        destination = "{}/jails/{}/root".format(iocroot, uuid) + destination
+        destination = f"{iocroot}/jails/{uuid}/root{destination}"
 
     IOCFstab(uuid, tag, action, source, destination, fstype, options, dump,
              _pass, index=index)

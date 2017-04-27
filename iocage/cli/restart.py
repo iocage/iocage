@@ -4,16 +4,14 @@ from subprocess import PIPE, Popen
 
 import click
 
+from iocage.lib.ioc_common import logit
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
-from iocage.lib.ioc_logger import IOCLogger
 from iocage.lib.ioc_start import IOCStart
 from iocage.lib.ioc_stop import IOCStop
 
 __cmdname__ = "restart_cmd"
 __rootcmd__ = True
-
-lgr = IOCLogger().cli_log()
 
 
 def check_type(uuid, tag, path, _all, soft):
@@ -29,17 +27,26 @@ def check_type(uuid, tag, path, _all, soft):
         else:
             __soft_restart__(uuid, tag, path, conf)
     elif conf["type"] == "basejail":
-        lgr.critical("Please run \"iocage migrate\" before trying"
-                     f" to restart {uuid} ({tag})")
+        logit({
+            "level"  : "ERROR",
+            "message": "Please run \"iocage migrate\" before trying"
+                       f" to restart {uuid} ({tag})"
+        })
         if not _all:
             exit(1)
     elif conf["type"] == "template":
-        lgr.critical("Please convert back to a jail before trying"
-                     f" to restart {uuid} ({tag})")
+        logit({
+            "level"  : "ERROR",
+            "message": "Please convert back to a jail before trying"
+                       f" to restart {uuid} ({tag})"
+        })
         if not _all:
             exit(1)
     else:
-        lgr.critical(f"{conf['type']} is not a supported jail type.")
+        logit({
+            "level"  : "ERROR",
+            "message": f"{conf['type']} is not a supported jail type."
+        })
 
         if not _all:
             exit(1)
@@ -72,13 +79,21 @@ def restart_cmd(jail, soft):
 
             check_type(uuid, tag, path, False, soft)
         elif len(_jail) > 1:
-            lgr.error("Multiple jails found for"
-                      " {}:".format(jail))
+            logit({
+                "level"  : "ERROR",
+                "message": f"Multiple jails found for {jail}:"
+            })
             for t, u in sorted(_jail.items()):
-                lgr.error("  {} ({})".format(u, t))
-            raise RuntimeError()
+                logit({
+                    "level"  : "ERROR",
+                    "message": f"  {u} ({t})"
+                })
+            exit(1)
         else:
-            lgr.critical("{} not found!".format(jail))
+            logit({
+                "level"  : "ERROR",
+                "message": f"{jail} not found!"
+            })
             exit(1)
 
 
@@ -95,7 +110,6 @@ def __soft_restart__(uuid, jail, path, conf):
     """
     getjid = IOCList().list_get_jid(uuid)
     status, jid = getjid
-    lgr = ioc_logger.Logger('ioc_cli_restart').getLogger()
 
     # These needs to be a list.
     exec_start = conf["exec_start"].split()
@@ -103,7 +117,10 @@ def __soft_restart__(uuid, jail, path, conf):
     exec_fib = conf["exec_fib"]
 
     if status:
-        lgr.info("Soft restarting {} ({})".format(uuid, jail))
+        logit({
+            "level"  : "INFO",
+            "message": f"Soft restarting {uuid} ({jail})"
+        })
         stop_cmd = ["setfib", exec_fib, "jexec", f"ioc-{uuid}"] + exec_stop
         Popen(stop_cmd, stdout=PIPE, stderr=PIPE).communicate()
 
@@ -113,5 +130,8 @@ def __soft_restart__(uuid, jail, path, conf):
         IOCJson(path, silent=True).json_set_value("last_started={}".format(
             datetime.utcnow().strftime("%F %T")))
     else:
-        lgr.critical("{} is not running!".format(jail))
+        logit({
+            "level"  : "ERROR",
+            "message": f"{jail} is not running!"
+        })
         exit(1)

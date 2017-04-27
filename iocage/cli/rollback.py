@@ -3,10 +3,9 @@ from subprocess import CalledProcessError, PIPE, Popen, check_call
 
 import click
 
-from iocage.lib.ioc_common import checkoutput
+from iocage.lib.ioc_common import checkoutput, logit
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
-from iocage.lib.ioc_logger import IOCLogger
 
 __cmdname__ = "rollback_cmd"
 __rootcmd__ = True
@@ -20,8 +19,6 @@ __rootcmd__ = True
               default=False, is_flag=True)
 def rollback_cmd(jail, name, force):
     """Get a list of jails and print the property."""
-    lgr = IOCLogger().cli_log()
-
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")
 
@@ -32,13 +29,22 @@ def rollback_cmd(jail, name, force):
         tag, uuid = next(iter(_jail.items()))
         path = paths[tag]
     elif len(_jail) > 1:
-        lgr.error("Multiple jails found for"
-                  f" {jail}:")
+        logit({
+            "level"  : "ERROR",
+            "message": "Multiple jails found for"
+                       f" {jail}:"
+        })
         for t, u in sorted(_jail.items()):
-            lgr.error(f"  {u} ({t})")
-        raise RuntimeError()
+            logit({
+                "level"  : "ERROR",
+                "message": f"  {u} ({t})"
+            })
+        exit(1)
     else:
-        lgr.critical(f"{jail} not found!")
+        logit({
+            "level"  : "ERROR",
+            "message": f"{jail} not found!"
+        })
         exit(1)
 
     # Looks like foo/iocage/jails/df0ef69a-57b6-4480-b1f8-88f7b6febbdf@BAR
@@ -52,14 +58,19 @@ def rollback_cmd(jail, name, force):
     try:
         checkoutput(["zfs", "get", "-H", "creation", target], stderr=PIPE)
     except CalledProcessError:
-        lgr.critical(f"Snapshot {target} does not exist!")
+        logit({
+            "level"  : "ERROR",
+            "message": f"Snapshot {target} does not exist!"
+        })
         exit(1)
 
     if not force:
-        lgr.warning(
-            "\nThis will destroy ALL data created since"
-            f" {name} was taken.\nIncluding ALL snapshots taken after"
-            f" {name} for {uuid} ({tag})")
+        logit({
+            "level"  : "WARNING",
+            "message": "\nThis will destroy ALL data created since"
+                       f" {name} was taken.\nIncluding ALL snapshots taken"
+                       f" after {name} for {uuid} ({tag})"
+        })
         if not click.confirm("\nAre you sure?"):
             exit()
     try:
@@ -72,7 +83,13 @@ def rollback_cmd(jail, name, force):
             check_call(
                 ["zfs", "rollback", "-r", f"{dataset}@{name}"])
 
-        lgr.info(f"Rolled back to: {target}")
+        logit({
+            "level"  : "INFO",
+            "message": f"Rolled back to: {target}"
+        })
     except CalledProcessError as err:
-        lgr.error(f"{err}")
+        logit({
+            "level"  : "ERROR",
+            "message": f"{err}"
+        })
         exit(1)

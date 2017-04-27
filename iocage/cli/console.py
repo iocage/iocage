@@ -3,9 +3,9 @@ from subprocess import Popen
 
 import click
 
+from iocage.lib.ioc_common import logit
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
-from iocage.lib.ioc_logger import IOCLogger
 from iocage.lib.ioc_start import IOCStart
 
 __cmdname__ = "console_cmd"
@@ -20,7 +20,6 @@ def console_cmd(jail, force):
     Runs jexec to login into the specified jail. Accepts a force flag that
     will attempt to start the jail if it is not already running.
     """
-    lgr = IOCLogger().cli_log()
     jails, paths = IOCList("uuid").list_datasets()
 
     _jail = {tag: uuid for (tag, uuid) in jails.items() if
@@ -36,37 +35,57 @@ def console_cmd(jail, force):
         exec_fib = conf["exec_fib"]
         status, _ = IOCList().list_get_jid(uuid)
     elif len(_jail) > 1:
-        lgr.error("Multiple jails found for"
-                  " {}:".format(jail))
+        logit({
+            "level"  : "ERROR",
+            "message": f"Multiple jails found for {jail}"
+        })
         for t, u in sorted(_jail.items()):
-            lgr.critical("  {} ({})".format(u, t))
+            logit({
+                "level"  : "ERROR",
+                "message": f"  {u} ({t})"
+            })
         exit(1)
     else:
-        lgr.critical("{} not found!".format(jail))
+        logit({
+            "level"  : "ERROR",
+            "message": f" {jail} not found!"
+        })
         exit(1)
 
     if not status and not force:
-        lgr.critical("{} ({}) is not running!".format(uuid, tag))
+        logit({
+            "level"  : "ERROR",
+            "message": f"{uuid} ({tag}) is not running!"
+        })
         exit(1)
 
     if not status and force:
-        lgr.info("{} ({}) is not running".format(uuid, tag) +
-                 ", starting jail.")
+        logit({
+            "level"  : "INFO",
+            "message": f"{uuid} ({tag}) is not running, starting jail."
+        })
         if conf["type"] == "jail":
             IOCStart(uuid, jail, path, conf, silent=True)
             status = True
         elif conf["type"] == "basejail":
-            lgr.critical("Please run \"iocage migrate\" before trying"
-                         " to start {} ({})".format(uuid, tag))
+            logit({
+                "level"  : "ERROR",
+                "message": "Please run \"iocage migrate\" before trying to"
+                           " start {uuid} ({tag})"
+            })
             exit(1)
         elif conf["type"] == "template":
-            lgr.critical("Please convert back to a jail before trying"
-                         " to start {} ({})".format(uuid, tag))
+            logit({
+                "level"  : "ERROR",
+                "message": "Please convert back to a jail before to start"
+                           f" {uuid} ({tag})"
+            })
             exit(1)
         else:
-            lgr.critical("{} is not a supported jail type.".format(
-                conf["type"]
-            ))
+            logit({
+                "level"  : "ERROR",
+                "message": f"{conf['type']} is not a supported jail type."
+            })
             exit(1)
 
     if status:

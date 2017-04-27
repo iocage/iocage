@@ -5,9 +5,9 @@ import click
 from texttable import Texttable
 
 import iocage.lib.ioc_common as ioc_common
+from iocage.lib.ioc_common import logit
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
-from iocage.lib.ioc_logger import IOCLogger
 
 __cmdname__ = "df_cmd"
 
@@ -21,8 +21,6 @@ __cmdname__ = "df_cmd"
               help="Sorts the list by the given type")
 def df_cmd(header, _long, _sort):
     """Allows a user to show resource usage of all jails."""
-    lgr = IOCLogger().cli_log()
-
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")
     jail_list = []
@@ -70,7 +68,14 @@ def df_cmd(header, _long, _sort):
         # We get an infinite float otherwise.
         table.set_cols_dtype(["t", "t", "t", "t", "t", "t", "t"])
         table.add_rows(jail_list)
-        lgr.info(table.draw())
+
+        logit({
+            "level"  : "INFO",
+            "message": table.draw()
+        })
     else:
         for jail in jail_list:
-            print("\t".join(jail))
+            logit({
+                "level"  : "INFO",
+                "message": "\t".join(jail)
+            })

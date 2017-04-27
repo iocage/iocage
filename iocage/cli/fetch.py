@@ -4,9 +4,8 @@ import os
 
 import click
 
-from iocage.lib.ioc_common import checkoutput
+from iocage.lib.ioc_common import checkoutput, logit
 from iocage.lib.ioc_fetch import IOCFetch
-from iocage.lib.ioc_logger import IOCLogger
 
 __cmdname__ = "fetch_cmd"
 __rootcmd__ = True
@@ -14,10 +13,18 @@ __rootcmd__ = True
 
 def validate_count(ctx, param, value):
     """Takes a string, removes the commas and returns an int."""
-    try:
-        count = value.replace(",", "")
-        return int(count)
-    except ValueError:
+    if isinstance(value, str):
+        try:
+            value = value.replace(",", "")
+
+            return int(value)
+        except ValueError:
+            logit({
+                "level"  : "ERROR",
+                "message": f"({value} is not a valid  integer."
+            })
+            exit(1)
+    else:
         return int(value)
 
 
@@ -59,8 +66,6 @@ def fetch_cmd(http, _file, server, user, password, auth, verify, release,
     freebsd_version = checkoutput(["freebsd-version"])
     arch = os.uname()[4]
 
-    lgr = IOCLogger().cli_log()
-
     if not files:
         if arch == "arm64":
             files = ("MANIFEST", "base.txz", "doc.txz")
@@ -81,19 +86,28 @@ def fetch_cmd(http, _file, server, user, password, auth, verify, release,
                 with open(plugin_file) as f:
                     return json.load(f)
             except FileNotFoundError:
-                lgr.critical("Please supply a file before any properties.")
+                logit({
+                    "level"  : "ERROR",
+                    "message": "Please supply a file before any properties."
+                })
                 exit(1)
             except json.decoder.JSONDecodeError:
-                lgr.critical("Invalid JSON file supplied, please supply a "
-                             "correctly formatted JSON file.")
+                logit({
+                    "level"  : "ERROR",
+                    "message": "Invalid JSON file supplied, please supply a "
+                               "correctly formatted JSON file."
+                })
                 exit(1)
 
         ip = [x for x in props if x.startswith("ip4_addr") or x.startswith(
             "ip6_addr")]
         if not ip:
-            lgr.critical("An IP address is needed to fetch a "
-                         "plugin!\nPlease specify "
-                         "ip(4|6)_addr=\"INTERFACE|IPADDRESS\"!")
+            logit({
+                "level"  : "ERROR",
+                "message": "An IP address is needed to fetch a plugin!\n"
+                           "Please specify ip(4|6)"
+                           "_addr=\"INTERFACE|IPADDRESS\"!"
+            })
             exit(1)
         if plugins:
             IOCFetch(release=None).fetch_plugin_index(props)

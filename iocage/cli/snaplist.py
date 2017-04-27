@@ -4,9 +4,9 @@ from subprocess import PIPE, Popen
 import click
 from texttable import Texttable
 
+from iocage.lib.ioc_common import logit
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
-from iocage.lib.ioc_logger import IOCLogger
 
 __cmdname__ = "snaplist_cmd"
 
@@ -17,8 +17,6 @@ __cmdname__ = "snaplist_cmd"
 @click.argument("jail")
 def snaplist_cmd(header, jail):
     """Allows a user to show resource usage of all jails."""
-    lgr = IOCLogger().cli_log()
-
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")
     snap_list = []
@@ -31,21 +29,29 @@ def snaplist_cmd(header, jail):
         tag, uuid = next(iter(_jail.items()))
         path = paths[tag]
     elif len(_jail) > 1:
-        lgr.error("Multiple jails found for"
-                  " {}:".format(jail))
+        logit({
+            "level"  : "ERROR",
+            "message": f"Multiple jails found for {jail}:"
+        })
         for t, u in sorted(_jail.items()):
-            lgr.critical("  {} ({})".format(u, t))
+            logit({
+                "level"  : "ERROR",
+                "message": f"  {u} ({t})"
+            })
         exit(1)
     else:
-        lgr.critical("{} not found!".format(jail))
+        logit({
+            "level"  : "ERROR",
+            "message": f"{jail} not found!"
+        })
         exit(1)
 
     conf = IOCJson(path).json_load()
 
     if conf["template"] == "yes":
-        full_path = "{}/iocage/templates/{}".format(pool, tag)
+        full_path = f"{pool}/iocage/templates/{tag}"
     else:
-        full_path = "{}/iocage/jails/{}".format(pool, uuid)
+        full_path = f"{pool}/iocage/jails/{uuid}"
 
     zconf = ["zfs", "get", "-H", "-o", "value"]
     snapshots = Popen(["zfs", "list", "-r", "-H", "-t", "snapshot",
@@ -80,7 +86,13 @@ def snaplist_cmd(header, jail):
         # We get an infinite float otherwise.
         table.set_cols_dtype(["t", "t", "t", "t"])
         table.add_rows(snap_list)
-        lgr.info(table.draw())
+        logit({
+            "level"  : "INFO",
+            "message": table.draw()
+        })
     else:
         for snap in snap_list:
-            lgr.info("\t".join(snap))
+            logit({
+                "level"  : "INFO",
+                "message": "\t".join(snap)
+            })
