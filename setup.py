@@ -27,7 +27,8 @@ setup(name='iocage',
           'texttable',
           'requests',
           'tqdm',
-          'coloredlogs'
+          'coloredlogs',
+          'libzfs'
       ],
       setup_requires=['pytest-runner'],
       entry_points={
