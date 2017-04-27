@@ -7,7 +7,7 @@ from datetime import datetime
 from shutil import copy
 from subprocess import CalledProcessError, PIPE, Popen, check_call
 
-from iocage.lib.ioc_common import checkoutput
+from iocage.lib.ioc_common import checkoutput, logit
 from iocage.lib.ioc_exec import IOCExec
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
@@ -207,8 +207,11 @@ class IOCCreate(object):
             iocjson.json_write(config)
 
         if not self.plugin:
-            self.lgr.info(
-                "{} ({}) successfully created!".format(jail_uuid, _tag))
+            msg = f"{jail_uuid} ({_tag}) successfully created!"
+            logit({
+                "level": "INFO",
+                "message": msg
+            })
 
         if self.pkglist:
             if config["ip4_addr"] == "none" and config["ip6_addr"] == "none":
