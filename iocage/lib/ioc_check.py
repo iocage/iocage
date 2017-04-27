@@ -46,7 +46,7 @@ class IOCCheck(object):
                 if "deactivate" not in sys.argv[1:]:
                     logit({
                         "level"  : "INFO",
-                        "message": f"Creating f{self.pool}/{dataset}"
+                        "message": f"Creating {self.pool}/{dataset}"
                     },
                         _callback=self.callback,
                         silent=self.silent)
