@@ -16,13 +16,16 @@ class IOCList(object):
         JID UID BOOT STATE TAG TYPE IP4 RELEASE
     """
 
-    def __init__(self, lst_type="all", hdr=True, full=False, _sort=None):
+    def __init__(self, lst_type="all", hdr=True, full=False, _sort=None,
+                 silent=False, callback=None):
         self.list_type = lst_type
         self.header = hdr
         self.full = full
         self.pool = IOCJson().json_get_value("pool")
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.sort = _sort
+        self.silent = silent
+        self.callback = callback
 
     def list_datasets(self, set=False):
         """Lists the datasets of given type."""
@@ -72,19 +75,25 @@ class IOCList(object):
                 logit({
                     "level"  : "ERROR",
                     "message": f"Duplicate tag ({tag}) detected!"
-                })
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
                 for d, t in sorted(dups.items()):
                     u = [m for m in d.split("/") if len(m) == 36 or len(m)
                          == 8][0]
                     logit({
                         "level"  : "ERROR",
                         "message": f"  {u} ({t})"
-                    })
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
                 logit({
                     "level"  : "ERROR",
                     "message": "\nPlease run \"iocage set tag=NEWTAG "
                                "UUID\" for one of the UUID's."
-                })
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
                 raise RuntimeError()
 
             return jails, paths
