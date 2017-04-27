@@ -1,12 +1,11 @@
 """Manipulate a jails fstab"""
-import logging
 import os
 import shutil
 import tempfile
 from datetime import datetime
 from subprocess import PIPE, Popen, call
 
-from iocage.lib.ioc_common import open_atomic
+from iocage.lib.ioc_common import logit, open_atomic
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
@@ -15,8 +14,8 @@ class IOCFstab(object):
     """Will add or remove an entry, and mount or umount the filesystem."""
 
     def __init__(self, uuid, tag, action, source, destination, fstype,
-                 fsoptions, fsdump, fspass, index=None, silent=False):
-        self.lgr = logging.getLogger('ioc_fstab')
+                 fsoptions, fsdump, fspass, index=None, silent=False,
+                 callback=None):
         self.pool = IOCJson().json_get_value("pool")
         self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
         self.uuid = uuid
@@ -31,9 +30,8 @@ class IOCFstab(object):
         self.index = index
         self.mount = f"{self.src}\t{self.dest}\t{self.fstype}\t" \
                      f"{self.fsoptions}\t{self.fsdump}\t{self.fspass}"
-
-        if silent:
-            self.lgr.disabled = True
+        self.silent = silent
+        self.callback = callback
 
         self.__fstab_parse__()
 
@@ -55,22 +53,23 @@ class IOCFstab(object):
 
     def __fstab_add__(self):
         """Adds a users mount to the jails fstab"""
-        with open("{}/jails/{}/fstab".format(self.iocroot,
-                                             self.uuid), "r") as \
-                fstab:
-            with open_atomic("{}/jails/{}/fstab".format(self.iocroot,
-                                                        self.uuid), "w"
-                             ) as _fstab:
+        with open(f"{self.uuid}/jails/{self.uuid}/fstab", "r") as fstab:
+            with open_atomic(f"{self.uuid}/jails/{self.uuid}/fstab",
+                             "w") as _fstab:
                 # open_atomic will empty the file, we need these still.
                 for line in fstab.readlines():
                     _fstab.write(line)
 
-                _fstab.write("{} # Added by iocage on {}\n".format(
-                    self.mount, datetime.utcnow().strftime("%F %T")))
+                date = datetime.utcnow().strftime("%F %T")
+                _fstab.write(f"{self.mount} # Added by iocage on {date}\n")
 
-        self.lgr.info(
-            "Successfully added mount to {} ({})'s fstab".format(self.uuid,
-                                                                 self.tag))
+        logit({
+            "level"  : "INFO",
+            "message": f"Successfully added mount to {self.uuid}"
+                       f" ({self.tag})'s fstab"
+        },
+            _callback=self.callback,
+            silent=self.silent)
 
     def __fstab_remove__(self):
         """
@@ -81,12 +80,9 @@ class IOCFstab(object):
         removed = False
         index = 0
 
-        with open("{}/jails/{}/fstab".format(self.iocroot,
-                                             self.uuid), "r") as \
-                fstab:
-            with open_atomic("{}/jails/{}/fstab".format(self.iocroot,
-                                                        self.uuid), "w"
-                             ) as _fstab:
+        with open(f"{self.iocroot}/jails/{self.uuid}/fstab", "r") as fstab:
+            with open_atomic(f"{self.iocroot}/jails/{self.uuid}/fstab",
+                             "w") as _fstab:
                 for line in fstab.readlines():
                     if line.rsplit("#")[0].rstrip() == self.mount or index \
                             == self.index and not removed:
@@ -98,12 +94,21 @@ class IOCFstab(object):
 
                     index += 1
         if removed:
-            self.lgr.info(
-                "Successfully removed mount from {} ({})'s fstab".format(
-                    self.uuid, self.tag))
+            logit({
+                "level"  : "INFO",
+                "message": f"Successfully removed mount from {self.uuid}"
+                           f" ({self.tag})'s fstab"
+            },
+                _callback=self.callback,
+                silent=self.silent)
             return dest  # Needed for umounting, otherwise we lack context.
         else:
-            self.lgr.info("No matching fstab entry.")
+            logit({
+                "level"  : "INFO",
+                "message": "No matching fstab entry."
+            },
+                _callback=self.callback,
+                silent=self.silent)
             exit()
 
     def __fstab_mount__(self):

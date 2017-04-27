@@ -1,7 +1,6 @@
 """Common methods we reuse."""
 import collections
 import ipaddress
-import logging
 import os
 import shutil
 import stat
@@ -9,12 +8,16 @@ import tempfile as tmp
 from contextlib import contextmanager
 from subprocess import check_output
 
-from iocage.lib import ioc_logger
+import logging
+
+import sys
+
+from iocage.lib.ioc_logger import IOCLogger
 
 
 def callback(log):
     """Helper to call the appropriate logging level"""
-    lgr = ioc_logger.IOCLogger().cli_log()
+    lgr = IOCLogger().cli_log()
 
     if log['level'] == 'CRITICAL':
         lgr.critical(log['message'])
@@ -28,7 +31,7 @@ def callback(log):
         lgr.debug(log['message'])
 
 
-def logit(content, _callback=None, silent=False):
+def logit(content, _callback=None, silent=False, term="\n"):
     """Helper to check callable status of callback or call ours."""
     if silent:
         return
@@ -43,13 +46,16 @@ def logit(content, _callback=None, silent=False):
         callback(content)
 
 
-def raise_sort_error(lgr, sort_list):
+def raise_sort_error(sort_list):
     msg = "Invalid sort type specified, use one of:\n"
 
     for s in sort_list:
         msg += f"  {s}\n"
 
-    lgr.critical(msg.rstrip())
+    logit({
+        "level"  : "ERROR",
+        "message": msg.rstrip()
+    })
 
     raise RuntimeError()
 
@@ -60,10 +66,6 @@ def ioc_sort(caller, s_type, data=None):
     except AttributeError:
         # When a failed template is attempted, it will set s_type to None.
         s_type = "tag"
-
-    lgr = logging.getLogger(
-        'ioc_cli_list') if caller == "list_full" or caller == "list_short" \
-        else logging.getLogger('ioc_cli_df')
 
     sort_funcs = {
         "jid"     : sort_jid,
@@ -89,11 +91,11 @@ def ioc_sort(caller, s_type, data=None):
     df_sorts = ["uuid", "crt", "res", "qta", "use", "ava", "tag"]
 
     if caller == "list_full" and s_type not in list_full_sorts:
-        raise_sort_error(lgr, list_full_sorts)
+        raise_sort_error(list_full_sorts)
     elif caller == "list_short" and s_type not in list_short_sorts:
-        raise_sort_error(lgr, list_short_sorts)
+        raise_sort_error(list_short_sorts)
     elif caller == "df" and s_type not in df_sorts:
-        raise_sort_error(lgr, df_sorts)
+        raise_sort_error(df_sorts)
 
     # Most calls will use this
     if caller == "list_release" and s_type == "release":

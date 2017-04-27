@@ -6,7 +6,7 @@ from os import X_OK, access, chdir, getcwd, makedirs, path as ospath, \
 from shutil import copy
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
 
-from iocage.lib.ioc_common import checkoutput, open_atomic, logit
+from iocage.lib.ioc_common import checkoutput, logit, open_atomic
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
@@ -173,7 +173,11 @@ class IOCStart(object):
                 vnet = True
 
             msg = f"* Starting {self.uuid} ({self.conf['tag']})"
-            logit({"level": "INFO", "message": msg}, self.callback,
+            logit({
+                      "level"  : "INFO",
+                      "message": msg
+                  },
+                  _callback=self.callback,
                   silent=self.silent)
 
             start = Popen([x for x in ["jail", "-c"] + net +
@@ -221,13 +225,21 @@ class IOCStart(object):
             if start.returncode:
                 # This is actually fatal.
                 msg = "  + Start FAILED"
-                logit({"level": "ERROR", "message": msg}, self.callback,
+                logit({
+                          "level"  : "ERROR",
+                          "message": msg
+                      },
+                      _callback=self.callback,
                       silent=self.silent)
 
                 raise RuntimeError(f"  {stderr_data.decode('utf-8')}")
             else:
-                logit({"level": "INFO", "message": "  + Started OK"},
-                      self.callback, silent=self.silent)
+                logit({
+                          "level"  : "INFO",
+                          "message": "  + Started OK"
+                      },
+                      _callback=self.callback,
+                      silent=self.silent)
 
             os_path = "{}/root/dev/log".format(self.path)
             if not ospath.isfile(os_path) and not ospath.islink(os_path):
@@ -286,11 +298,19 @@ class IOCStart(object):
                                       stdout=f, stderr=PIPE)
             if services:
                 msg = "  + Starting services FAILED"
-                logit({"level": "ERROR", "message": msg}, self.callback,
+                logit({
+                          "level"  : "ERROR",
+                          "message": msg
+                      },
+                      _callback=self.callback,
                       silent=self.silent)
             else:
                 msg = "  + Starting services OK"
-                logit({"level": "INFO", "message": msg}, self.callback,
+                logit({
+                          "level"  : "INFO",
+                          "message": msg
+                      },
+                      _callback=self.callback,
                       silent=self.silent)
 
             self.set("last_started={}".format(datetime.utcnow().strftime(
@@ -298,7 +318,11 @@ class IOCStart(object):
             # TODO: DHCP/BPF
         else:
             msg = f"{self.uuid} ({self.conf['tag']}) is already running!"
-            logit({"level": "ERROR", "message": msg}, self.callback,
+            logit({
+                      "level"  : "ERROR",
+                      "message": msg
+                  },
+                  _callback=self.callback,
                   silent=self.silent)
 
     def start_network(self, vnet):
@@ -337,11 +361,19 @@ class IOCStart(object):
                         iface, ip = addr.split("|")
                         if nic != iface:
                             err = f"\n  Invalid interface supplied: {iface}"
-                            logit({"level": "ERROR", "message": f"{err}"},
+                            logit({
+                                      "level"  : "ERROR",
+                                      "message": f"{err}"
+                                  },
+                                  _callback=self.callback,
                                   silent=self.silent)
 
                             err = f"  Did you mean {nic}?\n"
-                            logit({"level": "ERROR", "message": f"{err}"},
+                            logit({
+                                      "level"  : "ERROR",
+                                      "message": f"{err}"
+                                  },
+                                  _callback=self.callback,
                                   silent=self.silent)
                             continue
                         if iface not in ifaces:
@@ -352,8 +384,12 @@ class IOCStart(object):
                         self.start_network_vnet_addr(iface, ip, gw)
 
         except CalledProcessError as err:
-            logit({"level": "WARNING", "message": "Network failed to start:"
-                   f" {err.output.decode('utf-8')}".rstrip()},
+            logit({
+                      "level"  : "WARNING",
+                      "message": "Network failed to start:"
+                                 f" {err.output.decode('utf-8')}".rstrip()
+                  },
+                  _callback=self.callback,
                   silent=self.silent)
 
     def start_network_vnet_iface(self, nic, bridge, mtu, jid):

@@ -7,7 +7,8 @@ import sys
 from os import geteuid, path
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
 
-from iocage.lib.ioc_common import checkoutput, get_nested_key, open_atomic
+from iocage.lib.ioc_common import checkoutput, get_nested_key, logit, \
+    open_atomic
 
 
 def _get_pool_and_iocroot():
@@ -55,7 +56,7 @@ class IOCJson(object):
     def json_convert_from_zfs(self, uuid, skip=False):
         """Convert to JSON. Accepts a jail UUID"""
         pool, _ = _get_pool_and_iocroot()
-        dataset = "{}/iocage/jails/{}".format(pool, uuid)
+        dataset = f"{pool}/iocage/jails/{uuid}"
         jail_zfs_prop = "org.freebsd.iocage:jail_zfs_dataset"
 
         if geteuid() != 0:
@@ -100,18 +101,17 @@ class IOCJson(object):
         if not skip:
             # Set jailed=off and move the jailed dataset.
             checkoutput(["zfs", "set", "jailed=off",
-                         "{}/root/data".format(dataset)], stderr=PIPE)
+                         f"{dataset}/root/data"], stderr=PIPE)
             checkoutput(["zfs", "rename", "-f",
-                         "{}/root/data".format(dataset),
-                         "{}/data".format(dataset)], stderr=PIPE)
+                         f"{dataset}/root/data",
+                         f"{dataset}/data"], stderr=PIPE)
             checkoutput(["zfs", "set",
-                         "{}=iocage/jails/{}/data".format(
-                             jail_zfs_prop, uuid),
-                         "{}/data".format(dataset)], stderr=PIPE)
+                         f"{jail_zfs_prop}=iocage/jails/{uuid}/data",
+                         f"{dataset}/data"], stderr=PIPE)
             checkoutput(["zfs", "set", "jailed=on",
-                         "{}/data".format(dataset)], stderr=PIPE)
+                         f"{dataset}/data"], stderr=PIPE)
 
-        key_and_value["jail_zfs_dataset"] = "iocage/jails/{}/data".format(uuid)
+        key_and_value["jail_zfs_dataset"] = f"iocage/jails/{uuid}/data"
 
         self.json_write(key_and_value)
 
@@ -152,25 +152,29 @@ class IOCJson(object):
                                  "org.freebsd.iocage:host_hostname",
                                  self.location]).rstrip()
                             short_uuid = full_uuid[:8]
-                            full_dataset = "{}/iocage/jails/{}".format(
-                                pool, full_uuid)
-                            short_dataset = "{}/iocage/jails/{}".format(
-                                pool, short_uuid)
+                            full_dataset = f"{pool}/iocage/jails/{full_uuid}"
+                            short_dataset = f"{pool}/iocage/jails/{short_uuid}"
 
                             self.json_convert_from_zfs(full_uuid)
                             with open(self.location + "/config.json",
                                       "r") as conf:
                                 conf = json.load(conf)
 
-                            self.lgr.info("hack88 is no longer supported."
-                                          "\n{} is being converted to {} "
-                                          "permanently.".format(full_dataset,
-                                                                short_dataset))
+                            logit({
+                                "level"  : "INFO",
+                                "message": "hack88 is no longer supported."
+                                           f"\n{full_dataset} is being "
+                                           f"converted to {short_dataset}"
+                                           f" permanently."
+                            })
 
                             status, _ = IOCList().list_get_jid(full_uuid)
                             if status:
-                                self.lgr.info(
-                                    "Stopping jail to migrate UUIDs.")
+                                logit({
+                                    "level"  : "INFO",
+                                    "message":
+                                        "Stopping jail to migrate UUIDs."
+                                })
                                 from iocage.lib.ioc_stop import IOCStop
                                 IOCStop(full_uuid, conf["tag"], self.location,
                                         conf, silent=True)
@@ -182,27 +186,28 @@ class IOCJson(object):
 
                             # Set jailed=off and move the jailed dataset.
                             checkoutput(["zfs", "set", "jailed=off",
-                                         "{}/data".format(full_dataset)])
+                                         f"{full_dataset}/data"])
 
                             # We don't want to change a real hostname.
                             if jail_hostname == full_uuid:
-                                checkoutput(["zfs", "set", "{}={}".format(
-                                    host_prop, short_uuid), full_dataset])
+                                checkoutput(["zfs", "set",
+                                             f"{host_prop}={short_uuid}",
+                                             full_dataset])
 
-                            checkoutput(["zfs", "set", "{}={}".format(
-                                uuid_prop, short_uuid), full_dataset])
                             checkoutput(["zfs", "set",
-                                         "{}=iocage/jails/{}/data".format(
-                                             jail_zfs_prop, short_uuid),
-                                         "{}/data".format(full_dataset)])
+                                         f"{uuid_prop}={short_uuid}",
+                                         full_dataset])
+                            checkoutput(["zfs", "set",
+                                         f"{jail_zfs_prop}=iocage/jails/"
+                                         f"{short_uuid}/data",
+                                         f"{full_dataset}/data"])
                             checkoutput(["zfs", "rename", "-f", full_dataset,
                                          short_dataset])
                             checkoutput(["zfs", "set", "jailed=on",
-                                         "{}/data".format(short_dataset)])
+                                         f"{short_dataset}/data"])
 
                             uuid = short_uuid
-                            self.location = "{}/jails/{}".format(iocroot,
-                                                                 short_uuid)
+                            self.location = f"{iocroot}/jails/{short_uuid}"
                             skip = True
 
                     self.json_convert_from_zfs(uuid, skip=skip)
@@ -275,15 +280,19 @@ class IOCJson(object):
                 return pool
             elif match >= 2:
                 if "deactivate" not in sys.argv[1:]:
-                    self.lgr.error("Pools:")
+                    logit({
+                        "level"  : "ERROR",
+                        "message": "Pools:"
+                    })
                     for zpool in zpools:
-                        self.lgr.error("  {}".format(zpool))
-                    raise RuntimeError("You have {} ".format(match) +
-                                       "pools marked active for iocage "
-                                       "usage.\n"
-                                       "Run \"iocage deactivate ZPOOL\" on"
-                                       " {} of the".format(match - 1) +
-                                       " pools.\n")
+                        logit({
+                            "level"  : "ERROR",
+                            "message": f"  {zpool}"
+                        })
+                    raise RuntimeError(f"You have {match} pools marked active"
+                                       " for iocage usage.\n Run \"iocage"
+                                       f" deactivate ZPOOL\" on {match - 1}"
+                                       f" of the pools.\n")
             else:
                 if len(sys.argv) >= 2 and "activate" in sys.argv[1:]:
                     pass
@@ -308,9 +317,12 @@ class IOCJson(object):
                                                "activate with iocage activate "
                                                "POOL")
 
-                    self.lgr.info(f"Setting up zpool [{zpool}] for"
-                                  " iocage usage\n If you wish to change"
-                                  " please use \"iocage activate\"")
+                    logit({
+                        "level"  : "INFO",
+                        "message": f"Setting up zpool [{zpool}] for"
+                                   " iocage usage\n If you wish to change"
+                                   " please use \"iocage activate\""
+                    })
 
                     Popen(["zfs", "set", "org.freebsd.ioc:active=yes",
                            zpool]).communicate()
@@ -319,7 +331,7 @@ class IOCJson(object):
         elif prop == "iocroot":
             # Location in this case is actually the zpool.
             try:
-                loc = "{}/iocage".format(self.location)
+                loc = f"{self.location}/iocage"
                 mount = checkoutput(["zfs", "get", "-H", "-o", "value",
                                      "mountpoint", loc]).strip()
 
@@ -328,7 +340,7 @@ class IOCJson(object):
                 else:
                     raise RuntimeError(f"Please set a mountpoint on {loc}")
             except CalledProcessError:
-                raise RuntimeError("{} not found!".format(self.location))
+                raise RuntimeError(f"{self.location} not found!")
         elif prop == "all":
             conf = self.json_load()
 
@@ -370,8 +382,8 @@ class IOCJson(object):
 
         if key == "template":
             pool, iocroot = _get_pool_and_iocroot()
-            old_location = "{}/iocage/jails/{}".format(pool, uuid)
-            new_location = "{}/iocage/templates/{}".format(pool, old_tag)
+            old_location = f"{pool}/iocage/jails/{uuid}"
+            new_location = f"{pool}/iocage/templates/{old_tag}"
 
             if status:
                 raise RuntimeError(f"{uuid} ({old_tag}) is running.\nPlease"
@@ -405,11 +417,13 @@ class IOCJson(object):
                     self.location = new_location.lstrip(pool).replace(
                         "/iocage", iocroot)
                 except CalledProcessError as err:
-                    raise RuntimeError("{}".format(
-                        err.output.decode("utf-8").rstrip()))
+                    raise RuntimeError(
+                        f"{err.output.decode('utf-8').rstrip()}")
 
-                self.lgr.info("{} ({}) converted to a template.".format(uuid,
-                                                                        old_tag))
+                logit({
+                    "level"  : "INFO",
+                    "message": f"{uuid} ({old_tag}) converted to a template."
+                })
                 self.lgr.disabled = True
             elif value == "no":
                 try:
@@ -420,17 +434,22 @@ class IOCJson(object):
                     self.location = old_location.lstrip(pool).replace(
                         "/iocage", iocroot)
                 except CalledProcessError as err:
-                    raise RuntimeError("{}".format(
-                        err.output.decode("utf-8").rstrip()))
+                    raise RuntimeError(
+                        f"{err.output.decode('utf-8').rstrip()}")
 
-                self.lgr.info("{} ({}) converted to a jail.".format(uuid,
-                                                                    old_tag))
+                logit({
+                    "level"  : "INFO",
+                    "message": f"{uuid} ({old_tag}) converted to a jail."
+                })
                 self.lgr.disabled = True
 
         self.json_check_prop(key, value, conf)
         self.json_write(conf)
-        self.lgr.info(
-            "Property: {} has been updated to {}".format(key, value))
+        logit({
+            "level"  : "INFO",
+            "message":
+                f"Property: {key} has been updated to {value}"
+        })
 
         # Used for import
         if not create_func:
@@ -446,11 +465,11 @@ class IOCJson(object):
 
             if key in jail_params:
                 try:
-                    checkoutput(["jail", "-m", "jid={}".format(jid),
-                                 "{}={}".format(key, value)], stderr=STDOUT)
+                    checkoutput(["jail", "-m", f"jid={jid}",
+                                 f"{key}={value}"], stderr=STDOUT)
                 except CalledProcessError as err:
-                    raise RuntimeError("{}".format(
-                        err.output.decode("utf-8").rstrip()))
+                    raise RuntimeError(
+                        f"{err.output.decode('utf-8').rstrip()}")
 
     @staticmethod
     def json_get_version():
@@ -683,7 +702,10 @@ class IOCJson(object):
                 err = f"{value} is not a valid value for {key}.\n"
 
                 if self.cli:
-                    self.lgr.error(f"{err}")
+                    logit({
+                        "level"  : "ERROR",
+                        "message": f"{err}"
+                    })
                 else:
                     err = f"{err}"
 
@@ -741,12 +763,12 @@ class IOCJson(object):
 
     def json_plugin_load(self):
         try:
-            with open("{}/plugin/settings.json".format(
-                    self.location), "r") as settings:
+            with open(f"{self.location}/plugin/settings.json", "r") as \
+                    settings:
                 settings = json.load(settings)
         except (IOError, OSError):
             raise RuntimeError(
-                "No settings.json exists in {}/plugin!".format(self.location))
+                f"No settings.json exists in {self.location}/plugin!")
 
         return settings
 
@@ -758,8 +780,7 @@ class IOCJson(object):
         uuid = conf["host_hostuuid"]
         tag = conf["tag"]
         _path = checkoutput(["zfs", "get", "-H", "-o", "value", "mountpoint",
-                             "{}/iocage/jails/{}".format(pool,
-                                                         uuid)]).rstrip()
+                             f"{pool}/iocage/jails/{uuid}"]).rstrip()
         # Plugin variables
         settings = self.json_plugin_load()
         serviceget = settings["serviceget"]
@@ -770,7 +791,7 @@ class IOCJson(object):
         else:
             _prop = prop
 
-        prop_cmd = "{},{}".format(serviceget, ",".join(_prop)).split(",")
+        prop_cmd = f"{serviceget},{','.join(_prop)}".split(",")
         try:
             if prop[0] != "all":
                 if len(_prop) > 1:
@@ -781,7 +802,7 @@ class IOCJson(object):
                 return settings
         except KeyError:
             raise RuntimeError(
-                "Key: \"{}\" does not exist!".format(prop_error))
+                f"Key: \"{prop_error}\" does not exist!")
 
     def json_plugin_set_value(self, prop):
         from iocage.lib.ioc_exec import IOCExec
@@ -792,8 +813,7 @@ class IOCJson(object):
         uuid = conf["host_hostuuid"]
         tag = conf["tag"]
         _path = checkoutput(["zfs", "get", "-H", "-o", "value", "mountpoint",
-                             "{}/iocage/jails/{}".format(pool,
-                                                         uuid)]).rstrip()
+                             f"{pool}/iocage/jails/{uuid}"]).rstrip()
         status, _ = IOCList().list_get_jid(uuid)
 
         # Plugin variables
@@ -807,7 +827,7 @@ class IOCJson(object):
         if "options" in prop:
             prop = keys.split(".")[1:]
 
-        prop_cmd = "{},{},{}".format(serviceset, ",".join(prop), value).split(
+        prop_cmd = f"{serviceset},{','.join(prop)},{value}".split(
             ",")
         setting = settings["options"]
 
@@ -828,15 +848,26 @@ class IOCJson(object):
 
             if status:
                 # IOCExec will not show this if it doesn't start the jail.
-                self.lgr.info("Command output:")
+                logit({
+                    "level"  : "INFO",
+                    "message": "Command output:"
+                })
             IOCExec(prop_cmd, uuid, tag, _path).exec_jail()
 
             if restart:
-                self.lgr.info("\n-- Restarting service --")
-                self.lgr.info("Command output:")
+                logit({
+                    "level"  : "INFO",
+                    "message": "\n-- Restarting service --"
+                })
+                logit({
+                    "level"  : "INFO",
+                    "message": "Command output:"
+                })
                 IOCExec(servicerestart, uuid, tag, _path).exec_jail()
 
-            self.lgr.info("\nKey: {} has been updated to {}".format(keys,
-                                                                    value))
+            logit({
+                "level"  : "INFO",
+                "message": f"\nKey: {keys} has been updated to {value}"
+            })
         except KeyError:
-            raise RuntimeError("Key: \"{}\" does not exist!".format(key))
+            raise RuntimeError(f"Key: \"{key}\" does not exist!")

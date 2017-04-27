@@ -1,6 +1,4 @@
 """Destroy all of a dataset type."""
-import logging
-
 import libzfs
 
 from iocage.lib.ioc_destroy import IOCDestroy
@@ -12,7 +10,6 @@ class IOCClean(object):
 
     def __init__(self):
         self.pool = IOCJson().json_get_value("pool")
-        self.lgr = logging.getLogger('ioc_clean')
 
     def clean_jails(self):
         """Cleans all jails and their respective snapshots."""

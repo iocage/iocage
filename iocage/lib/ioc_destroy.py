@@ -1,7 +1,6 @@
 """iocage destroy module."""
 import glob
 import json
-import logging
 import os
 import shutil
 from subprocess import CalledProcessError, PIPE, Popen, check_call
@@ -20,7 +19,6 @@ class IOCDestroy(object):
     def __init__(self):
         self.pool = IOCJson().json_get_value("pool")
         self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
-        self.lgr = logging.getLogger('ioc_destroy')
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.ds = self.zfs.get_dataset
 
@@ -39,7 +37,7 @@ class IOCDestroy(object):
                 try:
                     check_call(["jail", "-r", jid[0]])
                 except CalledProcessError as err:
-                    raise RuntimeError("{}".format(err))
+                    raise RuntimeError(f"{err}")
         else:
             jid = Popen(["jls", "jid"], stdout=PIPE).communicate()[0].decode(
                 "utf-8").split()
@@ -48,7 +46,7 @@ class IOCDestroy(object):
                 try:
                     check_call(["jail", "-r", j])
                 except CalledProcessError as err:
-                    raise RuntimeError("{}".format(err))
+                    raise RuntimeError(f"{err}")
 
     def __destroy_leftovers__(self, dataset, clean=False):
         """Removes tags, parent datasets and logs."""

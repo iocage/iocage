@@ -1,6 +1,5 @@
 """iocage create module."""
 import json
-import logging
 import os
 import uuid
 from datetime import datetime
@@ -20,7 +19,8 @@ class IOCCreate(object):
 
     def __init__(self, release, props, num, pkglist=None, plugin=False,
                  migrate=False, config=None, silent=False, template=False,
-                 short=False, basejail=False, empty=False, uuid=None):
+                 short=False, basejail=False, empty=False, uuid=None,
+                 callback=None):
         self.pool = IOCJson().json_get_value("pool")
         self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
         self.release = release
@@ -35,10 +35,8 @@ class IOCCreate(object):
         self.basejail = basejail
         self.empty = empty
         self.uuid = uuid
-        self.lgr = logging.getLogger('ioc_create')
-
-        if silent:
-            self.lgr.disabled = True
+        self.silent = silent
+        self.callback = callback
 
     def create_jail(self):
         """
@@ -56,7 +54,7 @@ class IOCCreate(object):
         if self.short:
             jail_uuid = jail_uuid[:8]
 
-        location = "{}/jails/{}".format(self.iocroot, jail_uuid)
+        location = f"{self.iocroot}/jails/{jail_uuid}"
 
         if os.path.isdir(location):
             raise RuntimeError("The UUID is already in use by another jail.")
@@ -95,50 +93,45 @@ class IOCCreate(object):
                 # UnboundLocalError as the missing file will kick the
                 # migration routine for zfs props. We don't need that :)
                 if self.template:
-                    raise RuntimeError("Template: {} not found!".format(
-                        self.release))
+                    raise RuntimeError(f"Template: {self.release} not found!")
                 else:
-                    raise RuntimeError("RELEASE: {} not found!".format(
-                        self.release))
+                    raise RuntimeError(f"RELEASE: {self.release} not found!")
 
             config = self.create_config(jail_uuid, cloned_release)
-        jail = "{}/iocage/jails/{}/root".format(self.pool, jail_uuid)
+        jail = f"{self.pool}/iocage/jails/{jail_uuid}/root"
 
         if self.template:
             try:
                 check_call(["zfs", "snapshot",
-                            "{}/iocage/templates/{}/root@{}".format(
-                                self.pool, self.release, jail_uuid)],
-                           stderr=PIPE)
+                            f"{self.pool}/iocage/templates/{self.release}/"
+                            f"root@{jail_uuid}"], stderr=PIPE)
             except CalledProcessError:
-                raise RuntimeError("Template: {} not found!".format(
-                    self.release))
+                raise RuntimeError(f"Template: {self.release} not found!")
 
             Popen(["zfs", "clone", "-p",
-                   "{}/iocage/templates/{}/root@{}".format(
-                       self.pool, self.release, jail_uuid),
-                   jail], stdout=PIPE).communicate()
+                   f"{self.pool}/iocage/templates/{self.release}/root@"
+                   f"{jail_uuid}", jail], stdout=PIPE).communicate()
 
             # self.release is actually the templates name
-            config["release"] = IOCJson("{}/templates/{}".format(
-                self.iocroot, self.release)).json_get_value("release")
-            config["cloned_release"] = IOCJson("{}/templates/{}".format(
-                self.iocroot, self.release)).json_get_value("cloned_release")
+            config["release"] = IOCJson(
+                f"{self.iocroot}/templates/{self.release}").json_get_value(
+                "release")
+            config["cloned_release"] = IOCJson(
+                f"{self.iocroot}/templates/{self.release}").json_get_value(
+                "cloned_release")
         else:
             if not self.empty:
                 try:
                     check_call(["zfs", "snapshot",
-                                "{}/iocage/releases/{}/root@{}".format(
-                                    self.pool, self.release, jail_uuid)],
-                               stderr=PIPE)
+                                f"{self.pool}/iocage/releases/{self.release}/"
+                                f"root@{jail_uuid}"], stderr=PIPE)
                 except CalledProcessError:
                     raise RuntimeError(
-                        "RELEASE: {} not found!".format(self.release))
+                        f"RELEASE: {self.release} not found!")
 
                 Popen(["zfs", "clone", "-p",
-                       "{}/iocage/releases/{}/root@{}".format(
-                           self.pool, self.release, jail_uuid),
-                       jail], stdout=PIPE).communicate()
+                       f"{self.pool}/iocage/releases/{self.release}/root@"
+                       f"{jail_uuid}", jail], stdout=PIPE).communicate()
             else:
                 try:
                     checkoutput(["zfs", "create", "-p", jail], stderr=PIPE)
@@ -171,7 +164,7 @@ class IOCCreate(object):
             iocjson.json_write(config)
 
         # Just "touch" the fstab file, since it won't exist.
-        open("{}/jails/{}/fstab".format(self.iocroot, jail_uuid), "wb").close()
+        open(f"{self.iocroot}/jails/{jail_uuid}/fstab", "wb").close()
         _tag = self.create_link(jail_uuid, config["tag"])
         config["tag"] = _tag
 
@@ -211,12 +204,19 @@ class IOCCreate(object):
             logit({
                 "level": "INFO",
                 "message": msg
-            })
+            },
+                _callback=self.callback,
+                silent=self.silent)
 
         if self.pkglist:
             if config["ip4_addr"] == "none" and config["ip6_addr"] == "none":
-                self.lgr.warning(" You need an IP address for the"
-                                 " jail to install packages!\n")
+                logit({
+                    "level"  : "WARNING",
+                    "message": " You need an IP address for the jail to"
+                               "install packages!\n"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
             else:
                 self.create_install_packages(jail_uuid, location, _tag, config)
 
@@ -284,76 +284,76 @@ class IOCCreate(object):
             "host_hostuuid"        : jail_uuid,
             "allow_set_hostname"   : "1",
             "allow_sysvipc"        : "0",
-            "allow_raw_sockets"    : "0",
-            "allow_chflags"        : "0",
-            "allow_mount"          : "0",
-            "allow_mount_devfs"    : "0",
-            "allow_mount_nullfs"   : "0",
-            "allow_mount_procfs"   : "0",
-            "allow_mount_tmpfs"    : "0",
-            "allow_mount_zfs"      : "0",
-            "allow_quotas"         : "0",
-            "allow_socket_af"      : "0",
+            "allow_raw_sockets"  : "0",
+            "allow_chflags"      : "0",
+            "allow_mount"        : "0",
+            "allow_mount_devfs"  : "0",
+            "allow_mount_nullfs" : "0",
+            "allow_mount_procfs" : "0",
+            "allow_mount_tmpfs"  : "0",
+            "allow_mount_zfs"    : "0",
+            "allow_quotas"       : "0",
+            "allow_socket_af"    : "0",
             # RCTL limits
-            "cpuset"               : "off",
-            "rlimits"              : "off",
-            "memoryuse"            : "off",
-            "memorylocked"         : "off",
-            "vmemoryuse"           : "off",
-            "maxproc"              : "off",
-            "cputime"              : "off",
-            "pcpu"                 : "off",
-            "datasize"             : "off",
-            "stacksize"            : "off",
-            "coredumpsize"         : "off",
-            "openfiles"            : "off",
-            "pseudoterminals"      : "off",
-            "swapuse"              : "off",
-            "nthr"                 : "off",
-            "msgqqueued"           : "off",
-            "msgqsize"             : "off",
-            "nmsgq"                : "off",
-            "nsemop"               : "off",
-            "nshm"                 : "off",
-            "shmsize"              : "off",
-            "wallclock"            : "off",
+            "cpuset"             : "off",
+            "rlimits"            : "off",
+            "memoryuse"          : "off",
+            "memorylocked"       : "off",
+            "vmemoryuse"         : "off",
+            "maxproc"            : "off",
+            "cputime"            : "off",
+            "pcpu"               : "off",
+            "datasize"           : "off",
+            "stacksize"          : "off",
+            "coredumpsize"       : "off",
+            "openfiles"          : "off",
+            "pseudoterminals"    : "off",
+            "swapuse"            : "off",
+            "nthr"               : "off",
+            "msgqqueued"         : "off",
+            "msgqsize"           : "off",
+            "nmsgq"              : "off",
+            "nsemop"             : "off",
+            "nshm"               : "off",
+            "shmsize"            : "off",
+            "wallclock"          : "off",
             # Custom properties
-            "type"                 : "jail",
-            "tag"                  : datetime.utcnow().strftime("%F@%T:%f"),
-            "bpf"                  : "off",
-            "dhcp"                 : "off",
-            "boot"                 : "off",
-            "notes"                : "none",
-            "owner"                : "root",
-            "priority"             : "99",
-            "last_started"         : "none",
-            "release"              : release,
-            "cloned_release"       : self.release,
-            "template"             : "no",
-            "hostid"               : hostid,
-            "jail_zfs"             : "off",
-            "jail_zfs_dataset"     : "iocage/jails/{}/data".format(jail_uuid),
-            "jail_zfs_mountpoint"  : "none",
-            "mount_procfs"         : "0",
-            "mount_linprocfs"      : "0",
-            "count"                : "1",
-            "vnet"                 : "off",
-            "basejail"             : "no",
-            "comment"              : "none",
+            "type"               : "jail",
+            "tag"                : datetime.utcnow().strftime("%F@%T:%f"),
+            "bpf"                : "off",
+            "dhcp"               : "off",
+            "boot"               : "off",
+            "notes"              : "none",
+            "owner"              : "root",
+            "priority"           : "99",
+            "last_started"       : "none",
+            "release"            : release,
+            "cloned_release"     : self.release,
+            "template"           : "no",
+            "hostid"             : hostid,
+            "jail_zfs"           : "off",
+            "jail_zfs_dataset"   : f"iocage/jails/{jail_uuid}/data",
+            "jail_zfs_mountpoint": "none",
+            "mount_procfs"       : "0",
+            "mount_linprocfs"    : "0",
+            "count"              : "1",
+            "vnet"               : "off",
+            "basejail"           : "no",
+            "comment"            : "none",
             # Sync properties
-            "sync_state"           : "none",
-            "sync_target"          : "none",
-            "sync_tgt_zpool"       : "none",
+            "sync_state"         : "none",
+            "sync_target"        : "none",
+            "sync_tgt_zpool"     : "none",
             # Native ZFS properties
-            "compression"          : "lz4",
-            "origin"               : "readonly",
-            "quota"                : "none",
-            "mountpoint"           : "readonly",
-            "compressratio"        : "readonly",
-            "available"            : "readonly",
-            "used"                 : "readonly",
-            "dedup"                : "off",
-            "reservation"          : "none",
+            "compression"        : "lz4",
+            "origin"             : "readonly",
+            "quota"              : "none",
+            "mountpoint"         : "readonly",
+            "compressratio"      : "readonly",
+            "available"          : "readonly",
+            "used"               : "readonly",
+            "dedup"              : "off",
+            "reservation"        : "none",
         }
 
         return default_props
@@ -370,12 +370,11 @@ class IOCCreate(object):
             resolver = config["resolver"]
 
             if resolver != "/etc/resolv.conf" and resolver != "none":
-                with open("{}/etc/resolv.conf".format(location),
-                          "w") as resolv_conf:
+                with open(f"{location}/etc/resolv.conf", "w") as resolv_conf:
                     for line in resolver.split(";"):
                         resolv_conf.write(line + "\n")
             else:
-                copy(resolver, "{}/root/etc/resolv.conf".format(location))
+                copy(resolver, f"{location}/root/etc/resolv.conf")
 
             status, jid = IOCList().list_get_jid(jail_uuid)
 
@@ -383,7 +382,12 @@ class IOCCreate(object):
         srv_connect_cmd = ["drill", "_http._tcp.pkg.freebsd.org", "SRV"]
         dnssec_connect_cmd = ["drill", "-D", "pkg.freebsd.org"]
 
-        self.lgr.info("Testing SRV response to FreeBSD")
+        logit({
+            "level"  : "INFO",
+            "message": "Testing SRV response to FreeBSD"
+        },
+            _callback=self.callback,
+            silent=self.silent)
         srv_connection = IOCExec(srv_connect_cmd, jail_uuid, _tag, location,
                                  plugin=self.plugin).exec_jail()
 
@@ -391,7 +395,12 @@ class IOCCreate(object):
             raise RuntimeError(f"{srv_connection}\n"
                                f"Command run: {' '.join(srv_connect_cmd)}")
 
-        self.lgr.info("Testing DNSSEC response to FreeBSD")
+        logit({
+            "level"  : "INFO",
+            "message": "Testing DNSSEC response to FreeBSD"
+        },
+            _callback=self.callback,
+            silent=self.silent)
         dnssec_connection = IOCExec(dnssec_connect_cmd, jail_uuid, _tag,
                                     location, plugin=self.plugin).exec_jail()
 
@@ -403,7 +412,12 @@ class IOCCreate(object):
             with open(self.pkglist, "r") as j:
                 self.pkglist = json.load(j)["pkgs"]
 
-        self.lgr.info("\nInstalling pkg... ")
+        logit({
+            "level"  : "INFO",
+            "message": "\nInstalling pkg... "
+        },
+            _callback=self.callback,
+            silent=self.silent)
         # To avoid a user being prompted about pkg.
         Popen(["pkg-static", "-j", jid, "install", "-q", "-y",
                "pkg"], stderr=PIPE).communicate()
@@ -415,21 +429,41 @@ class IOCCreate(object):
                               plugin=self.plugin).exec_jail()
 
         if pkg_upgrade:
-            self.lgr.error(f"{pkg_upgrade}")
+            logit({
+                "level"  : "ERROR",
+                "message": f"{pkg_upgrade}"
+            },
+                _callback=self.callback,
+                silent=self.silent)
             err = True
 
-        self.lgr.info("Installing supplied packages:")
+        logit({
+            "level"  : "INFO",
+            "message": "Installing supplied packages:"
+        },
+            _callback=self.callback,
+            silent=self.silent)
         for pkg in self.pkglist:
-            self.lgr.info("  - {}... ".format(pkg))
+            logit({
+                "level"  : "INFO",
+                "message": f"  - {pkg}... "
+            },
+                _callback=self.callback,
+                silent=self.silent)
             cmd = ("pkg", "install", "-q", "-y", pkg)
             pkg_install = IOCExec(cmd, jail_uuid, _tag, location,
                                   plugin=self.plugin).exec_jail()
 
             if pkg_install:
-                self.lgr.error("{}".format(pkg_install))
+                logit({
+                    "level"  : "ERROR",
+                    "message": f"{pkg_install}"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
                 err = True
 
-        os.remove("{}/root/etc/resolv.conf".format(location))
+        os.remove(f"{location}/root/etc/resolv.conf")
 
         if status:
             IOCStop(jail_uuid, _tag, location, config, silent=True)
@@ -443,44 +477,45 @@ class IOCCreate(object):
         """
         # If this exists, another jail has used this tag.
         try:
-            readlink_mount = os.readlink(
-                "{}/tags/{}".format(self.iocroot, tag))
+            readlink_mount = os.readlink(f"{self.iocroot}/tags/{tag}")
             readlink_uuid = [m for m in readlink_mount.split("/") if len(m)
                              == 36 or len(m) == 8][0]
         except OSError:
             pass
 
         tag_date = datetime.utcnow().strftime("%F@%T:%f")
-        jail_location = "{}/jails/{}".format(self.iocroot, jail_uuid)
+        jail_location = f"{self.iocroot}/jails/{jail_uuid}"
 
-        if not os.path.exists("{}/tags".format(self.iocroot)):
-            os.mkdir("{}/tags".format(self.iocroot))
+        if not os.path.exists(f"{self.iocroot}/tags"):
+            os.mkdir(f"{self.iocroot}/tags")
 
-        if not os.path.exists("{}/tags/{}".format(self.iocroot, tag)):
+        if not os.path.exists(f"{self.iocroot}/tags/{tag}"):
             # We can have stale tags sometimes that aren't valid
             try:
-                os.remove("{}/tags/{}".format(self.iocroot, tag))
+                os.remove(f"{self.iocroot}/tags/{tag}")
             except OSError:
                 pass
 
             try:
-                os.remove("{}/tags/{}".format(self.iocroot, old_tag))
+                os.remove(f"{self.iocroot}/tags/{old_tag}")
             except OSError:
                 pass
             finally:
-                os.symlink(jail_location, "{}/tags/{}".format(self.iocroot,
-                                                              tag))
+                os.symlink(jail_location, f"{self.iocroot}/tags/{tag}")
 
                 return tag
         else:
-            self.lgr.warning("\n  tag: \"{}\" in use by {}!\n".format(
-                tag, readlink_uuid) + "  Renaming {}'s tag to {}.\n".format(
-                jail_uuid, tag_date))
+            logit({
+                "level"  : "WARNING",
+                "message": f"\n  tag: \"{tag}\" in use by {readlink_uuid}!\n"
+                           f"  Renaming {jail_uuid}'s tag to {tag_date}.\n"
+            },
+                _callback=self.callback,
+                silent=self.silent)
 
-            os.symlink(jail_location, "{}/tags/{}".format(self.iocroot,
-                                                          tag_date))
+            os.symlink(jail_location, f"{self.iocroot}/tags/{tag_date}")
             IOCJson(jail_location, silent=True).json_set_value(
-                "tag={}".format(tag_date), create_func=True)
+                f"tag={tag_date}", create_func=True)
 
             return tag_date
 
@@ -503,5 +538,5 @@ syslogd_flags="-c -ss"
 ipv6_activate_all_interfaces=\"YES\"
 """
 
-        with open("{}/root/etc/rc.conf".format(location), "w") as rc_conf:
+        with open(f"{location}/root/etc/rc.conf", "w") as rc_conf:
             rc_conf.write(rcconf.format(hostname=host_hostname))

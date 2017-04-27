@@ -11,12 +11,10 @@ from iocage.lib.ioc_json import IOCJson
 class IOCCheck(object):
     """Checks if the required iocage datasets are present"""
 
-    def __init__(self, silent=False):
+    def __init__(self, silent=False, callback=None):
         self.pool = IOCJson(silent=silent).json_get_value("pool")
-        self.lgr = logging.getLogger('ioc_check')
-
-        if silent:
-            self.lgr.disabled = True
+        self.callback = callback
+        self.silent = silent
 
         self.__check_datasets__()
 
@@ -47,7 +45,10 @@ class IOCCheck(object):
                                        " datasets!")
 
                 if "deactivate" not in sys.argv[1:]:
-                    self.lgr.info("Creating {}/{}".format(self.pool, dataset))
+                    logit({
+                        "level"  : "INFO",
+                        "message": f"Creating f{self.pool}/{dataset}"
+                    })
                     if dataset == "iocage":
                         if len(dups) != 0:
                             mount = "mountpoint=/{}/iocage".format(self.pool)
