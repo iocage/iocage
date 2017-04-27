@@ -5,18 +5,19 @@ import zipfile
 from datetime import datetime
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
 
-from iocage.lib.ioc_common import checkoutput
+from iocage.lib.ioc_common import checkoutput, logit
 from iocage.lib.ioc_json import IOCJson
 
 
 class IOCImage(object):
     """export() and import()"""
 
-    def __init__(self, callback=None):
-        self.callback = callback
+    def __init__(self, callback=None, silent=False):
         self.pool = IOCJson().json_get_value("pool")
         self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
         self.date = datetime.utcnow().strftime("%F")
+        self.callback = callback
+        self.silent = silent
 
     def export_jail(self, uuid, tag, path):
         """Make a recursive snapshot of the jail and export to a file."""
@@ -54,15 +55,17 @@ class IOCImage(object):
             # does not work how one expects.
             try:
                 with open(_image, "wb") as export:
-                    if callable(self.callback):
-                        self.callback(f"Exporting dataset: {dataset}")
+                    msg = f"Exporting dataset: {dataset}"
+                    logit({"level": "INFO", "message": msg}, self.callback,
+                          silent=self.silent)
 
                     check_call(["zfs", "send", target], stdout=export)
             except CalledProcessError as err:
                 raise RuntimeError(err)
 
-        if callable(self.callback):
-            self.callback(f"\nPreparing zip file: {image}.zip.")
+        msg = f"\nPreparing zip file: {image}.zip."
+        logit({"level": "INFO", "message": msg}, self.callback,
+              silent=self.silent)
 
         with zipfile.ZipFile(f"{image}.zip", "w",
                              compression=zipfile.ZIP_DEFLATED,
@@ -82,8 +85,9 @@ class IOCImage(object):
         except CalledProcessError as err:
             raise RuntimeError(f"{err.output.decode('utf-8').rstrip()}")
 
-        if callable(self.callback):
-            self.callback("\nExported: {}.zip".format(image))
+        msg = f"\nExported: {image}.zip"
+        logit({"level": "INFO", "message": msg}, self.callback,
+              silent=self.silent)
 
     def import_jail(self, jail):
         """Import from an iocage export."""
@@ -125,8 +129,9 @@ class IOCImage(object):
                 z_split_str = "/".join(z_split)
                 _z = z_split_str.replace("iocage/images/", "")
 
-                if callable(self.callback):
-                    self.callback("Importing dataset: {}".format(_z))
+                msg = f"Importing dataset: {_z}"
+                logit({"level": "INFO", "message": msg}, self.callback,
+                      silent=self.silent)
 
                 dataset = _import.read(z)
                 recv = Popen(cmd, stdin=PIPE)
@@ -146,5 +151,6 @@ class IOCImage(object):
         tag = IOCJson(f"{self.iocroot}/jails/{uuid}",
                       silent=True).json_set_value(f"tag={tag}")
 
-        if callable(self.callback):
-            self.callback(f"\nImported: {uuid} ({tag})")
+        msg = f"\nImported: {uuid} ({tag})"
+        logit({"level": "INFO", "message": msg}, self.callback,
+              silent=self.silent)
