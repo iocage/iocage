@@ -1,8 +1,7 @@
 """iocage exec module."""
-import logging
-from subprocess import CalledProcessError, Popen, STDOUT, PIPE
+from subprocess import CalledProcessError, PIPE, Popen, STDOUT
 
-from iocage.lib.ioc_common import checkoutput
+from iocage.lib.ioc_common import checkoutput, logit
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 from iocage.lib.ioc_start import IOCStart
@@ -12,7 +11,8 @@ class IOCExec(object):
     """Run jexec with a user inside the specified jail."""
 
     def __init__(self, command, uuid, tag, path, host_user="root",
-                 jail_user=None, plugin=False, skip=False):
+                 jail_user=None, plugin=False, skip=False, silent=False,
+                 callback=None):
         self.command = command
         self.uuid = uuid
         self.tag = tag
@@ -21,7 +21,8 @@ class IOCExec(object):
         self.jail_user = jail_user
         self.plugin = plugin
         self.skip = skip
-        self.lgr = logging.getLogger('ioc_exec')
+        self.silent = silent
+        self.callback = callback
 
     def exec_jail(self):
         if self.jail_user:
@@ -36,26 +37,34 @@ class IOCExec(object):
         exec_fib = conf["exec_fib"]
         if not status:
             if not self.plugin and not self.skip:
-                self.lgr.info("{} ({}) is not running, starting jail.".format(
-                    self.uuid, self.tag))
+                logit({
+                    "level"  : "INFO",
+                    "message": f"{self.uuid} ({self.tag}) is not running,"
+                               " starting jail"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
 
             if conf["type"] in ("jail", "plugin"):
                 IOCStart(self.uuid, self.tag, self.path, conf, silent=True)
             elif conf["type"] == "basejail":
                 raise RuntimeError(
-                    "Please run \"iocage migrate\" before trying"
-                    " to start {} ({})".format(self.uuid,
-                                               self.tag))
+                    "Please run \"iocage migrate\" before trying to start"
+                    f" {self.uuid} ({self.tag})")
             elif conf["type"] == "template":
                 raise RuntimeError(
-                    "Please convert back to a jail before trying"
-                    " to start {} ({})".format(self.uuid,
-                                               self.tag))
+                    "Please convert back to a jail before trying to start"
+                    f" {self.uuid} ({self.tag})")
             else:
-                raise RuntimeError("{} is not a supported jail type.".format(
-                    conf["type"]
-                ))
-            self.lgr.info("\nCommand output:")
+                raise RuntimeError(f"{conf['type']} is not a supported jail"
+                                   " type.")
+
+            logit({
+                "level"  : "INFO",
+                "message": "\nCommand output:"
+            },
+                _callback=self.callback,
+                silent=self.silent)
 
         if self.plugin:
             try:

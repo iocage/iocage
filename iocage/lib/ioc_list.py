@@ -1,11 +1,10 @@
 """List all datasets by type"""
-import logging
 from subprocess import CalledProcessError, PIPE
 
 import libzfs
 from texttable import Texttable
 
-from iocage.lib.ioc_common import checkoutput, ioc_sort
+from iocage.lib.ioc_common import checkoutput, ioc_sort, logit
 from iocage.lib.ioc_json import IOCJson
 
 
@@ -24,7 +23,6 @@ class IOCList(object):
         self.pool = IOCJson().json_get_value("pool")
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.sort = _sort
-        self.lgr = logging.getLogger('ioc_list')
 
     def list_datasets(self, set=False):
         """Lists the datasets of given type."""
@@ -71,13 +69,22 @@ class IOCList(object):
                 paths[conf["tag"]] = template
 
             if len(dups):
-                self.lgr.error(f"Duplicate tag ({tag}) detected!")
+                logit({
+                    "level"  : "ERROR",
+                    "message": f"Duplicate tag ({tag}) detected!"
+                })
                 for d, t in sorted(dups.items()):
                     u = [m for m in d.split("/") if len(m) == 36 or len(m)
                          == 8][0]
-                    self.lgr.error("  {} ({})".format(u, t))
-                self.lgr.error("\nPlease run \"iocage set tag=NEWTAG "
-                               "UUID\" for one of the UUID's.")
+                    logit({
+                        "level"  : "ERROR",
+                        "message": f"  {u} ({t})"
+                    })
+                logit({
+                    "level"  : "ERROR",
+                    "message": "\nPlease run \"iocage set tag=NEWTAG "
+                               "UUID\" for one of the UUID's."
+                })
                 raise RuntimeError()
 
             return jails, paths
@@ -102,7 +109,7 @@ class IOCList(object):
             uuid = conf["host_hostuuid"]
             full_ip4 = conf["ip4_addr"]
             ip6 = conf["ip6_addr"]
-            jail_root = "{}/iocage/jails/{}/root".format(self.pool, uuid)
+            jail_root = f"{self.pool}/iocage/jails/{uuid}/root"
 
             try:
                 short_ip4 = full_ip4.split("|")[1].split("/")[0]
@@ -115,9 +122,8 @@ class IOCList(object):
             full_release = conf["release"]
 
             if "HBSD" in full_release:
-                full_release = "{}-STABLE-HBSD".format(full_release.split(
-                    ".")[0])
-                short_release = "{}-STABLE".format(full_release.rsplit("-")[0])
+                full_release = f"{full_release.split('.')[0]}.-STABLE-HBSD"
+                short_release = f"{full_release.rsplit('-')[0]}-STABLE"
             else:
                 short_release = "-".join(full_release.rsplit("-")[:2])
 
@@ -200,7 +206,7 @@ class IOCList(object):
     def list_get_jid(cls, uuid):
         """Return a tuple containing True or False and the jail's id or '-'."""
         try:
-            jid = checkoutput(["jls", "-j", "ioc-{}".format(uuid)],
+            jid = checkoutput(["jls", "-j", f"ioc-{uuid}"],
                               stderr=PIPE).split()[5]
             return (True, jid)
         except CalledProcessError:

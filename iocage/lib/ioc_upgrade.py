@@ -1,5 +1,4 @@
 """iocage upgrade module"""
-import logging
 import os
 from subprocess import PIPE, Popen
 from tempfile import NamedTemporaryFile
@@ -14,7 +13,6 @@ class IOCUpgrade(object):
     """Will upgrade a jail to the specified RELEASE."""
 
     def __init__(self, conf, new_release, path):
-        self.lgr = logging.getLogger("ioc_upgrade")
         self.pool = IOCJson().json_get_value("pool")
         self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
         self.freebsd_version = checkoutput(["freebsd-version"])
