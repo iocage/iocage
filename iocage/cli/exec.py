@@ -1,9 +1,9 @@
 """exec module for the cli."""
 import click
 
+from iocage.lib.ioc_common import logit
 from iocage.lib.ioc_exec import IOCExec
 from iocage.lib.ioc_list import IOCList
-from iocage.lib.ioc_logger import IOCLogger
 
 __cmdname__ = "exec_cmd"
 __rootcmd__ = True
@@ -20,19 +20,23 @@ __rootcmd__ = True
 def exec_cmd(command, jail, host_user, jail_user):
     """Runs the command given inside the specified jail as the supplied
     user."""
-    lgr = IOCLogger().cli_log()
-
     # We may be getting ';', '&&' and so forth. Adding the shell for safety.
     if len(command) == 1:
         command = ("/bin/sh", "-c") + command
 
     if jail.startswith("-"):
-        lgr.critical("Please specify a jail first!")
+        logit({
+            "level"  : "ERROR",
+            "message": "Please specify a jail first!"
+        })
         exit(1)
 
     if host_user and jail_user:
-        lgr.critical("Please only specify either host_user or"
-                     " jail_user, not both!")
+        logit({
+            "level"  : "ERROR",
+            "message": "Please only specify either host_user or"
+                       " jail_user, not both!"
+        })
         exit(1)
 
     jails, paths = IOCList("uuid").list_datasets()
@@ -43,19 +47,33 @@ def exec_cmd(command, jail, host_user, jail_user):
         tag, uuid = next(iter(_jail.items()))
         path = paths[tag]
     elif len(_jail) > 1:
-        lgr.error("Multiple jails found for"
-                  " {}:".format(jail))
+        logit({
+            "level"  : "ERROR",
+            "message": f"Multiple jails found for {jail}:"
+        })
         for t, u in sorted(_jail.items()):
-            lgr.error("  {} ({})".format(u, t))
-        raise RuntimeError()
+            logit({
+                "level"  : "ERROR",
+                "message": f"  {u} ({t})"
+            })
+        exit(1)
     else:
-        lgr.critical("{} not found!".format(jail))
+        logit({
+            "level"  : "ERROR",
+            "message": "{} not found!".format(jail)
+        })
         exit(1)
 
     msg, err = IOCExec(command, uuid, tag, path, host_user,
                        jail_user).exec_jail()
 
     if err:
-        lgr.error(err.decode())
+        logit({
+            "level"  : "ERROR",
+            "message": err.decode()
+        })
     else:
-        lgr.info(msg.decode("utf-8"))
+        logit({
+            "level"  : "INFO",
+            "message": msg.decode("utf-8")
+        })

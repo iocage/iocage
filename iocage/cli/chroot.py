@@ -3,8 +3,8 @@ from subprocess import PIPE, Popen
 
 import click
 
+from iocage.lib.ioc_common import logit
 from iocage.lib.ioc_list import IOCList
-from iocage.lib.ioc_logger import IOCLogger
 
 __cmdname__ = "chroot_cmd"
 __rootcmd__ = True
@@ -39,7 +39,6 @@ def umount(path, _type):
 @click.argument("command", nargs=-1, type=click.UNPROCESSED)
 def chroot_cmd(jail, command):
     """Will chroot into a jail regardless if it's running."""
-    lgr = IOCLogger().cli_log()
     jails, paths = IOCList("uuid").list_datasets()
     command = list(command)
 
@@ -58,25 +57,39 @@ def chroot_cmd(jail, command):
         path = paths[tag]
 
     elif len(_jail) > 1:
-        lgr.error("Multiple jails found for"
-                  " {}:".format(jail))
+        logit({
+            "level"  : "ERROR",
+            "message": f"Multiple jails found for {jail}:"
+        })
         for t, u in sorted(_jail.items()):
-            lgr.critical("  {} ({})".format(u, t))
+            logit({
+                "level"  : "INFO",
+                "message": f"  {u} ({t})"
+            })
         exit(1)
     else:
-        lgr.critical("{} not found!".format(jail))
+        logit({
+            "level"  : "ERROR",
+            "message": f"{jail} not found!"
+        })
         exit(1)
 
     devfs_stderr = mount(f"{path}/root/dev", "devfs")
 
     if devfs_stderr:
-        lgr.critical("Mounting devfs failed!")
+        logit({
+            "level"  : "ERROR",
+            "message": "Mounting devfs failed!"
+        })
         exit(1)
 
     fstab_stderr = mount(f"{path}/fstab", "fstab")
 
     if fstab_stderr:
-        lgr.critical("Mounting devfs failed!")
+        logit({
+            "level"  : "ERROR",
+            "message": "Mounting fstab failed!"
+        })
         exit(1)
 
     chroot = Popen(["chroot", f"{path}/root"] + command)
@@ -84,7 +97,10 @@ def chroot_cmd(jail, command):
 
     udevfs_stderr = umount(f"{path}/root/dev", "devfs")
     if udevfs_stderr:
-        lgr.critical("Unmounting devfs failed!")
+        logit({
+            "level"  : "ERROR",
+            "message": "Unmounting devfs failed!"
+        })
         exit(1)
 
     ufstab_stderr = umount(f"{path}/fstab", "fstab")
@@ -93,8 +109,14 @@ def chroot_cmd(jail, command):
             # By default our fstab is empty and will throw this error.
             pass
         else:
-            lgr.critical("Unmounting fstab failed!")
+            logit({
+                "level"  : "ERROR",
+                "message": "Unmounting fstab failed!"
+            })
             exit(1)
 
     if chroot.returncode:
-        lgr.warning("Chroot had a non-zero exit code!")
+        logit({
+            "level"  : "WARNING",
+            "message": "Chroot had a non-zero exit code!"
+        })

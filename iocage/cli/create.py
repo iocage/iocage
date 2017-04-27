@@ -5,18 +5,14 @@ from json import JSONDecodeError
 
 import click
 
-from iocage.lib.ioc_common import checkoutput
+from iocage.lib.ioc_common import checkoutput, logit
 from iocage.lib.ioc_create import IOCCreate
 from iocage.lib.ioc_fetch import IOCFetch
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
-from iocage.lib.ioc_logger import IOCLogger
 
 __cmdname__ = "create_cmd"
 __rootcmd__ = True
-
-
-lgr = IOCLogger().cli_log()
 
 
 def validate_count(ctx, param, value):
@@ -27,7 +23,10 @@ def validate_count(ctx, param, value):
 
             return int(value)
         except ValueError:
-            lgr.error(f"{value} is not a valid integer.")
+            logit({
+                "level"  : "ERROR",
+                "message": f"({value} is not a valid  integer."
+            })
             exit(1)
     else:
         return int(value)
@@ -49,21 +48,29 @@ def validate_count(ctx, param, value):
 def create_cmd(release, template, count, props, pkglist, basejail, empty,
                short, uuid):
     if short and uuid:
-        lgr.critical(
-            "Can't use --short (-s) and --uuid (-u) at the same time!")
+        logit({
+            "level"  : "ERROR",
+            "message": "Can't use --short (-s) and  --uuid (-u) at the same"
+                       " time!"
+        })
         exit(1)
 
     if not template and not release and not empty:
-        lgr.critical("Must supply either --template (-t) or --release (-r)!")
+        logit({
+            "level"  : "ERROR",
+            "message": "Must supply either --template (-t) or --release (-r)!"
+        })
         exit(1)
 
     if release and "=" in release:
-        lgr.critical("Please supply a valid RELEASE!")
+        logit({
+            "level"  : "ERROR",
+            "message": "Please supply a valid RELEASE!"
+        })
         exit(1)
 
-    if template:
-        # We don't really care it's not a RELEASE at this point.
-        release = template
+    # We don't really care it's not a RELEASE at this point.
+    release = template if template else release
 
     if pkglist:
         _pkgformat = """
@@ -75,8 +82,12 @@ def create_cmd(release, template, count, props, pkglist, basejail, empty,
 }"""
 
         if not os.path.isfile(pkglist):
-            lgr.critical("{} does not exist!\nPlease supply a JSON file "
-                         "with the format:{}".format(pkglist, _pkgformat))
+            logit({
+                "level"  : "ERROR",
+                "message": f"{pkglist} does not exist!\n"
+                           "Please supply a JSON file with the format:"
+                           f" {_pkgformat}"
+            })
             exit(1)
         else:
             try:
@@ -84,8 +95,11 @@ def create_cmd(release, template, count, props, pkglist, basejail, empty,
                 with open(pkglist, "r") as p:
                     json.load(p)["pkgs"]  # noqa
             except JSONDecodeError:
-                lgr.critical("Please supply a valid JSON file with the"
-                             f" format:\n{_pkgformat}")
+                logit({
+                    "level"  : "ERROR",
+                    "message": "Please supply a valid"
+                               f" JSON file with the format:{_pkgformat}"
+                })
                 exit(1)
 
     pool = IOCJson().json_get_value("pool")
@@ -111,12 +125,22 @@ def create_cmd(release, template, count, props, pkglist, basejail, empty,
                       template=template, short=short, uuid=uuid,
                       basejail=basejail, empty=empty).create_jail()
         except RuntimeError as err:
-            lgr.error(err)
+            logit({
+                "level"  : "ERROR",
+                "message": err
+            })
+
             if template:
-                lgr.info("Created Templates:")
+                logit({
+                    "level"  : "INFO",
+                    "message": "Created Templates:"
+                })
                 templates = IOCList("template", hdr=False).list_datasets()
                 for temp in templates:
-                    lgr.info("  {}".format(temp[3]))
+                    logit({
+                        "level"  : "INFO",
+                        "message": f"  {temp[3]}"
+                    })
     else:
         for j in range(1, count + 1):
             try:
@@ -124,10 +148,19 @@ def create_cmd(release, template, count, props, pkglist, basejail, empty,
                           template=template, short=short,
                           basejail=basejail, empty=empty).create_jail()
             except RuntimeError as err:
-                lgr.error(err)
+                logit({
+                    "level"  : "ERROR",
+                    "message": err
+                })
                 if template:
-                    lgr.info("Created Templates:")
+                    logit({
+                        "level"  : "INFO",
+                        "message": "Created Templates:"
+                    })
                     templates = IOCList("template", hdr=False).list_datasets()
                     for temp in templates:
-                        lgr.info("  {}".format(temp[3]))
+                        logit({
+                            "level"  : "INFO",
+                            "message": f"  {temp[3]}"
+                        })
                 exit(1)

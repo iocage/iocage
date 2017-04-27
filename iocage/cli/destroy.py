@@ -1,10 +1,10 @@
 """destroy module for the cli."""
 import click
 
+from iocage.lib.ioc_common import logit
 from iocage.lib.ioc_destroy import IOCDestroy
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
-from iocage.lib.ioc_logger import IOCLogger
 
 __cmdname__ = "destroy_cmd"
 __rootcmd__ = True
@@ -19,8 +19,6 @@ __rootcmd__ = True
 @click.argument("jails", nargs=-1)
 def destroy_cmd(force, release, download, jails):
     """Destroys the jail's 2 datasets and the snapshot from the RELEASE."""
-    lgr = IOCLogger().cli_log()
-
     if download and not release:
         exit("--release (-r) must be specified as well!")
 
@@ -41,7 +39,10 @@ def destroy_cmd(force, release, download, jails):
                 IOCDestroy().__destroy_parse_datasets__(path)
                 exit()
             else:
-                lgr.critical(err)
+                logit({
+                    "level"  : "ERROR",
+                    "message": err
+                })
                 exit(1)
 
         for jail in jails:
@@ -52,18 +53,28 @@ def destroy_cmd(force, release, download, jails):
                 tag, uuid = next(iter(_jail.items()))
                 path = paths[tag]
             elif len(_jail) > 1:
-                lgr.error("Multiple jails found for"
-                          " {}:".format(jail))
+                logit({
+                    "level"  : "ERROR",
+                    "message": f"Multiple jails found for {jail}:"
+                })
                 for t, u in sorted(_jail.items()):
-                    lgr.critical("  {} ({})".format(u, t))
+                    logit({
+                        "level"  : "ERROR",
+                        "message": f"  {u} ({t})"
+                    })
                 exit(1)
             else:
-                lgr.critical("{} not found!".format(jail))
+                logit({
+                    "level"  : "ERROR",
+                    "message": f"{jail} not found!"
+                })
                 exit(1)
 
             if not force:
-                lgr.warning("\nThis will destroy"
-                            " jail {} ({})".format(uuid, tag))
+                logit({
+                    "level"  : "WARNING",
+                    "message": f"\nThis will destroy jail {uuid} ({tag})"
+                })
 
                 if not click.confirm("\nAre you sure?"):
                     continue  # no, continue to next jail
@@ -72,11 +83,17 @@ def destroy_cmd(force, release, download, jails):
 
             # If the jail is not running, let's do this thing.
             if status and not force:
-                lgr.critical(f"{uuid} ({tag}) is running.\nPlease stop "
-                             "it first!")
+                logit({
+                    "level"  : "ERROR",
+                    "message": f"{uuid} ({tag}) is running.\nPlease stop"
+                               " it first!"
+                })
                 exit(1)
             elif status and force:
-                lgr.info("Stopping {} ({}).".format(uuid, tag))
+                logit({
+                    "level"  : "INFO",
+                    "message": f"Stopping {uuid} ({tag})."
+                })
 
             IOCDestroy().destroy_jail(path)
     elif jails and release:
@@ -86,8 +103,11 @@ def destroy_cmd(force, release, download, jails):
             path = f"{pool}/iocage/releases/{release}"
 
             if not force:
-                lgr.warning(f"\nThis will destroy RELEASE: {release}")
-                lgr.warning("       and any jail that was created with it.")
+                logit({
+                    "level"  : "WARNING",
+                    "message": f"\nThis will destroy RELEASE: {release} and "
+                               "any jail that was created with it."
+                })
 
                 if not click.confirm("\nAre you sure?"):
                     continue
@@ -99,8 +119,14 @@ def destroy_cmd(force, release, download, jails):
                 IOCDestroy().__destroy_parse_datasets__(path)
 
     elif not jails and release:
-        lgr.critical("Please specify one or more RELEASEs!")
+        logit({
+            "level"  : "ERROR",
+            "message": "Please specify one or more RELEASEs!"
+        })
         exit(1)
     else:
-        lgr.critical("Please specify one or more jails!")
+        logit({
+            "level"  : "ERROR",
+            "message": "Please specify one or more jails!"
+        })
         exit(1)

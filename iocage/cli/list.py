@@ -1,8 +1,7 @@
 """list module for the cli."""
 import click
 
-from iocage.lib.ioc_logger import IOCLogger
-from iocage.lib.ioc_common import checkoutput
+from iocage.lib.ioc_common import checkoutput, logit
 from iocage.lib.ioc_fetch import IOCFetch
 from iocage.lib.ioc_list import IOCList
 
@@ -22,13 +21,12 @@ __cmdname__ = "list_cmd"
 @click.option("--remote", "-R", is_flag=True, help="Show remote's available "
                                                    "RELEASEs.")
 @click.option("--plugins", "-P", is_flag=True, help="Show available plugins.")
-@click.option("--http", "-h", default=False,
+@click.option("--http", default=False,
               help="Have --remote use HTTP instead.", is_flag=True)
 @click.option("--sort", "-s", "_sort", default="tag", nargs=1,
               help="Sorts the list by the given type")
 def list_cmd(dataset_type, header, _long, remote, http, plugins, _sort):
     """This passes the arg and calls the jail_datasets function."""
-    lgr = IOCLogger().cli_log()
     freebsd_version = checkoutput(["freebsd-version"])
 
     if dataset_type is None:
@@ -50,9 +48,18 @@ def list_cmd(dataset_type, header, _long, remote, http, plugins, _sort):
         if not header:
             if dataset_type == "base":
                 for item in _list:
-                    lgr.info(item)
+                    logit({
+                        "level"  : "INFO",
+                        "message": item
+                    })
             else:
                 for item in _list:
-                    print("\t".join(item))
+                    logit({
+                        "level"  : "INFO",
+                        "message": "\t".join(item)
+                    })
         else:
-            lgr.info(_list)
+            logit({
+                "level"  : "INFO",
+                "message": _list
+            })
