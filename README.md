@@ -22,7 +22,7 @@ To install using binary packages, simply run: `pkg install py36-iocage`(not in p
 
 ##### GitHub:
 */usr/src is required to build from GitHub*
-- `pkg install python36`
+- `pkg install python36 git-lite`
 - `python3.6 -m ensurepip`
 - `git clone --recursive https://github.com/iocage/iocage`
 - `pip3.6 install Cython`
