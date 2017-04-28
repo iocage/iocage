@@ -12,7 +12,7 @@ class IOCLogger(object):
         self.cli_logger = logging.getLogger("iocage")
         self.log_file = os.environ.get("IOCAGE_LOGFILE", "/var/log/iocage.log")
 
-        DEFAULT_LOGGING = {
+        default_logging = {
             'version'                 : 1,
             'disable_existing_loggers': False,
             'formatters'              : {
@@ -54,7 +54,7 @@ class IOCLogger(object):
         }
 
         if os.geteuid() == 0:
-            logging.config.dictConfig(DEFAULT_LOGGING)
+            logging.config.dictConfig(default_logging)
 
         coloredlogs.install(level="INFO", logger=self.cli_logger,
                             fmt="%(message)s",
