@@ -70,6 +70,8 @@ class IOCDestroy(object):
             snapshot = True
 
         if path:
+            path = path.replace("/root", "")
+
             if "templates" in path and clean:
                 for file in glob.glob(f"{tags}/*"):
                     if os.readlink(file) == f"{self.iocroot}/jails/" \
