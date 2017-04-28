@@ -84,7 +84,7 @@ def fetch_cmd(http, _file, server, user, password, auth, verify, release,
         if plugin_file:
             try:
                 with open(plugin_file) as f:
-                    return json.load(f)
+                    json.load(f)
             except FileNotFoundError:
                 logit({
                     "level"  : "ERROR",
