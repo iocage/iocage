@@ -1,16 +1,46 @@
 import logging
 import logging.handlers
 import os
+import sys
 from logging.config import dictConfig
 
 import coloredlogs
-import sys
 
 
 class IOCLogger(object):
     def __init__(self):
-        self.logger = logging.getLogger("iocage")
         self.cli_logger = logging.getLogger("iocage")
+        self.log_file = os.environ.get("IOCAGE_LOGFILE", "/var/log/iocage.log")
+
+        DEFAULT_LOGGING = {
+            'version'                 : 1,
+            'disable_existing_loggers': False,
+            'formatters'              : {
+                'log': {
+                    'format' : '%(asctime)s (%(levelname)s) %(message)s',
+                    'datefmt': '%Y/%m/%d %H:%M:%S',
+                },
+            },
+            'handlers'                : {
+                'file': {
+                    'level'      : 'DEBUG',
+                    'class'      : 'logging.handlers.RotatingFileHandler',
+                    'filename'   : f'{self.log_file}',
+                    'mode'       : 'a',
+                    'maxBytes'   : 10485760,
+                    'backupCount': 5,
+                    'encoding'   : 'utf-8',
+                    'formatter'  : 'log',
+                },
+            },
+            'loggers'                 : {
+                '': {
+                    'handlers' : ['file'],
+                    'level'    : 'DEBUG',
+                    'propagate': True
+                },
+            },
+        }
 
         cli_colors = {
             'info'    : {'color': 'white'},
@@ -22,6 +52,10 @@ class IOCLogger(object):
             'debug'   : {'color': 'green'},
             'warning' : {'color': 'yellow'}
         }
+
+        if os.geteuid() == 0:
+            logging.config.dictConfig(DEFAULT_LOGGING)
+
         coloredlogs.install(level="INFO", logger=self.cli_logger,
                             fmt="%(message)s",
                             stream=sys.stdout, level_styles=cli_colors)
@@ -29,56 +63,3 @@ class IOCLogger(object):
     def cli_log(self):
         return self.cli_logger
 
-
-class Logger(object):
-    """Pseudo-Class for Logger - Wrapper for logging module"""
-    log_file = os.environ.get("IOCAGE_LOGFILE", "/var/log/iocage.log")
-
-    DEFAULT_LOGGING = {
-        'version'                 : 1,
-        'disable_existing_loggers': True,
-        'root'                    : {
-            'level'   : 'NOTSET',
-            'handlers': ['file'],
-        },
-        'handlers'                : {
-            'file': {
-                'level'      : 'DEBUG',
-                'class'      : 'logging.handlers.RotatingFileHandler',
-                'filename'   : f'{log_file}',
-                'mode'       : 'a',
-                'maxBytes'   : 10485760,
-                'backupCount': 5,
-                'encoding'   : 'utf-8',
-                'formatter'  : 'file',
-            },
-        },
-        'formatters'              : {
-            'file': {
-                'format' : '%(asctime)s (%(levelname)s) %(message)s',
-                'datefmt': '%Y/%m/%d %H:%M:%S',
-            },
-        },
-    }
-
-    def __init__(self, application_name):
-        self.application_name = application_name
-
-    def _set_output_file(self):
-        """Set the output format for file log."""
-        dictConfig(self.DEFAULT_LOGGING)
-
-    def configure_logging(self):
-        if os.geteuid() == 0:
-            self._set_output_file()
-        else:
-            for handler in logging.root.handlers:
-                if isinstance(handler, logging.StreamHandler):
-                    logging.root.removeHandler(handler)
-
-        logging.root.setLevel(logging.DEBUG)
-
-    def getLogger(self):
-        self.configure_logging()
-
-        return logging.getLogger(self.application_name)
