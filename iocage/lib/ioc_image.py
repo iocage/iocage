@@ -24,7 +24,8 @@ class IOCImage(object):
         images = f"{self.iocroot}/images"
         name = f"{uuid}_{self.date}"
         image = f"{images}/{name}_{tag}"
-        image_path = f"{self.pool}{path}"
+        export_type, jail_name = path.rsplit('/', 2)[-2:]
+        image_path = f"{self.pool}/iocage/{export_type}/{jail_name}"
         jail_list = []
 
         # Looks like foo/iocage/jails/df0ef69a-57b6-4480-b1f8-88f7b6febbdf@BAR
@@ -36,16 +37,16 @@ class IOCImage(object):
             raise RuntimeError(f"{err.output.decode('utf-8').rstrip()}")
 
         datasets = Popen(["zfs", "list", "-H", "-r",
-                          "-o", "name", f"{self.pool}{path}"],
+                          "-o", "name", image_path],
                          stdout=PIPE, stderr=PIPE).communicate()[0].decode(
             "utf-8").split()
 
         for dataset in datasets:
-            if len(dataset) == 54:
+            if dataset.split("/")[-1] == jail_name:
                 _image = image
                 jail_list.append(_image)
-            elif len(dataset) > 54:
-                image_name = dataset.partition(f"{self.pool}{path}")[2]
+            else:
+                image_name = dataset.partition(f"{image_path}")[2]
                 name = image_name.replace("/", "_")
                 _image = image + name
                 jail_list.append(_image)
@@ -56,16 +57,22 @@ class IOCImage(object):
             try:
                 with open(_image, "wb") as export:
                     msg = f"Exporting dataset: {dataset}"
-                    logit({"level": "INFO", "message": msg}, self.callback,
-                          silent=self.silent)
+                    logit({"level": "INFO",
+                           "message": msg},
+                          self.callback,
+                          silent=self.silent
+                          )
 
                     check_call(["zfs", "send", target], stdout=export)
             except CalledProcessError as err:
                 raise RuntimeError(err)
 
         msg = f"\nPreparing zip file: {image}.zip."
-        logit({"level": "INFO", "message": msg}, self.callback,
-              silent=self.silent)
+        logit({"level": "INFO",
+               "message": msg},
+              self.callback,
+              silent=self.silent
+              )
 
         with zipfile.ZipFile(f"{image}.zip", "w",
                              compression=zipfile.ZIP_DEFLATED,
@@ -86,8 +93,11 @@ class IOCImage(object):
             raise RuntimeError(f"{err.output.decode('utf-8').rstrip()}")
 
         msg = f"\nExported: {image}.zip"
-        logit({"level": "INFO", "message": msg}, self.callback,
-              silent=self.silent)
+        logit({"level": "INFO",
+               "message": msg},
+              self.callback,
+              silent=self.silent
+              )
 
     def import_jail(self, jail):
         """Import from an iocage export."""
@@ -95,7 +105,6 @@ class IOCImage(object):
         exports = os.listdir(image_dir)
         uuid_matches = fnmatch.filter(exports, f"{jail}*.zip")
         tag_matches = fnmatch.filter(exports, f"*{jail}.zip")
-        cmd = ["zfs", "recv", "-F", "-d", self.pool]
 
         # We want to allow the user some flexibility.
         if uuid_matches:
@@ -107,7 +116,7 @@ class IOCImage(object):
             image_target = f"{image_dir}/{matches[0]}"
             uuid = matches[0].rsplit("_")[0]
             date = matches[0].rsplit("_")[1]
-            tag = matches[0].rsplit("_")[2].rsplit(".")[0]
+            tag = matches[0].replace(".zip", "").rsplit("-", 1)[-1][3:]
         elif len(matches) > 1:
             msg = f"Multiple exports found for {jail}:"
 
@@ -120,18 +129,30 @@ class IOCImage(object):
 
         with zipfile.ZipFile(image_target, "r") as _import:
             for z in _import.namelist():
-                z_split = z.split("_")
+                # Split on date, cut out the days, and split the tag/dataset
+                #  out
+                z_dataset = z.rsplit("-", 1)[-1][3:].rsplit("_", 2)[-3:]
+                z_dataset = "_".join(z_dataset)
+                z_dataset_type = z_dataset.rsplit("_root", 1)[-1]
 
-                # We don't want the date and tag
-                del z_split[1]
-                del z_split[1]
+                # Nicer progress and needed for proper import of each dataset.
+                if not z_dataset_type:
+                    z_dataset_type = "root"
+                elif z_dataset_type == f"{tag}_data":
+                    z_dataset_type = "data"
+                elif z_dataset_type != f"{tag}_data" and z_dataset_type != tag:
+                    z_dataset_type = f"root{z_dataset_type}".replace("_", "/")
 
-                z_split_str = "/".join(z_split)
-                _z = z_split_str.replace("iocage/images/", "")
+                _z = f"{uuid}/{z_dataset_type}" if z_dataset_type != tag \
+                    else uuid
+                cmd = ["zfs", "recv", "-F", f"{self.pool}/iocage/jails/{_z}"]
 
                 msg = f"Importing dataset: {_z}"
-                logit({"level": "INFO", "message": msg}, self.callback,
-                      silent=self.silent)
+                logit({"level": "INFO",
+                       "message": msg},
+                      self.callback,
+                      silent=self.silent
+                      )
 
                 dataset = _import.read(z)
                 recv = Popen(cmd, stdin=PIPE)
@@ -141,16 +162,24 @@ class IOCImage(object):
 
         # Cleanup our mess.
         try:
-            target = f"{self.pool}{self.iocroot}/jails/{uuid}@ioc-export-" \
+            target = f"{self.pool}/iocage/jails/{uuid}@ioc-export-" \
                      f"{date}"
 
             checkoutput(["zfs", "destroy", "-r", target], stderr=STDOUT)
         except CalledProcessError as err:
             raise RuntimeError(f"{err.output.decode('utf-8').rstrip()}")
 
+        # Templates become jails again once imported, let's make that reality.
+        IOCJson(f"{self.iocroot}/jails/{uuid}",
+                silent=True).json_set_value("type=jail")
+        IOCJson(f"{self.iocroot}/jails/{uuid}",
+                silent=True).json_set_value("template=no", _import=True)
         tag = IOCJson(f"{self.iocroot}/jails/{uuid}",
                       silent=True).json_set_value(f"tag={tag}")
 
         msg = f"\nImported: {uuid} ({tag})"
-        logit({"level": "INFO", "message": msg}, self.callback,
-              silent=self.silent)
+        logit({"level": "INFO",
+               "message": msg},
+              self.callback,
+              silent=self.silent
+              )

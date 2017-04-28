@@ -362,7 +362,7 @@ class IOCJson(object):
             else:
                 return conf[prop]
 
-    def json_set_value(self, prop, create_func=False):
+    def json_set_value(self, prop, create_func=False, _import=False):
         """Set a property for the specified jail."""
         # Circular dep! Meh.
         from iocage.lib.ioc_list import IOCList
@@ -437,24 +437,25 @@ class IOCJson(object):
                     silent=self.silent)
                 self.lgr.disabled = True
             elif value == "no":
-                try:
-                    checkoutput(["zfs", "rename", "-p", new_location,
-                                 old_location], stderr=STDOUT)
-                    conf["type"] = "jail"
+                if not _import:
+                    try:
+                        checkoutput(["zfs", "rename", "-p", new_location,
+                                     old_location], stderr=STDOUT)
+                        conf["type"] = "jail"
 
-                    self.location = old_location.lstrip(pool).replace(
-                        "/iocage", iocroot)
-                except CalledProcessError as err:
-                    raise RuntimeError(
-                        f"{err.output.decode('utf-8').rstrip()}")
+                        self.location = old_location.lstrip(pool).replace(
+                            "/iocage", iocroot)
+                    except CalledProcessError as err:
+                        raise RuntimeError(
+                            f"{err.output.decode('utf-8').rstrip()}")
 
-                logit({
-                    "level"  : "INFO",
-                    "message": f"{uuid} ({old_tag}) converted to a jail."
-                },
-                    _callback=self.callback,
-                    silent=self.silent)
-                self.lgr.disabled = True
+                    logit({
+                        "level"  : "INFO",
+                        "message": f"{uuid} ({old_tag}) converted to a jail."
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
+                    self.lgr.disabled = True
 
         self.json_check_prop(key, value, conf)
         self.json_write(conf)
