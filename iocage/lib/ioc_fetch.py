@@ -207,8 +207,8 @@ class IOCFetch(object):
         if self.hardened:
             if self.server == "ftp.freebsd.org":
                 self.server = "http://installer.hardenedbsd.org"
-                rdir = "releases/pub/HardenedBSD/releases/{self.arch}/" \
-                       "{self.arch}"
+                rdir = f"releases/pub/HardenedBSD/releases/{self.arch}/" \
+                       f"{self.arch}"
 
         if self.server == "ftp.freebsd.org":
             self.server = "https://download.freebsd.org"
