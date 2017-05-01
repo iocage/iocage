@@ -8,10 +8,6 @@ import tempfile as tmp
 from contextlib import contextmanager
 from subprocess import check_output
 
-import logging
-
-import sys
-
 from iocage.lib.ioc_logger import IOCLogger
 
 
