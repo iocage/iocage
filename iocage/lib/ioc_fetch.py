@@ -928,6 +928,38 @@ fingerprint: {fingerprint}
                     command = ["sh", "/root/post_install.sh"]
                     IOCExec(command, uuid, conf["name"], jaildir,
                             skip=True).exec_jail()
+
+                    ui_json = f"{jaildir}/plugin/ui.json"
+                    try:
+                        with open(ui_json, "r") as u:
+                            admin_portal = json.load(u)["adminportal"]
+                            try:
+                                ip4 = _conf["ip4_addr"].split("|")[1]
+                            except IndexError:
+                                ip4 = "none"
+
+                            try:
+                                ip6 = _conf["ip6_addr"].split("|")[1]
+                            except IndexError:
+                                ip6 = "none"
+
+                            if ip4 != "none":
+                                ip = ip4
+                            elif ip6 != "none":
+                                # If they had an IP4 address and an IP6 one,
+                                # we'll assume they prefer IP6.
+                                ip = ip6
+
+                            admin_portal = admin_portal.replace("%%IP%%", ip)
+                            logit({
+                                "level"  : "INFO",
+                                "message": f"Admin Portal:\n{admin_portal}"
+                            },
+                                _callback=self.callback,
+                                silent=self.silent)
+                    except FileNotFoundError:
+                        # They just didn't set a admin portal.
+                        pass
                 except (IOError, OSError):
                     pass
         else:
