@@ -1,12 +1,14 @@
 """iocage create module."""
 import json
 import os
+import sys
 import uuid
 from datetime import datetime
 from shutil import copy
 from subprocess import CalledProcessError, PIPE, Popen, check_call
 
 from iocage.lib.ioc_common import checkoutput, logit
+from iocage.lib.ioc_destroy import IOCDestroy
 from iocage.lib.ioc_exec import IOCExec
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
@@ -39,13 +41,7 @@ class IOCCreate(object):
         self.callback = callback
 
     def create_jail(self):
-        """
-        Create a snapshot of the user specified RELEASE dataset and clone a
-        jail from that. The user can also specify properties to override the
-        defaults.
-        """
-        start = False
-
+        """Helper to catch SIGINT"""
         if self.uuid:
             jail_uuid = self.uuid
         else:
@@ -55,6 +51,20 @@ class IOCCreate(object):
             jail_uuid = jail_uuid[:8]
 
         location = f"{self.iocroot}/jails/{jail_uuid}"
+
+        try:
+            self._create_jail(jail_uuid, location)
+        except KeyboardInterrupt:
+            IOCDestroy().destroy_jail(location)
+            sys.exit(1)
+
+    def _create_jail(self, jail_uuid, location):
+        """
+        Create a snapshot of the user specified RELEASE dataset and clone a
+        jail from that. The user can also specify properties to override the
+        defaults.
+        """
+        start = False
 
         if os.path.isdir(location):
             raise RuntimeError("The UUID is already in use by another jail.")
