@@ -3,7 +3,7 @@ import glob
 import imp
 import locale
 import os
-import stat
+import signal
 import subprocess as su
 import sys
 
@@ -16,6 +16,12 @@ from iocage.lib.ioc_check import IOCCheck
 core._verify_python3_env = lambda: None
 user_locale = os.environ.get("LANG", "en_US.UTF-8")
 locale.setlocale(locale.LC_ALL, user_locale)
+
+# @formatter:off
+# Sometimes SIGINT won't be installed.
+# http://stackoverflow.com/questions/40775054/capturing-sigint-using-keyboardinterrupt-exception-works-in-terminal-not-in-scr/40785230#40785230
+signal.signal(signal.SIGINT, signal.default_int_handler)
+# @formatter:on
 
 try:
     su.check_call(["sysctl", "vfs.zfs.version.spa"],
