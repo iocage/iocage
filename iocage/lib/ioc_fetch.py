@@ -1036,7 +1036,7 @@ fingerprint: {fingerprint}
             except ValueError as err:
                 raise RuntimeError(f"{err}!")
 
-        return plugin.split("(")[1].replace(")", "")
+        return plugin.rsplit("(", 1)[1].replace(")", "")
 
     def __fetch_sort_plugin__(self, plugins):
         """
