@@ -1,6 +1,8 @@
 import pytest
 import os
 
+from iocage.lib.ioc_common import checkoutput
+
 
 def pytest_addoption(parser):
     parser.addoption("--zpool", action="store", default=None,
@@ -18,9 +20,6 @@ def pytest_addoption(parser):
     parser.addoption("--noupdate", action="store_true",
                      help="Decide whether or not to update the fetch to the"
                           " latest patch level.")
-    parser.addoption("--hardened", action="store_true",
-                     help="Have fetch expect the default HardeneBSD layout"
-                          " instead.")
     parser.addoption("--auth", action="store", default=None,
                      help="Authentication method for HTTP fetching. Valid"
                           " values: basic, digest")
@@ -85,7 +84,14 @@ def http(request):
 @pytest.fixture
 def hardened(request):
     """Have fetch expect the default HardeneBSD layout instead."""
-    return request.config.getoption("--hardened")
+    freebsd_version = checkoutput(["freebsd-version"])
+
+    if "HBSD" in freebsd_version:
+        _hardened = True
+    else:
+        _hardened = False
+
+    return _hardened
 
 
 @pytest.fixture
