@@ -480,6 +480,9 @@ class IOCJson(object):
                 key = key.replace("_", ".")
 
             if key in jail_params:
+                if conf["vnet"] == "on" and key == "ip4.addr" or key == \
+                        "ip6.addr":
+                        return
                 try:
                     checkoutput(["jail", "-m", f"jid={jid}",
                                  f"{key}={value}"], stderr=STDOUT)
