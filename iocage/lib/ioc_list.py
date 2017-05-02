@@ -1,4 +1,5 @@
 """List all datasets by type"""
+import re
 from subprocess import CalledProcessError, PIPE
 
 import libzfs
@@ -131,8 +132,9 @@ class IOCList(object):
             full_release = conf["release"]
 
             if "HBSD" in full_release:
-                full_release = f"{full_release.split('.')[0]}.-STABLE-HBSD"
-                short_release = f"{full_release.rsplit('-')[0]}-STABLE"
+                full_release = re.sub(r"\W\w.", "-", full_release)
+                full_release = full_release.replace("--SD", "-STABLE-HBSD")
+                short_release = full_release.rstrip("-HBSD")
             else:
                 short_release = "-".join(full_release.rsplit("-")[:2])
 
