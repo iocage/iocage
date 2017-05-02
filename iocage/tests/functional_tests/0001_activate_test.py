@@ -1,6 +1,7 @@
 import pytest
-from iocage.cli.activate import activate_cmd
 from click.testing import CliRunner
+
+from iocage import main as ioc
 
 require_root = pytest.mark.require_root
 require_zpool = pytest.mark.require_zpool
@@ -10,6 +11,6 @@ require_zpool = pytest.mark.require_zpool
 @require_zpool
 def test_activate(zpool):
     runner = CliRunner()
-    result = runner.invoke(activate_cmd, [zpool])
+    result = runner.invoke(ioc.cli, ['activate', zpool])
 
     assert result.exit_code == 0
