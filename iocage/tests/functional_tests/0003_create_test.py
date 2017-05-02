@@ -1,3 +1,5 @@
+import re
+
 import pytest
 from click.testing import CliRunner
 
@@ -14,7 +16,8 @@ def test_create(release, hardened):
     prop_short = "tag=test_short"
 
     if hardened:
-        release = f"{release}-STABLE"
+        release = release.replace("-RELEASE", "-STABLE")
+        release = re.sub(r"\W\w.", "-", release)
 
     runner = CliRunner()
     result = runner.invoke(ioc.cli, ["create", "-r", release, prop])

@@ -1,3 +1,5 @@
+import re
+
 import pytest
 from click.testing import CliRunner
 
@@ -12,7 +14,8 @@ require_zpool = pytest.mark.require_zpool
 def test_fetch(release, server, user, password, auth, root_dir, http, _file,
                noupdate, hardened):
     if hardened:
-        release = f"{release}-STABLE"
+        release = release.replace("-RELEASE", "-STABLE")
+        release = re.sub(r"\W\w.", "-", release)
 
     # Type Errors are bad mmmkay
     command = ["fetch", "-r", release]
@@ -24,6 +27,8 @@ def test_fetch(release, server, user, password, auth, root_dir, http, _file,
     command += ["-a", auth] if auth else []
     command += ["-d", root_dir] if root_dir else []
     command += ["-NU"] if noupdate else []
+    command += ["-F", "base.txz", "-F", "doc.txz", "-F", "MANIFEST"] if  \
+        hardened else []
 
     runner = CliRunner()
     result = runner.invoke(ioc.cli, command)
