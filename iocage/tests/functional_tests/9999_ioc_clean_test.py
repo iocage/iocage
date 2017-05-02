@@ -1,6 +1,9 @@
 import os
+
 import pytest
-from iocage.lib.ioc_clean import IOCClean
+from click.testing import CliRunner
+
+from iocage import main as ioc
 
 require_root = pytest.mark.require_root
 require_zpool = pytest.mark.require_zpool
@@ -11,8 +14,11 @@ require_zpool = pytest.mark.require_zpool
 def test_clean():
     # Unless we change directory (not sure why) this will crash pytest.
     os.chdir("/")
+    actions = [["-j", "-f"], ["-a", "-f"]]
 
-    IOCClean().clean_jails()
-    IOCClean().clean_all()
+    runner = CliRunner()
+    for action in actions:
+        command = ["clean"] + action
+        result = runner.invoke(ioc.cli, command)
 
-    assert True == True
+        assert result.exit_code == 0
