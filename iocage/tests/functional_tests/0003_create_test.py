@@ -14,7 +14,7 @@ def test_create(release, hardened):
     prop_short = "tag=test_short"
 
     if hardened:
-        release = "{}-STABLE".format(release)
+        release = f"{release}-STABLE"
 
     runner = CliRunner()
     result = runner.invoke(ioc.cli, ["create", "-r", release, prop])
