@@ -15,15 +15,15 @@ def pytest_addoption(parser):
                      help="The password to use for fetching.")
     parser.addoption("--http", action="store_true",
                      help="Have --server define a HTTP server instead.")
+    parser.addoption("--noupdate", action="store_true",
+                     help="Decide whether or not to update the fetch to the"
+                          " latest patch level.")
     parser.addoption("--hardened", action="store_true",
                      help="Have fetch expect the default HardeneBSD layout"
                           " instead.")
     parser.addoption("--auth", action="store", default=None,
-                     help="Authentication method "
-                          "for "
-                          "HTTP fetching. Valid "
-                          "values: basic, digest")
-
+                     help="Authentication method for HTTP fetching. Valid"
+                          " values: basic, digest")
     parser.addoption("--file", action="store_true",
                      help="Use a local file directory for root-dir instead of "
                           "FTP or HTTP.")
@@ -98,3 +98,9 @@ def _file(request):
 def auth(request):
     """Authentication method for HTTP fetching. Valid values: basic, digest"""
     return request.config.getoption("--auth")
+
+
+@pytest.fixture
+def noupdate(request):
+    """ Decide whether or not to update the fetch to the latest patch level."""
+    return request.config.getoption("--noupdate")
