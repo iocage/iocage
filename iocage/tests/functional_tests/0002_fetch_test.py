@@ -10,7 +10,10 @@ require_zpool = pytest.mark.require_zpool
 @require_root
 @require_zpool
 def test_fetch(release, server, user, password, auth, root_dir, http, _file,
-               noupdate):
+               noupdate, hardened):
+    if hardened:
+        release = f"{release}-STABLE"
+
     # Type Errors are bad mmmkay
     command = ["fetch", "-r", release]
     command += ["-s", server] if server else []
