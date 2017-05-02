@@ -8,8 +8,6 @@ from iocage.lib.ioc_common import logit
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
-__cmdname__ = "get_cmd"
-
 
 @click.command(context_settings=dict(
     max_content_width=400, ), name="get", help="Gets the specified property.")
@@ -28,7 +26,7 @@ __cmdname__ = "get_cmd"
                                           "specified jail.", is_flag=True)
 @click.option("--pool", "-p", "_pool", help="Get the currently activated "
                                             "zpool.", is_flag=True)
-def get_cmd(prop, _all, _pool, jail, recursive, header, plugin):
+def cli(prop, _all, _pool, jail, recursive, header, plugin):
     """Get a list of jails and print the property."""
     get_jid = IOCList.list_get_jid
     jails, paths = IOCList("uuid").list_datasets()

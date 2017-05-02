@@ -8,14 +8,12 @@ from iocage.lib.ioc_common import logit
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
-__cmdname__ = "snaplist_cmd"
-
 
 @click.command(name="snaplist", help="Show snapshots of a specified jail.")
 @click.option("--header", "-h", "-H", is_flag=True, default=True,
               help="For scripting, use tabs for separators.")
 @click.argument("jail")
-def snaplist_cmd(header, jail):
+def cli(header, jail):
     """Allows a user to show resource usage of all jails."""
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")

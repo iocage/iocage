@@ -7,7 +7,6 @@ import click
 from iocage.lib.ioc_common import checkoutput, logit
 from iocage.lib.ioc_fetch import IOCFetch
 
-__cmdname__ = "fetch_cmd"
 __rootcmd__ = True
 
 
@@ -59,9 +58,8 @@ def validate_count(ctx, param, value):
                    "patch level.")
 @click.option("--eol/--noeol", "-E/-NE", default=True,
               help="Enable or disable EOL checking with upstream.")
-def fetch_cmd(http, _file, server, user, password, auth, verify, release,
-              plugins, plugin_file, root_dir, props, count, update, eol,
-              files):
+def cli(http, _file, server, user, password, auth, verify, release, plugins,
+        plugin_file, root_dir, props, count, update, eol, files):
     """CLI command that calls fetch_release()"""
     freebsd_version = checkoutput(["freebsd-version"])
     arch = os.uname()[4]

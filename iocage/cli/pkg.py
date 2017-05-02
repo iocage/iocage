@@ -5,14 +5,13 @@ from iocage.lib.ioc_common import logit
 from iocage.lib.ioc_exec import IOCExec
 from iocage.lib.ioc_list import IOCList
 
-__cmdname__ = "pkg_cmd"
 __rootcmd__ = True
 
 
 @click.command(name="pkg", help="Use pkg inside a specified jail.")
 @click.argument("jail", required=True, nargs=1)
 @click.argument("command", nargs=-1, type=click.UNPROCESSED)
-def pkg_cmd(command, jail):
+def cli(command, jail):
     """Runs pkg with the command given inside the specified jail."""
     jails, paths = IOCList("uuid").list_datasets()
     _jail = {tag: uuid for (tag, uuid) in jails.items() if

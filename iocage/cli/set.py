@@ -5,7 +5,6 @@ from iocage.lib.ioc_common import logit
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
-__cmdname__ = "set_cmd"
 __rootcmd__ = True
 
 
@@ -18,7 +17,7 @@ __rootcmd__ = True
                    " nested key use . as a separator."
                    "\n\b Example: iocage set -P foo.bar.baz=VALUE PLUGIN",
               is_flag=True)
-def set_cmd(prop, jail, plugin):
+def cli(prop, jail, plugin):
     """Get a list of jails and print the property."""
     jails, paths = IOCList("uuid").list_datasets(set=True)
     _jail = {tag: uuid for (tag, uuid) in jails.items() if

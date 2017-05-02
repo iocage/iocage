@@ -6,7 +6,6 @@ from iocage.lib.ioc_fstab import IOCFstab
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
-__cmdname__ = "fstab_cmd"
 __rootcmd__ = True
 
 
@@ -22,7 +21,7 @@ __rootcmd__ = True
 @click.option("--edit", "-e", "action",
               help="Opens up the fstab file in your environments EDITOR.",
               flag_value="edit")
-def fstab_cmd(action, fstab_string, jail):
+def cli(action, fstab_string, jail):
     """
     Looks for the jail supplied and passes the uuid, path and configuration
     location to manipulate the fstab.

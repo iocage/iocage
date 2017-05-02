@@ -4,7 +4,6 @@ import click
 from iocage.lib.ioc_clean import IOCClean
 from iocage.lib.ioc_common import logit
 
-__cmdname__ = "clean_cmd"
 __rootcmd__ = True
 
 
@@ -18,7 +17,7 @@ __rootcmd__ = True
               help="Destroy all RELEASEs fetched.")
 @click.option("--template", "-t", "dataset_type", flag_value="template",
               help="Destroy all templates.")
-def clean_cmd(force, dataset_type):
+def cli(force, dataset_type):
     """Calls the correct destroy function."""
     if dataset_type == "jails":
         if not force:

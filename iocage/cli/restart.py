@@ -10,7 +10,6 @@ from iocage.lib.ioc_list import IOCList
 from iocage.lib.ioc_start import IOCStart
 from iocage.lib.ioc_stop import IOCStop
 
-__cmdname__ = "restart_cmd"
 __rootcmd__ = True
 
 
@@ -56,7 +55,7 @@ def check_type(uuid, tag, path, _all, soft):
 @click.option("--soft", "-s", help="Restarts the jail but does not tear"
                                    " down the network stack.", is_flag=True)
 @click.argument("jail")
-def restart_cmd(jail, soft):
+def cli(jail, soft):
     """
     Looks for the jail supplied and passes the uuid, path and configuration
     location to stop_jail and start_jail.

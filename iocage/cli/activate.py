@@ -4,13 +4,12 @@ import libzfs
 
 from iocage.lib.ioc_common import logit
 
-__cmdname__ = "activate_cmd"
 __rootcmd__ = True
 
 
 @click.command(name="activate", help="Set a zpool active for iocage usage.")
 @click.argument("zpool")
-def activate_cmd(zpool):
+def cli(zpool):
     """Calls ZFS set to change the property org.freebsd.ioc:active to yes."""
     zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
     pools = zfs.pools

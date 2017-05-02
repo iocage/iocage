@@ -11,7 +11,6 @@ from iocage.lib.ioc_fetch import IOCFetch
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
-__cmdname__ = "create_cmd"
 __rootcmd__ = True
 
 
@@ -45,8 +44,8 @@ def validate_count(ctx, param, value):
               help="Use a short UUID of 8 characters instead of the default "
                    "36")
 @click.argument("props", nargs=-1)
-def create_cmd(release, template, count, props, pkglist, basejail, empty,
-               short, uuid):
+def cli(release, template, count, props, pkglist, basejail, empty, short,
+        uuid):
     if short and uuid:
         logit({
             "level"  : "ERROR",

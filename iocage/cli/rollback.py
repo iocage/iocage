@@ -7,7 +7,6 @@ from iocage.lib.ioc_common import checkoutput, logit
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
-__cmdname__ = "rollback_cmd"
 __rootcmd__ = True
 
 
@@ -17,7 +16,7 @@ __rootcmd__ = True
                                    " after @", required=True)
 @click.option("--force", "-f", help="Skip then interactive question.",
               default=False, is_flag=True)
-def rollback_cmd(jail, name, force):
+def cli(jail, name, force):
     """Get a list of jails and print the property."""
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")

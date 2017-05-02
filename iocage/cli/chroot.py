@@ -6,7 +6,6 @@ import click
 from iocage.lib.ioc_common import logit
 from iocage.lib.ioc_list import IOCList
 
-__cmdname__ = "chroot_cmd"
 __rootcmd__ = True
 
 
@@ -37,7 +36,7 @@ def umount(path, _type):
     name="chroot", help="Chroot to a jail.")
 @click.argument("jail")
 @click.argument("command", nargs=-1, type=click.UNPROCESSED)
-def chroot_cmd(jail, command):
+def cli(jail, command):
     """Will chroot into a jail regardless if it's running."""
     jails, paths = IOCList("uuid").list_datasets()
     command = list(command)

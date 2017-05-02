@@ -5,8 +5,6 @@ from iocage.lib.ioc_common import checkoutput, logit
 from iocage.lib.ioc_fetch import IOCFetch
 from iocage.lib.ioc_list import IOCList
 
-__cmdname__ = "list_cmd"
-
 
 @click.command(name="list", help="List a specified dataset type, by default"
                                  " lists all jails.")
@@ -25,7 +23,7 @@ __cmdname__ = "list_cmd"
               help="Have --remote use HTTP instead.", is_flag=True)
 @click.option("--sort", "-s", "_sort", default="tag", nargs=1,
               help="Sorts the list by the given type")
-def list_cmd(dataset_type, header, _long, remote, http, plugins, _sort):
+def cli(dataset_type, header, _long, remote, http, plugins, _sort):
     """This passes the arg and calls the jail_datasets function."""
     freebsd_version = checkoutput(["freebsd-version"])
 
