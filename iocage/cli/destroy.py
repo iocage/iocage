@@ -6,7 +6,6 @@ from iocage.lib.ioc_destroy import IOCDestroy
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
-__cmdname__ = "destroy_cmd"
 __rootcmd__ = True
 
 
@@ -17,7 +16,7 @@ __rootcmd__ = True
               help="Delete the download dataset of the specified RELEASE as"
                    " well.")
 @click.argument("jails", nargs=-1)
-def destroy_cmd(force, release, download, jails):
+def cli(force, release, download, jails):
     """Destroys the jail's 2 datasets and the snapshot from the RELEASE."""
     if download and not release:
         exit("--release (-r) must be specified as well!")

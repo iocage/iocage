@@ -4,7 +4,6 @@ import click
 from iocage.lib.ioc_common import logit
 from iocage.lib.iocage import IOCage
 
-__cmdname__ = "stop_cmd"
 __rootcmd__ = True
 
 
@@ -13,7 +12,7 @@ __rootcmd__ = True
               help="Will stop all jails with boot=on, in the specified"
                    " order with higher value for priority stopping first.")
 @click.argument("jails", nargs=-1)
-def stop_cmd(rc, jails):
+def cli(rc, jails):
     """
     Looks for the jail supplied and passes the uuid, path and configuration
     location to stop_jail.

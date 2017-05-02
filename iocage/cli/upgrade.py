@@ -8,7 +8,6 @@ from iocage.lib.ioc_start import IOCStart
 from iocage.lib.ioc_stop import IOCStop
 from iocage.lib.ioc_upgrade import IOCUpgrade
 
-__cmdname__ = "upgrade_cmd"
 __rootcmd__ = True
 
 
@@ -16,7 +15,7 @@ __rootcmd__ = True
                                     " jail to the RELEASE given.")
 @click.argument("jail", required=True)
 @click.option("--release", "-r", required=True, help="RELEASE to upgrade to")
-def upgrade_cmd(jail, release):
+def cli(jail, release):
     """Runs upgrade with the command given inside the specified jail."""
     jails, paths = IOCList("uuid").list_datasets()
     _jail = {tag: uuid for (tag, uuid) in jails.items() if

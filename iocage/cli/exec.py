@@ -5,7 +5,6 @@ from iocage.lib.ioc_common import logit
 from iocage.lib.ioc_exec import IOCExec
 from iocage.lib.ioc_list import IOCList
 
-__cmdname__ = "exec_cmd"
 __rootcmd__ = True
 
 
@@ -17,7 +16,7 @@ __rootcmd__ = True
 @click.option("--jail_user", "-U", help="The jail user to use.")
 @click.argument("jail", required=True, nargs=1)
 @click.argument("command", nargs=-1, type=click.UNPROCESSED)
-def exec_cmd(command, jail, host_user, jail_user):
+def cli(command, jail, host_user, jail_user):
     """Runs the command given inside the specified jail as the supplied
     user."""
     # We may be getting ';', '&&' and so forth. Adding the shell for safety.

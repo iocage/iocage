@@ -10,14 +10,13 @@ from iocage.lib.ioc_list import IOCList
 from iocage.lib.ioc_start import IOCStart
 from iocage.lib.ioc_stop import IOCStop
 
-__cmdname__ = "update_cmd"
 __rootcmd__ = True
 
 
 @click.command(name="update", help="Run freebsd-update to update a specified "
                                    "jail to the latest patch level.")
 @click.argument("jail", required=True)
-def update_cmd(jail):
+def cli(jail):
     """Runs update with the command given inside the specified jail."""
     jails, paths = IOCList("uuid").list_datasets()
     _jail = {tag: uuid for (tag, uuid) in jails.items() if

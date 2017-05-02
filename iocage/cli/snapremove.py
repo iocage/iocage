@@ -7,14 +7,12 @@ from iocage.lib.ioc_common import logit
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
-__cmdname__ = "snapremove_cmd"
-
 
 @click.command(name="snapremove", help="Remove specified snapshot of a jail.")
 @click.argument("jail")
 @click.option("--name", "-n", help="The snapshot name. This will be what comes"
                                    " after @", required=True)
-def snapremove_cmd(jail, name):
+def cli(jail, name):
     """Removes a snapshot from a user supplied jail."""
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")

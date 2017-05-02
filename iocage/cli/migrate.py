@@ -11,7 +11,6 @@ from iocage.lib.ioc_create import IOCCreate
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
-__cmdname__ = "migrate_cmd"
 __rootcmd__ = True
 
 
@@ -21,7 +20,7 @@ __rootcmd__ = True
               help="Bypass the interactive question.")
 @click.option("--delete", "-d", is_flag=True, default=False,
               help="Delete the old dataset after it has been migrated.")
-def migrate_cmd(force, delete):
+def cli(force, delete):
     """Migrates all the iocage_legacy develop basejails to clone jails."""
     jails, paths = IOCList("uuid").list_datasets()
 

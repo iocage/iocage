@@ -5,13 +5,12 @@ from iocage.lib.ioc_common import logit
 from iocage.lib.ioc_image import IOCImage
 from iocage.lib.ioc_list import IOCList
 
-__cmdname__ = "export_cmd"
 __rootcmd__ = True
 
 
 @click.command(name="export", help="Exports a specified jail.")
 @click.argument("jail", required=True)
-def export_cmd(jail):
+def cli(jail):
     """Make a recursive snapshot of the jail and export to a file."""
     jails, paths = IOCList("uuid").list_datasets()
     _jail = {tag: uuid for (tag, uuid) in jails.items() if

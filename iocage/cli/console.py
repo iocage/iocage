@@ -8,14 +8,13 @@ from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 from iocage.lib.ioc_start import IOCStart
 
-__cmdname__ = "console_cmd"
 __rootcmd__ = True
 
 
 @click.command(name="console", help="Login to a jail.")
 @click.argument("jail")
 @click.option("--force", "-f", default=False, is_flag=True)
-def console_cmd(jail, force):
+def cli(jail, force):
     """
     Runs jexec to login into the specified jail. Accepts a force flag that
     will attempt to start the jail if it is not already running.

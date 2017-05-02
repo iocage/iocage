@@ -4,7 +4,6 @@ import click
 from iocage.lib.ioc_common import logit
 from iocage.lib.iocage import IOCage
 
-__cmdname__ = "start_cmd"
 __rootcmd__ = True
 
 
@@ -13,7 +12,7 @@ __rootcmd__ = True
               help="Will start all jails with boot=on, in the specified"
                    " order with smaller value for priority starting first.")
 @click.argument("jails", nargs=-1)
-def start_cmd(rc, jails):
+def cli(rc, jails):
     """
     Looks for the jail supplied and passes the uuid, path and configuration
     location to start_jail.

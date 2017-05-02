@@ -1,6 +1,6 @@
 """snapshot module for the cli."""
 from datetime import datetime
-from subprocess import PIPE, check_call, CalledProcessError
+from subprocess import CalledProcessError, PIPE, check_call
 
 import click
 
@@ -8,7 +8,6 @@ from iocage.lib.ioc_common import logit
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
-__cmdname__ = "snapshot_cmd"
 __rootcmd__ = True
 
 
@@ -16,7 +15,7 @@ __rootcmd__ = True
 @click.argument("jail")
 @click.option("--name", "-n", help="The snapshot name. This will be what comes"
                                    " after @", required=False)
-def snapshot_cmd(jail, name):
+def cli(jail, name):
     """Get a list of jails and print the property."""
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")

@@ -9,8 +9,6 @@ from iocage.lib.ioc_common import logit
 from iocage.lib.ioc_json import IOCJson
 from iocage.lib.ioc_list import IOCList
 
-__cmdname__ = "df_cmd"
-
 
 @click.command(name="df", help="Show resource usage of all jails.")
 @click.option("--header", "-h", "-H", is_flag=True, default=True,
@@ -19,7 +17,7 @@ __cmdname__ = "df_cmd"
               help="Show the full uuid.")
 @click.option("--sort", "-s", "_sort", default="tag", nargs=1,
               help="Sorts the list by the given type")
-def df_cmd(header, _long, _sort):
+def cli(header, _long, _sort):
     """Allows a user to show resource usage of all jails."""
     jails, paths = IOCList("uuid").list_datasets()
     pool = IOCJson().json_get_value("pool")
