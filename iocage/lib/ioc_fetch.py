@@ -206,9 +206,8 @@ class IOCFetch(object):
         """
         if self.hardened:
             if self.server == "ftp.freebsd.org":
-                self.server = "http://installer.hardenedbsd.org"
-                rdir = f"releases/pub/HardenedBSD/releases/{self.arch}/" \
-                       f"{self.arch}"
+                self.server = "http://jenkins.hardenedbsd.org"
+                rdir = "builds"
 
         if self.server == "ftp.freebsd.org":
             self.server = "https://download.freebsd.org"
@@ -318,7 +317,8 @@ class IOCFetch(object):
                 self.release = self.__fetch_validate_release__(releases)
 
         if self.hardened:
-            self.root_dir = f"{rdir}/hardenedbsd-{self.release.lower()}-LAST"
+            self.root_dir = f"{rdir}/HardenedBSD-{self.release.upper()}-" \
+                            f"{self.arch}-LATEST"
         logit({
             "level"  : "INFO",
             "message": f"Fetching: {self.release}\n"
