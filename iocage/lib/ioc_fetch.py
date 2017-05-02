@@ -462,7 +462,7 @@ class IOCFetch(object):
                     for line in _manifest:
                         col = line.split("\t")
                         hashes[col[0]] = col[1]
-            except (IOError, OSError):
+            except FileNotFoundError:
                 raise RuntimeError("MANIFEST file is missing!")
 
             for f in self.files:
@@ -498,7 +498,7 @@ class IOCFetch(object):
                                 else:
                                     raise RuntimeError("Too many failed"
                                                        " verifications!")
-                    except (IOError, OSError):
+                    except FileNotFoundError:
                         if not _missing:
                             logit({
                                 "level"  : "ERROR",
@@ -960,7 +960,7 @@ fingerprint: {fingerprint}
                     except FileNotFoundError:
                         # They just didn't set a admin portal.
                         pass
-                except (IOError, OSError):
+                except FileNotFoundError:
                     pass
         else:
             logit({

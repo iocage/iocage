@@ -530,7 +530,7 @@ class IOCJson(object):
             try:
                 freebsd_version = f"{iocroot}/releases/{conf['release']}" \
                                   "/root/bin/freebsd-version"
-            except (IOError, OSError):
+            except FileNotFoundError:
                 freebsd_version = f"{iocroot}/templates/{conf['tag']}" \
                                   "/root/bin/freebsd-version"
 
@@ -787,7 +787,7 @@ class IOCJson(object):
             with open(f"{self.location}/plugin/settings.json", "r") as \
                     settings:
                 settings = json.load(settings)
-        except (IOError, OSError):
+        except FileNotFoundError:
             raise RuntimeError(
                 f"No settings.json exists in {self.location}/plugin!")
 
