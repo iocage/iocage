@@ -39,38 +39,39 @@ def print_version(ctx, param, value):
     sys.exit()
 
 
-@click.group(help="A jail manager.")
+cmd_folder = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                          'cli'))
+
+
+class IOCageCLI(click.MultiCommand):
+    """
+    Iterates in the 'cli' directory and will load any module's cli definition.
+    """
+    def list_commands(self, ctx):
+        rv = []
+
+        for filename in os.listdir(cmd_folder):
+            if filename.endswith('.py') and \
+               not filename.startswith('__init__'):
+                rv.append(filename.rstrip(".py"))
+        rv.sort()
+
+        return rv
+
+    def get_command(self, ctx, name):
+        try:
+            mod = __import__(f"iocage.cli.{name}",
+                             None, None, ["cli"])
+            return mod.cli
+        except (ImportError, AttributeError):
+            return
+
+
+@click.command(cls=IOCageCLI)
 @click.option("--version", "-v", is_flag=True, callback=print_version,
               help="Display iocage's version and exit.")
-@click.pass_context
-def cli(ctx, version):
-    """The placeholder for the calls."""
-    mod = ctx.obj[ctx.invoked_subcommand]
-    try:
-        if mod.__rootcmd__:
-            if "--help" not in sys.argv[1:]:
-                if os.geteuid() != 0:
-                    sys.exit("You need to have root privileges"
-                             " to run {}!".format(mod.__name__))
-    except AttributeError:
-        pass
-
-
-IOC_LIB = os.path.dirname(os.path.abspath(__file__))
-PATH = os.path.join("{}/cli".format(IOC_LIB))
-MODULES = {}
-for lib in glob.glob("{}/*.py".format(PATH)):
-    if "__init__.py" in lib:
-        continue
-
-    replace = lib.split("/")[-1].replace(".py", "")
-    _file, pathname, description = imp.find_module(replace, [PATH])
-    module = imp.load_module(replace, _file, pathname, description)
-    MODULES[replace] = module
-    cli.add_command(getattr(module, module.__cmdname__))
-
-
-def main():
+def cli(version):
+    """A jail manager."""
     skip_check = False
     skip_check_cmds = ["--help", "activate", "deactivate", "-v", "--version"]
 
@@ -87,11 +88,9 @@ def main():
 
         if not skip_check:
             IOCCheck()
-
-        cli(obj=MODULES)
     except RuntimeError as err:
         exit(err)
 
 
 if __name__ == '__main__':
-    main()
+    cli()

@@ -33,7 +33,7 @@ setup(name='iocage',
       setup_requires=['pytest-runner'],
       entry_points={
           'console_scripts': [
-              'iocage = iocage.main:main'
+              'iocage = iocage.main:cli'
           ]
       },
       data_files=_data,
