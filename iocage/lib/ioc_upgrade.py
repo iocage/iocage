@@ -60,7 +60,7 @@ class IOCUpgrade(object):
                         pass
 
                     if self.new_release[:4].endswith("-"):
-                        # 9.3-RELEASE and under don't actually have this binary.
+                        # 9.3-RELEASE and under don't actually have this binary
                         new_release = self.new_release
                     else:
                         with open(self._freebsd_version, "r") as r:

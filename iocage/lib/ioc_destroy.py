@@ -137,7 +137,7 @@ class IOCDestroy(object):
 
     def __destroy_parse_datasets__(self, path, clean=False):
         """
-        Parses the datasets before calling __destroy_dataset__ with each 
+        Parses the datasets before calling __destroy_dataset__ with each
         entry.
         """
         datasets = self.ds(path)
@@ -165,8 +165,8 @@ class IOCDestroy(object):
 
     def destroy_jail(self, path, clean=False):
         """
-        A convenience wrapper to call __stop_jails__ and  
-        __destroy_parse_datasets__
+        A convenience wrapper to call __stop_jails__ and
+         __destroy_parse_datasets__
         """
         dataset_type, uuid = path.rsplit("/")[-2:]
 
