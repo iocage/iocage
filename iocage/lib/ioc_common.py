@@ -6,7 +6,7 @@ import shutil
 import stat
 import tempfile as tmp
 from contextlib import contextmanager
-from subprocess import check_output
+from subprocess import CalledProcessError, check_output
 
 from iocage.lib.ioc_logger import IOCLogger
 
@@ -404,6 +404,11 @@ def get_nested_key(_dict, keys=[]):
 
 def checkoutput(*args, **kwargs):
     """Just a wrapper to return utf-8 from check_output"""
-    out = check_output(*args, **kwargs).decode("utf-8")
+    try:
+        out = check_output(*args, **kwargs)
+
+        out = out.decode("utf-8")
+    except CalledProcessError:
+        raise
 
     return out
