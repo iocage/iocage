@@ -219,6 +219,6 @@ class IOCList(object):
         try:
             jid = checkoutput(["jls", "-j", f"ioc-{uuid}"],
                               stderr=PIPE).split()[5]
-            return (True, jid)
+            return True, jid
         except CalledProcessError:
-            return (False, "-")
+            return False, "-"
