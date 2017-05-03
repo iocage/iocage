@@ -53,7 +53,7 @@ class IOCCreate(object):
         location = f"{self.iocroot}/jails/{jail_uuid}"
 
         try:
-            self._create_jail(jail_uuid, location)
+            return self._create_jail(jail_uuid, location)
         except KeyboardInterrupt:
             IOCDestroy().destroy_jail(location)
             sys.exit(1)
