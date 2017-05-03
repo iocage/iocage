@@ -62,6 +62,17 @@ class IOCageCLI(click.MultiCommand):
         try:
             mod = __import__(f"iocage.cli.{name}",
                              None, None, ["cli"])
+            mod_name = mod.__name__.replace("iocage.cli.", "")
+
+            try:
+                if mod.__rootcmd__ and "--help" not in sys.argv[1:]:
+                    if os.geteuid() != 0:
+                        sys.exit("You need to have root privileges to"
+                                 f" run {mod_name}")
+            except AttributeError:
+                # It's not a root required command.
+                pass
+
             return mod.cli
         except (ImportError, AttributeError):
             return
