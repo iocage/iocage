@@ -501,9 +501,9 @@ class IOCFetch(object):
                     except FileNotFoundError:
                         if not _missing:
                             logit({
-                                "level"  : "ERROR",
+                                "level"  : "WARNING",
                                 "message":
-                                    f"{f} missing, will download!"
+                                    f"{f} missing, will try to redownload!"
                             },
                                 _callback=self.callback,
                                 silent=self.silent)
@@ -589,7 +589,21 @@ class IOCFetch(object):
                             r"MANIFEST|base.txz|lib32.txz|doc.txz").match(f)):
                         try:
                             _ftp.voidcmd('TYPE I')
-                            filesize = _ftp.size(f)
+                            try:
+                                filesize = _ftp.size(f)
+                            except error_perm:
+                                # Could be HardenedBSD on a custom FTP
+                                # server, or they just don't have every
+                                # file we want. The only truly important
+                                # ones are base and MANIFEST for us,
+                                # the rest are not.
+                                # _list.remove(f)
+                                if f != "base.txz" and f != "MANIFEST":
+                                    self.files = tuple(x for x in _list if x
+                                                       != f)
+                                    continue
+                                else:
+                                    raise RuntimeError(f"{f} is required!")
 
                             with open(f, "wb") as txz:
                                 pbar = tqdm(total=filesize,
