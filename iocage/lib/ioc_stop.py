@@ -1,4 +1,5 @@
 """This stops jails."""
+import os
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
 
 from iocage.lib.ioc_common import checkoutput, logit
@@ -23,6 +24,21 @@ class IOCStop(object):
 
         self.__stop_jail__()
 
+    def runscript(self, script):
+        if os.access(script, os.X_OK):
+            # 0 if success
+            try:
+                out = checkoutput(script, stderr=STDOUT)
+            except CalledProcessError as err:
+                return False, err.output.decode().rstrip("\n")
+
+            if out:
+                return True, out.rstrip("\n")
+
+            return True, None
+        else:
+            return True, "Script is not executable!"
+
     def __stop_jail__(self):
         ip4_addr = self.conf["ip4_addr"]
         ip6_addr = self.conf["ip6_addr"]
@@ -40,13 +56,44 @@ class IOCStop(object):
         else:
             msg = f"* Stopping {self.uuid} ({self.conf['tag']})"
             logit({
-                      "level"  : "INFO",
-                      "message": msg
-                  },
-                  _callback=self.callback,
-                  silent=self.silent)
+                "level"  : "INFO",
+                "message": msg
+            },
+                _callback=self.callback,
+                silent=self.silent)
 
-            # TODO: Prestop findscript
+            prestop, prestop_err = self.runscript(self.conf["exec_prestop"])
+
+            if prestop and prestop_err:
+                msg = f"  + Running prestop WARNING\n{prestop_err}"
+                logit({
+                    "level"  : "WARNING",
+                    "message": msg
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+            elif prestop:
+                msg = "  + Running prestop OK"
+                logit({
+                    "level"  : "INFO",
+                    "message": msg
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+            else:
+                if prestop_err:
+                    # They may just be exiting on 1, with no real message.
+                    msg = f"  + Running prestop FAILED\n{prestop_err}"
+                else:
+                    msg = f"  + Running prestop FAILED"
+
+                logit({
+                    "level"  : "ERROR",
+                    "message": msg
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+
             exec_stop = self.conf["exec_stop"].split()
             with open("{}/log/{}-console.log".format(self.iocroot,
                                                      self.uuid), "a") as f:
@@ -197,6 +244,38 @@ class IOCStop(object):
                       },
                       _callback=self.callback,
                       silent=self.silent)
+
+            poststop, poststop_err = self.runscript(self.conf["exec_poststop"])
+
+            if poststop and poststop_err:
+                msg = f"  + Running poststop WARNING\n{poststop_err}"
+                logit({
+                    "level"  : "WARNING",
+                    "message": msg
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+            elif poststop:
+                msg = "  + Running poststop OK"
+                logit({
+                    "level"  : "INFO",
+                    "message": msg
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+            else:
+                if poststop_err:
+                    # They may just be exiting on 1, with no real message.
+                    msg = f"  + Running poststop FAILED\n{poststop_err}"
+                else:
+                    msg = f"  + Running poststop FAILED"
+
+                logit({
+                    "level"  : "ERROR",
+                    "message": msg
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
 
             Popen(["umount", "-afF", "{}/fstab".format(self.path)],
                   stderr=PIPE).communicate()

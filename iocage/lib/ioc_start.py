@@ -1,7 +1,7 @@
 """This is responsible for starting jails."""
 import re
 from datetime import datetime
-from os import X_OK, access, chdir, getcwd, makedirs, path as ospath, \
+from os import chdir, getcwd, makedirs, path as ospath, \
     symlink, uname
 from shutil import copy
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
@@ -67,9 +67,9 @@ class IOCStart(object):
             allow_mount_zfs = self.conf["allow_mount_zfs"]
             allow_quotas = self.conf["allow_quotas"]
             allow_socket_af = self.conf["allow_socket_af"]
-            exec_prestart = self.start_findscript("prestart")
-            exec_poststart = self.start_findscript("poststart")
-            exec_prestop = self.start_findscript("prestop")
+            exec_prestart = self.conf["exec_prestart"]
+            exec_poststart = self.conf["exec_poststart"]
+            exec_prestop = self.conf["exec_prestop"]
             exec_stop = self.conf["exec_stop"]
             exec_clean = self.conf["exec_clean"]
             exec_timeout = self.conf["exec_timeout"]
@@ -463,13 +463,6 @@ class IOCStart(object):
             return f"{err.output.decode('utf-8')}".rstrip()
         else:
             return
-
-    def start_findscript(self, exec_type):
-        # TODO: Do something with this.
-        if access("{}/{}".format(self.path, exec_type), X_OK):
-            return "{}/{}".format(self.path, exec_type)
-        else:
-            return self.get("exec_{}".format(exec_type))
 
     def start_generate_resolv(self):
         resolver = self.get("resolver")
