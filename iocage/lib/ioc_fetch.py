@@ -987,7 +987,7 @@ fingerprint: {fingerprint}
 
     def fetch_plugin_index(self, props, _list=False):
         if self.server == "ftp.freebsd.org":
-            git_server = "https://github.com/iXsystems/iocage-ix-plugins.git"
+            git_server = "https://github.com/freenas/iocage-ix-plugins.git"
         else:
             git_server = self.server
 
