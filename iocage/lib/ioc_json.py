@@ -844,6 +844,7 @@ class IOCJson(object):
         keys, _, value = ".".join(prop).partition("=")
         prop = keys.split(".")
         restart = False
+        readonly = False
 
         if "options" in prop:
             prop = keys.split(".")[1:]
@@ -862,10 +863,18 @@ class IOCJson(object):
                     if setting[current]:
                         try:
                             restart = setting[current]["requirerestart"]
+                            readonly = setting[current]["readonly"]
                         except KeyError:
                             pass
                 else:
                     setting = setting[current]
+
+            if readonly:
+                logit({
+                    "level"  : "ERROR",
+                    "message": "This key is readonly!"
+                })
+                return True
 
             if status:
                 # IOCExec will not show this if it doesn't start the jail.
