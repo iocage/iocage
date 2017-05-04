@@ -69,7 +69,7 @@ class IOCList(object):
                 template = template.properties["mountpoint"].value
                 conf = IOCJson(template).json_load()
 
-                jails[conf["tag"]] = conf["host_hostuuid"]
+                jails[f"{conf['tag']} (template)"] = conf["host_hostuuid"]
                 paths[conf["tag"]] = template
 
             if len(dups):
