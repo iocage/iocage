@@ -858,10 +858,24 @@ class IOCFetch(object):
         IOCStart(uuid, tag, jaildir, _conf, silent=True)
 
         try:
+            os.makedirs(f"{jaildir}/root/usr/local/etc/pkg/repos", 0o755)
+        except OSError:
+            # Same as below, it exists and we're OK with that.
+            pass
+
+        freebsd_conf = """\
+FreeBSD: { enabled: no }
+"""
+
+        try:
             os.makedirs(repo_dir, 0o755)
         except OSError:
             # It exists, that's fine.
             pass
+
+        with open(f"{jaildir}/root/usr/local/etc/pkg/repos/FreeBSD.conf",
+                  "w") as f_conf:
+            f_conf.write(freebsd_conf)
 
         for repo in pkg_repos:
             repo_name = repo
