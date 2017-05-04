@@ -961,12 +961,14 @@ fingerprint: {fingerprint}
                         with open(ui_json, "r") as u:
                             admin_portal = json.load(u)["adminportal"]
                             try:
-                                ip4 = _conf["ip4_addr"].split("|")[1]
+                                ip4 = _conf["ip4_addr"].split("|")[
+                                    1].rsplit("/")[0]
                             except IndexError:
                                 ip4 = "none"
 
                             try:
-                                ip6 = _conf["ip6_addr"].split("|")[1]
+                                ip6 = _conf["ip6_addr"].split("|")[
+                                    1].rsplit("/")[0]
                             except IndexError:
                                 ip6 = "none"
 
