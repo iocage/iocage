@@ -102,7 +102,10 @@ def cli(prop, _all, _pool, jail, recursive, header, plugin):
                     "message": json.dumps(props, indent=4)
                 })
             else:
-                pass
+                logit({
+                    "level"  : "INFO",
+                    "message": props[0].decode("utf-8")
+                })
         elif prop == "all":
             props = IOCJson(path).json_get_value(prop)
 
