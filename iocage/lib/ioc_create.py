@@ -400,10 +400,11 @@ class IOCCreate(object):
         },
             _callback=self.callback,
             silent=self.silent)
-        srv_connection = IOCExec(srv_connect_cmd, jail_uuid, _tag, location,
-                                 plugin=self.plugin).exec_jail()
+        srv_connection, srv_err = IOCExec(srv_connect_cmd, jail_uuid, _tag,
+                                          location,
+                                          plugin=self.plugin).exec_jail()
 
-        if srv_connection:
+        if srv_err:
             raise RuntimeError(f"{srv_connection}\n"
                                f"Command run: {' '.join(srv_connect_cmd)}")
 
@@ -413,10 +414,11 @@ class IOCCreate(object):
         },
             _callback=self.callback,
             silent=self.silent)
-        dnssec_connection = IOCExec(dnssec_connect_cmd, jail_uuid, _tag,
-                                    location, plugin=self.plugin).exec_jail()
+        dnssec_connection, dnssec_err = IOCExec(dnssec_connect_cmd,
+                                                jail_uuid, _tag, location,
+                                                plugin=self.plugin).exec_jail()
 
-        if dnssec_connection:
+        if dnssec_err:
             raise RuntimeError(f"{dnssec_connection}\n"
                                f"Command run: {' '.join(dnssec_connect_cmd)}")
 
@@ -437,10 +439,11 @@ class IOCCreate(object):
         # We will have mismatched ABI errors from earlier, this is to be safe.
         os.environ["ASSUME_ALWAYS_YES"] = "yes"
         cmd = ("pkg-static", "upgrade", "-f", "-q", "-y")
-        pkg_upgrade = IOCExec(cmd, jail_uuid, _tag, location,
-                              plugin=self.plugin).exec_jail()
+        pkg_upgrade, pkgupgrade_err = IOCExec(cmd, jail_uuid, _tag,
+                                              location,
+                                              plugin=self.plugin).exec_jail()
 
-        if pkg_upgrade:
+        if pkgupgrade_err:
             logit({
                 "level"  : "ERROR",
                 "message": f"{pkg_upgrade}"
@@ -463,10 +466,10 @@ class IOCCreate(object):
                 _callback=self.callback,
                 silent=self.silent)
             cmd = ("pkg", "install", "-q", "-y", pkg)
-            pkg_install = IOCExec(cmd, jail_uuid, _tag, location,
-                                  plugin=self.plugin).exec_jail()
+            pkg_install, pkg_err = IOCExec(cmd, jail_uuid, _tag, location,
+                                           plugin=self.plugin).exec_jail()
 
-            if pkg_install:
+            if pkg_err:
                 logit({
                     "level"  : "ERROR",
                     "message": f"{pkg_install}"
