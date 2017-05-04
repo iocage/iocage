@@ -952,8 +952,12 @@ fingerprint: {fingerprint}
                         _callback=self.callback,
                         silent=self.silent)
                     command = ["sh", "/root/post_install.sh"]
-                    IOCExec(command, uuid, conf["name"], jaildir,
-                            skip=True).exec_jail()
+                    msg, err = IOCExec(command, uuid, conf["name"], jaildir,
+                                       skip=True, plugin=True).exec_jail()
+                    logit({
+                        "level"  : "INFO",
+                        "message": msg
+                    })
 
                     ui_json = f"{jaildir}/plugin/ui.json"
                     try:

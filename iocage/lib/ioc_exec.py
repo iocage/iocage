@@ -68,11 +68,13 @@ class IOCExec(object):
 
         if self.plugin:
             try:
-                checkoutput(["setfib", exec_fib, "jexec", flag, user,
-                             f"ioc-{self.uuid}"] + list(self.command),
-                            stderr=STDOUT)
+                msg = checkoutput(["setfib", exec_fib, "jexec", flag, user,
+                                   f"ioc-{self.uuid}"] + list(self.command),
+                                  stderr=STDOUT)
+
+                return msg, False
             except CalledProcessError as err:
-                return err.output.decode("utf-8").rstrip()
+                return err.output.decode("utf-8").rstrip(), True
         else:
             jexec = Popen(["setfib", exec_fib, "jexec", flag, user,
                            f"ioc-{self.uuid}"] + list(self.command),
