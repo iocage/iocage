@@ -53,8 +53,8 @@ class IOCFstab(object):
 
     def __fstab_add__(self):
         """Adds a users mount to the jails fstab"""
-        with open(f"{self.uuid}/jails/{self.uuid}/fstab", "r") as fstab:
-            with open_atomic(f"{self.uuid}/jails/{self.uuid}/fstab",
+        with open(f"{self.iocroot}/jails/{self.uuid}/fstab", "r") as fstab:
+            with open_atomic(f"{self.iocroot}/jails/{self.uuid}/fstab",
                              "w") as _fstab:
                 # open_atomic will empty the file, we need these still.
                 for line in fstab.readlines():
