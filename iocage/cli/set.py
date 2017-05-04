@@ -60,7 +60,9 @@ def cli(prop, jail, plugin):
             exit(1)
     if plugin:
         _prop = prop.split(".")
-        IOCJson(path, cli=True).json_plugin_set_value(_prop)
+        err = IOCJson(path, cli=True).json_plugin_set_value(_prop)
+        if err:
+            exit(1)
     else:
         try:
             # We use this to test if it's a valid property at all.
