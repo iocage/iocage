@@ -369,7 +369,8 @@ class IOCCreate(object):
 
         return default_props
 
-    def create_install_packages(self, jail_uuid, location, _tag, config):
+    def create_install_packages(self, jail_uuid, location, _tag, config,
+                                repo="pkg.freebsd.org", site="FreeBSD"):
         """
         Takes a list of pkg's to install into the target jail. The resolver
         property is required for pkg to have network access.
@@ -390,12 +391,12 @@ class IOCCreate(object):
             status, jid = IOCList().list_get_jid(jail_uuid)
 
         # Connectivity test courtesy David Cottlehuber off Google Group
-        srv_connect_cmd = ["drill", "_http._tcp.pkg.freebsd.org", "SRV"]
-        dnssec_connect_cmd = ["drill", "-D", "pkg.freebsd.org"]
+        srv_connect_cmd = ["drill", f"_http._tcp.{repo}", "SRV"]
+        dnssec_connect_cmd = ["drill", "-D", f"{repo}"]
 
         logit({
             "level"  : "INFO",
-            "message": "Testing SRV response to FreeBSD"
+            "message": f"Testing SRV response to {site}"
         },
             _callback=self.callback,
             silent=self.silent)
@@ -408,7 +409,7 @@ class IOCCreate(object):
 
         logit({
             "level"  : "INFO",
-            "message": "Testing DNSSEC response to FreeBSD"
+            "message": f"Testing DNSSEC response to {site}"
         },
             _callback=self.callback,
             silent=self.silent)

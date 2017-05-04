@@ -919,10 +919,9 @@ fingerprint: {fingerprint}
                                                     fingerprint=r[
                                                         "fingerprint"]))
         err = IOCCreate(self.release, create_props, 0, plugin=True,
-                        pkglist=conf["pkgs"]).create_install_packages(uuid,
-                                                                      jaildir,
-                                                                      tag,
-                                                                      _conf)
+                        pkglist=conf["pkgs"]).create_install_packages(
+            uuid, jaildir, tag, _conf, repo=conf["packagesite"],
+            site=repo_name)
         if not err:
             # We need to pipe from tar to the root of the jail.
             if conf["artifact"]:
