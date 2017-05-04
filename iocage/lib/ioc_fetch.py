@@ -595,9 +595,8 @@ class IOCFetch(object):
                                 # Could be HardenedBSD on a custom FTP
                                 # server, or they just don't have every
                                 # file we want. The only truly important
-                                # ones are base and MANIFEST for us,
+                                # ones are base.txz and MANIFEST for us,
                                 # the rest are not.
-                                # _list.remove(f)
                                 if f != "base.txz" and f != "MANIFEST":
                                     self.files = tuple(x for x in _list if x
                                                        != f)
