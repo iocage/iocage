@@ -189,7 +189,8 @@ class IOCCreate(object):
                         "usr/libdata", "usr/lib32"]
 
             for bdir in basedirs:
-                if "-RELEASE" not in self.release:
+                if "-RELEASE" not in self.release and "-STABLE" not in \
+                        self.release:
                     _type = "templates"
                 else:
                     _type = "releases"
