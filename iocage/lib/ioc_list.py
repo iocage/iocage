@@ -70,7 +70,7 @@ class IOCList(object):
                 conf = IOCJson(template).json_load()
 
                 jails[f"{conf['tag']} (template)"] = conf["host_hostuuid"]
-                paths[conf["tag"]] = template
+                paths[f"{conf['tag']} (template)"] = template
 
             if len(dups):
                 logit({
