@@ -1,5 +1,6 @@
-import pytest
 import os
+
+import pytest
 
 from iocage.lib.ioc_common import checkoutput
 

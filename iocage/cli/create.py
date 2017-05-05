@@ -1,15 +1,14 @@
 """create module for the cli."""
 import json
 import os
-from json import JSONDecodeError
 
 import click
 
-from iocage.lib.ioc_common import checkoutput, logit
-from iocage.lib.ioc_create import IOCCreate
-from iocage.lib.ioc_fetch import IOCFetch
-from iocage.lib.ioc_json import IOCJson
-from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_common as ioc_common
+import iocage.lib.ioc_create as ioc_create
+import iocage.lib.ioc_fetch as ioc_fetch
+import iocage.lib.ioc_json as ioc_json
+import iocage.lib.ioc_list as ioc_list
 
 __rootcmd__ = True
 
@@ -22,7 +21,7 @@ def validate_count(ctx, param, value):
 
             return int(value)
         except ValueError:
-            logit({
+            ioc_common.logit({
                 "level"  : "ERROR",
                 "message": f"({value} is not a valid  integer."
             })
@@ -47,7 +46,7 @@ def validate_count(ctx, param, value):
 def cli(release, template, count, props, pkglist, basejail, empty, short,
         uuid):
     if short and uuid:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": "Can't use --short (-s) and  --uuid (-u) at the same"
                        " time!"
@@ -55,14 +54,14 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
         exit(1)
 
     if not template and not release and not empty:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": "Must supply either --template (-t) or --release (-r)!"
         })
         exit(1)
 
     if release and "=" in release:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": "Please supply a valid RELEASE!"
         })
@@ -81,7 +80,7 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
 }"""
 
         if not os.path.isfile(pkglist):
-            logit({
+            ioc_common.logit({
                 "level"  : "ERROR",
                 "message": f"{pkglist} does not exist!\n"
                            "Please supply a JSON file with the format:"
@@ -93,72 +92,75 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
                 # Just try to open the JSON with the right key.
                 with open(pkglist, "r") as p:
                     json.load(p)["pkgs"]  # noqa
-            except JSONDecodeError:
-                logit({
+            except json.JSONDecodeError:
+                ioc_common.logit({
                     "level"  : "ERROR",
                     "message": "Please supply a valid"
                                f" JSON file with the format:{_pkgformat}"
                 })
                 exit(1)
 
-    pool = IOCJson().json_get_value("pool")
-    iocroot = IOCJson(pool).json_get_value("iocroot")
+    pool = ioc_json.IOCJson().json_get_value("pool")
+    iocroot = ioc_json.IOCJson(pool).json_get_value("iocroot")
 
     if not os.path.isdir(
             f"{iocroot}/releases/{release}") and not template and not empty:
-        freebsd_version = checkoutput(["freebsd-version"])
+        freebsd_version = ioc_common.checkoutput(["freebsd-version"])
 
         if "HBSD" in freebsd_version:
             hardened = True
         else:
             hardened = False
 
-        IOCFetch(release, hardened=hardened).fetch_release()
+        ioc_fetch.IOCFetch(release, hardened=hardened).fetch_release()
 
     if empty:
         release = "EMPTY"
 
     if count == 1:
         try:
-            IOCCreate(release, props, 0, pkglist,
-                      template=template, short=short, uuid=uuid,
-                      basejail=basejail, empty=empty).create_jail()
+            ioc_create.IOCCreate(release, props, 0, pkglist,
+                                 template=template, short=short, uuid=uuid,
+                                 basejail=basejail, empty=empty).create_jail()
         except RuntimeError as err:
-            logit({
+            ioc_common.logit({
                 "level"  : "ERROR",
                 "message": err
             })
 
             if template:
-                logit({
+                ioc_common.logit({
                     "level"  : "INFO",
                     "message": "Created Templates:"
                 })
-                templates = IOCList("template", hdr=False).list_datasets()
+                templates = ioc_list.IOCList("template",
+                                             hdr=False).list_datasets()
                 for temp in templates:
-                    logit({
+                    ioc_common.logit({
                         "level"  : "INFO",
                         "message": f"  {temp[3]}"
                     })
     else:
         for j in range(1, count + 1):
             try:
-                IOCCreate(release, props, j, pkglist,
-                          template=template, short=short,
-                          basejail=basejail, empty=empty).create_jail()
+                ioc_create.IOCCreate(release, props, j, pkglist,
+                                     template=template, short=short,
+                                     basejail=basejail,
+                                     empty=empty).create_jail()
             except RuntimeError as err:
-                logit({
+                ioc_common.logit({
                     "level"  : "ERROR",
                     "message": err
                 })
                 if template:
-                    logit({
+                    ioc_common.logit({
                         "level"  : "INFO",
                         "message": "Created Templates:"
                     })
-                    templates = IOCList("template", hdr=False).list_datasets()
+                    templates = ioc_list.IOCList("template",
+                                                 hdr=False).list_datasets()
                     for temp in templates:
-                        logit({
+                        ioc_common.logit({
                             "level"  : "INFO",
                             "message": f"  {temp[3]}"
                         })

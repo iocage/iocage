@@ -1,14 +1,14 @@
 """restart module for the cli."""
-from datetime import datetime
-from subprocess import PIPE, Popen
+import datetime
+import subprocess as su
 
 import click
 
-from iocage.lib.ioc_common import logit
-from iocage.lib.ioc_json import IOCJson
-from iocage.lib.ioc_list import IOCList
-from iocage.lib.ioc_start import IOCStart
-from iocage.lib.ioc_stop import IOCStop
+import iocage.lib.ioc_common as ioc_common
+import iocage.lib.ioc_json as ioc_json
+import iocage.lib.ioc_list as ioc_list
+import iocage.lib.ioc_start as ioc_start
+import iocage.lib.ioc_stop as ioc_stop
 
 __rootcmd__ = True
 
@@ -18,7 +18,7 @@ def check_type(uuid, tag, path, _all, soft):
     Checks the jail type and spits out an error or does the specified 
     restart method.
     """
-    conf = IOCJson(path).json_load()
+    conf = ioc_json.IOCJson(path).json_load()
 
     if conf["type"] in ("jail", "plugin"):
         if not soft:
@@ -26,7 +26,7 @@ def check_type(uuid, tag, path, _all, soft):
         else:
             __soft_restart__(uuid, tag, path, conf)
     elif conf["type"] == "basejail":
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": "Please run \"iocage migrate\" before trying"
                        f" to restart {uuid} ({tag})"
@@ -34,7 +34,7 @@ def check_type(uuid, tag, path, _all, soft):
         if not _all:
             exit(1)
     elif conf["type"] == "template":
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": "Please convert back to a jail before trying"
                        f" to restart {uuid} ({tag})"
@@ -42,7 +42,7 @@ def check_type(uuid, tag, path, _all, soft):
         if not _all:
             exit(1)
     else:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": f"{conf['type']} is not a supported jail type."
         })
@@ -60,7 +60,7 @@ def cli(jail, soft):
     Looks for the jail supplied and passes the uuid, path and configuration
     location to stop_jail and start_jail.
     """
-    jails, paths = IOCList("uuid").list_datasets()
+    jails, paths = ioc_list.IOCList("uuid").list_datasets()
 
     if jail == "ALL":
         for j in jails:
@@ -78,18 +78,18 @@ def cli(jail, soft):
 
             check_type(uuid, tag, path, False, soft)
         elif len(_jail) > 1:
-            logit({
+            ioc_common.logit({
                 "level"  : "ERROR",
                 "message": f"Multiple jails found for {jail}:"
             })
             for t, u in sorted(_jail.items()):
-                logit({
+                ioc_common.logit({
                     "level"  : "ERROR",
                     "message": f"  {u} ({t})"
                 })
             exit(1)
         else:
-            logit({
+            ioc_common.logit({
                 "level"  : "ERROR",
                 "message": f"{jail} not found!"
             })
@@ -98,8 +98,8 @@ def cli(jail, soft):
 
 def __hard_restart__(uuid, jail, path, conf):
     """Stops and then starts the jail."""
-    IOCStop(uuid, jail, path, conf)
-    IOCStart(uuid, jail, path, conf)
+    ioc_stop.IOCStop(uuid, jail, path, conf)
+    ioc_start.IOCStart(uuid, jail, path, conf)
 
 
 def __soft_restart__(uuid, jail, path, conf):
@@ -107,7 +107,7 @@ def __soft_restart__(uuid, jail, path, conf):
     Will tear down the jail by running exec_stop and then exec_start, leaving
     the network stack intact, ideal for VIMAGE.
     """
-    getjid = IOCList().list_get_jid(uuid)
+    getjid = ioc_list.IOCList().list_get_jid(uuid)
     status, jid = getjid
 
     # These needs to be a list.
@@ -116,20 +116,21 @@ def __soft_restart__(uuid, jail, path, conf):
     exec_fib = conf["exec_fib"]
 
     if status:
-        logit({
+        ioc_common.logit({
             "level"  : "INFO",
             "message": f"Soft restarting {uuid} ({jail})"
         })
         stop_cmd = ["setfib", exec_fib, "jexec", f"ioc-{uuid}"] + exec_stop
-        Popen(stop_cmd, stdout=PIPE, stderr=PIPE).communicate()
+        su.Popen(stop_cmd, stdout=su.PIPE, stderr=su.PIPE).communicate()
 
-        Popen(["pkill", "-j", jid]).communicate()
+        su.Popen(["pkill", "-j", jid]).communicate()
         start_cmd = ["setfib", exec_fib, "jexec", f"ioc-{uuid}"] + exec_start
-        Popen(start_cmd, stdout=PIPE, stderr=PIPE).communicate()
-        IOCJson(path, silent=True).json_set_value("last_started={}".format(
-            datetime.utcnow().strftime("%F %T")))
+        su.Popen(start_cmd, stdout=su.PIPE, stderr=su.PIPE).communicate()
+        ioc_json.IOCJson(path, silent=True).json_set_value(
+            "last_started={}".format(
+                datetime.datetime.utcnow().strftime("%F %T")))
     else:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": f"{jail} is not running!"
         })

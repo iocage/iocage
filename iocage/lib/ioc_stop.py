@@ -1,23 +1,25 @@
 """This stops jails."""
 import os
-from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
+import subprocess as su
 
-from iocage.lib.ioc_common import checkoutput, logit
-from iocage.lib.ioc_json import IOCJson
-from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_common
+import iocage.lib.ioc_json
+import iocage.lib.ioc_list
 
 
 class IOCStop(object):
     """Stops a jail and unmounts the jails mountpoints."""
 
     def __init__(self, uuid, jail, path, conf, silent=False, callback=None):
-        self.pool = IOCJson(" ").json_get_value("pool")
-        self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
+        self.pool = iocage.lib.ioc_json.IOCJson(" ").json_get_value("pool")
+        self.iocroot = iocage.lib.ioc_json.IOCJson(self.pool).json_get_value(
+            "iocroot")
         self.uuid = uuid
         self.jail = jail
         self.path = path
         self.conf = conf
-        self.status, self.jid = IOCList().list_get_jid(uuid)
+        self.status, self.jid = iocage.lib.ioc_list.IOCList().list_get_jid(
+            uuid)
         self.nics = conf["interfaces"]
         self.callback = callback
         self.silent = silent
@@ -25,11 +27,16 @@ class IOCStop(object):
         self.__stop_jail__()
 
     def runscript(self, script):
+        """
+        Runs the users provided script, otherwise returns a tuple with 
+        True/False and the error.
+        """
         if os.access(script, os.X_OK):
             # 0 if success
             try:
-                out = checkoutput(script, stderr=STDOUT)
-            except CalledProcessError as err:
+                out = iocage.lib.ioc_common.checkoutput(script,
+                                                        stderr=su.STDOUT)
+            except su.CalledProcessError as err:
                 return False, err.output.decode().rstrip("\n")
 
             if out:
@@ -47,15 +54,15 @@ class IOCStop(object):
 
         if not self.status:
             msg = f"{self.uuid} ({self.conf['tag']}) is not running!"
-            logit({
-                      "level"  : "ERROR",
-                      "message": msg
-                  },
-                  _callback=self.callback,
-                  silent=self.silent)
+            iocage.lib.ioc_common.logit({
+                "level"  : "ERROR",
+                "message": msg
+            },
+                _callback=self.callback,
+                silent=self.silent)
         else:
             msg = f"* Stopping {self.uuid} ({self.conf['tag']})"
-            logit({
+            iocage.lib.ioc_common.logit({
                 "level"  : "INFO",
                 "message": msg
             },
@@ -66,7 +73,7 @@ class IOCStop(object):
 
             if prestop and prestop_err:
                 msg = f"  + Running prestop WARNING\n{prestop_err}"
-                logit({
+                iocage.lib.ioc_common.logit({
                     "level"  : "WARNING",
                     "message": msg
                 },
@@ -74,7 +81,7 @@ class IOCStop(object):
                     silent=self.silent)
             elif prestop:
                 msg = "  + Running prestop OK"
-                logit({
+                iocage.lib.ioc_common.logit({
                     "level"  : "INFO",
                     "message": msg
                 },
@@ -87,7 +94,7 @@ class IOCStop(object):
                 else:
                     msg = f"  + Running prestop FAILED"
 
-                logit({
+                iocage.lib.ioc_common.logit({
                     "level"  : "ERROR",
                     "message": msg
                 },
@@ -97,48 +104,51 @@ class IOCStop(object):
             exec_stop = self.conf["exec_stop"].split()
             with open("{}/log/{}-console.log".format(self.iocroot,
                                                      self.uuid), "a") as f:
-                services = check_call(["setfib", exec_fib, "jexec",
-                                       f"ioc-{self.uuid}"] + exec_stop,
-                                      stdout=f, stderr=PIPE)
+                services = su.check_call(["setfib", exec_fib, "jexec",
+                                          f"ioc-{self.uuid}"] + exec_stop,
+                                         stdout=f, stderr=su.PIPE)
             if services:
                 msg = "  + Stopping services FAILED"
-                logit({
-                          "level"  : "ERROR",
-                          "message": msg
-                      },
-                      _callback=self.callback,
-                      silent=self.silent)
+                iocage.lib.ioc_common.logit({
+                    "level"  : "ERROR",
+                    "message": msg
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
             else:
                 msg = "  + Stopping services OK"
-                logit({
-                          "level"  : "INFO",
-                          "message": msg
-                      },
-                      _callback=self.callback,
-                      silent=self.silent)
+                iocage.lib.ioc_common.logit({
+                    "level"  : "INFO",
+                    "message": msg
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
 
             if self.conf["jail_zfs"] == "on":
                 for jdataset in self.conf["jail_zfs_dataset"].split():
                     jdataset = jdataset.strip()
-                    children = checkoutput(["zfs", "list", "-H", "-r", "-o",
-                                            "name", "-S", "name",
-                                            "{}/{}".format(self.pool,
-                                                           jdataset)])
+                    children = iocage.lib.ioc_common.checkoutput(
+                        ["zfs", "list", "-H", "-r", "-o",
+                         "name", "-S", "name",
+                         "{}/{}".format(self.pool,
+                                        jdataset)])
 
                     for child in children.split():
                         child = child.strip()
 
                         try:
-                            checkoutput(["setfib", exec_fib, "jexec",
-                                         f"ioc-{self.uuid}", "zfs", "umount",
-                                         child], stderr=STDOUT)
-                        except CalledProcessError as err:
-                            mountpoint = checkoutput(["zfs", "get", "-H",
-                                                      "-o",
-                                                      "value", "mountpoint",
-                                                      "{}/{}".format(
-                                                          self.pool,
-                                                          jdataset)]).strip()
+                            iocage.lib.ioc_common.checkoutput(
+                                ["setfib", exec_fib, "jexec",
+                                 f"ioc-{self.uuid}", "zfs", "umount",
+                                 child], stderr=su.STDOUT)
+                        except su.CalledProcessError as err:
+                            mountpoint = iocage.lib.ioc_common.checkoutput(
+                                ["zfs", "get", "-H",
+                                 "-o",
+                                 "value", "mountpoint",
+                                 "{}/{}".format(
+                                     self.pool,
+                                     jdataset)]).strip()
                             if mountpoint == "none":
                                 pass
                             else:
@@ -147,10 +157,12 @@ class IOCStop(object):
                                         err.output.decode("utf-8").rstrip()))
 
                     try:
-                        checkoutput(["zfs", "unjail", "ioc-{}".format(
-                            self.uuid), "{}/{}".format(self.pool, jdataset)],
-                                    stderr=STDOUT)
-                    except CalledProcessError as err:
+                        iocage.lib.ioc_common.checkoutput(
+                            ["zfs", "unjail", "ioc-{}".format(
+                                self.uuid),
+                             "{}/{}".format(self.pool, jdataset)],
+                            stderr=su.STDOUT)
+                    except su.CalledProcessError as err:
                         raise RuntimeError(
                             "{}".format(
                                 err.output.decode("utf-8").rstrip()))
@@ -159,10 +171,10 @@ class IOCStop(object):
                 for nic in self.nics.split(","):
                     nic = nic.split(":")[0]
                     try:
-                        checkoutput(
+                        iocage.lib.ioc_common.checkoutput(
                             ["ifconfig", "{}:{}".format(nic, self.jid),
-                             "destroy"], stderr=STDOUT)
-                    except CalledProcessError:
+                             "destroy"], stderr=su.STDOUT)
+                    except su.CalledProcessError:
                         pass
 
             if ip4_addr != "inherit" and vnet == "off":
@@ -171,19 +183,21 @@ class IOCStop(object):
                         try:
                             iface, addr = ip4.split("/")[0].split("|")
                             addr = addr.split()
-                            checkoutput(["ifconfig", iface] + addr +
-                                         ["-alias"], stderr=STDOUT)
+                            iocage.lib.ioc_common.checkoutput(
+                                ["ifconfig", iface] + addr +
+                                ["-alias"],
+                                stderr=su.STDOUT)
                         except ValueError:
                             # Likely a misconfigured ip_addr with no interface.
                             msg = "  ! IP4 address is missing an interface," \
                                   " set ip4_addr to \"INTERFACE|IPADDR\""
-                            logit({
-                                      "level"  : "INFO",
-                                      "message": msg
-                                  },
-                                  _callback=self.callback,
-                                  silent=self.silent)
-                        except CalledProcessError as err:
+                            iocage.lib.ioc_common.logit({
+                                "level"  : "INFO",
+                                "message": msg
+                            },
+                                _callback=self.callback,
+                                silent=self.silent)
+                        except su.CalledProcessError as err:
                             if "Can't assign requested address" in \
                                     err.output.decode("utf-8"):
                                 # They may have a new address that somehow
@@ -201,19 +215,20 @@ class IOCStop(object):
                         try:
                             iface, addr = ip6.split("/")[0].split("|")
                             addr = addr.split()
-                            checkoutput(["ifconfig", iface, "inet6"] + addr +
-                                         ["-alias"], stderr=STDOUT)
+                            iocage.lib.ioc_common.checkoutput(
+                                ["ifconfig", iface, "inet6"] + addr +
+                                ["-alias"], stderr=su.STDOUT)
                         except ValueError:
                             # Likely a misconfigured ip_addr with no interface.
                             msg = "  ! IP6 address is missing an interface," \
                                   " set ip6_addr to \"INTERFACE|IPADDR\""
-                            logit({
-                                      "level"  : "INFO",
-                                      "message": msg
-                                  },
-                                  _callback=self.callback,
-                                  silent=self.silent)
-                        except CalledProcessError as err:
+                            iocage.lib.ioc_common.logit({
+                                "level"  : "INFO",
+                                "message": msg
+                            },
+                                _callback=self.callback,
+                                silent=self.silent)
+                        except su.CalledProcessError as err:
                             if "Can't assign requested address" in \
                                     err.output.decode("utf-8"):
                                 # They may have a new address that somehow
@@ -225,31 +240,31 @@ class IOCStop(object):
                                     "{}".format(
                                         err.output.decode("utf-8").strip()))
 
-            stop = check_call(["jail", "-r", "ioc-{}".format(self.uuid)],
-                              stderr=PIPE)
+            stop = su.check_call(["jail", "-r", "ioc-{}".format(self.uuid)],
+                                 stderr=su.PIPE)
 
             if stop:
                 msg = "  + Removing jail process FAILED"
-                logit({
-                          "level"  : "ERROR",
-                          "message": msg
-                      },
-                      _callback=self.callback,
-                      silent=self.silent)
+                iocage.lib.ioc_common.logit({
+                    "level"  : "ERROR",
+                    "message": msg
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
             else:
                 msg = "  + Removing jail process OK"
-                logit({
-                          "level"  : "INFO",
-                          "message": msg
-                      },
-                      _callback=self.callback,
-                      silent=self.silent)
+                iocage.lib.ioc_common.logit({
+                    "level"  : "INFO",
+                    "message": msg
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
 
             poststop, poststop_err = self.runscript(self.conf["exec_poststop"])
 
             if poststop and poststop_err:
                 msg = f"  + Running poststop WARNING\n{poststop_err}"
-                logit({
+                iocage.lib.ioc_common.logit({
                     "level"  : "WARNING",
                     "message": msg
                 },
@@ -257,7 +272,7 @@ class IOCStop(object):
                     silent=self.silent)
             elif poststop:
                 msg = "  + Running poststop OK"
-                logit({
+                iocage.lib.ioc_common.logit({
                     "level"  : "INFO",
                     "message": msg
                 },
@@ -270,22 +285,22 @@ class IOCStop(object):
                 else:
                     msg = f"  + Running poststop FAILED"
 
-                logit({
+                iocage.lib.ioc_common.logit({
                     "level"  : "ERROR",
                     "message": msg
                 },
                     _callback=self.callback,
                     silent=self.silent)
 
-            Popen(["umount", "-afF", "{}/fstab".format(self.path)],
-                  stderr=PIPE).communicate()
-            Popen(["umount", "-f", "{}/root/dev/fd".format(self.path)],
-                  stderr=PIPE).communicate()
-            Popen(["umount", "-f", "{}/root/dev".format(self.path)],
-                  stderr=PIPE).communicate()
-            Popen(["umount", "-f", "{}/root/proc".format(self.path)],
-                  stderr=PIPE).communicate()
-            Popen(
+            su.Popen(["umount", "-afF", "{}/fstab".format(self.path)],
+                     stderr=su.PIPE).communicate()
+            su.Popen(["umount", "-f", "{}/root/dev/fd".format(self.path)],
+                     stderr=su.PIPE).communicate()
+            su.Popen(["umount", "-f", "{}/root/dev".format(self.path)],
+                     stderr=su.PIPE).communicate()
+            su.Popen(["umount", "-f", "{}/root/proc".format(self.path)],
+                     stderr=su.PIPE).communicate()
+            su.Popen(
                 ["umount", "-f",
                  "{}/root/compat/linux/proc".format(self.path)],
-                stderr=PIPE).communicate()
+                stderr=su.PIPE).communicate()

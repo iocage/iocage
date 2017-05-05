@@ -1,10 +1,10 @@
 """fstab module for the cli."""
 import click
 
-from iocage.lib.ioc_common import logit
-from iocage.lib.ioc_fstab import IOCFstab
-from iocage.lib.ioc_json import IOCJson
-from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_common as ioc_common
+import iocage.lib.ioc_fstab as ioc_fstab
+import iocage.lib.ioc_json as ioc_json
+import iocage.lib.ioc_list as ioc_list
 
 __rootcmd__ = True
 
@@ -26,16 +26,16 @@ def cli(action, fstab_string, jail):
     Looks for the jail supplied and passes the uuid, path and configuration
     location to manipulate the fstab.
     """
-    pool = IOCJson().json_get_value("pool")
-    iocroot = IOCJson(pool).json_get_value("iocroot")
+    pool = ioc_json.IOCJson().json_get_value("pool")
+    iocroot = ioc_json.IOCJson(pool).json_get_value("iocroot")
     index = None
     _index = False
     fstab_string = list(fstab_string)
 
-    _jails, paths = IOCList("uuid").list_datasets()
+    _jails, paths = ioc_list.IOCList("uuid").list_datasets()
 
     if not fstab_string and action != "edit":
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": "Please supply a fstab entry!"
         })
@@ -47,18 +47,18 @@ def cli(action, fstab_string, jail):
     if len(_jail) == 1:
         tag, uuid = next(iter(_jail.items()))
     elif len(_jail) > 1:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": f"Multiple jails found for {jail}:"
         })
         for t, u in sorted(_jail.items()):
-            logit({
+            ioc_common.logit({
                 "level"  : "ERROR",
                 "message": f"  {u} ({t})"
             })
         exit(1)
     else:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": "{} not found!".format(jail)
         })
@@ -77,10 +77,11 @@ def cli(action, fstab_string, jail):
                 index = int(fstab_string[0])
 
                 _index = True
-                source, destination, fstype, options, dump, _pass = "", "", "", \
-                                                                    "", "", ""
+                source, destination, fstype, options, dump, _pass = "", "", \
+                                                                    "", "", \
+                                                                    "", ""
             except TypeError:
-                logit({
+                ioc_common.logit({
                     "level"  : "ERROR",
                     "message": "Please specify either a valid fstab "
                                "entry or an index number."
@@ -101,7 +102,7 @@ def cli(action, fstab_string, jail):
                 source, destination, fstype, options, dump, _pass = \
                     fstab_string
             except ValueError:
-                logit({
+                ioc_common.logit({
                     "level"  : "ERROR",
                     "message": "Please specify a valid fstab entry!\n\n"
                                "Example:\n  /the/source /dest FSTYPE "
@@ -116,5 +117,6 @@ def cli(action, fstab_string, jail):
     if not _index and action == "add":
         destination = f"{iocroot}/jails/{uuid}/root{destination}"
 
-    IOCFstab(uuid, tag, action, source, destination, fstype, options, dump,
-             _pass, index=index)
+    ioc_fstab.IOCFstab(uuid, tag, action, source, destination, fstype, options,
+                       dump,
+                       _pass, index=index)

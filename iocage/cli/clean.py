@@ -1,8 +1,8 @@
 """clean module for the cli."""
 import click
 
-from iocage.lib.ioc_clean import IOCClean
-from iocage.lib.ioc_common import logit
+import iocage.lib.ioc_clean as ioc_clean
+import iocage.lib.ioc_common as ioc_common
 
 __rootcmd__ = True
 
@@ -21,7 +21,7 @@ def cli(force, dataset_type):
     """Calls the correct destroy function."""
     if dataset_type == "jails":
         if not force:
-            logit({
+            ioc_common.logit({
                 "level"  : "WARNING",
                 "message": "\nThis will destroy ALL jails and any "
                            "snapshots on a RELEASE,"
@@ -30,22 +30,22 @@ def cli(force, dataset_type):
             if not click.confirm("\nAre you sure?"):
                 exit()
 
-        IOCClean().clean_jails()
-        logit({
+        ioc_clean.IOCClean().clean_jails()
+        ioc_common.logit({
             "level"  : "INFO",
             "message": "All iocage jail datasets have been destroyed."
         })
     elif dataset_type == "all":
         if not force:
-            logit({
+            ioc_common.logit({
                 "level"  : "WARNING",
                 "message": "\nThis will destroy ALL iocage data!"
             })
             if not click.confirm("\nAre you sure?"):
                 exit()
 
-        IOCClean().clean_all()
-        logit({
+        ioc_clean.IOCClean().clean_all()
+        ioc_common.logit({
             "level"  : "INFO",
             "message": "All iocage datasets have been destroyed."
         })
@@ -53,7 +53,7 @@ def cli(force, dataset_type):
         pass
     elif dataset_type == "template":
         if not force:
-            logit({
+            ioc_common.logit({
                 "level"  : "WARNING",
                 "message": "This will destroy ALL templates and jails"
                            " created from them!"
@@ -61,13 +61,13 @@ def cli(force, dataset_type):
             if not click.confirm("\nAre you sure?"):
                 exit()
 
-        IOCClean().clean_templates()
-        logit({
+        ioc_clean.IOCClean().clean_templates()
+        ioc_common.logit({
             "level"  : "INFO",
             "message": "All iocage template datasets have been destroyed."
         })
     else:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": "Please specify a dataset type to clean!"
         })

@@ -2,7 +2,7 @@
 import click
 import libzfs
 
-from iocage.lib.ioc_common import logit
+import iocage.lib.ioc_common as ioc_common
 
 __rootcmd__ = True
 
@@ -30,7 +30,7 @@ def cli(zpool):
         if comment.value == "iocage":
             comment.value = "-"
 
-    logit({
+    ioc_common.logit({
         "level"  : "INFO",
         "message": f"ZFS pool '{zpool}' successfully activated."
     })

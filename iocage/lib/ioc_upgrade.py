@@ -1,34 +1,37 @@
 """iocage upgrade module"""
 import os
-from subprocess import PIPE, Popen
-from tempfile import NamedTemporaryFile
-from urllib.request import urlopen
+import subprocess as su
+import tempfile
+import urllib.request
 
-from iocage.lib.ioc_common import checkoutput
-from iocage.lib.ioc_json import IOCJson
-from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_common
+import iocage.lib.ioc_json
+import iocage.lib.ioc_list
 
 
 class IOCUpgrade(object):
     """Will upgrade a jail to the specified RELEASE."""
 
     def __init__(self, conf, new_release, path):
-        self.pool = IOCJson().json_get_value("pool")
-        self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
-        self.freebsd_version = checkoutput(["freebsd-version"])
+        self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
+        self.iocroot = iocage.lib.ioc_json.IOCJson(self.pool).json_get_value(
+            "iocroot")
+        self.freebsd_version = iocage.lib.ioc_common.checkoutput(
+            ["freebsd-version"])
         self.conf = conf
         self.uuid = conf["host_hostuuid"]
         self.host_release = os.uname()[2]
         self.jail_release = conf["cloned_release"]
         self.new_release = new_release
         self.path = path
-        self.status, self.jid = IOCList.list_get_jid(self.uuid)
+        self.status, self.jid = iocage.lib.ioc_list.IOCList.list_get_jid(
+            self.uuid)
         self._freebsd_version = f"{self.iocroot}/releases/" \
                                 f"{new_release}/root/bin/freebsd-version"
 
     def upgrade_jail(self):
         if "HBSD" in self.freebsd_version:
-            Popen(["hbsd-upgrade", "-j", self.jid]).communicate()
+            su.Popen(["hbsd-upgrade", "-j", self.jid]).communicate()
         else:
             os.environ["PAGER"] = "/bin/cat"
             if os.path.isfile(f"{self.path}/etc/freebsd-update.conf"):
@@ -37,20 +40,22 @@ class IOCUpgrade(object):
 
                 tmp = None
                 try:
-                    tmp = NamedTemporaryFile(delete=False)
-                    with urlopen(f) as fbsd_update:
+                    tmp = tempfile.NamedTemporaryFile(delete=False)
+                    with urllib.request.urlopen(f) as fbsd_update:
                         tmp.write(fbsd_update.read())
                     tmp.close()
                     os.chmod(tmp.name, 0o755)
 
-                    fetch = Popen([tmp.name, "-b", self.path, "-d",
-                                   f"{self.path}/var/db/freebsd-update/",
-                                   "-f",
-                                   f"{self.path}/etc/freebsd-update.conf",
-                                   "--not-running-from-cron",
-                                   f"--currently-running {self.jail_release}",
-                                   "-r",
-                                   self.new_release, "upgrade"], stdin=PIPE)
+                    fetch = su.Popen([tmp.name, "-b", self.path, "-d",
+                                      f"{self.path}/var/db/freebsd-update/",
+                                      "-f",
+                                      f"{self.path}/etc/freebsd-update.conf",
+                                      "--not-running-from-cron",
+                                      "--currently-running "
+                                      f"{self.jail_release}",
+                                      "-r",
+                                      self.new_release, "upgrade"],
+                                     stdin=su.PIPE)
                     fetch.communicate(b"y")
 
                     if fetch.returncode:
@@ -74,19 +79,21 @@ class IOCUpgrade(object):
                             tmp.close()
                         os.remove(tmp.name)
 
-                IOCJson(f"{self.path.replace('/root', '')}",
-                        silent=True).json_set_value(f"release={new_release}")
+                iocage.lib.ioc_json.IOCJson(
+                    f"{self.path.replace('/root', '')}",
+                    silent=True).json_set_value(
+                    f"release={new_release}")
 
                 return new_release
 
     def __upgrade_install__(self, name):
         """Installs the upgrade and returns the exit code."""
-        install = Popen([name, "-b", self.path, "-d",
-                         f"{self.path}/var/db/freebsd-update/",
-                         "-f",
-                         f"{self.path}/etc/freebsd-update.conf",
-                         "-r",
-                         self.new_release, "install"], stderr=PIPE)
+        install = su.Popen([name, "-b", self.path, "-d",
+                            f"{self.path}/var/db/freebsd-update/",
+                            "-f",
+                            f"{self.path}/etc/freebsd-update.conf",
+                            "-r",
+                            self.new_release, "install"], stderr=su.PIPE)
         install.communicate()
 
         return install.returncode

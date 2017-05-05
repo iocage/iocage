@@ -1,9 +1,9 @@
 """list module for the cli."""
 import click
 
-from iocage.lib.ioc_common import checkoutput, logit
-from iocage.lib.ioc_fetch import IOCFetch
-from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_common as ioc_common
+import iocage.lib.ioc_fetch as ioc_fetch
+import iocage.lib.ioc_list as ioc_list
 
 
 @click.command(name="list", help="List a specified dataset type, by default"
@@ -25,7 +25,7 @@ from iocage.lib.ioc_list import IOCList
               help="Sorts the list by the given type")
 def cli(dataset_type, header, _long, remote, http, plugins, _sort):
     """This passes the arg and calls the jail_datasets function."""
-    freebsd_version = checkoutput(["freebsd-version"])
+    freebsd_version = ioc_common.checkoutput(["freebsd-version"])
 
     if dataset_type is None:
         dataset_type = "all"
@@ -36,28 +36,29 @@ def cli(dataset_type, header, _long, remote, http, plugins, _sort):
         else:
             hardened = False
 
-        IOCFetch("", http=http, hardened=hardened).fetch_release(
+        ioc_fetch.IOCFetch("", http=http, hardened=hardened).fetch_release(
             _list=True)
     elif plugins:
-        IOCFetch("").fetch_plugin_index("", _list=True)
+        ioc_fetch.IOCFetch("").fetch_plugin_index("", _list=True)
     else:
-        _list = IOCList(dataset_type, header, _long, _sort).list_datasets()
+        _list = ioc_list.IOCList(dataset_type, header, _long,
+                                 _sort).list_datasets()
 
         if not header:
             if dataset_type == "base":
                 for item in _list:
-                    logit({
+                    ioc_common.logit({
                         "level"  : "INFO",
                         "message": item
                     })
             else:
                 for item in _list:
-                    logit({
+                    ioc_common.logit({
                         "level"  : "INFO",
                         "message": "\t".join(item)
                     })
         else:
-            logit({
+            ioc_common.logit({
                 "level"  : "INFO",
                 "message": _list
             })

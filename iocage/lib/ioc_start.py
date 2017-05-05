@@ -1,14 +1,13 @@
 """This is responsible for starting jails."""
+import datetime
+import os
 import re
-from datetime import datetime
-from os import chdir, getcwd, makedirs, path as ospath, \
-    symlink, uname
-from shutil import copy
-from subprocess import CalledProcessError, PIPE, Popen, STDOUT, check_call
+import shutil
+import subprocess as su
 
-from iocage.lib.ioc_common import checkoutput, logit, open_atomic
-from iocage.lib.ioc_json import IOCJson
-from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_common
+import iocage.lib.ioc_json
+import iocage.lib.ioc_list
 
 
 class IOCStart(object):
@@ -18,14 +17,17 @@ class IOCStart(object):
     """
 
     def __init__(self, uuid, jail, path, conf, silent=False, callback=None):
-        self.pool = IOCJson(" ").json_get_value("pool")
-        self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
+        self.pool = iocage.lib.ioc_json.IOCJson(" ").json_get_value("pool")
+        self.iocroot = iocage.lib.ioc_json.IOCJson(self.pool).json_get_value(
+            "iocroot")
         self.uuid = uuid
         self.jail = jail
         self.path = path
         self.conf = conf
-        self.get = IOCJson(self.path, silent=True).json_get_value
-        self.set = IOCJson(self.path, silent=True).json_set_value
+        self.get = iocage.lib.ioc_json.IOCJson(self.path,
+                                               silent=True).json_get_value
+        self.set = iocage.lib.ioc_json.IOCJson(self.path,
+                                               silent=True).json_set_value
         self.exec_fib = self.conf["exec_fib"]
         self.callback = callback
         self.silent = silent
@@ -43,8 +45,8 @@ class IOCStart(object):
         specified data that is meant to populate resolv.conf
         will be copied into the jail.
         """
-        status, _ = IOCList().list_get_jid(self.uuid)
-        userland_version = float(uname()[2].partition("-")[0])
+        status, _ = iocage.lib.ioc_list.IOCList().list_get_jid(self.uuid)
+        userland_version = float(os.uname()[2].partition("-")[0])
 
         # If the jail is not running, let's do this thing.
         if not status:
@@ -81,21 +83,22 @@ class IOCStart(object):
             sysvshm = self.conf["sysvshm"]
 
             if mount_procfs == "1":
-                Popen(["mount", "-t", "procfs", "proc", self.path +
-                       "/root/proc"]).communicate()
+                su.Popen(["mount", "-t", "procfs", "proc", self.path +
+                          "/root/proc"]).communicate()
 
             try:
                 mount_linprocfs = self.conf["mount_linprocfs"]
 
                 if mount_linprocfs == "1":
-                    if not ospath.isdir("{}/root/compat/linux/proc".format(
+                    if not os.path.isdir("{}/root/compat/linux/proc".format(
                             self.path)):
-                        original_path = getcwd()
-                        chdir("{}/root".format(self.path))
-                        makedirs("compat/linux/proc", 0o755)
-                        chdir(original_path)
-                    Popen(["mount", "-t", "linprocfs", "linproc", self.path +
-                           "/root/compat/linux/proc"]).communicate()
+                        original_path = os.getcwd()
+                        os.chdir("{}/root".format(self.path))
+                        os.makedirs("compat/linux/proc", 0o755)
+                        os.chdir(original_path)
+                    su.Popen(
+                        ["mount", "-t", "linprocfs", "linproc", self.path +
+                         "/root/compat/linux/proc"]).communicate()
             except:
                 pass
 
@@ -108,22 +111,26 @@ class IOCStart(object):
                     jdataset = jdataset.strip()
 
                     try:
-                        check_call(["zfs", "get", "-H", "creation",
-                                    "{}/{}".format(self.pool,
-                                                   jdataset)],
-                                   stdout=PIPE, stderr=PIPE)
-                    except CalledProcessError:
-                        checkoutput(["zfs", "create", "-o",
-                                     "compression=lz4", "-o",
-                                     "mountpoint=none",
-                                     "{}/{}".format(self.pool, jdataset)],
-                                    stderr=STDOUT)
+                        su.check_call(["zfs", "get", "-H", "creation",
+                                       "{}/{}".format(self.pool,
+                                                      jdataset)],
+                                      stdout=su.PIPE, stderr=su.PIPE)
+                    except su.CalledProcessError:
+                        iocage.lib.ioc_common.checkoutput(
+                            ["zfs", "create", "-o",
+                             "compression=lz4", "-o",
+                             "mountpoint=none",
+                             "{}/{}".format(self.pool,
+                                            jdataset)],
+                            stderr=su.STDOUT)
 
                     try:
-                        checkoutput(["zfs", "set", "jailed=on",
-                                     "{}/{}".format(self.pool, jdataset)],
-                                    stderr=STDOUT)
-                    except CalledProcessError as err:
+                        iocage.lib.ioc_common.checkoutput(
+                            ["zfs", "set", "jailed=on",
+                             "{}/{}".format(self.pool,
+                                            jdataset)],
+                            stderr=su.STDOUT)
+                    except su.CalledProcessError as err:
                         raise RuntimeError(
                             "{}".format(
                                 err.output.decode("utf-8").rstrip()))
@@ -173,97 +180,99 @@ class IOCStart(object):
                 vnet = True
 
             msg = f"* Starting {self.uuid} ({self.conf['tag']})"
-            logit({
-                      "level"  : "INFO",
-                      "message": msg
-                  },
-                  _callback=self.callback,
-                  silent=self.silent)
+            iocage.lib.ioc_common.logit({
+                "level"  : "INFO",
+                "message": msg
+            },
+                _callback=self.callback,
+                silent=self.silent)
 
-            start = Popen([x for x in ["jail", "-c"] + net +
-                           ["name=ioc-{}".format(self.uuid),
-                            "host.domainname={}".format(host_domainname),
-                            "host.hostname={}".format(host_hostname),
-                            "path={}/root".format(self.path),
-                            "securelevel={}".format(securelevel),
-                            "host.hostuuid={}".format(self.uuid),
-                            "devfs_ruleset={}".format(devfs_ruleset),
-                            "enforce_statfs={}".format(enforce_statfs),
-                            "children.max={}".format(children_max),
-                            "allow.set_hostname={}".format(allow_set_hostname),
-                            "allow.sysvipc={}".format(allow_sysvipc),
-                            _sysvmsg,
-                            _sysvsem,
-                            _sysvshm,
-                            "allow.raw_sockets={}".format(allow_raw_sockets),
-                            "allow.chflags={}".format(allow_chflags),
-                            "allow.mount={}".format(allow_mount),
-                            "allow.mount.devfs={}".format(allow_mount_devfs),
-                            "allow.mount.nullfs={}".format(allow_mount_nullfs),
-                            "allow.mount.procfs={}".format(allow_mount_procfs),
-                            tmpfs,
-                            "allow.mount.zfs={}".format(allow_mount_zfs),
-                            "allow.quotas={}".format(allow_quotas),
-                            "allow.socket_af={}".format(allow_socket_af),
-                            "exec.prestart={}".format(exec_prestart),
-                            "exec.poststart={}".format(exec_poststart),
-                            "exec.prestop={}".format(exec_prestop),
-                            "exec.stop={}".format(exec_stop),
-                            "exec.clean={}".format(exec_clean),
-                            "exec.timeout={}".format(exec_timeout),
-                            "stop.timeout={}".format(stop_timeout),
-                            "mount.fstab={}/fstab".format(self.path),
-                            "mount.devfs={}".format(mount_devfs),
-                            fdescfs,
-                            "allow.dying",
-                            "exec.consolelog={}/log/ioc-{}-console.log".format(
-                                self.iocroot, self.uuid),
-                            "persist"] if x != ''], stdout=PIPE, stderr=PIPE)
+            start = su.Popen([x for x in ["jail", "-c"] + net +
+                              [f"name=ioc-{self.uuid}",
+                               f"host.domainname={host_domainname}",
+                               f"host.hostname={host_hostname}",
+                               f"path={self.path}/root",
+                               f"securelevel={securelevel}",
+                               f"host.hostuuid={self.uuid}",
+                               f"devfs_ruleset={devfs_ruleset}",
+                               f"enforce_statfs={enforce_statfs}",
+                               f"children.max={children_max}",
+                               f"allow.set_hostname={allow_set_hostname}",
+                               f"allow.sysvipc={allow_sysvipc}",
+                               _sysvmsg,
+                               _sysvsem,
+                               _sysvshm,
+                               f"allow.raw_sockets={allow_raw_sockets}",
+                               f"allow.chflags={allow_chflags}",
+                               f"allow.mount={allow_mount}",
+                               f"allow.mount.devfs={allow_mount_devfs}",
+                               f"allow.mount.nullfs={allow_mount_nullfs}",
+                               f"allow.mount.procfs={allow_mount_procfs}",
+                               tmpfs,
+                               f"allow.mount.zfs={allow_mount_zfs}",
+                               f"allow.quotas={allow_quotas}",
+                               f"allow.socket_af={allow_socket_af}",
+                               f"exec.prestart={exec_prestart}",
+                               f"exec.poststart={exec_poststart}",
+                               f"exec.prestop={exec_prestop}",
+                               f"exec.stop={exec_stop}",
+                               f"exec.clean={exec_clean}",
+                               f"exec.timeout={exec_timeout}",
+                               f"stop.timeout={stop_timeout}",
+                               f"mount.fstab={self.path}/fstab",
+                               f"mount.devfs={mount_devfs}",
+                               fdescfs,
+                               "allow.dying",
+                               f"exec.consolelog={self.iocroot}/log/ioc-"
+                               f"{self.uuid}-console.log",
+                               "persist"] if x != ''], stdout=su.PIPE,
+                             stderr=su.PIPE)
 
             stdout_data, stderr_data = start.communicate()
 
             if start.returncode:
                 # This is actually fatal.
                 msg = "  + Start FAILED"
-                logit({
-                          "level"  : "ERROR",
-                          "message": msg
-                      },
-                      _callback=self.callback,
-                      silent=self.silent)
+                iocage.lib.ioc_common.logit({
+                    "level"  : "ERROR",
+                    "message": msg
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
 
                 raise RuntimeError(f"  {stderr_data.decode('utf-8')}")
             else:
-                logit({
-                          "level"  : "INFO",
-                          "message": "  + Started OK"
-                      },
-                      _callback=self.callback,
-                      silent=self.silent)
+                iocage.lib.ioc_common.logit({
+                    "level"  : "INFO",
+                    "message": "  + Started OK"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
 
             os_path = "{}/root/dev/log".format(self.path)
-            if not ospath.isfile(os_path) and not ospath.islink(os_path):
-                original_path = getcwd()
-                chdir("{}/root/dev".format(self.path))
-                symlink("../var/run/log", "log")
-                chdir(original_path)
+            if not os.path.isfile(os_path) and not os.path.islink(os_path):
+                original_path = os.getcwd()
+                os.chdir("{}/root/dev".format(self.path))
+                os.symlink("../var/run/log", "log")
+                os.chdir(original_path)
 
             self.start_network(vnet)
 
             if self.conf["jail_zfs"] == "on":
                 for jdataset in self.conf["jail_zfs_dataset"].split():
                     jdataset = jdataset.strip()
-                    children = checkoutput(["zfs", "list", "-H", "-r", "-o",
-                                            "name", "-S", "name",
-                                            "{}/{}".format(self.pool,
-                                                           jdataset)])
+                    children = iocage.lib.ioc_common.checkoutput(
+                        ["zfs", "list", "-H", "-r", "-o",
+                         "name", "-S", "name",
+                         "{}/{}".format(self.pool,
+                                        jdataset)])
 
                     try:
-                        checkoutput(
+                        iocage.lib.ioc_common.checkoutput(
                             ["zfs", "jail", "ioc-{}".format(self.uuid),
                              "{}/{}".format(self.pool, jdataset)],
-                            stderr=STDOUT)
-                    except CalledProcessError as err:
+                            stderr=su.STDOUT)
+                    except su.CalledProcessError as err:
                         raise RuntimeError(
                             "{}".format(
                                 err.output.decode("utf-8").rstrip()))
@@ -272,17 +281,19 @@ class IOCStart(object):
                         child = child.strip()
 
                         try:
-                            mountpoint = checkoutput(["zfs", "get", "-H",
-                                                      "-o",
-                                                      "value", "mountpoint",
-                                                      "{}/{}".format(
-                                                          self.pool,
-                                                          jdataset)]).strip()
+                            mountpoint = iocage.lib.ioc_common.checkoutput(
+                                ["zfs", "get", "-H",
+                                 "-o",
+                                 "value", "mountpoint",
+                                 "{}/{}".format(
+                                     self.pool,
+                                     jdataset)]).strip()
                             if mountpoint != "none":
-                                checkoutput(["setfib", self.exec_fib, "jexec",
-                                             f"ioc-{self.uuid}", "zfs",
-                                             "mount", child], stderr=STDOUT)
-                        except CalledProcessError as err:
+                                iocage.lib.ioc_common.checkoutput(
+                                    ["setfib", self.exec_fib, "jexec",
+                                     f"ioc-{self.uuid}", "zfs",
+                                     "mount", child], stderr=su.STDOUT)
+                        except su.CalledProcessError as err:
                             raise RuntimeError(
                                 "{}".format(
                                     err.output.decode("utf-8").rstrip()))
@@ -293,37 +304,38 @@ class IOCStart(object):
 
             with open("{}/log/{}-console.log".format(self.iocroot,
                                                      self.uuid), "a") as f:
-                services = check_call(["setfib", self.exec_fib, "jexec",
-                                       f"ioc-{self.uuid}"] + exec_start,
-                                      stdout=f, stderr=PIPE)
+                services = su.check_call(["setfib", self.exec_fib, "jexec",
+                                          f"ioc-{self.uuid}"] + exec_start,
+                                         stdout=f, stderr=su.PIPE)
             if services:
                 msg = "  + Starting services FAILED"
-                logit({
-                          "level"  : "ERROR",
-                          "message": msg
-                      },
-                      _callback=self.callback,
-                      silent=self.silent)
+                iocage.lib.ioc_common.logit({
+                    "level"  : "ERROR",
+                    "message": msg
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
             else:
                 msg = "  + Starting services OK"
-                logit({
-                          "level"  : "INFO",
-                          "message": msg
-                      },
-                      _callback=self.callback,
-                      silent=self.silent)
+                iocage.lib.ioc_common.logit({
+                    "level"  : "INFO",
+                    "message": msg
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
 
-            self.set("last_started={}".format(datetime.utcnow().strftime(
-                "%F %T")))
+            self.set(
+                "last_started={}".format(datetime.datetime.utcnow().strftime(
+                    "%F %T")))
             # TODO: DHCP/BPF
         else:
             msg = f"{self.uuid} ({self.conf['tag']}) is already running!"
-            logit({
-                      "level"  : "ERROR",
-                      "message": msg
-                  },
-                  _callback=self.callback,
-                  silent=self.silent)
+            iocage.lib.ioc_common.logit({
+                "level"  : "ERROR",
+                "message": msg
+            },
+                _callback=self.callback,
+                silent=self.silent)
 
     def start_network(self, vnet):
         """
@@ -333,7 +345,7 @@ class IOCStart(object):
         :param vnet: Boolean
         """
         if vnet:
-            _, jid = IOCList().list_get_jid(self.uuid)
+            _, jid = iocage.lib.ioc_list.IOCList().list_get_jid(self.uuid)
             net_configs = ((self.get("ip4_addr"), self.get("defaultrouter")),
                            (self.get("ip6_addr"), self.get("defaultrouter6")))
             nics = self.get("interfaces").split(",")
@@ -361,20 +373,20 @@ class IOCStart(object):
                         iface, ip = addr.split("|")
                         if nic != iface:
                             err = f"\n  Invalid interface supplied: {iface}"
-                            logit({
-                                      "level"  : "ERROR",
-                                      "message": f"{err}"
-                                  },
-                                  _callback=self.callback,
-                                  silent=self.silent)
+                            iocage.lib.ioc_common.logit({
+                                "level"  : "ERROR",
+                                "message": f"{err}"
+                            },
+                                _callback=self.callback,
+                                silent=self.silent)
 
                             err = f"  Did you mean {nic}?\n"
-                            logit({
-                                      "level"  : "ERROR",
-                                      "message": f"{err}"
-                                  },
-                                  _callback=self.callback,
-                                  silent=self.silent)
+                            iocage.lib.ioc_common.logit({
+                                "level"  : "ERROR",
+                                "message": f"{err}"
+                            },
+                                _callback=self.callback,
+                                silent=self.silent)
                             continue
                         if iface not in ifaces:
                             self.start_network_vnet_iface(nic, bridge,
@@ -383,14 +395,14 @@ class IOCStart(object):
 
                         self.start_network_vnet_addr(iface, ip, gw)
 
-        except CalledProcessError as err:
-            logit({
-                      "level"  : "WARNING",
-                      "message": "Network failed to start:"
-                                 f" {err.output.decode('utf-8')}".rstrip()
-                  },
-                  _callback=self.callback,
-                  silent=self.silent)
+        except su.CalledProcessError as err:
+            iocage.lib.ioc_common.logit({
+                "level"  : "WARNING",
+                "message": "Network failed to start:"
+                           f" {err.output.decode('utf-8')}".rstrip()
+            },
+                _callback=self.callback,
+                silent=self.silent)
 
     def start_network_vnet_iface(self, nic, bridge, mtu, jid):
         """
@@ -405,32 +417,43 @@ class IOCStart(object):
 
         mac_a, mac_b = self.__start_generate_vnet_mac__(nic)
         epair_a_cmd = ["ifconfig", "epair", "create"]
-        epair_a = Popen(epair_a_cmd, stdout=PIPE).communicate()[0]
+        epair_a = su.Popen(epair_a_cmd, stdout=su.PIPE).communicate()[0]
         epair_a = epair_a.strip()
         epair_b = re.sub(b"a$", b"b", epair_a)
 
         try:
             # Host side
-            checkoutput(["ifconfig", epair_a, "name",
-                         f"{nic}:{jid}", "mtu", mtu], stderr=STDOUT)
-            checkoutput(["ifconfig", f"{nic}:{jid}", "link", mac_a],
-                        stderr=STDOUT)
-            checkoutput(["ifconfig", f"{nic}:{jid}", "description",
-                         "associated with jail:"
-                         f" {self.uuid} ({self.conf['tag']})"], stderr=STDOUT)
+            iocage.lib.ioc_common.checkoutput(["ifconfig", epair_a, "name",
+                                               f"{nic}:{jid}", "mtu", mtu],
+                                              stderr=su.STDOUT)
+            iocage.lib.ioc_common.checkoutput(
+                ["ifconfig", f"{nic}:{jid}", "link", mac_a],
+                stderr=su.STDOUT)
+            iocage.lib.ioc_common.checkoutput(
+                ["ifconfig", f"{nic}:{jid}", "description",
+                 "associated with jail:"
+                 f" {self.uuid} ({self.conf['tag']})"],
+                stderr=su.STDOUT)
 
             # Jail side
-            checkoutput(["ifconfig", epair_b, "vnet",
-                         f"ioc-{self.uuid}"], stderr=STDOUT)
-            checkoutput(["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
-                         "ifconfig", epair_b, "name", nic, "mtu", mtu],
-                        stderr=STDOUT)
-            checkoutput(["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
-                         "ifconfig", nic, "link",mac_b], stderr=STDOUT)
-            checkoutput(["ifconfig", bridge, "addm", f"{nic}:{jid}", "up"],
-                        stderr=STDOUT)
-            checkoutput(["ifconfig", f"{nic}:{jid}", "up"], stderr=STDOUT)
-        except CalledProcessError as err:
+            iocage.lib.ioc_common.checkoutput(["ifconfig", epair_b, "vnet",
+                                               f"ioc-{self.uuid}"],
+                                              stderr=su.STDOUT)
+            iocage.lib.ioc_common.checkoutput(
+                ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
+                 "ifconfig", epair_b, "name", nic, "mtu", mtu],
+                stderr=su.STDOUT)
+            iocage.lib.ioc_common.checkoutput(
+                ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
+
+                 "ifconfig", nic, "link", mac_b], stderr=su.STDOUT)
+            iocage.lib.ioc_common.checkoutput(
+                ["ifconfig", bridge, "addm", f"{nic}:{jid}", "up"],
+                stderr=su.STDOUT)
+            iocage.lib.ioc_common.checkoutput(
+                ["ifconfig", f"{nic}:{jid}", "up"],
+                stderr=su.STDOUT)
+        except su.CalledProcessError as err:
             return f"{err.output.decode('utf-8')}".rstrip()
         else:
             return
@@ -455,11 +478,13 @@ class IOCStart(object):
 
         try:
             # Jail side
-            checkoutput(["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
-                         "ifconfig"] + ifconfig, stderr=STDOUT)
-            checkoutput(["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
-                         "route"] + route, stderr=STDOUT)
-        except CalledProcessError as err:
+            iocage.lib.ioc_common.checkoutput(
+                ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
+                 "ifconfig"] + ifconfig, stderr=su.STDOUT)
+            iocage.lib.ioc_common.checkoutput(
+                ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
+                 "route"] + route, stderr=su.STDOUT)
+        except su.CalledProcessError as err:
             return f"{err.output.decode('utf-8')}".rstrip()
         else:
             return
@@ -468,15 +493,16 @@ class IOCStart(object):
         resolver = self.get("resolver")
         #                                     compat
         if resolver != "/etc/resolv.conf" and resolver != "none":
-            with open_atomic("{}/root/etc/resolv.conf".format(self.path),
-                             "w") as resolv_conf:
+            with iocage.lib.ioc_common.open_atomic(
+                    "{}/root/etc/resolv.conf".format(self.path),
+                    "w") as resolv_conf:
                 for line in resolver.split(";"):
                     resolv_conf.write(line + "\n")
         elif resolver == "none":
-            copy("/etc/resolv.conf", "{}/root/etc/resolv.conf".format(
+            shutil.copy("/etc/resolv.conf", "{}/root/etc/resolv.conf".format(
                 self.path))
         else:
-            copy(resolver, "{}/root/etc/resolv.conf".format(self.path))
+            shutil.copy(resolver, "{}/root/etc/resolv.conf".format(self.path))
 
     def __start_generate_vnet_mac__(self, nic):
         """
@@ -487,12 +513,12 @@ class IOCStart(object):
         mac = self.get("{}_mac".format(nic))
 
         if mac == "none":
-            jails, paths = IOCList("uuid").list_datasets()
+            jails, paths = iocage.lib.ioc_list.IOCList("uuid").list_datasets()
             mac_list = []
 
             for jail in jails:
                 path = paths[jail]
-                _conf = IOCJson(path).json_load()
+                _conf = iocage.lib.ioc_json.IOCJson(path).json_load()
                 mac = _conf["mac_prefix"]
                 mac_list.append(_conf["{}_mac".format(nic)].split(","))
 
@@ -518,11 +544,13 @@ class IOCStart(object):
 
 def find_bridge_mtu(bridge):
     memberif = [x for x in
-                checkoutput(["ifconfig", bridge]).splitlines()
+                iocage.lib.ioc_common.checkoutput(
+                    ["ifconfig", bridge]).splitlines()
                 if x.strip().startswith("member")]
 
     if not memberif:
         return '1500'
 
-    membermtu = checkoutput(["ifconfig", memberif[0].split()[1]]).split()
+    membermtu = iocage.lib.ioc_common.checkoutput(
+        ["ifconfig", memberif[0].split()[1]]).split()
     return membermtu[5]

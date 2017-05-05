@@ -4,8 +4,8 @@ import os
 
 import click
 
-from iocage.lib.ioc_common import checkoutput, logit
-from iocage.lib.ioc_fetch import IOCFetch
+import iocage.lib.ioc_common as ioc_common
+import iocage.lib.ioc_fetch as ioc_fetch
 
 __rootcmd__ = True
 
@@ -18,7 +18,7 @@ def validate_count(ctx, param, value):
 
             return int(value)
         except ValueError:
-            logit({
+            ioc_common.logit({
                 "level"  : "ERROR",
                 "message": f"({value} is not a valid  integer."
             })
@@ -61,7 +61,7 @@ def validate_count(ctx, param, value):
 def cli(http, _file, server, user, password, auth, verify, release, plugins,
         plugin_file, root_dir, props, count, update, eol, files):
     """CLI command that calls fetch_release()"""
-    freebsd_version = checkoutput(["freebsd-version"])
+    freebsd_version = ioc_common.checkoutput(["freebsd-version"])
     arch = os.uname()[4]
 
     if not files:
@@ -84,13 +84,13 @@ def cli(http, _file, server, user, password, auth, verify, release, plugins,
                 with open(plugin_file) as f:
                     json.load(f)
             except FileNotFoundError:
-                logit({
+                ioc_common.logit({
                     "level"  : "ERROR",
                     "message": "Please supply a file before any properties."
                 })
                 exit(1)
             except json.decoder.JSONDecodeError:
-                logit({
+                ioc_common.logit({
                     "level"  : "ERROR",
                     "message": "Invalid JSON file supplied, please supply a "
                                "correctly formatted JSON file."
@@ -100,7 +100,7 @@ def cli(http, _file, server, user, password, auth, verify, release, plugins,
         ip = [x for x in props if x.startswith("ip4_addr") or x.startswith(
             "ip6_addr")]
         if not ip:
-            logit({
+            ioc_common.logit({
                 "level"  : "ERROR",
                 "message": "An IP address is needed to fetch a plugin!\n"
                            "Please specify ip(4|6)"
@@ -108,23 +108,25 @@ def cli(http, _file, server, user, password, auth, verify, release, plugins,
             })
             exit(1)
         if plugins:
-            IOCFetch(release=None).fetch_plugin_index(props)
+            ioc_fetch.IOCFetch(release=None).fetch_plugin_index(props)
             exit()
 
         if count == 1:
-            IOCFetch("", server, user, password, auth, root_dir,
-                     http=http, _file=_file, verify=verify,
-                     hardened=hardened, update=update, eol=eol,
-                     files=files).fetch_plugin(
+            ioc_fetch.IOCFetch("", server, user, password, auth, root_dir,
+                               http=http, _file=_file, verify=verify,
+                               hardened=hardened, update=update, eol=eol,
+                               files=files).fetch_plugin(
                 plugin_file, props, 0)
         else:
             for j in range(1, count + 1):
-                IOCFetch("", server, user, password, auth, root_dir,
-                         http=http, _file=_file, verify=verify,
-                         hardened=hardened, update=update,
-                         eol=eol, files=files).fetch_plugin(plugin_file,
-                                                            props, j)
+                ioc_fetch.IOCFetch("", server, user, password, auth, root_dir,
+                                   http=http, _file=_file, verify=verify,
+                                   hardened=hardened, update=update,
+                                   eol=eol, files=files).fetch_plugin(
+                    plugin_file, props, j)
     else:
-        IOCFetch(release, server, user, password, auth, root_dir, http=http,
-                 _file=_file, verify=verify, hardened=hardened, update=update,
-                 eol=eol, files=files).fetch_release()
+        ioc_fetch.IOCFetch(release, server, user, password, auth, root_dir,
+                           http=http,
+                           _file=_file, verify=verify, hardened=hardened,
+                           update=update,
+                           eol=eol, files=files).fetch_release()

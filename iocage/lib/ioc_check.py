@@ -1,17 +1,18 @@
 """Check datasets before execution"""
 import os
+import subprocess as su
 import sys
-from subprocess import CalledProcessError, PIPE, Popen
 
-from iocage.lib.ioc_common import checkoutput, logit
-from iocage.lib.ioc_json import IOCJson
+import iocage.lib.ioc_common
+import iocage.lib.ioc_json
 
 
 class IOCCheck(object):
     """Checks if the required iocage datasets are present"""
 
     def __init__(self, silent=False, callback=None):
-        self.pool = IOCJson(silent=silent).json_get_value("pool")
+        self.pool = iocage.lib.ioc_json.IOCJson(silent=silent).json_get_value(
+            "pool")
         self.callback = callback
         self.silent = silent
 
@@ -26,9 +27,10 @@ class IOCCheck(object):
                     "iocage/jails", "iocage/log", "iocage/releases",
                     "iocage/templates")
 
-        mounts = checkoutput(["zfs", "get", "-o", "name,value", "-t",
-                              "filesystem", "-H",
-                              "mountpoint"]).splitlines()
+        mounts = iocage.lib.ioc_common.checkoutput(
+            ["zfs", "get", "-o", "name,value", "-t",
+             "filesystem", "-H",
+             "mountpoint"]).splitlines()
 
         mounts = dict([list(map(str, m.split("\t"))) for m in mounts])
         dups = {name: mount for name, mount in mounts.items() if
@@ -36,15 +38,16 @@ class IOCCheck(object):
 
         for dataset in datasets:
             try:
-                checkoutput(["zfs", "get", "-H", "creation", "{}/{}".format(
-                    self.pool, dataset)], stderr=PIPE)
-            except CalledProcessError:
+                iocage.lib.ioc_common.checkoutput(
+                    ["zfs", "get", "-H", "creation", "{}/{}".format(
+                        self.pool, dataset)], stderr=su.PIPE)
+            except su.CalledProcessError:
                 if os.geteuid() != 0:
                     raise RuntimeError("Run as root to create missing"
                                        " datasets!")
 
                 if "deactivate" not in sys.argv[1:]:
-                    logit({
+                    iocage.lib.ioc_common.logit({
                         "level"  : "INFO",
                         "message": f"Creating {self.pool}/{dataset}"
                     },
@@ -56,10 +59,10 @@ class IOCCheck(object):
                         else:
                             mount = "mountpoint=/iocage"
 
-                        Popen(["zfs", "create", "-o", "compression=lz4",
-                               "-o", mount, "{}/{}".format(
+                        su.Popen(["zfs", "create", "-o", "compression=lz4",
+                                  "-o", mount, "{}/{}".format(
                                 self.pool, dataset)]).communicate()
                     else:
-                        Popen(["zfs", "create", "-o", "compression=lz4",
-                               "{}/{}".format(self.pool,
-                                              dataset)]).communicate()
+                        su.Popen(["zfs", "create", "-o", "compression=lz4",
+                                  "{}/{}".format(self.pool,
+                                                 dataset)]).communicate()

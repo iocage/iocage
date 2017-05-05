@@ -1,23 +1,25 @@
 """Destroy all of a dataset type."""
 import libzfs
 
-from iocage.lib.ioc_destroy import IOCDestroy
-from iocage.lib.ioc_json import IOCJson
+import iocage.lib.ioc_destroy
+import iocage.lib.ioc_json
 
 
 class IOCClean(object):
     """Cleans datasets and snapshots of a given type."""
 
     def __init__(self):
-        self.pool = IOCJson().json_get_value("pool")
+        self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
 
     def clean_jails(self):
         """Cleans all jails and their respective snapshots."""
-        IOCDestroy().destroy_jail(f"{self.pool}/iocage/jails", clean=True)
+        iocage.lib.ioc_destroy.IOCDestroy().destroy_jail(
+            f"{self.pool}/iocage/jails",
+            clean=True)
 
     def clean_all(self):
         """Cleans everything related to iocage."""
-        IOCDestroy().__stop_jails__()
+        iocage.lib.ioc_destroy.IOCDestroy().__stop_jails__()
 
         zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         datasets = zfs.get_dataset(f"{self.pool}/iocage")
@@ -41,6 +43,6 @@ class IOCClean(object):
 
     def clean_templates(self):
         """Cleans all templates and their respective children."""
-        IOCDestroy().__destroy_parse_datasets__(
+        iocage.lib.ioc_destroy.IOCDestroy().__destroy_parse_datasets__(
             f"{self.pool}/iocage/templates",
             clean=True)

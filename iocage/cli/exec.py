@@ -1,9 +1,9 @@
 """exec module for the cli."""
 import click
 
-from iocage.lib.ioc_common import logit
-from iocage.lib.ioc_exec import IOCExec
-from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_common as ioc_common
+import iocage.lib.ioc_exec as ioc_exec
+import iocage.lib.ioc_list as ioc_list
 
 __rootcmd__ = True
 
@@ -24,21 +24,21 @@ def cli(command, jail, host_user, jail_user):
         command = ("/bin/sh", "-c") + command
 
     if jail.startswith("-"):
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": "Please specify a jail first!"
         })
         exit(1)
 
     if host_user and jail_user:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": "Please only specify either host_user or"
                        " jail_user, not both!"
         })
         exit(1)
 
-    jails, paths = IOCList("uuid").list_datasets()
+    jails, paths = ioc_list.IOCList("uuid").list_datasets()
     _jail = {tag: uuid for (tag, uuid) in jails.items() if
              uuid.startswith(jail) or tag == jail}
 
@@ -46,33 +46,33 @@ def cli(command, jail, host_user, jail_user):
         tag, uuid = next(iter(_jail.items()))
         path = paths[tag]
     elif len(_jail) > 1:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": f"Multiple jails found for {jail}:"
         })
         for t, u in sorted(_jail.items()):
-            logit({
+            ioc_common.logit({
                 "level"  : "ERROR",
                 "message": f"  {u} ({t})"
             })
         exit(1)
     else:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": "{} not found!".format(jail)
         })
         exit(1)
 
-    msg, err = IOCExec(command, uuid, tag, path, host_user,
-                       jail_user).exec_jail()
+    msg, err = ioc_exec.IOCExec(command, uuid, tag, path, host_user,
+                                jail_user).exec_jail()
 
     if err:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": err.decode()
         })
     else:
-        logit({
+        ioc_common.logit({
             "level"  : "INFO",
             "message": msg.decode("utf-8")
         })

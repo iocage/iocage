@@ -1,11 +1,11 @@
 """rollback module for the cli."""
-from subprocess import CalledProcessError, PIPE, Popen, check_call
+import subprocess as su
 
 import click
 
-from iocage.lib.ioc_common import checkoutput, logit
-from iocage.lib.ioc_json import IOCJson
-from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_common as ioc_common
+import iocage.lib.ioc_json as ioc_json
+import iocage.lib.ioc_list as ioc_list
 
 __rootcmd__ = True
 
@@ -18,8 +18,8 @@ __rootcmd__ = True
               default=False, is_flag=True)
 def cli(jail, name, force):
     """Get a list of jails and print the property."""
-    jails, paths = IOCList("uuid").list_datasets()
-    pool = IOCJson().json_get_value("pool")
+    jails, paths = ioc_list.IOCList("uuid").list_datasets()
+    pool = ioc_json.IOCJson().json_get_value("pool")
 
     _jail = {tag: uuid for (tag, uuid) in jails.items() if
              uuid.startswith(jail) or tag == jail}
@@ -28,26 +28,26 @@ def cli(jail, name, force):
         tag, uuid = next(iter(_jail.items()))
         path = paths[tag]
     elif len(_jail) > 1:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": "Multiple jails found for"
                        f" {jail}:"
         })
         for t, u in sorted(_jail.items()):
-            logit({
+            ioc_common.logit({
                 "level"  : "ERROR",
                 "message": f"  {u} ({t})"
             })
         exit(1)
     else:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": f"{jail} not found!"
         })
         exit(1)
 
     # Looks like foo/iocage/jails/df0ef69a-57b6-4480-b1f8-88f7b6febbdf@BAR
-    conf = IOCJson(path).json_load()
+    conf = ioc_json.IOCJson(path).json_load()
 
     if conf["template"] == "yes":
         target = f"{pool}/iocage/templates/{tag}"
@@ -55,16 +55,17 @@ def cli(jail, name, force):
         target = f"{pool}/iocage/jails/{uuid}"
 
     try:
-        checkoutput(["zfs", "get", "-H", "creation", target], stderr=PIPE)
-    except CalledProcessError:
-        logit({
+        ioc_common.checkoutput(["zfs", "get", "-H", "creation", target],
+                               stderr=su.PIPE)
+    except su.CalledProcessError:
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": f"Snapshot {target} does not exist!"
         })
         exit(1)
 
     if not force:
-        logit({
+        ioc_common.logit({
             "level"  : "WARNING",
             "message": "\nThis will destroy ALL data created since"
                        f" {name} was taken.\nIncluding ALL snapshots taken"
@@ -73,21 +74,22 @@ def cli(jail, name, force):
         if not click.confirm("\nAre you sure?"):
             exit()
     try:
-        datasets = Popen(["zfs", "list", "-H", "-r",
-                          "-o", "name", target],
-                         stdout=PIPE,
-                         stderr=PIPE).communicate()[0].decode("utf-8").split()
+        datasets = su.Popen(["zfs", "list", "-H", "-r",
+                             "-o", "name", target],
+                            stdout=su.PIPE,
+                            stderr=su.PIPE).communicate()[0].decode(
+            "utf-8").split()
 
         for dataset in datasets:
-            check_call(
+            su.check_call(
                 ["zfs", "rollback", "-r", f"{dataset}@{name}"])
 
-        logit({
+        ioc_common.logit({
             "level"  : "INFO",
             "message": f"Rolled back to: {target}"
         })
-    except CalledProcessError as err:
-        logit({
+    except su.CalledProcessError as err:
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": f"{err}"
         })

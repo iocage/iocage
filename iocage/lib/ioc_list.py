@@ -1,12 +1,12 @@
 """List all datasets by type"""
 import re
-from subprocess import CalledProcessError, PIPE
+import subprocess as su
 
 import libzfs
-from texttable import Texttable
+import texttable
 
-from iocage.lib.ioc_common import checkoutput, ioc_sort, logit
-from iocage.lib.ioc_json import IOCJson
+import iocage.lib.ioc_common
+import iocage.lib.ioc_json
 
 
 class IOCList(object):
@@ -22,7 +22,7 @@ class IOCList(object):
         self.list_type = lst_type
         self.header = hdr
         self.full = full
-        self.pool = IOCJson().json_get_value("pool")
+        self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.sort = _sort
         self.silent = silent
@@ -50,7 +50,7 @@ class IOCList(object):
 
             for jail in ds:
                 jail = jail.properties["mountpoint"].value
-                conf = IOCJson(jail).json_load()
+                conf = iocage.lib.ioc_json.IOCJson(jail).json_load()
 
                 if not set and conf["tag"] in jails:
                     # Add the original in
@@ -67,13 +67,13 @@ class IOCList(object):
 
             for template in template_datasets:
                 template = template.properties["mountpoint"].value
-                conf = IOCJson(template).json_load()
+                conf = iocage.lib.ioc_json.IOCJson(template).json_load()
 
                 jails[f"{conf['tag']} (template)"] = conf["host_hostuuid"]
                 paths[f"{conf['tag']} (template)"] = template
 
             if len(dups):
-                logit({
+                iocage.lib.ioc_common.logit({
                     "level"  : "ERROR",
                     "message": f"Duplicate tag ({tag}) detected!"
                 },
@@ -82,13 +82,13 @@ class IOCList(object):
                 for d, t in sorted(dups.items()):
                     u = [m for m in d.split("/") if len(m) == 36 or len(m)
                          == 8][0]
-                    logit({
+                    iocage.lib.ioc_common.logit({
                         "level"  : "ERROR",
                         "message": f"  {u} ({t})"
                     },
                         _callback=self.callback,
                         silent=self.silent)
-                logit({
+                iocage.lib.ioc_common.logit({
                     "level"  : "ERROR",
                     "message": "\nPlease run \"iocage set tag=NEWTAG "
                                "UUID\" for one of the UUID's."
@@ -109,12 +109,12 @@ class IOCList(object):
 
     def list_all(self, jails):
         """List all jails."""
-        table = Texttable(max_width=0)
+        table = texttable.Texttable(max_width=0)
         jail_list = []
 
         for jail in jails:
             jail = jail.properties["mountpoint"].value
-            conf = IOCJson(jail).json_load()
+            conf = iocage.lib.ioc_json.IOCJson(jail).json_load()
 
             uuid = conf["host_hostuuid"]
             full_ip4 = conf["ip4_addr"]
@@ -152,9 +152,9 @@ class IOCList(object):
                 template = "-"
             else:
                 try:
-                    template = checkoutput(["zfs", "get", "-H", "-o", "value",
-                                            "origin",
-                                            jail_root]).split("/")[3]
+                    template = iocage.lib.ioc_common.checkoutput(
+                        ["zfs", "get", "-H", "-o", "value", "origin",
+                         jail_root]).split("/")[3]
                 except IndexError:
                     template = "-"
 
@@ -170,7 +170,8 @@ class IOCList(object):
                                   short_ip4])
 
         list_type = "list_full" if self.full else "list_short"
-        sort = ioc_sort(list_type, self.sort, data=jail_list)
+        sort = iocage.lib.ioc_common.ioc_sort(list_type, self.sort,
+                                              data=jail_list)
         jail_list.sort(key=sort)
 
         # Prints the table
@@ -198,8 +199,9 @@ class IOCList(object):
 
     def list_bases(self, datasets):
         """Lists all bases."""
-        base_list = ioc_sort("list_release", "release", data=datasets)
-        table = Texttable(max_width=0)
+        base_list = iocage.lib.ioc_common.ioc_sort("list_release", "release",
+                                                   data=datasets)
+        table = texttable.Texttable(max_width=0)
 
         if self.header:
             base_list.insert(0, ["Bases fetched"])
@@ -217,8 +219,8 @@ class IOCList(object):
     def list_get_jid(cls, uuid):
         """Return a tuple containing True or False and the jail's id or '-'."""
         try:
-            jid = checkoutput(["jls", "-j", f"ioc-{uuid}"],
-                              stderr=PIPE).split()[5]
+            jid = iocage.lib.ioc_common.checkoutput(
+                ["jls", "-j", f"ioc-{uuid}"], stderr=su.PIPE).split()[5]
             return True, jid
-        except CalledProcessError:
+        except su.CalledProcessError:
             return False, "-"

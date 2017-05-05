@@ -1,7 +1,7 @@
 """import module for the cli."""
 import click
 
-from iocage.lib.ioc_image import IOCImage
+import iocage.lib.ioc_image as ioc_image
 
 __rootcmd__ = True
 
@@ -10,4 +10,4 @@ __rootcmd__ = True
 @click.argument("jail", required=True)
 def cli(jail):
     """Import from an iocage export."""
-    IOCImage().import_jail(jail)
+    ioc_image.IOCImage().import_jail(jail)
