@@ -759,6 +759,17 @@ class IOCFetch(object):
         pkg_repos = conf["fingerprints"]
         freebsd_version = f"{self.iocroot}/releases/{conf['release']}" \
                           "/root/bin/freebsd-version"
+        json_props = conf.get("properties", {})
+        props = list(props)
+
+        for p, v in json_props.items():
+            # The JSON properties are going to be treated as user entered
+            # ones on the command line. If the users prop exists on the
+            # command line, we will skip the JSON one.
+            _p = f"{p}={v}"
+
+            if p not in [_prop.split("=")[0] for _prop in props]:
+                props.append(_p)
 
         if num <= 1:
             logit({
