@@ -1,13 +1,13 @@
 """Manipulate a jails fstab"""
+import datetime
 import os
 import shutil
+import subprocess as su
 import tempfile
-from datetime import datetime
-from subprocess import PIPE, Popen, call
 
-from iocage.lib.ioc_common import logit, open_atomic
-from iocage.lib.ioc_json import IOCJson
-from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_common
+import iocage.lib.ioc_json
+import iocage.lib.ioc_list
 
 
 class IOCFstab(object):
@@ -16,8 +16,9 @@ class IOCFstab(object):
     def __init__(self, uuid, tag, action, source, destination, fstype,
                  fsoptions, fsdump, fspass, index=None, silent=False,
                  callback=None):
-        self.pool = IOCJson().json_get_value("pool")
-        self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
+        self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
+        self.iocroot = iocage.lib.ioc_json.IOCJson(self.pool).json_get_value(
+            "iocroot")
         self.uuid = uuid
         self.tag = tag
         self.action = action
@@ -54,16 +55,17 @@ class IOCFstab(object):
     def __fstab_add__(self):
         """Adds a users mount to the jails fstab"""
         with open(f"{self.iocroot}/jails/{self.uuid}/fstab", "r") as fstab:
-            with open_atomic(f"{self.iocroot}/jails/{self.uuid}/fstab",
-                             "w") as _fstab:
+            with iocage.lib.ioc_common.open_atomic(
+                    f"{self.iocroot}/jails/{self.uuid}/fstab",
+                    "w") as _fstab:
                 # open_atomic will empty the file, we need these still.
                 for line in fstab.readlines():
                     _fstab.write(line)
 
-                date = datetime.utcnow().strftime("%F %T")
+                date = datetime.datetime.utcnow().strftime("%F %T")
                 _fstab.write(f"{self.mount} # Added by iocage on {date}\n")
 
-        logit({
+        iocage.lib.ioc_common.logit({
             "level"  : "INFO",
             "message": f"Successfully added mount to {self.uuid}"
                        f" ({self.tag})'s fstab"
@@ -81,8 +83,9 @@ class IOCFstab(object):
         index = 0
 
         with open(f"{self.iocroot}/jails/{self.uuid}/fstab", "r") as fstab:
-            with open_atomic(f"{self.iocroot}/jails/{self.uuid}/fstab",
-                             "w") as _fstab:
+            with iocage.lib.ioc_common.open_atomic(
+                    f"{self.iocroot}/jails/{self.uuid}/fstab",
+                    "w") as _fstab:
                 for line in fstab.readlines():
                     if line.rsplit("#")[0].rstrip() == self.mount or index \
                             == self.index and not removed:
@@ -94,7 +97,7 @@ class IOCFstab(object):
 
                     index += 1
         if removed:
-            logit({
+            iocage.lib.ioc_common.logit({
                 "level"  : "INFO",
                 "message": f"Successfully removed mount from {self.uuid}"
                            f" ({self.tag})'s fstab"
@@ -103,7 +106,7 @@ class IOCFstab(object):
                 silent=self.silent)
             return dest  # Needed for umounting, otherwise we lack context.
         else:
-            logit({
+            iocage.lib.ioc_common.logit({
                 "level"  : "INFO",
                 "message": "No matching fstab entry."
             },
@@ -113,12 +116,14 @@ class IOCFstab(object):
 
     def __fstab_mount__(self):
         """Mounts the users mount if the jail is running."""
-        status, _ = IOCList().list_get_jid(self.uuid)
+        status, _ = iocage.lib.ioc_list.IOCList().list_get_jid(self.uuid)
 
         os.makedirs(self.dest, exist_ok=True)
         if status:
-            proc = Popen(["mount", "-t", self.fstype, "-o", self.fsoptions,
-                          self.src, self.dest], stdout=PIPE, stderr=PIPE)
+            proc = su.Popen(["mount", "-t", self.fstype, "-o", self.fsoptions,
+                             self.src, self.dest], stdout=su.PIPE,
+                            stderr=su.PIPE)
+
             stdout_data, stderr_data = proc.communicate()
 
             if stderr_data:
@@ -130,10 +135,11 @@ class IOCFstab(object):
 
         :param dest: The destination to umount.
         """
-        status, _ = IOCList().list_get_jid(self.uuid)
+        status, _ = iocage.lib.ioc_list.IOCList().list_get_jid(self.uuid)
 
         if status:
-            proc = Popen(["umount", "-f", dest], stdout=PIPE, stderr=PIPE)
+            proc = su.Popen(["umount", "-f", dest], stdout=su.PIPE,
+                            stderr=su.PIPE)
             stdout_data, stderr_data = proc.communicate()
 
             if stderr_data:
@@ -150,7 +156,7 @@ class IOCFstab(object):
         tmp_fstab = tempfile.NamedTemporaryFile(suffix=".iocage")
 
         shutil.copy2(jail_fstab, tmp_fstab.name)
-        proc = call([editor, tmp_fstab.name])
+        proc = su.call([editor, tmp_fstab.name])
 
         if proc == 0:
             with open(jail_fstab, "w") as fstab:

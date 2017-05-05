@@ -1,13 +1,12 @@
 """df module for the cli."""
-from subprocess import PIPE, Popen
+import subprocess as su
 
 import click
-from texttable import Texttable
+import texttable
 
 import iocage.lib.ioc_common as ioc_common
-from iocage.lib.ioc_common import logit
-from iocage.lib.ioc_json import IOCJson
-from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_json as ioc_json
+import iocage.lib.ioc_list as ioc_list
 
 
 @click.command(name="df", help="Show resource usage of all jails.")
@@ -19,10 +18,10 @@ from iocage.lib.ioc_list import IOCList
               help="Sorts the list by the given type")
 def cli(header, _long, _sort):
     """Allows a user to show resource usage of all jails."""
-    jails, paths = IOCList("uuid").list_datasets()
-    pool = IOCJson().json_get_value("pool")
+    jails, paths = ioc_list.IOCList("uuid").list_datasets()
+    pool = ioc_json.IOCJson().json_get_value("pool")
     jail_list = []
-    table = Texttable(max_width=0)
+    table = texttable.Texttable(max_width=0)
 
     for jail in jails:
         full_uuid = jails[jail]
@@ -33,7 +32,7 @@ def cli(header, _long, _sort):
             uuid = full_uuid
 
         path = paths[jail]
-        conf = IOCJson(path).json_load()
+        conf = ioc_json.IOCJson(path).json_load()
         zconf = ["zfs", "get", "-H", "-o", "value"]
         mountpoint = f"{pool}/iocage/jails/{full_uuid}"
 
@@ -43,18 +42,21 @@ def cli(header, _long, _sort):
         if template == "template":
             mountpoint = f"{pool}/iocage/templates/{tag}"
 
-        compressratio = Popen(zconf + ["compressratio", mountpoint],
-                              stdout=PIPE).communicate()[0].decode(
+        compressratio = su.Popen(zconf + ["compressratio", mountpoint],
+                                 stdout=su.PIPE).communicate()[0].decode(
             "utf-8").strip()
-        reservation = Popen(zconf + ["reservation", mountpoint],
-                            stdout=PIPE).communicate()[0].decode(
+        reservation = su.Popen(zconf + ["reservation", mountpoint],
+                               stdout=su.PIPE).communicate()[0].decode(
             "utf-8").strip()
-        quota = Popen(zconf + ["quota", mountpoint],
-                      stdout=PIPE).communicate()[0].decode("utf-8").strip()
-        used = Popen(zconf + ["used", mountpoint],
-                     stdout=PIPE).communicate()[0].decode("utf-8").strip()
-        available = Popen(zconf + ["available", mountpoint],
-                          stdout=PIPE).communicate()[0].decode("utf-8").strip()
+        quota = su.Popen(zconf + ["quota", mountpoint],
+                         stdout=su.PIPE).communicate()[0].decode(
+            "utf-8").strip()
+        used = su.Popen(zconf + ["used", mountpoint],
+                        stdout=su.PIPE).communicate()[0].decode(
+            "utf-8").strip()
+        available = su.Popen(zconf + ["available", mountpoint],
+                             stdout=su.PIPE).communicate()[0].decode(
+            "utf-8").strip()
 
         jail_list.append([uuid, compressratio, reservation, quota, used,
                           available, tag])
@@ -67,13 +69,13 @@ def cli(header, _long, _sort):
         table.set_cols_dtype(["t", "t", "t", "t", "t", "t", "t"])
         table.add_rows(jail_list)
 
-        logit({
+        ioc_common.logit({
             "level"  : "INFO",
             "message": table.draw()
         })
     else:
         for jail in jail_list:
-            logit({
+            ioc_common.logit({
                 "level"  : "INFO",
                 "message": "\t".join(jail)
             })

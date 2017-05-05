@@ -1,6 +1,4 @@
 """The main CLI for ioc."""
-import glob
-import imp
 import locale
 import os
 import signal
@@ -11,7 +9,7 @@ import click
 # This prevents it from getting in our way.
 from click import core
 
-from iocage.lib.ioc_check import IOCCheck
+import iocage.lib.ioc_check as ioc_check
 
 core._verify_python3_env = lambda: None
 user_locale = os.environ.get("LANG", "en_US.UTF-8")
@@ -47,12 +45,13 @@ class IOCageCLI(click.MultiCommand):
     """
     Iterates in the 'cli' directory and will load any module's cli definition.
     """
+
     def list_commands(self, ctx):
         rv = []
 
         for filename in os.listdir(cmd_folder):
             if filename.endswith('.py') and \
-               not filename.startswith('__init__'):
+                    not filename.startswith('__init__'):
                 rv.append(filename.rstrip(".py"))
         rv.sort()
 
@@ -95,10 +94,10 @@ def cli(version):
                 skip_check = True
             elif "clean" in arg:
                 skip_check = True
-                IOCCheck(silent=True)
+                ioc_check.IOCCheck(silent=True)
 
         if not skip_check:
-            IOCCheck()
+            ioc_check.IOCCheck()
     except RuntimeError as err:
         exit(err)
 

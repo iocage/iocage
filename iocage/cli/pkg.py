@@ -1,9 +1,9 @@
 """pkg module for the cli."""
 import click
 
-from iocage.lib.ioc_common import logit
-from iocage.lib.ioc_exec import IOCExec
-from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_common as ioc_common
+import iocage.lib.ioc_exec as ioc_exec
+import iocage.lib.ioc_list as ioc_list
 
 __rootcmd__ = True
 
@@ -13,7 +13,7 @@ __rootcmd__ = True
 @click.argument("command", nargs=-1, type=click.UNPROCESSED)
 def cli(command, jail):
     """Runs pkg with the command given inside the specified jail."""
-    jails, paths = IOCList("uuid").list_datasets()
+    jails, paths = ioc_list.IOCList("uuid").list_datasets()
     _jail = {tag: uuid for (tag, uuid) in jails.items() if
              uuid.startswith(jail) or tag == jail}
 
@@ -21,18 +21,18 @@ def cli(command, jail):
         tag, uuid = next(iter(_jail.items()))
         path = paths[tag]
     elif len(_jail) > 1:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": f"Multiple jails found for {jail}:"
         })
         for t, u in sorted(_jail.items()):
-            logit({
+            ioc_common.logit({
                 "level"  : "ERROR",
                 "message": f"  {u} ({t})"
             })
         exit(1)
     else:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": f"{jail} not found!"
         })
@@ -40,4 +40,4 @@ def cli(command, jail):
 
     cmd = ("pkg",) + command
 
-    IOCExec(cmd, uuid, tag, path).exec_jail()
+    ioc_exec.IOCExec(cmd, uuid, tag, path).exec_jail()

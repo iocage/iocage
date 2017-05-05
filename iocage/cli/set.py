@@ -1,9 +1,9 @@
 """set module for the cli."""
 import click
 
-from iocage.lib.ioc_common import logit
-from iocage.lib.ioc_json import IOCJson
-from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_common as ioc_common
+import iocage.lib.ioc_json as ioc_json
+import iocage.lib.ioc_list as ioc_list
 
 __rootcmd__ = True
 
@@ -19,27 +19,27 @@ __rootcmd__ = True
               is_flag=True)
 def cli(prop, jail, plugin):
     """Get a list of jails and print the property."""
-    jails, paths = IOCList("uuid").list_datasets(set=True)
+    jails, paths = ioc_list.IOCList("uuid").list_datasets(set=True)
     _jail = {tag: uuid for (tag, uuid) in jails.items() if
              uuid.startswith(jail) or tag == jail}
 
     if len(_jail) == 1:
         tag, uuid = next(iter(_jail.items()))
         path = paths[tag]
-        iocjson = IOCJson(path, cli=True)
+        iocjson = ioc_json.IOCJson(path, cli=True)
     elif len(_jail) > 1:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": f"Multiple jails found for {jail}:"
         })
         for t, u in sorted(_jail.items()):
-            logit({
+            ioc_common.logit({
                 "level"  : "ERROR",
                 "message": f"  {u} ({t})"
             })
         exit(1)
     else:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": f"{jail} not found!"
         })
@@ -47,20 +47,20 @@ def cli(prop, jail, plugin):
 
     if "template" in prop.split("=")[0]:
         if "template" in path and prop != "template=no":
-            logit({
+            ioc_common.logit({
                 "level"  : "ERROR",
                 "message": f"{uuid} ({tag}) is already a template!"
             })
             exit(1)
         elif "template" not in path and prop != "template=yes":
-            logit({
+            ioc_common.logit({
                 "level"  : "ERROR",
                 "message": f"{uuid} ({tag}) is already a jail!"
             })
             exit(1)
     if plugin:
         _prop = prop.split(".")
-        err = IOCJson(path, cli=True).json_plugin_set_value(_prop)
+        err = ioc_json.IOCJson(path, cli=True).json_plugin_set_value(_prop)
         if err:
             exit(1)
     else:
@@ -73,7 +73,7 @@ def cli(prop, jail, plugin):
             iocjson.json_set_value(prop)
         except KeyError:
             _prop = prop.partition("=")[0]
-            logit({
+            ioc_common.logit({
                 "level"  : "ERROR",
                 "message": f"{_prop} is not a valid property!"
             })

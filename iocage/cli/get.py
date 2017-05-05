@@ -2,11 +2,11 @@
 import json
 
 import click
-from texttable import Texttable
+import texttable
 
-from iocage.lib.ioc_common import logit
-from iocage.lib.ioc_json import IOCJson
-from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_common as ioc_common
+import iocage.lib.ioc_json as ioc_json
+import iocage.lib.ioc_list as ioc_list
 
 
 @click.command(context_settings=dict(
@@ -28,10 +28,10 @@ from iocage.lib.ioc_list import IOCList
                                             "zpool.", is_flag=True)
 def cli(prop, _all, _pool, jail, recursive, header, plugin):
     """Get a list of jails and print the property."""
-    get_jid = IOCList.list_get_jid
-    jails, paths = IOCList("uuid").list_datasets()
+    get_jid = ioc_list.IOCList.list_get_jid
+    jails, paths = ioc_list.IOCList("uuid").list_datasets()
     jail_list = []
-    table = Texttable(max_width=0)
+    table = texttable.Texttable(max_width=0)
 
     if _all:
         # Confusing I know.
@@ -39,9 +39,9 @@ def cli(prop, _all, _pool, jail, recursive, header, plugin):
         prop = "all"
 
     if _pool:
-        pool = IOCJson().json_get_value("pool")
+        pool = ioc_json.IOCJson().json_get_value("pool")
 
-        logit({
+        ioc_common.logit({
             "level"  : "INFO",
             "message": pool
         })
@@ -49,7 +49,7 @@ def cli(prop, _all, _pool, jail, recursive, header, plugin):
 
     if recursive is None:
         if jail == "":
-            logit({
+            ioc_common.logit({
                 "level"  : "ERROR",
                 "message": 'Usage: iocage get [OPTIONS] PROP JAIL\n'
                            'Missing argument "jail".'
@@ -63,18 +63,18 @@ def cli(prop, _all, _pool, jail, recursive, header, plugin):
             tag, uuid = next(iter(_jail.items()))
             path = paths[tag]
         elif len(_jail) > 1:
-            logit({
+            ioc_common.logit({
                 "level"  : "ERROR",
                 "message": f"Multiple jails found for {jail}:"
             })
             for t, u in sorted(_jail.items()):
-                logit({
+                ioc_common.logit({
                     "level"  : "ERROR",
                     "message": f"  {u} ({t})"
                 })
             exit(1)
         else:
-            logit({
+            ioc_common.logit({
                 "level"  : "ERROR",
                 "message": f"{jail} not found!"
             })
@@ -88,35 +88,35 @@ def cli(prop, _all, _pool, jail, recursive, header, plugin):
             else:
                 state = "down"
 
-            logit({
+            ioc_common.logit({
                 "level"  : "INFO",
                 "message": state
             })
         elif plugin:
             _prop = prop.split(".")
-            props = IOCJson(path).json_plugin_get_value(_prop)
+            props = ioc_json.IOCJson(path).json_plugin_get_value(_prop)
 
             if isinstance(props, dict):
-                logit({
+                ioc_common.logit({
                     "level"  : "INFO",
                     "message": json.dumps(props, indent=4)
                 })
             else:
-                logit({
+                ioc_common.logit({
                     "level"  : "INFO",
                     "message": props[0].decode("utf-8")
                 })
         elif prop == "all":
-            props = IOCJson(path).json_get_value(prop)
+            props = ioc_json.IOCJson(path).json_get_value(prop)
 
             for p, v in props.items():
-                logit({
+                ioc_common.logit({
                     "level"  : "INFO",
                     "message": f"{p}:{v}"
                 })
         elif prop == "fstab":
-            pool = IOCJson().json_get_value("pool")
-            iocroot = IOCJson(pool).json_get_value("iocroot")
+            pool = ioc_json.IOCJson().json_get_value("pool")
+            iocroot = ioc_json.IOCJson(pool).json_get_value("iocroot")
             index = 0
 
             with open(f"{iocroot}/jails/{uuid}/fstab", "r") as fstab:
@@ -130,24 +130,24 @@ def cli(prop, _all, _pool, jail, recursive, header, plugin):
                 # We get an infinite float otherwise.
                 table.set_cols_dtype(["t", "t"])
                 table.add_rows(jail_list)
-                logit({
+                ioc_common.logit({
                     "level"  : "INFO",
                     "message": table.draw()
                 })
             else:
                 for fstab in jail_list:
-                    logit({
+                    ioc_common.logit({
                         "level"  : "INFO",
                         "message": f"{fstab[0]}\t{fstab[1]}"
                     })
         else:
             try:
-                logit({
+                ioc_common.logit({
                     "level"  : "INFO",
-                    "message": IOCJson(path).json_get_value(prop)
+                    "message": ioc_json.IOCJson(path).json_get_value(prop)
                 })
             except:
-                logit({
+                ioc_common.logit({
                     "level"  : "ERROR",
                     "message": f"{prop} is not a valid property!"
                 })
@@ -167,15 +167,15 @@ def cli(prop, _all, _pool, jail, recursive, header, plugin):
 
                     jail_list.append([uuid, j, state])
                 elif prop == "all":
-                    props = IOCJson(path).json_get_value(prop)
+                    props = ioc_json.IOCJson(path).json_get_value(prop)
 
                     for p, v in props.items():
                         jail_list.append([uuid, j, f"{p}:{v}"])
                 else:
                     jail_list.append(
-                        [uuid, j, IOCJson(path).json_get_value(prop)])
+                        [uuid, j, ioc_json.IOCJson(path).json_get_value(prop)])
             except:
-                logit({
+                ioc_common.logit({
                     "level"  : "ERROR",
                     "message": f"{prop} is not a valid property!"
                 })
@@ -187,13 +187,13 @@ def cli(prop, _all, _pool, jail, recursive, header, plugin):
             # We get an infinite float otherwise.
             table.set_cols_dtype(["t", "t", "t"])
             table.add_rows(jail_list)
-            logit({
+            ioc_common.logit({
                 "level"  : "INFO",
                 "message": table.draw()
             })
         else:
             for jail in jail_list:
-                logit({
+                ioc_common.logit({
                     "level"  : "INFO",
                     "message": "\t".join(jail)
                 })

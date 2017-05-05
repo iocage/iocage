@@ -1,9 +1,9 @@
 """export module for the cli."""
 import click
 
-from iocage.lib.ioc_common import logit
-from iocage.lib.ioc_image import IOCImage
-from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_common as ioc_common
+import iocage.lib.ioc_image as ioc_image
+import iocage.lib.ioc_list as ioc_list
 
 __rootcmd__ = True
 
@@ -12,7 +12,7 @@ __rootcmd__ = True
 @click.argument("jail", required=True)
 def cli(jail):
     """Make a recursive snapshot of the jail and export to a file."""
-    jails, paths = IOCList("uuid").list_datasets()
+    jails, paths = ioc_list.IOCList("uuid").list_datasets()
     _jail = {tag: uuid for (tag, uuid) in jails.items() if
              uuid.startswith(jail) or tag == jail}
 
@@ -21,30 +21,30 @@ def cli(jail):
         path = paths[tag]
     elif len(_jail) > 1:
 
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": f"Multiple jails found for {jail}:"
         })
         for t, u in sorted(_jail.items()):
-            logit({
+            ioc_common.logit({
                 "level"  : "ERROR",
                 "message": f"  {u} ({t})"
             })
         exit(1)
     else:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": f"{jail} not found!"
         })
         exit(1)
 
-    status, _ = IOCList().list_get_jid(uuid)
+    status, _ = ioc_list.IOCList().list_get_jid(uuid)
     if status:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": f"{uuid} ({tag}) is runnning, stop the jail before"
                        " exporting!"
         })
         exit(1)
 
-    IOCImage().export_jail(uuid, tag, path)
+    ioc_image.IOCImage().export_jail(uuid, tag, path)

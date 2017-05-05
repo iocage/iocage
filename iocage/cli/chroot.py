@@ -1,10 +1,10 @@
 """chroot module for the cli."""
-from subprocess import PIPE, Popen
+import subprocess as su
 
 import click
 
-from iocage.lib.ioc_common import logit
-from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_common as ioc_common
+import iocage.lib.ioc_list as ioc_list
 
 __rootcmd__ = True
 
@@ -15,7 +15,7 @@ def mount(path, _type):
     else:
         cmd = ["mount", "-a", "-F", path]
 
-    _, stderr = Popen(cmd, stdout=PIPE, stderr=PIPE).communicate()
+    _, stderr = su.Popen(cmd, stdout=su.PIPE, stderr=su.PIPE).communicate()
 
     return stderr
 
@@ -26,7 +26,7 @@ def umount(path, _type):
     else:
         cmd = ["umount", "-a", "-F", path]
 
-    _, stderr = Popen(cmd, stdout=PIPE, stderr=PIPE).communicate()
+    _, stderr = su.Popen(cmd, stdout=su.PIPE, stderr=su.PIPE).communicate()
 
     return stderr
 
@@ -38,7 +38,7 @@ def umount(path, _type):
 @click.argument("command", nargs=-1, type=click.UNPROCESSED)
 def cli(jail, command):
     """Will chroot into a jail regardless if it's running."""
-    jails, paths = IOCList("uuid").list_datasets()
+    jails, paths = ioc_list.IOCList("uuid").list_datasets()
     command = list(command)
 
     # We may be getting ';', '&&' and so forth. Adding the shell for safety.
@@ -56,18 +56,18 @@ def cli(jail, command):
         path = paths[tag]
 
     elif len(_jail) > 1:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": f"Multiple jails found for {jail}:"
         })
         for t, u in sorted(_jail.items()):
-            logit({
+            ioc_common.logit({
                 "level"  : "INFO",
                 "message": f"  {u} ({t})"
             })
         exit(1)
     else:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": f"{jail} not found!"
         })
@@ -76,7 +76,7 @@ def cli(jail, command):
     devfs_stderr = mount(f"{path}/root/dev", "devfs")
 
     if devfs_stderr:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": "Mounting devfs failed!"
         })
@@ -85,18 +85,18 @@ def cli(jail, command):
     fstab_stderr = mount(f"{path}/fstab", "fstab")
 
     if fstab_stderr:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": "Mounting fstab failed!"
         })
         exit(1)
 
-    chroot = Popen(["chroot", f"{path}/root"] + command)
+    chroot = su.Popen(["chroot", f"{path}/root"] + command)
     chroot.communicate()
 
     udevfs_stderr = umount(f"{path}/root/dev", "devfs")
     if udevfs_stderr:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": "Unmounting devfs failed!"
         })
@@ -108,14 +108,14 @@ def cli(jail, command):
             # By default our fstab is empty and will throw this error.
             pass
         else:
-            logit({
+            ioc_common.logit({
                 "level"  : "ERROR",
                 "message": "Unmounting fstab failed!"
             })
             exit(1)
 
     if chroot.returncode:
-        logit({
+        ioc_common.logit({
             "level"  : "WARNING",
             "message": "Chroot had a non-zero exit code!"
         })

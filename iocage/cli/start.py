@@ -1,8 +1,8 @@
 """start module for the cli."""
 import click
 
-from iocage.lib.ioc_common import logit
-from iocage.lib.iocage import IOCage
+import iocage.lib.ioc_common as ioc_common
+import iocage.lib.iocage as ioc
 
 __rootcmd__ = True
 
@@ -18,7 +18,7 @@ def cli(rc, jails):
     location to start_jail.
     """
     if not jails and not rc:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": 'Usage: iocage start [OPTIONS] JAILS...\n'
                        '\nError: Missing argument "jails".'
@@ -26,7 +26,7 @@ def cli(rc, jails):
         exit(1)
 
     if rc:
-        IOCage(rc=rc, silent=True).start()
+        ioc.IOCage(rc=rc, silent=True).start()
     else:
         for jail in jails:
-            IOCage(jail, rc=rc).start()
+            ioc.IOCage(jail, rc=rc).start()

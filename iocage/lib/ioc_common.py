@@ -1,19 +1,19 @@
 """Common methods we reuse."""
 import collections
+import contextlib
 import ipaddress
 import os
 import shutil
 import stat
+import subprocess as su
 import tempfile as tmp
-from contextlib import contextmanager
-from subprocess import CalledProcessError, check_output
 
-from iocage.lib.ioc_logger import IOCLogger
+import iocage.lib.ioc_logger
 
 
 def callback(log):
     """Helper to call the appropriate logging level"""
-    lgr = IOCLogger().cli_log()
+    lgr = iocage.lib.ioc_logger.IOCLogger().cli_log()
 
     if log['level'] == 'CRITICAL':
         lgr.critical(log['message'])
@@ -327,7 +327,7 @@ def copytree(src, dst, symlinks=False, ignore=None):
 
 
 # http://stackoverflow.com/questions/2333872/atomic-writing-to-file-with-python
-@contextmanager
+@contextlib.contextmanager
 def tempfile(suffix='', dir=None):
     """
     Context for temporary file.
@@ -357,7 +357,7 @@ def tempfile(suffix='', dir=None):
                 raise
 
 
-@contextmanager
+@contextlib.contextmanager
 def open_atomic(filepath, *args, **kwargs):
     """
     Open temporary file object that atomically moves to destination upon
@@ -392,8 +392,11 @@ def open_atomic(filepath, *args, **kwargs):
         os.chmod(filepath, 0o644)
 
 
-def get_nested_key(_dict, keys=[]):
+def get_nested_key(_dict, keys=None):
     """Gets a nested key from a dictionary."""
+    if not keys:
+        keys = []
+
     key = keys.pop(0)
 
     if len(keys) == 0:
@@ -405,10 +408,10 @@ def get_nested_key(_dict, keys=[]):
 def checkoutput(*args, **kwargs):
     """Just a wrapper to return utf-8 from check_output"""
     try:
-        out = check_output(*args, **kwargs)
+        out = su.check_output(*args, **kwargs)
 
         out = out.decode("utf-8")
-    except CalledProcessError:
+    except su.CalledProcessError:
         raise
 
     return out

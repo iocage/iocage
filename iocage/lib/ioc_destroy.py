@@ -3,11 +3,12 @@ import glob
 import json
 import os
 import shutil
-from subprocess import CalledProcessError, PIPE, Popen, check_call
+import subprocess as su
 
 import libzfs
 
-from iocage.lib.ioc_json import IOCJson
+import iocage.lib.ioc_json
+import iocage.lib.ioc_stop
 
 
 class IOCDestroy(object):
@@ -17,8 +18,9 @@ class IOCDestroy(object):
     """
 
     def __init__(self):
-        self.pool = IOCJson().json_get_value("pool")
-        self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
+        self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
+        self.iocroot = iocage.lib.ioc_json.IOCJson(self.pool).json_get_value(
+            "iocroot")
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.ds = self.zfs.get_dataset
 
@@ -28,24 +30,24 @@ class IOCDestroy(object):
 
         if path:
             # We got ourselves a template child!
-            jls = Popen(["jls", "jid", "path", "--libxo", "json"],
-                        stdout=PIPE).communicate()[0]
+            jls = su.Popen(["jls", "jid", "path", "--libxo", "json"],
+                           stdout=su.PIPE).communicate()[0]
             jls = json.loads(jls)["jail-information"]["jail"]
             jid = [jail["jid"] for jail in jls if path in jail["path"]]
 
             if jid:
                 try:
-                    check_call(["jail", "-r", jid[0]])
-                except CalledProcessError as err:
+                    su.check_call(["jail", "-r", jid[0]])
+                except su.CalledProcessError as err:
                     raise RuntimeError(f"{err}")
         else:
-            jid = Popen(["jls", "jid"], stdout=PIPE).communicate()[0].decode(
-                "utf-8").split()
+            jid = su.Popen(["jls", "jid"], stdout=su.PIPE).communicate()[
+                0].decode("utf-8").split()
 
             for j in jid:
                 try:
-                    check_call(["jail", "-r", j])
-                except CalledProcessError as err:
+                    su.check_call(["jail", "-r", j])
+                except su.CalledProcessError as err:
                     raise RuntimeError(f"{err}")
 
     def __destroy_leftovers__(self, dataset, clean=False):
@@ -93,16 +95,16 @@ class IOCDestroy(object):
                         os.remove(file)
 
             # Dangling mounts are bad...mmkay?
-            Popen(["umount", "-afF", f"{umount_path}/fstab"],
-                  stderr=PIPE).communicate()
-            Popen(["umount", "-f", f"{umount_path}/root/dev/fd"],
-                  stderr=PIPE).communicate()
-            Popen(["umount", "-f", f"{umount_path}/root/dev"],
-                  stderr=PIPE).communicate()
-            Popen(["umount", "-f", f"{umount_path}/root/proc"],
-                  stderr=PIPE).communicate()
-            Popen(["umount", "-f", f"{umount_path}/root/compat/linux/proc"],
-                  stderr=PIPE).communicate()
+            su.Popen(["umount", "-afF", f"{umount_path}/fstab"],
+                     stderr=su.PIPE).communicate()
+            su.Popen(["umount", "-f", f"{umount_path}/root/dev/fd"],
+                     stderr=su.PIPE).communicate()
+            su.Popen(["umount", "-f", f"{umount_path}/root/dev"],
+                     stderr=su.PIPE).communicate()
+            su.Popen(["umount", "-f", f"{umount_path}/root/proc"],
+                     stderr=su.PIPE).communicate()
+            su.Popen(["umount", "-f", f"{umount_path}/root/compat/linux/proc"],
+                     stderr=su.PIPE).communicate()
 
         if not clean and not snapshot:
             if any(_type in dataset.name for _type in ("jails", "templates",
@@ -174,10 +176,9 @@ class IOCDestroy(object):
             self.__stop_jails__()
             self.__destroy_parse_datasets__(path)
         else:
-            from iocage.lib.ioc_stop import IOCStop
-            conf = IOCJson(path).json_load()
+            conf = iocage.lib.ioc_json.IOCJson(path).json_load()
 
-            IOCStop(uuid, "", path, conf, silent=True)
+            iocage.lib.ioc_stop.IOCStop(uuid, "", path, conf, silent=True)
 
             self.__destroy_parse_datasets__(
                 f"{self.pool}/iocage/{dataset_type}/{uuid}")

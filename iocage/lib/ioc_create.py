@@ -1,19 +1,20 @@
 """iocage create module."""
+import datetime
 import json
 import os
+import shutil
+import subprocess as su
 import sys
 import uuid
-from datetime import datetime
-from shutil import copy
-from subprocess import CalledProcessError, PIPE, Popen, check_call
 
-from iocage.lib.ioc_common import checkoutput, logit
-from iocage.lib.ioc_destroy import IOCDestroy
-from iocage.lib.ioc_exec import IOCExec
-from iocage.lib.ioc_json import IOCJson
-from iocage.lib.ioc_list import IOCList
-from iocage.lib.ioc_start import IOCStart
-from iocage.lib.ioc_stop import IOCStop
+import iocage.lib.ioc_common
+import iocage.lib.ioc_destroy
+import iocage.lib.ioc_exec
+import iocage.lib.ioc_fstab
+import iocage.lib.ioc_json
+import iocage.lib.ioc_list
+import iocage.lib.ioc_start
+import iocage.lib.ioc_stop
 
 
 class IOCCreate(object):
@@ -23,8 +24,9 @@ class IOCCreate(object):
                  migrate=False, config=None, silent=False, template=False,
                  short=False, basejail=False, empty=False, uuid=None,
                  callback=None):
-        self.pool = IOCJson().json_get_value("pool")
-        self.iocroot = IOCJson(self.pool).json_get_value("iocroot")
+        self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
+        self.iocroot = iocage.lib.ioc_json.IOCJson(self.pool).json_get_value(
+            "iocroot")
         self.release = release
         self.props = props
         self.num = num
@@ -55,7 +57,7 @@ class IOCCreate(object):
         try:
             return self._create_jail(jail_uuid, location)
         except KeyboardInterrupt:
-            IOCDestroy().destroy_jail(location)
+            iocage.lib.ioc_destroy.IOCDestroy().destroy_jail(location)
             sys.exit(1)
 
     def _create_jail(self, jail_uuid, location):
@@ -76,7 +78,8 @@ class IOCCreate(object):
                 if self.template:
                     _type = "templates"
                     temp_path = f"{self.iocroot}/{_type}/{self.release}"
-                    template_config = IOCJson(f"{temp_path}").json_get_value
+                    template_config = iocage.lib.ioc_json.IOCJson(
+                        f"{temp_path}").json_get_value
                     cloned_release = template_config("cloned_release")
                 else:
                     _type = "releases"
@@ -112,43 +115,46 @@ class IOCCreate(object):
 
         if self.template:
             try:
-                check_call(["zfs", "snapshot",
-                            f"{self.pool}/iocage/templates/{self.release}/"
-                            f"root@{jail_uuid}"], stderr=PIPE)
-            except CalledProcessError:
+                su.check_call(["zfs", "snapshot",
+                               f"{self.pool}/iocage/templates/{self.release}/"
+                               f"root@{jail_uuid}"], stderr=su.PIPE)
+            except su.CalledProcessError:
                 raise RuntimeError(f"Template: {self.release} not found!")
 
-            Popen(["zfs", "clone", "-p",
-                   f"{self.pool}/iocage/templates/{self.release}/root@"
-                   f"{jail_uuid}", jail], stdout=PIPE).communicate()
+            su.Popen(["zfs", "clone", "-p",
+                      f"{self.pool}/iocage/templates/{self.release}/root@"
+                      f"{jail_uuid}", jail], stdout=su.PIPE).communicate()
 
             # self.release is actually the templates name
-            config["release"] = IOCJson(
+            config["release"] = iocage.lib.ioc_json.IOCJson(
                 f"{self.iocroot}/templates/{self.release}").json_get_value(
                 "release")
-            config["cloned_release"] = IOCJson(
+            config["cloned_release"] = iocage.lib.ioc_json.IOCJson(
                 f"{self.iocroot}/templates/{self.release}").json_get_value(
                 "cloned_release")
         else:
             if not self.empty:
                 try:
-                    check_call(["zfs", "snapshot",
-                                f"{self.pool}/iocage/releases/{self.release}/"
-                                f"root@{jail_uuid}"], stderr=PIPE)
-                except CalledProcessError:
+                    su.check_call(["zfs", "snapshot",
+                                   f"{self.pool}/iocage/releases/"
+                                   f"{self.release}/"
+                                   f"root@{jail_uuid}"], stderr=su.PIPE)
+                except su.CalledProcessError:
                     raise RuntimeError(
                         f"RELEASE: {self.release} not found!")
 
-                Popen(["zfs", "clone", "-p",
-                       f"{self.pool}/iocage/releases/{self.release}/root@"
-                       f"{jail_uuid}", jail], stdout=PIPE).communicate()
+                su.Popen(["zfs", "clone", "-p",
+                          f"{self.pool}/iocage/releases/{self.release}/root@"
+                          f"{jail_uuid}", jail], stdout=su.PIPE).communicate()
             else:
                 try:
-                    checkoutput(["zfs", "create", "-p", jail], stderr=PIPE)
-                except CalledProcessError as err:
+                    iocage.lib.ioc_common.checkoutput(
+                        ["zfs", "create", "-p", jail],
+                        stderr=su.PIPE)
+                except su.CalledProcessError as err:
                     raise RuntimeError(err.output.decode("utf-8").rstrip())
 
-        iocjson = IOCJson(location)
+        iocjson = iocage.lib.ioc_json.IOCJson(location)
 
         # This test is to avoid the same warnings during install_packages.
         if not self.plugin:
@@ -166,9 +172,8 @@ class IOCCreate(object):
 
                     config[key] = value
                 except RuntimeError as err:
-                    from iocage.lib.ioc_destroy import IOCDestroy
                     iocjson.json_write(config)  # Destroy counts on this.
-                    IOCDestroy().destroy_jail(location)
+                    iocage.lib.ioc_destroy.IOCDestroy().destroy_jail(location)
                     raise RuntimeError(f"***\n{err}\n***\n")
 
             iocjson.json_write(config)
@@ -182,7 +187,6 @@ class IOCCreate(object):
             self.create_rc(location, config["host_hostname"])
 
         if self.basejail:
-            from iocage.lib.ioc_fstab import IOCFstab
             basedirs = ["bin", "boot", "lib", "libexec", "rescue", "sbin",
                         "usr/bin", "usr/include", "usr/lib",
                         "usr/libexec", "usr/sbin", "usr/share",
@@ -198,8 +202,10 @@ class IOCCreate(object):
                 source = f"{self.iocroot}/{_type}/{self.release}/root/{bdir}"
                 destination = f"{self.iocroot}/jails/{jail_uuid}/root/{bdir}"
 
-                IOCFstab(jail_uuid, _tag, "add", source, destination, "nullfs",
-                         "ro", "0", "0", silent=True)
+                iocage.lib.ioc_fstab.IOCFstab(jail_uuid, _tag, "add", source,
+                                              destination,
+                                              "nullfs", "ro", "0", "0",
+                                              silent=True)
                 config["basejail"] = "yes"
 
             iocjson.json_write(config)
@@ -212,8 +218,8 @@ class IOCCreate(object):
 
         if not self.plugin:
             msg = f"{jail_uuid} ({_tag}) successfully created!"
-            logit({
-                "level": "INFO",
+            iocage.lib.ioc_common.logit({
+                "level"  : "INFO",
                 "message": msg
             },
                 _callback=self.callback,
@@ -221,7 +227,7 @@ class IOCCreate(object):
 
         if self.pkglist:
             if config["ip4_addr"] == "none" and config["ip6_addr"] == "none":
-                logit({
+                iocage.lib.ioc_common.logit({
                     "level"  : "WARNING",
                     "message": " You need an IP address for the jail to"
                                "install packages!\n"
@@ -232,9 +238,7 @@ class IOCCreate(object):
                 self.create_install_packages(jail_uuid, location, _tag, config)
 
         if start:
-            from iocage.lib.ioc_start import IOCStart
-
-            IOCStart(jail_uuid, _tag, location, config)
+            iocage.lib.ioc_start.IOCStart(jail_uuid, _tag, location, config)
 
         return jail_uuid
 
@@ -243,7 +247,7 @@ class IOCCreate(object):
         This sets up the default configuration for a jail. It also does some
         mild sanity checking on the properties users are supplying.
         """
-        version = IOCJson().json_get_version()
+        version = iocage.lib.ioc_json.IOCJson().json_get_version()
 
         with open("/etc/hostid", "r") as _file:
             hostid = _file.read().strip()
@@ -295,76 +299,77 @@ class IOCCreate(object):
             "host_hostuuid"        : jail_uuid,
             "allow_set_hostname"   : "1",
             "allow_sysvipc"        : "0",
-            "allow_raw_sockets"  : "0",
-            "allow_chflags"      : "0",
-            "allow_mount"        : "0",
-            "allow_mount_devfs"  : "0",
-            "allow_mount_nullfs" : "0",
-            "allow_mount_procfs" : "0",
-            "allow_mount_tmpfs"  : "0",
-            "allow_mount_zfs"    : "0",
-            "allow_quotas"       : "0",
-            "allow_socket_af"    : "0",
+            "allow_raw_sockets"    : "0",
+            "allow_chflags"        : "0",
+            "allow_mount"          : "0",
+            "allow_mount_devfs"    : "0",
+            "allow_mount_nullfs"   : "0",
+            "allow_mount_procfs"   : "0",
+            "allow_mount_tmpfs"    : "0",
+            "allow_mount_zfs"      : "0",
+            "allow_quotas"         : "0",
+            "allow_socket_af"      : "0",
             # RCTL limits
-            "cpuset"             : "off",
-            "rlimits"            : "off",
-            "memoryuse"          : "off",
-            "memorylocked"       : "off",
-            "vmemoryuse"         : "off",
-            "maxproc"            : "off",
-            "cputime"            : "off",
-            "pcpu"               : "off",
-            "datasize"           : "off",
-            "stacksize"          : "off",
-            "coredumpsize"       : "off",
-            "openfiles"          : "off",
-            "pseudoterminals"    : "off",
-            "swapuse"            : "off",
-            "nthr"               : "off",
-            "msgqqueued"         : "off",
-            "msgqsize"           : "off",
-            "nmsgq"              : "off",
-            "nsemop"             : "off",
-            "nshm"               : "off",
-            "shmsize"            : "off",
-            "wallclock"          : "off",
+            "cpuset"               : "off",
+            "rlimits"              : "off",
+            "memoryuse"            : "off",
+            "memorylocked"         : "off",
+            "vmemoryuse"           : "off",
+            "maxproc"              : "off",
+            "cputime"              : "off",
+            "pcpu"                 : "off",
+            "datasize"             : "off",
+            "stacksize"            : "off",
+            "coredumpsize"         : "off",
+            "openfiles"            : "off",
+            "pseudoterminals"      : "off",
+            "swapuse"              : "off",
+            "nthr"                 : "off",
+            "msgqqueued"           : "off",
+            "msgqsize"             : "off",
+            "nmsgq"                : "off",
+            "nsemop"               : "off",
+            "nshm"                 : "off",
+            "shmsize"              : "off",
+            "wallclock"            : "off",
             # Custom properties
-            "type"               : "jail",
-            "tag"                : datetime.utcnow().strftime("%F@%T:%f"),
-            "bpf"                : "off",
-            "dhcp"               : "off",
-            "boot"               : "off",
-            "notes"              : "none",
-            "owner"              : "root",
-            "priority"           : "99",
-            "last_started"       : "none",
-            "release"            : release,
-            "cloned_release"     : self.release,
-            "template"           : "no",
-            "hostid"             : hostid,
-            "jail_zfs"           : "off",
-            "jail_zfs_dataset"   : f"iocage/jails/{jail_uuid}/data",
-            "jail_zfs_mountpoint": "none",
-            "mount_procfs"       : "0",
-            "mount_linprocfs"    : "0",
-            "count"              : "1",
-            "vnet"               : "off",
-            "basejail"           : "no",
-            "comment"            : "none",
+            "type"                 : "jail",
+            "tag"                  : datetime.datetime.utcnow().strftime(
+                "%F@%T:%f"),
+            "bpf"                  : "off",
+            "dhcp"                 : "off",
+            "boot"                 : "off",
+            "notes"                : "none",
+            "owner"                : "root",
+            "priority"             : "99",
+            "last_started"         : "none",
+            "release"              : release,
+            "cloned_release"       : self.release,
+            "template"             : "no",
+            "hostid"               : hostid,
+            "jail_zfs"             : "off",
+            "jail_zfs_dataset"     : f"iocage/jails/{jail_uuid}/data",
+            "jail_zfs_mountpoint"  : "none",
+            "mount_procfs"         : "0",
+            "mount_linprocfs"      : "0",
+            "count"                : "1",
+            "vnet"                 : "off",
+            "basejail"             : "no",
+            "comment"              : "none",
             # Sync properties
-            "sync_state"         : "none",
-            "sync_target"        : "none",
-            "sync_tgt_zpool"     : "none",
+            "sync_state"           : "none",
+            "sync_target"          : "none",
+            "sync_tgt_zpool"       : "none",
             # Native ZFS properties
-            "compression"        : "lz4",
-            "origin"             : "readonly",
-            "quota"              : "none",
-            "mountpoint"         : "readonly",
-            "compressratio"      : "readonly",
-            "available"          : "readonly",
-            "used"               : "readonly",
-            "dedup"              : "off",
-            "reservation"        : "none",
+            "compression"          : "lz4",
+            "origin"               : "readonly",
+            "quota"                : "none",
+            "mountpoint"           : "readonly",
+            "compressratio"        : "readonly",
+            "available"            : "readonly",
+            "used"                 : "readonly",
+            "dedup"                : "off",
+            "reservation"          : "none",
         }
 
         return default_props
@@ -375,10 +380,11 @@ class IOCCreate(object):
         Takes a list of pkg's to install into the target jail. The resolver
         property is required for pkg to have network access.
         """
-        status, jid = IOCList().list_get_jid(jail_uuid)
+        status, jid = iocage.lib.ioc_list.IOCList().list_get_jid(jail_uuid)
         err = False
         if not status:
-            IOCStart(jail_uuid, _tag, location, config, silent=True)
+            iocage.lib.ioc_start.IOCStart(jail_uuid, _tag, location, config,
+                                          silent=True)
             resolver = config["resolver"]
 
             if resolver != "/etc/resolv.conf" and resolver != "none":
@@ -386,37 +392,37 @@ class IOCCreate(object):
                     for line in resolver.split(";"):
                         resolv_conf.write(line + "\n")
             else:
-                copy(resolver, f"{location}/root/etc/resolv.conf")
+                shutil.copy(resolver, f"{location}/root/etc/resolv.conf")
 
-            status, jid = IOCList().list_get_jid(jail_uuid)
+            status, jid = iocage.lib.ioc_list.IOCList().list_get_jid(jail_uuid)
 
         # Connectivity test courtesy David Cottlehuber off Google Group
         srv_connect_cmd = ["drill", f"_http._tcp.{repo}", "SRV"]
         dnssec_connect_cmd = ["drill", "-D", f"{repo}"]
 
-        logit({
+        iocage.lib.ioc_common.logit({
             "level"  : "INFO",
             "message": f"Testing SRV response to {site}"
         },
             _callback=self.callback,
             silent=self.silent)
-        srv_connection, srv_err = IOCExec(srv_connect_cmd, jail_uuid, _tag,
-                                          location,
-                                          plugin=self.plugin).exec_jail()
+        srv_connection, srv_err = iocage.lib.ioc_exec.IOCExec(
+            srv_connect_cmd, jail_uuid, _tag, location,
+            plugin=self.plugin).exec_jail()
 
         if srv_err:
             raise RuntimeError(f"{srv_connection}\n"
                                f"Command run: {' '.join(srv_connect_cmd)}")
 
-        logit({
+        iocage.lib.ioc_common.logit({
             "level"  : "INFO",
             "message": f"Testing DNSSEC response to {site}"
         },
             _callback=self.callback,
             silent=self.silent)
-        dnssec_connection, dnssec_err = IOCExec(dnssec_connect_cmd,
-                                                jail_uuid, _tag, location,
-                                                plugin=self.plugin).exec_jail()
+        dnssec_connection, dnssec_err = iocage.lib.ioc_exec.IOCExec(
+            dnssec_connect_cmd, jail_uuid, _tag, location,
+            plugin=self.plugin).exec_jail()
 
         if dnssec_err:
             raise RuntimeError(f"{dnssec_connection}\n"
@@ -426,25 +432,24 @@ class IOCCreate(object):
             with open(self.pkglist, "r") as j:
                 self.pkglist = json.load(j)["pkgs"]
 
-        logit({
+        iocage.lib.ioc_common.logit({
             "level"  : "INFO",
             "message": "\nInstalling pkg... "
         },
             _callback=self.callback,
             silent=self.silent)
         # To avoid a user being prompted about pkg.
-        Popen(["pkg-static", "-j", jid, "install", "-q", "-y",
-               "pkg"], stderr=PIPE).communicate()
+        su.Popen(["pkg-static", "-j", jid, "install", "-q", "-y",
+                  "pkg"], stderr=su.PIPE).communicate()
 
         # We will have mismatched ABI errors from earlier, this is to be safe.
         os.environ["ASSUME_ALWAYS_YES"] = "yes"
         cmd = ("pkg-static", "upgrade", "-f", "-q", "-y")
-        pkg_upgrade, pkgupgrade_err = IOCExec(cmd, jail_uuid, _tag,
-                                              location,
-                                              plugin=self.plugin).exec_jail()
+        pkg_upgrade, pkgupgrade_err = iocage.lib.ioc_exec.IOCExec(
+            cmd, jail_uuid, _tag, location, plugin=self.plugin).exec_jail()
 
         if pkgupgrade_err:
-            logit({
+            iocage.lib.ioc_common.logit({
                 "level"  : "ERROR",
                 "message": f"{pkg_upgrade}"
             },
@@ -452,25 +457,25 @@ class IOCCreate(object):
                 silent=self.silent)
             err = True
 
-        logit({
+        iocage.lib.ioc_common.logit({
             "level"  : "INFO",
             "message": "Installing supplied packages:"
         },
             _callback=self.callback,
             silent=self.silent)
         for pkg in self.pkglist:
-            logit({
+            iocage.lib.ioc_common.logit({
                 "level"  : "INFO",
                 "message": f"  - {pkg}... "
             },
                 _callback=self.callback,
                 silent=self.silent)
             cmd = ("pkg", "install", "-q", "-y", pkg)
-            pkg_install, pkg_err = IOCExec(cmd, jail_uuid, _tag, location,
-                                           plugin=self.plugin).exec_jail()
+            pkg_install, pkg_err = iocage.lib.ioc_exec.IOCExec(
+                cmd, jail_uuid, _tag, location, plugin=self.plugin).exec_jail()
 
             if pkg_err:
-                logit({
+                iocage.lib.ioc_common.logit({
                     "level"  : "ERROR",
                     "message": f"{pkg_install}"
                 },
@@ -481,7 +486,8 @@ class IOCCreate(object):
         os.remove(f"{location}/root/etc/resolv.conf")
 
         if status:
-            IOCStop(jail_uuid, _tag, location, config, silent=True)
+            iocage.lib.ioc_stop.IOCStop(jail_uuid, _tag, location, config,
+                                        silent=True)
 
         if self.plugin and err:
             return err
@@ -498,7 +504,7 @@ class IOCCreate(object):
         except OSError:
             pass
 
-        tag_date = datetime.utcnow().strftime("%F@%T:%f")
+        tag_date = datetime.datetime.utcnow().strftime("%F@%T:%f")
         jail_location = f"{self.iocroot}/jails/{jail_uuid}"
 
         if not os.path.exists(f"{self.iocroot}/tags"):
@@ -520,7 +526,7 @@ class IOCCreate(object):
 
                 return tag
         else:
-            logit({
+            iocage.lib.ioc_common.logit({
                 "level"  : "WARNING",
                 "message": f"\n  tag: \"{tag}\" in use by {readlink_uuid}!\n"
                            f"  Renaming {jail_uuid}'s tag to {tag_date}.\n"
@@ -529,7 +535,8 @@ class IOCCreate(object):
                 silent=self.silent)
 
             os.symlink(jail_location, f"{self.iocroot}/tags/{tag_date}")
-            IOCJson(jail_location, silent=True).json_set_value(
+            iocage.lib.ioc_json.IOCJson(jail_location,
+                                        silent=True).json_set_value(
                 f"tag={tag_date}", create_func=True)
 
             return tag_date

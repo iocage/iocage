@@ -1,8 +1,8 @@
 import logging
+import logging.config
 import logging.handlers
 import os
 import sys
-from logging.config import dictConfig
 
 import coloredlogs
 
@@ -62,4 +62,3 @@ class IOCLogger(object):
 
     def cli_log(self):
         return self.cli_logger
-

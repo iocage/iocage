@@ -1,12 +1,12 @@
 """snaplist module for the cli."""
-from subprocess import PIPE, Popen
+import subprocess as su
 
 import click
-from texttable import Texttable
+import texttable
 
-from iocage.lib.ioc_common import logit
-from iocage.lib.ioc_json import IOCJson
-from iocage.lib.ioc_list import IOCList
+import iocage.lib.ioc_common as ioc_common
+import iocage.lib.ioc_json as ioc_json
+import iocage.lib.ioc_list as ioc_list
 
 
 @click.command(name="snaplist", help="Show snapshots of a specified jail.")
@@ -15,10 +15,10 @@ from iocage.lib.ioc_list import IOCList
 @click.argument("jail")
 def cli(header, jail):
     """Allows a user to show resource usage of all jails."""
-    jails, paths = IOCList("uuid").list_datasets()
-    pool = IOCJson().json_get_value("pool")
+    jails, paths = ioc_list.IOCList("uuid").list_datasets()
+    pool = ioc_json.IOCJson().json_get_value("pool")
     snap_list = []
-    table = Texttable(max_width=0)
+    table = texttable.Texttable(max_width=0)
 
     _jail = {tag: uuid for (tag, uuid) in jails.items() if
              uuid.startswith(jail) or tag == jail}
@@ -27,24 +27,24 @@ def cli(header, jail):
         tag, uuid = next(iter(_jail.items()))
         path = paths[tag]
     elif len(_jail) > 1:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": f"Multiple jails found for {jail}:"
         })
         for t, u in sorted(_jail.items()):
-            logit({
+            ioc_common.logit({
                 "level"  : "ERROR",
                 "message": f"  {u} ({t})"
             })
         exit(1)
     else:
-        logit({
+        ioc_common.logit({
             "level"  : "ERROR",
             "message": f"{jail} not found!"
         })
         exit(1)
 
-    conf = IOCJson(path).json_load()
+    conf = ioc_json.IOCJson(path).json_load()
 
     if conf["template"] == "yes":
         full_path = f"{pool}/iocage/templates/{tag}"
@@ -52,9 +52,10 @@ def cli(header, jail):
         full_path = f"{pool}/iocage/jails/{uuid}"
 
     zconf = ["zfs", "get", "-H", "-o", "value"]
-    snapshots = Popen(["zfs", "list", "-r", "-H", "-t", "snapshot",
-                       full_path], stdout=PIPE,
-                      stderr=PIPE).communicate()[0].decode("utf-8").split("\n")
+    snapshots = su.Popen(["zfs", "list", "-r", "-H", "-t", "snapshot",
+                          full_path], stdout=su.PIPE,
+                         stderr=su.PIPE).communicate()[0].decode(
+        "utf-8").split("\n")
 
     for snap in snapshots:
         # We get an empty list at the end.
@@ -69,12 +70,12 @@ def cli(header, jail):
                 # basejail datasets.
                 continue
 
-            creation = Popen(zconf + ["creation", snap[0]],
-                             stdout=PIPE).communicate()[0].decode(
+            creation = su.Popen(zconf + ["creation", snap[0]],
+                                stdout=su.PIPE).communicate()[0].decode(
                 "utf-8").strip()
             used = snap[1]
-            referenced = Popen(zconf + ["referenced", snap[0]],
-                               stdout=PIPE).communicate()[0].decode(
+            referenced = su.Popen(zconf + ["referenced", snap[0]],
+                                  stdout=su.PIPE).communicate()[0].decode(
                 "utf-8").strip()
 
             snap_list.append([snapname, creation, referenced, used])
@@ -84,13 +85,13 @@ def cli(header, jail):
         # We get an infinite float otherwise.
         table.set_cols_dtype(["t", "t", "t", "t"])
         table.add_rows(snap_list)
-        logit({
+        ioc_common.logit({
             "level"  : "INFO",
             "message": table.draw()
         })
     else:
         for snap in snap_list:
-            logit({
+            ioc_common.logit({
                 "level"  : "INFO",
                 "message": "\t".join(snap)
             })

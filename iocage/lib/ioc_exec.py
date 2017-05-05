@@ -1,10 +1,10 @@
 """iocage exec module."""
-from subprocess import CalledProcessError, PIPE, Popen, STDOUT
+import subprocess as su
 
-from iocage.lib.ioc_common import checkoutput, logit
-from iocage.lib.ioc_json import IOCJson
-from iocage.lib.ioc_list import IOCList
-from iocage.lib.ioc_start import IOCStart
+import iocage.lib.ioc_common
+import iocage.lib.ioc_json
+import iocage.lib.ioc_list
+import iocage.lib.ioc_start
 
 
 class IOCExec(object):
@@ -32,12 +32,12 @@ class IOCExec(object):
             flag = "-u"
             user = self.host_user
 
-        status, _ = IOCList().list_get_jid(self.uuid)
-        conf = IOCJson(self.path).json_load()
+        status, _ = iocage.lib.ioc_list.IOCList().list_get_jid(self.uuid)
+        conf = iocage.lib.ioc_json.IOCJson(self.path).json_load()
         exec_fib = conf["exec_fib"]
         if not status:
             if not self.plugin and not self.skip:
-                logit({
+                iocage.lib.ioc_common.logit({
                     "level"  : "INFO",
                     "message": f"{self.uuid} ({self.tag}) is not running,"
                                " starting jail"
@@ -46,7 +46,9 @@ class IOCExec(object):
                     silent=self.silent)
 
             if conf["type"] in ("jail", "plugin"):
-                IOCStart(self.uuid, self.tag, self.path, conf, silent=True)
+                iocage.lib.ioc_start.IOCStart(self.uuid, self.tag, self.path,
+                                              conf,
+                                              silent=True)
             elif conf["type"] == "basejail":
                 raise RuntimeError(
                     "Please run \"iocage migrate\" before trying to start"
@@ -59,7 +61,7 @@ class IOCExec(object):
                 raise RuntimeError(f"{conf['type']} is not a supported jail"
                                    " type.")
 
-            logit({
+            iocage.lib.ioc_common.logit({
                 "level"  : "INFO",
                 "message": "\nCommand output:"
             },
@@ -68,17 +70,18 @@ class IOCExec(object):
 
         if self.plugin:
             try:
-                msg = checkoutput(["setfib", exec_fib, "jexec", flag, user,
-                                   f"ioc-{self.uuid}"] + list(self.command),
-                                  stderr=STDOUT)
+                msg = iocage.lib.ioc_common.checkoutput(
+                    ["setfib", exec_fib, "jexec", flag, user,
+                     f"ioc-{self.uuid}"] + list(self.command),
+                    stderr=su.STDOUT)
 
                 return msg, False
-            except CalledProcessError as err:
+            except su.CalledProcessError as err:
                 return err.output.decode("utf-8").rstrip(), True
         else:
-            jexec = Popen(["setfib", exec_fib, "jexec", flag, user,
-                           f"ioc-{self.uuid}"] + list(self.command),
-                          stdout=PIPE, stderr=PIPE)
+            jexec = su.Popen(["setfib", exec_fib, "jexec", flag, user,
+                              f"ioc-{self.uuid}"] + list(self.command),
+                             stdout=su.PIPE, stderr=su.PIPE)
             msg, err = jexec.communicate()
 
             return msg, err
