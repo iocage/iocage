@@ -752,25 +752,20 @@ class IOCFetch(object):
         Popen(["umount", f"{new_root}/dev"]).communicate()
 
     def fetch_plugin(self, _json, props, num):
-        """Expects an JSON object."""
+        """Helper to fetch plugins"""
         with open(_json, "r") as j:
             conf = json.load(j)
-        self.release = conf["release"]
-        pkg_repos = conf["fingerprints"]
-        freebsd_version = f"{self.iocroot}/releases/{conf['release']}" \
-                          "/root/bin/freebsd-version"
-        json_props = conf.get("properties", {})
-        props = list(props)
 
-        for p, v in json_props.items():
-            # The JSON properties are going to be treated as user entered
-            # ones on the command line. If the users prop exists on the
-            # command line, we will skip the JSON one.
-            _p = f"{p}={v}"
+        self.__fetch_plugin_inform__(conf, num)
+        props, pkg = self.__fetch_plugin_props__(conf, props, num)
+        uuid, tag, jaildir, _conf, repo_dir = self.__fetch_plugin_create__(
+            props)
+        self.__fetch_plugin_install_packages__(uuid, tag, jaildir, conf,
+                                               _conf, pkg, props, repo_dir)
+        self.__fetch_plugin_post_install__(conf, _conf, jaildir, uuid)
 
-            if p not in [_prop.split("=")[0] for _prop in props]:
-                props.append(_p)
-
+    def __fetch_plugin_inform__(self, conf, num):
+        """Logs the pertinent information before fetching a plugin"""
         if num <= 1:
             logit({
                 "level"  : "INFO",
@@ -806,6 +801,24 @@ class IOCFetch(object):
                     _callback=self.callback,
                     silent=self.silent)
 
+    def __fetch_plugin_props__(self, conf, props, num):
+        """Generates the list of properties that a user and the JSON supply"""
+        self.release = conf["release"]
+        pkg_repos = conf["fingerprints"]
+        freebsd_version = f"{self.iocroot}/releases/{conf['release']}" \
+                          "/root/bin/freebsd-version"
+        json_props = conf.get("properties", {})
+        props = list(props)
+
+        for p, v in json_props.items():
+            # The JSON properties are going to be treated as user entered
+            # ones on the command line. If the users prop exists on the
+            # command line, we will skip the JSON one.
+            _p = f"{p}={v}"
+
+            if p not in [_prop.split("=")[0] for _prop in props]:
+                props.append(_p)
+
             if not os.path.isdir(f"{self.iocroot}/releases/{self.release}"):
                 self.fetch_release()
 
@@ -839,6 +852,10 @@ class IOCFetch(object):
         create_props = [f"{k}_{num}" if k == f"{_tag}" and num != 0 else k
                         for k in create_props]
 
+        return create_props, pkg_repos
+
+    def __fetch_plugin_create__(self, create_props):
+        """Creates the plugin with the provided properties"""
         uuid = IOCCreate(self.release, create_props, 0).create_jail()
         jaildir = f"{self.iocroot}/jails/{uuid}"
         repo_dir = f"{jaildir}/root/usr/local/etc/pkg/repos"
@@ -865,6 +882,12 @@ class IOCFetch(object):
             IOCDestroy().destroy_jail(path)
             raise RuntimeError()
 
+        return uuid, tag, jaildir, _conf, repo_dir
+
+    def __fetch_plugin_install_packages__(self, uuid, tag, jaildir, conf,
+                                          _conf, pkg_repos, create_props,
+                                          repo_dir):
+        """Attempts to start the jail and install the packages"""
         IOCStart(uuid, tag, jaildir, _conf, silent=True)
 
         try:
@@ -932,80 +955,8 @@ fingerprint: {fingerprint}
                         pkglist=conf["pkgs"]).create_install_packages(
             uuid, jaildir, tag, _conf, repo=conf["packagesite"],
             site=repo_name)
-        if not err:
-            # We need to pipe from tar to the root of the jail.
-            if conf["artifact"]:
-                # TODO: Fancier.
-                logit({
-                    "level"  : "INFO",
-                    "message": "Fetching artifact... "
-                },
-                    _callback=self.callback,
-                    silent=self.silent)
 
-                Popen(["git", "clone", conf["artifact"],
-                       f"{jaildir}/plugin"], stdout=PIPE,
-                      stderr=PIPE).communicate()
-                tar_in = Popen(["tar", "cvf", "-", "-C",
-                                f"{jaildir}/plugin/overlay/", "."],
-                               stdout=PIPE, stderr=PIPE).communicate()
-                Popen(["tar", "xf", "-", "-C", f"{jaildir}/root"],
-                      stdin=PIPE).communicate(input=tar_in[0])
-
-                try:
-                    copy(f"{jaildir}/plugin/post_install.sh",
-                         f"{jaildir}/root/root")
-
-                    logit({
-                        "level"  : "INFO",
-                        "message": "Running post_install.sh"
-                    },
-                        _callback=self.callback,
-                        silent=self.silent)
-                    command = ["sh", "/root/post_install.sh"]
-                    msg, err = IOCExec(command, uuid, conf["name"], jaildir,
-                                       skip=True, plugin=True).exec_jail()
-                    logit({
-                        "level"  : "INFO",
-                        "message": msg
-                    })
-
-                    ui_json = f"{jaildir}/plugin/ui.json"
-                    try:
-                        with open(ui_json, "r") as u:
-                            admin_portal = json.load(u)["adminportal"]
-                            try:
-                                ip4 = _conf["ip4_addr"].split("|")[
-                                    1].rsplit("/")[0]
-                            except IndexError:
-                                ip4 = "none"
-
-                            try:
-                                ip6 = _conf["ip6_addr"].split("|")[
-                                    1].rsplit("/")[0]
-                            except IndexError:
-                                ip6 = "none"
-
-                            if ip4 != "none":
-                                ip = ip4
-                            elif ip6 != "none":
-                                # If they had an IP4 address and an IP6 one,
-                                # we'll assume they prefer IP6.
-                                ip = ip6
-
-                            admin_portal = admin_portal.replace("%%IP%%", ip)
-                            logit({
-                                "level"  : "INFO",
-                                "message": f"Admin Portal:\n{admin_portal}"
-                            },
-                                _callback=self.callback,
-                                silent=self.silent)
-                    except FileNotFoundError:
-                        # They just didn't set a admin portal.
-                        pass
-                except FileNotFoundError:
-                    pass
-        else:
+        if err:
             logit({
                 "level"  : "ERROR",
                 "message": "pkg error, refusing to fetch artifact and "
@@ -1013,6 +964,81 @@ fingerprint: {fingerprint}
             },
                 _callback=self.callback,
                 silent=self.silent)
+
+    def __fetch_plugin_post_install__(self, conf, _conf, jaildir, uuid):
+        """Fetches the users artifact and runs the post install"""
+        # We need to pipe from tar to the root of the jail.
+        if conf["artifact"]:
+            logit({
+                "level"  : "INFO",
+                "message": "Fetching artifact... "
+            },
+                _callback=self.callback,
+                silent=self.silent)
+
+            Popen(["git", "clone", conf["artifact"],
+                   f"{jaildir}/plugin"], stdout=PIPE,
+                  stderr=PIPE).communicate()
+            tar_in = Popen(["tar", "cvf", "-", "-C",
+                            f"{jaildir}/plugin/overlay/", "."],
+                           stdout=PIPE, stderr=PIPE).communicate()
+            Popen(["tar", "xf", "-", "-C", f"{jaildir}/root"],
+                  stdin=PIPE).communicate(input=tar_in[0])
+
+            try:
+                copy(f"{jaildir}/plugin/post_install.sh",
+                     f"{jaildir}/root/root")
+
+                logit({
+                    "level"  : "INFO",
+                    "message": "Running post_install.sh"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+
+                command = ["sh", "/root/post_install.sh"]
+                msg, err = IOCExec(command, uuid, conf["name"], jaildir,
+                                   skip=True, plugin=True).exec_jail()
+                logit({
+                    "level"  : "INFO",
+                    "message": msg
+                })
+
+                ui_json = f"{jaildir}/plugin/ui.json"
+                try:
+                    with open(ui_json, "r") as u:
+                        admin_portal = json.load(u)["adminportal"]
+                        try:
+                            ip4 = _conf["ip4_addr"].split("|")[1].rsplit(
+                                "/")[0]
+                        except IndexError:
+                            ip4 = "none"
+
+                        try:
+                            ip6 = _conf["ip6_addr"].split("|")[1].rsplit(
+                                "/")[0]
+                        except IndexError:
+                            ip6 = "none"
+
+                        if ip4 != "none":
+                            ip = ip4
+                        elif ip6 != "none":
+                            # If they had an IP4 address and an IP6 one,
+                            # we'll assume they prefer IP6.
+                            ip = ip6
+
+                        admin_portal = admin_portal.replace("%%IP%%", ip)
+                        logit({
+                            "level"  : "INFO",
+                            "message": f"Admin Portal:\n{admin_portal}"
+                        },
+                            _callback=self.callback,
+                            silent=self.silent)
+                except FileNotFoundError:
+                    # They just didn't set a admin portal.
+                    pass
+            except FileNotFoundError:
+                pass
 
     def fetch_plugin_index(self, props, _list=False):
         if self.server == "ftp.freebsd.org":
