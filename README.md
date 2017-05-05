@@ -23,13 +23,10 @@ To install using binary packages, simply run: `pkg install py36-iocage`(not in p
 ##### GitHub:
 */usr/src is required to build from GitHub*
 - `pkg install python36 git-lite`
-- `python3.6 -m ensurepip`
 - `git clone --recursive https://github.com/iocage/iocage`
-- `pip3.6 install Cython`
-- `cd iocage/py-libzfs && python3.6 setup.py build && python3.6 setup.py install`
-- `cd .. && pip3.6 install .`
+- `make install` as root
 
-To install subsequent updates: `git pull` and `pip3.6 install -U .`
+To install subsequent updates: run `make install` as root.
 
 ##### Ports:
 - To be able to use the ports tree and build `sysutils/py3-iocage` you need to follow the steps below.
