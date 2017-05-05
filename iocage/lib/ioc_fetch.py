@@ -844,7 +844,7 @@ class IOCFetch(object):
         #  supplied properties replacing ours. Finally we add _1, _2 etc to
         # the tag with the final iteration if the user supplied count.
         create_props = [f"cloned_release={self.release}",
-                        f"release={release}", "type=plugin"]
+                        f"release={release}", "type=plugin", "boot=on"]
 
         # If the user supplied a tag, we shouldn't add ours.
         if "tag" not in [p.split("=")[0] for p in props]:
