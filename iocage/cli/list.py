@@ -3,7 +3,7 @@ import click
 
 import iocage.lib.ioc_common as ioc_common
 import iocage.lib.ioc_fetch as ioc_fetch
-import iocage.lib.ioc_list as ioc_list
+import iocage.lib.iocage as ioc
 
 
 @click.command(name="list", help="List a specified dataset type, by default"
@@ -41,8 +41,7 @@ def cli(dataset_type, header, _long, remote, http, plugins, _sort):
     elif plugins:
         ioc_fetch.IOCFetch("").fetch_plugin_index("", _list=True)
     else:
-        _list = ioc_list.IOCList(dataset_type, header, _long,
-                                 _sort).list_datasets()
+        _list = ioc.IOCage().list(dataset_type, header, _long, _sort)
 
         if not header:
             if dataset_type == "base":
