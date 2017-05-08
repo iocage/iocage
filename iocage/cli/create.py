@@ -46,12 +46,15 @@ def validate_count(ctx, param, value):
 def cli(release, template, count, props, pkglist, basejail, empty, short,
         uuid):
     if short and uuid:
-        ioc_common.logit({
-            "level"  : "ERROR",
-            "message": "Can't use --short (-s) and  --uuid (-u) at the same"
-                       " time!"
-        })
-        exit(1)
+        uuid = uuid[:8]
+
+        if len(uuid) != 8:
+            ioc_common.logit({
+                "level"  : "ERROR",
+                "message": "Need a minimum of 8 characters to use --short"
+                           " (-s) and --uuid (-u) together!"
+            })
+            exit(1)
 
     if not template and not release and not empty:
         ioc_common.logit({
