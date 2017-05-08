@@ -148,3 +148,6 @@ me:\
         net.link.bridge.pfil_onlyip=0  # Only pass IP packets when pfil is enabled
         net.link.bridge.pfil_bridge=0  # Packet filter on the bridge interface
         net.link.bridge.pfil_member=0  # Packet filter on the member interface
+- Lots of jails or a big server? Mount `fdescfs`:
+
+        mount -t fdescfs fdesc /dev/fd
