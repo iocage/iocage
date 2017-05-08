@@ -96,6 +96,23 @@ class IOCFetch(object):
 
         return eol_releases
 
+    def __fetch_host_release__(self):
+        """Helper to return the hosts sanitized RELEASE"""
+        rel = os.uname()[2]
+        if "-RELEASE" in rel or "-STABLE" in rel:
+            self.release = rel.rsplit("-", 1)[0]
+
+            if "-STABLE" in rel:
+                # HardenedBSD
+                self.release = self.release.replace("-RELEASE",
+                                                    "-STABLE")
+                self.release = re.sub(r"\W\w.", "-", self.release)
+
+        else:
+            self.release = "Not a RELEASE"
+
+        return self.release
+
     def __fetch_validate_release__(self, releases):
         """
         Checks if the user supplied an index number and returns the
@@ -111,17 +128,18 @@ class IOCFetch(object):
             except IndexError:
                 raise RuntimeError(f"[{self.release}] is not in the list!")
             except ValueError:
-                rel = os.uname()[2]
-                if "-RELEASE" in rel:
-                    self.release = rel
+                # We want to use their host as RELEASE, but it may
+                # not be on the mirrors anymore.
+                try:
+                    self.release = self.__fetch_host_release__()
 
-                    # We want to use their host as RELEASE, but it may
-                    # not be on the mirrors anymore.
-                    try:
-                        releases.index(self.release)
-                    except ValueError:
-                        raise RuntimeError("Please select an item!")
-                else:
+                    if "-STABLE" in self.release:
+                        # Custom HardenedBSD server
+                        self.hardened = True
+                        return self.release
+
+                    releases.index(self.release)
+                except ValueError:
                     raise RuntimeError("Please select an item!")
         else:
             # Quick list validation
@@ -261,9 +279,9 @@ class IOCFetch(object):
                     },
                         _callback=self.callback,
                         silent=self.silent)
-                self.release = input(
-                    "\nWhich release do you want to fetch?"
-                    " (EXIT) ")
+                host_release = self.__fetch_host_release__()
+                self.release = input("\nWhich release do you want to fetch?"
+                                     f" ({host_release})\nType EXIT to quit: ")
                 self.release = self.__fetch_validate_release__(releases)
         else:
             if self.auth == "basic":
@@ -312,9 +330,9 @@ class IOCFetch(object):
                 if _list:
                     return
 
-                self.release = input(
-                    "\nWhich release do you want to fetch?"
-                    " (EXIT) ")
+                host_release = self.__fetch_host_release__()
+                self.release = input("\nWhich release do you want to fetch?"
+                                     f" ({host_release})\nType EXIT to quit: ")
                 self.release = self.__fetch_validate_release__(releases)
 
         if self.hardened:
@@ -372,8 +390,9 @@ class IOCFetch(object):
             if _list:
                 return
 
+            host_release = self.__fetch_host_release__()
             self.release = input("\nWhich release do you want to fetch?"
-                                 " (EXIT) ")
+                                 f" ({host_release})\nType EXIT to quit: ")
 
             self.release = self.__fetch_validate_release__(releases)
 
