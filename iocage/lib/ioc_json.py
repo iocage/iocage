@@ -745,7 +745,10 @@ class IOCJson(object):
             if props[key][0] == "string":
                 return
             else:
-                err = f"{value} is not a valid value for {key}.\n"
+                if key == "ip4_addr" or key == "ip6_addr" and value == "none":
+                    err = ""
+                else:
+                    err = f"{value} is not a valid value for {key}.\n"
 
                 if self.cli:
                     iocage.lib.ioc_common.logit({
@@ -769,10 +772,11 @@ class IOCJson(object):
                     msg = "IP address must contain both an interface and IP " \
                           "address.\nEXAMPLE: em0|192.168.1.10"
 
-                    if not self.cli:
-                        msg = err + msg
+                    if value != "none":
+                        if not self.cli:
+                            msg = err + msg
 
-                    raise RuntimeError(msg)
+                        raise RuntimeError(msg)
                 elif key == "ip6_addr":
                     msg = "IP address must contain both an interface and IP " \
                           "address.\nEXAMPLE: em0|fe80::5400:ff:fe54:1"
