@@ -6,6 +6,7 @@ import os
 import shutil
 import stat
 import subprocess as su
+import sys
 import tempfile as tmp
 
 import iocage.lib.ioc_logger
@@ -25,6 +26,13 @@ def callback(log):
         lgr.info(log['message'])
     elif log['level'] == 'DEBUG':
         lgr.debug(log['message'])
+    elif log['level'] == 'EXCEPTION':
+        # TODO: Better solution?
+        if not os.isatty(sys.stdout.fileno()):
+            raise RuntimeError(log['message'])
+        else:
+            lgr.error(log['message'])
+            exit(1)
 
 
 def logit(content, _callback=None, silent=False, term="\n"):
