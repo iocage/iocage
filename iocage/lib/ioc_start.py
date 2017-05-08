@@ -179,6 +179,17 @@ class IOCStart(object):
                 net = ["vnet"]
                 vnet = True
 
+            ips_in_use = iocage.lib.ioc_common.checkoutput(
+                ["jls", "ip4.addr", "ip6.addr"]).split()
+            ips_in_use = [x for x in ips_in_use if x != "-"]
+
+            if any(ip in ip4_addr or ip in ip6_addr for ip in ips_in_use):
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": f"IP is in use. Please change {self.uuid} ("
+                               f"{self.conf['tag']})'s IP."
+                })
+
             msg = f"* Starting {self.uuid} ({self.conf['tag']})"
             iocage.lib.ioc_common.logit({
                 "level"  : "INFO",
