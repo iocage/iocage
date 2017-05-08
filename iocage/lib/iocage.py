@@ -53,10 +53,10 @@ class PoolAndDataset(object):
 
 class IOCage(object):
     def __init__(self, jail=None, rc=False, callback=None, silent=False):
-        self.pool = ioc_json.IOCJson().json_get_value("pool")
-        self.iocroot = ioc_json.IOCJson(self.pool).json_get_value("iocroot")
+        self.pool = PoolAndDataset().get_pool()
+        self.iocroot = PoolAndDataset().get_iocroot()
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
-        self.jails, self._paths = ioc_list.IOCList("uuid").list_datasets()
+        self.jails, self._paths = self.list("uuid")
         self.jail = jail
         self.rc = rc
         self._all = True if self.jail and 'ALL' in self.jail else False
@@ -103,6 +103,13 @@ class IOCage(object):
         else:
             return True, f"{_type} is not a supported jail type."
 
+    def list(self, lst_type, header=False, long=False, sort="tag", uuid=None):
+        """foo"""
+        if lst_type == "jid":
+            return ioc_list.IOCList().list_get_jid(uuid)
+
+        return ioc_list.IOCList(lst_type, header, long, sort).list_datasets()
+
     def start(self, jail=None):
         """Checks jails type and existence, then starts the jail"""
         if self.rc or self._all:
@@ -143,7 +150,7 @@ class IOCage(object):
             # We want this to be the real jail now.
             self.jail = j
             tag, uuid, path = self.__check_jail_existence__()
-            status, _ = ioc_list.IOCList().list_get_jid(uuid)
+            status, jid = self.list("jid", uuid=uuid)
 
             if action == 'stop':
                 self.stop(j)
@@ -198,7 +205,7 @@ class IOCage(object):
             self.jail = j
 
             tag, uuid, path = self.__check_jail_existence__()
-            status, _ = ioc_list.IOCList().list_get_jid(uuid)
+            status, _ = self.list("jid", uuid=uuid)
 
             if action == 'stop':
                 if status:
