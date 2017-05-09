@@ -917,6 +917,18 @@ class IOCFetch(object):
                                           repo_dir):
         """Attempts to start the jail and install the packages"""
         iocage.lib.ioc_start.IOCStart(uuid, tag, jaildir, _conf, silent=True)
+        kmods = conf.get("kmods", {})
+
+        for kmod in kmods:
+            try:
+                su.check_call(["kldload", kmod])
+            except su.CalledProcessError:
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": "Module not found!"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
 
         try:
             os.makedirs(f"{jaildir}/root/usr/local/etc/pkg/repos", 0o755)
