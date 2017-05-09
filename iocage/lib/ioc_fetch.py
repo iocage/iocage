@@ -785,6 +785,7 @@ class IOCFetch(object):
         with open(_json, "r") as j:
             conf = json.load(j)
 
+        self.release = conf['release']
         self.__fetch_plugin_inform__(conf, num)
         props, pkg = self.__fetch_plugin_props__(conf, props, num)
         jail_uuid = str(uuid.uuid4())
@@ -863,11 +864,14 @@ class IOCFetch(object):
             # 9.3-RELEASE and under don't actually have this binary.
             release = conf["release"]
         else:
-            with open(freebsd_version, "r") as r:
-                for line in r:
-                    if line.startswith("USERLAND_VERSION"):
-                        release = line.rstrip().partition("=")[2].strip(
-                            '"')
+            try:
+                with open(freebsd_version, "r") as r:
+                    for line in r:
+                        if line.startswith("USERLAND_VERSION"):
+                            release = line.rstrip().partition("=")[2].strip(
+                                '"')
+            except FileNotFoundError:
+                self.fetch_release()
 
         # We set our properties that we need, and then iterate over the user
         #  supplied properties replacing ours. Finally we add _1, _2 etc to
