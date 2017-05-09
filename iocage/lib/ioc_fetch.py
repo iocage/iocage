@@ -921,7 +921,8 @@ class IOCFetch(object):
 
         for kmod in kmods:
             try:
-                su.check_call(["kldload", kmod])
+                su.check_call(["kldload", "-n", kmod], stdout=su.PIPE,
+                              stderr=su.PIPE)
             except su.CalledProcessError:
                 iocage.lib.ioc_common.logit({
                     "level"  : "EXCEPTION",
