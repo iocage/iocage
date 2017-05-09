@@ -188,7 +188,9 @@ class IOCStart(object):
                     "level"  : "EXCEPTION",
                     "message": f"IP is in use. Please change {self.uuid} ("
                                f"{self.conf['tag']})'s IP."
-                })
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
 
             msg = f"* Starting {self.uuid} ({self.conf['tag']})"
             iocage.lib.ioc_common.logit({
