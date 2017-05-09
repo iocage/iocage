@@ -9,6 +9,7 @@ import os
 import re
 import shutil
 import subprocess as su
+import sys
 import tarfile
 import tempfile
 import urllib.request
@@ -17,7 +18,6 @@ import uuid
 import requests
 import requests.auth
 import requests.packages.urllib3.exceptions
-import sys
 import tqdm
 
 import iocage.lib.ioc_common
@@ -871,10 +871,25 @@ class IOCFetch(object):
                             release = line.rstrip().partition("=")[2].strip(
                                 '"')
             except FileNotFoundError:
+                iocage.lib.ioc_common.logit({
+                    "level"  : "WARNING",
+                    "message": f"Release {self.release} missing, "
+                               f"will attempt to fetch it."
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+
                 self.fetch_release()
 
+                # We still want this.
+                with open(freebsd_version, "r") as r:
+                    for line in r:
+                        if line.startswith("USERLAND_VERSION"):
+                            release = line.rstrip().partition("=")[2].strip(
+                                '"')
+
         # We set our properties that we need, and then iterate over the user
-        #  supplied properties replacing ours. Finally we add _1, _2 etc to
+        # supplied properties replacing ours. Finally we add _1, _2 etc to
         # the tag with the final iteration if the user supplied count.
         create_props = [f"cloned_release={self.release}",
                         f"release={release}", "type=plugin", "boot=on"]
