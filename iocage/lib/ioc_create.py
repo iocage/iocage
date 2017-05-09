@@ -238,7 +238,8 @@ class IOCCreate(object):
                 self.create_install_packages(jail_uuid, location, _tag, config)
 
         if start:
-            iocage.lib.ioc_start.IOCStart(jail_uuid, _tag, location, config)
+            iocage.lib.ioc_start.IOCStart(jail_uuid, _tag, location, config,
+                                          silent=self.silent)
 
         return jail_uuid
 
