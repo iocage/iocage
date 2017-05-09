@@ -802,7 +802,7 @@ class IOCFetch(object):
                 silent=self.silent)
             iocage.lib.ioc_common.logit({
                 "level"  : "INFO",
-                "message": f"  Using RELEASE: {self.release}"
+                "message": f"  Using RELEASE: {conf['release']}"
             },
                 _callback=self.callback,
                 silent=self.silent)
