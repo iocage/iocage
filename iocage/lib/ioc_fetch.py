@@ -884,7 +884,7 @@ class IOCFetch(object):
     def __fetch_plugin_create__(self, create_props):
         """Creates the plugin with the provided properties"""
         uuid = iocage.lib.ioc_create.IOCCreate(self.release, create_props,
-                                               0).create_jail()
+                                               0, silent=True).create_jail()
         jaildir = f"{self.iocroot}/jails/{uuid}"
         repo_dir = f"{jaildir}/root/usr/local/etc/pkg/repos"
         path = f"{self.pool}/iocage/jails/{uuid}"
