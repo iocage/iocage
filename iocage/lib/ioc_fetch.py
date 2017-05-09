@@ -8,7 +8,7 @@ import logging
 import os
 import re
 import shutil
-import subprocess
+import subprocess as su
 import tarfile
 import tempfile
 import urllib.request
@@ -172,15 +172,15 @@ class IOCFetch(object):
             if os.path.isdir(f"{self.iocroot}/download/{self.release}"):
                 pass
             else:
-                subprocess.Popen(["zfs", "create", "-o", "compression=lz4",
-                                  f"{self.pool}/iocage/download/"
-                                  f"{self.release}"]).communicate()
+                su.Popen(["zfs", "create", "-o", "compression=lz4",
+                          f"{self.pool}/iocage/download/"
+                          f"{self.release}"]).communicate()
             dataset = f"{self.iocroot}/download/{self.release}"
 
             for f in self.files:
                 if not os.path.isfile(f):
-                    subprocess.Popen(["zfs", "destroy", "-r", "-f",
-                                      f"{self.pool}{dataset}"])
+                    su.Popen(["zfs", "destroy", "-r", "-f",
+                              f"{self.pool}{dataset}"])
                     if f == "MANIFEST":
                         error = f"{f} is a required file!" \
                                 f"\nPlease place it in {self.root_dir}/" \
@@ -554,9 +554,9 @@ class IOCFetch(object):
 
         if not os.path.isdir(dataset):
             fresh = True
-            subprocess.Popen(["zfs", "create", "-o", "compression=lz4",
-                              f"{self.pool}/iocage/download/"
-                              f"{self.release}"]).communicate()
+            su.Popen(["zfs", "create", "-o", "compression=lz4",
+                      f"{self.pool}/iocage/download/"
+                      f"{self.release}"]).communicate()
 
         if missing or fresh:
             os.chdir(f"{self.iocroot}/download/{self.release}")
@@ -659,9 +659,9 @@ class IOCFetch(object):
         """
         src = f"{self.iocroot}/download/{self.release}/{f}"
         dest = f"{self.iocroot}/releases/{self.release}/root"
-        subprocess.Popen(["zfs", "create", "-p", "-o", "compression=lz4",
-                          f"{self.pool}/iocage/releases/{self.release}/"
-                          "root"]).communicate()
+        su.Popen(["zfs", "create", "-p", "-o", "compression=lz4",
+                  f"{self.pool}/iocage/releases/{self.release}/"
+                  "root"]).communicate()
 
         with tarfile.open(src) as f:
             # Extracting over the same files is much slower then
@@ -697,7 +697,7 @@ class IOCFetch(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-        subprocess.Popen(cmd).communicate()
+        su.Popen(cmd).communicate()
         shutil.copy("/etc/resolv.conf", f"{new_root}/etc/resolv.conf")
 
         os.environ["UNAME_r"] = self.release
@@ -721,10 +721,10 @@ class IOCFetch(object):
                              "--not-running-from-cron",
                              "fetch"]
 
-                with subprocess.Popen(fetch_cmd, stdout=subprocess.PIPE,
-                                      stderr=subprocess.PIPE,
-                                      bufsize=1,
-                                      universal_newlines=True) as fetch, \
+                with su.Popen(fetch_cmd, stdout=su.PIPE,
+                              stderr=su.PIPE,
+                              bufsize=1,
+                              universal_newlines=True) as fetch, \
                         io.StringIO() as buffer:
                     for line in fetch.stdout:
                         if not self.silent:
@@ -738,12 +738,12 @@ class IOCFetch(object):
                     fetch_output = buffer.getvalue()
 
                 if not fetch.returncode:
-                    subprocess.Popen([tmp.name, "-b", new_root, "-d",
-                                      f"{new_root}/var/db/freebsd-update/",
-                                      "-f",
-                                      f"{new_root}/etc/freebsd-update.conf",
-                                      "install"],
-                                     stderr=subprocess.PIPE).communicate()
+                    su.Popen([tmp.name, "-b", new_root, "-d",
+                              f"{new_root}/var/db/freebsd-update/",
+                              "-f",
+                              f"{new_root}/etc/freebsd-update.conf",
+                              "install"],
+                             stderr=su.PIPE).communicate()
                 else:
                     if "HAS PASSED" in fetch_output:
                         ast = "*" * 10
@@ -776,7 +776,7 @@ class IOCFetch(object):
         except OSError:
             pass
 
-        subprocess.Popen(["umount", f"{new_root}/dev"]).communicate()
+        su.Popen(["umount", f"{new_root}/dev"]).communicate()
 
     def fetch_plugin(self, _json, props, num):
         """Helper to fetch plugins"""
@@ -1005,15 +1005,15 @@ fingerprint: {fingerprint}
                 _callback=self.callback,
                 silent=self.silent)
 
-            subprocess.Popen(["git", "clone", conf["artifact"],
-                              f"{jaildir}/plugin"], stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE).communicate()
-            tar_in = subprocess.Popen(["tar", "cvf", "-", "-C",
-                                       f"{jaildir}/plugin/overlay/", "."],
-                                      stdout=subprocess.PIPE,
-                                      stderr=subprocess.PIPE).communicate()
-            subprocess.Popen(["tar", "xf", "-", "-C", f"{jaildir}/root"],
-                             stdin=subprocess.PIPE).communicate(
+            su.Popen(["git", "clone", conf["artifact"],
+                      f"{jaildir}/plugin"], stdout=su.PIPE,
+                     stderr=su.PIPE).communicate()
+            tar_in = su.Popen(["tar", "cvf", "-", "-C",
+                               f"{jaildir}/plugin/overlay/", "."],
+                              stdout=su.PIPE,
+                              stderr=su.PIPE).communicate()
+            su.Popen(["tar", "xf", "-", "-C", f"{jaildir}/root"],
+                     stdin=su.PIPE).communicate(
                 input=tar_in[0])
 
             try:
@@ -1083,14 +1083,14 @@ fingerprint: {fingerprint}
         try:
             iocage.lib.ioc_common.checkoutput(
                 ["git", "clone", git_server,
-                 f"{self.iocroot}/.plugin_index"], stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError as err:
+                 f"{self.iocroot}/.plugin_index"], stderr=su.STDOUT)
+        except su.CalledProcessError as err:
             if "already exists" in err.output.decode("utf-8").rstrip():
                 try:
                     iocage.lib.ioc_common.checkoutput(
                         ["git", "-C", f"{self.iocroot}/.plugin_index",
-                         "pull"], stderr=subprocess.STDOUT)
-                except subprocess.CalledProcessError as err:
+                         "pull"], stderr=su.STDOUT)
+                except su.CalledProcessError as err:
                     raise RuntimeError(
                         f"{err.output.decode('utf-8').rstrip()}")
             else:
