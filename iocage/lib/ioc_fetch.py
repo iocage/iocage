@@ -12,10 +12,12 @@ import subprocess as su
 import tarfile
 import tempfile
 import urllib.request
+import uuid
 
 import requests
 import requests.auth
 import requests.packages.urllib3.exceptions
+import sys
 import tqdm
 
 import iocage.lib.ioc_common
@@ -785,11 +787,19 @@ class IOCFetch(object):
 
         self.__fetch_plugin_inform__(conf, num)
         props, pkg = self.__fetch_plugin_props__(conf, props, num)
-        uuid, tag, jaildir, _conf, repo_dir = self.__fetch_plugin_create__(
-            props)
-        self.__fetch_plugin_install_packages__(uuid, tag, jaildir, conf,
-                                               _conf, pkg, props, repo_dir)
-        self.__fetch_plugin_post_install__(conf, _conf, jaildir, uuid)
+        jail_uuid = str(uuid.uuid4())
+        location = f"{self.iocroot}/jails/{jail_uuid}"
+
+        try:
+            tag, jaildir, _conf, repo_dir = self.__fetch_plugin_create__(
+                props, jail_uuid)
+            self.__fetch_plugin_install_packages__(jail_uuid, tag, jaildir,
+                                                   conf, _conf, pkg, props,
+                                                   repo_dir)
+            self.__fetch_plugin_post_install__(conf, _conf, jaildir, jail_uuid)
+        except KeyboardInterrupt:
+            iocage.lib.ioc_destroy.IOCDestroy().destroy_jail(location)
+            sys.exit(1)
 
     def __fetch_plugin_inform__(self, conf, num):
         """Logs the pertinent information before fetching a plugin"""
@@ -881,10 +891,10 @@ class IOCFetch(object):
 
         return create_props, pkg_repos
 
-    def __fetch_plugin_create__(self, create_props):
+    def __fetch_plugin_create__(self, create_props, uuid):
         """Creates the plugin with the provided properties"""
-        uuid = iocage.lib.ioc_create.IOCCreate(self.release, create_props,
-                                               0, silent=True).create_jail()
+        iocage.lib.ioc_create.IOCCreate(self.release, create_props, 0,
+                                        uuid=uuid, silent=True).create_jail()
         jaildir = f"{self.iocroot}/jails/{uuid}"
         repo_dir = f"{jaildir}/root/usr/local/etc/pkg/repos"
         path = f"{self.pool}/iocage/jails/{uuid}"
@@ -910,7 +920,7 @@ class IOCFetch(object):
             iocage.lib.ioc_destroy.IOCDestroy().destroy_jail(path)
             raise RuntimeError()
 
-        return uuid, tag, jaildir, _conf, repo_dir
+        return tag, jaildir, _conf, repo_dir
 
     def __fetch_plugin_install_packages__(self, uuid, tag, jaildir, conf,
                                           _conf, pkg_repos, create_props,
