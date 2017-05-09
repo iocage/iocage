@@ -108,7 +108,10 @@ def cli(http, _file, server, user, password, auth, verify, release, plugins,
             })
             exit(1)
         if plugins:
-            ioc_fetch.IOCFetch(release=None).fetch_plugin_index(props)
+            ioc_fetch.IOCFetch(release=None, http=http, _file=_file,
+                               verify=verify, hardened=hardened,
+                               update=update, eol=eol,
+                               files=files).fetch_plugin_index(props)
             exit()
 
         if count == 1:
