@@ -785,6 +785,10 @@ class IOCFetch(object):
         with open(_json, "r") as j:
             conf = json.load(j)
 
+        if self.hardened:
+            conf['release'] = conf['release'].replace("-RELEASE", "-STABLE")
+            conf['release'] = re.sub(r"\W\w.", "-", conf['release'])
+
         self.release = conf['release']
         self.__fetch_plugin_inform__(conf, num)
         props, pkg = self.__fetch_plugin_props__(conf, props, num)
