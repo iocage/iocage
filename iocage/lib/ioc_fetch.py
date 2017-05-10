@@ -1026,8 +1026,8 @@ fingerprint: {fingerprint}
                                                     fingerprint=r[
                                                         "fingerprint"]))
         err = iocage.lib.ioc_create.IOCCreate(
-            self.release, create_props, 0, plugin=True,
-            pkglist=conf["pkgs"]).create_install_packages(
+            self.release, create_props, 0, pkglist=conf[
+                "pkgs"]).create_install_packages(
             uuid, jaildir, tag, _conf, repo=conf["packagesite"],
             site=repo_name)
 
