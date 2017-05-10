@@ -70,10 +70,11 @@ class IOCExec(object):
 
         if self.plugin:
             try:
-                msg = iocage.lib.ioc_common.checkoutput(
-                    ["setfib", exec_fib, "jexec", flag, user,
-                     f"ioc-{self.uuid}"] + list(self.command),
-                    stderr=su.STDOUT)
+                p = su.Popen(["setfib", exec_fib, "jexec", flag, user,
+                              f"ioc-{self.uuid}"] + list(self.command),
+                             stderr=su.STDOUT, stdin=su.PIPE)
+                exec_out = p.communicate(b"\r")[0]
+                msg = exec_out if exec_out is not None else ""
 
                 return msg, False
             except su.CalledProcessError as err:
