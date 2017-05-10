@@ -86,7 +86,7 @@ def cli(http, _file, server, user, password, auth, verify, release, plugins,
             except FileNotFoundError:
                 ioc_common.logit({
                     "level"  : "ERROR",
-                    "message": "Please supply a file before any properties."
+                    "message": "File was not found!"
                 })
                 exit(1)
             except json.decoder.JSONDecodeError:
