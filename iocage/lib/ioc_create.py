@@ -433,7 +433,7 @@ class IOCCreate(object):
             raise RuntimeError(f"{dnssec_connection}\n"
                                f"Command run: {' '.join(dnssec_connect_cmd)}")
 
-        if not self.plugin:
+        if isinstance(self.pkglist, str):
             with open(self.pkglist, "r") as j:
                 self.pkglist = json.load(j)["pkgs"]
 
