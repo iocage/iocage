@@ -192,6 +192,10 @@ class IOCCreate(object):
                         "usr/libexec", "usr/sbin", "usr/share",
                         "usr/libdata", "usr/lib32"]
 
+            if "-STABLE" in self.release:
+                # HardenedBSD does not have this.
+                basedirs.remove("usr/lib32")
+
             for bdir in basedirs:
                 if "-RELEASE" not in self.release and "-STABLE" not in \
                         self.release:
