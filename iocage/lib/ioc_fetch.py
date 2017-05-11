@@ -751,7 +751,7 @@ class IOCFetch(object):
                         ast = "*" * 10
                         iocage.lib.ioc_common.logit({
                             "level"  : "WARNING",
-                            "message": f"\n{ast}\n{self.release} is past it's "
+                            "message": f"\n{ast}\n{self.release} is past it's"
                                        " EOL, consider using a newer"
                                        f" RELEASE.\n{ast}"
                         },
