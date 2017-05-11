@@ -1,8 +1,10 @@
-from collections import OrderedDict
-from operator import itemgetter
+import collections
+import operator
+import subprocess as su
 
 import libzfs
 
+import iocage.lib.ioc_clean as ioc_clean
 import iocage.lib.ioc_common as ioc_common
 import iocage.lib.ioc_json as ioc_json
 import iocage.lib.ioc_list as ioc_list
@@ -63,85 +65,6 @@ class IOCage(object):
         self.callback = ioc_common.callback if not callback else callback
         self.silent = silent
 
-    def __check_jail_existence__(self):
-        """
-        Helper to check if jail dataset exists
-        Return: 
-                tuple: The jails tag, uuid, path
-        """
-        _jail = {tag: uuid for (tag, uuid) in self.jails.items() if
-                 uuid.startswith(self.jail) or tag == self.jail}
-
-        if len(_jail) == 1:
-            tag, uuid = next(iter(_jail.items()))
-            path = self._paths[tag]
-
-            return tag, uuid, path
-        elif len(_jail) > 1:
-            msg = f"Multiple jails found for {self.jail}:"
-
-            for j in sorted(_jail.items()):
-                msg += f"\n  {j}"
-
-            raise RuntimeError(msg)
-        else:
-            raise RuntimeError(f"{self.jail} not found!")
-
-    def __check_jail_type__(self, _type, uuid, tag):
-        """
-        Return: 
-            tuple: True if error with a message, or False/None
-        """
-        if _type in ('jail', 'plugin'):
-            return False, None
-        elif _type == 'basejail':
-            return (True, "Please run \"iocage migrate\" before trying to"
-                          f" start {uuid} ({tag})")
-        elif _type == 'template':
-            return (True, "Please convert back to a jail before trying to"
-                          f" start {uuid} ({tag})")
-        else:
-            return True, f"{_type} is not a supported jail type."
-
-    def list(self, lst_type, header=False, long=False, sort="tag", uuid=None):
-        """foo"""
-        if lst_type == "jid":
-            return ioc_list.IOCList().list_get_jid(uuid)
-
-        return ioc_list.IOCList(lst_type, header, long, sort).list_datasets()
-
-    def start(self, jail=None):
-        """Checks jails type and existence, then starts the jail"""
-        if self.rc or self._all:
-            if not jail:
-                self.__jail_order__("start")
-        else:
-            tag, uuid, path = self.__check_jail_existence__()
-            conf = ioc_json.IOCJson(path).json_load()
-            err, msg = self.__check_jail_type__(conf["type"], uuid, tag)
-
-            if not err:
-                ioc_start.IOCStart(uuid, tag, path, conf,
-                                   callback=self.callback, silent=self.silent)
-
-                return False, None
-            else:
-                if jail:
-                    return err, msg
-                else:
-                    self.callback({"level": "ERROR", "message": msg})
-                    exit(1)
-
-    def stop(self, jail=None):
-        """Stops the jail."""
-        if self.rc or self._all:
-            if not jail:
-                self.__jail_order__("stop")
-        else:
-            tag, uuid, path = self.__check_jail_existence__()
-            conf = ioc_json.IOCJson(path).json_load()
-            ioc_stop.IOCStop(uuid, tag, path, conf, silent=self.silent)
-
     def __all__(self, jail_order, action):
         # So we can properly start these.
         self._all = False
@@ -183,12 +106,12 @@ class IOCage(object):
             if boot == 'on':
                 boot_order[jail] = int(priority)
 
-            jail_order = OrderedDict(sorted(jail_order.items(),
-                                            key=itemgetter(1),
-                                            reverse=_reverse))
-            boot_order = OrderedDict(sorted(boot_order.items(),
-                                            key=itemgetter(1),
-                                            reverse=_reverse))
+            jail_order = collections.OrderedDict(
+                sorted(jail_order.items(), key=operator.itemgetter(1),
+                       reverse=_reverse))
+            boot_order = collections.OrderedDict(
+                sorted(boot_order.items(), key=operator.itemgetter(1),
+                       reverse=_reverse))
 
         if self.rc:
             self.__rc__(boot_order, action)
@@ -225,6 +148,48 @@ class IOCage(object):
                 else:
                     message = f"{uuid} ({j}) is already running!"
                     self.callback({'level': 'WARNING', 'message': message})
+
+    def __check_jail_existence__(self):
+        """
+        Helper to check if jail dataset exists
+        Return: 
+                tuple: The jails tag, uuid, path
+        """
+        _jail = {tag: uuid for (tag, uuid) in self.jails.items() if
+                 uuid.startswith(self.jail) or tag == self.jail}
+
+        if len(_jail) == 1:
+            tag, uuid = next(iter(_jail.items()))
+            path = self._paths[tag]
+
+            return tag, uuid, path
+        elif len(_jail) > 1:
+            msg = f"Multiple jails found for {self.jail}:"
+
+            for j in sorted(_jail.items()):
+                msg += f"\n  {j}"
+
+            raise RuntimeError(msg)
+        else:
+            raise RuntimeError(f"{self.jail} not found!")
+
+    @staticmethod
+    def __check_jail_type__(_type, uuid, tag):
+        """
+        Return: 
+            tuple: True if error with a message, or False/None
+        """
+        if _type in ('jail', 'plugin'):
+            return False, None
+        elif _type == 'basejail':
+            return (True, "Please run \"iocage migrate\" before trying to"
+                          f" start {uuid} ({tag})")
+        elif _type == 'template':
+            return (True, "Please convert back to a jail before trying to"
+                          f" start {uuid} ({tag})")
+        else:
+            return True, f"{_type} is not a supported jail type."
+
     @staticmethod
     def __mount__(path, _type):
         if _type == "devfs":
@@ -368,3 +333,43 @@ class IOCage(object):
             },
                 _callback=self.callback,
                 silent=self.silent)
+
+    @staticmethod
+    def list(lst_type, header=False, long=False, sort="tag", uuid=None):
+        """Returns a list of lst_type"""
+        if lst_type == "jid":
+            return ioc_list.IOCList().list_get_jid(uuid)
+
+        return ioc_list.IOCList(lst_type, header, long, sort).list_datasets()
+
+    def start(self, jail=None):
+        """Checks jails type and existence, then starts the jail"""
+        if self.rc or self._all:
+            if not jail:
+                self.__jail_order__("start")
+        else:
+            tag, uuid, path = self.__check_jail_existence__()
+            conf = ioc_json.IOCJson(path).json_load()
+            err, msg = self.__check_jail_type__(conf["type"], uuid, tag)
+
+            if not err:
+                ioc_start.IOCStart(uuid, tag, path, conf,
+                                   callback=self.callback, silent=self.silent)
+
+                return False, None
+            else:
+                if jail:
+                    return err, msg
+                else:
+                    self.callback({"level": "ERROR", "message": msg})
+                    exit(1)
+
+    def stop(self, jail=None):
+        """Stops the jail."""
+        if self.rc or self._all:
+            if not jail:
+                self.__jail_order__("stop")
+        else:
+            tag, uuid, path = self.__check_jail_existence__()
+            conf = ioc_json.IOCJson(path).json_load()
+            ioc_stop.IOCStop(uuid, tag, path, conf, silent=self.silent)
