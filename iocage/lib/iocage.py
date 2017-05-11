@@ -225,3 +225,22 @@ class IOCage(object):
                 else:
                     message = f"{uuid} ({j}) is already running!"
                     self.callback({'level': 'WARNING', 'message': message})
+    def activate(self, zpool):
+        """Activates the zpool for iocage usage"""
+        pools = self.zfs.pools
+        prop = "org.freebsd.ioc:active"
+
+        for pool in pools:
+            if pool.name == zpool:
+                ds = self.zfs.get_dataset(pool.name)
+                ds.properties[prop] = libzfs.ZFSUserProperty("yes")
+            else:
+                ds = self.zfs.get_dataset(pool.name)
+                ds.properties[prop] = libzfs.ZFSUserProperty("no")
+
+            # Check and clean if necessary iocage_legacy way
+            # to mark a ZFS pool as usable (now replaced by ZFS property)
+            comment = self.zfs.get(pool.name).properties["comment"]
+
+            if comment.value == "iocage":
+                comment.value = "-"
