@@ -331,3 +331,40 @@ class IOCage(object):
             },
                 _callback=self.callback,
                 silent=self.silent)
+
+    def clean(self, d_type):
+        """Destroys all of a specified dataset types."""
+        if d_type == "jails":
+            ioc_clean.IOCClean().clean_jails()
+            ioc_common.logit({
+                "level"  : "INFO",
+                "message": "All iocage jail datasets have been destroyed."
+            },
+                _callback=self.callback,
+                silent=self.silent)
+        elif d_type == "all":
+            ioc_clean.IOCClean().clean_all()
+            ioc_common.logit({
+                "level"  : "INFO",
+                "message": "All iocage datasets have been destroyed."
+            },
+                _callback=self.callback,
+                silent=self.silent)
+        elif d_type == "release":
+            # TODO: Add this
+            return
+        elif d_type == "template":
+            ioc_clean.IOCClean().clean_templates()
+            ioc_common.logit({
+                "level"  : "INFO",
+                "message": "All iocage template datasets have been destroyed."
+            },
+                _callback=self.callback,
+                silent=self.silent)
+        else:
+            ioc_common.logit({
+                "level"  : "EXCEPTIONG",
+                "message": "Please specify a dataset type to clean!"
+            },
+                _callback=self.callback,
+                silent=self.silent)
