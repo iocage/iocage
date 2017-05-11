@@ -1,8 +1,8 @@
 """activate module for the cli."""
 import click
-import libzfs
 
 import iocage.lib.ioc_common as ioc_common
+import iocage.lib.iocage as ioc
 
 __rootcmd__ = True
 
@@ -11,24 +11,7 @@ __rootcmd__ = True
 @click.argument("zpool")
 def cli(zpool):
     """Calls ZFS set to change the property org.freebsd.ioc:active to yes."""
-    zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
-    pools = zfs.pools
-    prop = "org.freebsd.ioc:active"
-
-    for _pool in pools:
-        if _pool.name == zpool:
-            ds = zfs.get_dataset(_pool.name)
-            ds.properties[prop] = libzfs.ZFSUserProperty("yes")
-        else:
-            ds = zfs.get_dataset(_pool.name)
-            ds.properties[prop] = libzfs.ZFSUserProperty("no")
-
-        # Check and clean if necessary iocage_legacy way
-        # to mark a ZFS pool as usable (now replaced by ZFS property)
-        comment = zfs.get(_pool.name).properties["comment"]
-
-        if comment.value == "iocage":
-            comment.value = "-"
+    ioc.IOCage().activate(zpool)
 
     ioc_common.logit({
         "level"  : "INFO",
