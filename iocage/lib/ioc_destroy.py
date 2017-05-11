@@ -25,30 +25,20 @@ class IOCDestroy(object):
         self.ds = self.zfs.get_dataset
 
     @staticmethod
-    def __stop_jails__(path=None):
-        """Stops every jail running forcefully."""
+    def __stop_jails__(datasets, path=None, root=False):
+        for dataset in datasets.dependents:
+            if "jails" in dataset.name:
+                # This is just to setup a replacement.
+                path = path.replace("templates", "jails")
+                uuid = dataset.name.partition(f"{path}/")[2].rsplit("/", 1)[0]
+                # We want the real path now.
+                _path = dataset.properties["mountpoint"].value.replace(
+                    "/root", "")
 
-        if path:
-            # We got ourselves a template child!
-            jls = su.Popen(["jls", "jid", "path", "--libxo", "json"],
-                           stdout=su.PIPE).communicate()[0]
-            jls = json.loads(jls)["jail-information"]["jail"]
-            jid = [jail["jid"] for jail in jls if path in jail["path"]]
-
-            if jid:
-                try:
-                    su.check_call(["jail", "-r", jid[0]])
-                except su.CalledProcessError as err:
-                    raise RuntimeError(f"{err}")
-        else:
-            jid = su.Popen(["jls", "jid"], stdout=su.PIPE).communicate()[
-                0].decode("utf-8").split()
-
-            for j in jid:
-                try:
-                    su.check_call(["jail", "-r", j])
-                except su.CalledProcessError as err:
-                    raise RuntimeError(f"{err}")
+                if dataset.name.endswith(uuid) or root:
+                    conf = iocage.lib.ioc_json.IOCJson(_path).json_load()
+                    iocage.lib.ioc_stop.IOCStop(uuid, "", _path, conf,
+                                                silent=True)
 
     def __destroy_leftovers__(self, dataset, clean=False):
         """Removes tags, parent datasets and logs."""
@@ -106,7 +96,7 @@ class IOCDestroy(object):
             su.Popen(["umount", "-f", f"{umount_path}/root/compat/linux/proc"],
                      stderr=su.PIPE).communicate()
 
-        if not clean and not snapshot:
+        if not snapshot:
             if any(_type in dataset.name for _type in ("jails", "templates",
                                                        "releases")):
                 # The jails parent won't show in the list.
@@ -150,10 +140,18 @@ class IOCDestroy(object):
             # Is actually a single dataset.
             self.__destroy_dataset__(datasets)
         else:
-            for dataset in dependents:
-                if "templates" in path or "release" in path:
-                    self.__stop_jails__(dataset.name.replace(self.pool, ""))
+            if "templates" in path or "release" in path:
+                # This will tell __stop_jails__ to actually try stopping on
+                # a /root
+                root = True
+            else:
+                # Otherwise we only stop when the uuid is the last entry in
+                # the jails path.
+                root = False
 
+            self.__stop_jails__(datasets, path, root)
+
+            for dataset in dependents:
                 try:
                     self.__destroy_dataset__(dataset)
                     self.__destroy_leftovers__(dataset, clean=clean)
@@ -173,11 +171,9 @@ class IOCDestroy(object):
         dataset_type, uuid = path.rsplit("/")[-2:]
 
         if clean:
-            self.__stop_jails__()
             self.__destroy_parse_datasets__(path)
         else:
             conf = iocage.lib.ioc_json.IOCJson(path).json_load()
-
             iocage.lib.ioc_stop.IOCStop(uuid, "", path, conf, silent=True)
 
             self.__destroy_parse_datasets__(
