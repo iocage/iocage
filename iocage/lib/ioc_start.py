@@ -177,6 +177,8 @@ class IOCStart(object):
                 vnet = False
             else:
                 net = ["vnet"]
+                ip4_addr = self.conf["ip4_addr"]
+                ip6_addr = self.conf["ip6_addr"]
                 vnet = True
 
             ips_in_use = iocage.lib.ioc_common.checkoutput(
