@@ -225,6 +225,28 @@ class IOCage(object):
                 else:
                     message = f"{uuid} ({j}) is already running!"
                     self.callback({'level': 'WARNING', 'message': message})
+    @staticmethod
+    def __mount__(path, _type):
+        if _type == "devfs":
+            cmd = ["mount", "-t", "devfs", "devfs", path]
+        else:
+            cmd = ["mount", "-a", "-F", path]
+
+        _, stderr = su.Popen(cmd, stdout=su.PIPE, stderr=su.PIPE).communicate()
+
+        return stderr
+
+    @staticmethod
+    def __umount__(path, _type):
+        if _type == "devfs":
+            cmd = ["umount", path]
+        else:
+            cmd = ["umount", "-a", "-F", path]
+
+        _, stderr = su.Popen(cmd, stdout=su.PIPE, stderr=su.PIPE).communicate()
+
+        return stderr
+
     def activate(self, zpool):
         """Activates the zpool for iocage usage"""
         pools = self.zfs.pools
@@ -244,3 +266,68 @@ class IOCage(object):
 
             if comment.value == "iocage":
                 comment.value = "-"
+
+    def chroot(self, command):
+        """Chroots into a jail and runs a command, or the shell."""
+        # We may be getting ';', '&&' and so forth. Adding the shell for
+        # safety.
+        command = list(command)
+
+        # We may be getting ';', '&&' and so forth. Adding the shell for
+        # safety.
+        if len(command) == 1:
+            command = ["/bin/sh", "-c"] + command
+
+        tag, uuid, path = self.__check_jail_existence__()
+        devfs_stderr = self.__mount__(f"{path}/root/dev", "devfs")
+
+        if devfs_stderr:
+            ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": "Mounting devfs failed!"
+            },
+                _callback=self.callback,
+                silent=self.silent)
+
+        fstab_stderr = self.__mount__(f"{path}/fstab", "fstab")
+
+        if fstab_stderr:
+            ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": "Mounting fstab failed!"
+            },
+                _callback=self.callback,
+                silent=self.silent)
+
+        chroot = su.Popen(["chroot", f"{path}/root"] + command)
+        chroot.communicate()
+
+        udevfs_stderr = self.__umount__(f"{path}/root/dev", "devfs")
+        if udevfs_stderr:
+            ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": "Unmounting devfs failed!"
+            },
+                _callback=self.callback,
+                silent=self.silent)
+
+        ufstab_stderr = self.__umount__(f"{path}/fstab", "fstab")
+        if ufstab_stderr:
+            if b"fstab reading failure\n" in ufstab_stderr:
+                # By default our fstab is empty and will throw this error.
+                pass
+            else:
+                ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": "Unmounting fstab failed!"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+
+        if chroot.returncode:
+            ioc_common.logit({
+                "level"  : "WARNING",
+                "message": "Chroot had a non-zero exit code!"
+            },
+                _callback=self.callback,
+                silent=self.silent)
