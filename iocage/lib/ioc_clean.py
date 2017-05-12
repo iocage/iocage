@@ -26,6 +26,30 @@ class IOCClean(object):
             f"{self.pool}/iocage/jails",
             clean=True)
 
+    def clean_releases(self):
+        """Cleans all releases and the jails created from them."""
+        iocage.lib.ioc_common.logit({
+            "level"  : "INFO",
+            "message": "Cleaning iocage/download"
+        },
+            _callback=self.callback,
+            silent=self.silent)
+
+        iocage.lib.ioc_destroy.IOCDestroy().destroy_jail(
+            f"{self.pool}/iocage/download",
+            clean=True)
+
+        iocage.lib.ioc_common.logit({
+            "level"  : "INFO",
+            "message": "Cleaning iocage/releases"
+        },
+            _callback=self.callback,
+            silent=self.silent)
+
+        iocage.lib.ioc_destroy.IOCDestroy().destroy_jail(
+            f"{self.pool}/iocage/releases",
+            clean=True)
+
     def clean_all(self):
         """Cleans everything related to iocage."""
         datasets = ("iocage", "iocage/download", "iocage/images",

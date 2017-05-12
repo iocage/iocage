@@ -316,8 +316,14 @@ class IOCage(object):
                 _callback=self.callback,
                 silent=self.silent)
         elif d_type == "release":
-            # TODO: Add this
-            return
+            ioc_clean.IOCClean().clean_releases()
+            ioc_common.logit({
+                "level"  : "INFO",
+                "message": "All iocage RELEASE and jail datasets have been"
+                           " destroyed."
+            },
+                _callback=self.callback,
+                silent=self.silent)
         elif d_type == "template":
             ioc_clean.IOCClean().clean_templates()
             ioc_common.logit({
