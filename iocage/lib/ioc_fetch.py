@@ -61,6 +61,9 @@ class IOCFetch(object):
         self.silent = silent
         self.callback = callback
 
+        self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
+        self.zpool = self.zfs.get(self.pool)
+
         if hardened:
             self.http = True
 
@@ -171,7 +174,9 @@ class IOCFetch(object):
             except OSError as err:
                 raise RuntimeError(f"{err}")
 
-            if os.path.isdir(f"{self.iocroot}/download/{self.release}"):
+            dataset = f"{self.iocroot}/download/{self.release}"
+
+            if os.path.isdir(dataset):
                 pass
             else:
                 su.Popen(["zfs", "create", "-o", "compression=lz4",
