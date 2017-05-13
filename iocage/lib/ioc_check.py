@@ -2,6 +2,7 @@
 import os
 import subprocess as su
 import sys
+import libzfs
 
 import iocage.lib.ioc_common
 import iocage.lib.ioc_json
@@ -27,21 +28,18 @@ class IOCCheck(object):
                     "iocage/jails", "iocage/log", "iocage/releases",
                     "iocage/templates")
 
-        mounts = iocage.lib.ioc_common.checkoutput(
-            ["zfs", "get", "-o", "name,value", "-t",
-             "filesystem", "-H",
-             "mountpoint"]).splitlines()
-
-        mounts = dict([list(map(str, m.split("\t"))) for m in mounts])
-        dups = {name: mount for name, mount in mounts.items() if
-                mount == "/iocage"}
+        zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
+        pool = zfs.get(self.pool)
+        hasDuplicates = len(list(filter(lambda x: x.mountpoint == "/iocage", list(pool.root.datasets)))) > 0
 
         for dataset in datasets:
-            try:
-                iocage.lib.ioc_common.checkoutput(
-                    ["zfs", "get", "-H", "creation", "{}/{}".format(
-                        self.pool, dataset)], stderr=su.PIPE)
-            except su.CalledProcessError:
+
+            zfsDatasetName = "{}/{}".format(self.pool, dataset)
+
+            isExisting = len(list(filter(lambda x: x.name == zfsDatasetName, list(pool.root.datasets)))) > 0
+
+            if not isExisting:
+
                 if os.geteuid() != 0:
                     raise RuntimeError("Run as root to create missing"
                                        " datasets!")
@@ -52,16 +50,13 @@ class IOCCheck(object):
                 },
                     _callback=self.callback,
                     silent=self.silent)
-                if dataset == "iocage":
-                    if len(dups) != 0:
-                        mount = "mountpoint=/{}/iocage".format(self.pool)
-                    else:
-                        mount = "mountpoint=/iocage"
 
-                    su.Popen(["zfs", "create", "-o", "compression=lz4",
-                              "-o", mount, "{}/{}".format(
-                            self.pool, dataset)]).communicate()
-                else:
-                    su.Popen(["zfs", "create", "-o", "compression=lz4",
-                              "{}/{}".format(self.pool,
-                                             dataset)]).communicate()
+                datasetOptions = {
+                    "compression": "lz4",
+                    "mountpoint": "/{}/{}".format(self.pool, dataset)
+                }
+
+                if (dataset == "iocage") and not hasDuplicates:
+                    datasetOptions.mountpoint = "/iocage"
+
+                pool.create(zfsDatasetName, datasetOptions)
