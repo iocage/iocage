@@ -216,9 +216,18 @@ class IOCage(object):
 
         return stderr
 
+    def __remove_activate_comment(self, pool):
+        """Removes old legacy comment for zpool activation"""
+        # Check and clean if necessary iocage_legacy way
+        # to mark a ZFS pool as usable (now replaced by ZFS property)
+        comment = self.zfs.get(pool.name).properties["comment"]
+
+        if comment.value == "iocage":
+            comment.value = "-"
+
     def activate(self, zpool):
         """Activates the zpool for iocage usage"""
-        pools = self.zfs.pools
+        pools = list(self.zfs.pools)
         prop = "org.freebsd.ioc:active"
         match = False
 
@@ -227,16 +236,18 @@ class IOCage(object):
                 ds = self.zfs.get_dataset(pool.name)
                 ds.properties[prop] = libzfs.ZFSUserProperty("yes")
                 match = True
-            else:
+
+                self.__remove_activate_comment(pool)
+
+        if match:
+            for pool in pools:
+                if pool.name == zpool:
+                    continue
+
                 ds = self.zfs.get_dataset(pool.name)
                 ds.properties[prop] = libzfs.ZFSUserProperty("no")
 
-            # Check and clean if necessary iocage_legacy way
-            # to mark a ZFS pool as usable (now replaced by ZFS property)
-            comment = self.zfs.get(pool.name).properties["comment"]
-
-            if comment.value == "iocage":
-                comment.value = "-"
+                self.__remove_activate_comment(pool)
 
         if not match:
             return True
