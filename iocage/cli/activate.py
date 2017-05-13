@@ -11,7 +11,13 @@ __rootcmd__ = True
 @click.argument("zpool")
 def cli(zpool):
     """Calls ZFS set to change the property org.freebsd.ioc:active to yes."""
-    ioc.IOCage().activate(zpool)
+    err = ioc.IOCage(activate=True).activate(zpool)
+
+    if err:
+        ioc_common.logit({
+            "level"  : "EXCEPTION",
+            "message": f"ZFS pool '{zpool}' not found!"
+        })
 
     ioc_common.logit({
         "level"  : "INFO",

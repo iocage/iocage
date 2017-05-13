@@ -54,11 +54,15 @@ class PoolAndDataset(object):
 
 
 class IOCage(object):
-    def __init__(self, jail=None, rc=False, callback=None, silent=False):
-        self.pool = PoolAndDataset().get_pool()
-        self.iocroot = PoolAndDataset().get_iocroot()
+    def __init__(self, jail=None, rc=False, callback=None, silent=False,
+                 activate=False):
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
-        self.jails, self._paths = self.list("uuid")
+
+        if not activate:
+            self.pool = PoolAndDataset().get_pool()
+            self.iocroot = PoolAndDataset().get_iocroot()
+            self.jails, self._paths = self.list("uuid")
+
         self.jail = jail
         self.rc = rc
         self._all = True if self.jail and 'ALL' in self.jail else False
@@ -216,11 +220,13 @@ class IOCage(object):
         """Activates the zpool for iocage usage"""
         pools = self.zfs.pools
         prop = "org.freebsd.ioc:active"
+        match = False
 
         for pool in pools:
             if pool.name == zpool:
                 ds = self.zfs.get_dataset(pool.name)
                 ds.properties[prop] = libzfs.ZFSUserProperty("yes")
+                match = True
             else:
                 ds = self.zfs.get_dataset(pool.name)
                 ds.properties[prop] = libzfs.ZFSUserProperty("no")
@@ -231,6 +237,9 @@ class IOCage(object):
 
             if comment.value == "iocage":
                 comment.value = "-"
+
+        if not match:
+            return True
 
     def chroot(self, command):
         """Chroots into a jail and runs a command, or the shell."""
