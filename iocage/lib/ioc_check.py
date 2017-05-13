@@ -28,7 +28,7 @@ class IOCCheck(object):
                     "iocage/jails", "iocage/log", "iocage/releases",
                     "iocage/templates")
 
-        zfs = libzfs.ZFS()
+        zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         pool = zfs.get(self.pool)
         hasDuplicates = len(list(filter(lambda x: x.mountpoint == "/iocage", list(pool.root.datasets)))) > 0
 
