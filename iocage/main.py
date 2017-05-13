@@ -83,7 +83,7 @@ class IOCageCLI(click.MultiCommand):
 def cli(version):
     """A jail manager."""
     skip_check = False
-    skip_check_cmds = ["--help", "activate", "deactivate", "-v", "--version"]
+    skip_check_cmds = ["--help", "activate", "-v", "--version"]
 
     try:
         if "iocage" in sys.argv[0] and len(sys.argv) == 1:
