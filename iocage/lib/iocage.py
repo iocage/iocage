@@ -236,21 +236,7 @@ class IOCage(object):
 
         for pool in pools:
             if pool.name == zpool:
-                ds = self.zfs.get_dataset(pool.name)
-                ds.properties[prop] = libzfs.ZFSUserProperty("yes")
                 match = True
-
-                self.__remove_activate_comment(pool)
-
-        if match:
-            for pool in pools:
-                if pool.name == zpool:
-                    continue
-
-                ds = self.zfs.get_dataset(pool.name)
-                ds.properties[prop] = libzfs.ZFSUserProperty("no")
-
-                self.__remove_activate_comment(pool)
 
         if not match:
             ioc_common.logit({
@@ -259,6 +245,15 @@ class IOCage(object):
             },
                 _callback=self.callback,
                 silent=self.silent)
+
+        for pool in pools:
+            ds = self.zfs.get_dataset(pool.name)
+            if pool.name == zpool:
+                ds.properties[prop] = libzfs.ZFSUserProperty("yes")
+            else:
+                ds.properties[prop] = libzfs.ZFSUserProperty("no")
+
+            self.__remove_activate_comment(pool)
 
     def chroot(self, command):
         """Chroots into a jail and runs a command, or the shell."""
