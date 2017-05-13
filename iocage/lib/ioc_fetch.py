@@ -186,8 +186,12 @@ class IOCFetch(object):
 
             for f in self.files:
                 if not os.path.isfile(f):
-                    su.Popen(["zfs", "destroy", "-r", "-f",
-                              f"{self.pool}{dataset}"])
+
+                    dataset = self.zfs.get_dataset(f"{self.pool}{dataset}")
+
+                    dataset.unmount()
+                    dataset.delete(recursive=True)
+
                     if f == "MANIFEST":
                         error = f"{f} is a required file!" \
                                 f"\nPlease place it in {self.root_dir}/" \
