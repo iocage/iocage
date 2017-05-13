@@ -406,6 +406,16 @@ class IOCage(object):
 
         if clone:
             _, clone_uuid, _ = self.__check_jail_existence__()
+            status, _ = self.list("jid", uuid=clone_uuid)
+            if status:
+                ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": f"Jail: {self.jail} must not be running to be"
+                               " cloned!"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+
             release = clone_uuid
             clone = self.jail
 
