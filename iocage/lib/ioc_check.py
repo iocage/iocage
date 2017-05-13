@@ -46,23 +46,22 @@ class IOCCheck(object):
                     raise RuntimeError("Run as root to create missing"
                                        " datasets!")
 
-                if "deactivate" not in sys.argv[1:]:
-                    iocage.lib.ioc_common.logit({
-                        "level"  : "INFO",
-                        "message": f"Creating {self.pool}/{dataset}"
-                    },
-                        _callback=self.callback,
-                        silent=self.silent)
-                    if dataset == "iocage":
-                        if len(dups) != 0:
-                            mount = "mountpoint=/{}/iocage".format(self.pool)
-                        else:
-                            mount = "mountpoint=/iocage"
-
-                        su.Popen(["zfs", "create", "-o", "compression=lz4",
-                                  "-o", mount, "{}/{}".format(
-                                self.pool, dataset)]).communicate()
+                iocage.lib.ioc_common.logit({
+                    "level"  : "INFO",
+                    "message": f"Creating {self.pool}/{dataset}"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+                if dataset == "iocage":
+                    if len(dups) != 0:
+                        mount = "mountpoint=/{}/iocage".format(self.pool)
                     else:
-                        su.Popen(["zfs", "create", "-o", "compression=lz4",
-                                  "{}/{}".format(self.pool,
-                                                 dataset)]).communicate()
+                        mount = "mountpoint=/iocage"
+
+                    su.Popen(["zfs", "create", "-o", "compression=lz4",
+                              "-o", mount, "{}/{}".format(
+                            self.pool, dataset)]).communicate()
+                else:
+                    su.Popen(["zfs", "create", "-o", "compression=lz4",
+                              "{}/{}".format(self.pool,
+                                             dataset)]).communicate()

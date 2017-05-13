@@ -300,24 +300,23 @@ class IOCJson(object):
 
                 return pool
             elif match >= 2:
-                if "deactivate" not in sys.argv[1:]:
+                iocage.lib.ioc_common.logit({
+                    "level"  : "ERROR",
+                    "message": "Pools:"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+                for zpool in zpools:
                     iocage.lib.ioc_common.logit({
                         "level"  : "ERROR",
-                        "message": "Pools:"
+                        "message": f"  {zpool}"
                     },
                         _callback=self.callback,
                         silent=self.silent)
-                    for zpool in zpools:
-                        iocage.lib.ioc_common.logit({
-                            "level"  : "ERROR",
-                            "message": f"  {zpool}"
-                        },
-                            _callback=self.callback,
-                            silent=self.silent)
-                    raise RuntimeError(f"You have {match} pools marked active"
-                                       " for iocage usage.\n Run \"iocage"
-                                       f" deactivate ZPOOL\" on {match - 1}"
-                                       f" of the pools.\n")
+                raise RuntimeError(f"You have {match} pools marked active"
+                                   " for iocage usage.\n Run \"iocage"
+                                   f" activate ZPOOL\" on the preferred"
+                                   " pool.\n")
             else:
                 if len(sys.argv) >= 2 and "activate" in sys.argv[1:]:
                     pass
