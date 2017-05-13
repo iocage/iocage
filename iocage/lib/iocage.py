@@ -1,11 +1,14 @@
 import collections
 import operator
+import os
 import subprocess as su
 
 import libzfs
 
 import iocage.lib.ioc_clean as ioc_clean
 import iocage.lib.ioc_common as ioc_common
+import iocage.lib.ioc_create as ioc_create
+import iocage.lib.ioc_fetch as ioc_fetch
 import iocage.lib.ioc_json as ioc_json
 import iocage.lib.ioc_list as ioc_list
 import iocage.lib.ioc_start as ioc_start
@@ -364,6 +367,57 @@ class IOCage(object):
             },
                 _callback=self.callback,
                 silent=self.silent)
+
+    def create(self, release, props, count=0, pkglist=None, template=False,
+               short=False, uuid=None, basejail=False, empty=False,
+               clone=None):
+        if short and uuid:
+            uuid = uuid[:8]
+
+            if len(uuid) != 8:
+                ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": "Need a minimum of 8 characters to use --short"
+                               " (-s) and --uuid (-u) together!"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+
+        if not template and not release and not empty and not clone:
+            ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": "Must supply either --template (-t) or"
+                           " --release (-r)!"
+            },
+                _callback=self.callback,
+                silent=self.silent)
+
+        if not os.path.isdir(
+                f"{self.iocroot}/releases/{release}") and not template and \
+                not empty and not clone:
+            freebsd_version = ioc_common.checkoutput(["freebsd-version"])
+
+            if "HBSD" in freebsd_version:
+                hardened = True
+            else:
+                hardened = False
+
+            ioc_fetch.IOCFetch(release, hardened=hardened).fetch_release()
+
+        if clone:
+            _, clone_uuid, _ = self.__check_jail_existence__()
+            release = clone_uuid
+            clone = self.jail
+
+        try:
+            ioc_create.IOCCreate(release, props, count, pkglist,
+                                 template=template, short=short, uuid=uuid,
+                                 basejail=basejail, empty=empty, clone=clone
+                                 ).create_jail()
+        except RuntimeError as err:
+            return True, err
+
+        return False, None
 
     @staticmethod
     def list(lst_type, header=False, long=False, sort="tag", uuid=None):
