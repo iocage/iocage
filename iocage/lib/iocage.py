@@ -250,7 +250,12 @@ class IOCage(object):
                 self.__remove_activate_comment(pool)
 
         if not match:
-            return True
+            ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": f"ZFS pool '{zpool}' not found!"
+            },
+                _callback=self.callback,
+                silent=self.silent)
 
     def chroot(self, command):
         """Chroots into a jail and runs a command, or the shell."""
