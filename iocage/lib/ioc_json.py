@@ -5,6 +5,7 @@ import os
 import re
 import subprocess as su
 import sys
+import libzfs
 
 import iocage.lib.ioc_common
 import iocage.lib.ioc_create
@@ -33,6 +34,7 @@ class IOCJson(object):
         self.cli = cli
         self.silent = silent
         self.callback = callback
+        self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
 
     def json_convert_from_ucl(self):
         """Convert to JSON. Accepts a location to the ucl configuration."""
@@ -64,22 +66,16 @@ class IOCJson(object):
             raise RuntimeError("You need to be root to convert the"
                                " configurations to the new format!")
 
-        cmd = ["zfs", "get", "-H", "-o", "property,value", "all", dataset]
+        props = self.zfs.get_dataset(dataset).properties
 
-        regex = re.compile("org.freebsd.iocage")
-
-        zfs_get = su.Popen(cmd, stdout=su.PIPE).communicate()[0].decode(
-            "utf-8").split("\n")
-
-        # Find each of the props we want to convert.
-        props = [p for p in zfs_get if re.search(regex, p)]
+        # Filter the props we want to convert.
+        prop_prefix = "org.freebsd.iocage"
+        props = list(filter(lambda x: x.startswith("org.freebsd.iocage")))
 
         key_and_value = {"host_domainname": "none"}
 
-        for prop in props:
-            prop = prop.partition(":")
-            key = prop[2].split("\t")[0]
-            value = prop[2].split("\t")[1].strip()
+        for prop, value in props:
+            key = prop.partition(":")[2]
 
             if key == "type":
                 if value == "basejail":
@@ -101,25 +97,36 @@ class IOCJson(object):
 
         if not skip:
             # Set jailed=off and move the jailed dataset.
-            iocage.lib.ioc_common.checkoutput(["zfs", "set", "jailed=off",
-                                               f"{dataset}/root/data"],
-                                              stderr=su.PIPE)
-            iocage.lib.ioc_common.checkoutput(["zfs", "rename", "-f",
-                                               f"{dataset}/root/data",
-                                               f"{dataset}/data"],
-                                              stderr=su.PIPE)
-            iocage.lib.ioc_common.checkoutput(["zfs", "set",
-                                               f"{jail_zfs_prop}=iocage/jails/"
-                                               f"{uuid}/data",
-                                               f"{dataset}/data"],
-                                              stderr=su.PIPE)
-            iocage.lib.ioc_common.checkoutput(["zfs", "set", "jailed=on",
-                                               f"{dataset}/data"],
-                                              stderr=su.PIPE)
+            self.zfs_set_property(f"{dataset}/root/data", "jailed", "off")
+            self.zfs.get_dataset(f"{dataset}/root/data").rename(f"{dataset}/data")
+            self.zfs_set_property(f"{dataset}/data", jail_zfs_prop, f"iocage/jails/{uuid}/data")
+            self.zfs_set_property(f"{dataset}/data", "jailed", "on")
 
         key_and_value["jail_zfs_dataset"] = f"iocage/jails/{uuid}/data"
 
         self.json_write(key_and_value)
+
+    def _zfs_get_properties(self, identifier):
+        if "/" in identifier:
+            dataset = self.zfs.get_dataset(identifier)
+            return dataset.properties
+        else:
+            pool = self.zfs.get(identifier)
+            return pool.root_dataset.properties
+
+    def zfs_get_property(self, identifier, key):
+        try:
+            return self._zfs_get_properties(identifier)[key].value
+        except:
+            return ""
+
+    def zfs_set_property(self, identifier, key, value):
+        if ":" in key:
+            newproperty = libzfs.ZFSUserProperty(value)
+        else:
+            newproperty = libzfs.ZFSProperty(value)
+
+        self._zfs_get_properties(identifier)[key] = newproperty;
 
     def json_load(self):
         """Load the JSON at the location given. Returns a JSON object."""
@@ -146,16 +153,8 @@ class IOCJson(object):
                             # Hack88 migration to a perm short UUID.
                             pool, iocroot = _get_pool_and_iocroot()
 
-                            full_uuid = iocage.lib.ioc_common.checkoutput(
-                                ["zfs", "get", "-H", "-o",
-                                 "value",
-                                 "org.freebsd.iocage:host_hostuuid",
-                                 self.location]).rstrip()
-                            jail_hostname = iocage.lib.ioc_common.checkoutput(
-                                ["zfs", "get", "-H", "-o",
-                                 "value",
-                                 "org.freebsd.iocage:host_hostname",
-                                 self.location]).rstrip()
+                            full_uuid = self.zfs_get_property(self.location, 'org.freebsd.iocage:host_hostuuid')
+                            jail_hostname = self.zfs_get_property(self.location, 'org.freebsd.iocage:host_hostname')
                             short_uuid = full_uuid[:8]
                             full_dataset = f"{pool}/iocage/jails/{full_uuid}"
                             short_dataset = f"{pool}/iocage/jails/{short_uuid}"
@@ -198,33 +197,17 @@ class IOCJson(object):
                             host_prop = "org.freebsd.iocage:host_hostname"
 
                             # Set jailed=off and move the jailed dataset.
-                            iocage.lib.ioc_common.checkoutput(
-                                ["zfs", "set", "jailed=off",
-                                 f"{full_dataset}/data"])
+                            self.zfs_set_property(f"{full_dataset}/data", 'jailed', 'off')
 
                             # We don't want to change a real hostname.
                             if jail_hostname == full_uuid:
-                                iocage.lib.ioc_common.checkoutput(
-                                    ["zfs", "set",
-                                     f"{host_prop}="
-                                     f"{short_uuid}",
-                                     full_dataset])
+                                self.zfs_set_property(full_dataset, host_prop, short_uuid)
 
-                            iocage.lib.ioc_common.checkoutput(["zfs", "set",
-                                                               f"{uuid_prop}="
-                                                               f"{short_uuid}",
-                                                               full_dataset])
-                            iocage.lib.ioc_common.checkoutput(["zfs", "set",
-                                                               f"{jail_zfs_prop}="
-                                                               "iocage/jails/"
-                                                               f"{short_uuid}/data",
-                                                               f"{full_dataset}/data"])
-                            iocage.lib.ioc_common.checkoutput(
-                                ["zfs", "rename", "-f", full_dataset,
-                                 short_dataset])
-                            iocage.lib.ioc_common.checkoutput(
-                                ["zfs", "set", "jailed=on",
-                                 f"{short_dataset}/data"])
+                            self.zfs_set_property(full_dataset, uuid_prop, short_uuid)
+                            self.zfs_set_property(f"{full_dataset}/data", jail_zfs_prop, f"iocage/jails/{short_uuid}/data")
+
+                            self.zfs.get_dataset(full_dataset).rename(short_dataset)
+                            self.zfs_set_property(f"{short_dataset}/data", "jailed", "on")
 
                             uuid = short_uuid
                             self.location = f"{iocroot}/jails/{short_uuid}"
@@ -257,48 +240,41 @@ class IOCJson(object):
             json.dump(data, out, sort_keys=True, indent=4,
                       ensure_ascii=False)
 
+    def _upgrade_pool(self, pool):
+        if os.geteuid() != 0:
+            raise RuntimeError("Run as root to migrate old pool"
+                               " activation property!")
+
+        self.zfs_set_property(pool, "org.freebsd.ioc:active", "yes")
+        self.zfs_set_property(pool, "comment", "-")
+
+
     def json_get_value(self, prop):
         """Returns a string with the specified prop's value."""
         old = False
+        zpools = list(map(lambda x: x.name, list(self.zfs.pools)))
 
         if prop == "pool":
             match = 0
-            zpools = su.Popen(["zpool", "list", "-H", "-o", "name"],
-                              stdout=su.PIPE).communicate()[0].decode(
-                "utf-8").split()
 
-            for zfs in zpools:
-                dataset = su.Popen(["zfs", "get", "-H", "-o", "value",
-                                    "org.freebsd.ioc:active", zfs],
-                                   stdout=su.PIPE).communicate()[0].decode(
-                    "utf-8").strip()
+            for pool in zpools:
 
-                old_dataset = su.Popen(["zpool", "get", "-H", "-o", "value",
-                                        "comment", zfs],
-                                       stdout=su.PIPE).communicate()[0].decode(
-                    "utf-8").strip()
+                prop_ioc_active = self.zfs_get_property(pool, "org.freebsd.ioc:active");
+                prop_comment = self.zfs_get_property(pool, "comment")
 
-                if dataset == "yes":
-                    _dataset = zfs
+                if prop_ioc_active == "yes":
+                    _dataset = pool
                     match += 1
-                elif old_dataset == "iocage":
-                    _dataset = zfs
+                elif prop_comment == "iocage":
+                    _dataset = pool
                     match += 1
                     old = True
 
             if match == 1:
-                pool = _dataset
-
                 if old:
-                    if os.geteuid() != 0:
-                        raise RuntimeError("Run as root to migrate old pool"
-                                           " activation property!")
-                    su.check_call(["zpool", "set", "comment=-", pool],
-                                  stderr=su.PIPE, stdout=su.PIPE)
-                    su.check_call(["zfs", "set", "org.freebsd.ioc:active=yes",
-                                   pool], stderr=su.PIPE, stdout=su.PIPE)
+                    self._upgrade_pool(_dataset)
+                return _dataset
 
-                return pool
             elif match >= 2:
                 iocage.lib.ioc_common.logit({
                     "level"  : "ERROR",
@@ -323,11 +299,6 @@ class IOCJson(object):
                 else:
                     # We use the first zpool the user has, they are free to
                     # change it.
-                    cmd = ["zpool", "list", "-H", "-o", "name"]
-                    zpools = su.Popen(cmd, stdout=su.PIPE).communicate()[
-                        0].decode(
-                        "utf-8").split()
-
                     zpool = zpools[0]
 
                     if os.geteuid() != 0:
@@ -351,23 +322,20 @@ class IOCJson(object):
                         _callback=self.callback,
                         silent=self.silent)
 
-                    su.Popen(["zfs", "set", "org.freebsd.ioc:active=yes",
-                              zpool]).communicate()
-
+                    self.zfs_set_property(zpool, "org.freebsd.ioc:active", "yes")
                     return zpool
+
         elif prop == "iocroot":
             # Location in this case is actually the zpool.
             try:
                 loc = f"{self.location}/iocage"
-                mount = iocage.lib.ioc_common.checkoutput(
-                    ["zfs", "get", "-H", "-o", "value",
-                     "mountpoint", loc]).strip()
+                mount = self.zfs_get_property(loc, "mountpoint")
 
                 if mount != "none":
                     return mount
                 else:
                     raise RuntimeError(f"Please set a mountpoint on {loc}")
-            except su.CalledProcessError:
+            except:
                 raise RuntimeError(f"{self.location} not found!")
         elif prop == "all":
             conf = self.json_load()
@@ -427,9 +395,7 @@ class IOCJson(object):
                 if _uuid == uuid:
                     continue
 
-                origin = iocage.lib.ioc_common.checkoutput(
-                    ["zfs", "get", "-H", "-o", "value",
-                     "origin", _path]).rstrip()
+                origin = self.zfs_get_property(_path, 'origin')
 
                 if origin == t_old_path or origin == t_path:
                     _status, _ = iocage.lib.ioc_list.IOCList.list_get_jid(
@@ -439,17 +405,10 @@ class IOCJson(object):
                         raise RuntimeError(f"CHILD: {_uuid} ({j}) is"
                                            f" running.\nPlease stop it first!")
             if value == "yes":
-                try:
-                    iocage.lib.ioc_common.checkoutput(
-                        ["zfs", "rename", "-p", old_location,
-                         new_location], stderr=su.STDOUT)
-                    conf["type"] = "template"
+                self.zfs.get_dataset(old_location).rename(new_location)
+                conf["type"] = "template"
 
-                    self.location = new_location.lstrip(pool).replace(
-                        "/iocage", iocroot)
-                except su.CalledProcessError as err:
-                    raise RuntimeError(
-                        f"{err.output.decode('utf-8').rstrip()}")
+                self.location = new_location.lstrip(pool).replace("/iocage", iocroot)
 
                 iocage.lib.ioc_common.logit({
                     "level"  : "INFO",
@@ -460,17 +419,9 @@ class IOCJson(object):
                 self.lgr.disabled = True
             elif value == "no":
                 if not _import:
-                    try:
-                        iocage.lib.ioc_common.checkoutput(
-                            ["zfs", "rename", "-p", new_location,
-                             old_location], stderr=su.STDOUT)
-                        conf["type"] = "jail"
-
-                        self.location = old_location.lstrip(pool).replace(
-                            "/iocage", iocroot)
-                    except su.CalledProcessError as err:
-                        raise RuntimeError(
-                            f"{err.output.decode('utf-8').rstrip()}")
+                    self.zfs.get_dataset(old_location).rename(new_location)
+                    conf["type"] = "jail"
+                    self.location = old_location.lstrip(pool).replace("/iocage", iocroot)
 
                     iocage.lib.ioc_common.logit({
                         "level"  : "INFO",
@@ -730,12 +681,9 @@ class IOCJson(object):
                           " M, G, or T."
                     raise RuntimeError(err)
 
-            iocage.lib.ioc_common.checkoutput(["zfs", "set", f"{key}={value}",
-                                               f"{pool}/iocage/{_type}/"
-                                               f"{uuid}"])
-            return
+            self.zfs_set_property(f"{pool}/iocage/{_type}/{uuid}", key, value)
 
-        if key in props.keys():
+        elif key in props.keys():
             # Either it contains what we expect, or it's a string.
             for k in props[key]:
                 if k in value:
@@ -828,11 +776,8 @@ class IOCJson(object):
         conf = self.json_load()
         uuid = conf["host_hostuuid"]
         tag = conf["tag"]
-        _path = iocage.lib.ioc_common.checkoutput(
-            ["zfs", "get", "-H", "-o", "value",
-             "mountpoint",
-             f"{pool}/iocage/jails/"
-             f"{uuid}"]).rstrip()
+        _path = self.zfs_get_property(f"{pool}/iocage/jails/{uuid}", "mountpoint")
+
         # Plugin variables
         settings = self.json_plugin_load()
         serviceget = settings["serviceget"]
@@ -862,9 +807,7 @@ class IOCJson(object):
         conf = self.json_load()
         uuid = conf["host_hostuuid"]
         tag = conf["tag"]
-        _path = iocage.lib.ioc_common.checkoutput(
-            ["zfs", "get", "-H", "-o", "value", "mountpoint",
-             f"{pool}/iocage/jails/{uuid}"]).rstrip()
+        _path = self.zfs_get_property(f"{pool}/iocage/jails/{uuid}", "mountpoint")
         status, _ = iocage.lib.ioc_list.IOCList().list_get_jid(uuid)
 
         # Plugin variables
