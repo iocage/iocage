@@ -21,6 +21,7 @@ import requests.auth
 import requests.packages.urllib3.exceptions
 import tqdm
 
+from git import Repo
 import iocage.lib.ioc_common
 import iocage.lib.ioc_create
 import iocage.lib.ioc_destroy
@@ -1070,9 +1071,8 @@ fingerprint: {fingerprint}
                 _callback=self.callback,
                 silent=self.silent)
 
-            su.Popen(["git", "clone", conf["artifact"],
-                      f"{jaildir}/plugin"], stdout=su.PIPE,
-                     stderr=su.PIPE).communicate()
+            Repo.clone_from(conf["artifact"], f"{jaildir}/plugin", branch='master')
+
             tar_in = su.Popen(["tar", "cvf", "-", "-C",
                                f"{jaildir}/plugin/overlay/", "."],
                               stdout=su.PIPE,
