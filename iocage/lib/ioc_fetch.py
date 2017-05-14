@@ -1140,21 +1140,17 @@ fingerprint: {fingerprint}
         else:
             git_server = self.server
 
+        git_working_dir = f"{self.iocroot}/.plugin_index"
+
         try:
-            iocage.lib.ioc_common.checkoutput(
-                ["git", "clone", git_server,
-                 f"{self.iocroot}/.plugin_index"], stderr=su.STDOUT)
-        except su.CalledProcessError as err:
-            if "already exists" in err.output.decode("utf-8").rstrip():
-                try:
-                    iocage.lib.ioc_common.checkoutput(
-                        ["git", "-C", f"{self.iocroot}/.plugin_index",
-                         "pull"], stderr=su.STDOUT)
-                except su.CalledProcessError as err:
-                    raise RuntimeError(
-                        f"{err.output.decode('utf-8').rstrip()}")
-            else:
-                raise RuntimeError(f"{err.output.decode('utf-8').rstrip()}")
+            repo = Repo(git_working_dir)
+        except git.exc.NoSuchPathError:
+            try:
+                repo = Repo.clone_from(git_server, git_working_dir)
+            except git.exc.GitCommandError as err:
+                raise RuntimeError(err)
+        except git.exc.InvalidGitRepositoryError:
+            raise RuntimeError(f"The path {git_working_dir} already exists, but is not a git repository")
 
         with open(f"{self.iocroot}/.plugin_index/INDEX", "r") as plugins:
             plugins = json.load(plugins)
