@@ -22,6 +22,8 @@ import requests.packages.urllib3.exceptions
 import tqdm
 
 from git import Repo
+from distutils.dir_util import copy_tree
+
 import iocage.lib.ioc_common
 import iocage.lib.ioc_create
 import iocage.lib.ioc_destroy
@@ -1071,15 +1073,8 @@ fingerprint: {fingerprint}
                 _callback=self.callback,
                 silent=self.silent)
 
-            Repo.clone_from(conf["artifact"], f"{jaildir}/plugin", branch='master')
-
-            tar_in = su.Popen(["tar", "cvf", "-", "-C",
-                               f"{jaildir}/plugin/overlay/", "."],
-                              stdout=su.PIPE,
-                              stderr=su.PIPE).communicate()
-            su.Popen(["tar", "xf", "-", "-C", f"{jaildir}/root"],
-                     stdin=su.PIPE).communicate(
-                input=tar_in[0])
+            repo = Repo.clone_from(conf["artifact"], f"{jaildir}/plugin", branch='master')
+            copy_tree(f"{jaildir}/plugin/overlay/", f"{jaildir}/root", preserve_symlinks=True)
 
             try:
                 shutil.copy(f"{jaildir}/plugin/post_install.sh",
