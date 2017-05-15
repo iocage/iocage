@@ -5,6 +5,7 @@ import os
 import re
 import subprocess as su
 import sys
+
 import libzfs
 
 import iocage.lib.ioc_common
@@ -98,8 +99,10 @@ class IOCJson(object):
         if not skip:
             # Set jailed=off and move the jailed dataset.
             self.zfs_set_property(f"{dataset}/root/data", "jailed", "off")
-            self.zfs.get_dataset(f"{dataset}/root/data").rename(f"{dataset}/data")
-            self.zfs_set_property(f"{dataset}/data", jail_zfs_prop, f"iocage/jails/{uuid}/data")
+            self.zfs.get_dataset(f"{dataset}/root/data").rename(
+                f"{dataset}/data")
+            self.zfs_set_property(f"{dataset}/data", jail_zfs_prop,
+                                  f"iocage/jails/{uuid}/data")
             self.zfs_set_property(f"{dataset}/data", "jailed", "on")
 
         key_and_value["jail_zfs_dataset"] = f"iocage/jails/{uuid}/data"
@@ -153,8 +156,11 @@ class IOCJson(object):
                             # Hack88 migration to a perm short UUID.
                             pool, iocroot = _get_pool_and_iocroot()
 
-                            full_uuid = self.zfs_get_property(self.location, 'org.freebsd.iocage:host_hostuuid')
-                            jail_hostname = self.zfs_get_property(self.location, 'org.freebsd.iocage:host_hostname')
+                            full_uuid = self.zfs_get_property(self.location,
+                                                              'org.freebsd.iocage:host_hostuuid')
+                            jail_hostname = self.zfs_get_property(
+                                self.location,
+                                'org.freebsd.iocage:host_hostname')
                             short_uuid = full_uuid[:8]
                             full_dataset = f"{pool}/iocage/jails/{full_uuid}"
                             short_dataset = f"{pool}/iocage/jails/{short_uuid}"
@@ -197,17 +203,25 @@ class IOCJson(object):
                             host_prop = "org.freebsd.iocage:host_hostname"
 
                             # Set jailed=off and move the jailed dataset.
-                            self.zfs_set_property(f"{full_dataset}/data", 'jailed', 'off')
+                            self.zfs_set_property(f"{full_dataset}/data",
+                                                  'jailed', 'off')
 
                             # We don't want to change a real hostname.
                             if jail_hostname == full_uuid:
-                                self.zfs_set_property(full_dataset, host_prop, short_uuid)
+                                self.zfs_set_property(full_dataset, host_prop,
+                                                      short_uuid)
 
-                            self.zfs_set_property(full_dataset, uuid_prop, short_uuid)
-                            self.zfs_set_property(f"{full_dataset}/data", jail_zfs_prop, f"iocage/jails/{short_uuid}/data")
+                            self.zfs_set_property(full_dataset, uuid_prop,
+                                                  short_uuid)
+                            self.zfs_set_property(f"{full_dataset}/data",
+                                                  jail_zfs_prop,
+                                                  f"iocage/jails/{"
+                                                  f"short_uuid}/data")
 
-                            self.zfs.get_dataset(full_dataset).rename(short_dataset)
-                            self.zfs_set_property(f"{short_dataset}/data", "jailed", "on")
+                            self.zfs.get_dataset(full_dataset).rename(
+                                short_dataset)
+                            self.zfs_set_property(f"{short_dataset}/data",
+                                                  "jailed", "on")
 
                             uuid = short_uuid
                             self.location = f"{iocroot}/jails/{short_uuid}"
@@ -248,7 +262,6 @@ class IOCJson(object):
         self.zfs_set_property(pool, "org.freebsd.ioc:active", "yes")
         self.zfs_set_property(pool, "comment", "-")
 
-
     def json_get_value(self, prop):
         """Returns a string with the specified prop's value."""
         old = False
@@ -259,7 +272,8 @@ class IOCJson(object):
 
             for pool in zpools:
 
-                prop_ioc_active = self.zfs_get_property(pool, "org.freebsd.ioc:active");
+                prop_ioc_active = self.zfs_get_property(pool,
+                                                        "org.freebsd.ioc:active");
                 prop_comment = self.zfs_get_property(pool, "comment")
 
                 if prop_ioc_active == "yes":
@@ -322,7 +336,8 @@ class IOCJson(object):
                         _callback=self.callback,
                         silent=self.silent)
 
-                    self.zfs_set_property(zpool, "org.freebsd.ioc:active", "yes")
+                    self.zfs_set_property(zpool, "org.freebsd.ioc:active",
+                                          "yes")
                     return zpool
 
         elif prop == "iocroot":
@@ -408,7 +423,8 @@ class IOCJson(object):
                 self.zfs.get_dataset(old_location).rename(new_location)
                 conf["type"] = "template"
 
-                self.location = new_location.lstrip(pool).replace("/iocage", iocroot)
+                self.location = new_location.lstrip(pool).replace("/iocage",
+                                                                  iocroot)
 
                 iocage.lib.ioc_common.logit({
                     "level"  : "INFO",
@@ -421,7 +437,8 @@ class IOCJson(object):
                 if not _import:
                     self.zfs.get_dataset(old_location).rename(new_location)
                     conf["type"] = "jail"
-                    self.location = old_location.lstrip(pool).replace("/iocage", iocroot)
+                    self.location = old_location.lstrip(pool).replace(
+                        "/iocage", iocroot)
 
                     iocage.lib.ioc_common.logit({
                         "level"  : "INFO",
@@ -776,7 +793,8 @@ class IOCJson(object):
         conf = self.json_load()
         uuid = conf["host_hostuuid"]
         tag = conf["tag"]
-        _path = self.zfs_get_property(f"{pool}/iocage/jails/{uuid}", "mountpoint")
+        _path = self.zfs_get_property(f"{pool}/iocage/jails/{uuid}",
+                                      "mountpoint")
 
         # Plugin variables
         settings = self.json_plugin_load()
@@ -807,7 +825,8 @@ class IOCJson(object):
         conf = self.json_load()
         uuid = conf["host_hostuuid"]
         tag = conf["tag"]
-        _path = self.zfs_get_property(f"{pool}/iocage/jails/{uuid}", "mountpoint")
+        _path = self.zfs_get_property(f"{pool}/iocage/jails/{uuid}",
+                                      "mountpoint")
         status, _ = iocage.lib.ioc_list.IOCList().list_get_jid(uuid)
 
         # Plugin variables
