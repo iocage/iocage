@@ -15,6 +15,7 @@ import tempfile
 import urllib.request
 import uuid
 
+import libzfs
 import requests
 import requests.auth
 import requests.packages.urllib3.exceptions
@@ -179,9 +180,11 @@ class IOCFetch(object):
             if os.path.isdir(dataset):
                 pass
             else:
-                self.zpool.create(f"{self.pool}/iocage/download/{self.release}", {
-                        "compression": "lz4"
-                    })
+                self.zpool.create(dataset, {
+                    "compression": "lz4"
+                })
+
+                self.zfs.get_dataset_by_path(dataset).mount()
 
             for f in self.files:
                 if not os.path.isfile(f):
@@ -566,8 +569,10 @@ class IOCFetch(object):
             fresh = True
             dataset = f"{self.pool}/iocage/download/{self.release}"
             self.zpool.create(dataset, {
-                    "compression": "lz4"
-                })
+                "compression": "lz4"
+            })
+
+            self.zfs.get_dataset(dataset).mount()
 
         if missing or fresh:
             os.chdir(f"{self.iocroot}/download/{self.release}")
@@ -672,9 +677,12 @@ class IOCFetch(object):
         dest = f"{self.iocroot}/releases/{self.release}/root"
 
         dataset = f"{self.pool}/iocage/releases/{self.release}/root"
-        self.zpool.create(dataset, {
+        if not os.path.isdir(dest):
+            self.zpool.create(dataset, {
                 "compression": "lz4"
             }, libzfs.DatasetType.FILESYSTEM, 0, True)
+
+            self.zfs.get_dataset(dataset).mount_recursive(True)
 
         with tarfile.open(src) as f:
             # Extracting over the same files is much slower then
