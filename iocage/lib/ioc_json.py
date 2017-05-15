@@ -71,11 +71,11 @@ class IOCJson(object):
 
         # Filter the props we want to convert.
         prop_prefix = "org.freebsd.iocage"
-        props = list(filter(lambda x: x.startswith("org.freebsd.iocage")))
+        props = list(filter(lambda x: x.startswith(prop_prefix), props))
 
         key_and_value = {"host_domainname": "none"}
 
-        for prop, value in props:
+        for prop in props:
             key = prop.partition(":")[2]
 
             if key == "type":
@@ -94,6 +94,9 @@ class IOCJson(object):
                         key_and_value["host_hostname"] = value
 
                 continue
+            else:
+                value = self.zfs_get_property(dataset, prop)
+
             key_and_value[key] = value
 
         if not skip:
