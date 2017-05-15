@@ -159,8 +159,9 @@ class IOCJson(object):
                             # Hack88 migration to a perm short UUID.
                             pool, iocroot = _get_pool_and_iocroot()
 
-                            full_uuid = self.zfs_get_property(self.location,
-                                                              'org.freebsd.iocage:host_hostuuid')
+                            full_uuid = self.zfs_get_property(
+                                self.location,
+                                'org.freebsd.iocage:host_hostuuid')
                             jail_hostname = self.zfs_get_property(
                                 self.location,
                                 'org.freebsd.iocage:host_hostname')
@@ -275,8 +276,8 @@ class IOCJson(object):
 
             for pool in zpools:
 
-                prop_ioc_active = self.zfs_get_property(pool,
-                                                        "org.freebsd.ioc:active");
+                prop_ioc_active = self.zfs_get_property(
+                    pool, "org.freebsd.ioc:active")
                 prop_comment = self.zfs_get_property(pool, "comment")
 
                 if prop_ioc_active == "yes":
