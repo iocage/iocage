@@ -180,8 +180,7 @@ class IOCFetch(object):
                 pass
             else:
                 self.zpool.create(f"{self.pool}/iocage/download/{self.release}", {
-                        "compression": "lz4",
-                        "mountpoint": dataset
+                        "compression": "lz4"
                     })
 
             for f in self.files:
