@@ -124,12 +124,12 @@ class IOCJson(object):
             return "-"
 
     def zfs_set_property(self, identifier, key, value):
-        if ":" in key:
-            newproperty = libzfs.ZFSUserProperty(value)
-        else:
-            newproperty = libzfs.ZFSProperty(value)
+        ds = self._zfs_get_properties(identifier)
 
-        self._zfs_get_properties(identifier)[key] = newproperty;
+        if ":" in key:
+            ds[key] = libzfs.ZFSUserProperty(value)
+        else:
+            ds[key].value = value
 
     def json_load(self):
         """Load the JSON at the location given. Returns a JSON object."""
