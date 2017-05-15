@@ -34,8 +34,7 @@ class IOCCheck(object):
 
         for dataset in datasets:
 
-            zfs_dataset_name = "{}/{}".format(self.pool, dataset)
-
+            zfs_dataset_name = f"{self.pool}/{dataset}"
             is_existing = len(list(filter(lambda x: x.name == zfs_dataset_name,
                                           list(pool.root.datasets)))) > 0
 
@@ -62,3 +61,4 @@ class IOCCheck(object):
                     dataset_options["mountpoint"] = f"/{self.pool}/iocage"
 
                 pool.create(zfs_dataset_name, dataset_options)
+                zfs.get_dataset(zfs_dataset_name).mount()
