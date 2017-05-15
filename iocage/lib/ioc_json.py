@@ -215,8 +215,8 @@ class IOCJson(object):
                                                   short_uuid)
                             self.zfs_set_property(f"{full_dataset}/data",
                                                   jail_zfs_prop,
-                                                  f"iocage/jails/{"
-                                                  f"short_uuid}/data")
+                                                  f"iocage/jails/"
+                                                  f"{short_uuid}/data")
 
                             self.zfs.get_dataset(full_dataset).rename(
                                 short_dataset)
