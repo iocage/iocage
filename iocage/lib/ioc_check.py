@@ -1,7 +1,6 @@
 """Check datasets before execution"""
 import os
-import subprocess as su
-import sys
+
 import libzfs
 
 import iocage.lib.ioc_common
@@ -30,15 +29,17 @@ class IOCCheck(object):
 
         zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         pool = zfs.get(self.pool)
-        hasDuplicates = len(list(filter(lambda x: x.mountpoint == "/iocage", list(pool.root.datasets)))) > 0
+        has_duplicates = len(list(filter(lambda x: x.mountpoint == "/iocage",
+                                         list(pool.root.datasets)))) > 0
 
         for dataset in datasets:
 
-            zfsDatasetName = "{}/{}".format(self.pool, dataset)
+            zfs_dataset_name = "{}/{}".format(self.pool, dataset)
 
-            isExisting = len(list(filter(lambda x: x.name == zfsDatasetName, list(pool.root.datasets)))) > 0
+            is_existing = len(list(filter(lambda x: x.name == zfs_dataset_name,
+                                          list(pool.root.datasets)))) > 0
 
-            if not isExisting:
+            if not is_existing:
 
                 if os.geteuid() != 0:
                     raise RuntimeError("Run as root to create missing"
@@ -51,12 +52,13 @@ class IOCCheck(object):
                     _callback=self.callback,
                     silent=self.silent)
 
-                datasetOptions = {
+                dataset_options = {
                     "compression": "lz4",
-                    "mountpoint": "/{}/{}".format(self.pool, dataset)
                 }
 
-                if (dataset == "iocage") and not hasDuplicates:
-                    datasetOptions.mountpoint = "/iocage"
+                if dataset == "iocage" and not has_duplicates:
+                    dataset_options["mountpoint"] = "/iocage"
+                elif dataset == "iocage" and has_duplicates:
+                    dataset_options["mountpoint"] = f"/{self.pool}/iocage"
 
-                pool.create(zfsDatasetName, datasetOptions)
+                pool.create(zfs_dataset_name, dataset_options)
