@@ -32,13 +32,14 @@ class IOCDestroy(object):
                 path = path.replace("templates", "jails")
                 uuid = dataset.name.partition(f"{path}/")[2].rsplit("/", 1)[0]
                 # We want the real path now.
-                _path = dataset.properties["mountpoint"].value.replace(
-                    "/root", "")
+                if dataset.type == libzfs.DatasetType.FILESYSTEM:
+                    _path = dataset.properties["mountpoint"].value.replace(
+                        "/root", "")
 
-                if dataset.name.endswith(uuid) or root:
-                    conf = iocage.lib.ioc_json.IOCJson(_path).json_load()
-                    iocage.lib.ioc_stop.IOCStop(uuid, "", _path, conf,
-                                                silent=True)
+                    if dataset.name.endswith(uuid) or root:
+                        conf = iocage.lib.ioc_json.IOCJson(_path).json_load()
+                        iocage.lib.ioc_stop.IOCStop(uuid, "", _path, conf,
+                                                    silent=True)
 
     def __destroy_leftovers__(self, dataset, clean=False):
         """Removes tags, parent datasets and logs."""
