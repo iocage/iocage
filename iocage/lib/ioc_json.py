@@ -118,7 +118,7 @@ class IOCJson(object):
         try:
             return self._zfs_get_properties(identifier)[key].value
         except:
-            return ""
+            return "-"
 
     def zfs_set_property(self, identifier, key, value):
         if ":" in key:
