@@ -179,10 +179,10 @@ class IOCFetch(object):
             if os.path.isdir(dataset):
                 pass
             else:
-                su.Popen(["zfs", "create", "-o", "compression=lz4",
-                          f"{self.pool}/iocage/download/"
-                          f"{self.release}"]).communicate()
-            dataset = f"{self.iocroot}/download/{self.release}"
+                self.zpool.create(f"{self.pool}/iocage/download/{self.release}", {
+                        "compression": "lz4",
+                        "mountpoint": dataset
+                    })
 
             for f in self.files:
                 if not os.path.isfile(f):
@@ -561,9 +561,10 @@ class IOCFetch(object):
 
         if not os.path.isdir(dataset):
             fresh = True
-            su.Popen(["zfs", "create", "-o", "compression=lz4",
-                      f"{self.pool}/iocage/download/"
-                      f"{self.release}"]).communicate()
+            dataset = f"{self.pool}/iocage/download/{self.release}"
+            self.zpool.create(dataset, {
+                    "compression": "lz4"
+                })
 
         if missing or fresh:
             os.chdir(f"{self.iocroot}/download/{self.release}")
@@ -666,9 +667,11 @@ class IOCFetch(object):
         """
         src = f"{self.iocroot}/download/{self.release}/{f}"
         dest = f"{self.iocroot}/releases/{self.release}/root"
-        su.Popen(["zfs", "create", "-p", "-o", "compression=lz4",
-                  f"{self.pool}/iocage/releases/{self.release}/"
-                  "root"]).communicate()
+
+        dataset = f"{self.pool}/iocage/releases/{self.release}/root"
+        self.zpool.create(dataset, {
+                "compression": "lz4"
+            }, libzfs.DatasetType.FILESYSTEM, 0, True)
 
         with tarfile.open(src) as f:
             # Extracting over the same files is much slower then
