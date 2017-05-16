@@ -314,6 +314,7 @@ class IOCStart(object):
                                     err.output.decode("utf-8").rstrip()))
 
             self.start_generate_resolv()
+            self.start_copy_localtime()
             # This needs to be a list.
             exec_start = self.conf["exec_start"].split()
 
@@ -503,6 +504,12 @@ class IOCStart(object):
             return f"{err.output.decode('utf-8')}".rstrip()
         else:
             return
+
+    def start_copy_localtime(self):
+        host_time = self.get("host_time")
+        if host_time:
+            shutil.copy("/etc/localtime",
+                        f"{self.path}/root/etc/localtime")
 
     def start_generate_resolv(self):
         resolver = self.get("resolver")
