@@ -65,9 +65,10 @@ class IOCageCLI(click.MultiCommand):
 
             try:
                 if mod.__rootcmd__ and "--help" not in sys.argv[1:]:
-                    if os.geteuid() != 0:
-                        sys.exit("You need to have root privileges to"
-                                 f" run {mod_name}")
+                    if len(sys.argv) != 1:
+                        if os.geteuid() != 0:
+                            sys.exit("You need to have root privileges to"
+                                     f" run {mod_name}")
             except AttributeError:
                 # It's not a root required command.
                 pass
