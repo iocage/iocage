@@ -479,7 +479,7 @@ class IOCJson(object):
                         "ip6.addr":
                     return
                 try:
-                    ip = True if key == "ip4.addr" or key == "ip6.addr" else\
+                    ip = True if key == "ip4.addr" or key == "ip6.addr" else \
                         False
                     if ip and value == "none":
                         return
@@ -495,7 +495,7 @@ class IOCJson(object):
     @staticmethod
     def json_get_version():
         """Sets the iocage configuration version."""
-        version = "5"
+        version = "6"
         return version
 
     def json_check_config(self, conf, version):
@@ -570,6 +570,10 @@ class IOCJson(object):
         # Set all keys, even if it's the same value.
         conf["comment"] = comment
 
+        # Version 6 keys
+        conf["host_time"] = "yes"
+
+        # Set all keys, even if it's the same value.
         conf["CONFIG_VERSION"] = version
         self.json_write(conf)
 
@@ -674,7 +678,8 @@ class IOCJson(object):
             "mount_linprocfs"      : ("0", "1"),
             "vnet"                 : ("off", "on"),
             "template"             : ("no", "yes"),
-            "comment"              : ("string",)
+            "comment"              : ("string",),
+            "host_time"            : ("no", "yes")
         }
 
         zfs_props = {

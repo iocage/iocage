@@ -418,6 +418,7 @@ class IOCCreate(object):
             "vnet"                 : "off",
             "basejail"             : "no",
             "comment"              : "none",
+            "host_time"            : "yes",
             # Sync properties
             "sync_state"           : "none",
             "sync_target"          : "none",
