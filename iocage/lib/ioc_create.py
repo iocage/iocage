@@ -2,7 +2,6 @@
 import datetime
 import json
 import os
-import shutil
 import subprocess as su
 import sys
 import uuid
@@ -554,8 +553,8 @@ class IOCCreate(object):
         # If this exists, another jail has used this tag.
         try:
             readlink_mount = os.readlink(f"{self.iocroot}/tags/{tag}")
-            readlink_uuid = [m for m in readlink_mount.split("/") if len(m)
-                             == 36 or len(m) == 8][0]
+            readlink_uuid = [m for m in readlink_mount.split("/")
+                             if len(m) == 36 or len(m) == 8][0]
         except OSError:
             pass
 
