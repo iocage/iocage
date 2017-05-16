@@ -5,14 +5,14 @@ set -x
 # Run pep8 on all .py files in all subfolders
 
 tmpafter=$(mktemp)
-find ~/iocage/iocage/cli ~/iocage/iocage/lib -name \*.py -exec flake8 --ignore=E127,E203 {} + > $tmpafter
+find ./iocage/cli ./iocage/lib -name \*.py -exec flake8 --ignore=E127,E203 {} + > $tmpafter
 num_errors_after=`cat $tmpafter | wc -l`
 echo $num_errors_after
 
 git checkout HEAD~
 
 tmpbefore=$(mktemp)
-find ~/iocage/iocage/cli ~/iocage/iocage/lib -name \*.py -exec flake8 --ignore=E127,E203 {} + > $tmpbefore
+find ./iocage/cli ./iocage/lib -name \*.py -exec flake8 --ignore=E127,E203 {} + > $tmpbefore
 num_errors_before=`cat $tmpbefore | wc -l`
 echo $num_errors_before
 
