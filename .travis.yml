@@ -3,9 +3,6 @@ python:
   - "3.6"
 sudo: required
 install:
-  - git clone https://github.com/iocage/iocage.git /home/travis/iocage
-  - cd /home/travis/iocage
-  - git checkout -qf $TRAVIS_COMMIT
   - sudo apt-get -qq update
   - sudo apt-get -y install git
   - pip3 install flake8
