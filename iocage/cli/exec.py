@@ -59,7 +59,7 @@ def cli(command, jail, host_user, jail_user):
     else:
         ioc_common.logit({
             "level"  : "ERROR",
-            "message": "{} not found!".format(jail)
+            "message": f"{jail} not found!"
         })
         exit(1)
 

@@ -60,7 +60,7 @@ def cli(action, fstab_string, jail):
     else:
         ioc_common.logit({
             "level"  : "ERROR",
-            "message": "{} not found!".format(jail)
+            "message": f"{jail} not found!"
         })
         exit(1)
 
