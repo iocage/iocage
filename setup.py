@@ -28,6 +28,7 @@ setup(name='iocage',
           'requests',
           'tqdm',
           'coloredlogs',
+          'GitPython',
           'libzfs'
       ],
       setup_requires=['pytest-runner'],

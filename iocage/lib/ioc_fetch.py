@@ -21,6 +21,9 @@ import requests.auth
 import requests.packages.urllib3.exceptions
 import tqdm
 
+from git import Repo
+from distutils.dir_util import copy_tree
+
 import iocage.lib.ioc_common
 import iocage.lib.ioc_create
 import iocage.lib.ioc_destroy
@@ -1091,16 +1094,8 @@ fingerprint: {fingerprint}
                 _callback=self.callback,
                 silent=self.silent)
 
-            su.Popen(["git", "clone", conf["artifact"],
-                      f"{jaildir}/plugin"], stdout=su.PIPE,
-                     stderr=su.PIPE).communicate()
-            tar_in = su.Popen(["tar", "cvf", "-", "-C",
-                               f"{jaildir}/plugin/overlay/", "."],
-                              stdout=su.PIPE,
-                              stderr=su.PIPE).communicate()
-            su.Popen(["tar", "xf", "-", "-C", f"{jaildir}/root"],
-                     stdin=su.PIPE).communicate(
-                input=tar_in[0])
+            repo = Repo.clone_from(conf["artifact"], f"{jaildir}/plugin", branch='master')
+            copy_tree(f"{jaildir}/plugin/overlay/", f"{jaildir}/root", preserve_symlinks=True)
 
             try:
                 shutil.copy(f"{jaildir}/plugin/post_install.sh",
@@ -1147,21 +1142,17 @@ fingerprint: {fingerprint}
         else:
             git_server = self.server
 
+        git_working_dir = f"{self.iocroot}/.plugin_index"
+
         try:
-            iocage.lib.ioc_common.checkoutput(
-                ["git", "clone", git_server,
-                 f"{self.iocroot}/.plugin_index"], stderr=su.STDOUT)
-        except su.CalledProcessError as err:
-            if "already exists" in err.output.decode("utf-8").rstrip():
-                try:
-                    iocage.lib.ioc_common.checkoutput(
-                        ["git", "-C", f"{self.iocroot}/.plugin_index",
-                         "pull"], stderr=su.STDOUT)
-                except su.CalledProcessError as err:
-                    raise RuntimeError(
-                        f"{err.output.decode('utf-8').rstrip()}")
-            else:
-                raise RuntimeError(f"{err.output.decode('utf-8').rstrip()}")
+            repo = Repo(git_working_dir)
+        except git.exc.NoSuchPathError:
+            try:
+                repo = Repo.clone_from(git_server, git_working_dir)
+            except git.exc.GitCommandError as err:
+                raise RuntimeError(err)
+        except git.exc.InvalidGitRepositoryError:
+            raise RuntimeError(f"The path {git_working_dir} already exists, but is not a git repository")
 
         with open(f"{self.iocroot}/.plugin_index/INDEX", "r") as plugins:
             plugins = json.load(plugins)
