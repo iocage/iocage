@@ -16,8 +16,8 @@ import tempfile
 import urllib.request
 import uuid
 
-import git
 import libzfs
+import pygit2
 import requests
 import requests.auth
 import requests.packages.urllib3.exceptions
@@ -1093,8 +1093,8 @@ fingerprint: {fingerprint}
                 _callback=self.callback,
                 silent=self.silent)
 
-            git.Repo.clone_from(conf["artifact"], f"{jaildir}/plugin",
-                                branch='master')
+            pygit2.clone_repository(conf["artifact"], f"{jaildir}/plugin",
+                                    checkout_branch='master')
             distutils.dir_util.copy_tree(f"{jaildir}/plugin/overlay/",
                                          f"{jaildir}/root",
                                          preserve_symlinks=True)
@@ -1147,16 +1147,15 @@ fingerprint: {fingerprint}
         git_working_dir = f"{self.iocroot}/.plugin_index"
 
         try:
-            git.Repo(git_working_dir)
-        except git.exc.NoSuchPathError:
+            pygit2.clone_repository(git_server, git_working_dir)
+        except pygit2.GitError:
+            raise
+        except ValueError:
             try:
-                git.Repo.clone_from(git_server, git_working_dir)
-            except git.exc.GitCommandError as err:
-                raise RuntimeError(err)
-        except git.exc.InvalidGitRepositoryError:
-            raise RuntimeError(
-                f"The path {git_working_dir} already exists, but is not a "
-                f"git repository")
+                repo = pygit2.Repository(git_working_dir)
+                iocage.lib.ioc_common.git_pull(repo)
+            except (pygit2.GitError, AssertionError, RuntimeError):
+                raise
 
         with open(f"{self.iocroot}/.plugin_index/INDEX", "r") as plugins:
             plugins = json.load(plugins)
