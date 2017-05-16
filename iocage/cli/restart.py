@@ -127,8 +127,7 @@ def __soft_restart__(uuid, jail, path, conf):
         start_cmd = ["setfib", exec_fib, "jexec", f"ioc-{uuid}"] + exec_start
         su.Popen(start_cmd, stdout=su.PIPE, stderr=su.PIPE).communicate()
         ioc_json.IOCJson(path, silent=True).json_set_value(
-            "last_started={}".format(
-                datetime.datetime.utcnow().strftime("%F %T")))
+            f"last_started={datetime.datetime.utcnow().strftime('%F %T')}")
     else:
         ioc_common.logit({
             "level"  : "ERROR",
