@@ -507,17 +507,20 @@ class IOCStart(object):
     def start_generate_resolv(self):
         resolver = self.get("resolver")
         #                                     compat
-        if resolver != "/etc/resolv.conf" and resolver != "none":
+        if resolver != "/etc/resolv.conf" and resolver != "none" and \
+                resolver != "/dev/null":
             with iocage.lib.ioc_common.open_atomic(
-                    "{}/root/etc/resolv.conf".format(self.path),
-                    "w") as resolv_conf:
+                    f"{self.path}/root/etc/resolv.conf", "w") as resolv_conf:
                 for line in resolver.split(";"):
                     resolv_conf.write(line + "\n")
         elif resolver == "none":
-            shutil.copy("/etc/resolv.conf", "{}/root/etc/resolv.conf".format(
-                self.path))
+            shutil.copy("/etc/resolv.conf",
+                        f"{self.path}/root/etc/resolv.conf")
+        elif resolver == "/dev/null":
+            # They don't want the resolv.conf to be touched.
+            return
         else:
-            shutil.copy(resolver, "{}/root/etc/resolv.conf".format(self.path))
+            shutil.copy(resolver, f"{self.path}/root/etc/resolv.conf")
 
     def __start_generate_vnet_mac__(self, nic):
         """
