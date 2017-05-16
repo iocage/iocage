@@ -1,5 +1,6 @@
 """iocage fetch module."""
 import collections
+import distutils.dir_util
 import ftplib
 import hashlib
 import io
@@ -15,14 +16,12 @@ import tempfile
 import urllib.request
 import uuid
 
+import git
 import libzfs
 import requests
 import requests.auth
 import requests.packages.urllib3.exceptions
 import tqdm
-
-from git import Repo
-from distutils.dir_util import copy_tree
 
 import iocage.lib.ioc_common
 import iocage.lib.ioc_create
@@ -640,8 +639,8 @@ class IOCFetch(object):
                                 # ones are base.txz and MANIFEST for us,
                                 # the rest are not.
                                 if f != "base.txz" and f != "MANIFEST":
-                                    self.files = tuple(x for x in _list if x
-                                                       != f)
+                                    self.files = tuple(x for x in _list
+                                                       if x != f)
                                     continue
                                 else:
                                     raise RuntimeError(f"{f} is required!")
@@ -1094,8 +1093,11 @@ fingerprint: {fingerprint}
                 _callback=self.callback,
                 silent=self.silent)
 
-            repo = Repo.clone_from(conf["artifact"], f"{jaildir}/plugin", branch='master')
-            copy_tree(f"{jaildir}/plugin/overlay/", f"{jaildir}/root", preserve_symlinks=True)
+            git.Repo.clone_from(conf["artifact"], f"{jaildir}/plugin",
+                                branch='master')
+            distutils.dir_util.copy_tree(f"{jaildir}/plugin/overlay/",
+                                         f"{jaildir}/root",
+                                         preserve_symlinks=True)
 
             try:
                 shutil.copy(f"{jaildir}/plugin/post_install.sh",
@@ -1145,14 +1147,16 @@ fingerprint: {fingerprint}
         git_working_dir = f"{self.iocroot}/.plugin_index"
 
         try:
-            repo = Repo(git_working_dir)
+            git.Repo(git_working_dir)
         except git.exc.NoSuchPathError:
             try:
-                repo = Repo.clone_from(git_server, git_working_dir)
+                git.Repo.clone_from(git_server, git_working_dir)
             except git.exc.GitCommandError as err:
                 raise RuntimeError(err)
         except git.exc.InvalidGitRepositoryError:
-            raise RuntimeError(f"The path {git_working_dir} already exists, but is not a git repository")
+            raise RuntimeError(
+                f"The path {git_working_dir} already exists, but is not a "
+                f"git repository")
 
         with open(f"{self.iocroot}/.plugin_index/INDEX", "r") as plugins:
             plugins = json.load(plugins)
