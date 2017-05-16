@@ -1061,6 +1061,27 @@ fingerprint: {fingerprint}
 
     def __fetch_plugin_post_install__(self, conf, _conf, jaildir, uuid):
         """Fetches the users artifact and runs the post install"""
+        try:
+            ip4 = _conf["ip4_addr"].split("|")[1].rsplit(
+                "/")[0]
+        except IndexError:
+            ip4 = "none"
+
+        try:
+            ip6 = _conf["ip6_addr"].split("|")[1].rsplit(
+                "/")[0]
+        except IndexError:
+            ip6 = "none"
+
+        if ip4 != "none":
+            ip = ip4
+        elif ip6 != "none":
+            # If they had an IP4 address and an IP6 one,
+            # we'll assume they prefer IP6.
+            ip = ip6
+
+        os.environ["IOCAGE_PLUGIN_IP"] = ip
+
         # We need to pipe from tar to the root of the jail.
         if conf["artifact"]:
             iocage.lib.ioc_common.logit({
@@ -1107,25 +1128,6 @@ fingerprint: {fingerprint}
                 try:
                     with open(ui_json, "r") as u:
                         admin_portal = json.load(u)["adminportal"]
-                        try:
-                            ip4 = _conf["ip4_addr"].split("|")[1].rsplit(
-                                "/")[0]
-                        except IndexError:
-                            ip4 = "none"
-
-                        try:
-                            ip6 = _conf["ip6_addr"].split("|")[1].rsplit(
-                                "/")[0]
-                        except IndexError:
-                            ip6 = "none"
-
-                        if ip4 != "none":
-                            ip = ip4
-                        elif ip6 != "none":
-                            # If they had an IP4 address and an IP6 one,
-                            # we'll assume they prefer IP6.
-                            ip = ip6
-
                         admin_portal = admin_portal.replace("%%IP%%", ip)
                         iocage.lib.ioc_common.logit({
                             "level"  : "INFO",
