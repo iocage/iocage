@@ -479,6 +479,11 @@ class IOCJson(object):
                         "ip6.addr":
                     return
                 try:
+                    ip = True if key == "ip4.addr" or key == "ip6.addr" else\
+                        False
+                    if ip and value == "none":
+                        return
+
                     iocage.lib.ioc_common.checkoutput(
                         ["jail", "-m", f"jid={jid}",
                          f"{key}={value}"],
@@ -749,10 +754,11 @@ class IOCJson(object):
                     msg = "IP address must contain both an interface and IP " \
                           "address.\nEXAMPLE: em0|fe80::5400:ff:fe54:1"
 
-                    if not self.cli:
-                        msg = err + msg
+                    if value != "none":
+                        if not self.cli:
+                            msg = err + msg
 
-                    raise RuntimeError(msg)
+                        raise RuntimeError(msg)
                 elif key == "interfaces":
                     msg = "Interfaces must be specified as a pair.\n" \
                           "EXAMPLE: vnet0:bridge0, vnet1:bridge1"
