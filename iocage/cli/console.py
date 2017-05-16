@@ -47,7 +47,7 @@ def cli(jail, force):
     else:
         ioc_common.logit({
             "level"  : "ERROR",
-            "message": f" {jail} not found!"
+            "message": f"{jail} not found!"
         })
         exit(1)
 
@@ -70,14 +70,14 @@ def cli(jail, force):
             ioc_common.logit({
                 "level"  : "ERROR",
                 "message": "Please run \"iocage migrate\" before trying to"
-                           " start {uuid} ({tag})"
+                           f" start {uuid} ({tag})"
             })
             exit(1)
         elif conf["type"] == "template":
             ioc_common.logit({
                 "level"  : "ERROR",
-                "message": "Please convert back to a jail before to start"
-                           f" {uuid} ({tag})"
+                "message": "Please convert back to a jail before trying to"
+                           f" start {uuid} ({tag})"
             })
             exit(1)
         else:
