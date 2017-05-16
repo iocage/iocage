@@ -445,18 +445,10 @@ class IOCCreate(object):
         """
         status, jid = iocage.lib.ioc_list.IOCList().list_get_jid(jail_uuid)
         err = False
+
         if not status:
             iocage.lib.ioc_start.IOCStart(jail_uuid, _tag, location, config,
                                           silent=True)
-            resolver = config["resolver"]
-
-            if resolver != "/etc/resolv.conf" and resolver != "none":
-                with open(f"{location}/etc/resolv.conf", "w") as resolv_conf:
-                    for line in resolver.split(";"):
-                        resolv_conf.write(line + "\n")
-            else:
-                shutil.copy(resolver, f"{location}/root/etc/resolv.conf")
-
             status, jid = iocage.lib.ioc_list.IOCList().list_get_jid(jail_uuid)
 
         # Connectivity test courtesy David Cottlehuber off Google Group
