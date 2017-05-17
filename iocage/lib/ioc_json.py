@@ -317,7 +317,14 @@ class IOCJson(object):
                 else:
                     # We use the first zpool the user has, they are free to
                     # change it.
-                    zpool = zpools[0]
+                    try:
+                        zpool = zpools[0]
+                    except IndexError:
+                        iocage.lib.ioc_common.logit({
+                            "level"  : "EXCEPTION",
+                            "message": "No zpools found! Please create one "
+                                       "before using iocage."
+                        })
 
                     if os.geteuid() != 0:
                         raise RuntimeError("Run as root to automatically "
