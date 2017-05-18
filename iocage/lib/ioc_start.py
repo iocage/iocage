@@ -544,7 +544,7 @@ class IOCStart(object):
             for jail in jails:
                 path = paths[jail]
                 _conf = iocage.lib.ioc_json.IOCJson(path).json_load()
-                mac = _conf["mac_prefix"]
+                mac = _conf.get("mac_prefix", "02ff60")
                 mac_list.append(_conf["{}_mac".format(nic)].split(","))
 
             # We have to flatten our list of lists.
