@@ -82,7 +82,6 @@ class IOCJson(object):
             key = key.partition(":")[2]
             value = prop.value
 
-
             if key == "type":
                 if value == "basejail":
                     # These were just clones on master.
