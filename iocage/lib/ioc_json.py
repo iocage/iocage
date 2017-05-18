@@ -326,7 +326,9 @@ class IOCJson(object):
                             "level"  : "EXCEPTION",
                             "message": "No zpools found! Please create one "
                                        "before using iocage."
-                        })
+                        },
+                            _callback=self.callback,
+                            silent=self.silent)
 
                     if os.geteuid() != 0:
                         raise RuntimeError("Run as root to automatically "
@@ -719,7 +721,12 @@ class IOCJson(object):
                                                                    "T")):
                     err = f"{value} should have a suffix ending in" \
                           " M, G, or T."
-                    raise RuntimeError(err)
+                    iocage.lib.ioc_common.logit({
+                        "level"  : "EXCEPTION",
+                        "message": err
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
 
             self.zfs_set_property(f"{pool}/iocage/{_type}/{uuid}", key, value)
 
@@ -737,69 +744,51 @@ class IOCJson(object):
                 else:
                     err = f"{value} is not a valid value for {key}.\n"
 
-                if self.cli:
-                    iocage.lib.ioc_common.logit({
-                        "level"  : "ERROR",
-                        "message": f"{err}"
-                    },
-                        _callback=self.callback,
-                        silent=self.silent)
-                else:
-                    err = f"{err}"
-
                 if key not in ("interfaces", "ip4_addr", "ip6_addr",
                                "memoryuse"):
                     msg = f"Value must be {' or '.join(props[key])}"
 
-                    if not self.cli:
-                        msg = err + msg
-
-                    raise RuntimeError(msg)
                 elif key == "ip4_addr":
                     msg = "IP address must contain both an interface and IP " \
                           "address.\nEXAMPLE: em0|192.168.1.10"
 
-                    if value != "none":
-                        if not self.cli:
-                            msg = err + msg
-
-                        raise RuntimeError(msg)
+                    if value == "none":
+                        return
                 elif key == "ip6_addr":
                     msg = "IP address must contain both an interface and IP " \
                           "address.\nEXAMPLE: em0|fe80::5400:ff:fe54:1"
 
-                    if value != "none":
-                        if not self.cli:
-                            msg = err + msg
-
-                        raise RuntimeError(msg)
+                    if value == "none":
+                        return
                 elif key == "interfaces":
                     msg = "Interfaces must be specified as a pair.\n" \
                           "EXAMPLE: vnet0:bridge0, vnet1:bridge1"
-
-                    if not self.cli:
-                        msg = err + msg
-
-                    raise RuntimeError(msg)
                 elif key == "memoryuse":
                     msg = "memoryuse requires at minimum a pair.\nEXAMPLE: " \
                           "8g:log"
 
-                    if not self.cli:
-                        msg = err + msg
-
-                    raise RuntimeError(msg)
-                else:
-                    if self.cli:
-                        exit(1)
+                msg = err + msg
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": msg
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
         else:
             if self.cli:
-                raise RuntimeError(
-                    f"{key} cannot be changed by the user.")
+                msg = f"{key} cannot be changed by the user."
             else:
                 if key not in conf.keys():
-                    raise RuntimeError(
-                        f"{key} is not a valid property!")
+                    msg = f"{key} is not a valid property!"
+                else:
+                    return
+
+            iocage.lib.ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": msg
+            },
+                _callback=self.callback,
+                silent=self.silent)
 
     def json_plugin_load(self):
         try:
