@@ -71,12 +71,17 @@ class IOCJson(object):
 
         # Filter the props we want to convert.
         prop_prefix = "org.freebsd.iocage"
-        props = list(filter(lambda x: x.startswith(prop_prefix), props))
 
         key_and_value = {"host_domainname": "none"}
 
-        for prop in props:
-            key = prop.partition(":")[2]
+        for key, prop in props.items():
+
+            if not key.startswith(prop_prefix):
+                continue
+
+            key = key.partition(":")[2]
+            value = prop.value
+
 
             if key == "type":
                 if value == "basejail":
@@ -84,18 +89,16 @@ class IOCJson(object):
                     value = "jail"
                     key_and_value["basejail"] = "yes"
             elif key == "hostname":
-                hostname = key_and_value["host_hostname"]
+                hostname = props[f'{prop_prefix}:host_hostname']
 
                 if value != hostname:
                     # This is safe to replace at this point.
                     # The user changed the wrong hostname key, we will move
                     # it to the right one now.
                     if hostname == uuid:
-                        key_and_value["host_hostname"] = value
+                        key_and_value["host_hostname"] = prop.value
 
                 continue
-            else:
-                value = self.zfs_get_property(dataset, prop)
 
             key_and_value[key] = value
 
