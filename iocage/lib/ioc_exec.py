@@ -11,8 +11,8 @@ class IOCExec(object):
     """Run jexec with a user inside the specified jail."""
 
     def __init__(self, command, uuid, tag, path, host_user="root",
-                 jail_user=None, plugin=False, skip=False, silent=False,
-                 callback=None):
+                 jail_user=None, plugin=False, skip=False, console=False,
+                 silent=False, callback=None):
         self.command = command
         self.uuid = uuid
         self.tag = tag
@@ -21,6 +21,7 @@ class IOCExec(object):
         self.jail_user = jail_user
         self.plugin = plugin
         self.skip = skip
+        self.console = console
         self.silent = silent
         self.callback = callback
 
@@ -79,6 +80,12 @@ class IOCExec(object):
                 return msg, False
             except su.CalledProcessError as err:
                 return err.output.decode("utf-8").rstrip(), True
+        elif self.console:
+            login_flags = conf["login_flags"].split()
+            su.Popen(["setfib", exec_fib, "jexec", f"ioc-{self.uuid}",
+                      "login"] + login_flags).communicate()
+
+            return None, False
         else:
             jexec = su.Popen(["setfib", exec_fib, "jexec", flag, user,
                               f"ioc-{self.uuid}"] + list(self.command),
