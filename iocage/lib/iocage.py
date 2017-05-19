@@ -8,6 +8,7 @@ import libzfs
 import iocage.lib.ioc_clean as ioc_clean
 import iocage.lib.ioc_common as ioc_common
 import iocage.lib.ioc_create as ioc_create
+import iocage.lib.ioc_exec as ioc_exec
 import iocage.lib.ioc_fetch as ioc_fetch
 import iocage.lib.ioc_json as ioc_json
 import iocage.lib.ioc_list as ioc_list
@@ -363,9 +364,41 @@ class IOCage(object):
                 _callback=self.callback,
                 silent=self.silent)
 
+    def exec(self, command, host_user="root", jail_user=None, console=False):
+        """Executes a command in the jail as the supplied users."""
+        if host_user and jail_user:
+            ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": "Please only specify either host_user or"
+                           " jail_user, not both!"
+            },
+                _callback=self.callback,
+                silent=self.silent)
+
+        tag, uuid, path = self.__check_jail_existence__()
+        msg, err = ioc_exec.IOCExec(command, uuid, tag, path, host_user,
+                                    jail_user, console=console).exec_jail()
+
+        if not console:
+            if err:
+                ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": err.decode()
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+            else:
+                ioc_common.logit({
+                    "level"  : "INFO",
+                    "message": msg.decode("utf-8")
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+
     def create(self, release, props, count=0, pkglist=None, template=False,
                short=False, uuid=None, basejail=False, empty=False,
                clone=None):
+        """Creates the jail dataset"""
         if short and uuid:
             uuid = uuid[:8]
 
