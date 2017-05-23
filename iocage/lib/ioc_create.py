@@ -532,7 +532,7 @@ class IOCCreate(object):
             if pkg_err:
                 iocage.lib.ioc_common.logit({
                     "level"  : "ERROR",
-                    "message": f"{pkg_install}"
+                    "message": f"{pkg_err.decode()}"
                 },
                     _callback=self.callback,
                     silent=self.silent)
