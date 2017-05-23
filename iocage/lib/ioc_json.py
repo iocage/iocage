@@ -103,12 +103,16 @@ class IOCJson(object):
 
         if not skip:
             # Set jailed=off and move the jailed dataset.
-            self.zfs_set_property(f"{dataset}/root/data", "jailed", "off")
-            self.zfs.get_dataset(f"{dataset}/root/data").rename(
-                f"{dataset}/data")
-            self.zfs_set_property(f"{dataset}/data", jail_zfs_prop,
-                                  f"iocage/jails/{uuid}/data")
-            self.zfs_set_property(f"{dataset}/data", "jailed", "on")
+            try:
+                self.zfs_set_property(f"{dataset}/root/data", "jailed", "off")
+                self.zfs.get_dataset(f"{dataset}/root/data").rename(
+                    f"{dataset}/data")
+                self.zfs_set_property(f"{dataset}/data", jail_zfs_prop,
+                                      f"iocage/jails/{uuid}/data")
+                self.zfs_set_property(f"{dataset}/data", "jailed", "on")
+            except libzfs.ZFSException as err:
+                # The jailed dataset doesn't exist, which is OK.
+                pass
 
         key_and_value["jail_zfs_dataset"] = f"iocage/jails/{uuid}/data"
 
