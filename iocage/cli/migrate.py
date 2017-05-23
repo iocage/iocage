@@ -41,7 +41,7 @@ def cli(force, delete):
         jail_old = f"{pool}/iocage/jails_old/{uuid}"
         path = paths[tag]
         conf = ioc_json.IOCJson(path).json_load()
-        release = conf["release"]
+        release = conf["cloned_release"]
 
         if conf["type"] == "basejail":
             try:
@@ -71,7 +71,7 @@ def cli(force, delete):
 
             ioc_common.logit({
                 "level"  : "INFO",
-                "message": "Copying files for {uuid} ({tag}), please wait..."
+                "message": f"Copying files for {uuid} ({tag}), please wait..."
             })
 
             ioc_common.copytree(f"{iocroot}/jails_old/{uuid}/root",
