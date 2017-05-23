@@ -324,7 +324,7 @@ class IOCage(object):
     def clean(self, d_type):
         """Destroys all of a specified dataset types."""
         if d_type == "jails":
-            ioc_clean.IOCClean().clean_jails()
+            ioc_clean.IOCClean(silent=self.silent).clean_jails()
             ioc_common.logit({
                 "level"  : "INFO",
                 "message": "All iocage jail datasets have been destroyed."
@@ -332,7 +332,7 @@ class IOCage(object):
                 _callback=self.callback,
                 silent=self.silent)
         elif d_type == "all":
-            ioc_clean.IOCClean().clean_all()
+            ioc_clean.IOCClean(silent=self.silent).clean_all()
             ioc_common.logit({
                 "level"  : "INFO",
                 "message": "All iocage datasets have been destroyed."
@@ -340,7 +340,7 @@ class IOCage(object):
                 _callback=self.callback,
                 silent=self.silent)
         elif d_type == "release":
-            ioc_clean.IOCClean().clean_releases()
+            ioc_clean.IOCClean(silent=self.silent).clean_releases()
             ioc_common.logit({
                 "level"  : "INFO",
                 "message": "All iocage RELEASE and jail datasets have been"
@@ -349,7 +349,7 @@ class IOCage(object):
                 _callback=self.callback,
                 silent=self.silent)
         elif d_type == "template":
-            ioc_clean.IOCClean().clean_templates()
+            ioc_clean.IOCClean(silent=self.silent).clean_templates()
             ioc_common.logit({
                 "level"  : "INFO",
                 "message": "All iocage template datasets have been destroyed."
@@ -377,7 +377,8 @@ class IOCage(object):
 
         tag, uuid, path = self.__check_jail_existence__()
         msg, err = ioc_exec.IOCExec(command, uuid, tag, path, host_user,
-                                    jail_user, console=console).exec_jail()
+                                    jail_user, console=console,
+                                    silent=self.silent).exec_jail()
 
         if not console:
             if err:
@@ -430,7 +431,8 @@ class IOCage(object):
             else:
                 hardened = False
 
-            ioc_fetch.IOCFetch(release, hardened=hardened).fetch_release()
+            ioc_fetch.IOCFetch(release, hardened=hardened,
+                               silent=self.silent).fetch_release()
 
         if clone:
             _, clone_uuid, _ = self.__check_jail_existence__()
@@ -450,8 +452,8 @@ class IOCage(object):
         try:
             ioc_create.IOCCreate(release, props, count, pkglist,
                                  template=template, short=short, uuid=uuid,
-                                 basejail=basejail, empty=empty, clone=clone
-                                 ).create_jail()
+                                 basejail=basejail, empty=empty, clone=clone,
+                                 silent=self.silent).create_jail()
         except RuntimeError as err:
             return True, err
 
@@ -472,7 +474,7 @@ class IOCage(object):
                 self.__jail_order__("start")
         else:
             tag, uuid, path = self.__check_jail_existence__()
-            conf = ioc_json.IOCJson(path).json_load()
+            conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
             err, msg = self.__check_jail_type__(conf["type"], uuid, tag)
 
             if not err:
@@ -494,5 +496,5 @@ class IOCage(object):
                 self.__jail_order__("stop")
         else:
             tag, uuid, path = self.__check_jail_existence__()
-            conf = ioc_json.IOCJson(path).json_load()
+            conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
             ioc_stop.IOCStop(uuid, tag, path, conf, silent=self.silent)

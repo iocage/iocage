@@ -14,4 +14,4 @@ def cli(jail):
     Runs jexec to login into the specified jail.
     """
     # Command is empty since this command is hardcoded later on.
-    ioc.IOCage(jail).exec("", console=True)
+    ioc.IOCage(jail, silent=True).exec("", console=True)
