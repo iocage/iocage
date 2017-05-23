@@ -1095,9 +1095,13 @@ fingerprint: {fingerprint}
 
             pygit2.clone_repository(conf["artifact"], f"{jaildir}/plugin",
                                     checkout_branch='master')
-            distutils.dir_util.copy_tree(f"{jaildir}/plugin/overlay/",
-                                         f"{jaildir}/root",
-                                         preserve_symlinks=True)
+            try:
+                distutils.dir_util.copy_tree(f"{jaildir}/plugin/overlay/",
+                                             f"{jaildir}/root",
+                                             preserve_symlinks=True)
+            except distutils.errors.DistutilsFileError:
+                # It just doesn't exist
+                pass
 
             try:
                 shutil.copy(f"{jaildir}/plugin/post_install.sh",
