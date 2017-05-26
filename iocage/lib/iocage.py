@@ -8,6 +8,7 @@ import libzfs
 import iocage.lib.ioc_clean as ioc_clean
 import iocage.lib.ioc_common as ioc_common
 import iocage.lib.ioc_create as ioc_create
+import iocage.lib.ioc_destroy as ioc_destroy
 import iocage.lib.ioc_exec as ioc_exec
 import iocage.lib.ioc_fetch as ioc_fetch
 import iocage.lib.ioc_json as ioc_json
@@ -59,13 +60,17 @@ class PoolAndDataset(object):
 
 class IOCage(object):
     def __init__(self, jail=None, rc=False, callback=None, silent=False,
-                 activate=False):
+                 activate=False, skip_jails=False):
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
 
         if not activate:
             self.pool = PoolAndDataset().get_pool()
             self.iocroot = PoolAndDataset().get_iocroot()
-            self.jails, self._paths = self.list("uuid")
+
+            if not skip_jails:
+                # When they need to destroy a jail with a missing or bad
+                # configuration, this gets in our way otherwise.
+                self.jails, self._paths = self.list("uuid")
 
         self.jail = jail
         self.rc = rc
@@ -458,6 +463,17 @@ class IOCage(object):
                 },
                     _callback=self.callback,
                     silent=self.silent)
+
+    @staticmethod
+    def destroy(path, parse=False):
+        """Destroys the supplied path"""
+        if parse:
+            # This skips some of the nice things destroy_jail does. Namely
+            # loading a configuration, as these aren't jails being destroyed.
+            ioc_destroy.IOCDestroy().__destroy_parse_datasets__(path)
+        else:
+            ioc_destroy.IOCDestroy().destroy_jail(path)
+
     @staticmethod
     def list(lst_type, header=False, long=False, sort="tag", uuid=None):
         """Returns a list of lst_type"""

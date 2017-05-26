@@ -2,9 +2,7 @@
 import click
 
 import iocage.lib.ioc_common as ioc_common
-import iocage.lib.ioc_destroy as ioc_destroy
-import iocage.lib.ioc_json as ioc_json
-import iocage.lib.ioc_list as ioc_list
+import iocage.lib.iocage as ioc
 
 __rootcmd__ = True
 
@@ -18,6 +16,8 @@ __rootcmd__ = True
 @click.argument("jails", nargs=-1)
 def cli(force, release, download, jails):
     """Destroys the jail's 2 datasets and the snapshot from the RELEASE."""
+    pool = ioc.PoolAndDataset().get_pool()
+
     if download and not release:
         ioc_common.logit({
             "level"  : "EXCEPTION",
@@ -25,27 +25,28 @@ def cli(force, release, download, jails):
         })
 
     if jails and not release:
-        get_jid = ioc_list.IOCList().list_get_jid
-
         try:
-            jail_list, paths = ioc_list.IOCList("uuid").list_datasets()
+            jail_list, paths = ioc.IOCage.list("uuid")
         except RuntimeError as err:
             err = str(err)
 
             if "Configuration is missing" in err:
                 uuid = err.split()[5]
-                pool = ioc_json.IOCJson().json_get_value("pool")
                 path = f"{pool}/iocage/jails/{uuid}"
 
-                ioc_destroy.IOCDestroy().__stop_jails__(path.replace(pool, ""))
-                ioc_destroy.IOCDestroy().__destroy_parse_datasets__(path)
-                exit()
+                if uuid == jails[0]:
+                    ioc.IOCage(skip_jails=True).destroy(path, parse=True)
+                    exit()
+                else:
+                    ioc_common.logit({
+                        "level"  : "EXCEPTION",
+                        "message": err
+                    })
             else:
                 ioc_common.logit({
-                    "level"  : "ERROR",
+                    "level"  : "EXCEPTION",
                     "message": err
                 })
-                exit(1)
 
         for jail in jails:
             _jail = {tag: uuid for (tag, uuid) in jail_list.items() if
@@ -67,10 +68,9 @@ def cli(force, release, download, jails):
                 exit(1)
             else:
                 ioc_common.logit({
-                    "level"  : "ERROR",
+                    "level"  : "EXCEPTION",
                     "message": f"{jail} not found!"
                 })
-                exit(1)
 
             if not force:
                 ioc_common.logit({
@@ -81,26 +81,23 @@ def cli(force, release, download, jails):
                 if not click.confirm("\nAre you sure?"):
                     continue  # no, continue to next jail
 
-            status, _ = get_jid(uuid)
+            status, _ = ioc.IOCage().list("jid", uuid=uuid)
 
             # If the jail is not running, let's do this thing.
             if status and not force:
                 ioc_common.logit({
-                    "level"  : "ERROR",
+                    "level"  : "EXCEPTION",
                     "message": f"{uuid} ({tag}) is running.\nPlease stop"
                                " it first!"
                 })
-                exit(1)
             elif status and force:
                 ioc_common.logit({
                     "level"  : "INFO",
                     "message": f"Stopping {uuid} ({tag})."
                 })
 
-            ioc_destroy.IOCDestroy().destroy_jail(path)
+            ioc.IOCage().destroy(path)
     elif jails and release:
-        pool = ioc_json.IOCJson().json_get_value("pool")
-
         for release in jails:
             path = f"{pool}/iocage/releases/{release}"
 
@@ -114,21 +111,19 @@ def cli(force, release, download, jails):
                 if not click.confirm("\nAre you sure?"):
                     continue
 
-            ioc_destroy.IOCDestroy().__destroy_parse_datasets__(path)
+            ioc.IOCage().destroy(path, parse=True)
 
             if download:
                 path = f"{pool}/iocage/download/{release}"
-                ioc_destroy.IOCDestroy().__destroy_parse_datasets__(path)
+                ioc.IOCage().destroy(path, parse=True)
 
     elif not jails and release:
         ioc_common.logit({
-            "level"  : "ERROR",
+            "level"  : "EXCEPTION",
             "message": "Please specify one or more RELEASEs!"
         })
-        exit(1)
     else:
         ioc_common.logit({
-            "level"  : "ERROR",
+            "level"  : "EXCEPTION",
             "message": "Please specify one or more jails!"
         })
-        exit(1)
