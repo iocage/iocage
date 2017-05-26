@@ -19,7 +19,10 @@ __rootcmd__ = True
 def cli(force, release, download, jails):
     """Destroys the jail's 2 datasets and the snapshot from the RELEASE."""
     if download and not release:
-        exit("--release (-r) must be specified as well!")
+        ioc_common.logit({
+            "level"  : "EXCEPTION",
+            "message": "--release (-r) must be specified as well!"
+        })
 
     if jails and not release:
         get_jid = ioc_list.IOCList().list_get_jid
