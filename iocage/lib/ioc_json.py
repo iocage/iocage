@@ -550,6 +550,12 @@ class IOCJson(object):
             except FileNotFoundError:
                 freebsd_version = f"{iocroot}/templates/{conf['tag']}" \
                                   "/root/bin/freebsd-version"
+            except KeyError:
+                # At this point it should be a real misconfigured jail
+                uuid = self.location.rsplit("/", 1)[-1]
+                raise RuntimeError("Configuration is missing!"
+                                   f" Please destroy {uuid} and recreate"
+                                   " it.")
 
             if conf["release"][:4].endswith("-"):
                 # 9.3-RELEASE and under don't actually have this binary.

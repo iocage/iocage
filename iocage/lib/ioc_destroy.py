@@ -150,7 +150,12 @@ class IOCDestroy(object):
                 # the jails path.
                 root = False
 
-            self.__stop_jails__(datasets, path, root)
+            try:
+                self.__stop_jails__(datasets, path, root)
+            except RuntimeError:
+                # If a bad or missing configuration for a jail, this will
+                # get in the way.
+                pass
 
             for dataset in dependents:
                 try:
