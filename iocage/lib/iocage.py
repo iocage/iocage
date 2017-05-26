@@ -474,6 +474,43 @@ class IOCage(object):
         else:
             ioc_destroy.IOCDestroy().destroy_jail(path)
 
+    def df(self, long=False):
+        """Returns a list containing the resource usage of all jails"""
+        jails, paths = self.list("uuid")
+        jail_list = []
+
+        for jail in jails:
+            full_uuid = jails[jail]
+
+            if not long:
+                uuid = full_uuid[:8]
+            else:
+                uuid = full_uuid
+
+            path = paths[jail]
+            conf = ioc_json.IOCJson(path).json_load()
+            mountpoint = f"{self.pool}/iocage/jails/{full_uuid}"
+
+            tag = conf["tag"]
+            template = conf["type"]
+
+            if template == "template":
+                mountpoint = f"{self.pool}/iocage/templates/{tag}"
+
+            ds = self.zfs.get_dataset(mountpoint)
+            zconf = ds.properties
+
+            compressratio = zconf["compressratio"].value
+            reservation = zconf["reservation"].value
+            quota = zconf["quota"].value
+            used = zconf["used"].value
+            available = zconf["available"].value
+
+            jail_list.append([uuid, compressratio, reservation, quota, used,
+                              available, tag])
+
+        return jail_list
+
     @staticmethod
     def list(lst_type, header=False, long=False, sort="tag", uuid=None):
         """Returns a list of lst_type"""
