@@ -4,6 +4,7 @@ import os
 import signal
 import subprocess as su
 import sys
+import re
 
 import click
 # This prevents it from getting in our way.
@@ -52,7 +53,7 @@ class IOCageCLI(click.MultiCommand):
         for filename in os.listdir(cmd_folder):
             if filename.endswith('.py') and \
                     not filename.startswith('__init__'):
-                rv.append(filename.rstrip(".py"))
+                rv.append(re.sub(".py$", "", filename))
         rv.sort()
 
         return rv
