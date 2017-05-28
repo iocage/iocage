@@ -251,6 +251,7 @@ class IOCage(object):
             },
                 _callback=self.callback,
                 silent=self.silent)
+            return
 
         for pool in pools:
             ds = self.zfs.get_dataset(pool.name)
