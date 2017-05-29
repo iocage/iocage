@@ -41,7 +41,8 @@ def cli(dataset_type, header, _long, remote, http, plugins, _sort):
     elif plugins:
         ioc_fetch.IOCFetch("").fetch_plugin_index("", _list=True)
     else:
-        _list = ioc.IOCage(skip_jails=True).list(dataset_type, header, _long, _sort)
+        _list = ioc.IOCage(skip_jails=True).list(dataset_type, header, _long,
+                                                 _sort)
 
         if not header:
             if dataset_type == "base":
