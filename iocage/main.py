@@ -30,14 +30,6 @@ except su.CalledProcessError:
              "Try calling 'kldload zfs' as root.")
 
 
-def print_version(ctx, param, value):
-    """Prints the version and then exits."""
-    if not value or ctx.resilient_parsing:
-        return
-    print("Version\t0.9.9 ALPHA")
-    sys.exit()
-
-
 cmd_folder = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                           'cli'))
 
@@ -80,9 +72,9 @@ class IOCageCLI(click.MultiCommand):
 
 
 @click.command(cls=IOCageCLI)
-@click.option("--version", "-v", is_flag=True, callback=print_version,
-              help="Display iocage's version and exit.")
-def cli(version):
+@click.version_option(version="0.9.9-ALPHA", prog_name="iocage",
+                      message="%(version)s")
+def cli():
     """A jail manager."""
     skip_check = False
     skip_check_cmds = ["--help", "activate", "-v", "--version"]
