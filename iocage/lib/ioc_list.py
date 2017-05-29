@@ -113,13 +113,12 @@ class IOCList(object):
         jail_list = []
 
         for jail in jails:
-            jail = jail.properties["mountpoint"].value
-            conf = iocage.lib.ioc_json.IOCJson(jail).json_load()
+            mountpoint = jail.properties["mountpoint"].value
+            conf = iocage.lib.ioc_json.IOCJson(mountpoint).json_load()
 
             uuid = conf["host_hostuuid"]
             full_ip4 = conf["ip4_addr"]
             ip6 = conf["ip6_addr"]
-            jail_root = f"{self.pool}/iocage/jails/{uuid}/root"
 
             try:
                 short_ip4 = full_ip4.split("|")[1].split("/")[0]
@@ -151,11 +150,10 @@ class IOCList(object):
             if conf["type"] == "template":
                 template = "-"
             else:
-                try:
-                    template = iocage.lib.ioc_common.checkoutput(
-                        ["zfs", "get", "-H", "-o", "value", "origin",
-                         jail_root]).split("/")[3]
-                except IndexError:
+                _origin_property = jail.properties["origin"]
+                if _origin_property and _origin_property.value != "":
+                    template = jail.properties["origin"].value
+                else:
                     template = "-"
 
             if "release" in template.lower() or "stable" in template.lower():
