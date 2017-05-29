@@ -189,7 +189,7 @@ class IOCage(object):
     @staticmethod
     def __check_jail_type__(_type, uuid, tag):
         """
-        Return: 
+        Return:
             tuple: True if error with a message, or False/None
         """
         if _type in ('jail', 'plugin'):
