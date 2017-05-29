@@ -54,4 +54,4 @@ def cli(force, dataset_type):
         if not click.confirm("\nAre you sure?"):
             exit()
 
-    ioc.IOCage().clean(dataset_type)
+    ioc.IOCage(skip_jails=True).clean(dataset_type)
