@@ -1,7 +1,4 @@
 #!/bin/sh
-
-set -x
-
 # Run pep8 on all .py files in all subfolders
 
 tmpafter=$(mktemp)
