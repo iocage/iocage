@@ -1,10 +1,10 @@
 """The main CLI for ioc."""
 import locale
 import os
+import re
 import signal
 import subprocess as su
 import sys
-import re
 
 import click
 # This prevents it from getting in our way.
