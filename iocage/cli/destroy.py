@@ -27,6 +27,7 @@ def cli(force, release, download, jails):
     if jails and not release:
         try:
             jail_list, paths = ioc.IOCage.list("uuid")
+            iocage = ioc.IOCage(skip_jails=True)
         except RuntimeError as err:
             err = str(err)
 
@@ -35,7 +36,7 @@ def cli(force, release, download, jails):
                 path = f"{pool}/iocage/jails/{uuid}"
 
                 if uuid == jails[0]:
-                    ioc.IOCage(skip_jails=True).destroy(path, parse=True)
+                    iocage.destroy(path, parse=True)
                     exit()
                 else:
                     ioc_common.logit({
@@ -96,8 +97,10 @@ def cli(force, release, download, jails):
                     "message": f"Stopping {uuid} ({tag})."
                 })
 
-            ioc.IOCage().destroy(path)
+            iocage.destroy(path)
     elif jails and release:
+        iocage = ioc.IOCage(skip_jails=True)
+
         for release in jails:
             path = f"{pool}/iocage/releases/{release}"
 
@@ -111,11 +114,11 @@ def cli(force, release, download, jails):
                 if not click.confirm("\nAre you sure?"):
                     continue
 
-            ioc.IOCage().destroy(path, parse=True)
+            iocage.destroy(path, parse=True)
 
             if download:
                 path = f"{pool}/iocage/download/{release}"
-                ioc.IOCage().destroy(path, parse=True)
+                iocage.destroy(path, parse=True)
 
     elif not jails and release:
         ioc_common.logit({
