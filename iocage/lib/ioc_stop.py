@@ -28,7 +28,7 @@ class IOCStop(object):
 
     def runscript(self, script):
         """
-        Runs the users provided script, otherwise returns a tuple with 
+        Runs the users provided script, otherwise returns a tuple with
         True/False and the error.
         """
         if os.access(script, os.X_OK):
