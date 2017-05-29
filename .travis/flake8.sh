@@ -6,7 +6,11 @@ find ./iocage/cli ./iocage/lib -name \*.py -exec flake8 --ignore=E127,E203 {} + 
 num_errors_after=`cat $tmpafter | wc -l`
 echo "Current Error Count: ${num_errors_after}"
 
-last_release=$(git describe --tags)
+# Get new tags from remote
+git fetch --tags
+# Get latest tag name
+last_release=$(git describe --tags `git rev-list --tags --max-count=1`)
+
 echo "Comparing with last stable release: ${last_release}"
 git checkout ${last_release}
 
