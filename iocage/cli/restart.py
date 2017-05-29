@@ -15,7 +15,7 @@ __rootcmd__ = True
 
 def check_type(uuid, tag, path, _all, soft):
     """
-    Checks the jail type and spits out an error or does the specified 
+    Checks the jail type and spits out an error or does the specified
     restart method.
     """
     conf = ioc_json.IOCJson(path).json_load()

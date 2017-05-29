@@ -165,7 +165,7 @@ class IOCage(object):
     def __check_jail_existence__(self):
         """
         Helper to check if jail dataset exists
-        Return: 
+        Return:
                 tuple: The jails tag, uuid, path
         """
         _jail = {tag: uuid for (tag, uuid) in self.jails.items() if
