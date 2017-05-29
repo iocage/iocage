@@ -82,11 +82,13 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
     if empty:
         release = "EMPTY"
 
+    iocage = ioc.IOCage(skip_jails=True)
+
     if count == 1:
-        err, msg = ioc.IOCage().create(release, props, pkglist=pkglist,
-                                       template=template, short=short,
-                                       uuid=uuid, basejail=basejail,
-                                       empty=empty)
+        err, msg = iocage.create(release, props, pkglist=pkglist,
+                                 template=template, short=short,
+                                 uuid=uuid, basejail=basejail,
+                                 empty=empty)
         if err:
             ioc_common.logit({
                 "level"  : "ERROR",
@@ -106,10 +108,10 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
                     })
     else:
         for j in range(1, count + 1):
-            err, msg = ioc.IOCage().create(release, props, j, pkglist=pkglist,
-                                           template=template, short=short,
-                                           uuid=uuid, basejail=basejail,
-                                           empty=empty)
+            err, msg = iocage.create(release, props, j, pkglist=pkglist,
+                                     template=template, short=short,
+                                     uuid=uuid, basejail=basejail,
+                                     empty=empty)
             if err:
                 ioc_common.logit({
                     "level"  : "ERROR",
