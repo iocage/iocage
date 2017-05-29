@@ -7,7 +7,7 @@ num_errors_after=`cat $tmpafter | wc -l`
 echo "Current Error Count: ${num_errors_after}"
 
 # Get new tags from remote
-git fetch --tags
+git fetch --tags --quiet
 # Get latest tag name
 last_release=$(git describe --tags `git rev-list --tags --max-count=1`)
 
