@@ -396,8 +396,7 @@ class IOCJson(object):
         sysctls_cmd = ["sysctl", "-d", "security.jail.param"]
         jail_param_regex = re.compile("security.jail.param.")
         sysctls_list = su.Popen(sysctls_cmd, stdout=su.PIPE).communicate()[
-            0].decode(
-            "utf-8").split()
+            0].decode("utf-8").split()
         jail_params = [p.replace("security.jail.param.", "").replace(":", "")
                        for p in sysctls_list if re.match(jail_param_regex, p)]
         single_period = ["allow_raw_sockets", "allow_socket_af",
@@ -405,9 +404,9 @@ class IOCJson(object):
 
         if not create_func:
             if key == "tag":
-                conf["tag"] = iocage.lib.ioc_create.IOCCreate("", prop,
-                                                              0).create_link(
-                    conf["host_hostuuid"], value, old_tag=old_tag)
+                conf["tag"] = iocage.lib.ioc_create.IOCCreate(
+                    "", prop, 0).create_link(conf["host_hostuuid"], value,
+                                             old_tag=old_tag)
                 tag = conf["tag"]
 
         if key == "template":
