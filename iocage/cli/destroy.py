@@ -17,6 +17,7 @@ __rootcmd__ = True
 def cli(force, release, download, jails):
     """Destroys the jail's 2 datasets and the snapshot from the RELEASE."""
     pool = ioc.PoolAndDataset().get_pool()
+    iocage = ioc.IOCage(skip_jails=True)
 
     if download and not release:
         ioc_common.logit({
@@ -27,7 +28,6 @@ def cli(force, release, download, jails):
     if jails and not release:
         try:
             jail_list, paths = ioc.IOCage.list("uuid")
-            iocage = ioc.IOCage(skip_jails=True)
         except RuntimeError as err:
             err = str(err)
 
