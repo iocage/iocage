@@ -251,9 +251,9 @@ class IOCJson(object):
             conf_version = conf["CONFIG_VERSION"]
 
             if version != conf_version:
-                conf = self.json_check_config(conf, version)
+                conf = self.json_check_config(conf)
         except KeyError:
-            conf = self.json_check_config(conf, version)
+            conf = self.json_check_config(conf)
 
         return conf
 
@@ -383,128 +383,169 @@ class IOCJson(object):
             else:
                 return conf[prop]
 
-    def json_set_value(self, prop, create_func=False, _import=False):
+    def json_set_value(self, prop, create_func=False, _import=False,
+                       default=False):
         """Set a property for the specified jail."""
         # Circular dep! Meh.
         key, _, value = prop.partition("=")
 
-        conf = self.json_load()
-        old_tag = conf["tag"]
-        uuid = conf["host_hostuuid"]
-        status, jid = iocage.lib.ioc_list.IOCList.list_get_jid(uuid)
-        conf[key] = value
-        sysctls_cmd = ["sysctl", "-d", "security.jail.param"]
-        jail_param_regex = re.compile("security.jail.param.")
-        sysctls_list = su.Popen(sysctls_cmd, stdout=su.PIPE).communicate()[
-            0].decode("utf-8").split()
-        jail_params = [p.replace("security.jail.param.", "").replace(":", "")
-                       for p in sysctls_list if re.match(jail_param_regex, p)]
-        single_period = ["allow_raw_sockets", "allow_socket_af",
-                         "allow_set_hostname"]
+        if not default:
+            conf = self.json_load()
+            old_tag = conf["tag"]
+            uuid = conf["host_hostuuid"]
+            status, jid = iocage.lib.ioc_list.IOCList.list_get_jid(uuid)
+            conf[key] = value
+            sysctls_cmd = ["sysctl", "-d", "security.jail.param"]
+            jail_param_regex = re.compile("security.jail.param.")
+            sysctls_list = su.Popen(sysctls_cmd, stdout=su.PIPE).communicate()[
+                0].decode("utf-8").split()
+            jail_params = [p.replace("security.jail.param.", "").replace(":",
+                                                                         "")
+                           for p in sysctls_list if re.match(jail_param_regex,
+                                                             p)]
+            single_period = ["allow_raw_sockets", "allow_socket_af",
+                             "allow_set_hostname"]
+            if not create_func:
+                if key == "tag":
+                    conf["tag"] = iocage.lib.ioc_create.IOCCreate(
+                        "", prop, 0).create_link(conf["host_hostuuid"], value,
+                                                 old_tag=old_tag)
+                    tag = conf["tag"]
 
-        if not create_func:
-            if key == "tag":
-                conf["tag"] = iocage.lib.ioc_create.IOCCreate(
-                    "", prop, 0).create_link(conf["host_hostuuid"], value,
-                                             old_tag=old_tag)
-                tag = conf["tag"]
+            if key == "template":
+                pool, iocroot = _get_pool_and_iocroot()
+                old_location = f"{pool}/iocage/jails/{uuid}"
+                new_location = f"{pool}/iocage/templates/{old_tag}"
 
-        if key == "template":
-            pool, iocroot = _get_pool_and_iocroot()
-            old_location = f"{pool}/iocage/jails/{uuid}"
-            new_location = f"{pool}/iocage/templates/{old_tag}"
+                if status:
+                    iocage.lib.ioc_common.logit({
+                        "level"  : "EXCEPTION",
+                        "message": f"{uuid} ({old_tag}) is running.\nPlease"
+                                   " stop it first!"
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
 
-            if status:
-                raise RuntimeError(f"{uuid} ({old_tag}) is running.\nPlease"
-                                   "stop it first!")
+                jails, paths = iocage.lib.ioc_list.IOCList(
+                    "uuid").list_datasets()
+                for j in jails:
+                    _uuid = jails[j]
+                    _path = f"{paths[j]}/root"
+                    t_old_path = f"{old_location}/root@{_uuid}"
+                    t_path = f"{new_location}/root@{_uuid}"
 
-            jails, paths = iocage.lib.ioc_list.IOCList("uuid").list_datasets()
-            for j in jails:
-                _uuid = jails[j]
-                _path = f"{paths[j]}/root"
-                t_old_path = f"{old_location}/root@{_uuid}"
-                t_path = f"{new_location}/root@{_uuid}"
+                    if _uuid == uuid:
+                        continue
 
-                if _uuid == uuid:
-                    continue
+                    origin = self.zfs_get_property(_path, 'origin')
 
-                origin = self.zfs_get_property(_path, 'origin')
+                    if origin == t_old_path or origin == t_path:
+                        _status, _ = iocage.lib.ioc_list.IOCList.list_get_jid(
+                            _uuid)
 
-                if origin == t_old_path or origin == t_path:
-                    _status, _ = iocage.lib.ioc_list.IOCList.list_get_jid(
-                        _uuid)
+                        if _status:
+                            iocage.lib.ioc_common.logit({
+                                "level"  : "EXCEPTION",
+                                "message": f"{uuid} ({old_tag}) is running.\n"
+                                           "Please stop it first!"
+                            },
+                                _callback=self.callback,
+                                silent=self.silent)
 
-                    if _status:
-                        raise RuntimeError(f"CHILD: {_uuid} ({j}) is"
-                                           f" running.\nPlease stop it first!")
-            if value == "yes":
-                self.zfs.get_dataset(old_location).rename(new_location)
-                conf["type"] = "template"
-
-                self.location = new_location.lstrip(pool).replace("/iocage",
-                                                                  iocroot)
-
-                iocage.lib.ioc_common.logit({
-                    "level"  : "INFO",
-                    "message": f"{uuid} ({old_tag}) converted to a template."
-                },
-                    _callback=self.callback,
-                    silent=self.silent)
-                self.lgr.disabled = True
-            elif value == "no":
-                if not _import:
+                if value == "yes":
                     self.zfs.get_dataset(old_location).rename(new_location)
-                    conf["type"] = "jail"
-                    self.location = old_location.lstrip(pool).replace(
+                    conf["type"] = "template"
+
+                    self.location = new_location.lstrip(pool).replace(
                         "/iocage", iocroot)
 
                     iocage.lib.ioc_common.logit({
                         "level"  : "INFO",
-                        "message": f"{uuid} ({old_tag}) converted to a jail."
+                        "message": f"{uuid} ({old_tag}) converted to a"
+                                   "template."
                     },
                         _callback=self.callback,
                         silent=self.silent)
                     self.lgr.disabled = True
+                elif value == "no":
+                    if not _import:
+                        self.zfs.get_dataset(old_location).rename(new_location)
+                        conf["type"] = "jail"
+                        self.location = old_location.lstrip(pool).replace(
+                            "/iocage", iocroot)
 
-        self.json_check_prop(key, value, conf)
-        self.json_write(conf)
-        iocage.lib.ioc_common.logit({
-            "level"  : "INFO",
-            "message":
-                f"Property: {key} has been updated to {value}"
-        },
-            _callback=self.callback,
-            silent=self.silent)
+                        iocage.lib.ioc_common.logit({
+                            "level"  : "INFO",
+                            "message": f"{uuid} ({old_tag}) converted to a"
+                                       "jail."
+                        },
+                            _callback=self.callback,
+                            silent=self.silent)
+                        self.lgr.disabled = True
+        else:
+            _, iocroot = _get_pool_and_iocroot()
+            with open(f"{iocroot}/defaults.json", "r") as default_json:
+                conf = json.load(default_json)
 
-        # Used for import
-        if not create_func:
-            if key == "tag":
-                return tag
+        if not default:
+            self.json_check_prop(key, value, conf)
+            self.json_write(conf)
+            iocage.lib.ioc_common.logit({
+                "level"  : "INFO",
+                "message":
+                    f"Property: {key} has been updated to {value}"
+            },
+                _callback=self.callback,
+                silent=self.silent)
 
-        # We can attempt to set a property in realtime to jail.
-        if status:
-            if key in single_period:
-                key = key.replace("_", ".", 1)
-            else:
-                key = key.replace("_", ".")
+            # Used for import
+            if not create_func:
+                if key == "tag":
+                    return tag
 
-            if key in jail_params:
-                if conf["vnet"] == "on" and key == "ip4.addr" or key == \
-                        "ip6.addr":
-                    return
-                try:
-                    ip = True if key == "ip4.addr" or key == "ip6.addr" else \
-                        False
-                    if ip and value == "none":
+            # We can attempt to set a property in realtime to jail.
+            if status:
+                if key in single_period:
+                    key = key.replace("_", ".", 1)
+                else:
+                    key = key.replace("_", ".")
+
+                if key in jail_params:
+                    if conf["vnet"] == "on" and key == "ip4.addr" or key == \
+                            "ip6.addr":
                         return
+                    try:
+                        ip = True if key == "ip4.addr" or key == "ip6.addr" \
+                            else False
+                        if ip and value == "none":
+                            return
 
-                    iocage.lib.ioc_common.checkoutput(
-                        ["jail", "-m", f"jid={jid}",
-                         f"{key}={value}"],
-                        stderr=su.STDOUT)
-                except su.CalledProcessError as err:
-                    raise RuntimeError(
-                        f"{err.output.decode('utf-8').rstrip()}")
+                        iocage.lib.ioc_common.checkoutput(
+                            ["jail", "-m", f"jid={jid}",
+                             f"{key}={value}"],
+                            stderr=su.STDOUT)
+                    except su.CalledProcessError as err:
+                        raise RuntimeError(
+                            f"{err.output.decode('utf-8').rstrip()}")
+        else:
+            if key in conf:
+                conf[key] = value
+                self.json_write(conf, "/defaults.json")
+
+                iocage.lib.ioc_common.logit({
+                    "level"  : "INFO",
+                    "message":
+                        f"Default Property: {key} has been updated to {value}"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+            else:
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": f"{key} is not a valid property for default!"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
 
     @staticmethod
     def json_get_version():
@@ -512,7 +553,7 @@ class IOCJson(object):
         version = "6"
         return version
 
-    def json_check_config(self, conf, version):
+    def json_check_config(self, conf, default=False):
         """
         Takes JSON as input and checks to see what is missing and adds the
         new keys with their default values if missing.
@@ -539,47 +580,48 @@ class IOCJson(object):
         conf["sysvshm"] = sysvshm
 
         # Version 3 keys
-        try:
-            release = conf["release"]
-            cloned_release = conf["cloned_release"]
-        except KeyError:
+        if not default:
             try:
-                freebsd_version = f"{iocroot}/releases/{conf['release']}" \
-                                  "/root/bin/freebsd-version"
-            except FileNotFoundError:
-                freebsd_version = f"{iocroot}/templates/{conf['tag']}" \
-                                  "/root/bin/freebsd-version"
-            except KeyError:
-                # At this point it should be a real misconfigured jail
-                uuid = self.location.rsplit("/", 1)[-1]
-                raise RuntimeError("Configuration is missing!"
-                                   f" Please destroy {uuid} and recreate"
-                                   " it.")
-
-            if conf["release"][:4].endswith("-"):
-                # 9.3-RELEASE and under don't actually have this binary.
                 release = conf["release"]
-            else:
-                with open(freebsd_version, "r") as r:
-                    for line in r:
-                        if line.startswith("USERLAND_VERSION"):
-                            release = line.rstrip().partition("=")[2].strip(
-                                '"')
+                cloned_release = conf["cloned_release"]
+            except KeyError:
+                try:
+                    freebsd_version = f"{iocroot}/releases/{conf['release']}" \
+                                      "/root/bin/freebsd-version"
+                except FileNotFoundError:
+                    freebsd_version = f"{iocroot}/templates/{conf['tag']}" \
+                                      "/root/bin/freebsd-version"
+                except KeyError:
+                    # At this point it should be a real misconfigured jail
+                    uuid = self.location.rsplit("/", 1)[-1]
+                    raise RuntimeError("Configuration is missing!"
+                                       f" Please destroy {uuid} and recreate"
+                                       " it.")
 
-            cloned_release = conf["release"]
+                if conf["release"][:4].endswith("-"):
+                    # 9.3-RELEASE and under don't actually have this binary.
+                    release = conf["release"]
+                else:
+                    with open(freebsd_version, "r") as r:
+                        for line in r:
+                            if line.startswith("USERLAND_VERSION"):
+                                release = line.rstrip().partition("=")[2]
+                                release = release.strip('"')
 
-        # Set all Version 3 keys
-        conf["release"] = release
-        conf["cloned_release"] = cloned_release
+                cloned_release = conf["release"]
 
-        # Version 4 keys
-        try:
-            basejail = conf["basejail"]
-        except KeyError:
-            basejail = "no"
+            # Set all Version 3 keys
+            conf["release"] = release
+            conf["cloned_release"] = cloned_release
 
-        # Set all keys, even if it's the same value.
-        conf["basejail"] = basejail
+            # Version 4 keys
+            try:
+                basejail = conf["basejail"]
+            except KeyError:
+                basejail = "no"
+
+            # Set all keys, even if it's the same value.
+            conf["basejail"] = basejail
 
         # Version 5 keys
         try:
@@ -594,8 +636,10 @@ class IOCJson(object):
         conf["host_time"] = "yes"
 
         # Set all keys, even if it's the same value.
-        conf["CONFIG_VERSION"] = version
-        self.json_write(conf)
+        conf["CONFIG_VERSION"] = self.json_get_version()
+
+        if not default:
+            self.json_write(conf)
 
         return conf
 
