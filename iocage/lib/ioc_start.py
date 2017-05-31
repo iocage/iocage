@@ -104,7 +104,8 @@ class IOCStart(object):
 
             if self.conf["jail_zfs"] == "on":
                 allow_mount = "1"
-                enforce_statfs = "1"
+                enforce_statfs = enforce_statfs if enforce_statfs != "2" \
+                    else "1"
                 allow_mount_zfs = "1"
 
                 for jdataset in self.conf["jail_zfs_dataset"].split():
