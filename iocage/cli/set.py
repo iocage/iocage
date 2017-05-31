@@ -19,62 +19,74 @@ __rootcmd__ = True
               is_flag=True)
 def cli(prop, jail, plugin):
     """Get a list of jails and print the property."""
-    jails, paths = ioc_list.IOCList("uuid").list_datasets(set=True)
-    _jail = {tag: uuid for (tag, uuid) in jails.items() if
-             uuid.startswith(jail) or tag == jail}
-
-    if len(_jail) == 1:
-        tag, uuid = next(iter(_jail.items()))
-        path = paths[tag]
-        iocjson = ioc_json.IOCJson(path, cli=True)
-    elif len(_jail) > 1:
-        ioc_common.logit({
-            "level"  : "ERROR",
-            "message": f"Multiple jails found for {jail}:"
-        })
-        for t, u in sorted(_jail.items()):
-            ioc_common.logit({
-                "level"  : "ERROR",
-                "message": f"  {u} ({t})"
-            })
-        exit(1)
+    if jail == "default":
+        default = True
     else:
-        ioc_common.logit({
-            "level"  : "ERROR",
-            "message": f"{jail} not found!"
-        })
-        exit(1)
+        default = False
 
-    if "template" in prop.split("=")[0]:
-        if "template" in path and prop != "template=no":
+    if not default:
+        jails, paths = ioc_list.IOCList("uuid").list_datasets(set=True)
+        _jail = {tag: uuid for (tag, uuid) in jails.items() if
+                 uuid.startswith(jail) or tag == jail}
+
+        if len(_jail) == 1:
+            tag, uuid = next(iter(_jail.items()))
+            path = paths[tag]
+            iocjson = ioc_json.IOCJson(path, cli=True)
+        elif len(_jail) > 1:
             ioc_common.logit({
                 "level"  : "ERROR",
-                "message": f"{uuid} ({tag}) is already a template!"
+                "message": f"Multiple jails found for {jail}:"
             })
+            for t, u in sorted(_jail.items()):
+                ioc_common.logit({
+                    "level"  : "ERROR",
+                    "message": f"  {u} ({t})"
+                })
             exit(1)
-        elif "template" not in path and prop != "template=yes":
+        else:
             ioc_common.logit({
                 "level"  : "ERROR",
-                "message": f"{uuid} ({tag}) is already a jail!"
+                "message": f"{jail} not found!"
             })
             exit(1)
-    if plugin:
-        _prop = prop.split(".")
-        err = ioc_json.IOCJson(path, cli=True).json_plugin_set_value(_prop)
-        if err:
-            exit(1)
+
+        if "template" in prop.split("=")[0]:
+            if "template" in path and prop != "template=no":
+                ioc_common.logit({
+                    "level"  : "ERROR",
+                    "message": f"{uuid} ({tag}) is already a template!"
+                })
+                exit(1)
+            elif "template" not in path and prop != "template=yes":
+                ioc_common.logit({
+                    "level"  : "ERROR",
+                    "message": f"{uuid} ({tag}) is already a jail!"
+                })
+                exit(1)
+
+        if plugin:
+            _prop = prop.split(".")
+            err = ioc_json.IOCJson(path, cli=True).json_plugin_set_value(_prop)
+            if err:
+                exit(1)
+        else:
+            try:
+                # We use this to test if it's a valid property at all.
+                _prop = prop.partition("=")[0]
+                iocjson.json_get_value(_prop)
+
+                # The actual setting of the property.
+                iocjson.json_set_value(prop)
+            except KeyError:
+                _prop = prop.partition("=")[0]
+                ioc_common.logit({
+                    "level"  : "ERROR",
+                    "message": f"{_prop} is not a valid property!"
+                })
+                exit(1)
     else:
-        try:
-            # We use this to test if it's a valid property at all.
-            _prop = prop.partition("=")[0]
-            iocjson.json_get_value(_prop)
+        _, iocroot = ioc_json._get_pool_and_iocroot()
+        ioc_json.IOCJson(iocroot).json_set_value(prop, default=True)
 
-            # The actual setting of the property.
-            iocjson.json_set_value(prop)
-        except KeyError:
-            _prop = prop.partition("=")[0]
-            ioc_common.logit({
-                "level"  : "ERROR",
-                "message": f"{_prop} is not a valid property!"
-            })
-            exit(1)
+
