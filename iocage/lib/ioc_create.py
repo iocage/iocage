@@ -218,9 +218,9 @@ class IOCCreate(object):
                         },
                             _callback=self.callback,
                             silent=self.silent)
-                elif self.num != 0:
-                    if key == "tag":
-                        value = f"{value}_{self.num}"
+                    elif self.num != 0:
+                        if key == "tag":
+                            value = f"{value}_{self.num}"
                 elif key == "boot" and value == "on":
                     start = True
 
