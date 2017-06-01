@@ -31,7 +31,7 @@ def cli(dataset_type, header, _long, remote, http, plugins, _sort):
     if dataset_type is None:
         dataset_type = "all"
 
-    if remote:
+    if remote and not plugins:
         if "HBSD" in freebsd_version:
             hardened = True
         else:
@@ -39,10 +39,10 @@ def cli(dataset_type, header, _long, remote, http, plugins, _sort):
 
         ioc_fetch.IOCFetch("", http=http, hardened=hardened).fetch_release(
             _list=True)
-    elif plugins:
+    elif plugins and remote:
         ioc_fetch.IOCFetch("").fetch_plugin_index("", _list=True)
     else:
-        _list = iocage.list(dataset_type, header, _long, _sort)
+        _list = iocage.list(dataset_type, header, _long, _sort, plugin=plugins)
 
         if not header:
             if dataset_type == "base":
