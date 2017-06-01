@@ -1150,16 +1150,18 @@ fingerprint: {fingerprint}
 
         git_working_dir = f"{self.iocroot}/.plugin_index"
 
-        try:
-            pygit2.clone_repository(git_server, git_working_dir)
-        except pygit2.GitError:
-            raise
-        except ValueError:
+        # list --plugins won't often be root.
+        if os.geteuid() == 0:
             try:
-                repo = pygit2.Repository(git_working_dir)
-                iocage.lib.ioc_common.git_pull(repo)
-            except (pygit2.GitError, AssertionError, RuntimeError):
+                pygit2.clone_repository(git_server, git_working_dir)
+            except pygit2.GitError:
                 raise
+            except ValueError:
+                try:
+                    repo = pygit2.Repository(git_working_dir)
+                    iocage.lib.ioc_common.git_pull(repo)
+                except (pygit2.GitError, AssertionError, RuntimeError):
+                    raise
 
         with open(f"{self.iocroot}/.plugin_index/INDEX", "r") as plugins:
             plugins = json.load(plugins)
