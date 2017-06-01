@@ -88,5 +88,3 @@ def cli(prop, jail, plugin):
     else:
         _, iocroot = ioc_json._get_pool_and_iocroot()
         ioc_json.IOCJson(iocroot).json_set_value(prop, default=True)
-
-
