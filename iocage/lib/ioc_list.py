@@ -18,7 +18,7 @@ class IOCList(object):
     """
 
     def __init__(self, lst_type="all", hdr=True, full=False, _sort=None,
-                 silent=False, callback=None):
+                 silent=False, callback=None, plugin=False):
         self.list_type = lst_type
         self.header = hdr
         self.full = full
@@ -27,6 +27,7 @@ class IOCList(object):
         self.sort = _sort
         self.silent = silent
         self.callback = callback
+        self.plugin = plugin
 
     def list_datasets(self, set=False):
         """Lists the datasets of given type."""
@@ -109,6 +110,7 @@ class IOCList(object):
 
     def list_all(self, jails):
         """List all jails."""
+        self.full = True if self.plugin else self.full
         table = texttable.Texttable(max_width=0)
         jail_list = []
 
@@ -161,6 +163,12 @@ class IOCList(object):
 
             # Append the JID and the UUID to the table
             if self.full:
+                if self.plugin:
+                    if jail_type != "plugin":
+                        # We only want plugin type jails to be apart of the
+                        # list
+                        continue
+
                 jail_list.append([jid, uuid, boot, state, tag, jail_type,
                                   full_release, full_ip4, ip6, template])
             else:

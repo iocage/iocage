@@ -512,12 +512,14 @@ class IOCage(object):
         return jail_list
 
     @staticmethod
-    def list(lst_type, header=False, long=False, sort="tag", uuid=None):
+    def list(lst_type, header=False, long=False, sort="tag", uuid=None,
+             plugin=False):
         """Returns a list of lst_type"""
         if lst_type == "jid":
             return ioc_list.IOCList().list_get_jid(uuid)
 
-        return ioc_list.IOCList(lst_type, header, long, sort).list_datasets()
+        return ioc_list.IOCList(lst_type, header, long, sort,
+                                plugin=plugin).list_datasets()
 
     def start(self, jail=None):
         """Checks jails type and existence, then starts the jail"""
