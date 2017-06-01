@@ -528,8 +528,14 @@ class IOCage(object):
             tag, uuid, path = self.__check_jail_existence__()
             conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
             err, msg = self.__check_jail_type__(conf["type"], uuid, tag)
+            depends = conf["depends"].split()
 
             if not err:
+                for depend in depends:
+                    if depend != "none":
+                        self.jail = depend
+                        self.start()
+
                 ioc_start.IOCStart(uuid, tag, path, conf,
                                    callback=self.callback, silent=self.silent)
 

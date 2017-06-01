@@ -386,7 +386,6 @@ class IOCJson(object):
     def json_set_value(self, prop, create_func=False, _import=False,
                        default=False):
         """Set a property for the specified jail."""
-        # Circular dep! Meh.
         key, _, value = prop.partition("=")
 
         if not default:
@@ -550,7 +549,7 @@ class IOCJson(object):
     @staticmethod
     def json_get_version():
         """Sets the iocage configuration version."""
-        version = "6"
+        version = "7"
         return version
 
     def json_check_config(self, conf, default=False):
@@ -634,6 +633,9 @@ class IOCJson(object):
 
         # Version 6 keys
         conf["host_time"] = "yes"
+
+        # Version 7 keys
+        conf["depends"] = "none"
 
         # Set all keys, even if it's the same value.
         conf["CONFIG_VERSION"] = self.json_get_version()
@@ -743,7 +745,8 @@ class IOCJson(object):
             "vnet"                 : ("off", "on"),
             "template"             : ("no", "yes"),
             "comment"              : ("string",),
-            "host_time"            : ("no", "yes")
+            "host_time"            : ("no", "yes"),
+            "depends"              : ("string",)
         }
 
         zfs_props = {

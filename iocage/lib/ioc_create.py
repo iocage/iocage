@@ -455,6 +455,7 @@ class IOCCreate(object):
         default_props["release"] = release
         default_props["cloned_release"] = self.release
         default_props["jail_zfs_dataset"] = f"iocage/jails/{jail_uuid}/data"
+        default_props["depends"] = "none"
 
         return default_props
 

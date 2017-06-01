@@ -10,7 +10,7 @@ __rootcmd__ = True
 
 @click.command(context_settings=dict(
     max_content_width=400, ), name="set", help="Sets the specified property.")
-@click.argument("prop")
+@click.argument("prop", nargs=-1)
 @click.argument("jail")
 @click.option("--plugin", "-P",
               help="Set the specified key for a plugin jail, if accessing a"
@@ -19,6 +19,8 @@ __rootcmd__ = True
               is_flag=True)
 def cli(prop, jail, plugin):
     """Get a list of jails and print the property."""
+    prop = " ".join(prop)  # We don't want a tuple.
+
     if jail == "default":
         default = True
     else:
