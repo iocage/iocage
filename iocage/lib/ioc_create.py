@@ -22,7 +22,7 @@ class IOCCreate(object):
     def __init__(self, release, props, num, pkglist=None, plugin=False,
                  migrate=False, config=None, silent=False, template=False,
                  short=False, basejail=False, empty=False, uuid=None,
-                 clone=None, callback=None):
+                 clone=False, callback=None):
         self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage.lib.ioc_json.IOCJson(self.pool).json_get_value(
             "iocroot")
@@ -81,7 +81,7 @@ class IOCCreate(object):
                     template_config = iocage.lib.ioc_json.IOCJson(
                         temp_path).json_get_value
                     cloned_release = template_config("cloned_release")
-                elif self.clone is not None:
+                elif self.clone:
                     _type = "jails"
                     clone_path = f"{self.iocroot}/{_type}/{self.release}"
                     clone_config = iocage.lib.ioc_json.IOCJson(
@@ -114,12 +114,12 @@ class IOCCreate(object):
                 # migration routine for zfs props. We don't need that :)
                 if self.template:
                     raise RuntimeError(f"Template: {self.release} not found!")
-                elif self.clone is not None:
-                    raise RuntimeError(f"Jail: {self.clone} not found!")
+                elif self.clone:
+                    raise RuntimeError(f"Jail: {self.jail} not found!")
                 else:
                     raise RuntimeError(f"RELEASE: {self.release} not found!")
 
-            if self.clone is None:
+            if not self.clone:
                 config = self.create_config(jail_uuid, cloned_release)
             else:
                 clone_config = f"{self.iocroot}/jails/{jail_uuid}/config.json"
@@ -146,13 +146,13 @@ class IOCCreate(object):
             config["cloned_release"] = iocage.lib.ioc_json.IOCJson(
                 f"{self.iocroot}/templates/{self.release}").json_get_value(
                 "cloned_release")
-        elif self.clone is not None:
+        elif self.clone:
             try:
                 su.check_call(["zfs", "snapshot", "-r",
                                f"{self.pool}/iocage/jails/{self.release}"
                                f"@{jail_uuid}"], stderr=su.PIPE)
             except su.CalledProcessError:
-                raise RuntimeError(f"Jail: {self.clone} not found!")
+                raise RuntimeError(f"Jail: {self.jail} not found!")
 
             su.Popen(["zfs", "clone",
                       f"{self.pool}/iocage/jails/{self.release}@"
@@ -236,7 +236,7 @@ class IOCCreate(object):
             iocjson.json_write(config)
 
         # Just "touch" the fstab file, since it won't exist.
-        if self.clone is None:
+        if not self.clone:
             open(f"{self.iocroot}/jails/{jail_uuid}/fstab", "wb").close()
         else:
             with open(clone_fstab, "r") as _clone_fstab:
@@ -287,7 +287,7 @@ class IOCCreate(object):
             iocjson.json_write(config)
 
         if not self.plugin:
-            if self.clone is not None:
+            if self.clone:
                 msg = f"{jail_uuid} ({_tag}) successfully cloned!"
             else:
                 msg = f"{jail_uuid} ({_tag}) successfully created!"
