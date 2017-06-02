@@ -182,9 +182,19 @@ class IOCage(object):
             for j in sorted(_jail.items()):
                 msg += f"\n  {j}"
 
-            raise RuntimeError(msg)
+            ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": msg
+            },
+                _callback=self.callback,
+                silent=self.silent)
         else:
-            raise RuntimeError(f"{self.jail} not found!")
+            ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": f"{self.jail} not found!"
+            },
+                _callback=self.callback,
+                silent=self.silent)
 
     @staticmethod
     def __check_jail_type__(_type, uuid, tag):
