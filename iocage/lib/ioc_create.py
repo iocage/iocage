@@ -2,6 +2,7 @@
 import datetime
 import json
 import os
+import pathlib
 import subprocess as su
 import sys
 import uuid
@@ -618,9 +619,20 @@ class IOCCreate(object):
 
             return tag_date
 
-    def create_rc(self, location, host_hostname):
-        """Writes a boilerplate rc.conf file for a jail."""
-        rcconf = """\
+    @staticmethod
+    def create_rc(location, host_hostname):
+        """
+        Writes a boilerplate rc.conf file for a jail if it doesn't exist,
+         otherwise changes the hostname.
+        """
+        rc_conf = pathlib.Path(f"{location}/root/etc/rc.conf")
+
+        if rc_conf.is_file():
+            su.Popen(["sysrc", "-R", f"{location}/root",
+                      f"host_hostname={host_hostname}"],
+                     stdout=su.PIPE).communicate()
+        else:
+            rcconf = """\
 host_hostname="{hostname}"
 cron_flags="$cron_flags -J 15"
 
@@ -636,6 +648,4 @@ syslogd_flags="-c -ss"
 # Enable IPv6
 ipv6_activate_all_interfaces=\"YES\"
 """
-
-        with open(f"{location}/root/etc/rc.conf", "w") as rc_conf:
-            rc_conf.write(rcconf.format(hostname=host_hostname))
+            rc_conf.write_text(rcconf.format(hostname=host_hostname))
