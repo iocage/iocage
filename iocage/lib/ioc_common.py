@@ -47,7 +47,6 @@ def logit(content, _callback=None, silent=False, term="\n"):
             # They need to see these errors, too bad!
             return
 
-
     if callable(_callback):
         _callback({"level": level, "message": msg})
     else:
