@@ -1,5 +1,4 @@
 """fetch module for the cli."""
-import json
 import os
 
 import click
