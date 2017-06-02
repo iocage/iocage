@@ -29,7 +29,8 @@ def validate_count(ctx, param, value):
 
 @click.command(context_settings=dict(
     max_content_width=400, ),
-    name="fetch", help="Fetch a version of FreeBSD for jail usage.")
+    name="fetch", help="Fetch a version of FreeBSD for jail usage or a"
+                       " preconfigured plugin.")
 @click.option("--http", "-h", default=False,
               help="Have --server define a HTTP server instead.", is_flag=True)
 @click.option("--file", "-f", "_file", default=False,
