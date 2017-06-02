@@ -27,7 +27,9 @@ def validate_count(ctx, param, value):
         return int(value)
 
 
-@click.command(name="fetch", help="Fetch a version of FreeBSD for jail usage.")
+@click.command(context_settings=dict(
+    max_content_width=400, ),
+    name="fetch", help="Fetch a version of FreeBSD for jail usage.")
 @click.option("--http", "-h", default=False,
               help="Have --server define a HTTP server instead.", is_flag=True)
 @click.option("--file", "-f", "_file", default=False,
@@ -46,7 +48,10 @@ def validate_count(ctx, param, value):
 @click.option("--verify/--noverify", "-V/-NV", default=True,
               help="Enable or disable verifying SSL cert for HTTP fetching.")
 @click.option("--release", "-r", help="The FreeBSD release to fetch.")
-@click.option("--plugin-file", "-P", help="The plugin file to use.")
+@click.option("--plugin-file", "-P", is_flag=True,
+              help="This is a plugin file outside the INDEX, but exists in "
+                   "that location.\nDeveloper option, most will prefer to "
+                   "use --plugins.")
 @click.option("--plugins", help="List all available plugins for creation.",
               is_flag=True)
 @click.argument("props", nargs=-1)
@@ -58,8 +63,12 @@ def validate_count(ctx, param, value):
                    "patch level.")
 @click.option("--eol/--noeol", "-E/-NE", default=True,
               help="Enable or disable EOL checking with upstream.")
+@click.option("--name", "-n", help="Supply a plugin name for --plugins to "
+                                   "fetch or use a autocompleted filename"
+                                   " for --plugin-file.\nAlso accepts full"
+                                   " path for --plugin-file.")
 def cli(http, _file, server, user, password, auth, verify, release, plugins,
-        plugin_file, root_dir, props, count, update, eol, files):
+        plugin_file, root_dir, props, count, update, eol, files, name):
     """CLI command that calls fetch_release()"""
     freebsd_version = ioc_common.checkoutput(["freebsd-version"])
     arch = os.uname()[4]
@@ -79,39 +88,21 @@ def cli(http, _file, server, user, password, auth, verify, release, plugins,
         hardened = False
 
     if plugins or plugin_file:
-        if plugin_file:
-            try:
-                with open(plugin_file) as f:
-                    json.load(f)
-            except FileNotFoundError:
-                ioc_common.logit({
-                    "level"  : "ERROR",
-                    "message": "File was not found!"
-                })
-                exit(1)
-            except json.decoder.JSONDecodeError:
-                ioc_common.logit({
-                    "level"  : "ERROR",
-                    "message": "Invalid JSON file supplied, please supply a "
-                               "correctly formatted JSON file."
-                })
-                exit(1)
-
         ip = [x for x in props if x.startswith("ip4_addr") or x.startswith(
             "ip6_addr")]
         if not ip:
             ioc_common.logit({
-                "level"  : "ERROR",
+                "level"  : "EXCEPTION",
                 "message": "An IP address is needed to fetch a plugin!\n"
                            "Please specify ip(4|6)"
                            "_addr=\"INTERFACE|IPADDRESS\"!"
             })
-            exit(1)
         if plugins:
             ioc_fetch.IOCFetch(release=None, http=http, _file=_file,
                                verify=verify, hardened=hardened,
                                update=update, eol=eol,
-                               files=files).fetch_plugin_index(props)
+                               files=files, plugin=name).fetch_plugin_index(
+                props)
             exit()
 
         if count == 1:
@@ -119,14 +110,14 @@ def cli(http, _file, server, user, password, auth, verify, release, plugins,
                                http=http, _file=_file, verify=verify,
                                hardened=hardened, update=update, eol=eol,
                                files=files).fetch_plugin(
-                plugin_file, props, 0)
+                name, props, 0)
         else:
             for j in range(1, count + 1):
                 ioc_fetch.IOCFetch("", server, user, password, auth, root_dir,
                                    http=http, _file=_file, verify=verify,
                                    hardened=hardened, update=update,
                                    eol=eol, files=files).fetch_plugin(
-                    plugin_file, props, j)
+                    name, props, j)
     else:
         ioc_fetch.IOCFetch(release, server, user, password, auth, root_dir,
                            http=http,

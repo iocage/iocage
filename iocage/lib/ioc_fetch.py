@@ -38,7 +38,8 @@ class IOCFetch(object):
                  password="anonymous@", auth=None, root_dir=None, http=False,
                  _file=False, verify=True, hardened=False, update=True,
                  eol=True, files=("MANIFEST", "base.txz", "lib32.txz",
-                                  "doc.txz"), silent=False, callback=None):
+                                  "doc.txz"), silent=False, callback=None,
+                 plugin=None):
         self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage.lib.ioc_json.IOCJson(self.pool).json_get_value(
             "iocroot")
@@ -66,6 +67,7 @@ class IOCFetch(object):
 
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.zpool = self.zfs.get(self.pool)
+        self.plugin = plugin
 
         if hardened:
             self.http = True
@@ -803,8 +805,26 @@ class IOCFetch(object):
 
     def fetch_plugin(self, _json, props, num):
         """Helper to fetch plugins"""
-        with open(_json, "r") as j:
-            conf = json.load(j)
+        _json = f"{self.iocroot}/.plugin_index/{_json}.json" if not \
+            _json.endswith(".json") else _json
+        try:
+            with open(_json, "r") as j:
+                conf = json.load(j)
+        except FileNotFoundError:
+            iocage.lib.ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": f"{_json} was not found!"
+            },
+                _callback=self.callback,
+                silent=self.silent)
+        except json.decoder.JSONDecodeError:
+            iocage.lib.ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": "Invalid JSON file supplied, please supply a "
+                           "correctly formatted JSON file."
+            },
+                _callback=self.callback,
+                silent=self.silent)
 
         if self.hardened:
             conf['release'] = conf['release'].replace("-RELEASE", "-STABLE")
@@ -1167,20 +1187,26 @@ fingerprint: {fingerprint}
             plugins = json.load(plugins)
 
         _plugins = self.__fetch_sort_plugin__(plugins)
-        for p in _plugins:
-            iocage.lib.ioc_common.logit({
-                "level"  : "INFO",
-                "message": f"[{_plugins.index(p)}] {p}"
-            },
-                _callback=self.callback,
-                silent=self.silent)
+
+        if self.plugin is None:
+            for p in _plugins:
+                iocage.lib.ioc_common.logit({
+                    "level"  : "INFO",
+                    "message": f"[{_plugins.index(p)}] {p}"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
 
         if _list:
             return
 
-        plugin = input("\nWhich plugin do you want to create? (EXIT) ")
-        plugin = self.__fetch_validate_plugin__(plugin.lower(), _plugins)
-        self.fetch_plugin(f"{self.iocroot}/.plugin_index/{plugin}.json",
+        if self.plugin is None:
+            self.plugin = input("\nWhich plugin do you want to create? ("
+                                "EXIT) ")
+
+        self.plugin = self.__fetch_validate_plugin__(self.plugin.lower(),
+                                                     _plugins)
+        self.fetch_plugin(f"{self.iocroot}/.plugin_index/{self.plugin}.json",
                           props, 0)
 
     def __fetch_validate_plugin__(self, plugin, plugins):
@@ -1189,6 +1215,7 @@ fingerprint: {fingerprint}
         plugin. If they gave us a plugin name, we make sure that exists in
         the list at all.
         """
+        _plugin = plugin  # Gets lost in the enumeration if no match is found.
         if plugin.lower() == "exit":
             exit()
 
@@ -1203,8 +1230,11 @@ fingerprint: {fingerprint}
             # Quick list validation
             try:
                 plugin = [i for i, p in enumerate(plugins) if
-                          plugin.capitalize() in p]
-                plugin = plugins[int(plugin[0])]
+                          plugin.capitalize() in p or plugin in p]
+                try:
+                    plugin = plugins[int(plugin[0])]
+                except IndexError:
+                    raise RuntimeError(f"Plugin: {_plugin} not in list!")
             except ValueError as err:
                 raise RuntimeError(f"{err}!")
 
