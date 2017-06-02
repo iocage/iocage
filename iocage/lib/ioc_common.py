@@ -39,11 +39,14 @@ def callback(log):
 
 def logit(content, _callback=None, silent=False, term="\n"):
     """Helper to check callable status of callback or call ours."""
-    if silent:
-        return
-
     level = content["level"]
     msg = content["message"]
+
+    if silent:
+        if level != "EXCEPTION":
+            # They need to see these errors, too bad!
+            return
+
 
     if callable(_callback):
         _callback({"level": level, "message": msg})
