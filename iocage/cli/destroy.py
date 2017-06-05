@@ -48,6 +48,21 @@ def cli(force, release, download, jails):
                     "level"  : "EXCEPTION",
                     "message": err
                 })
+        except FileNotFoundError as err:
+            # Jail is lacking a configuration, time to nuke it from orbit.
+            err = str(err).rsplit("/")[-2]
+
+            uuid = err
+            path = f"{pool}/iocage/jails/{uuid}"
+
+            if uuid == jails[0]:
+                iocage.destroy(path, parse=True)
+                exit()
+            else:
+                ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": err
+                })
 
         for jail in jails:
             _jail = {tag: uuid for (tag, uuid) in jail_list.items() if
