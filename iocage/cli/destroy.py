@@ -50,9 +50,7 @@ def cli(force, release, download, jails):
                 })
         except FileNotFoundError as err:
             # Jail is lacking a configuration, time to nuke it from orbit.
-            err = str(err).rsplit("/")[-2]
-
-            uuid = err
+            uuid = str(err).rsplit("/")[-2]
             path = f"{pool}/iocage/jails/{uuid}"
 
             if uuid == jails[0]:
