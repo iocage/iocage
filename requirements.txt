@@ -1,0 +1,9 @@
+click==6.7
+texttable==0.9.0
+requests==2.17.3
+tqdm==4.14.0
+coloredlogs==7.0
+verboselogs==1.6
+pygit2==0.25.1
+cffi==1.9.1
+git+https://github.com/freenas/py-libzfs.git#egg=libzfs
