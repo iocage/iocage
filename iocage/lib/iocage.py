@@ -11,6 +11,7 @@ import iocage.lib.ioc_create as ioc_create
 import iocage.lib.ioc_destroy as ioc_destroy
 import iocage.lib.ioc_exec as ioc_exec
 import iocage.lib.ioc_fetch as ioc_fetch
+import iocage.lib.ioc_image as ioc_image
 import iocage.lib.ioc_json as ioc_json
 import iocage.lib.ioc_list as ioc_list
 import iocage.lib.ioc_start as ioc_start
@@ -520,6 +521,22 @@ class IOCage(object):
                 },
                     _callback=self.callback,
                     silent=self.silent)
+
+    def export(self):
+        """Will export a jail"""
+        tag, uuid, path = self.__check_jail_existence__()
+        status, _ = self.list("jid", uuid=uuid)
+
+        if status:
+            ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": f"{uuid} ({tag}) is runnning, stop the jail before"
+                           " exporting!"
+            },
+                _callback=self.callback,
+                silent=self.silent)
+
+        ioc_image.IOCImage().export_jail(uuid, tag, path)
 
     @staticmethod
     def list(lst_type, header=False, long=False, sort="tag", uuid=None,
