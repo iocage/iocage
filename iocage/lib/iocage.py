@@ -538,6 +538,10 @@ class IOCage(object):
 
         ioc_image.IOCImage().export_jail(uuid, tag, path)
 
+    def import_(self):
+        """Imports a jail"""
+        ioc_image.IOCImage().import_jail(self.jail)
+
     @staticmethod
     def list(lst_type, header=False, long=False, sort="tag", uuid=None,
              plugin=False):
