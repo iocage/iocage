@@ -442,38 +442,6 @@ class IOCage(object):
 
         return False, None
 
-    def exec(self, command, host_user="root", jail_user=None, console=False):
-        """Executes a command in the jail as the supplied users."""
-        if host_user and jail_user:
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": "Please only specify either host_user or"
-                           " jail_user, not both!"
-            },
-                _callback=self.callback,
-                silent=self.silent)
-
-        tag, uuid, path = self.__check_jail_existence__()
-        msg, err = ioc_exec.IOCExec(command, uuid, tag, path, host_user,
-                                    jail_user, console=console,
-                                    silent=self.silent).exec_jail()
-
-        if not console:
-            if err:
-                ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": err.decode()
-                },
-                    _callback=self.callback,
-                    silent=self.silent)
-            else:
-                ioc_common.logit({
-                    "level"  : "INFO",
-                    "message": msg.decode("utf-8")
-                },
-                    _callback=self.callback,
-                    silent=self.silent)
-
     @staticmethod
     def destroy(path, parse=False):
         """Destroys the supplied path"""
@@ -520,6 +488,38 @@ class IOCage(object):
                               available, tag])
 
         return jail_list
+
+    def exec(self, command, host_user="root", jail_user=None, console=False):
+        """Executes a command in the jail as the supplied users."""
+        if host_user and jail_user:
+            ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": "Please only specify either host_user or"
+                           " jail_user, not both!"
+            },
+                _callback=self.callback,
+                silent=self.silent)
+
+        tag, uuid, path = self.__check_jail_existence__()
+        msg, err = ioc_exec.IOCExec(command, uuid, tag, path, host_user,
+                                    jail_user, console=console,
+                                    silent=self.silent).exec_jail()
+
+        if not console:
+            if err:
+                ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": err.decode()
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+            else:
+                ioc_common.logit({
+                    "level"  : "INFO",
+                    "message": msg.decode("utf-8")
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
 
     @staticmethod
     def list(lst_type, header=False, long=False, sort="tag", uuid=None,
