@@ -21,6 +21,7 @@ import pygit2
 import requests
 import requests.auth
 import requests.packages.urllib3.exceptions
+import texttable
 import tqdm
 
 import iocage.lib.ioc_common
@@ -1162,7 +1163,8 @@ fingerprint: {fingerprint}
             except FileNotFoundError:
                 pass
 
-    def fetch_plugin_index(self, props, _list=False):
+    def fetch_plugin_index(self, props, _list=False, list_header=False,
+                           list_long=False):
         if self.server == "ftp.freebsd.org":
             git_server = "https://github.com/freenas/iocage-ix-plugins.git"
         else:
@@ -1188,7 +1190,7 @@ fingerprint: {fingerprint}
 
         _plugins = self.__fetch_sort_plugin__(plugins)
 
-        if self.plugin is None:
+        if self.plugin is None and not _list:
             for p in _plugins:
                 iocage.lib.ioc_common.logit({
                     "level"  : "INFO",
@@ -1198,7 +1200,31 @@ fingerprint: {fingerprint}
                     silent=self.silent)
 
         if _list:
-            return
+            plugin_list = []
+
+            for p in _plugins:
+                p = p.split("-", 1)
+                name = p[0]
+                desc, pkg = re.sub(r'[()]', '', p[1]).rsplit(" ", 1)
+
+                p = [name, desc, pkg]
+                plugin_list.append(p)
+
+            if not list_header:
+                return plugin_list
+            else:
+                if list_long:
+                    table = texttable.Texttable(max_width=0)
+                else:
+                    table = texttable.Texttable(max_width=80)
+
+                # We get an infinite float otherwise.
+                table.set_cols_dtype(["t", "t", "t"])
+                plugin_list.insert(0, ["NAME", "DESCRIPTION", "PKG"])
+
+                table.add_rows(plugin_list)
+
+                return table.draw()
 
         if self.plugin is None:
             self.plugin = input("\nWhich plugin do you want to create? ("

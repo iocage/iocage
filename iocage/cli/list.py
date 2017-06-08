@@ -39,26 +39,29 @@ def cli(dataset_type, header, _long, remote, http, plugins, _sort):
 
         ioc_fetch.IOCFetch("", http=http, hardened=hardened).fetch_release(
             _list=True)
-    elif plugins and remote:
-        ioc_fetch.IOCFetch("").fetch_plugin_index("", _list=True)
+
+    if plugins and remote:
+        _list = ioc_fetch.IOCFetch("").fetch_plugin_index("", _list=True,
+                                                          list_header=header,
+                                                          list_long=_long)
     else:
         _list = iocage.list(dataset_type, header, _long, _sort, plugin=plugins)
 
-        if not header:
-            if dataset_type == "base":
-                for item in _list:
-                    ioc_common.logit({
-                        "level"  : "INFO",
-                        "message": item
-                    })
-            else:
-                for item in _list:
-                    ioc_common.logit({
-                        "level"  : "INFO",
-                        "message": "\t".join(item)
-                    })
+    if not header:
+        if dataset_type == "base":
+            for item in _list:
+                ioc_common.logit({
+                    "level"  : "INFO",
+                    "message": item
+                })
         else:
-            ioc_common.logit({
-                "level"  : "INFO",
-                "message": _list
-            })
+            for item in _list:
+                ioc_common.logit({
+                    "level"  : "INFO",
+                    "message": "\t".join(item)
+                })
+    else:
+        ioc_common.logit({
+            "level"  : "INFO",
+            "message": _list
+        })
