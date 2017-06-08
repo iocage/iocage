@@ -11,6 +11,7 @@ import iocage.lib.ioc_create as ioc_create
 import iocage.lib.ioc_destroy as ioc_destroy
 import iocage.lib.ioc_exec as ioc_exec
 import iocage.lib.ioc_fetch as ioc_fetch
+import iocage.lib.ioc_fstab as ioc_fstab
 import iocage.lib.ioc_image as ioc_image
 import iocage.lib.ioc_json as ioc_json
 import iocage.lib.ioc_list as ioc_list
@@ -537,6 +538,19 @@ class IOCage(object):
                 silent=self.silent)
 
         ioc_image.IOCImage().export_jail(uuid, tag, path)
+
+    def fstab(self, action, source, destination, fstype, options, dump, _pass,
+              index=None, add_path=False):
+        """Adds an fstab entry for a jail"""
+        tag, uuid, path = self.__check_jail_existence__()
+
+        if add_path:
+            destination = f"{self.iocroot}/jails/{uuid}/root{destination}"
+
+        print(destination)
+
+        ioc_fstab.IOCFstab(uuid, tag, action, source, destination, fstype,
+                           options, dump, _pass, index=index)
 
     def import_(self):
         """Imports a jail"""

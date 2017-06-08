@@ -2,9 +2,7 @@
 import click
 
 import iocage.lib.ioc_common as ioc_common
-import iocage.lib.ioc_fstab as ioc_fstab
-import iocage.lib.ioc_json as ioc_json
-import iocage.lib.ioc_list as ioc_list
+import iocage.lib.iocage as ioc
 
 __rootcmd__ = True
 
@@ -26,43 +24,16 @@ def cli(action, fstab_string, jail):
     Looks for the jail supplied and passes the uuid, path and configuration
     location to manipulate the fstab.
     """
-    pool = ioc_json.IOCJson().json_get_value("pool")
-    iocroot = ioc_json.IOCJson(pool).json_get_value("iocroot")
     index = None
     _index = False
+    add_path = False
     fstab_string = list(fstab_string)
-
-    _jails, paths = ioc_list.IOCList("uuid").list_datasets()
 
     if not fstab_string and action != "edit":
         ioc_common.logit({
-            "level"  : "ERROR",
-            "message": "Please supply a fstab entry!"
+            "level"  : "EXCEPTION",
+            "message": "Please supply a fstab entry or jail!"
         })
-        exit(1)
-
-    _jail = {tag: uuid for (tag, uuid) in _jails.items() if
-             uuid.startswith(jail) or tag == jail}
-
-    if len(_jail) == 1:
-        tag, uuid = next(iter(_jail.items()))
-    elif len(_jail) > 1:
-        ioc_common.logit({
-            "level"  : "ERROR",
-            "message": f"Multiple jails found for {jail}:"
-        })
-        for t, u in sorted(_jail.items()):
-            ioc_common.logit({
-                "level"  : "ERROR",
-                "message": f"  {u} ({t})"
-            })
-        exit(1)
-    else:
-        ioc_common.logit({
-            "level"  : "ERROR",
-            "message": f"{jail} not found!"
-        })
-        exit(1)
 
     # The user will expect to supply a string, the API would prefer these
     # separate. If the user supplies a quoted string, we will split it,
@@ -114,9 +85,8 @@ def cli(action, fstab_string, jail):
                                                                 "", "", \
                                                                 "", ""
 
-    if not _index and action == "add":
-        destination = f"{iocroot}/jails/{uuid}/root{destination}"
+    if not _index:
+        add_path = True
 
-    ioc_fstab.IOCFstab(uuid, tag, action, source, destination, fstype, options,
-                       dump,
-                       _pass, index=index)
+    ioc.IOCage(jail).fstab(action, source, destination, fstype, options,
+                           dump, _pass, index=index, add_path=add_path)
