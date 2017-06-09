@@ -28,11 +28,12 @@ import os
 import sys
 
 import coloredlogs
+import verboselogs
 
 
 class IOCLogger(object):
     def __init__(self):
-        self.cli_logger = logging.getLogger("iocage")
+        self.cli_logger = verboselogs.VerboseLogger("iocage")
         self.log_file = os.environ.get("IOCAGE_LOGFILE", "/var/log/iocage.log")
 
         default_logging = {
@@ -79,7 +80,7 @@ class IOCLogger(object):
         if os.geteuid() == 0:
             logging.config.dictConfig(default_logging)
 
-        coloredlogs.install(level="INFO", logger=self.cli_logger,
+        coloredlogs.install(level="VERBOSE", logger=self.cli_logger,
                             fmt="%(message)s",
                             stream=sys.stdout, level_styles=cli_colors)
 
