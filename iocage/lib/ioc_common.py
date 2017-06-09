@@ -51,6 +51,10 @@ def callback(log):
         lgr.info(log['message'])
     elif log['level'] == 'DEBUG':
         lgr.debug(log['message'])
+    elif log['level'] == 'VERBOSE':
+        lgr.verbose(log['message'])
+    elif log['level'] == 'NOTICE':
+        lgr.notice(log['message'])
     elif log['level'] == 'EXCEPTION':
         # TODO: Better solution?
         if not os.isatty(sys.stdout.fileno()):
