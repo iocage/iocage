@@ -22,6 +22,7 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Check datasets before execution"""
+import collections
 import os
 
 import libzfs
@@ -39,6 +40,7 @@ class IOCCheck(object):
         self.callback = callback
         self.silent = silent
 
+        self.__check_fd_mount__()
         self.__check_datasets__()
 
     def __check_datasets__(self):
@@ -85,3 +87,30 @@ class IOCCheck(object):
 
                 pool.create(zfs_dataset_name, dataset_options)
                 zfs.get_dataset(zfs_dataset_name).mount()
+
+    def __check_fd_mount__(self):
+        """
+        Checks if /dev/fd is mounted, and if not, give the user a
+        warning.
+        """
+        if not os.path.ismount("/dev/fd"):
+            messages = collections.OrderedDict([
+                ("1-NOTICE", "*" * 80),
+                ("2-WARNING", "fdescfs(5) is not mounted, performance "
+                              " may suffer. Please run:"),
+                ("3-INFO", "mount -t fdescfs fdesc /dev/fd"),
+                ("4-WARNING", "You can also permanently mount it in "
+                              "/etc/fstab with the following entry:"),
+                ("5-INFO", "fdesc /dev/fd  fdescfs  rw  0  0"),
+                ("6-NOTICE", f"{'*' * 80}\n")
+            ])
+
+            for level, msg in messages.items():
+                level = level.partition("-")[2]
+
+                iocage.lib.ioc_common.logit({
+                    "level"  : level,
+                    "message": msg
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
