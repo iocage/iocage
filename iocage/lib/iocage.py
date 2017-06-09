@@ -562,6 +562,61 @@ class IOCage(object):
 
         ioc_image.IOCImage().export_jail(uuid, tag, path)
 
+    def fetch(self, **kwargs):
+        """Fetches a release or plugin."""
+        release = kwargs.pop("release", None)
+        name = kwargs.pop("name", None)
+        props = kwargs.pop("props", ())
+        plugins = kwargs.pop("plugins", False)
+        plugin_file = kwargs.pop("plugin_file", False)
+        count = kwargs.pop("count", 1)
+
+        freebsd_version = ioc_common.checkoutput(["freebsd-version"])
+        arch = os.uname()[4]
+
+        if not kwargs["files"]:
+            if arch == "arm64":
+                kwargs["files"] = ("MANIFEST", "base.txz", "doc.txz")
+            else:
+                kwargs["files"] = ("MANIFEST", "base.txz", "lib32.txz",
+                                   "doc.txz")
+
+        if "HBSD" in freebsd_version:
+            if kwargs["server"] == "ftp.freebsd.org":
+                kwargs["hardened"] = True
+            else:
+                kwargs["hardened"] = False
+        else:
+            kwargs["hardened"] = False
+
+        if plugins or plugin_file:
+            ip = [x for x in props if x.startswith("ip4_addr") or
+                  x.startswith("ip6_addr")]
+            if not ip:
+                ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": "An IP address is needed to fetch a plugin!\n"
+                               "Please specify ip(4|6)"
+                               "_addr=\"INTERFACE|IPADDRESS\"!"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+
+            if plugins:
+                ioc_fetch.IOCFetch(release, **kwargs).fetch_plugin_index(props)
+                return
+
+            if count == 1:
+                ioc_fetch.IOCFetch(release, **kwargs).fetch_plugin(name,
+                                                                   props, 0)
+            else:
+                for j in range(1, count + 1):
+                    ioc_fetch.IOCFetch(release, **kwargs).fetch_plugin(name,
+                                                                       props,
+                                                                       j)
+        else:
+            ioc_fetch.IOCFetch(release, **kwargs).fetch_release()
+
     def fstab(self, action, source, destination, fstype, options, dump, _pass,
               index=None, add_path=False):
         """Adds an fstab entry for a jail"""

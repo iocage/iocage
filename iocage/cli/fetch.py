@@ -22,12 +22,10 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """fetch module for the cli."""
-import os
-
 import click
 
 import iocage.lib.ioc_common as ioc_common
-import iocage.lib.ioc_fetch as ioc_fetch
+import iocage.lib.iocage as ioc
 
 __rootcmd__ = True
 
@@ -89,60 +87,6 @@ def validate_count(ctx, param, value):
                                    "fetch or use a autocompleted filename"
                                    " for --plugin-file.\nAlso accepts full"
                                    " path for --plugin-file.")
-def cli(http, _file, server, user, password, auth, verify, release, plugins,
-        plugin_file, root_dir, props, count, update, eol, files, name):
+def cli(**kwargs):
     """CLI command that calls fetch_release()"""
-    freebsd_version = ioc_common.checkoutput(["freebsd-version"])
-    arch = os.uname()[4]
-
-    if not files:
-        if arch == "arm64":
-            files = ("MANIFEST", "base.txz", "doc.txz")
-        else:
-            files = ("MANIFEST", "base.txz", "lib32.txz", "doc.txz")
-
-    if "HBSD" in freebsd_version:
-        if server == "ftp.freebsd.org":
-            hardened = True
-        else:
-            hardened = False
-    else:
-        hardened = False
-
-    if plugins or plugin_file:
-        ip = [x for x in props if x.startswith("ip4_addr") or x.startswith(
-            "ip6_addr")]
-        if not ip:
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": "An IP address is needed to fetch a plugin!\n"
-                           "Please specify ip(4|6)"
-                           "_addr=\"INTERFACE|IPADDRESS\"!"
-            })
-        if plugins:
-            ioc_fetch.IOCFetch(release=None, http=http, _file=_file,
-                               verify=verify, hardened=hardened,
-                               update=update, eol=eol,
-                               files=files, plugin=name).fetch_plugin_index(
-                props)
-            exit()
-
-        if count == 1:
-            ioc_fetch.IOCFetch("", server, user, password, auth, root_dir,
-                               http=http, _file=_file, verify=verify,
-                               hardened=hardened, update=update, eol=eol,
-                               files=files).fetch_plugin(
-                name, props, 0)
-        else:
-            for j in range(1, count + 1):
-                ioc_fetch.IOCFetch("", server, user, password, auth, root_dir,
-                                   http=http, _file=_file, verify=verify,
-                                   hardened=hardened, update=update,
-                                   eol=eol, files=files).fetch_plugin(
-                    name, props, j)
-    else:
-        ioc_fetch.IOCFetch(release, server, user, password, auth, root_dir,
-                           http=http,
-                           _file=_file, verify=verify, hardened=hardened,
-                           update=update,
-                           eol=eol, files=files).fetch_release()
+    ioc.IOCage().fetch(**kwargs)
