@@ -51,7 +51,7 @@ setup(name='iocage',
           'requests',
           'tqdm',
           'coloredlogs',
-          'verboselogs'
+          'verboselogs',
           'pygit2>=0.24.2',
           'libzfs'
       ],
