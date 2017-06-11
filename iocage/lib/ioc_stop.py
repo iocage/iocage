@@ -60,6 +60,7 @@ class IOCStop(object):
         if len(script) > 1:
             # We may be getting ';', '&&' and so forth. Adding the shell for
             # safety.
+            # TODO: Check if each command is executable as well
             script = ["/bin/sh", "-c", " ".join(script)]
         elif os.access(script[0], os.X_OK):
             script = script[0]
