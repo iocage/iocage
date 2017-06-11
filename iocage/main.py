@@ -43,6 +43,8 @@ locale.setlocale(locale.LC_ALL, user_locale)
 # Sometimes SIGINT won't be installed.
 # http://stackoverflow.com/questions/40775054/capturing-sigint-using-keyboardinterrupt-exception-works-in-terminal-not-in-scr/40785230#40785230
 signal.signal(signal.SIGINT, signal.default_int_handler)
+# If a utility decides to cut off the pipe, we don't care (IE: head)
+signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 # @formatter:on
 
 try:
