@@ -347,7 +347,8 @@ class IOCFetch(object):
                     rel = rel.decode()
                     rel = rel.strip("href=").strip("/").split(">")
                     if "-RELEASE" in rel[0]:
-                        rel = rel[0].strip('"').strip("/").strip("/</a")
+                        rel = rel[0].strip('"').strip("/").strip(
+                            "/</a").strip('title="')
                         if rel not in releases:
                             releases.append(rel)
 
