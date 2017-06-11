@@ -271,6 +271,8 @@ class IOCFetch(object):
 
         if self.server == "ftp.freebsd.org":
             self.server = "https://download.freebsd.org"
+
+        if self.root_dir is None:
             self.root_dir = f"ftp/releases/{self.arch}"
 
         if self.auth and "https" not in self.server:
