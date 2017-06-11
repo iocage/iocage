@@ -34,7 +34,7 @@ __rootcmd__ = True
 @click.option("--force", "-f", default=False, is_flag=True)
 @click.option("--release", "-r", default=False, is_flag=True)
 @click.option("--download", "-d", default=False, is_flag=True,
-              help="Delete the download dataset of the specified RELEASE as"
+              help="Destroy the download dataset of the specified RELEASE as"
                    " well.")
 @click.argument("jails", nargs=-1)
 def cli(force, release, download, jails):

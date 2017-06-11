@@ -155,7 +155,12 @@ class IOCDestroy(object):
         Parses the datasets before calling __destroy_dataset__ with each
         entry.
         """
-        datasets = self.ds(path)
+        try:
+            datasets = self.ds(path)
+        except libzfs.ZFSException:
+            # Dataset can't be found, we don't care
+            return
+
         single = True if len(list(datasets.dependents)) == 0 else False
         dependents = datasets.dependents
 
