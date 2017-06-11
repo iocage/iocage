@@ -255,7 +255,12 @@ class IOCCreate(object):
                 except RuntimeError as err:
                     iocjson.json_write(config)  # Destroy counts on this.
                     iocage.lib.ioc_destroy.IOCDestroy().destroy_jail(location)
+
                     raise RuntimeError(f"***\n{err}\n***\n")
+                except SystemExit:
+                    iocjson.json_write(config)  # Destroy counts on this.
+                    iocage.lib.ioc_destroy.IOCDestroy().destroy_jail(location)
+                    exit(1)
 
             iocjson.json_write(config)
 
