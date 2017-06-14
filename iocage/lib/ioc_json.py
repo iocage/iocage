@@ -491,7 +491,7 @@ class IOCJson(object):
                     self.lgr.disabled = True
                 elif value == "no":
                     if not _import:
-                        self.zfs.get_dataset(old_location).rename(new_location)
+                        self.zfs.get_dataset(new_location).rename(old_location)
                         conf["type"] = "jail"
                         self.location = old_location.lstrip(pool).replace(
                             "/iocage", iocroot)
@@ -499,7 +499,7 @@ class IOCJson(object):
                         iocage.lib.ioc_common.logit({
                             "level"  : "INFO",
                             "message": f"{uuid} ({old_tag}) converted to a"
-                                       "jail."
+                                       " jail."
                         },
                             _callback=self.callback,
                             silent=self.silent)
