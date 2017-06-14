@@ -527,7 +527,7 @@ class IOCFetch(object):
                         col = line.split("\t")
                         hashes[col[0]] = col[1]
             except FileNotFoundError:
-                raise RuntimeError("MANIFEST file is missing!")
+                missing.append("MANIFEST")
 
             for f in self.files:
                 if f == "MANIFEST":
