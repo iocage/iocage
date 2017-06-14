@@ -44,6 +44,9 @@ def cli(prop, jail, plugin):
     """Get a list of jails and print the property."""
     prop = " ".join(prop)  # We don't want a tuple.
 
+    if "template" in prop:
+        jail = f"{jail} (template)"
+
     if jail == "default":
         default = True
     else:
