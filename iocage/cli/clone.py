@@ -38,10 +38,9 @@ def validate_count(ctx, param, value):
             return int(value)
         except ValueError:
             ioc_common.logit({
-                "level"  : "ERROR",
+                "level"  : "EXCEPTION",
                 "message": f"({value} is not a valid  integer."
             })
-            exit(1)
     else:
         return int(value)
 
