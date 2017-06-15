@@ -406,7 +406,7 @@ class IOCage(object):
 
     def create(self, release, props, count=0, pkglist=None, template=False,
                short=False, uuid=None, basejail=False, empty=False,
-               clone=None):
+               clone=None, skip_batch=False):
         """Creates the jail dataset"""
         if short and uuid:
             uuid = uuid[:8]
@@ -458,10 +458,18 @@ class IOCage(object):
             clone = self.jail
 
         try:
-            ioc_create.IOCCreate(release, props, count, pkglist,
-                                 template=template, short=short, uuid=uuid,
-                                 basejail=basejail, empty=empty, clone=clone,
-                                 silent=self.silent).create_jail()
+            if count > 1 and not skip_batch:
+                for j in range(1, count + 1):
+                    self.create(release, props, j, pkglist=pkglist,
+                                template=template, short=short, uuid=uuid,
+                                basejail=basejail, empty=empty,
+                                skip_batch=True)
+            else:
+                ioc_create.IOCCreate(release, props, count, pkglist,
+                                     template=template, short=short, uuid=uuid,
+                                     basejail=basejail, empty=empty,
+                                     clone=clone,
+                                     silent=self.silent).create_jail()
         except RuntimeError as err:
             return True, err
 

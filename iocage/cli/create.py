@@ -130,26 +130,6 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
                         "message": f"  {temp[3]}"
                     })
     else:
-        for j in range(1, count + 1):
-            err, msg = iocage.create(release, props, j, pkglist=pkglist,
-                                     template=template, short=short,
-                                     uuid=uuid, basejail=basejail,
-                                     empty=empty)
-            if err:
-                ioc_common.logit({
-                    "level"  : "ERROR",
-                    "message": msg
-                })
-
-                if template:
-                    ioc_common.logit({
-                        "level"  : "INFO",
-                        "message": "Created Templates:"
-                    })
-                    templates = ioc.IOCage().list("template")
-                    for temp in templates:
-                        ioc_common.logit({
-                            "level"  : "INFO",
-                            "message": f"  {temp[3]}"
-                        })
-                exit(1)
+        iocage.create(release, props, count, pkglist=pkglist,
+                      template=template, short=short, uuid=uuid,
+                      basejail=basejail, empty=empty)
