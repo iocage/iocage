@@ -29,11 +29,29 @@ import iocage.lib.ioc_common as ioc_common
 __rootcmd__ = True
 
 
+def validate_count(ctx, param, value):
+    """Takes a string, removes the commas and returns an int."""
+    if isinstance(value, str):
+        try:
+            value = value.replace(",", "")
+
+            return int(value)
+        except ValueError:
+            ioc_common.logit({
+                "level"  : "ERROR",
+                "message": f"({value} is not a valid  integer."
+            })
+            exit(1)
+    else:
+        return int(value)
+
+
 @click.command(name="clone", help="Clone a jail.")
 @click.argument("source", nargs=1)
 @click.argument("props", nargs=-1)
-def cli(source, props):
-    err, msg = ioc.IOCage(jail=source).create(source, props, clone=True)
+@click.option("--count", "-c", callback=validate_count, default="1")
+def cli(source, props, count):
+    err, msg = ioc.IOCage(jail=source).create(source, props, count, clone=True)
 
     if err:
         ioc_common.logit({

@@ -462,7 +462,7 @@ class IOCage(object):
                 for j in range(1, count + 1):
                     self.create(release, props, j, pkglist=pkglist,
                                 template=template, short=short, uuid=uuid,
-                                basejail=basejail, empty=empty,
+                                basejail=basejail, empty=empty, clone=clone,
                                 skip_batch=True)
             else:
                 ioc_create.IOCCreate(release, props, count, pkglist,
