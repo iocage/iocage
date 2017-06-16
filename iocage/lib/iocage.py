@@ -22,6 +22,7 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 import collections
+import json
 import operator
 import os
 import subprocess as su
@@ -204,8 +205,8 @@ class IOCage(object):
         elif len(_jail) > 1:
             msg = f"Multiple jails found for {self.jail}:"
 
-            for j in sorted(_jail.items()):
-                msg += f"\n  {j}"
+            for j, u in sorted(_jail.items()):
+                msg += f"\n  {j} ({u})"
 
             ioc_common.logit({
                 "level"  : "EXCEPTION",
@@ -635,6 +636,90 @@ class IOCage(object):
 
         ioc_fstab.IOCFstab(uuid, tag, action, source, destination, fstype,
                            options, dump, _pass, index=index)
+
+    def get(self, prop, recursive=False, plugin=False, pool=False):
+        """Get a jail property"""
+        if not recursive:
+            tag, uuid, path = self.__check_jail_existence__()
+            status, jid = self.list("jid", uuid=uuid)
+
+            if pool:
+                return self.pool
+
+            if prop == "state":
+                if status:
+                    state = "up"
+                else:
+                    state = "down"
+
+                return state
+            elif plugin:
+                _prop = prop.split(".")
+                props = ioc_json.IOCJson(path).json_plugin_get_value(_prop)
+
+                if isinstance(props, dict):
+                    return json.dumps(props, indent=4)
+                else:
+                    return props[0].decode("utf-8")
+            elif prop == "all":
+                props = ioc_json.IOCJson(path).json_get_value(prop)
+
+                return props
+            elif prop == "fstab":
+                fstab_list = []
+                index = 0
+
+                with open(f"{self.iocroot}/jails/{uuid}/fstab", "r") as fstab:
+                    for line in fstab.readlines():
+                        line = line.rsplit("#")[0].rstrip()
+                        fstab_list.append([index, line.replace("\t", " ")])
+                        index += 1
+
+                    return fstab_list
+            else:
+                try:
+                    return ioc_json.IOCJson(path).json_get_value(prop)
+                except KeyError:
+                    ioc_common.logit({
+                        "level"  : "EXCEPTION",
+                        "message": f"{prop} is not a valid property!"
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
+        else:
+            jail_list = []
+
+            for j in self.jails:
+                uuid = self.jails[j]
+                path = self._paths[j]
+                try:
+                    if prop == "state":
+                        status, _ = self.list("jid", uuid=uuid)
+
+                        if status:
+                            state = "up"
+                        else:
+                            state = "down"
+
+                        jail_list.append([uuid, j, state])
+                    elif prop == "all":
+                        props = ioc_json.IOCJson(path).json_get_value(prop)
+
+                        for p, v in props.items():
+                            jail_list.append([uuid, j, f"{p}:{v}"])
+                    else:
+                        jail_list.append(
+                            [uuid, j, ioc_json.IOCJson(path).json_get_value(
+                                prop)])
+                except KeyError:
+                    ioc_common.logit({
+                        "level"  : "EXCEPTION",
+                        "message": f"{prop} is not a valid property!"
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
+
+            return jail_list
 
     def import_(self):
         """Imports a jail"""
