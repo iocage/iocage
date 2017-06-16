@@ -50,8 +50,10 @@ def cli(force, delete):
     if not force:
         ioc_common.logit({
             "level"  : "WARNING",
-            "message": "\nThis will migrate ALL basejails to clonejails,"
-                       " it can take a long time!"
+            "message": "\nThis will migrate ALL iocage-legacy develop"
+                       " basejails to clonejails, it can take a long"
+                       " time!\nPlease make sure you are not running"
+                       " this on iocage-legacy 1.7.6 basejails."
         })
 
         if not click.confirm("\nAre you sure?"):
