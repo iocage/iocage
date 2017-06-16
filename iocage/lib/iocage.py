@@ -633,8 +633,6 @@ class IOCage(object):
         if add_path:
             destination = f"{self.iocroot}/jails/{uuid}/root{destination}"
 
-        print(destination)
-
         ioc_fstab.IOCFstab(uuid, tag, action, source, destination, fstype,
                            options, dump, _pass, index=index)
 
