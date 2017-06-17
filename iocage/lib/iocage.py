@@ -22,6 +22,7 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 import collections
+import datetime
 import json
 import operator
 import os
@@ -734,6 +735,64 @@ class IOCage(object):
 
         return ioc_list.IOCList(lst_type, header, long, sort,
                                 plugin=plugin).list_datasets()
+
+    def restart(self, soft=False):
+        if self._all:
+            if not soft:
+                self.__jail_order__("stop")
+
+                # This gets unset each time.
+                self._all = True
+
+                self.__jail_order__("start")
+            else:
+                for j in self.jails:
+                    self.jail = j
+                    self.__soft_restart__()
+        else:
+            if not soft:
+                self.stop()
+                self.start()
+            else:
+                self.__soft_restart__()
+
+    def __soft_restart__(self):
+        tag, uuid, path = self.__check_jail_existence__()
+        status, jid = self.list("jid", uuid=uuid)
+        conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
+        # These needs to be a list.
+        exec_start = conf["exec_start"].split()
+        exec_stop = conf["exec_stop"].split()
+        exec_fib = conf["exec_fib"]
+
+        if status:
+            ioc_common.logit({
+                "level"  : "INFO",
+                "message": f"Soft restarting {uuid} ({self.jail})"
+            },
+                _callback=self.callback,
+                silent=self.silent)
+
+            stop_cmd = ["setfib", exec_fib, "jexec", f"ioc-{uuid}"] + \
+                       exec_stop
+            su.Popen(stop_cmd, stdout=su.PIPE,
+                     stderr=su.PIPE).communicate()
+
+            su.Popen(["pkill", "-j", jid]).communicate()
+            start_cmd = ["setfib", exec_fib, "jexec", f"ioc-{uuid}"] + \
+                        exec_start
+            su.Popen(start_cmd, stdout=su.PIPE,
+                     stderr=su.PIPE).communicate()
+            ioc_json.IOCJson(path, silent=True).json_set_value(
+                "last_started="
+                f"{datetime.datetime.utcnow().strftime('%F %T')}")
+        else:
+            ioc_common.logit({
+                "level"  : "ERROR",
+                "message": f"{self.jail} is not running!"
+            },
+                _callback=self.callback,
+                silent=self.silent)
 
     def start(self, jail=None):
         """Checks jails type and existence, then starts the jail"""
