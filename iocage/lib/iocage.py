@@ -740,7 +740,6 @@ class IOCage(object):
         if self._all:
             if not soft:
                 self.__jail_order__("stop")
-
                 # This gets unset each time.
                 self._all = True
 
@@ -760,7 +759,8 @@ class IOCage(object):
         tag, uuid, path = self.__check_jail_existence__()
         status, jid = self.list("jid", uuid=uuid)
         conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
-        # These needs to be a list.
+
+        # These need to be a list.
         exec_start = conf["exec_start"].split()
         exec_stop = conf["exec_stop"].split()
         exec_fib = conf["exec_fib"]
