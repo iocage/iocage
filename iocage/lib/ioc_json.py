@@ -475,20 +475,30 @@ class IOCJson(object):
                                 silent=self.silent)
 
                 if value == "yes":
-                    self.zfs.get_dataset(old_location).rename(new_location)
-                    conf["type"] = "template"
+                    try:
+                        self.zfs.get_dataset(old_location).rename(new_location)
+                        conf["type"] = "template"
 
-                    self.location = new_location.lstrip(pool).replace(
-                        "/iocage", iocroot)
+                        self.location = new_location.lstrip(pool).replace(
+                            "/iocage", iocroot)
 
-                    iocage.lib.ioc_common.logit({
-                        "level"  : "INFO",
-                        "message": f"{uuid} ({old_tag}) converted to a"
-                                   " template."
-                    },
-                        _callback=self.callback,
-                        silent=self.silent)
-                    self.lgr.disabled = True
+                        iocage.lib.ioc_common.logit({
+                            "level"  : "INFO",
+                            "message": f"{uuid} ({old_tag}) converted to a"
+                                       " template."
+                        },
+                            _callback=self.callback,
+                            silent=self.silent)
+                        self.lgr.disabled = True
+                    except libzfs.ZFSException:
+                        iocage.lib.ioc_common.logit({
+                            "level"  : "EXCEPTION",
+                            "message": "A template by that name already"
+                                       " exists!"
+                        },
+                            _callback=self.callback,
+                            silent=self.silent)
+
                 elif value == "no":
                     if not _import:
                         self.zfs.get_dataset(new_location).rename(old_location)
