@@ -759,6 +759,41 @@ class IOCage(object):
             else:
                 self.__soft_restart__()
 
+    def rollback(self, name):
+        """Rolls back a jail and all datasets to the supplied snapshot"""
+        tag, uuid, path = self.__check_jail_existence__()
+        conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
+
+        if conf["template"] == "yes":
+            target = f"{self.pool}/iocage/templates/{tag}"
+        else:
+            target = f"{self.pool}/iocage/jails/{uuid}"
+
+        try:
+            datasets = self.zfs.get_dataset(target)
+            self.zfs.get_snapshot(f"{datasets.name}@{name}")
+        except libzfs.ZFSException as err:
+            ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": err
+            },
+                _callback=self.callback,
+                silent=self.silent)
+
+        for dataset in datasets.dependents:
+            if dataset.type == libzfs.DatasetType.FILESYSTEM:
+                self.zfs.get_snapshot(f"{dataset.name}@{name}").rollback()
+
+        # datasets is actually the parent.
+        self.zfs.get_snapshot(f"{datasets.name}@{name}").rollback()
+
+        ioc_common.logit({
+            "level"  : "INFO",
+            "message": f"Rolled back to: {target}"
+        },
+            _callback=self.callback,
+            silent=self.silent)
+
     def __soft_restart__(self):
         """
         Executes a soft reboot by keeping the jail network stack intact,
