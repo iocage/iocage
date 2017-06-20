@@ -281,6 +281,10 @@ class IOCCreate(object):
                         _fstab.write(line.replace(clone_uuid, jail_uuid))
 
         _tag = self.create_link(jail_uuid, config["tag"])
+
+        if is_template:
+                _tag = _tag.replace("@", "_")
+
         config["tag"] = _tag
 
         if not self.empty:
@@ -351,6 +355,9 @@ class IOCCreate(object):
                 self.create_install_packages(jail_uuid, location, _tag, config)
 
         if is_template:
+            # If we don't, the tag is the bad one with the @ if that's been
+            # replaced
+            iocjson.json_write(config)
             iocjson.json_set_value("template=yes")
 
         if start:
