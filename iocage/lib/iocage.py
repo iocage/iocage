@@ -760,6 +760,10 @@ class IOCage(object):
                 self.__soft_restart__()
 
     def __soft_restart__(self):
+        """
+        Executes a soft reboot by keeping the jail network stack intact,
+        but executing the rc scripts.
+        """
         tag, uuid, path = self.__check_jail_existence__()
         status, jid = self.list("jid", uuid=uuid)
         conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
