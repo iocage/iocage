@@ -29,7 +29,7 @@ To install using binary packages, simply run: `pkg install py36-iocage`
 To install subsequent updates: run `make install` as root.
 
 ##### Ports:
-- Build the port as follow: `cd /usr/ports/sysutils/py3-iocage/ ; make install clean`
+- Build the port as follows: `cd /usr/ports/sysutils/py3-iocage/ ; make install clean`
 
 *Note: `sysutils/py3-iocage` will conflict with other previous versions of iocage included into the ports tree. We suggest you first uninstall any other previous version of iocage prior to install this one.*
 
