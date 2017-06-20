@@ -301,6 +301,11 @@ class IOCCreate(object):
                 source = f"{self.iocroot}/{_type}/{self.release}/root/{bdir}"
                 destination = f"{self.iocroot}/jails/{jail_uuid}/root/{bdir}"
 
+                # This reduces the REFER of the basejail.
+                # # Just much faster by almost a factor of 2 than the builtins.
+                su.Popen(["rm", "-r", "-f", destination]).communicate()
+                os.mkdir(destination)
+
                 iocage.lib.ioc_fstab.IOCFstab(jail_uuid, _tag, "add", source,
                                               destination,
                                               "nullfs", "ro", "0", "0",
