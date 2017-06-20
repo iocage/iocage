@@ -302,7 +302,7 @@ class IOCCreate(object):
                 destination = f"{self.iocroot}/jails/{jail_uuid}/root/{bdir}"
 
                 # This reduces the REFER of the basejail.
-                # # Just much faster by almost a factor of 2 than the builtins.
+                # Just much faster by almost a factor of 2 than the builtins.
                 su.Popen(["rm", "-r", "-f", destination]).communicate()
                 os.mkdir(destination)
 
