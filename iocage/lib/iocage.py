@@ -580,6 +580,7 @@ class IOCage(object):
         plugins = kwargs.pop("plugins", False)
         plugin_file = kwargs.pop("plugin_file", False)
         count = kwargs.pop("count", 1)
+        accept = kwargs.pop("accept", False)
 
         freebsd_version = ioc_common.checkoutput(["freebsd-version"])
         arch = os.uname()[4]
@@ -613,17 +614,20 @@ class IOCage(object):
                     silent=self.silent)
 
             if plugins:
-                ioc_fetch.IOCFetch(release, **kwargs).fetch_plugin_index(props)
+                ioc_fetch.IOCFetch(release, **kwargs).fetch_plugin_index(
+                    props, accept_license=accept)
                 return
 
             if count == 1:
                 ioc_fetch.IOCFetch(release, **kwargs).fetch_plugin(name,
-                                                                   props, 0)
+                                                                   props, 0,
+                                                                   accept)
             else:
                 for j in range(1, count + 1):
                     ioc_fetch.IOCFetch(release, **kwargs).fetch_plugin(name,
                                                                        props,
-                                                                       j)
+                                                                       j,
+                                                                       accept)
         else:
             ioc_fetch.IOCFetch(release, **kwargs).fetch_release()
 
