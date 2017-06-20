@@ -87,6 +87,8 @@ def validate_count(ctx, param, value):
                                    "fetch or use a autocompleted filename"
                                    " for --plugin-file.\nAlso accepts full"
                                    " path for --plugin-file.")
+@click.option("--accept/--noaccept", default=False,
+              help="Accept the plugin's LICENSE agreement.")
 def cli(**kwargs):
     """CLI command that calls fetch_release()"""
     ioc.IOCage().fetch(**kwargs)

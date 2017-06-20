@@ -830,10 +830,14 @@ class IOCFetch(object):
 
         su.Popen(["umount", f"{new_root}/dev"]).communicate()
 
-    def fetch_plugin(self, _json, props, num):
+    def fetch_plugin(self, _json, props, num, accept_license):
         """Helper to fetch plugins"""
         _json = f"{self.iocroot}/.plugin_index/{_json}.json" if not \
             _json.endswith(".json") else _json
+
+        with open(f"{self.iocroot}/.plugin_index/INDEX", "r") as plugins:
+            plugins = json.load(plugins)
+
         try:
             with open(_json, "r") as j:
                 conf = json.load(j)
@@ -858,7 +862,7 @@ class IOCFetch(object):
             conf['release'] = re.sub(r"\W\w.", "-", conf['release'])
 
         self.release = conf['release']
-        self.__fetch_plugin_inform__(conf, num)
+        self.__fetch_plugin_inform__(conf, num, plugins, accept_license)
         props, pkg = self.__fetch_plugin_props__(conf, props, num)
         jail_uuid = str(uuid.uuid4())
         location = f"{self.iocroot}/jails/{jail_uuid}"
@@ -874,7 +878,7 @@ class IOCFetch(object):
             iocage.lib.ioc_destroy.IOCDestroy().destroy_jail(location)
             sys.exit(1)
 
-    def __fetch_plugin_inform__(self, conf, num):
+    def __fetch_plugin_inform__(self, conf, num, plugins, accept_license):
         """Logs the pertinent information before fetching a plugin"""
         if num <= 1:
             iocage.lib.ioc_common.logit({
@@ -910,6 +914,37 @@ class IOCFetch(object):
                 },
                     _callback=self.callback,
                     silent=self.silent)
+
+            # Name would be convenient, but it doesn't always gel with the
+            # JSON's title, pkg always does.
+            license = plugins[pkg.split("/", 1)[-1]].get("license", False)
+            license_text = requests.get(license)
+
+            if license and not accept_license:
+                # license_text =
+                iocage.lib.ioc_common.logit({
+                    "level"  : "WARNING",
+                    "message": "  This plugin requires accepting a license "
+                               "to proceed:"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+                iocage.lib.ioc_common.logit({
+                    "level"  : "VERBOSE",
+                    "message": f"{license_text.text}"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+
+                agree = input("Do you agree? (y/N) ")
+
+                if agree.lower() != "y":
+                    iocage.lib.ioc_common.logit({
+                        "level"  : "EXCEPTION",
+                        "message": "You must accept the license to continue!"
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
 
     def __fetch_plugin_props__(self, conf, props, num):
         """Generates the list of properties that a user and the JSON supply"""
@@ -1190,7 +1225,7 @@ fingerprint: {fingerprint}
                 pass
 
     def fetch_plugin_index(self, props, _list=False, list_header=False,
-                           list_long=False):
+                           list_long=False, accept_license=False):
         if self.server == "ftp.freebsd.org":
             git_server = "https://github.com/freenas/iocage-ix-plugins.git"
         else:
@@ -1215,7 +1250,6 @@ fingerprint: {fingerprint}
             plugins = json.load(plugins)
 
         _plugins = self.__fetch_sort_plugin__(plugins)
-
         if self.plugin is None and not _list:
             for p in _plugins:
                 iocage.lib.ioc_common.logit({
@@ -1232,8 +1266,13 @@ fingerprint: {fingerprint}
                 p = p.split("-", 1)
                 name = p[0]
                 desc, pkg = re.sub(r'[()]', '', p[1]).rsplit(" ", 1)
+                license = plugins[pkg].get("license", "")
 
                 p = [name, desc, pkg]
+
+                if not list_header:
+                    p += [license]
+
                 plugin_list.append(p)
 
             if not list_header:
@@ -1259,7 +1298,7 @@ fingerprint: {fingerprint}
         self.plugin = self.__fetch_validate_plugin__(self.plugin.lower(),
                                                      _plugins)
         self.fetch_plugin(f"{self.iocroot}/.plugin_index/{self.plugin}.json",
-                          props, 0)
+                          props, 0, accept_license)
 
     def __fetch_validate_plugin__(self, plugin, plugins):
         """
