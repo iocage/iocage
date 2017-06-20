@@ -91,6 +91,7 @@ class IOCCreate(object):
         defaults.
         """
         start = False
+        is_template = False
 
         if os.path.isdir(location):
             raise RuntimeError("The UUID is already in use by another jail.")
@@ -223,7 +224,7 @@ class IOCCreate(object):
                 except su.CalledProcessError as err:
                     raise RuntimeError(err.output.decode("utf-8").rstrip())
 
-        iocjson = iocage.lib.ioc_json.IOCJson(location)
+        iocjson = iocage.lib.ioc_json.IOCJson(location, silent=True)
 
         # This test is to avoid the same warnings during install_packages.
         if not self.plugin:
@@ -247,6 +248,10 @@ class IOCCreate(object):
                             value = f"{value}_{self.num}"
                 elif key == "boot" and value == "on":
                     start = True
+                elif key == "template" and value == "yes":
+                    # We will set this properly later
+                    is_template = True
+                    continue
 
                 try:
                     iocjson.json_check_prop(key, value, config)
@@ -325,6 +330,7 @@ class IOCCreate(object):
                 msg = f"{jail_uuid} ({_tag}) successfully cloned!"
             else:
                 msg = f"{jail_uuid} ({_tag}) successfully created!"
+
             iocage.lib.ioc_common.logit({
                 "level"  : "INFO",
                 "message": msg
@@ -343,6 +349,9 @@ class IOCCreate(object):
                     silent=self.silent)
             else:
                 self.create_install_packages(jail_uuid, location, _tag, config)
+
+        if is_template:
+            iocjson.json_set_value("template=yes")
 
         if start:
             iocage.lib.ioc_start.IOCStart(jail_uuid, _tag, location, config,

@@ -484,7 +484,7 @@ class IOCJson(object):
                     iocage.lib.ioc_common.logit({
                         "level"  : "INFO",
                         "message": f"{uuid} ({old_tag}) converted to a"
-                                   "template."
+                                   " template."
                     },
                         _callback=self.callback,
                         silent=self.silent)
