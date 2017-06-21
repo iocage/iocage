@@ -165,6 +165,9 @@ class IOCList(object):
             if full_ip4 == "none":
                 full_ip4 = "-"
 
+            if ip6 == "none":
+                ip6 = "-"
+
             status, jid = self.list_get_jid(uuid)
 
             if status:
