@@ -24,6 +24,7 @@
 """create module for the cli."""
 import json
 import os
+import uuid
 
 import click
 
@@ -54,7 +55,7 @@ def validate_count(ctx, param, value):
 @click.option("--release", "-r", required=False)
 @click.option("--template", "-t", required=False)
 @click.option("--pkglist", "-p", default=None)
-@click.option("--uuid", "-u", default=None,
+@click.option("--uuid", "-u", "_uuid", default=None,
               help="Provide a specific UUID for this jail")
 @click.option("--basejail", "-b", is_flag=True, default=False)
 @click.option("--empty", "-e", is_flag=True, default=False)
@@ -63,12 +64,28 @@ def validate_count(ctx, param, value):
                    "36")
 @click.argument("props", nargs=-1)
 def cli(release, template, count, props, pkglist, basejail, empty, short,
-        uuid):
+        _uuid):
     if release and "=" in release:
         ioc_common.logit({
             "level"  : "EXCEPTION",
             "message": "Please supply a valid RELEASE!"
         })
+
+    if template:
+        try:
+            uuid.UUID(template, version=4)
+            ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": "Template creation only supports TAGs!"
+            })
+        except ValueError:
+            ioc_common.logit({
+                "level"  : "WARNING",
+                "message": "This may be a short UUID, template creation only"
+                           " supports TAGs"
+            })
+            if not click.confirm("\nProceed?"):
+                exit()
 
     # We don't really care it's not a RELEASE at this point.
     release = template if template else release
@@ -109,7 +126,7 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
     if count == 1:
         err, msg = iocage.create(release, props, pkglist=pkglist,
                                  template=template, short=short,
-                                 uuid=uuid, basejail=basejail,
+                                 uuid=_uuid, basejail=basejail,
                                  empty=empty)
         if err:
             ioc_common.logit({
@@ -130,5 +147,5 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
                     })
     else:
         iocage.create(release, props, count, pkglist=pkglist,
-                      template=template, short=short, uuid=uuid,
+                      template=template, short=short, uuid=_uuid,
                       basejail=basejail, empty=empty)
