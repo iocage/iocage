@@ -178,9 +178,11 @@ class IOCList(object):
             if conf["type"] == "template":
                 template = "-"
             else:
-                _origin_property = jail.properties["origin"]
+                jail_root = self.zfs.get_dataset(f"{jail.name}/root")
+                _origin_property = jail_root.properties["origin"]
+
                 if _origin_property and _origin_property.value != "":
-                    template = jail.properties["origin"].value
+                    template = jail_root.properties["origin"].value
                 else:
                     template = "-"
 
