@@ -183,6 +183,8 @@ class IOCList(object):
 
                 if _origin_property and _origin_property.value != "":
                     template = jail_root.properties["origin"].value
+                    template = template.rsplit("/root@", 1)[0].rsplit(
+                        "/", 1)[-1]
                 else:
                     template = "-"
 
