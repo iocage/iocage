@@ -544,14 +544,14 @@ class IOCage(object):
             if err:
                 ioc_common.logit({
                     "level"  : "EXCEPTION",
-                    "message": err.decode()
+                    "message": err
                 },
                     _callback=self.callback,
                     silent=self.silent)
             else:
                 ioc_common.logit({
                     "level"  : "INFO",
-                    "message": msg.decode("utf-8")
+                    "message": msg
                 },
                     _callback=self.callback,
                     silent=self.silent)
