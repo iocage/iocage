@@ -24,6 +24,7 @@
 """create module for the cli."""
 import json
 import os
+import re
 import uuid
 
 import click
@@ -55,6 +56,9 @@ def validate_count(ctx, param, value):
 @click.option("--release", "-r", required=False)
 @click.option("--template", "-t", required=False)
 @click.option("--pkglist", "-p", default=None)
+@click.option("--name", "-n", default=None,
+              help="Provide a specific name and tag instead of an UUID for"
+                   " this jail")
 @click.option("--uuid", "-u", "_uuid", default=None,
               help="Provide a specific UUID for this jail")
 @click.option("--basejail", "-b", is_flag=True, default=False)
@@ -64,7 +68,22 @@ def validate_count(ctx, param, value):
                    "36")
 @click.argument("props", nargs=-1)
 def cli(release, template, count, props, pkglist, basejail, empty, short,
-        _uuid):
+        name, _uuid):
+    if name:
+        _props = []
+        if f"tag={name}" not in props:
+            _props.append(f"tag={name}")
+
+        for prop in props:
+            replace = f"tag={name}"
+            prop = re.sub(r"tag=.*", replace, prop)
+            _props.append(prop)
+
+        props = tuple(_props)
+
+        # At this point we don't care
+        _uuid = name
+
     if release and "=" in release:
         ioc_common.logit({
             "level"  : "EXCEPTION",
