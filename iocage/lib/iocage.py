@@ -639,6 +639,15 @@ class IOCage(object):
         if add_path:
             destination = f"{self.iocroot}/jails/{uuid}/root{destination}"
 
+        if len(destination) > 88:
+            ioc_common.logit({
+                "level"  : "WARNING",
+                "message": "The destination's mountpoint exceeds 88 "
+                           "characters, this may cause failure!"
+            },
+                _callback=self.callback,
+                silent=self.silent)
+
         ioc_fstab.IOCFstab(uuid, tag, action, source, destination, fstype,
                            options, dump, _pass, index=index)
 
