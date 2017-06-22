@@ -402,25 +402,33 @@ class IOCStart(object):
             for nic in nics:
                 self.start_network_interface_vnet(nic, net_configs, jid)
 
-    def start_network_interface_vnet(self, nic, net_configs, jid):
+    def start_network_interface_vnet(self, nic_defs, net_configs, jid):
         """
         Start VNET on interface
 
-        :param nic: The network interface to assign the IP in the jail
+        :param nic_defs: comma separated interface definitions (nic, bridge)
         :param net_configs: Tuple of IP address and router pairs
         :param jid: The jails ID
         """
-        nic, bridge = nic.split(":")
 
-        try:
-            membermtu = find_bridge_mtu(bridge)
+        nic_defs = nic_defs.split(",")
+        nics = list(map(lambda x: x.split(":")[0], nic_defs))
 
-            ifaces = []
-            for addrs, gw in net_configs:
-                if addrs != 'none':
+        for nic_def in nic_defs:
+
+            nic, bridge = nic_def.split(":")
+
+            try:
+                membermtu = find_bridge_mtu(bridge)
+
+                ifaces = []
+                for addrs, gw in net_configs:
+                    if addrs == 'none':
+                        continue
+
                     for addr in addrs.split(','):
                         iface, ip = addr.split("|")
-                        if nic != iface:
+                        if iface not in nics:
                             err = f"\n  Invalid interface supplied: {iface}"
                             iocage.lib.ioc_common.logit({
                                 "level"  : "ERROR",
@@ -444,14 +452,14 @@ class IOCStart(object):
 
                         self.start_network_vnet_addr(iface, ip, gw)
 
-        except su.CalledProcessError as err:
-            iocage.lib.ioc_common.logit({
-                "level"  : "WARNING",
-                "message": "Network failed to start:"
-                           f" {err.output.decode('utf-8')}".rstrip()
-            },
-                _callback=self.callback,
-                silent=self.silent)
+            except su.CalledProcessError as err:
+                iocage.lib.ioc_common.logit({
+                    "level"  : "WARNING",
+                    "message": "Network failed to start:"
+                               f" {err.output.decode('utf-8')}".rstrip()
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
 
     def start_network_vnet_iface(self, nic, bridge, mtu, jid):
         """
