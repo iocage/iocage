@@ -279,7 +279,12 @@ class IOCStart(object):
                     _callback=self.callback,
                     silent=self.silent)
 
-                raise RuntimeError(f"  {stderr_data.decode('utf-8')}")
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": stderr_data.decode('utf-8')
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
             else:
                 iocage.lib.ioc_common.logit({
                     "level"  : "INFO",
@@ -333,9 +338,13 @@ class IOCStart(object):
                                      f"ioc-{self.uuid}", "zfs",
                                      "mount", child], stderr=su.STDOUT)
                         except su.CalledProcessError as err:
-                            raise RuntimeError(
-                                "{}".format(
-                                    err.output.decode("utf-8").rstrip()))
+                            msg = err.output.decode('utf-8').rstrip()
+                            iocage.lib.ioc_common.logit({
+                                "level"  : "EXCEPTION",
+                                "message": msg
+                            },
+                                _callback=self.callback,
+                                silent=self.silent)
 
             self.start_generate_resolv()
             self.start_copy_localtime()
