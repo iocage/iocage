@@ -402,56 +402,62 @@ class IOCStart(object):
             for nic in nics:
                 self.start_network_interface_vnet(nic, net_configs, jid)
 
-    def start_network_interface_vnet(self, nic, net_configs, jid):
+    def start_network_interface_vnet(self, nic_definitions, net_configs, jid):
         """
         Start VNET on interface
 
-        :param nic: The network interface to assign the IP in the jail
+        :param nic_definitions: The network comma separated interface(s) to assign the IP in the jail
         :param net_configs: Tuple of IP address and router pairs
         :param jid: The jails ID
         """
-        nic, bridge = nic.split(":")
 
-        try:
-            membermtu = find_bridge_mtu(bridge)
+        nic_definitions = nic_definitions.split(",")
+        nics = list(map(lambda x: x.split(":")[0], nic_definitions))
 
-            ifaces = []
-            for addrs, gw in net_configs:
-                if addrs != 'none':
-                    for addr in addrs.split(','):
-                        iface, ip = addr.split("|")
-                        if nic != iface:
-                            err = f"\n  Invalid interface supplied: {iface}"
-                            iocage.lib.ioc_common.logit({
-                                "level"  : "ERROR",
-                                "message": f"{err}"
-                            },
-                                _callback=self.callback,
-                                silent=self.silent)
+        for nic_definition in nic_definitions:
 
-                            err = f"  Did you mean {nic}?\n"
-                            iocage.lib.ioc_common.logit({
-                                "level"  : "ERROR",
-                                "message": f"{err}"
-                            },
-                                _callback=self.callback,
-                                silent=self.silent)
-                            continue
-                        if iface not in ifaces:
-                            self.start_network_vnet_iface(nic, bridge,
-                                                          membermtu, jid)
-                            ifaces.append(iface)
+            nic, bridge = nic_definition.split(":")
 
-                        self.start_network_vnet_addr(iface, ip, gw)
+            try:
+                membermtu = find_bridge_mtu(bridge)
 
-        except su.CalledProcessError as err:
-            iocage.lib.ioc_common.logit({
-                "level"  : "WARNING",
-                "message": "Network failed to start:"
-                           f" {err.output.decode('utf-8')}".rstrip()
-            },
-                _callback=self.callback,
-                silent=self.silent)
+                ifaces = []
+                for addrs, gw in net_configs:
+                    if addrs != 'none':
+                        for addr in addrs.split(','):
+                            iface, ip = addr.split("|")
+                            if iface not in nics:
+                                err = f"\n  Invalid interface supplied: {iface}"
+                                iocage.lib.ioc_common.logit({
+                                    "level"  : "ERROR",
+                                    "message": f"{err}"
+                                },
+                                    _callback=self.callback,
+                                    silent=self.silent)
+
+                                err = f"  Did you mean {nic}?\n"
+                                iocage.lib.ioc_common.logit({
+                                    "level"  : "ERROR",
+                                    "message": f"{err}"
+                                },
+                                    _callback=self.callback,
+                                    silent=self.silent)
+                                continue
+                            if iface not in ifaces:
+                                self.start_network_vnet_iface(nic, bridge,
+                                                              membermtu, jid)
+                                ifaces.append(iface)
+
+                            self.start_network_vnet_addr(iface, ip, gw)
+
+            except su.CalledProcessError as err:
+                iocage.lib.ioc_common.logit({
+                    "level"  : "WARNING",
+                    "message": "Network failed to start:"
+                               f" {err.output.decode('utf-8')}".rstrip()
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
 
     def start_network_vnet_iface(self, nic, bridge, mtu, jid):
         """
