@@ -24,35 +24,34 @@
 .\" == CLEAN ==
 .Nm
 .Cm clean
-.Op Fl a | -all
-.Op Fl b | r | -base
+.Op Fl a | -all | Cm dataset_type
+.Op Fl b | r | -base | Cm dataset_type
 .Op Fl f | -force
-.Op Fl j | -jails
-.Op Fl t | -template
+.Op Fl j | -jails |  Cm dataset_type
+.Op Fl t | -template | Cm dataset_type
+.\"== CLONE ==
+.Nm
+.Cm clone
+.Ar UUID | TAG
+.Ar PROPERTIES
+.Op Fl c | -count
 .\" == CONSOLE ==
 .Nm
 .Cm console
-.Op Fl f | -force
 .Ar UUID | TAG
 .\" == CREATE ==
 .Nm
 .Cm create
 .Op Fl b | -basejail
 .Op Fl c | -count
-.Ar TEXT
 .Op Fl e | -empty
+.Op Fl n | -name
 .Op Fl p | -pkglist
-.Ar TEXT
 .Op Fl r | -release
-.Ar TEXT
 .Op Fl s | -short
 .Op Fl t | -template
-.Ar TEXT
-.Op Fl u | -uuid
-.Ar TEXT
-.Op Cm release Ns = Ns Ar RELEASE
-.Op Cm pkglist Ns = Ns Ar FILE
-.Op Cm property Ns = Ns Ar VALUE
+.Op Fl u | -uuid | Cm _uuid
+.Ar PROPERTIES
 .\" == DESTROY ==
 .Nm
 .Cm destroy
@@ -64,15 +63,14 @@
 .Nm
 .Cm df
 .Op Fl H | h | -header
-.Op Fl l | -long
+.Op Fl l | -long | Cm _long
+.Op Fl s | -sort | Cm _sort
 .\" == EXEC ==
 .Nm
 .Cm exec
-.Op Fl U | -jail_user
-.Ar NAME
-.Op Fl u | -host_user
-.Ar NAME
-.Ar ALL | TAG | UUID
+.Op Fl U | -jail_user Ar NAME
+.Op Fl u | -host_user Ar NAME
+.Ar TAG | UUID
 .Cm COMMAND Op Ar ARGS
 .\" == EXPORT ==
 .Nm
@@ -81,70 +79,60 @@
 .\" == FETCH ==
 .Nm
 .Cm fetch
-.Op Fl -plugins
+.Op Fl -accept
+.Op Fl -noaccept
+.Op Fl -plugins Ar PROPERTIES
 .Op Fl E | -eol
 .Op Fl F | -files
-.Ar TEXT
 .Op Fl NE | -noeol
 .Op Fl NU | -noupdate
 .Op Fl NV | -noverify
 .Op Fl P | -plugin-file
-.Ar TEXT
 .Op Fl U | -update
 .Op Fl V | -verify
 .Op Fl a | -auth
-.Ar TEXT
 .Op Fl c | -count
-.Ar TEXT
 .Op Fl d | -root-dir
-.Ar TEXT
-.Op Fl f | -file
+.Op Fl f | -file | Cm _file
 .Op Fl h | -http
+.Op Fl n | -name
 .Op Fl p | -password
-.Ar TEXT
 .Op Fl r | -release
-.Ar TEXT
 .Op Fl s | -server
-.Ar TEXT
 .Op Fl u | -user
-.Ar TEXT
-.Op Cm release Ns = Ns Ar RELEASE
-.Op Cm ftphost Ns = Ns Ar ftp.hostname.org
-.Op Cm ftpdir Ns = Ns Ar /dir/
-.Op Cm ftpfiles Ns = Ns Ar "base.txz doc.txz lib32.txz src.txz"
 .\" == FSTAB ==
 .Nm
 .Cm fstab
-.Op Fl a | -add
-.Op Fl e | -edit
-.Op Fl r | -remove
 .Ar JAIL
-.Op Ar FSTAB_STRING
+.Ar FSTAB_STRING
+.Op Fl a | -add | Cm action
+.Op Fl e | -edit | Cm action
+.Op Fl r | -remove | Cm action
 .\" == GET ==
 .Nm
 .Cm get
+.Ar PROPERTY
+.Ar UUID | TAG
 .Op Fl H | h | -header
 .Op Fl P | -plugin
-.Op Fl a | -all
-.Op Fl p | -pool
+.Op Fl a | -all | Cm _all
+.Op Fl p | -pool | Cm _pool
 .Op Fl r | -recursive
-.Ar PROPERTY
-.Op Ar all | UUID | TAG
 .\" == IMPORT ==
 .Nm
 .Cm import
-.Ar JAIL
-.Op Ar Jail_value
+.Ar UUID | TAG
 .\" == LIST ==
 .Nm
 .Cm list
+.Op Fl -http
 .Op Fl H | h | -header
 .Op Fl P | -plugins
 .Op Fl R | -remote
-.Op Fl b | r | -base | -release
-.Op Fl h | -http
-.Op Fl l | -long
-.Op Fl t | -template
+.Op Fl b | r | -base | -release | Cm dataset_type
+.Op Fl l | -long | Cm _long
+.Op Fl s | -sort | Cm _sort
+.Op Fl t | -template | Cm dataset_type
 .\" == MIGRATE ==
 .Nm
 .Cm migrate
@@ -153,27 +141,25 @@
 .\" == PKG ==
 .Nm
 .Cm pkg
-.Ar JAIL
+.Ar UUID | TAG
 .Ar COMMAND
 .\" == RESTART ==
 .Nm
 .Cm restart
 .Op Fl s | -soft
-.Op Ar UUID | TAG
+.Ar UUID | TAG
 .\" == ROLLBACK ==
 .Nm
 .Cm rollback
+.Ar UUID | TAG
 .Op Fl f | -force
 .Op Fl n | -name
-.Ar SNAPSHOT
-.Op Ar UUID | TAG@snapshotname
 .\" == SET ==
 .Nm
 .Cm set
-.Op Fl P | -plugin
-.Ar KEY
-.Ar property_value
-.Op Ar UUID | TAG
+.Ar PROPERTY
+.Ar UUID | TAG
+.Op Fl P | -plugin Ar KEY
 .\" == SNAPLIST ==
 .Nm
 .Cm snaplist
@@ -182,33 +168,32 @@
 .\" == SNAPREMOVE ==
 .Nm
 .Cm snapremove
+.Ar UUID | TAG
 .Op Fl n | -name
-.Op Ar UUID | TAG@snapshotname | ALL
 .\" == SNAPSHOT ==
 .Nm
 .Cm snapshot
+.Ar UUID | TAG
 .Op Fl n | -name
-.Op Ar UUID | TAG | TAG@snapshotname
 .\" == START ==
 .Nm
 .Cm start
 .Op Fl -rc
-.Op Ar UUID | TAG
+.Ar UUID | TAG
 .\" == STOP ==
 .Nm
 .Cm stop
 .Op Fl -rc
-.Op Ar UUID | TAG
+.Ar UUID | TAG
 .\" == UPDATE ==
 .Nm
 .Cm update
-.Op Ar UUID | TAG
+.Ar UUID | TAG
 .\" == UPGRADE ==
 .Nm
 .Cm upgrade
-.Op Fl r | -release
-.Ar RELEASE
-.Op Ar UUID | TAG
+.Ar UUID | TAG
+.Fl r | -release Ar RELEASE
 .Sh DESCRIPTION
 .Nm
 is a system administration tool designed to simplify jail management
@@ -1606,6 +1591,8 @@ For more information, please see
 Please report bugs, issues, and feature requests at
 .Lk https://github.com/iocage/iocage/issues
 .Sh AUTHORS
+.An Warren Block
+.An Tim Moore Jr
 .An Peter Toth
 .An Brandon Schneider
 .Sh SPECIAL THANKS
