@@ -1134,7 +1134,7 @@ fingerprint: {fingerprint}
                                                         "fingerprint"]))
         err = iocage.lib.ioc_create.IOCCreate(
             self.release, create_props, 0, pkglist=conf[
-                "pkgs"]).create_install_packages(
+                "pkgs"], silent=True).create_install_packages(
             uuid, jaildir, tag, _conf, repo=conf["packagesite"],
             site=repo_name)
 
