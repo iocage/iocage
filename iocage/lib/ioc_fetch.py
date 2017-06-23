@@ -923,10 +923,9 @@ class IOCFetch(object):
                 license = plugins[conf["name"].lower().split("/", 1)[-1]].get(
                     "license", False)
 
-            license_text = requests.get(license)
-
             if license and not accept_license:
-                # license_text =
+                license_text = requests.get(license)
+
                 iocage.lib.ioc_common.logit({
                     "level"  : "WARNING",
                     "message": "  This plugin requires accepting a license "
