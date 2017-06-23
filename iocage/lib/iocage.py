@@ -821,6 +821,60 @@ class IOCage(object):
             _callback=self.callback,
             silent=self.silent)
 
+    def set(self, prop, plugin=False):
+        """Sets a property for a jail or plugin"""
+        prop = " ".join(prop)  # We don't want a tuple.
+
+        if self.jail == "default":
+            default = True
+        else:
+            default = False
+
+        if "template=no" in prop:
+            self.jail = f"{jail} (template)"
+
+        if not default:
+            tag, uuid, path = self.__check_jail_existence__()
+            iocjson = ioc_json.IOCJson(path, cli=True)
+
+            if "template" in prop.split("=")[0]:
+                if "template" in path and prop != "template=no":
+                    ioc_common.logit({
+                        "level"  : "EXCEPTION",
+                        "message": f"{uuid} ({tag}) is already a template!"
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
+                elif "template" not in path and prop != "template=yes":
+                    ioc_common.logit({
+                        "level"  : "EXCEPTION",
+                        "message": f"{uuid} ({tag}) is already a jail!"
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
+
+            if plugin:
+                _prop = prop.split(".")
+                ioc_json.IOCJson(path, cli=True).json_plugin_set_value(_prop)
+            else:
+                try:
+                    # We use this to test if it's a valid property at all.
+                    _prop = prop.partition("=")[0]
+                    self.get(_prop)
+
+                    # The actual setting of the property.
+                    iocjson.json_set_value(prop)
+                except KeyError:
+                    _prop = prop.partition("=")[0]
+                    ioc_common.logit({
+                        "level"  : "EXCEPTION",
+                        "message": f"{_prop} is not a valid property!"
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
+        else:
+            ioc_json.IOCJson(self.iocroot).json_set_value(prop, default=True)
+
     def __soft_restart__(self):
         """
         Executes a soft reboot by keeping the jail network stack intact,
