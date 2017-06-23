@@ -535,7 +535,7 @@ class IOCCreate(object):
             silent=self.silent)
         srv_connection, srv_err = iocage.lib.ioc_exec.IOCExec(
             srv_connect_cmd, jail_uuid, _tag, location,
-            plugin=self.plugin).exec_jail()
+            plugin=self.plugin, silent=True).exec_jail()
 
         if srv_err:
             raise RuntimeError(f"{srv_connection}\n"
@@ -549,7 +549,7 @@ class IOCCreate(object):
             silent=self.silent)
         dnssec_connection, dnssec_err = iocage.lib.ioc_exec.IOCExec(
             dnssec_connect_cmd, jail_uuid, _tag, location,
-            plugin=self.plugin).exec_jail()
+            plugin=self.plugin, silent=True).exec_jail()
 
         if dnssec_err:
             raise RuntimeError(f"{dnssec_connection}\n"
@@ -599,7 +599,8 @@ class IOCCreate(object):
                 silent=self.silent)
             cmd = ("pkg", "install", "-q", "-y", pkg)
             pkg_install, pkg_err = iocage.lib.ioc_exec.IOCExec(
-                cmd, jail_uuid, _tag, location, plugin=self.plugin).exec_jail()
+                cmd, jail_uuid, _tag, location, plugin=self.plugin,
+                silent=self.silent).exec_jail()
 
             if pkg_err:
                 iocage.lib.ioc_common.logit({
