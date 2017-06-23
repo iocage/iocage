@@ -70,7 +70,7 @@ def validate_count(ctx, param, value):
               default=False, is_flag=True)
 @click.argument("props", nargs=-1)
 def cli(release, template, count, props, pkglist, basejail, empty, short,
-        name, _uuid):
+        name, _uuid, force):
     if name:
         _props = []
         if f"tag={name}" not in props:
@@ -102,9 +102,9 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
         except ValueError:
             if not force:
                 ioc_common.logit({
-                    "level"  : "WARNING",
-                    "message": "This may be a short UUID, template creation only"
-                            " supports TAGs"
+                    "level":   "WARNING",
+                    "message": "This may be a short UUID, "
+                               "template creation only supports TAGs"
                 })
                 if not click.confirm("\nProceed?"):
                     exit()
