@@ -631,7 +631,8 @@ class IOCage(object):
                     silent=self.silent)
 
             if plugins:
-                ioc_fetch.IOCFetch(release, **kwargs).fetch_plugin_index(
+                ioc_fetch.IOCFetch(
+                    release, plugin=name, **kwargs).fetch_plugin_index(
                     props, accept_license=accept)
                 return
 
