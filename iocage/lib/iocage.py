@@ -204,17 +204,33 @@ class IOCage(object):
 
             return tag, uuid, path
         elif len(_jail) > 1:
-            msg = f"Multiple jails found for {self.jail}:"
+            # Do another search, this time more exact.
+            _jail = {tag: uuid for (tag, uuid) in _jail.items() if
+                     uuid == self.jail or tag == self.jail}
+            if len(_jail) == 1:
+                tag, uuid = next(iter(_jail.items()))
+                path = self._paths[tag]
 
-            for j, u in sorted(_jail.items()):
-                msg += f"\n  {j} ({u})"
+                return tag, uuid, path
+            elif len(_jail) > 1:
+                msg = f"Multiple jails found for {self.jail}:"
 
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": msg
-            },
-                _callback=self.callback,
-                silent=self.silent)
+                for j, u in sorted(_jail.items()):
+                    msg += f"\n  {j} ({u})"
+
+                ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": msg
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+            else:
+                ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": f"{self.jail} not found!"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
         else:
             ioc_common.logit({
                 "level"  : "EXCEPTION",
@@ -544,14 +560,14 @@ class IOCage(object):
             if err:
                 ioc_common.logit({
                     "level"  : "EXCEPTION",
-                    "message": err.decode()
+                    "message": err
                 },
                     _callback=self.callback,
                     silent=self.silent)
             else:
                 ioc_common.logit({
                     "level"  : "INFO",
-                    "message": msg.decode("utf-8")
+                    "message": msg
                 },
                     _callback=self.callback,
                     silent=self.silent)
@@ -638,6 +654,15 @@ class IOCage(object):
 
         if add_path:
             destination = f"{self.iocroot}/jails/{uuid}/root{destination}"
+
+        if len(destination) > 88:
+            ioc_common.logit({
+                "level"  : "WARNING",
+                "message": "The destination's mountpoint exceeds 88 "
+                           "characters, this may cause failure!"
+            },
+                _callback=self.callback,
+                silent=self.silent)
 
         ioc_fstab.IOCFstab(uuid, tag, action, source, destination, fstype,
                            options, dump, _pass, index=index)

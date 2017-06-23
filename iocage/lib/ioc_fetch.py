@@ -917,7 +917,12 @@ class IOCFetch(object):
 
             # Name would be convenient, but it doesn't always gel with the
             # JSON's title, pkg always does.
-            license = plugins[pkg.split("/", 1)[-1]].get("license", False)
+            try:
+                license = plugins[pkg.split("/", 1)[-1]].get("license", False)
+            except UnboundLocalError:
+                license = plugins[conf["name"].lower().split("/", 1)[-1]].get(
+                    "license", False)
+
             license_text = requests.get(license)
 
             if license and not accept_license:

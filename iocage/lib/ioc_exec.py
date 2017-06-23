@@ -92,7 +92,13 @@ class IOCExec(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-        if self.plugin:
+        if self.console:
+            login_flags = conf["login_flags"].split()
+            su.Popen(["setfib", exec_fib, "jexec", f"ioc-{self.uuid}",
+                      "login"] + login_flags).communicate()
+
+            return None, False
+        else:
             try:
                 p = su.Popen(["setfib", exec_fib, "jexec", flag, user,
                               f"ioc-{self.uuid}"] + list(self.command),
@@ -103,16 +109,3 @@ class IOCExec(object):
                 return msg, False
             except su.CalledProcessError as err:
                 return err.output.decode("utf-8").rstrip(), True
-        elif self.console:
-            login_flags = conf["login_flags"].split()
-            su.Popen(["setfib", exec_fib, "jexec", f"ioc-{self.uuid}",
-                      "login"] + login_flags).communicate()
-
-            return None, False
-        else:
-            jexec = su.Popen(["setfib", exec_fib, "jexec", flag, user,
-                              f"ioc-{self.uuid}"] + list(self.command),
-                             stdout=su.PIPE, stderr=su.PIPE)
-            msg, err = jexec.communicate()
-
-            return msg, err

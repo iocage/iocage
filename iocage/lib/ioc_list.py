@@ -165,6 +165,9 @@ class IOCList(object):
             if full_ip4 == "none":
                 full_ip4 = "-"
 
+            if ip6 == "none":
+                ip6 = "-"
+
             status, jid = self.list_get_jid(uuid)
 
             if status:
@@ -175,9 +178,13 @@ class IOCList(object):
             if conf["type"] == "template":
                 template = "-"
             else:
-                _origin_property = jail.properties["origin"]
+                jail_root = self.zfs.get_dataset(f"{jail.name}/root")
+                _origin_property = jail_root.properties["origin"]
+
                 if _origin_property and _origin_property.value != "":
-                    template = jail.properties["origin"].value
+                    template = jail_root.properties["origin"].value
+                    template = template.rsplit("/root@", 1)[0].rsplit(
+                        "/", 1)[-1]
                 else:
                     template = "-"
 
