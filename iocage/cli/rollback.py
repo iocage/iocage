@@ -34,7 +34,7 @@ __rootcmd__ = True
 @click.argument("jail")
 @click.option("--name", "-n", help="The snapshot name. This will be what comes"
                                    " after @", required=True)
-@click.option("--force", "-f", help="Skip then interactive question.",
+@click.option("--force", "-f", help="Skip the interactive question.",
               default=False, is_flag=True)
 def cli(jail, name, force):
     """Get a list of jails and print the property."""
