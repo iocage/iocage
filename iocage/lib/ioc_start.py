@@ -27,6 +27,7 @@ import os
 import re
 import shutil
 import subprocess as su
+import hashlib
 
 import iocage.lib.ioc_common
 import iocage.lib.ioc_json
@@ -570,6 +571,18 @@ class IOCStart(object):
         else:
             shutil.copy(resolver, f"{self.path}/root/etc/resolv.conf")
 
+    def __generate_mac_bytes(self, nic):
+        m = hashlib.md5()
+        m.update(self.uuid.encode("utf-8"))
+        m.update(nic.encode("utf-8"))
+        prefix = "02ff60"
+        return f"{prefix}{m.hexdigest()[0:12-len(prefix)]}"
+
+    def __generate_mac_address_pair(self, nic):
+        mac_a = self.__generate_mac_bytes(nic)
+        mac_b = hex(int(mac_a, 16) + 1)
+        return mac_a, mac_b
+
     def __start_generate_vnet_mac__(self, nic):
         """
         Generates a random MAC address and checks for uniquness.
@@ -579,33 +592,12 @@ class IOCStart(object):
         mac = self.get("{}_mac".format(nic))
 
         if mac == "none":
-            jails, paths = iocage.lib.ioc_list.IOCList("uuid").list_datasets()
-            mac_list = []
-
-            for jail in jails:
-                path = paths[jail]
-                _conf = iocage.lib.ioc_json.IOCJson(path).json_load()
-                mac = _conf.get("mac_prefix", "02ff60")
-                mac_list.append(_conf["{}_mac".format(nic)].split(","))
-
-            # We have to flatten our list of lists.
-            mac_list = [m for maclist in mac_list for m in maclist]
-            for number in range(16 ** 6):
-                # SO
-                hex_num_a = hex(number)[2:].zfill(6)
-                hex_num_b = hex(number + 1)[2:].zfill(6)
-                gen_mac_a = "{}{}{}{}{}{}{}".format(mac, *hex_num_a)
-                gen_mac_b = "{}{}{}{}{}{}{}".format(mac, *hex_num_b)
-                gen_mac_combined = "{},{}".format(gen_mac_a, gen_mac_b)
-
-                if gen_mac_a in mac_list or gen_mac_b in mac_list:
-                    continue
-                else:
-                    self.set("{}_mac={}".format(nic, gen_mac_combined))
-                    return gen_mac_a, gen_mac_b
+            mac_a, mac_b = self.__generate_mac_address_pair(nic)
+            self.set(f"{nic}_mac={mac_a},{mac_b}")
         else:
             mac_a, mac_b = mac.split(",")
-            return mac_a, mac_b
+
+        return mac_a, mac_b
 
 
 def find_bridge_mtu(bridge):
