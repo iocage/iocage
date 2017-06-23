@@ -831,7 +831,7 @@ class IOCage(object):
             default = False
 
         if "template=no" in prop:
-            self.jail = f"{jail} (template)"
+            self.jail = f"{self.jail} (template)"
 
         if not default:
             tag, uuid, path = self.__check_jail_existence__()
