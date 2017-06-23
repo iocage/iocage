@@ -1003,4 +1003,9 @@ class IOCJson(object):
                 _callback=self.callback,
                 silent=self.silent)
         except KeyError:
-            raise RuntimeError(f"Key: \"{key}\" does not exist!")
+            iocage.lib.ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": f"Key: \"{key}\" does not exist!"
+            },
+                _callback=self.callback,
+                silent=self.silent)
