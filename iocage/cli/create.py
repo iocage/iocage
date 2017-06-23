@@ -44,7 +44,7 @@ def validate_count(ctx, param, value):
             return int(value)
         except ValueError:
             ioc_common.logit({
-                "level":   "EXCEPTION",
+                "level"  : "EXCEPTION",
                 "message": f"{value} is not a valid integer."
             })
     else:
@@ -88,7 +88,7 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
 
     if release and "=" in release:
         ioc_common.logit({
-            "level":   "EXCEPTION",
+            "level"  : "EXCEPTION",
             "message": "Please supply a valid RELEASE!"
         })
 
@@ -96,13 +96,13 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
         try:
             uuid.UUID(template, version=4)
             ioc_common.logit({
-                "level":   "EXCEPTION",
+                "level"  : "EXCEPTION",
                 "message": "Template creation only supports TAGs!"
             })
         except ValueError:
             if not force:
                 ioc_common.logit({
-                    "level":   "WARNING",
+                    "level"  : "WARNING",
                     "message": "This may be a short UUID, "
                                "template creation only supports TAGs"
                 })
@@ -123,7 +123,7 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
 
         if not os.path.isfile(pkglist):
             ioc_common.logit({
-                "level":   "EXCEPTION",
+                "level"  : "EXCEPTION",
                 "message": f"{pkglist} does not exist!\n"
                            "Please supply a JSON file with the format:"
                            f" {_pkgformat}"
@@ -135,7 +135,7 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
                     json.load(p)["pkgs"]  # noqa
             except json.JSONDecodeError:
                 ioc_common.logit({
-                    "level":   "EXCEPTION",
+                    "level"  : "EXCEPTION",
                     "message": "Please supply a valid"
                                f" JSON file with the format:{_pkgformat}"
                 })
@@ -152,19 +152,19 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
                                  empty=empty)
         if err:
             ioc_common.logit({
-                "level":  "ERROR",
+                "level"  : "ERROR",
                 "message": msg
             })
 
             if template:
                 ioc_common.logit({
-                    "level":   "INFO",
+                    "level"  : "INFO",
                     "message": "Created Templates:"
                 })
                 templates = ioc.IOCage().list("template")
                 for temp in templates:
                     ioc_common.logit({
-                        "level":   "INFO",
+                        "level"  : "INFO",
                         "message": f"  {temp[3]}"
                     })
     else:
