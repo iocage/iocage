@@ -207,6 +207,7 @@ class IOCage(object):
             # Do another search, this time more exact.
             _jail = {tag: uuid for (tag, uuid) in _jail.items() if
                      uuid == self.jail or tag == self.jail}
+
             if len(_jail) == 1:
                 tag, uuid = next(iter(_jail.items()))
                 path = self._paths[tag]
