@@ -44,8 +44,8 @@ def validate_count(ctx, param, value):
             return int(value)
         except ValueError:
             ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": f"({value} is not a valid  integer."
+                "level":   "EXCEPTION",
+                "message": f"{value} is not a valid integer."
             })
     else:
         return int(value)
@@ -66,9 +66,11 @@ def validate_count(ctx, param, value):
 @click.option("--short", "-s", is_flag=True, default=False,
               help="Use a short UUID of 8 characters instead of the default "
                    "36")
+@click.option("--force", "-f", help="Skip the interactive question.",
+              default=False, is_flag=True)
 @click.argument("props", nargs=-1)
 def cli(release, template, count, props, pkglist, basejail, empty, short,
-        name, _uuid):
+        name, _uuid, force):
     if name:
         _props = []
         if f"tag={name}" not in props:
@@ -86,7 +88,7 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
 
     if release and "=" in release:
         ioc_common.logit({
-            "level"  : "EXCEPTION",
+            "level":   "EXCEPTION",
             "message": "Please supply a valid RELEASE!"
         })
 
@@ -94,17 +96,18 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
         try:
             uuid.UUID(template, version=4)
             ioc_common.logit({
-                "level"  : "EXCEPTION",
+                "level":   "EXCEPTION",
                 "message": "Template creation only supports TAGs!"
             })
         except ValueError:
-            ioc_common.logit({
-                "level"  : "WARNING",
-                "message": "This may be a short UUID, template creation only"
-                           " supports TAGs"
-            })
-            if not click.confirm("\nProceed?"):
-                exit()
+            if not force:
+                ioc_common.logit({
+                    "level":   "WARNING",
+                    "message": "This may be a short UUID, "
+                               "template creation only supports TAGs"
+                })
+                if not click.confirm("\nProceed?"):
+                    exit()
 
     # We don't really care it's not a RELEASE at this point.
     release = template if template else release
@@ -120,7 +123,7 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
 
         if not os.path.isfile(pkglist):
             ioc_common.logit({
-                "level"  : "EXCEPTION",
+                "level":   "EXCEPTION",
                 "message": f"{pkglist} does not exist!\n"
                            "Please supply a JSON file with the format:"
                            f" {_pkgformat}"
@@ -132,7 +135,7 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
                     json.load(p)["pkgs"]  # noqa
             except json.JSONDecodeError:
                 ioc_common.logit({
-                    "level"  : "EXCEPTION",
+                    "level":   "EXCEPTION",
                     "message": "Please supply a valid"
                                f" JSON file with the format:{_pkgformat}"
                 })
@@ -149,19 +152,19 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
                                  empty=empty)
         if err:
             ioc_common.logit({
-                "level"  : "ERROR",
+                "level":  "ERROR",
                 "message": msg
             })
 
             if template:
                 ioc_common.logit({
-                    "level"  : "INFO",
+                    "level":   "INFO",
                     "message": "Created Templates:"
                 })
                 templates = ioc.IOCage().list("template")
                 for temp in templates:
                     ioc_common.logit({
-                        "level"  : "INFO",
+                        "level":   "INFO",
                         "message": f"  {temp[3]}"
                     })
     else:

@@ -44,6 +44,7 @@
 .Op Fl p | -pkglist
 .Ar TEXT
 .Op Fl r | -release
+.Op Fl f | -force
 .Ar TEXT
 .Op Fl s | -short
 .Op Fl t | -template
@@ -338,6 +339,8 @@ Create an empty jail, which is used for unsupported or custom jails.
 .It Op Fl p | -pkglist
 .It Op Fl r | -release
 Specify which release to use for the new jail.
+.It Op Fl f | -force
+Skip prompts, auto-confirming them with yes.
 .It Op Fl s | -short
 Use a short UUID of 8 characters instead of the default 36.
 .It Op Fl t | -template

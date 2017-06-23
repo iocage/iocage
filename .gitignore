@@ -11,3 +11,4 @@
 venv/
 build/
 venv-*/
+.python-version
