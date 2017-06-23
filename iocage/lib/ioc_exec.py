@@ -100,9 +100,15 @@ class IOCExec(object):
             return None, False
         else:
             try:
-                p = su.Popen(["setfib", exec_fib, "jexec", flag, user,
-                              f"ioc-{self.uuid}"] + list(self.command),
-                             stderr=su.STDOUT, stdin=su.PIPE)
+                cmd = ["setfib", exec_fib, "jexec", flag, user,
+                       f"ioc-{self.uuid}"] + list(self.command)
+
+                if not self.silent:
+                    p = su.Popen(cmd, stderr=su.STDOUT, stdin=su.PIPE)
+                else:
+                    p = su.Popen(cmd, stderr=su.STDOUT, stdin=su.PIPE,
+                                 stdout=su.PIPE)
+
                 exec_out = p.communicate(b"\r")[0]
                 msg = exec_out if exec_out is not None else ""
 
