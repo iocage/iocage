@@ -28,80 +28,19 @@ import click
 import texttable
 
 import iocage.lib.ioc_common as ioc_common
-import iocage.lib.ioc_json as ioc_json
-import iocage.lib.ioc_list as ioc_list
+import iocage.lib.iocage as ioc
 
 
 @click.command(name="snaplist", help="Show snapshots of a specified jail.")
 @click.option("--header", "-h", "-H", is_flag=True, default=True,
               help="For scripting, use tabs for separators.")
+@click.option("--long", "-l", "_long", is_flag=True, default=False,
+              help="Show the full dataset path for snapshot name.")
 @click.argument("jail")
-def cli(header, jail):
+def cli(header, jail, _long):
     """Allows a user to show resource usage of all jails."""
-    jails, paths = ioc_list.IOCList("uuid").list_datasets()
-    pool = ioc_json.IOCJson().json_get_value("pool")
-    snap_list = []
     table = texttable.Texttable(max_width=0)
-
-    _jail = {tag: uuid for (tag, uuid) in jails.items() if
-             uuid.startswith(jail) or tag == jail}
-
-    if len(_jail) == 1:
-        tag, uuid = next(iter(_jail.items()))
-        path = paths[tag]
-    elif len(_jail) > 1:
-        ioc_common.logit({
-            "level"  : "ERROR",
-            "message": f"Multiple jails found for {jail}:"
-        })
-        for t, u in sorted(_jail.items()):
-            ioc_common.logit({
-                "level"  : "ERROR",
-                "message": f"  {u} ({t})"
-            })
-        exit(1)
-    else:
-        ioc_common.logit({
-            "level"  : "ERROR",
-            "message": f"{jail} not found!"
-        })
-        exit(1)
-
-    conf = ioc_json.IOCJson(path).json_load()
-
-    if conf["template"] == "yes":
-        full_path = f"{pool}/iocage/templates/{tag}"
-    else:
-        full_path = f"{pool}/iocage/jails/{uuid}"
-
-    zconf = ["zfs", "get", "-H", "-o", "value"]
-    snapshots = su.Popen(["zfs", "list", "-r", "-H", "-t", "snapshot",
-                          full_path], stdout=su.PIPE,
-                         stderr=su.PIPE).communicate()[0].decode(
-        "utf-8").split("\n")
-
-    for snap in snapshots:
-        # We get an empty list at the end.
-        if snap:
-            snap = snap.split()
-            snapname = snap[0].rsplit("@")[1]
-            root_snapname = snap[0].rsplit("@")[0].split("/")[-1]
-
-            if root_snapname == "root":
-                snapname += "/root"
-            elif root_snapname != uuid and root_snapname != tag:
-                # basejail datasets.
-                continue
-
-            creation = su.Popen(zconf + ["creation", snap[0]],
-                                stdout=su.PIPE).communicate()[0].decode(
-                "utf-8").strip()
-            used = snap[1]
-            referenced = su.Popen(zconf + ["referenced", snap[0]],
-                                  stdout=su.PIPE).communicate()[0].decode(
-                "utf-8").strip()
-
-            snap_list.append([snapname, creation, referenced, used])
+    snap_list = ioc.IOCage(jail).snap_list(_long)
 
     if header:
         snap_list.insert(0, ["NAME", "CREATED", "RSIZE", "USED"])

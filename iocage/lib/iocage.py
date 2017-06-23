@@ -875,6 +875,37 @@ class IOCage(object):
         else:
             ioc_json.IOCJson(self.iocroot).json_set_value(prop, default=True)
 
+    def snap_list(self, long=True):
+        """Gathers a list of snapshots and returns it"""
+        tag, uuid, path = self.__check_jail_existence__()
+        conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
+        snap_list = []
+
+        if conf["template"] == "yes":
+            full_path = f"{self.pool}/iocage/templates/{tag}"
+        else:
+            full_path = f"{self.pool}/iocage/jails/{uuid}"
+
+        snapshots = self.zfs.get_dataset(full_path)
+
+        for snap in snapshots.snapshots_recursive:
+            snap_name = snap.name.rsplit("@")[1] if not long else snap.name
+            root_snap_name = snap.name.rsplit("@")[0].split("/")[-1]
+
+            if root_snap_name == "root":
+                snap_name += "/root"
+            elif root_snap_name != uuid and root_snap_name != tag:
+                # basejail datasets.
+                continue
+
+            creation = snap.properties["creation"].value
+            used = snap.properties["used"].value
+            referenced = snap.properties["referenced"].value
+
+            snap_list.append([snap_name, creation, referenced, used])
+
+        return snap_list
+
     def __soft_restart__(self):
         """
         Executes a soft reboot by keeping the jail network stack intact,
