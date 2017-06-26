@@ -580,7 +580,7 @@ class IOCStart(object):
 
     def __generate_mac_address_pair(self, nic):
         mac_a = self.__generate_mac_bytes(nic)
-        mac_b = hex(int(mac_a, 16) + 1)[2:]
+        mac_b = hex(int(mac_a, 16) + 1)[2:].zfill(12)
         return mac_a, mac_b
 
     def __start_generate_vnet_mac__(self, nic):
