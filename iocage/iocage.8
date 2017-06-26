@@ -45,6 +45,7 @@
 .Op Fl b | -basejail
 .Op Fl c | -count
 .Op Fl e | -empty
+.Op Fl f | -force
 .Op Fl n | -name
 .Op Fl p | -pkglist
 .Op Fl r | -release
@@ -321,6 +322,8 @@ Clone the jail from the current host's release, as determined by the
 command.
 .It Op Fl e | -empty
 Create an empty jail, which is used for unsupported or custom jails.
+.It Op Fl f | -force
+Skip prompts, auto-confirming them with yes.
 .It Op Fl p | -pkglist
 .It Op Fl r | -release
 Specify which release to use for the new jail.
