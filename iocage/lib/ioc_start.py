@@ -23,11 +23,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """This is responsible for starting jails."""
 import datetime
+import hashlib
 import os
 import re
 import shutil
 import subprocess as su
-import hashlib
 
 import iocage.lib.ioc_common
 import iocage.lib.ioc_json
@@ -557,7 +557,7 @@ class IOCStart(object):
         resolver = self.get("resolver")
         #                                     compat
         if resolver != "/etc/resolv.conf" and resolver != "none" and \
-                resolver != "/dev/null":
+                        resolver != "/dev/null":
             with iocage.lib.ioc_common.open_atomic(
                     f"{self.path}/root/etc/resolv.conf", "w") as resolv_conf:
                 for line in resolver.split(";"):
