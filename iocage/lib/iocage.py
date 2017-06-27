@@ -427,6 +427,8 @@ class IOCage(object):
                short=False, uuid=None, basejail=False, empty=False,
                clone=None, skip_batch=False):
         """Creates the jail dataset"""
+        count = 0 if count == 1 and not skip_batch else count
+
         if short and uuid:
             uuid = uuid[:8]
 
