@@ -575,7 +575,7 @@ class IOCStart(object):
         m = hashlib.md5()
         m.update(self.uuid.encode("utf-8"))
         m.update(nic.encode("utf-8"))
-        prefix = "02ff60"
+        prefix = self.get("mac_prefix")
         return f"{prefix}{m.hexdigest()[0:12-len(prefix)]}"
 
     def __generate_mac_address_pair(self, nic):
