@@ -43,16 +43,16 @@
 .Nm
 .Cm create
 .Op Fl b | -basejail
-.Op Fl c | -count
+.Op Fl c | -count Ar TEXT
 .Op Fl e | -empty
 .Op Fl f | -force
 .Op Fl n | -name
-.Op Fl p | -pkglist
-.Op Fl r | -release
+.Op Fl p | -pkglist Ar TEXT
+.Op Fl r | -release Ar TEXT
 .Op Fl s | -short
-.Op Fl t | -template
-.Op Fl u | -uuid | Cm _uuid
-.Ar PROPERTIES
+.Op Fl t | -template Ar TEXT
+.Op Fl u | -uuid | Cm _uuid Ar TEXT
+.Op Ar PROPERTIES
 .\" == DESTROY ==
 .Nm
 .Cm destroy
@@ -319,7 +319,7 @@ Options:
 .Bl -tag -width "[-b | --basejail]"
 .It Op Fl b | -basejail
 Create a new "basejail" with a common shared base.
-.It Op Fl c | -count
+.It Op Fl c | -count Ar TEXT
 Clone the jail from the current host's release, as determined by the
 .Fl r
 option.
@@ -329,14 +329,14 @@ Create an empty jail for unsupported or custom jails.
 Skip prompts, auto-confirming them with yes.
 .It Op Fl n | -name
 Provide a name and tag instead of a UUID for the new jail.
-.It Op Fl p | -pkglist
-.It Op Fl r | -release
+.It Op Fl p | -pkglist Ar TEXT
+.It Op Fl r | -release Ar TEXT
 Specify which release to use for the new jail.
 .It Op Fl s | -short
 Use a short UUID of 8 characters instead of the default 36.
-.It Op Fl t | -template
+.It Op Fl t | -template Ar TEXT
 Create a template style jail.
-.It Op Fl u | -uuid
+.It Op Fl u | -uuid Ar TEXT
 Specify a desired UUID for the new jail.
 .El
 .Pp
