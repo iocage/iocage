@@ -368,146 +368,23 @@ class IOCCreate(object):
 
     def create_config(self, jail_uuid, release):
         """
-        This sets up the default configuration for a jail. It also does some
-        mild sanity checking on the properties users are supplying.
+        Loads default props and sets the user properties, along with some mild
+        sanity checking
         """
-        version = iocage.lib.ioc_json.IOCJson().json_get_version()
         ioc_json = iocage.lib.ioc_json.IOCJson()
-        default_json_location = f"{self.iocroot}/defaults.json"
-
-        with open("/etc/hostid", "r") as _file:
-            hostid = _file.read().strip()
-
-        try:
-            with open(default_json_location, "r") as default_json:
-                default_props = json.load(default_json)
-                default_props = ioc_json.json_check_config(default_props,
-                                                           default=True)
-        except FileNotFoundError:
-            default_props = {
-                "CONFIG_VERSION"       : version,
-                "interfaces"           : "vnet0:bridge0",
-                "host_domainname"      : "none",
-                "exec_fib"             : "0",
-                "ip4_addr"             : "none",
-                "ip4_saddrsel"         : "1",
-                "ip4"                  : "new",
-                "ip6_addr"             : "none",
-                "ip6_saddrsel"         : "1",
-                "ip6"                  : "new",
-                "defaultrouter"        : "none",
-                "defaultrouter6"       : "none",
-                "resolver"             : "/etc/resolv.conf",
-                "mac_prefix"           : "02ff60",
-                "vnet0_mac"            : "none",
-                "vnet1_mac"            : "none",
-                "vnet2_mac"            : "none",
-                "vnet3_mac"            : "none",
-                "devfs_ruleset"        : "4",
-                "exec_start"           : "/bin/sh /etc/rc",
-                "exec_stop"            : "/bin/sh /etc/rc.shutdown",
-                "exec_prestart"        : "/usr/bin/true",
-                "exec_poststart"       : "/usr/bin/true",
-                "exec_prestop"         : "/usr/bin/true",
-                "exec_poststop"        : "/usr/bin/true",
-                "exec_clean"           : "1",
-                "exec_timeout"         : "60",
-                "stop_timeout"         : "30",
-                "exec_jail_user"       : "root",
-                "exec_system_jail_user": "0",
-                "exec_system_user"     : "root",
-                "mount_devfs"          : "1",
-                "mount_fdescfs"        : "1",
-                "enforce_statfs"       : "2",
-                "children_max"         : "0",
-                "login_flags"          : "-f root",
-                "securelevel"          : "2",
-                "sysvmsg"              : "new",
-                "sysvsem"              : "new",
-                "sysvshm"              : "new",
-                "allow_set_hostname"   : "1",
-                "allow_sysvipc"        : "0",
-                "allow_raw_sockets"    : "0",
-                "allow_chflags"        : "0",
-                "allow_mount"          : "0",
-                "allow_mount_devfs"    : "0",
-                "allow_mount_nullfs"   : "0",
-                "allow_mount_procfs"   : "0",
-                "allow_mount_tmpfs"    : "0",
-                "allow_mount_zfs"      : "0",
-                "allow_quotas"         : "0",
-                "allow_socket_af"      : "0",
-                "cpuset"               : "off",
-                "rlimits"              : "off",
-                "memoryuse"            : "off",
-                "memorylocked"         : "off",
-                "vmemoryuse"           : "off",
-                "maxproc"              : "off",
-                "cputime"              : "off",
-                "pcpu"                 : "off",
-                "datasize"             : "off",
-                "stacksize"            : "off",
-                "coredumpsize"         : "off",
-                "openfiles"            : "off",
-                "pseudoterminals"      : "off",
-                "swapuse"              : "off",
-                "nthr"                 : "off",
-                "msgqqueued"           : "off",
-                "msgqsize"             : "off",
-                "nmsgq"                : "off",
-                "nsemop"               : "off",
-                "nshm"                 : "off",
-                "shmsize"              : "off",
-                "wallclock"            : "off",
-                "type"                 : "jail",
-                "bpf"                  : "off",
-                "dhcp"                 : "off",
-                "boot"                 : "off",
-                "notes"                : "none",
-                "owner"                : "root",
-                "priority"             : "99",
-                "last_started"         : "none",
-                "template"             : "no",
-                "hostid"               : hostid,
-                "jail_zfs"             : "off",
-                "jail_zfs_mountpoint"  : "none",
-                "mount_procfs"         : "0",
-                "mount_linprocfs"      : "0",
-                "count"                : "1",
-                "vnet"                 : "off",
-                "basejail"             : "no",
-                "comment"              : "none",
-                "host_time"            : "yes",
-                "sync_state"           : "none",
-                "sync_target"          : "none",
-                "sync_tgt_zpool"       : "none",
-                "compression"          : "lz4",
-                "origin"               : "readonly",
-                "quota"                : "none",
-                "mountpoint"           : "readonly",
-                "compressratio"        : "readonly",
-                "available"            : "readonly",
-                "used"                 : "readonly",
-                "dedup"                : "off",
-                "reservation"          : "none"
-            }
-        finally:
-            # They may have had new keys added to their default
-            # configuration, or it never existed.
-            iocage.lib.ioc_json.IOCJson().json_write(default_props,
-                                                     default_json_location)
+        jail_props = ioc_json.json_check_default_config()
 
         # Unique jail properties, they will be overridden by user supplied
         # values.
-        default_props["host_hostname"] = jail_uuid
-        default_props["host_hostuuid"] = jail_uuid
-        default_props["tag"] = datetime.datetime.utcnow().strftime("%F@%T:%f")
-        default_props["release"] = release
-        default_props["cloned_release"] = self.release
-        default_props["jail_zfs_dataset"] = f"iocage/jails/{jail_uuid}/data"
-        default_props["depends"] = "none"
+        jail_props["host_hostname"] = jail_uuid
+        jail_props["host_hostuuid"] = jail_uuid
+        jail_props["tag"] = datetime.datetime.utcnow().strftime("%F@%T:%f")
+        jail_props["release"] = release
+        jail_props["cloned_release"] = self.release
+        jail_props["jail_zfs_dataset"] = f"iocage/jails/{jail_uuid}/data"
+        jail_props["depends"] = "none"
 
-        return default_props
+        return jail_props
 
     def create_install_packages(self, jail_uuid, location, _tag, config,
                                 repo="pkg.freebsd.org", site="FreeBSD"):
