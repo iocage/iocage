@@ -30,6 +30,8 @@ import subprocess as su
 import sys
 import uuid
 
+import libzfs
+
 import iocage.lib.ioc_common
 import iocage.lib.ioc_destroy
 import iocage.lib.ioc_exec
@@ -65,6 +67,7 @@ class IOCCreate(object):
         self.clone = clone
         self.silent = silent
         self.callback = callback
+        self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
 
     def create_jail(self):
         """Helper to catch SIGINT"""
@@ -230,14 +233,29 @@ class IOCCreate(object):
                 config[k] = v
         else:
             if not self.empty:
+                dataset = f"{self.pool}/iocage/releases/{self.release}/" \
+                          f"root@{jail_uuid}"
                 try:
                     su.check_call(["zfs", "snapshot",
                                    f"{self.pool}/iocage/releases/"
                                    f"{self.release}/"
                                    f"root@{jail_uuid}"], stderr=su.PIPE)
                 except su.CalledProcessError:
-                    raise RuntimeError(
-                        f"RELEASE: {self.release} not found!")
+                    try:
+                        snapshot = self.zfs.get_snapshot(dataset)
+                        iocage.lib.ioc_common.logit({
+                            "level"  : "EXCEPTION",
+                            "message": f"Snapshot: {snapshot.name} exists!\n"
+                                       "Please manually run zfs destroy"
+                                       f" {snapshot.name} if wish to destroy"
+                                       " it."
+                        },
+                            _callback=self.callback,
+                            silent=self.silent)
+
+                    except libzfs.ZFSException:
+                        raise RuntimeError(
+                            f"RELEASE: {self.release} not found!")
 
                 su.Popen(["zfs", "clone", "-p",
                           f"{self.pool}/iocage/releases/{self.release}/root@"
