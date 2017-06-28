@@ -54,6 +54,12 @@ def cli(prop, _all, _pool, jail, recursive, header, plugin):
         # Confusing I know.
         jail = prop
         prop = "all"
+    else:
+        if not jail:
+            ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": "You must specify a jail!"
+            })
 
     if not recursive:
         if prop == "state":
