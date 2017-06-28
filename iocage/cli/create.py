@@ -167,6 +167,7 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
                         "level"  : "INFO",
                         "message": f"  {temp[3]}"
                     })
+                exit(1)
     else:
         iocage.create(release, props, count, pkglist=pkglist,
                       template=template, short=short, uuid=_uuid,
