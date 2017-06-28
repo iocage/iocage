@@ -317,7 +317,11 @@ class IOCage(object):
                 silent=self.silent)
 
         for pool in pools:
-            ds = self.zfs.get_dataset(pool.name)
+            if pool.status != "UNAVAIL":
+                ds = self.zfs.get_dataset(pool.name)
+            else:
+                continue
+
             if pool.name == zpool:
                 ds.properties[prop] = libzfs.ZFSUserProperty("yes")
             else:
