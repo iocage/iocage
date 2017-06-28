@@ -296,7 +296,17 @@ class IOCage(object):
 
         for pool in pools:
             if pool.name == zpool:
-                match = True
+                if pool.status != "UNAVAIL":
+                    match = True
+                else:
+                    ioc_common.logit({
+                        "level"  : "EXCEPTION",
+                        "message": f"ZFS pool '{zpool}' is UNAVAIL!\nPlease"
+                                   f" check zpool status {zpool} for more"
+                                   " information."
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
 
         if not match:
             ioc_common.logit({
