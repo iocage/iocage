@@ -53,21 +53,28 @@ def validate_count(ctx, param, value):
 
 @click.command(name="create", help="Create a jail.")
 @click.option("--count", "-c", callback=validate_count, default="1")
-@click.option("--release", "-r", required=False)
-@click.option("--template", "-t", required=False)
+@click.option("--release", "-r", required=False,
+              help="Specify the release to use for the new jail.")
+@click.option("--template", "-t", required=False,
+              help="Flag this jail as a template, which allows for rapid "
+                   "redeployment of a customized jail.")
 @click.option("--pkglist", "-p", default=None)
 @click.option("--name", "-n", default=None,
               help="Provide a specific name and tag instead of an UUID for"
-                   " this jail")
+                   " this jail.")
 @click.option("--uuid", "-u", "_uuid", default=None,
-              help="Provide a specific UUID for this jail")
-@click.option("--basejail", "-b", is_flag=True, default=False)
-@click.option("--empty", "-e", is_flag=True, default=False)
+              help="Provide a specific UUID for this jail.")
+@click.option("--basejail", "-b", is_flag=True, default=False,
+              help="Set the new jail type to a basejail. Basejails "
+                   "re-clone their base filesystems at each startup.")
+@click.option("--empty", "-e", is_flag=True, default=False,
+              help="Create an empty jail used for unsupported or custom "
+                   "jails.")
 @click.option("--short", "-s", is_flag=True, default=False,
               help="Use a short UUID of 8 characters instead of the default "
-                   "36")
-@click.option("--force", "-f", help="Skip the interactive question.",
-              default=False, is_flag=True)
+                   "36.")
+@click.option("--force", "-f", is_flag=True, default=False,
+              help="Skip the interactive question.")
 @click.argument("props", nargs=-1)
 def cli(release, template, count, props, pkglist, basejail, empty, short,
         name, _uuid, force):
