@@ -140,11 +140,30 @@ class IOCCreate(object):
                 if self.template:
                     raise RuntimeError(f"Template: {self.release} not found!")
                 elif self.clone:
-                    raise RuntimeError(f"Jail: {self.jail} not found!")
-                    # Yep, that's actually the source jail.
-                    raise RuntimeError(f"Jail: {self.release} not found!")
+                    if os.path.isdir(f"{self.iocroot}/templates/"
+                                     f"{self.release}"):
+                        iocage.lib.ioc_common.logit({
+                            "level"  : "EXCEPTION",
+                            "message": "You cannot clone a template, "
+                                       "use create -t instead."
+                        },
+                            _callback=self.callback,
+                            silent=self.silent)
+                    else:
+                        # Yep, self.release is actually the source jail.
+                        iocage.lib.ioc_common.logit({
+                            "level"  : "EXCEPTION",
+                            "message": f"Jail: {self.release} not found!"
+                        },
+                            _callback=self.callback,
+                            silent=self.silent)
                 else:
-                    raise RuntimeError(f"RELEASE: {self.release} not found!")
+                    iocage.lib.ioc_common.logit({
+                        "level"  : "EXCEPTION",
+                        "message": f"RELEASE: {self.release} not found!"
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
 
             if not self.clone:
                 config = self.create_config(jail_uuid, cloned_release)
@@ -285,7 +304,7 @@ class IOCCreate(object):
         _tag = self.create_link(jail_uuid, config["tag"])
 
         if is_template:
-                _tag = _tag.replace("@", "_")
+            _tag = _tag.replace("@", "_")
 
         config["tag"] = _tag
 
