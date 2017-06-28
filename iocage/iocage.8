@@ -276,6 +276,11 @@ The pool can be activated for
 .Nm
 jails without requiring user input.
 By default, all other pools are deactivated.
+.Pp
+Example:
+.Pp
+.Dl # iocage activate examplezpool
+.Pp
 .\" == CHROOT ==
 .It Cm chroot
 Chroot into a jail without actually starting the jail itself.
@@ -283,6 +288,11 @@ Useful for initial setup like setting a root password or configuring
 networking.
 A command can be specified as with the normal system, see
 .Xr chroot 8 .
+.Pp
+Example:
+.Pp
+.Dl # iocage chroot examplejail ls /home
+.Pp
 .\" == CLEAN ==
 .It Cm clean
 Destroy ZFS datasets.
