@@ -687,12 +687,12 @@ class IOCage(object):
 
     def get(self, prop, recursive=False, plugin=False, pool=False):
         """Get a jail property"""
+        if pool:
+            return self.pool
+
         if not recursive:
             tag, uuid, path = self.__check_jail_existence__()
             status, jid = self.list("jid", uuid=uuid)
-
-            if pool:
-                return self.pool
 
             if prop == "state":
                 if status:
