@@ -221,7 +221,12 @@ class IOCCreate(object):
 
             # Clones are expected to be as identical as possible.
             for k, v in config.items():
-                v = v.replace(clone_uuid, jail_uuid)
+                if k == "tag":
+                    if v == clone_uuid:
+                        v = datetime.datetime.utcnow().strftime("%F@%T:%f")
+                else:
+                    v = v.replace(clone_uuid, jail_uuid)
+
                 config[k] = v
         else:
             if not self.empty:
