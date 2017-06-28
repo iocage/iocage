@@ -691,6 +691,18 @@ class IOCage(object):
             return self.pool
 
         if not recursive:
+            if self.jail == "default":
+                try:
+                    return ioc_json.IOCJson().json_get_value(prop,
+                                                             default=True)
+                except KeyError:
+                    ioc_common.logit({
+                        "level"  : "EXCEPTION",
+                        "message": f"{prop} is not a valid property!"
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
+
             tag, uuid, path = self.__check_jail_existence__()
             status, jid = self.list("jid", uuid=uuid)
 

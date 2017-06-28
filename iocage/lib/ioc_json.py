@@ -295,10 +295,17 @@ class IOCJson(object):
         self.zfs_set_property(pool, "org.freebsd.ioc:active", "yes")
         self.zfs_set_property(pool, "comment", "-")
 
-    def json_get_value(self, prop):
+    def json_get_value(self, prop, default=False):
         """Returns a string with the specified prop's value."""
         old = False
         zpools = list(map(lambda x: x.name, list(self.zfs.pools)))
+
+        if default:
+            _, iocroot = _get_pool_and_iocroot()
+            with open(f"{iocroot}/defaults.json", "r") as default_json:
+                conf = json.load(default_json)
+
+            return conf[prop]
 
         if prop == "pool":
             match = 0
