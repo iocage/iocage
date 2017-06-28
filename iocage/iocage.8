@@ -487,29 +487,27 @@ Define the user.
 .El
 .Pp
 Examples:
-.Bl -item
-.It
-.Nm
-fetch release=10.1-RELEASE
-.El
 .Pp
-.Cm fetch
-is also used to update already downloaded releases.
-To update a local release already present in
-.Nm
-.Po
-.Cm iocage list -r
-.Pc ,
-run:
-.Bl -item
-.It
-.Nm
-fetch release=10.1-RELEASE
-.El
+.Dl # iocage fetch
 .Pp
-This example applies the latest patches to 10.1-RELEASE base.
-Newly created jails or basejails will automatically have the latest
-updates applied.
+.Nm
+lists available FreeBSD releases and asks which to download.
+Enter the numeric option for the desired release, or type EXIT
+to quit without downloading.
+.Pp
+.Dl # iocage fetch --release 10.3-RELEASE
+.Pp
+This tells
+.Nm
+to download and automatically update the FreeBSD 10.3 RELEASE.
+This can also be used to apply the latest patches to an already
+downloaded release.
+Newly created jails or basejails are automatically updated.
+.Pp
+.Dl # iocage fetch -NE -r 11.0-RELEASE
+.Pp
+This disables the end of life check, then fetches the FreeBSD 11.0
+release and updates with the latest patches.
 .\" == FSTAB ==
 .It Cm fstab
 Manipulates the fstab settings of a specific jail.
