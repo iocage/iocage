@@ -23,6 +23,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """This is responsible for starting jails."""
 import datetime
+import hashlib
 import os
 import re
 import shutil
@@ -402,25 +403,33 @@ class IOCStart(object):
             for nic in nics:
                 self.start_network_interface_vnet(nic, net_configs, jid)
 
-    def start_network_interface_vnet(self, nic, net_configs, jid):
+    def start_network_interface_vnet(self, nic_defs, net_configs, jid):
         """
         Start VNET on interface
 
-        :param nic: The network interface to assign the IP in the jail
+        :param nic_defs: comma separated interface definitions (nic, bridge)
         :param net_configs: Tuple of IP address and router pairs
         :param jid: The jails ID
         """
-        nic, bridge = nic.split(":")
 
-        try:
-            membermtu = find_bridge_mtu(bridge)
+        nic_defs = nic_defs.split(",")
+        nics = list(map(lambda x: x.split(":")[0], nic_defs))
 
-            ifaces = []
-            for addrs, gw in net_configs:
-                if addrs != 'none':
+        for nic_def in nic_defs:
+
+            nic, bridge = nic_def.split(":")
+
+            try:
+                membermtu = find_bridge_mtu(bridge)
+
+                ifaces = []
+                for addrs, gw in net_configs:
+                    if addrs == 'none':
+                        continue
+
                     for addr in addrs.split(','):
                         iface, ip = addr.split("|")
-                        if nic != iface:
+                        if iface not in nics:
                             err = f"\n  Invalid interface supplied: {iface}"
                             iocage.lib.ioc_common.logit({
                                 "level"  : "ERROR",
@@ -444,14 +453,14 @@ class IOCStart(object):
 
                         self.start_network_vnet_addr(iface, ip, gw)
 
-        except su.CalledProcessError as err:
-            iocage.lib.ioc_common.logit({
-                "level"  : "WARNING",
-                "message": "Network failed to start:"
-                           f" {err.output.decode('utf-8')}".rstrip()
-            },
-                _callback=self.callback,
-                silent=self.silent)
+            except su.CalledProcessError as err:
+                iocage.lib.ioc_common.logit({
+                    "level"  : "WARNING",
+                    "message": "Network failed to start:"
+                               f" {err.output.decode('utf-8')}".rstrip()
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
 
     def start_network_vnet_iface(self, nic, bridge, mtu, jid):
         """
@@ -540,15 +549,18 @@ class IOCStart(object):
 
     def start_copy_localtime(self):
         host_time = self.get("host_time")
-        if host_time:
-            shutil.copy("/etc/localtime",
-                        f"{self.path}/root/etc/localtime")
+        if host_time == "yes":
+            try:
+                shutil.copy("/etc/localtime",
+                            f"{self.path}/root/etc/localtime")
+            except FileNotFoundError:
+                return
 
     def start_generate_resolv(self):
         resolver = self.get("resolver")
         #                                     compat
         if resolver != "/etc/resolv.conf" and resolver != "none" and \
-                resolver != "/dev/null":
+                        resolver != "/dev/null":
             with iocage.lib.ioc_common.open_atomic(
                     f"{self.path}/root/etc/resolv.conf", "w") as resolv_conf:
                 for line in resolver.split(";"):
@@ -562,6 +574,18 @@ class IOCStart(object):
         else:
             shutil.copy(resolver, f"{self.path}/root/etc/resolv.conf")
 
+    def __generate_mac_bytes(self, nic):
+        m = hashlib.md5()
+        m.update(self.uuid.encode("utf-8"))
+        m.update(nic.encode("utf-8"))
+        prefix = self.get("mac_prefix")
+        return f"{prefix}{m.hexdigest()[0:12-len(prefix)]}"
+
+    def __generate_mac_address_pair(self, nic):
+        mac_a = self.__generate_mac_bytes(nic)
+        mac_b = hex(int(mac_a, 16) + 1)[2:].zfill(12)
+        return mac_a, mac_b
+
     def __start_generate_vnet_mac__(self, nic):
         """
         Generates a random MAC address and checks for uniquness.
@@ -571,33 +595,12 @@ class IOCStart(object):
         mac = self.get("{}_mac".format(nic))
 
         if mac == "none":
-            jails, paths = iocage.lib.ioc_list.IOCList("uuid").list_datasets()
-            mac_list = []
-
-            for jail in jails:
-                path = paths[jail]
-                _conf = iocage.lib.ioc_json.IOCJson(path).json_load()
-                mac = _conf.get("mac_prefix", "02ff60")
-                mac_list.append(_conf["{}_mac".format(nic)].split(","))
-
-            # We have to flatten our list of lists.
-            mac_list = [m for maclist in mac_list for m in maclist]
-            for number in range(16 ** 6):
-                # SO
-                hex_num_a = hex(number)[2:].zfill(6)
-                hex_num_b = hex(number + 1)[2:].zfill(6)
-                gen_mac_a = "{}{}{}{}{}{}{}".format(mac, *hex_num_a)
-                gen_mac_b = "{}{}{}{}{}{}{}".format(mac, *hex_num_b)
-                gen_mac_combined = "{},{}".format(gen_mac_a, gen_mac_b)
-
-                if gen_mac_a in mac_list or gen_mac_b in mac_list:
-                    continue
-                else:
-                    self.set("{}_mac={}".format(nic, gen_mac_combined))
-                    return gen_mac_a, gen_mac_b
+            mac_a, mac_b = self.__generate_mac_address_pair(nic)
+            self.set(f"{nic}_mac={mac_a},{mac_b}")
         else:
             mac_a, mac_b = mac.split(",")
-            return mac_a, mac_b
+
+        return mac_a, mac_b
 
 
 def find_bridge_mtu(bridge):

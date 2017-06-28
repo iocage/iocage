@@ -332,6 +332,8 @@ Provide a name and tag instead of a UUID for the new jail.
 .It Op Fl p | -pkglist Ar TEXT
 .It Op Fl r | -release Ar TEXT
 Specify which release to use for the new jail.
+.It Op Fl f | -force
+Skip prompts, auto-confirming them with yes.
 .It Op Fl s | -short
 Use a short UUID of 8 characters instead of the default 36.
 .It Op Fl t | -template Ar TEXT
@@ -890,8 +892,8 @@ virtual interface should be attached.
 Default: vnet0:bridge0,vnet1:bridge1
 .Pp
 Source: local
-.It domainname=
-The NIS domainname of the jail.
+.It host_domainname=
+The NIS domain name of the jail.
 .Pp
 Default: none
 .Pp

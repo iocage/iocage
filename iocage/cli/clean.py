@@ -31,7 +31,8 @@ __rootcmd__ = True
 
 
 @click.command(name="clean", help="Destroy specified dataset types.")
-@click.option("--force", "-f", default=False, is_flag=True)
+@click.option("--force", "-f", default=False, is_flag=True,
+              help="Runs the command with no further user interaction.")
 @click.option("--all", "-a", "dataset_type", flag_value="all",
               help="Destroy all iocage data that has been created.")
 @click.option("--jails", "-j", "dataset_type", flag_value="jails",

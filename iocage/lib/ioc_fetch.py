@@ -917,11 +917,15 @@ class IOCFetch(object):
 
             # Name would be convenient, but it doesn't always gel with the
             # JSON's title, pkg always does.
-            license = plugins[pkg.split("/", 1)[-1]].get("license", False)
-            license_text = requests.get(license)
+            try:
+                license = plugins[pkg.split("/", 1)[-1]].get("license", False)
+            except UnboundLocalError:
+                license = plugins[conf["name"].lower().split("/", 1)[-1]].get(
+                    "license", False)
 
             if license and not accept_license:
-                # license_text =
+                license_text = requests.get(license)
+
                 iocage.lib.ioc_common.logit({
                     "level"  : "WARNING",
                     "message": "  This plugin requires accepting a license "
@@ -1130,7 +1134,7 @@ fingerprint: {fingerprint}
                                                         "fingerprint"]))
         err = iocage.lib.ioc_create.IOCCreate(
             self.release, create_props, 0, pkglist=conf[
-                "pkgs"]).create_install_packages(
+                "pkgs"], silent=True).create_install_packages(
             uuid, jaildir, tag, _conf, repo=conf["packagesite"],
             site=repo_name)
 

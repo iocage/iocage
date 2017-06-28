@@ -45,7 +45,7 @@ def validate_count(ctx, param, value):
         except ValueError:
             ioc_common.logit({
                 "level"  : "EXCEPTION",
-                "message": f"({value} is not a valid  integer."
+                "message": f"{value} is not a valid integer."
             })
     else:
         return int(value)
@@ -66,10 +66,19 @@ def validate_count(ctx, param, value):
 @click.option("--short", "-s", is_flag=True, default=False,
               help="Use a short UUID of 8 characters instead of the default "
                    "36")
+@click.option("--force", "-f", help="Skip the interactive question.",
+              default=False, is_flag=True)
 @click.argument("props", nargs=-1)
 def cli(release, template, count, props, pkglist, basejail, empty, short,
-        name, _uuid):
+        name, _uuid, force):
     if name:
+        valid = True if re.match("^[a-zA-Z0-9_]*$", name) else False
+        if not valid:
+            ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": f"Invalid character in {name}, please remove it."
+            })
+
         _props = []
         if f"tag={name}" not in props:
             _props.append(f"tag={name}")
@@ -98,13 +107,14 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
                 "message": "Template creation only supports TAGs!"
             })
         except ValueError:
-            ioc_common.logit({
-                "level"  : "WARNING",
-                "message": "This may be a short UUID, template creation only"
-                           " supports TAGs"
-            })
-            if not click.confirm("\nProceed?"):
-                exit()
+            if not force:
+                ioc_common.logit({
+                    "level"  : "WARNING",
+                    "message": "This may be a short UUID, "
+                               "template creation only supports TAGs"
+                })
+                if not click.confirm("\nProceed?"):
+                    exit()
 
     # We don't really care it's not a RELEASE at this point.
     release = template if template else release
@@ -164,6 +174,7 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
                         "level"  : "INFO",
                         "message": f"  {temp[3]}"
                     })
+                exit(1)
     else:
         iocage.create(release, props, count, pkglist=pkglist,
                       template=template, short=short, uuid=_uuid,

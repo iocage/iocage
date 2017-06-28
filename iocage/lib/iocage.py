@@ -204,17 +204,34 @@ class IOCage(object):
 
             return tag, uuid, path
         elif len(_jail) > 1:
-            msg = f"Multiple jails found for {self.jail}:"
+            # Do another search, this time more exact.
+            _jail = {tag: uuid for (tag, uuid) in _jail.items() if
+                     uuid == self.jail or tag == self.jail}
 
-            for j, u in sorted(_jail.items()):
-                msg += f"\n  {j} ({u})"
+            if len(_jail) == 1:
+                tag, uuid = next(iter(_jail.items()))
+                path = self._paths[tag]
 
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": msg
-            },
-                _callback=self.callback,
-                silent=self.silent)
+                return tag, uuid, path
+            elif len(_jail) > 1:
+                msg = f"Multiple jails found for {self.jail}:"
+
+                for j, u in sorted(_jail.items()):
+                    msg += f"\n  {j} ({u})"
+
+                ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": msg
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+            else:
+                ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": f"{self.jail} not found!"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
         else:
             ioc_common.logit({
                 "level"  : "EXCEPTION",
@@ -279,7 +296,17 @@ class IOCage(object):
 
         for pool in pools:
             if pool.name == zpool:
-                match = True
+                if pool.status != "UNAVAIL":
+                    match = True
+                else:
+                    ioc_common.logit({
+                        "level"  : "EXCEPTION",
+                        "message": f"ZFS pool '{zpool}' is UNAVAIL!\nPlease"
+                                   f" check zpool status {zpool} for more"
+                                   " information."
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
 
         if not match:
             ioc_common.logit({
@@ -290,7 +317,11 @@ class IOCage(object):
                 silent=self.silent)
 
         for pool in pools:
-            ds = self.zfs.get_dataset(pool.name)
+            if pool.status != "UNAVAIL":
+                ds = self.zfs.get_dataset(pool.name)
+            else:
+                continue
+
             if pool.name == zpool:
                 ds.properties[prop] = libzfs.ZFSUserProperty("yes")
             else:
@@ -410,6 +441,8 @@ class IOCage(object):
                short=False, uuid=None, basejail=False, empty=False,
                clone=None, skip_batch=False):
         """Creates the jail dataset"""
+        count = 0 if count == 1 and not skip_batch else count
+
         if short and uuid:
             uuid = uuid[:8]
 
@@ -544,14 +577,14 @@ class IOCage(object):
             if err:
                 ioc_common.logit({
                     "level"  : "EXCEPTION",
-                    "message": err.decode()
+                    "message": err
                 },
                     _callback=self.callback,
                     silent=self.silent)
             else:
                 ioc_common.logit({
                     "level"  : "INFO",
-                    "message": msg.decode("utf-8")
+                    "message": msg
                 },
                     _callback=self.callback,
                     silent=self.silent)
@@ -614,7 +647,8 @@ class IOCage(object):
                     silent=self.silent)
 
             if plugins:
-                ioc_fetch.IOCFetch(release, **kwargs).fetch_plugin_index(
+                ioc_fetch.IOCFetch(
+                    release, plugin=name, **kwargs).fetch_plugin_index(
                     props, accept_license=accept)
                 return
 
@@ -653,12 +687,24 @@ class IOCage(object):
 
     def get(self, prop, recursive=False, plugin=False, pool=False):
         """Get a jail property"""
+        if pool:
+            return self.pool
+
         if not recursive:
+            if self.jail == "default":
+                try:
+                    return ioc_json.IOCJson().json_get_value(prop,
+                                                             default=True)
+                except KeyError:
+                    ioc_common.logit({
+                        "level"  : "EXCEPTION",
+                        "message": f"{prop} is not a valid property!"
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
+
             tag, uuid, path = self.__check_jail_existence__()
             status, jid = self.list("jid", uuid=uuid)
-
-            if pool:
-                return self.pool
 
             if prop == "state":
                 if status:
@@ -772,6 +818,16 @@ class IOCage(object):
         """Rolls back a jail and all datasets to the supplied snapshot"""
         tag, uuid, path = self.__check_jail_existence__()
         conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
+        status, _ = self.list("jid", uuid=uuid)
+
+        if status:
+            ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": f"Please stop {uuid} ({tag}) before trying to"
+                           " rollback!"
+            },
+                _callback=self.callback,
+                silent=self.silent)
 
         if conf["template"] == "yes":
             target = f"{self.pool}/iocage/templates/{tag}"
@@ -802,6 +858,92 @@ class IOCage(object):
         },
             _callback=self.callback,
             silent=self.silent)
+
+    def set(self, prop, plugin=False):
+        """Sets a property for a jail or plugin"""
+        prop = " ".join(prop)  # We don't want a tuple.
+
+        if self.jail == "default":
+            ioc_json.IOCJson().json_check_default_config()
+            default = True
+        else:
+            default = False
+
+        if "template=no" in prop:
+            self.jail = f"{self.jail} (template)"
+
+        if not default:
+            tag, uuid, path = self.__check_jail_existence__()
+            iocjson = ioc_json.IOCJson(path, cli=True)
+
+            if "template" in prop.split("=")[0]:
+                if "template" in path and prop != "template=no":
+                    ioc_common.logit({
+                        "level"  : "EXCEPTION",
+                        "message": f"{uuid} ({tag}) is already a template!"
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
+                elif "template" not in path and prop != "template=yes":
+                    ioc_common.logit({
+                        "level"  : "EXCEPTION",
+                        "message": f"{uuid} ({tag}) is already a jail!"
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
+
+            if plugin:
+                _prop = prop.split(".")
+                ioc_json.IOCJson(path, cli=True).json_plugin_set_value(_prop)
+            else:
+                try:
+                    # We use this to test if it's a valid property at all.
+                    _prop = prop.partition("=")[0]
+                    self.get(_prop)
+
+                    # The actual setting of the property.
+                    iocjson.json_set_value(prop)
+                except KeyError:
+                    _prop = prop.partition("=")[0]
+                    ioc_common.logit({
+                        "level"  : "EXCEPTION",
+                        "message": f"{_prop} is not a valid property!"
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
+        else:
+            ioc_json.IOCJson(self.iocroot).json_set_value(prop, default=True)
+
+    def snap_list(self, long=True):
+        """Gathers a list of snapshots and returns it"""
+        tag, uuid, path = self.__check_jail_existence__()
+        conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
+        snap_list = []
+
+        if conf["template"] == "yes":
+            full_path = f"{self.pool}/iocage/templates/{tag}"
+        else:
+            full_path = f"{self.pool}/iocage/jails/{uuid}"
+
+        snapshots = self.zfs.get_dataset(full_path)
+
+        for snap in snapshots.snapshots_recursive:
+            snap_name = snap.name.rsplit("@")[1] if not long else snap.name
+            root_snap_name = snap.name.rsplit("@")[0].split("/")[-1]
+
+            if root_snap_name == "root":
+                snap_name += "/root"
+            elif root_snap_name != uuid and root_snap_name != tag:
+                # basejail datasets.
+                continue
+
+            creation = snap.properties["creation"].value
+            used = snap.properties["used"].value
+            referenced = snap.properties["referenced"].value
+
+            snap_list.append([snap_name, creation, referenced, used])
+
+        return snap_list
 
     def __soft_restart__(self):
         """

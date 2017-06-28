@@ -92,27 +92,26 @@ class IOCExec(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-        if self.plugin:
-            try:
-                p = su.Popen(["setfib", exec_fib, "jexec", flag, user,
-                              f"ioc-{self.uuid}"] + list(self.command),
-                             stderr=su.STDOUT, stdin=su.PIPE)
-                exec_out = p.communicate(b"\r")[0]
-                msg = exec_out if exec_out is not None else ""
-
-                return msg, False
-            except su.CalledProcessError as err:
-                return err.output.decode("utf-8").rstrip(), True
-        elif self.console:
+        if self.console:
             login_flags = conf["login_flags"].split()
             su.Popen(["setfib", exec_fib, "jexec", f"ioc-{self.uuid}",
                       "login"] + login_flags).communicate()
 
             return None, False
         else:
-            jexec = su.Popen(["setfib", exec_fib, "jexec", flag, user,
-                              f"ioc-{self.uuid}"] + list(self.command),
-                             stdout=su.PIPE, stderr=su.PIPE)
-            msg, err = jexec.communicate()
+            try:
+                cmd = ["setfib", exec_fib, "jexec", flag, user,
+                       f"ioc-{self.uuid}"] + list(self.command)
 
-            return msg, err
+                if not self.silent:
+                    p = su.Popen(cmd, stderr=su.STDOUT, stdin=su.PIPE)
+                else:
+                    p = su.Popen(cmd, stderr=su.STDOUT, stdin=su.PIPE,
+                                 stdout=su.PIPE)
+
+                exec_out = p.communicate(b"\r")[0]
+                msg = exec_out if exec_out is not None else ""
+
+                return msg, False
+            except su.CalledProcessError as err:
+                return err.output.decode("utf-8").rstrip(), True

@@ -54,6 +54,12 @@ def cli(prop, _all, _pool, jail, recursive, header, plugin):
         # Confusing I know.
         jail = prop
         prop = "all"
+    else:
+        if not jail:
+            ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": "You must specify a jail!"
+            })
 
     if not recursive:
         if prop == "state":
@@ -96,6 +102,12 @@ def cli(prop, _all, _pool, jail, recursive, header, plugin):
                         "level"  : "INFO",
                         "message": f"{fstab[0]}\t{fstab[1]}"
                     })
+        elif _pool:
+            pool = ioc.IOCage().get("", pool=True)
+            ioc_common.logit({
+                "level"  : "INFO",
+                "message": pool
+            })
         else:
             p = ioc.IOCage(jail).get(prop)
 

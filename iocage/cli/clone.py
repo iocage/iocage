@@ -22,9 +22,12 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """clone module for the cli."""
+import re
+
 import click
-import iocage.lib.iocage as ioc
+
 import iocage.lib.ioc_common as ioc_common
+import iocage.lib.iocage as ioc
 
 __rootcmd__ = True
 
@@ -49,8 +52,29 @@ def validate_count(ctx, param, value):
 @click.argument("source", nargs=1)
 @click.argument("props", nargs=-1)
 @click.option("--count", "-c", callback=validate_count, default="1")
-def cli(source, props, count):
-    err, msg = ioc.IOCage(jail=source).create(source, props, count, clone=True)
+@click.option("--name", "-n", default=None,
+              help="Provide a specific name and tag instead of an UUID for"
+                   " this jail")
+@click.option("--uuid", "-u", "_uuid", default=None,
+              help="Provide a specific UUID for this jail")
+def cli(source, props, count, name, _uuid):
+    if name:
+        _props = []
+        if f"tag={name}" not in props:
+            _props.append(f"tag={name}")
+
+        for prop in props:
+            replace = f"tag={name}"
+            prop = re.sub(r"tag=.*", replace, prop)
+            _props.append(prop)
+
+        props = tuple(_props)
+
+        # At this point we don't care
+        _uuid = name
+
+    err, msg = ioc.IOCage(jail=source).create(source, props, count,
+                                              uuid=_uuid, clone=True)
 
     if err:
         ioc_common.logit({

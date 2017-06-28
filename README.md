@@ -33,6 +33,9 @@ To install subsequent updates: run `make install` as root.
 
 *Note: `sysutils/py3-iocage` will conflict with other previous versions of iocage included into the ports tree. We suggest you first uninstall any other previous version of iocage prior to install this one.*
 
+##### Pkg:
+- It is possible to install pre-built packages using pkg(8) if you are using FreeBSD 10 or above: `pkg install py36-iocage`
+
 ###### Upgrading from `iocage_legacy`:
 
 This repository replaces `iocage_legacy`. To upgrade to the current version:
