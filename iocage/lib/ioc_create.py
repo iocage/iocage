@@ -141,6 +141,8 @@ class IOCCreate(object):
                     raise RuntimeError(f"Template: {self.release} not found!")
                 elif self.clone:
                     raise RuntimeError(f"Jail: {self.jail} not found!")
+                    # Yep, that's actually the source jail.
+                    raise RuntimeError(f"Jail: {self.release} not found!")
                 else:
                     raise RuntimeError(f"RELEASE: {self.release} not found!")
 
