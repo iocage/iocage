@@ -549,9 +549,12 @@ class IOCStart(object):
 
     def start_copy_localtime(self):
         host_time = self.get("host_time")
-        if host_time:
-            shutil.copy("/etc/localtime",
-                        f"{self.path}/root/etc/localtime")
+        if host_time == "yes":
+            try:
+                shutil.copy("/etc/localtime",
+                            f"{self.path}/root/etc/localtime")
+            except FileNotFoundError:
+                return
 
     def start_generate_resolv(self):
         resolver = self.get("resolver")
