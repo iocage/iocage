@@ -828,6 +828,7 @@ class IOCage(object):
         prop = " ".join(prop)  # We don't want a tuple.
 
         if self.jail == "default":
+            ioc_json.IOCJson().json_check_default_config()
             default = True
         else:
             default = False
