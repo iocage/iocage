@@ -818,6 +818,16 @@ class IOCage(object):
         """Rolls back a jail and all datasets to the supplied snapshot"""
         tag, uuid, path = self.__check_jail_existence__()
         conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
+        status, _ = self.list("jid", uuid=uuid)
+
+        if status:
+            ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": f"Please stop {uuid} ({tag}) before trying to"
+                           " rollback!"
+            },
+                _callback=self.callback,
+                silent=self.silent)
 
         if conf["template"] == "yes":
             target = f"{self.pool}/iocage/templates/{tag}"
