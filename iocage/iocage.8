@@ -291,8 +291,11 @@ A command can be specified as with the normal system, see
 .Pp
 Example:
 .Pp
-.Dl # iocage chroot examplejail ls /home
+.Dl # iocage chroot 6ffe99a9 ls
 .Pp
+Run
+.Cm ls
+in the jail identified by the shortened UUID.
 .\" == CLEAN ==
 .It Cm clean
 Destroy ZFS datasets.
@@ -310,15 +313,35 @@ Destroys all created jails.
 .It Op Fl t | -template | Cm dataset_type
 Destroys all templates.
 .El
+.Pp
+Example:
+.Pp
+.Dl # iocage clean -j
+.Pp
+Destroys all created jails on the system, after a prompt ensures this
+is the desired action.
+.Pp
 .\"== CLONE ==
 .It Cm clone
 Clone a jail.
 Properties can be configured for the clone by listing them after the
 .Ar SOURCE
 is named.
+.Pp
+Example:
+.Pp
+.Dl # iocage clone 38114a58 tag=cloneexample1
+.Pp
+Clone jail 38114a58 and add the tag property cloneexample1.
+.Pp
 .\" == CONSOLE ==
 .It Cm console
 Execute login to open a shell inside the jail.
+.Pp
+Example:
+.Pp
+.Dl # iocage console cloneexample1
+.Pp
 .\" == CREATE ==
 .It Cm create
 Deploy a new jail based on the host operating system's release.
@@ -353,14 +376,15 @@ Specify a desired UUID for the new jail.
 .El
 .Pp
 Examples:
-.Bl -item
-.It
-.Nm
-create tag=www01 pkglist=$HOME/my-pkgs.txt
-.It
-.Nm
-create -b tag=mybasejail
-.El
+.Pp
+.Dl # iocage create -s -r 11.0-RELEASE
+.Pp
+Create a FreeBSD 11.0 jail with a shortened UUID.
+.Pp
+.Dl # iocage create -r 11.0-RELEASE -u 12345678
+.Pp
+Create a FreeBSD 11.0 jail with the custom UUID 12345678.
+.Pp
 .\" == DESTROY ==
 .It Cm destroy
 Destroy the specified jail.
@@ -377,6 +401,15 @@ Destroy the jail with no further warnings or user input.
 .It Op Fl r | -release
 Destroy a specified RELEASE dataset.
 .El
+.Pp
+Examples:
+.Pp
+.Dl # iocage destroy 12345678
+.Pp
+.Dl # iocage destroy -r 10.1-RELEASE
+.Pp
+Destroy the downloaded FreeBSD 10.1 release.
+.Pp
 .\" == DF ==
 .It Cm df
 Show resource usage of all jails.
@@ -726,6 +759,13 @@ Options:
 Stop all jails with boot=on in a specific order.
 Jails with higher priority values stop first.
 .El
+.Pp
+Example:
+.Pp
+.Dl # iocage stop 6ffe99a9
+.Pp
+Stop the jail identified by the shortened UUID.
+.Pp
 .\" == UPDATE ==
 .It Cm update
 Runs
