@@ -344,18 +344,20 @@ Example:
 .Pp
 .\" == CREATE ==
 .It Cm create
-Deploy a new jail based on the host operating system's release.
-The default can be overridden by specifying the release option.
+Deploy a new jail based on the host operating system's RELEASE.
+The default can be overridden by specifying the RELEASE option.
 A fully independent jail set is created by default.
 .Pp
 Options:
 .Bl -tag -width "[-b | --basejail]"
 .It Op Fl b | -basejail
-Create a new "basejail" with a common shared base.
+Create a new "basejail".
+This basejail mounts the designated RELEASE directory as a
+nullfs mount over the jail's directories.
 .It Op Fl c | -count Ar TEXT
-Clone the jail from the current host's release, as determined by the
-.Fl r
-option.
+Designate the number of jails to create, all cloned from
+the desired
+.Op Fl r Ar RELEASE . 
 .It Op Fl e | -empty
 Create an empty jail for unsupported or custom jails.
 .It Op Fl f | -force
@@ -363,8 +365,10 @@ Skip prompts, auto-confirming them with yes.
 .It Op Fl n | -name
 Provide a name and tag instead of a UUID for the new jail.
 .It Op Fl p | -pkglist Ar TEXT
+Specify a JSON file which manages the installation of each
+package in the newly created jail.
 .It Op Fl r | -release Ar TEXT
-Specify which release to use for the new jail.
+Specify which RELEASE to use for the new jail.
 .It Op Fl f | -force
 Skip prompts, auto-confirming them with yes.
 .It Op Fl s | -short
@@ -385,6 +389,12 @@ Create a FreeBSD 11.0 jail with a shortened UUID.
 .Pp
 Create a FreeBSD 11.0 jail with the custom UUID 12345678.
 .Pp
+.Dl # iocage create -c 3 -r 11.0-RELEASE tag=examplejail
+.Pp
+This command creates three identical jails based off the
+FreeBSD 11.0 RELEASE.
+These jails are sequentially tagged based on the
+custom tag property.
 .\" == DESTROY ==
 .It Cm destroy
 Destroy the specified jail.
