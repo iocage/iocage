@@ -414,7 +414,9 @@ Destroy a specified RELEASE dataset.
 .Pp
 Examples:
 .Pp
-.Dl # iocage destroy 12345678
+.Dl # iocage destroy 12345678 -f
+.Pp
+Destroy the identified jail with no further input.
 .Pp
 .Dl # iocage destroy -r 10.1-RELEASE
 .Pp
@@ -450,9 +452,16 @@ Options:
 Use when scripting, using tabs for separators.
 .It Op Fl l | -long | Cm _long
 Shows the full UUID.
-.It Op Fl s | -s | Cm _long Ar TEXT
+.It Op Fl s | -sort | Cm _sort Ar TEXT
 Sorts the list by the named type.
 .El
+.Pp
+Example:
+.Pp
+.Dl # iocage df -l
+.Pp
+Displays the usage table with the full UUID of each jail.
+.Pp
 .\" == EXEC ==
 .It Cm exec
 Execute a command inside the specified jail.
@@ -472,6 +481,23 @@ Specifies which jail user runs the command.
 .It Op Fl u | -host_user Ar NAME
 Specify which host user runs the command.
 .El
+.Pp
+Examples:
+.Pp
+.Dl # iocage exec examplejail_1 ls /tmp
+.Pp
+Lists the contents of the examplejail_1's
+.Pa /tmp
+directory.
+.Pp
+.Dl # iocage exec examplejail_1 "cat COPYRIGHT" | less
+.Pp
+In this example, examplejail_1 executes
+.Cm cat COPYRIGHT ,
+while the output is run with
+.Cm less
+outside the jail on the primary system.
+.Pp
 .\" == EXPORT ==
 .It Cm export
 Exports the specified jail.
@@ -479,6 +505,11 @@ An archive file is created in
 .Pa /iocage/images
 with an SHA256 checksum.
 The jail must be stopped before exporting.
+.Pp
+Example:
+.Pp
+.Dl # iocage export examplejail_2
+.Pp
 .\" == FETCH ==
 .It Cm fetch
 Downloads and/or updates releases.
@@ -577,8 +608,15 @@ Opens the
 .Pa fstab
 file in the default editor.
 .It Op Fl r | -remove | Cm action
-Remove an entry from a specific jail's fstab and unmounts it.
+Remove an entry from a specific jail's
+.Pa fstab
+and unmounts it.
 .El
+.Pp
+Example:
+.Pp
+.Dl # iocage fstab -e examplejail_1
+.Pp
 .\" == GET ==
 .It Cm get
 Display the specified property.
@@ -599,11 +637,34 @@ Get the currently activated zpool.
 .It Op Fl r | -recursive
 Get the specified property for all jails.
 .El
+.Pp
+Examples:
+.Pp
+.Dl # iocage get -p
+.Pp
+Outputs the name of the activated zpool.
+.Pp
+.Dl # iocage get -a examplejail_1 | less
+.Pp
+List all properties of examplejail_1 and send the output
+through
+.Cm less .
+.Pp
+.Dl # iocage get -r dhcp
+.Pp
+Displays a table with each jail's UUID, TAG, and the
+status of the requested property.
+.Pp
 .\" == IMPORT ==
 .It Cm import
 Import a specific jail image.
 Short UUIDs can be used, but do not specify the full filename, only
 the UUID.
+.Pp
+Example:
+.Pp
+.Dl # iocage import 064c247
+.Pp
 .\" == LIST ==
 .It Cm list
 List the specified dataset type.
@@ -631,6 +692,29 @@ Sorts the list by the given type.
 .It Op Fl t | -template | Cm dataset_type
 Lists all templates.
 .El
+.Pp
+Example:
+.Pp
+.Dl # iocage list
+.Pp
+Displays a table containing several elements for
+each installed jail:
+.Bl -tag -width "release"
+.It JID
+Jail identifier
+.It UUID
+Unique identifcation number.
+.It STATE
+Displays the active state of the jail.
+Can be up or down.
+.It TAG
+The user added tag value.
+.It RELEASE
+The jail's FreeBSD RELEASE.
+.It IP4
+Shows the availability of IP4 addresses.
+.El
+.Pp
 .\" == MIGRATE ==
 .It Cm migrate
 Migrate from the development version of iocage-legacy to the current
@@ -643,12 +727,21 @@ Destroy the old dataset after migration.
 .It Op Fl f | -force
 Bypass any further warning or required user interaction.
 .El
+.Pp
+Example:
+.Pp
+.Dl # iocage migrate -d -f
+.Pp
+Migrates to the new jail format and deletes the old dataset with
+no further user interaction.
+.Pp
 .\" == PKG ==
 .It Cm pkg
 Run desired
 .Cm pkg
 commands in the specified jail.
 List the jail's UUID or TAG, then any desired commands.
+.Pp
 .\" == RESTART ==
 .It Cm restart
 Restart the specified jail, OR use ALL to restart all jails.
@@ -658,6 +751,13 @@ Options:
 .It Op Fl s | -soft
 Restart the jail, but do not tear down the network stack.
 .El
+.Pp
+Examples:
+.Pp
+.Dl # iocage restart ALL
+.Pp
+.Dl # iocage restart --soft examplejail1
+.Pp
 .\" == ROLLBACK ==
 .It Cm rollback
 Roll back a jail to an existing snapshot.
@@ -672,6 +772,11 @@ Run the command, skipping any warnings or further user interaction.
 .It Fl n | -name
 [Required] Used to specify the snapshot name.
 .El
+.Pp
+Example:
+.Pp
+.Dl # iocage rollback -n snapshottest2 examplejail1
+.Pp
 .\" == SET ==
 .It Cm set
 Set the specified property in the desired jail.
@@ -682,14 +787,13 @@ Options:
 .It Op Fl P | -plugin Ar KEY
 Set the specified key for a plugin jail.
 If accessing a nested key, use "." as a separator.
-.El
 .Pp
-Example:
-.Bl -item
-.It
-.Nm
-set -P foo.bar.baz=VALUE PLUGIN
-.El
+Examples:
+.Pp
+.Dl # iocage set -P foo.bar.baz=VALUE PLUGIN
+.Pp
+.Dl # iocage set tag=examplejail1 b1ebda86
+.Pp
 .\" == SNAPLIST ==
 .It Cm snaplist
 List snapshots of a jail.
@@ -714,6 +818,11 @@ Tabs are used as separators.
 .It Op Fl l | -long | Cm _long
 Show the full dataset path for the snapshot.
 .El
+.Pp
+Example:
+.Pp
+.Dl # iocage snaplist examplejail1
+.Pp
 .\" == SNAPREMOVE ==
 .It Cm snapremove
 Delete snapshots of the specified jail.
@@ -726,6 +835,11 @@ Options:
 .It Op Fl n | -name Ar TEXT
 [Required] The snapshot name.
 .El
+.Pp
+Example:
+.Pp
+.Dl # iocage snapremove -n snapshottest1 examplejail1
+.Pp
 .\" == SNAPSHOT ==
 .It Cm snapshot
 Create a ZFS snapshot of the specified jail.
@@ -737,6 +851,11 @@ Options:
 .It Op Fl n | -name Ar TEXT
 The user created snapshot name.
 .El
+.Pp
+Example:
+.Pp
+.Dl # iocage snapshot examplejail1 -n snapshottest1
+.Pp
 .\" == START ==
 .It Cm start
 Start a jail identified by
@@ -753,6 +872,11 @@ Options:
 Start all jails with boot=on in a specific order.
 Jails with lower priority start first.
 .El
+.Pp
+Example:
+.Pp
+.Dl # iocage start examplejail1
+.Pp
 .\" == STOP ==
 .It Cm stop
 Stop a jail identified by
@@ -783,6 +907,11 @@ Runs
 to update the specified jail to the latest patch level.
 A backup snapshot is automatically created to provide a rollback
 option.
+.Pp
+Example:
+.Pp
+.Dl # iocage update examplejail1
+.Pp
 .\" == UPGRADE ==
 .It Cm upgrade
 Runs
@@ -796,14 +925,11 @@ Options:
 .El
 .Pp
 Example:
-.Bl -item
-.It
-.Nm
-set release=10.1-RELEASE UUID|TAG
-.El
 .Pp
-For this, the release must be locally available.
-.El
+.Dl # iocage upgrade examplejail2 -r 11.0-RELEASE
+.Pp
+To upgrade, the release must be locally available.
+.Pp
 .Sh PROPERTIES
 The Source listed with each property shows whether it is a local
 .Nm
