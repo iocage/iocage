@@ -396,8 +396,8 @@ class IOCStart(object):
         """
         if vnet:
             _, jid = iocage.lib.ioc_list.IOCList().list_get_jid(self.uuid)
-            net_configs = ((self.get("ip4_addr"), self.get("defaultrouter")),
-                           (self.get("ip6_addr"), self.get("defaultrouter6")))
+            net_configs = ((self.get("ip4_addr"), self.get("defaultrouter"), False),
+                           (self.get("ip6_addr"), self.get("defaultrouter6"), True))
             nics = self.get("interfaces").split(",")
 
             for nic in nics:
@@ -423,7 +423,7 @@ class IOCStart(object):
                 membermtu = find_bridge_mtu(bridge)
 
                 ifaces = []
-                for addrs, gw in net_configs:
+                for addrs, gw, ipv6 in net_configs:
                     if addrs == 'none':
                         continue
 
@@ -451,7 +451,7 @@ class IOCStart(object):
                                                           membermtu, jid)
                             ifaces.append(iface)
 
-                        self.start_network_vnet_addr(iface, ip, gw)
+                        self.start_network_vnet_addr(iface, ip, gw, ipv6)
 
             except su.CalledProcessError as err:
                 iocage.lib.ioc_common.logit({
@@ -516,7 +516,7 @@ class IOCStart(object):
         else:
             return
 
-    def start_network_vnet_addr(self, iface, ip, defaultgw):
+    def start_network_vnet_addr(self, iface, ip, defaultgw, ipv6=False):
         """
         Add an IP address to a vnet interface inside the jail.
 
@@ -527,7 +527,7 @@ class IOCStart(object):
         """
 
         # Crude check to see if it's a IPv6 address
-        if ":" in ip:
+        if ipv6:
             ifconfig = [iface, "inet6", ip, "up"]
             route = ["add", "-6", "default", defaultgw]
         else:
