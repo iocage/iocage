@@ -804,13 +804,13 @@ class IOCage(object):
 
     @staticmethod
     def list(lst_type, header=False, long=False, sort="tag", uuid=None,
-             plugin=False):
+             plugin=False, quick=False):
         """Returns a list of lst_type"""
         if lst_type == "jid":
             return ioc_list.IOCList().list_get_jid(uuid)
 
         return ioc_list.IOCList(lst_type, header, long, sort,
-                                plugin=plugin).list_datasets()
+                                plugin=plugin, quick=quick).list_datasets()
 
     def restart(self, soft=False):
         if self._all:

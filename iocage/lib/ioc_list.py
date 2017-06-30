@@ -22,6 +22,7 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """List all datasets by type"""
+import json
 import re
 import subprocess as su
 
@@ -41,7 +42,7 @@ class IOCList(object):
     """
 
     def __init__(self, lst_type="all", hdr=True, full=False, _sort=None,
-                 silent=False, callback=None, plugin=False):
+                 silent=False, callback=None, plugin=False, quick=False):
         self.list_type = lst_type
         self.header = hdr
         self.full = full
@@ -51,6 +52,7 @@ class IOCList(object):
         self.silent = silent
         self.callback = callback
         self.plugin = plugin
+        self.quick = quick
 
     def list_datasets(self, set=False):
         """Lists the datasets of given type."""
@@ -64,7 +66,10 @@ class IOCList(object):
                 f"{self.pool}/iocage/templates").children
 
         if self.list_type == "all":
-            _all = self.list_all(ds)
+            if self.quick:
+                _all = self.list_all_quick(ds)
+            else:
+                _all = self.list_all(ds)
 
             return _all
         elif self.list_type == "uuid":
@@ -130,10 +135,40 @@ class IOCList(object):
 
             return templates
 
+    def list_all_quick(self, jails):
+        """Returns a table of jails with minimal processing"""
+        jail_list = []
+
+        for jail in jails:
+            mountpoint = jail.properties["mountpoint"].value
+            with open(f"{mountpoint}/config.json", "r") as loc:
+                conf = json.load(loc)
+
+            uuid = conf["host_hostuuid"]
+            ip4 = conf["ip4_addr"]
+            tag = conf["tag"]
+
+            jail_list.append([uuid, tag, ip4])
+
+        # Prints the table
+        if self.header:
+            table = texttable.Texttable(max_width=0)
+
+            # We get an infinite float otherwise.
+            table.set_cols_dtype(["t", "t", "t"])
+            jail_list.insert(0, ["UUID", "TAG", "IP4"])
+
+            table.add_rows(jail_list)
+
+            return table.draw()
+        else:
+            flat_jail = [j for j in jail_list]
+
+            return flat_jail
+
     def list_all(self, jails):
         """List all jails."""
         self.full = True if self.plugin else self.full
-        table = texttable.Texttable(max_width=0)
         jail_list = []
 
         for jail in jails:
@@ -211,6 +246,8 @@ class IOCList(object):
 
         # Prints the table
         if self.header:
+            table = texttable.Texttable(max_width=0)
+
             if self.full:
                 # We get an infinite float otherwise.
                 table.set_cols_dtype(["t", "t", "t", "t", "t", "t", "t", "t",
