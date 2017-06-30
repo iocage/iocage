@@ -74,16 +74,29 @@ class IOCExec(object):
                                               conf,
                                               silent=True)
             elif conf["type"] == "basejail":
-                raise RuntimeError(
-                    "Please run \"iocage migrate\" before trying to start"
-                    f" {self.uuid} ({self.tag})")
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": "Please run \"iocage migrate\" before trying"
+                               f" to start {self.uuid} ({self.tag})"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
             elif conf["type"] == "template":
-                raise RuntimeError(
-                    "Please convert back to a jail before trying to start"
-                    f" {self.uuid} ({self.tag})")
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": "Please convert back to a jail before trying"
+                               f" to start {self.uuid} ({self.tag})"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
             else:
-                raise RuntimeError(f"{conf['type']} is not a supported jail"
-                                   " type.")
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": f"{conf['type']} is not a supported jail"
+                               " type."
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
 
             iocage.lib.ioc_common.logit({
                 "level"  : "INFO",
