@@ -141,8 +141,20 @@ class IOCList(object):
 
         for jail in jails:
             mountpoint = jail.properties["mountpoint"].value
-            with open(f"{mountpoint}/config.json", "r") as loc:
-                conf = json.load(loc)
+
+            try:
+                with open(f"{mountpoint}/config.json", "r") as loc:
+                    conf = json.load(loc)
+            except FileNotFoundError:
+                uuid = mountpoint.rsplit("/", 1)[-1]
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": f"{uuid} is missing its configuration file,"
+                               "\nPlease run just 'list' instead to create"
+                               " it."
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
 
             uuid = conf["host_hostuuid"]
             ip4 = conf["ip4_addr"]
