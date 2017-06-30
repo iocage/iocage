@@ -149,7 +149,7 @@ class IOCList(object):
                 uuid = mountpoint.rsplit("/", 1)[-1]
                 iocage.lib.ioc_common.logit({
                     "level"  : "EXCEPTION",
-                    "message": f"{uuid} is missing its configuration file,"
+                    "message": f"{uuid} is missing its configuration file."
                                "\nPlease run just 'list' instead to create"
                                " it."
                 },
