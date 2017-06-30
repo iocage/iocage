@@ -396,8 +396,9 @@ class IOCStart(object):
         """
         if vnet:
             _, jid = iocage.lib.ioc_list.IOCList().list_get_jid(self.uuid)
-            net_configs = ((self.get("ip4_addr"), self.get("defaultrouter"), False),
-                           (self.get("ip6_addr"), self.get("defaultrouter6"), True))
+            net_configs = (
+                (self.get("ip4_addr"), self.get("defaultrouter"), False),
+                (self.get("ip6_addr"), self.get("defaultrouter6"), True))
             nics = self.get("interfaces").split(",")
 
             for nic in nics:
