@@ -46,7 +46,9 @@ import iocage.lib.iocage as ioc
               help="Have --remote use HTTP instead.", is_flag=True)
 @click.option("--sort", "-s", "_sort", default="tag", nargs=1,
               help="Sorts the list by the given type")
-def cli(dataset_type, header, _long, remote, http, plugins, _sort):
+@click.option("--quick", "-q", is_flag=True, default=False,
+              help="Lists all jails with less processing and fields.")
+def cli(dataset_type, header, _long, remote, http, plugins, _sort, quick):
     """This passes the arg and calls the jail_datasets function."""
     freebsd_version = ioc_common.checkoutput(["freebsd-version"])
     iocage = ioc.IOCage(skip_jails=True)
@@ -68,7 +70,8 @@ def cli(dataset_type, header, _long, remote, http, plugins, _sort):
                                                           list_header=header,
                                                           list_long=_long)
     else:
-        _list = iocage.list(dataset_type, header, _long, _sort, plugin=plugins)
+        _list = iocage.list(dataset_type, header, _long, _sort,
+                            plugin=plugins, quick=quick)
 
     if not header:
         if dataset_type == "base":
