@@ -196,7 +196,8 @@ class IOCage(object):
                 tuple: The jails tag, uuid, path
         """
         _jail = {tag: uuid for (tag, uuid) in self.jails.items() if
-                 uuid.startswith(self.jail) or tag == self.jail}
+                 uuid.startswith(self.jail) or tag == self.jail or
+                 tag == f"{self.jail} (template)"}
 
         if len(_jail) == 1:
             tag, uuid = next(iter(_jail.items()))
