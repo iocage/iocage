@@ -113,13 +113,12 @@ class IOCList(object):
                         _callback=self.callback,
                         silent=self.silent)
                 iocage.lib.ioc_common.logit({
-                    "level"  : "ERROR",
+                    "level"  : "EXCEPTION",
                     "message": "\nPlease run \"iocage set tag=NEWTAG "
                                "UUID\" for one of the UUID's."
                 },
                     _callback=self.callback,
                     silent=self.silent)
-                raise RuntimeError()
 
             return jails, paths
         elif self.list_type == "base":
