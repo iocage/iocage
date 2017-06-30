@@ -132,6 +132,7 @@
 .Op Fl R | -remote
 .Op Fl b | r | -base | -release | Cm dataset_type
 .Op Fl l | -long | Cm _long
+.Op Fl q | -quick
 .Op Fl s | -sort | Cm _sort
 .Op Fl t | -template | Cm dataset_type
 .\" == MIGRATE ==
@@ -687,6 +688,8 @@ Shows available RELEASE options for remote.
 List all bases.
 .It Op Fl l | -long | Cm _long
 Shows the full UUID and ip4 address.
+.It Op Fl q | -quick
+Lists all jails with less processing and fields.
 .It Op Fl s | -sort | Cm _sort Ar TEXT
 Sorts the list by the given type.
 .It Op Fl t | -template | Cm dataset_type
