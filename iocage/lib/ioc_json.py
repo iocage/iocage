@@ -165,8 +165,23 @@ class IOCJson(object):
 
     def json_load(self):
         """Load the JSON at the location given. Returns a JSON object."""
+        pool, iocroot = _get_pool_and_iocroot()
         version = self.json_get_version()
+        jail_type, jail_uuid = self.location.rsplit("/", 2)[-2:]
+        jail_dataset = self.zfs.get_dataset(
+            f"{pool}/iocage/{jail_type}/{jail_uuid}")
         skip = False
+
+        if jail_dataset.mountpoint is None:
+            try:
+                jail_dataset.mount_recursive()
+            except libzfs.ZFSException as err:
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": err
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
 
         try:
             with open(self.location + "/config.json", "r") as conf:
@@ -186,8 +201,6 @@ class IOCJson(object):
                             uuid = d
                         elif len(d) == 8:
                             # Hack88 migration to a perm short UUID.
-                            pool, iocroot = _get_pool_and_iocroot()
-
                             full_uuid = self.zfs_get_property(
                                 self.location,
                                 'org.freebsd.iocage:host_hostuuid')
