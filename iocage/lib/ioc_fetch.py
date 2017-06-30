@@ -133,16 +133,16 @@ class IOCFetch(object):
     def __fetch_host_release__(self):
         """Helper to return the hosts sanitized RELEASE"""
         rel = os.uname()[2]
-        if "-RELEASE" in rel or "-STABLE" in rel:
-            self.release = rel.rsplit("-", 1)[0]
+        self.release = rel.rsplit("-", 1)[0]
 
-            if "-STABLE" in rel:
-                # HardenedBSD
-                self.release = self.release.replace("-RELEASE",
-                                                    "-STABLE")
-                self.release = re.sub(r"\W\w.", "-", self.release)
-
-        else:
+        if "-STABLE" in rel:
+            # FreeNAS
+            self.release = f"{self.release}-RELEASE"
+        elif "-HBSD" in rel:
+            # HardenedBSD
+            self.release = re.sub(r"\W\w.", "-", self.release)
+            self.release = re.sub(r"([A-Z])\w+", "STABLE", self.release)
+        elif "-RELEASE" not in rel:
             self.release = "Not a RELEASE"
 
         return self.release
