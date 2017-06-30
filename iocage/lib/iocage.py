@@ -227,16 +227,32 @@ class IOCage(object):
                     _callback=self.callback,
                     silent=self.silent)
             else:
+                if "(template)" in self.jail:
+                    # This will fail because it will be looking for JAIL
+                    # (template) and not just jail. Which is fine in this case.
+                    msg = f"{self.jail.rsplit('(', 1)[0].rstrip()} is " \
+                          " already a jail!"
+                else:
+                    msg = f"{self.jail} not found!"
+
                 ioc_common.logit({
                     "level"  : "EXCEPTION",
-                    "message": f"{self.jail} not found!"
+                    "message": msg
                 },
                     _callback=self.callback,
                     silent=self.silent)
         else:
+            if "(template)" in self.jail:
+                # This will fail because it will be looking for JAIL
+                # (template) and not just jail. Which is fine in this case.
+                msg = f"{self.jail.rsplit('(', 1)[0].rstrip()} is" \
+                      " already a jail!"
+            else:
+                msg = f"{self.jail} not found!"
+
             ioc_common.logit({
                 "level"  : "EXCEPTION",
-                "message": f"{self.jail} not found!"
+                "message": msg
             },
                 _callback=self.callback,
                 silent=self.silent)
@@ -878,7 +894,7 @@ class IOCage(object):
             iocjson = ioc_json.IOCJson(path, cli=True)
 
             if "template" in prop.split("=")[0]:
-                if "template" in path and prop != "template=no":
+                if "templates/" in path and prop != "template=no":
                     ioc_common.logit({
                         "level"  : "EXCEPTION",
                         "message": f"{uuid} ({tag}) is already a template!"
