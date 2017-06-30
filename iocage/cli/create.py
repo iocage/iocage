@@ -58,8 +58,8 @@ def validate_count(ctx, param, value):
 @click.option("--release", "-r", required=False,
               help="Specify the RELEASE to use for the new jail.")
 @click.option("--template", "-t", required=False,
-              help="Flag this jail as a template, which allows for rapid"
-                   " redeployment of a customized jail.")
+              help="Specify the template to use for the new jail instead of"
+                   " a RELEASE.")
 @click.option("--pkglist", "-p", default=None,
               help="Specify a JSON file which manages the installation of"
                    " each package in the newly created jail.")
