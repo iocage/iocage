@@ -323,8 +323,10 @@ class IOCFetch(object):
                         _callback=self.callback,
                         silent=self.silent)
                 host_release = self.__fetch_host_release__()
-                self.release = input("\nWhich release do you want to fetch?"
-                                     f" ({host_release})\nType EXIT to quit: ")
+                self.release = input("\nType the number of the desired"
+                                     " RELEASE\nPress [Enter] to fetch "
+                                     f"the default selection: ({host_release})"
+                                     "\nType EXIT to quit: ")
                 self.release = self.__fetch_validate_release__(releases)
         else:
             if self.auth == "basic":
@@ -375,8 +377,10 @@ class IOCFetch(object):
                     return
 
                 host_release = self.__fetch_host_release__()
-                self.release = input("\nWhich release do you want to fetch?"
-                                     f" ({host_release})\nType EXIT to quit: ")
+                self.release = input("\nType the number of the desired"
+                                     " RELEASE\nPress [Enter] to fetch "
+                                     f"the default selection: ({host_release})"
+                                     "\nType EXIT to quit: ")
                 self.release = self.__fetch_validate_release__(releases)
 
         if self.hardened:
@@ -435,8 +439,10 @@ class IOCFetch(object):
                 return
 
             host_release = self.__fetch_host_release__()
-            self.release = input("\nWhich release do you want to fetch?"
-                                 f" ({host_release})\nType EXIT to quit: ")
+            self.release = input("\nType the number of the desired"
+                                 " RELEASE\nPress [Enter] to fetch"
+                                 f" the default selection: ({host_release})"
+                                 "\nType EXIT to quit: ")
 
             self.release = self.__fetch_validate_release__(releases)
 
@@ -1296,8 +1302,9 @@ fingerprint: {fingerprint}
                 return table.draw()
 
         if self.plugin is None:
-            self.plugin = input("\nWhich plugin do you want to create? ("
-                                "EXIT) ")
+            self.plugin = input("\nType the number of the desired"
+                                " plugin\nPress [Enter] or type EXIT to"
+                                " quit: ")
 
         self.plugin = self.__fetch_validate_plugin__(self.plugin.lower(),
                                                      _plugins)
