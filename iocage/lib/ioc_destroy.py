@@ -150,7 +150,7 @@ class IOCDestroy(object):
 
         dataset.delete()
 
-    def __destroy_parse_datasets__(self, path, clean=False):
+    def __destroy_parse_datasets__(self, path, clean=False, stop=True):
         """
         Parses the datasets before calling __destroy_dataset__ with each
         entry.
@@ -177,12 +177,13 @@ class IOCDestroy(object):
                 # the jails path.
                 root = False
 
-            try:
-                self.__stop_jails__(datasets, path, root)
-            except (RuntimeError, FileNotFoundError):
-                # If a bad or missing configuration for a jail, this will
-                # get in the way.
-                pass
+            if stop:
+                try:
+                    self.__stop_jails__(datasets, path, root)
+                except (RuntimeError, FileNotFoundError):
+                    # If a bad or missing configuration for a jail, this will
+                    # get in the way.
+                    pass
 
             for dataset in dependents:
                 try:
