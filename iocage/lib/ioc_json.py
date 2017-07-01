@@ -651,14 +651,9 @@ class IOCJson(object):
                 except KeyError:
                     # At this point it should be a real misconfigured jail
                     uuid = self.location.rsplit("/", 1)[-1]
-                    iocage.lib.ioc_common.logit({
-                        "level"  : "EXCEPTION",
-                        "message": "Configuration is missing!\n"
-                                   f"Please destroy {uuid} and recreate"
-                                   " it."
-                    },
-                        _callback=self.callback,
-                        silent=self.silent)
+                    raise RuntimeError("Configuration is missing!"
+                                       f" Please destroy {uuid} and recreate"
+                                       " it.")
 
                 if conf["release"][:4].endswith("-"):
                     # 9.3-RELEASE and under don't actually have this binary.
