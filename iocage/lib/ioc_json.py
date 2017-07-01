@@ -611,8 +611,13 @@ class IOCJson(object):
         new keys with their default values if missing.
         """
         if os.geteuid() != 0:
-            raise RuntimeError("You need to be root to convert the"
-                               " configurations to the new format!")
+            iocage.lib.ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": "You need to be root to convert the"
+                           " configurations to the new format!"
+            },
+                _callback=self.callback,
+                silent=self.silent)
 
         _, iocroot = _get_pool_and_iocroot()
 
@@ -646,9 +651,14 @@ class IOCJson(object):
                 except KeyError:
                     # At this point it should be a real misconfigured jail
                     uuid = self.location.rsplit("/", 1)[-1]
-                    raise RuntimeError("Configuration is missing!"
-                                       f" Please destroy {uuid} and recreate"
-                                       " it.")
+                    iocage.lib.ioc_common.logit({
+                        "level"  : "EXCEPTION",
+                        "message": "Configuration is missing!\n"
+                                   f"Please destroy {uuid} and recreate"
+                                   " it."
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
 
                 if conf["release"][:4].endswith("-"):
                     # 9.3-RELEASE and under don't actually have this binary.
