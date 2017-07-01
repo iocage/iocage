@@ -61,10 +61,10 @@ def callback(log):
             raise RuntimeError(log['message'])
         else:
             lgr.error(log['message'])
-            exit(1)
+            raise SystemExit(log['message'])
 
 
-def logit(content, _callback=None, silent=False, term="\n"):
+def logit(content, _callback=None, silent=False):
     """Helper to check callable status of callback or call ours."""
     level = content["level"]
     msg = content["message"]
