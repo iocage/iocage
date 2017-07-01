@@ -539,18 +539,17 @@ class IOCage(object):
 
     def df(self, long=False):
         """Returns a list containing the resource usage of all jails"""
-        jails, paths = self.list("uuid")
         jail_list = []
 
-        for jail in jails:
-            full_uuid = jails[jail]
+        for jail in self.jails:
+            full_uuid = self.jails[jail]
 
             if not long:
                 uuid = full_uuid[:8]
             else:
                 uuid = full_uuid
 
-            path = paths[jail]
+            path = self._paths[jail]
             conf = ioc_json.IOCJson(path).json_load()
             mountpoint = f"{self.pool}/iocage/jails/{full_uuid}"
 
