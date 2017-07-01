@@ -527,15 +527,99 @@ class IOCage(object):
 
         return False, None
 
-    @staticmethod
-    def destroy(path, parse=False):
-        """Destroys the supplied path"""
-        if parse:
-            # This skips some of the nice things destroy_jail does. Namely
-            # loading a configuration, as these aren't jails being destroyed.
-            ioc_destroy.IOCDestroy().__destroy_parse_datasets__(path)
-        else:
-            ioc_destroy.IOCDestroy().destroy_jail(path)
+    def destroy_release(self, download=False):
+        """Destroy supplied RELEASE and the download dataset if asked"""
+        path = f"{self.pool}/iocage/releases/{self.jail}"
+
+        ioc_common.logit({
+            "level"  : "INFO",
+            "message": f"Destroying RELEASE dataset: {self.jail}"
+        },
+            _callback=self.callback,
+            silent=self.silent)
+
+        ioc_destroy.IOCDestroy().__destroy_parse_datasets__(
+            path, stop=False)
+
+        if download:
+            path = f"{self.pool}/iocage/download/{self.jail}"
+            ioc_common.logit({
+                "level"  : "INFO",
+                "message": f"Destroying RELEASE download dataset: {self.jail}"
+            },
+                _callback=self.callback,
+                silent=self.silent)
+
+            ioc_destroy.IOCDestroy().__destroy_parse_datasets__(
+                path, stop=False)
+
+    def destroy_jail(self):
+        """
+        Destroys the supplied jail, to reduce perfomance hit,
+        call IOCage with skip_jails=True
+        """
+        try:
+            self.jails, self._paths = self.list("uuid")
+        except (RuntimeError, SystemExit) as err:
+            err = str(err)
+
+            if "Configuration is missing" in err:
+                uuid = err.split()[5]
+                path = f"{self.pool}/iocage/jails/{uuid}"
+
+                if uuid == self.jail:
+                    ioc_destroy.IOCDestroy().__destroy_parse_datasets__(
+                        path, stop=False)
+
+                    ioc_common.logit({
+                        "level"  : "INFO",
+                        "message": f"{uuid} destroyed"
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
+                    return
+                else:
+                    ioc_common.logit({
+                        "level"  : "EXCEPTION",
+                        "message": err
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
+        except FileNotFoundError as err:
+            # Jail is lacking a configuration, time to nuke it from orbit.
+            uuid = str(err).rsplit("/")[-2]
+            path = f"{self.pool}/iocage/jails/{uuid}"
+
+            if uuid == self.jail:
+                ioc_destroy.IOCDestroy().__destroy_parse_datasets__(path)
+                return
+            else:
+                ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": err
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+
+        tag, uuid, path = self.__check_jail_existence__()
+        status, _ = self.list("jid", uuid=uuid)
+
+        if status:
+            ioc_common.logit({
+                "level"  : "INFO",
+                "message": f"Stopping {uuid} ({tag})"
+            },
+                _callback=self.callback,
+                silent=self.silent)
+
+        ioc_common.logit({
+            "level"  : "INFO",
+            "message": f"Destroying {uuid} ({tag})"
+        },
+            _callback=self.callback,
+            silent=self.silent)
+
+        ioc_destroy.IOCDestroy().destroy_jail(path)
 
     def df(self, long=False):
         """Returns a list containing the resource usage of all jails"""
