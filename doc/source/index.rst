@@ -42,11 +42,12 @@ Documentation:
    best-practices
    advanced-use
    templates
-   automatic-package-installation
    jail-package
    debian
    known-issues
    faq
+
+.. Missing File: automatic-package-installation
 
 Indices and tables
 ==================
