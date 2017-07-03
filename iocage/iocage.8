@@ -208,8 +208,8 @@ Both shared IP jails and VNET jails are supported.
 .Pp
 Each jail has a unique ID (UUID) which is automatically generated at
 creation time.
-Using the UUID as a jail identifier makes it possible to replicate a
-jail in a distributed environment with greater flexibility.
+Using the UUID as a jail identifier is more flexible when replicating
+a jail in a distributed environment.
 This also eliminates potential naming clashes on large scale
 deployments and helps reduce operator error.
 .Pp
@@ -358,7 +358,7 @@ nullfs mount over the jail's directories.
 .It Op Fl c | -count Ar TEXT
 Designate the number of jails to create, all cloned from
 the desired
-.Op Fl r Ar RELEASE . 
+.Op Fl r Ar RELEASE .
 .It Op Fl e | -empty
 Create an empty jail for unsupported or custom jails.
 .It Op Fl f | -force
@@ -790,6 +790,7 @@ Options:
 .It Op Fl P | -plugin Ar KEY
 Set the specified key for a plugin jail.
 If accessing a nested key, use "." as a separator.
+.El
 .Pp
 Examples:
 .Pp
@@ -1762,17 +1763,17 @@ List templates:
 iocage list -t
 .Ed
 .Pp
-Import package on another host
+Import package on another host:
 .Bd -literal -offset indent
 iocage import UUID
 .Ed
 .Sh HINTS
-When using VNET, remember to add the node's physical NIC into one
-of the bridges if an outside connection is needed.
+When using VNET and an outside connection is needed, add the node's
+physical NIC into one of the bridges.
 Also see
 .Xr bridge 4
 for how traffic is handled.
-In a nutshell: bridges behave like a network switch.
+Basically, bridges behave like a network switch.
 .Pp
 The PF firewall is not supported inside VNET jails as of July 2014.
 PF can be enabled for the host.
@@ -1799,8 +1800,9 @@ net.link.bridge.pfil_bridge=0
 net.link.bridge.pfil_member=0
 .Ed
 .Pp
-For more information, please see
+See
 .Lk https://github.com/iocage/iocage
+for more information.
 .Sh SEE ALSO
 .Xr cpuset 1 ,
 .Xr bridge 4 ,
@@ -1812,9 +1814,10 @@ For more information, please see
 .Xr rctl 8 ,
 .Xr sysctl 8 ,
 .Xr zfs 8 ,
-.Xr zpool 8
+.Xr zpool 8 ,
+.Xr VNET 9
 .Sh BUGS
-Please report bugs, issues, and feature requests at
+Please report bugs, issues, and feature requests to
 .Lk https://github.com/iocage/iocage/issues
 .Sh AUTHORS
 .Nm
