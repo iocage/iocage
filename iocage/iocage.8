@@ -952,11 +952,9 @@ Source: local
 .It vnet=on | off
 Controls whether the jail is started with a VNET or a shared IP
 configuration.
-The default is to auto-guess from a sysctl.
-If a fully virtualized per-jail network stack is not needed, set this
-to off.
+Set "on" if a fully virtualized per-jail network stack is required.
 .Pp
-Default: auto-guess
+Default: off
 .Pp
 Source: local
 .It ip4_addr="interface|ip-address/netmask"
