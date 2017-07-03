@@ -76,7 +76,7 @@ sure that you do not have any of the following lines in your kernconf (unless yo
   options     ALTQ_PRIQ
 
 Otherwise, should you try to start a jail with VNET support enabled, your host system will more than likely crash.
-You can read a little more at the mailing list post `here <http://lists.freebsd.org/pipermail/freebsd-jail/2014-July/002635.html>`_.
+You can read a little more in the `July 2014 mailing list post <http://lists.freebsd.org/pipermail/freebsd-jail/2014-July/002635.html>`_.
 
 IPv6 host bind failures
 -----------------------
@@ -94,5 +94,4 @@ setting to sysctl.conf.
     # disable duplicated address detection probe packets for jails
     net.inet6.ip6.dad_count=0
 
-You can read a little more about this `here <https://github.com/iocage/iocage/issues/119>`_ and at the mailing list post `here <https://lists.freebsd.org/pipermail/freebsd-jail/2013-July/002347.html>`_.
-
+Read more in this `July 2013 mailing list post <https://lists.freebsd.org/pipermail/freebsd-jail/2013-July/002347.html>`_.
