@@ -94,4 +94,4 @@ setting to sysctl.conf.
     # disable duplicated address detection probe packets for jails
     net.inet6.ip6.dad_count=0
 
-You can read more about this `in issue #119 <https://github.com/iocage/iocage/issues/119>`_ and in the `July 2013 mailing list post <https://lists.freebsd.org/pipermail/freebsd-jail/2013-July/002347.html>`_.
+Read more in this `July 2013 mailing list post <https://lists.freebsd.org/pipermail/freebsd-jail/2013-July/002347.html>`_.
