@@ -1015,7 +1015,7 @@ class IOCage(object):
                         silent=self.silent)
 
             if key == "ip6_addr":
-                rtsold_enable = "YES" if ("accept_rtadv" in value) else "NO"
+                rtsold_enable = "YES" if "accept_rtadv" in value else "NO"
                 ioc_common.set_rcconf(path, "rtsold_enable", rtsold_enable)
 
         else:
