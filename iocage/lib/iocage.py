@@ -959,47 +959,6 @@ class IOCage(object):
             _callback=self.callback,
             silent=self.silent)
 
-    def __set_rcconf(self, key, value):
-
-        tag, uuid, path = self.__check_jail_existence__()
-        conf_file = f"{self.iocroot}/jails/{uuid}/root/etc/rc.conf"
-
-        found = False
-        changed = False
-
-        with open(conf_file, "r+") as f:
-
-            output = []
-
-            lines = f.read().splitlines()
-            for line in lines:
-
-                try:
-                    current_key, current_value = line.split("=", 1)
-                    current_value = current_value.strip("\"")
-                except ValueError:
-                    output.append(line)
-                    continue
-
-                if current_key == key:
-                    found = True
-
-                    if current_value != value:
-                        changed = True
-                        output.append(f"{key}=\"{value}\"")
-                        continue
-
-                output.append(line)
-
-            if not found:
-                output.append(f"{key}=\"{value}\"")
-                changed = True
-
-            if changed:
-                f.seek(0)
-                f.write("\n".join(output) + "\n")
-                f.truncate()
-
     def set(self, prop, plugin=False):
         """Sets a property for a jail or plugin"""
         prop = " ".join(prop)  # We don't want a tuple.
@@ -1057,7 +1016,7 @@ class IOCage(object):
 
             if key == "ip6_addr":
                 rtsold_enable = "YES" if ("accept_rtadv" in value) else "NO"
-                self.__set_rcconf("rtsold_enable", rtsold_enable)
+                ioc_common.set_rcconf(path, "rtsold_enable", rtsold_enable)
 
         else:
             ioc_json.IOCJson(self.iocroot).json_set_value(prop, default=True)
