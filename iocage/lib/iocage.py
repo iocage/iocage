@@ -972,11 +972,13 @@ class IOCage(object):
         if "template=no" in prop:
             self.jail = f"{self.jail} (template)"
 
+        key, value = prop.split("=", 1)
+
         if not default:
             tag, uuid, path = self.__check_jail_existence__()
             iocjson = ioc_json.IOCJson(path, cli=True)
 
-            if "template" in prop.split("=")[0]:
+            if "template" in key:
                 if "templates/" in path and prop != "template=no":
                     ioc_common.logit({
                         "level"  : "EXCEPTION",
@@ -1011,6 +1013,11 @@ class IOCage(object):
                     },
                         _callback=self.callback,
                         silent=self.silent)
+
+            if key == "ip6_addr":
+                rtsold_enable = "YES" if "accept_rtadv" in value else "NO"
+                ioc_common.set_rcconf(path, "rtsold_enable", rtsold_enable)
+
         else:
             ioc_json.IOCJson(self.iocroot).json_set_value(prop, default=True)
 
