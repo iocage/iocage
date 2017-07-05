@@ -500,3 +500,44 @@ def git_pull(repo, remote_name="origin", branch="master"):
                 repo.state_cleanup()
             else:
                 raise AssertionError("Unknown merge analysis result")
+
+
+def set_rcconf(jail_path, key, value):
+
+    conf_file = f"{jail_path}/root/etc/rc.conf"
+
+    found = False
+    changed = False
+
+    with open(conf_file, "r+") as f:
+
+        output = []
+
+        lines = f.read().splitlines()
+        for line in lines:
+
+            try:
+                current_key, current_value = line.split("=", 1)
+                current_value = current_value.strip("\"")
+            except ValueError:
+                output.append(line)
+                continue
+
+            if current_key == key:
+                found = True
+
+                if current_value != value:
+                    changed = True
+                    output.append(f"{key}=\"{value}\"")
+                    continue
+
+            output.append(line)
+
+        if not found:
+            output.append(f"{key}=\"{value}\"")
+            changed = True
+
+        if changed:
+            f.seek(0)
+            f.write("\n".join(output) + "\n")
+            f.truncate()
