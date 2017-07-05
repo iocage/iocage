@@ -1,153 +1,259 @@
-===========
-Basic usage
+.. index:: Basic Usage
+.. _Basic Usage:
+
+Basic Usage
 ===========
 
-This section is about basic use and is a suitable quick howto for newcomers.
+This section is about basic iocage usage and is meant as a "how-to"
+reference for new users.
 
-Fetch a release
+.. tip:: Remember, command line help is always available by typing
+   :command:`iocage --help` or :command:`iocage [subcommand] --help`.
+
+iocage has a basic "flow" when first used. As a new user interacts with
+iocage for the first time, this flow guides them through initializing
+iocage, then interacting with newly created jails.
+
+.. index:: Activate iocage
+.. _Activate iocage:
+
+Activate iocage
 ---------------
 
-The very first step with iocage is to fetch a RELEASE. By default iocage will attempt to fetch the
-host's current RELEASE from the freebsd.org servers. Once the RELEASE bits are downloaded, the most
-recent patches are applied too.
+Before iocage is functional, it needs to :command:`activate`.
+Essentially, iocage needs to link with a usable zpool. In most cases,
+activation is automatic to the primary system zpool, but more advanced
+users can use :command:`iocage activate` to designate a different zpool
+for iocage usage.
 
-Simply run:
+Once iocage is ready with an active zpool, users are able to immediately
+begin downloading FreeBSD releases for jail creation.
 
-``iocage fetch``
+.. index:: Fetch a release
+.. _Fetch a Release:
 
-If a specific RELEASE is required run:
+Fetch a Release
+---------------
 
-``iocage fetch release=9.3-RELEASE``
+iocage now needs to fetch a RELEASE, which is used to create jails. By
+default, typing :command:`iocage fetch` opens a menu for the user to
+choose which release to download, as seen in this example:
 
-In case a specific download mirror is required simply run:
+.. code-block:: none
 
-``iocage fetch ftphost=ftp.hostname.org``
+ # iocage fetch
+ [0] 9.3-RELEASE (EOL)
+ [1] 10.1-RELEASE (EOL)
+ [2] 10.2-RELEASE (EOL)
+ [3] 10.3-RELEASE
+ [4] 11.0-RELEASE
 
-You can also specify a ftp directory to fetch the base files from:
+ Type the number of the desired RELEASE
+ Press [Enter] to fetch the default selection: (default)
+ Type EXIT to quit: 4
 
-``iocage fetch ftpdir=/dir/``
+Once the desired RELEASE is downloaded, the most recent patches are also
+applied to it.
 
-Create a jail
+:command:`iocage fetch` also has a number of options and properties for
+users to fine-tune the functionality of the command.
+
+If a specific RELEASE is required, type:
+
+:samp:`# iocage fetch release=10.3-RELEASE`
+
+If a specific download mirror is required, type:
+
+:samp:`# iocage fetch ftphost=ftp.hostname.org`
+
+:command:`fetch` can also pull from a specific ftp directory:
+
+:samp:`# iocage fetch ftpdir=/dir/`
+
+.. index:: Basic Jail Creation
+.. _Create a Jail:
+
+Create a Jail
 -------------
 
-There are three supported basic jail types: full, clone and base jail. In addition to these three 
-there are two more which are discussed later (empty and templates).
-Depending on requirements the `create` subcommand can be tweaked to create any of the three types.
-By default iocage will create a fully independent jail of the current host's RELEASE and set the TAG property to todays date.
+With a release downloaded, iocage is now able to create jails. There are
+five types of jails, three basic and two advanced. Basic jail types are
+**full**, **clone**, and **base** jails. Advanced jails types are
+**empty** and **templates**, but these are discussed in the
+:ref:`Jail Types` section, along with more detailed descriptions of the
+basic jail types.
 
-Creating a jail is real simple, just run:
+Depending on the user's requirements, the :command:`create` subcommand
+can be tweaked to create any of the three basic types. By default,
+iocage creates a fully independent jail of the current host's RELEASE,
+setting the TAG property to the current date.
 
-``iocage create``
+The :command:`create` command can be used to quickly create a basic
+jail:
 
-This will create a fully independent jail.
+:samp:`# iocage create -r 11.0-RELEASE`
 
-To create a lightweight jail (clone) run:
+This basic jail is fully independent.
 
-``iocage create -c``
+To create a full jails with multiple clones, type:
 
-To create a base jail:
+:samp:`# iocage create -r 11.0-RELEASE -c 2`
 
-``iocage create -b``
+The numeric value after the **-c** flag is used to designate the number
+of clone jails to create. In the above example, *two* jails are created,
+**one** *full* jail and **one** clone jail.
 
-To create a jail and set its IP address and tag property run:
+A simple basejail is created with the **-b** flag:
 
-``iocage create -c tag=myjail ip4_addr="em0|10.1.1.10/24"``
+:samp:`# iocage create -b -r 11.0-RELEASE`
 
-For more information please read iocage(8).
+After designating the type of jail to create with the option flags,
+specific jail **properties** can also be set. For example:
 
-Listing jails
+:samp:`# iocage create -r 11.0-RELEASE tag=myjail boot=on`
+
+Creates a FreeBSD 11.0 jail with the custom tag *myjail* and sets the
+jail to start at system boot time.
+
+More information about iocage jail properties is available in the
+iocage(8) FreeBSD manual page, which is accessed on a FreeBSD system by
+typing :command:`man iocage`.
+
+.. index:: Listing Jails
+.. _Listing Jails:
+
+Listing Jails
 -------------
 
-To list all jails run:
+To list all jails:
 
-``iocage list``
+:samp:`# iocage list`
 
-To see all downloaded RELEASEs run:
+To see all downloaded RELEASEs:
 
-``iocage list -r``
+:samp:`# iocage list -r`
 
-To see available templates run:
+View available templates with:
 
-``iocage list -t``
+:samp:`# iocage list -t`
 
-Start, stop or restart a jail
------------------------------
+.. index:: Jail start stop restart
+.. _Start Stop Restart Jail:
 
-To start or stop any jail on the system both the UUID or TAG can be used interchangeably.
-To simplify UUID handling iocage accepts a partial UUID too with any subcommand.
+Start, Stop, or Restart a Jail
+------------------------------
+
+Jails can be started, stopped, or restarted at any time with iocage. By
+default, new jails are in a *down* (stopped) state. To see the status of
+all jails, use :command:`iocage list` and read the **STATE** column.
+
+Use each jail's UUID or custom TAG to start, stop, or restart it. When
+using a jail's UUID, it is not required to type the full UUID. Partial
+UUIDs are acceptable, as long as the given characters are enough to
+identify the desired jail. Alternately, use **ALL** to apply the command
+to all created jails.
+
+.. tip:: Partial UUIDs can also be supplied for any other iocage
+   operation or subcommand.
+
+.. index:: Jail Start
+.. _Startjail:
 
 Start
 +++++
 
-To start a jail tagged www01 simply run:
+To start a jail with the custom tag **www01**, type:
 
-``iocage start www01``
+:samp:`# iocage start www01`
 
-To start a jail with a full UUID run:
+A jail can also be started with a full UUID:
 
-``iocage start 26e8e027-f00c-11e4-8f7f-3c970e80eb61``
+:samp:`# iocage start 26e8e027-f00c-11e4-8f7f-3c970e80eb61`
 
-Or to start the jail only with a partial UUID enter the first few characters only:
+A partial UUID is also acceptable:
 
-``iocage start 26e8``
+:samp:`# iocage start 26e8`
+
+.. index:: Jail Stop
+.. _Stopjail:
 
 Stop
 ++++
 
-To stop a jail just use the ``stop`` subcommand instead of start:
+The syntax for the **stop** subcommand is the same as **start**:
 
-``iocage stop www01``
+:samp:`# iocage stop www01`
+
+:samp:`# iocage stop 26e8e027-f00c-11e4-8f7f-3c970e80eb61`
+
+:samp:`# iocage stop 26e8`
+
+.. index:: Jail Restart
+.. _Restartjail:
 
 Restart
 +++++++
 
-To restart a jail run:
+The **restart** subcommand also uses the same syntax as **start** and
+**stop**:
 
-``iocage restart www01``
+:samp:`# iocage restart www01`
 
-*Note: Short UUIDs are supported with all operations and subcommands within iocage.*
+:samp:`# iocage restart 26e8e027-f00c-11e4-8f7f-3c970e80eb61`
 
-Configure a jail
+:samp:`# iocage restart 26e8`
+
+.. index:: Configure a Jail
+.. _Configure a Jail:
+
+Configure a Jail
 ----------------
 
-Any property can be reconfigured with the ``set`` subcommand.
+Configuring the properties of an already created jail is best done with
+the **set** and **get** subcommands. Be sure to provide the tag or UUID
+of the desired jail when using these subcommands.
 
-Set property
-++++++++++++
+.. index:: Set Property
+.. _Set Jail Property:
 
-To set the jail's TAG property run:
+Set Jail Property
++++++++++++++++++
 
-``iocage set tag=www02 26e8e027``
+:command:`iocage` uses the **set** subcommand to configure jail
+properties.
 
-Get property
-++++++++++++
+To set the TAG property for a jail (after creation):
 
-To verify any property simply run the ``get`` subcommand:
+:samp:`# iocage set tag=www02 26e8e027`
 
-``iocage get tag 26e8e027``
+The full list of jail properties is available in the iocage(8) manual
+page PROPERTIES section.
+
+.. index:: Get Property
+.. _Get Jail Property:
+
+Get Jail Property
++++++++++++++++++
+
+To view a specific jail property, use the **get** subcommand:
+
+:samp:`# iocage get tag 26e8e027`
 
 Get all properties:
 +++++++++++++++++++
 
-Or to display all supported properties run:
+Display the full list of a jail's properties:
 
-``iocage get all 26e8e027``
+:samp:`# iocage get all 26e8e027 | more`
 
-System wide defaults
---------------------
+.. index:: Destroy a Jail
+.. _Destroy a Jail:
 
-Starting with version 1.6.0 system wide defaults can be set. These defaults will be re-applied for all
-newly created jails. To create a system wide default override for a property simply specify the ``default`` keyword instead of a jail UUID or TAG.
+Destroy a Jail
+--------------
 
-Example, to turn off VNET capability for all newly created jails run:
+Destroy a specific jail using the **destroy** subcommand:
 
-``iocage set vnet=off default``
+:samp:`# iocage destroy www02`
 
-Destroy a jails
----------------
-
-To destroy a jail, simply run:
-
-``iocage destroy www02``
-
-**Warning:** this will irreversibly destroy the jail!
+.. warning:: This irreversibly destroys the jail!
