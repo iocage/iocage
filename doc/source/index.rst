@@ -1,27 +1,27 @@
 .. iocage documentation master file, created by
    sphinx-quickstart on Wed Jul  9 10:19:09 2014.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+   You can adapt this file completely to your liking, but it should at
+   least contain the root `toctree` directive.
 
 ===============================
-iocage - A FreeBSD jail manager
+iocage - A FreeBSD Jail Manager
 ===============================
 
-iocage is a zero dependency drop in jail/container manager amalgamating some
-of the best features and technologies FreeBSD operating system has to offer.
-It is geared for ease of use with a simple and easy to understand command
-syntax.
+iocage is a zero dependency drop in jail/container manager, combining
+some of the best features and technologies the FreeBSD operating system
+has to offer. It is geared for ease of use with a simplistic and easy to
+learn command syntax.
 
 **FEATURES:**
 
-- Templates, clones, basejails, fully independent jails
-- Ease of use
+- Templates, clones, basejails, and fully independent jails
+- Easy to use
 - Zero configuration files
 - Rapid thin provisioning within seconds
 - Automatic package installation
 - Virtual networking stacks (vnet)
 - Shared IP based jails (non vnet)
-- Resource limits (CPU, MEMORY, etc.)
+- Resource limiting (CPU, MEMORY, etc.)
 - Filesystem quotas and reservations
 - Dedicated ZFS datasets inside jails
 - Transparent ZFS snapshot management
@@ -55,4 +55,3 @@ Indices and tables
  * :ref:`genindex`
  * :ref:`modindex`
  * :ref:`search`
-
