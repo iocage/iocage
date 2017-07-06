@@ -1041,9 +1041,9 @@ Source:
 Only applies when vnet=off.
 Control the availability of IPv4 addresses.
 Possible values are "inherit" to allow unrestricted access to all
-system addresses, "new" to restrict addresses via ip4.addr above,
+system addresses, "new" to restrict addresses via ip4_addr above,
 and "disable" to stop the jail from using IPv4 entirely.
-Setting the ip4.addr parameter implies a value of "new".
+Setting the ip4_addr parameter implies a value of "new".
 .Pp
 Default: new
 .Pp
@@ -1065,9 +1065,9 @@ Semicolons are translated to newlines in
 If the resolver is set to none (default) the jail inherits the
 .Pa resolv.conf
 file from the host.
-.It ip6.addr, ip6.saddrsel, ip6
-A set of IPv6 options for the prison, the counterparts to ip4.addr,
-ip4.saddrsel and ip4 above.
+.It ip6_addr, ip6_saddrsel, ip6
+A set of IPv6 options for the prison, the counterparts to ip4_addr,
+ip4_saddrsel and ip4 above.
 .It Pf interfaces= Op vnet0:bridge0,vnet1:bridge1 | vnet0:bridge0
 By default, there are two interfaces specified with their bridge
 association.
