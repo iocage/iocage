@@ -53,18 +53,26 @@ class IOCCheck(object):
                     "iocage/templates")
 
         zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
+        zpools = zfs.pools
+        iocage_datasets = []
+        for p in zpools:
+            try:
+                z = zfs.get_dataset(f"{p.name}/iocage")
+                iocage_datasets.append(z)
+            except libzfs.ZFSException:
+                # Doesn't exist, that's fine
+                continue
+
         pool = zfs.get(self.pool)
         has_duplicates = len(list(filter(lambda x: x.mountpoint == "/iocage",
-                                         list(pool.root.datasets)))) > 0
+                                         iocage_datasets))) > 0
 
         for dataset in datasets:
-
             zfs_dataset_name = f"{self.pool}/{dataset}"
-            is_existing = len(list(filter(lambda x: x.name == zfs_dataset_name,
-                                          list(pool.root.datasets)))) > 0
-
-            if not is_existing:
-
+            try:
+                zfs.get_dataset(zfs_dataset_name)
+            except libzfs.ZFSException:
+                # Doesn't exist
                 if os.geteuid() != 0:
                     raise RuntimeError("Run as root to create missing"
                                        " datasets!")
