@@ -1,97 +1,126 @@
+.. index:: Known Issues
+.. _Known Issues:
+
 Known Issues
 ============
 
-This is a short list of known issues.
+This section provides a short list of known issues.
 
-88 character mount path limitation
-----------------------------------
+.. index:: Known Issues, Mount Path Limit
+.. _Mount Path Limit:
 
-There is a know mountpoint path length limitation issue on FreeBSD which is set to a historical 88 character limit.
+Mount Path Limit
+----------------
 
-This issue does not affect iocage jails from functioning properly, but can present challenges
-when diving into ZFS snapshots (cd into .zfs/snapshots, tar, etc.).
+There is a known mountpoint path length limitation issue on FreeBSD.
+Path length has an historical 88 character limit.
+
+This issue does not affect :command:`iocage` jails from functioning
+properly, but can present challenges when diving into ZFS snapshots,
+like :command:`cd` into :file:`.zfs/snapshots`, :command:`tar`, etc.
 
 ZFS snapshot creation and rollback is not affected.
 
-To workaround this issue iocage 1.6.0 introduced a ``hack88`` property.
+To work around this issue, **iocage 1.6.0** introduced a **hack88**
+property.
 
 Example:
 
 Shut down jail:
 
-``iocage stop myjail``
+:samp:`# iocage stop myjail`
 
-Set the ``hack88`` property to "1":
+Set the **hack88** property to *1*:
 
-``iocage set hack88=1``
+:samp:`# iocage set hack88=1 myjail`
 
 Start jail:
 
-``iocage start myjail``
+:samp:`# iocage start myjail`
 
-To revert back to full paths repeat the procedure but set ``hack88=0``.
+Revert back to full paths by repeating the procedure, but setting
+**hack88=0**.
 
-To create a system wide default (introduced in 1.6.0) for all newly created jails use:
+Create a system wide default (introduced in **1.6.0**) for all newly
+created jails with :command:`iocage set hack88=1 default`
 
-``iocage set hack88=1 default``
+.. index:: Known Issues, Property Validation
+.. _Property Validation:
 
-Property validation
+Property Validation
 -------------------
 
-iocage does not validate properties right now. Please refer to man page to see what is supported
-for each property. By default iocage pre-configures each property with a safe default.
+:command:`iocage` does not currently validate properties. Please refer
+to the :file:`iocage.8` manual page to see what is supported for each
+property. By default, :command:`iocage` preconfigures each property with
+a safe default.
 
-VNET/VIMAGE issues
+.. index:: Known Issues, VNET/VIMAGE
+.. _VNETVIMAGE:
+
+VNET/VIMAGE Issues
 ------------------
 
-VNET/VIMAGE can cause unexpected system crashes when VNET enabled jails are destroyed - that is when the
-jail process is killed, removed, stopped.
+VNET/VIMAGE can cause unexpected system crashes when VNET enabled jails
+are destroyed. In other words, when the jail process is killed, removed,
+or stopped.
 
-As a workaround iocage allows a warm restart without destroying the jail.
-By default the restart sub-command will execute a warm restart.
+As a workaround, :command:`iocage` allows a soft restart without
+destroying the jail. By default, :command:`iocage restart` executes a
+soft restart.
 
 Example:
 
-``iocage restart UUID``
+:samp:`# iocage restart examplejail`
 
-FreeBSD 10.1-RELEASE is stable enough to run with VNET and warm restarts.
-There are production machines with iocage and VNET jails running well beyond 100 days of uptime
-running both PF and IPFW.
+FreeBSD 10.1-RELEASE is stable enough to run with VNET and soft
+restarts. There are production machines with :command:`iocage` and VNET
+jails running well over 100 days of uptime running both PF and IPFW.
+
+.. index:: Known Issues, VNET and ALTQ
+.. _VNETVIMAGE and ALTQ:
 
 VNET/VIMAGE issues w/ ALTQ
---------------------------
+++++++++++++++++++++++++++
 
-As recent as FreeBSD 10.1-RELEASE-p10, there is some *interesting* interaction between VNET/VIMAGE and ALTQ,
-which is an ALTernate Queueing system used by PF and other routing software.  Should you compile a kernel, make
-sure that you do not have any of the following lines in your kernconf (unless you want to disable VNET):
+As recent as FreeBSD 10.1-RELEASE-p10, there are some *interesting*
+interactions between VNET/VIMAGE and the ALTernate Queueing (ALTQ)
+system used by PF and other routing software. When compiling a kernel,
+be sure these lines are **not** in the :file:`kernconf` file (unless
+disabling VNET):
 
-::
+.. code-block:: none
 
-  options     ALTQ
-  options     ALTQ_CBQ
-  options     ALTQ_RED
-  options     ALTQ_RIO
-  options     ALTQ_HFSC
-  options     ALTQ_CDNR
-  options     ALTQ_PRIQ
+ options     ALTQ
+ options     ALTQ_CBQ
+ options     ALTQ_RED
+ options     ALTQ_RIO
+ options     ALTQ_HFSC
+ options     ALTQ_CDNR
+ options     ALTQ_PRIQ
 
-Otherwise, should you try to start a jail with VNET support enabled, your host system will more than likely crash.
-You can read a little more in the `July 2014 mailing list post <http://lists.freebsd.org/pipermail/freebsd-jail/2014-July/002635.html>`_.
+Otherwise, when starting a jail with VNET support enabled, the host
+system is likely to crash. Read a more about this issue from a
+`2014 mailing list post <http://lists.freebsd.org/pipermail/freebsd-jail/2014-July/002635.html>`_.
+
+.. index:: Known Issues, IPv6 Host Bind Failure
+.. _IPv6 Host Bind Failures:
 
 IPv6 host bind failures
 -----------------------
 
-In some cases a jail with an ip6 address may take too long adding the address
-to the interface, and services defined to bind specifically to that address
-may fail. In such cases, adding the following sysctl do disable DAD (duplicate
-address detection) probe packets.
+In some cases, a jail with an *ip6* address may take too long adding the
+address to the interface. Services defined to bind specifically to the
+address may then fail. If this happens, add this to :file:`sysctl.conf`
+to disable DAD (duplicate address detection) probe packets:
 
-To set, ``sysctl net.inet6.ip6.dad_count=0``. To make it permanent, add the
-setting to sysctl.conf.
+.. code-block:: none
 
-::
+ # disable duplicated address detection probe packets for jails
+ net.inet6.ip6.dad_count=0
 
-    # disable duplicated address detection probe packets for jails
-    net.inet6.ip6.dad_count=0
-
-Read more in this `July 2013 mailing list post <https://lists.freebsd.org/pipermail/freebsd-jail/2013-July/002347.html>`_.
+Adding these lines permanently disables DAD. To set this for ONLY the
+current system boot, type :command:`sysctl net.inet6.ip6.dad_count=0` in
+a command line interface (CLI). More information about this issue is
+available from a
+`2013 mailing list post <https://lists.freebsd.org/pipermail/freebsd-jail/2013-July/002347.html>`_.
