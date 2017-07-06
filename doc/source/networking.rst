@@ -24,6 +24,10 @@ The rest of this section shows more depth of the **Shared IP** and
 **VNET** networking options, along with instructions for
 :ref:`Configuring Network Interfaces`.
 
+.. warning:: In the examples in this section, **em0** is used as the
+   network adapter. **em0** is a placeholder and must be replaced with
+   the user's specific network adapter.
+
 .. index:: Shared IP
 .. _Shared IP:
 
@@ -66,8 +70,6 @@ with a :kbd:`,`:
 :samp:`iocage start examplejail1`
 
 **Verify visible IP configuration in the jail**
-
-.. note:: The jail **must** be running for this example to work.
 
 :samp:`# iocage exec examplejail1 ifconfig`
 
