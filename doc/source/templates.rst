@@ -1,33 +1,53 @@
-How to create and use templates
-===============================
+.. index:: Using Templates
+.. _Using Templates:
 
-**Templates can save you precious time!**
+Using Templates
+===============
 
-Set up a jail any way you like, and create a template from it. All packages and pre-configured settings will be available for deployment next time within seconds.
+**Templates can save precious time!**
 
-Any jail can be converted to a template and back to a jail again as required. In fact a template is just another jail which has the property ``template`` set to "yes". The difference is that templates are not started by iocage.
+Set up a jail and create a template from it. All packages and
+preconfigured settings remain available for deployment to new jails
+within seconds.
 
-**Here is how to create a template with iocage:**
+Any jail can be converted between jail and template as needed.
+Essentially, a template is just another jail which has the property
+**template** set to **yes**. The difference is templates are not started
+by :command:`iocage`.
 
-1. Create a new jail ``iocage create tag=mytemplate``
-2. Configure the jail's networking
-3. Install any package you like and customize jail
-4. Once finished with customization stop the jail ``iocage stop UUID | TAG``
-5. A good idea is set some notes ``iocage set notes="customized PHP,nginx jail" UUID | TAG``
-6. Turn the template property on ``iocage set template=yes UUID | TAG``
-7. List your template with ``iocage list -t``
+**Create a template with iocage:**
 
-**Here is how to use the created template:**
+1. Create a jail: :samp:`# iocage create -r 11.0-RELEASE -n mytemplate`.
+2. Configure the jail's networking.
+3. Install packages and/or customize the jail as needed.
+4. Once finished with customization, stop the jail:
+   :samp:`# iocage stop mytemplate`.
+5. It is recommended to add notes to the jail, so the specific jail
+   customizations are easily remembered:
+   :samp:`# iocage set notes="customized PHP,nginx jail" mytemplate`
+6. Set the **template** property **on**:
+   :samp:`# iocage set template=yes mytemplate`.
+7. Find the new template with :command:`iocage list -t`.
 
-To create a new jail from this template simply clone it!
+**Use the created template:**
 
-1. ``iocage clone UUID-of-mytemplate tag=mynewjail``
-2. List new jail ``iocage list``
-3. Start jail ``iocage start UUID | TAG``
+Use :command:`iocage create -t` to create a new jail from the new
+template:
+
+1. :samp:`# iocage create -t mytemplate -n jailfromtemplate`
+2. Find the new jail with :command:`iocage list`.
+3. Start the jail with :samp:`# iocage start jailfromtemplate`.
 
 Done!
 
-**If you need to make further customization in the template or want to patch it, you have two options.**
+**Customizing a template:**
 
-* convert template back to jail with ``iocage set template=no UUID-of-template``, and start the jail
-* if you don't need network access to make the changes simply run ``iocage chroot UUID-of-template``, make the changes and exit
+To make further customizations or just patch the template, there are two
+options:
+
+* Convert the template back to a jail with
+  :command:`iocage set template=no [UUID-of-template]`, then start the
+  jail with :command:`iocage start [UUID | NAME]`.
+* If network access is unnecessary to make the changes, use
+  :command:`iocage chroot [template-UUID] [Command ...]` to run the
+  needed commands inside the template.
