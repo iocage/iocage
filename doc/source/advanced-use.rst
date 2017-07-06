@@ -1,6 +1,11 @@
+.. index:: Advance Usage
+.. _Advanced Usage:
+
+Advanced Usage
 ==============
-Advanced usage
-==============
+
+.. index:: Clones
+.. _Clones:
 
 Clones
 ------
@@ -11,95 +16,119 @@ Essentially, clones are cheap, lightweight, and writable snapshots.
 A clone depends on its source snapshot and filesystem. To destroy the
 source jail and preserve its clones, the clone must be promoted first.
 
-Create a clone
+.. index:: Create clones
+.. _Create a Clone:
+
+Create a Clone
 ++++++++++++++
 
 To clone **www01** to **www02**, run:
 
-:samp:`# iocage clone www01 tag=www02`
+:samp:`# iocage clone www01 --name www02`
 
 Clone a jail from an existing snapshot with:
 
-:samp:`# iocage clone www01@snapshotname tag=www03`
+:samp:`# iocage clone www01@snapshotname --name www03`
 
-Promoting a clone
+.. index:: Promote a Clone
+.. _Promoting a Clone:
+
+Promoting a Clone
 +++++++++++++++++
+
+.. warning:: This functionality isn't fully added to iocage, and may not
+   function as expected.
 
 **To promote a cloned jail, run:**
 
-:samp:`# iocage promote UUID | TAG`
+:command:`iocage promote [UUID | NAME]`
 
 This reverses the *clone* and *source* jail relationship. The clone
 becomes the source and the source jail is demoted to a clone.
 
 **The demoted jail can now be removed:**
 
-:samp:`# iocage destroy UUID | TAG`
+:command:`iocage destroy [UUID | NAME]`
 
-Updating jails
+.. index:: Updating Jails
+.. _Updating Jails:
+
+Updating Jails
 --------------
 
 Updates are handled with the freebsd-update(8) utility. Jails can be
-updated while they are stopped or running.
+updated while they are stopped or running. While updating can seem
+routine, it is always recommended to use ZFS snapshot functionality to
+create a backup of the jail before updating.
+
+Create a backup snapshot of the jail:
+
+:command:`iocage snapshot -n [snapshotname] [UUID | NAME]`
 
 To update a jail to latest patch level, run:
 
-:samp:`# iocage update UUID | TAG`
-
-This automatically creates a back-out snapshot of the jail.
+:command:`iocage update [UUID | NAME]`
 
 When updates are finished and the jail appears to function properly,
 remove the snapshot:
 
-:samp:`# iocage snapremove UUID|TAG@snapshotname`
-
-If the update breaks the jail, revert back to the original snapshot:
-
-:samp:`# iocage rollback UUID|TAG@snapshotname`
+:command:`iocage snapremove [UUID|NAME]@[snapshotname]`
 
 To test updating without affecting a jail, create a clone and update the
 clone the same way as outlined above.
 
 To clone a jail, run:
 
-:samp:`# iocage clone UUID|TAG tag=testupdate`
+:command:`iocage clone [UUID|NAME] --name [testupdate]`
 
-Upgrading jails
+.. index:: Upgrade Jails
+.. _Upgrading Jails:
+
+Upgrading Jails
 ---------------
 
 Upgrades are handled with the freebsd-update(8) utility. By default, the
-upgrade command attempts to upgrade the jail to the host's RELEASE
-version (visible with uname -r).
+user must supply the new RELEASE for the jail's upgrade. For example:
 
-Based on the jail **type** property, upgrades are handled differently
-for basejails and normal jails.
+:samp:`# iocage upgrade examplejail -r 11.0-RELEASE`
 
-Upgrade Normal Jails
-++++++++++++++++++++
+Tells jail *examplejail* to upgrade its RELEASE to *11.0-RELEASE*.
 
-To upgrade a normal jail (non-basejail) to the host's RELEASE, run:
+Upgrades are handled differently for basejails and the other types of
+jails, as a basejail is treated differently in iocage.
 
-:samp:`# iocage upgrade UUID | TAG`
+.. index:: Upgrade Standard Jail
+.. _Upgrade Standard Jail:
+
+Upgrade a Standard Jail
++++++++++++++++++++++++
+
+To upgrade a Standard (non-basejail) jail to the host's RELEASE, run:
+
+:command:`iocage upgrade -r [11.1-RELEASE] [UUID | NAME]`
 
 This upgrades the jail to the same RELEASE as the host.
 
-To upgrade to a specific release, run:
+.. index:: Upgrade Basejail (Legacy)
+.. _Upgrade Basejail:
 
-:samp:`# iocage upgrade UUID|TAG release=10.1-RELEASE`
+Upgrade basejail (Legacy ONLY)
+++++++++++++++++++++++++++++++
 
-Upgrade basejail
-++++++++++++++++
+.. warning:: This section only applies to **legacy** versions of iocage.
+   Basejail upgrade functionality is not yet re-implemented in the
+   current version.
 
 Ugrading a basejail has a few steps. Always start by verifying the jail
 type, as this process only works with basejails. Running:
 
-:samp:`# iocage get type UUID|TAG`
+:command:`iocage get type [UUID|TAG]`
 
-needs to return "basejail", for the desired jail.
+needs to return **basejail**, for the desired jail.
 
 Upgrading can be forced while the jail is online by executing:
 
-:samp:`# iocage upgrade UUID|TAG`
+:command:`iocage upgrade [UUID|TAG]`
 
 This forcibly re-clones the basejail filesystems while the jail is
 running (no downtime) and update the jail's :file:`/etc` with the
@@ -107,31 +136,40 @@ changes from the new RELEASE.
 
 To upgrade the jail while it is stopped, run:
 
-:samp:`# iocage set release=11.0-RELEASE UUID|TAG`
+:command:`iocage set release=[11.0-RELEASE] [UUID|TAG]`
 
-This causes the jail to re-clone its filesystems from the 11.0-RELEASE
+This causes the jail to re-clone its filesystems from the *11.0-RELEASE*
 on next jail start. This does not update the jail's :file:`/etc` files
 with changes from the next RELEASE.
 
-Auto boot
+.. index:: Auto-Boot
+.. _AutoBoot:
+
+Auto-boot
 ---------
 
 Make sure :command:`iocage_enable="YES"` is set in :file:`/etc/rc.conf`.
 
 To enable a jail to auto-boot during a system boot, simply run:
 
-:samp:`# iocage set boot=on UUID|TAG`
+:samp:`# iocage set boot=on UUID|NAME`
 
-Boot priority
+.. index:: Boot Priority
+.. _Boot Priority:
+
+Boot Priority
 +++++++++++++
 
 Boot order can be specified by setting the priority value:
 
-:samp:`# iocage set priority=20 UUID|TAG`
+:command:`iocage set priority=[20] [UUID|NAME]`
 
 *Lower* values are higher in the boot priority.
 
-Snapshot management
+.. index:: Snapshot Management
+.. _Snapshot Management:
+
+Snapshot Management
 -------------------
 
 iocage supports transparent ZFS snapshot management out of the box.
@@ -139,123 +177,156 @@ Snapshots are point-in-time copies of data, a safety point to which a
 jail can be reverted at any time. Initially, snapshots take up almost no
 space, as only changing data is recorded.
 
-List snapshots for a jail with:
+List snapshots for a jail:
 
-:samp:`# iocage snaplist UUID|TAG`
+:command:`iocage snaplist [UUID|TAG]`
 
-To create a new snapshot, run:
+Create a new snapshot:
 
-:samp:`# iocage snapshot UUID|TAG`
+:command:`iocage snapshot [UUID|TAG]`
 
-This creates a snapshot based on current time.
+This creates a snapshot based on the current time.
 
-To create a snapshot with custom naming, run:
+.. index:: Resource Limits
+.. _Resource Limits:
 
-:samp:`# iocage snapshot UUID|TAG@mysnapshotname`
+Resource Limits (Legacy ONLY)
+-----------------------------
 
-Resource limits
----------------
+.. warning:: This functionality is only available for legacy versions of
+   :command:`iocage`. It is not yet implemented in the current version.
+   This applies to all subsections of *Resource Limits*.
 
-iocage can enable optional resource limits for a jail. The outlined
-procedure here is meant to provide a starting point for the user.
+:command:`iocage` can enable optional resource limits for a jail. The
+outlined procedure here is meant to provide a starting point for the
+user.
 
-Limit core or thread
-++++++++++++++++++++
+.. index:: Limit Cores or Threads
+.. _Limit Cores or Threads:
 
-Limit a jail to a single thread or core number 1:
+Limit Cores or Threads
+++++++++++++++++++++++
 
-:samp:`# iocage set cpuset=1 UUID|TAG`
-:samp:`# iocage start UUID|TAG`
+Limit a jail to a single thread or core #1:
 
-List applied rules
-++++++++++++++++++
+:command:`iocage set cpuset=1 [UUID|TAG]`
+:command:`iocage start [UUID|TAG]`
+
+.. index:: List Applied Rules
+.. _List Applied Rules:
+
+List Applied Limits
++++++++++++++++++++
 
 List applied limits:
 
-:samp:`# iocage limits UUID|TAG`
+:command:`iocage limits [UUID|TAG]`
+
+.. index:: Limit DRAM Usage
+.. _Limit DRAM Usage:
 
 Limit DRAM use
 ++++++++++++++
 
-Limit a jail to 4G DRAM memory use (limit RSS memory use can be done
-on-the-fly):
+This example limits a jail to using 4 Gb DRAM memory (limiting RSS
+memory use can be done on-the-fly):
 
-:samp:`# iocage set memoryuse=4G:deny UUID|TAG`
+:samp:`# iocage set memoryuse=4G:deny examplejail`
 
-Turn on resource limits
+.. index:: Turn on Resource Limits
+.. _Turn on Resource Limits:
+
+Turn on Resource Limits
 +++++++++++++++++++++++
 
-Turn on resource limiting for jail:
+Turn on resource limiting for a jail with:
 
-:samp:`# iocage set rlimits=on UUID|TAG`
+:command:`iocage set rlimits=on [UUID|TAG]`
+
+.. index:: Apply Limits
+.. _Apply Limits:
 
 Apply limits
 ++++++++++++
 
-Apply limit on-the-fly:
+Apply limits to a running jail with:
 
-:samp:`# iocage cap UUID | TAG`
+:command:`iocage cap [UUID | TAG]`
 
-Check limits
+.. index:: Check Limits
+.. _Check Limits:
+
+Check Limits
 ++++++++++++
 
-Check active limits:
+Check the currently active limits on a jail with:
 
-:samp:`# iocage limits UUID | TAG`
+:command:`iocage limits [UUID | TAG]`
 
-Limit CPU use by %
-++++++++++++++++++
+.. index:: Limit CPU Usage by Percentage
+.. _Limit CPU Usage by Percentage:
 
-Limit CPU execution to 20%:
+Limit CPU Usage by %
+++++++++++++++++++++
 
-:samp:`# iocage set pcpu=20:deny UUID|TAG`
-:samp:`# iocage cap UUID|TAG`
+In this example, :command:`iocage` limits *testjail* CPU execution to
+20%, then applies the limitation to the active jail:
 
-Check limits:
+:samp:`# iocage set pcpu=20:deny testjail`
+:samp:`# iocage cap testjail`
 
-:samp:`# iocage limits UUID | TAG`
+Double check the jail's current limits to confirm the functionality:
 
-Resetting a jail's properties
-+++++++++++++++++++++++++++++
+:samp:`# iocage limits testjail`
 
-iocage easily allows resetting a jail's properties back to their
+.. index:: Reset Jail Properties
+.. _Reset Jail Properties:
+
+Reset Jail Properties
++++++++++++++++++++++
+
+:command:`iocage` easily allows resetting jail properties back to the
 defaults!
 
 To reset to defaults:
 
-:samp:`# iocage reset UUID | TAG`
+:command:`iocage reset [UUID | TAG]`
 
 You can also reset every jail to the default properties:
 
-:samp:`# iocage reset ALL`
+:command:`iocage reset ALL`
 
-Resetting a jail retains the jail's UUID and TAG. Everything else is
-lost. Be sure to reset any needed custom properties. If anything is set
-by ``iocage set PROPERTY default``, there is nothing else required!
+Resetting a jail retains the jail's UUID and TAG. All other non-standard
+settings are lost. Be sure to reset any needed custom properties. If
+anything is set by :command:`iocage set [PROPERTY] default`, there is
+nothing else required!
 
-Automatic package installation
+.. index:: Automatic Package Installation
+.. _Automatic Package Installation:
+
+Automatic Package Installation
 ------------------------------
 
 Packages can be installed automatically at creation time!
 
-Specify the ``pkglist`` property at creation time, which needs to point
-to a text file containing one package name per line. Note an Internet
-connection is required, as :command:`pkg install` obtains packages from
-online repositories.
+Use the [-p | --pkglist] option at creation time, which needs to point
+to a JSON file containing one package name per line.
 
-**Example:**
+.. note:: An Internet connection is required for automatic package
+   installations, as :command:`pkg install` obtains packages from online
+   repositories.
 
-Create a :file:`pkgs.txt` file and add package names to it.
+Create a :file:`pkgs.json` file and add package names to it.
 
-:file:`pkgs.txt`:
+:file:`pkgs.json`:
 
 .. code-block:: none
 
    nginx
    tmux
 
-Now, create a jail and supply :file:`pkgs.txt`:
+Now, create a jail and supply :file:`pkgs.json`:
 
-:samp:`# iocage create pkglist=/path-to/pkgs.txt tag=myjail`
+:command:`iocage create -r [RELEASE] -p [path-to/pkgs.json] -n [NAME]`
 
 This installs **nginx** and **tmux** in the newly created jail.
