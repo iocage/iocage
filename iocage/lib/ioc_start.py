@@ -40,12 +40,11 @@ class IOCStart(object):
     for them. It also finds any scripts the user supplies for exec_*
     """
 
-    def __init__(self, uuid, jail, path, conf, silent=False, callback=None):
+    def __init__(self, uuid, path, conf, silent=False, callback=None):
         self.pool = iocage.lib.ioc_json.IOCJson(" ").json_get_value("pool")
         self.iocroot = iocage.lib.ioc_json.IOCJson(self.pool).json_get_value(
             "iocroot")
         self.uuid = uuid
-        self.jail = jail
         self.path = path
         self.conf = conf
         self.get = iocage.lib.ioc_json.IOCJson(self.path,
@@ -213,13 +212,12 @@ class IOCStart(object):
             if any(ip in ip4_addr or ip in ip6_addr for ip in ips_in_use):
                 iocage.lib.ioc_common.logit({
                     "level"  : "EXCEPTION",
-                    "message": f"IP is in use. Please change {self.uuid} ("
-                               f"{self.conf['tag']})'s IP."
+                    "message": f"IP is in use. Please change {self.uuid}'s IP."
                 },
                     _callback=self.callback,
                     silent=self.silent)
 
-            msg = f"* Starting {self.uuid} ({self.conf['tag']})"
+            msg = f"* Starting {self.uuid}"
             iocage.lib.ioc_common.logit({
                 "level"  : "INFO",
                 "message": msg
@@ -379,7 +377,7 @@ class IOCStart(object):
                     "%F %T")))
             # TODO: DHCP/BPF
         else:
-            msg = f"{self.uuid} ({self.conf['tag']}) is already running!"
+            msg = f"{self.uuid} is already running!"
             iocage.lib.ioc_common.logit({
                 "level"  : "ERROR",
                 "message": msg
@@ -491,7 +489,7 @@ class IOCStart(object):
             iocage.lib.ioc_common.checkoutput(
                 ["ifconfig", f"{nic}:{jid}", "description",
                  "associated with jail:"
-                 f" {self.uuid} ({self.conf['tag']})"],
+                 f" {self.uuid}"],
                 stderr=su.STDOUT)
 
             # Jail side
