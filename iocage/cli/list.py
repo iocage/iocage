@@ -44,7 +44,7 @@ import iocage.lib.iocage as ioc
 @click.option("--plugins", "-P", is_flag=True, help="Show available plugins.")
 @click.option("--http", default=False,
               help="Have --remote use HTTP instead.", is_flag=True)
-@click.option("--sort", "-s", "_sort", default="tag", nargs=1,
+@click.option("--sort", "-s", "_sort", default="name", nargs=1,
               help="Sorts the list by the given type")
 @click.option("--quick", "-q", is_flag=True, default=False,
               help="Lists all jails with less processing and fields.")
