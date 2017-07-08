@@ -33,11 +33,10 @@ require_zpool = pytest.mark.require_zpool
 @require_root
 @require_zpool
 def test_set():
-    jails = ["test", "test_short"]
-    newtags = {"test": "newtest", "test_short": "newtest_short"}
+    jails = ["771ec0cf-afdd-455d-9245-4a890e228325", "dfb013e5"]
     runner = CliRunner()
 
     for jail in jails:
-        result = runner.invoke(ioc.cli, ["set", f"tag={newtags[jail]}", jail])
+        result = runner.invoke(ioc.cli, ["set", f"notes={jail}", jail])
 
         assert result.exit_code == 0
