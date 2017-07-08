@@ -41,22 +41,22 @@ __rootcmd__ = True
 @click.argument("jail", required=True)
 def cli(jail):
     """Runs update with the command given inside the specified jail."""
+    # TODO: Move to API
     jails, paths = ioc_list.IOCList("uuid").list_datasets()
-    _jail = {tag: uuid for (tag, uuid) in jails.items() if
-             uuid.startswith(jail) or tag == jail}
+    _jail = {uuid: path for (uuid, path) in jails.items() if
+             uuid.startswith(jail)}
 
     if len(_jail) == 1:
-        tag, uuid = next(iter(_jail.items()))
-        path = paths[tag]
+        uuid, path = next(iter(_jail.items()))
     elif len(_jail) > 1:
         ioc_common.logit({
             "level"  : "ERROR",
             "message": f"Multiple jails found for {jail}:"
         })
-        for t, u in sorted(_jail.items()):
+        for u, p in sorted(_jail.items()):
             ioc_common.logit({
                 "level"  : "ERROR",
-                "message": f"  {u} ({t})"
+                "message": f"  {u} ({p})"
             })
         exit(1)
     else:
@@ -73,21 +73,21 @@ def cli(jail):
 
     if conf["type"] == "jail":
         if not status:
-            ioc_start.IOCStart(uuid, tag, path, conf, silent=True)
+            ioc_start.IOCStart(uuid, path, conf, silent=True)
             status, jid = ioc_list.IOCList.list_get_jid(uuid)
             started = True
     elif conf["type"] == "basejail":
         ioc_common.logit({
             "level"  : "ERROR",
             "message": "Please run \"iocage migrate\" before trying"
-                       f" to update {uuid} ({tag})"
+                       f" to update {uuid}"
         })
         exit(1)
     elif conf["type"] == "template":
         ioc_common.logit({
             "level"  : "ERROR",
             "message": "Please convert back to a jail before trying"
-                       f" to update {uuid} ({tag})"
+                       f" to update {uuid}"
         })
         exit(1)
     else:
@@ -101,10 +101,9 @@ def cli(jail):
         su.Popen(["hbsd-update", "-j", jid]).communicate()
 
         if started:
-            ioc_stop.IOCStop(uuid, tag, path, conf, silent=True)
+            ioc_stop.IOCStop(uuid, path, conf, silent=True)
     else:
-        ioc_fetch.IOCFetch(conf["cloned_release"]).fetch_update(True, uuid,
-                                                                tag)
+        ioc_fetch.IOCFetch(conf["cloned_release"]).fetch_update(True, uuid)
 
         if started:
-            ioc_stop.IOCStop(uuid, tag, path, conf, silent=True)
+            ioc_stop.IOCStop(uuid, path, conf, silent=True)
