@@ -22,8 +22,6 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """clone module for the cli."""
-import re
-
 import click
 
 import iocage.lib.ioc_common as ioc_common

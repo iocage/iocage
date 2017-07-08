@@ -37,7 +37,6 @@ import sys
 import tarfile
 import tempfile
 import urllib.request
-import uuid
 
 import libzfs
 import pygit2
