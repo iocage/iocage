@@ -104,8 +104,7 @@ class IOCUpgrade(object):
 
                 iocage.lib.ioc_json.IOCJson(
                     f"{self.path.replace('/root', '')}",
-                    silent=True).json_set_value(
-                    f"release={new_release}")
+                    silent=True).json_set_value(f"release={new_release}")
 
                 return new_release
 
