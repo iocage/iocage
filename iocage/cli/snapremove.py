@@ -37,23 +37,23 @@ import iocage.lib.ioc_list as ioc_list
                                    " after @", required=True)
 def cli(jail, name):
     """Removes a snapshot from a user supplied jail."""
-    jails, paths = ioc_list.IOCList("uuid").list_datasets()
+    # TODO: Move to API
+    jails = ioc_list.IOCList("uuid").list_datasets()
     pool = ioc_json.IOCJson().json_get_value("pool")
-    _jail = {tag: uuid for (tag, uuid) in jails.items() if
-             uuid.startswith(jail) or tag == jail}
+    _jail = {uuid: path for (uuid, path) in jails.items() if
+             uuid.startswith(jail)}
 
     if len(_jail) == 1:
-        tag, uuid = next(iter(_jail.items()))
-        path = paths[tag]
+        uuid, path = next(iter(_jail.items()))
     elif len(_jail) > 1:
         ioc_common.logit({
             "level"  : "ERROR",
             "message": f"Multiple jails found for {jail}:"
         })
-        for t, u in sorted(_jail.items()):
+        for u, p in sorted(_jail.items()):
             ioc_common.logit({
                 "level"  : "ERROR",
-                "message": f"  {u} ({t})"
+                "message": f"  {u} ({p})"
             })
         exit(1)
     else:
@@ -67,7 +67,7 @@ def cli(jail, name):
     conf = ioc_json.IOCJson(path).json_load()
 
     if conf["template"] == "yes":
-        target = f"{pool}/iocage/templates/{tag}@{name}"
+        target = f"{pool}/iocage/templates/{uuid}@{name}"
     else:
         target = f"{pool}/iocage/jails/{uuid}@{name}"
 
