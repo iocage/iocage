@@ -35,7 +35,7 @@ import iocage.lib.iocage as ioc
               help="For scripting, use tabs for separators.")
 @click.option("--long", "-l", "_long", is_flag=True, default=False,
               help="Show the full uuid.")
-@click.option("--sort", "-s", "_sort", default="tag", nargs=1,
+@click.option("--sort", "-s", "_sort", default="name", nargs=1,
               help="Sorts the list by the given type")
 def cli(header, _long, _sort):
     """Allows a user to show resource usage of all jails."""
@@ -45,9 +45,9 @@ def cli(header, _long, _sort):
     sort = ioc_common.ioc_sort("df", _sort)
     jail_list.sort(key=sort)
     if header:
-        jail_list.insert(0, ["UUID", "CRT", "RES", "QTA", "USE", "AVA", "TAG"])
+        jail_list.insert(0, ["NAME", "CRT", "RES", "QTA", "USE", "AVA"])
         # We get an infinite float otherwise.
-        table.set_cols_dtype(["t", "t", "t", "t", "t", "t", "t"])
+        table.set_cols_dtype(["t", "t", "t", "t", "t", "t"])
         table.add_rows(jail_list)
 
         ioc_common.logit({
