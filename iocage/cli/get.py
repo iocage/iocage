@@ -70,14 +70,14 @@ def cli(prop, _all, _pool, jail, recursive, header, plugin):
                 "message": state
             })
         elif plugin:
-            _plugin = ioc.IOCage(jail).get(prop, plugin=True)
+            _plugin = ioc.IOCage(jail, skip_jails=True).get(prop, plugin=True)
 
             ioc_common.logit({
                 "level"  : "INFO",
                 "message": _plugin
             })
         elif prop == "all":
-            props = ioc.IOCage(jail).get(prop)
+            props = ioc.IOCage(jail, skip_jails=True).get(prop)
 
             for p, v in props.items():
                 ioc_common.logit({
@@ -85,7 +85,7 @@ def cli(prop, _all, _pool, jail, recursive, header, plugin):
                     "message": f"{p}:{v}"
                 })
         elif prop == "fstab":
-            fstab_list = ioc.IOCage(jail).get(prop)
+            fstab_list = ioc.IOCage(jail, skip_jails=True).get(prop)
 
             if header:
                 fstab_list.insert(0, ["INDEX", "FSTAB ENTRY"])
@@ -103,13 +103,13 @@ def cli(prop, _all, _pool, jail, recursive, header, plugin):
                         "message": f"{fstab[0]}\t{fstab[1]}"
                     })
         elif _pool:
-            pool = ioc.IOCage().get("", pool=True)
+            pool = ioc.IOCage(skip_jails=True).get("", pool=True)
             ioc_common.logit({
                 "level"  : "INFO",
                 "message": pool
             })
         else:
-            p = ioc.IOCage(jail).get(prop)
+            p = ioc.IOCage(jail, skip_jails=True).get(prop)
 
             ioc_common.logit({
                 "level"  : "INFO",
@@ -120,9 +120,9 @@ def cli(prop, _all, _pool, jail, recursive, header, plugin):
 
         # Prints the table
         if header:
-            jail_list.insert(0, ["UUID", "TAG", f"PROP - {prop}"])
+            jail_list.insert(0, ["NAME", f"PROP - {prop}"])
             # We get an infinite float otherwise.
-            table.set_cols_dtype(["t", "t", "t"])
+            table.set_cols_dtype(["t", "t"])
             table.add_rows(jail_list)
             ioc_common.logit({
                 "level"  : "INFO",
