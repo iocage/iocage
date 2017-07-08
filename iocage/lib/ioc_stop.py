@@ -34,12 +34,11 @@ import iocage.lib.ioc_list
 class IOCStop(object):
     """Stops a jail and unmounts the jails mountpoints."""
 
-    def __init__(self, uuid, jail, path, conf, silent=False, callback=None):
+    def __init__(self, uuid, path, conf, silent=False, callback=None):
         self.pool = iocage.lib.ioc_json.IOCJson(" ").json_get_value("pool")
         self.iocroot = iocage.lib.ioc_json.IOCJson(self.pool).json_get_value(
             "iocroot")
         self.uuid = uuid
-        self.jail = jail
         self.path = path
         self.conf = conf
         self.status, self.jid = iocage.lib.ioc_list.IOCList().list_get_jid(
@@ -85,7 +84,7 @@ class IOCStop(object):
         exec_fib = self.conf["exec_fib"]
 
         if not self.status:
-            msg = f"{self.uuid} ({self.conf['tag']}) is not running!"
+            msg = f"{self.uuid} is not running!"
             iocage.lib.ioc_common.logit({
                 "level"  : "ERROR",
                 "message": msg
@@ -93,7 +92,7 @@ class IOCStop(object):
                 _callback=self.callback,
                 silent=self.silent)
         else:
-            msg = f"* Stopping {self.uuid} ({self.conf['tag']})"
+            msg = f"* Stopping {self.uuid}"
             iocage.lib.ioc_common.logit({
                 "level"  : "INFO",
                 "message": msg
