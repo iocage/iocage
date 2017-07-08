@@ -22,7 +22,6 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """iocage create module."""
-import datetime
 import json
 import os
 import pathlib
@@ -94,10 +93,10 @@ class IOCCreate(object):
         defaults.
         """
         start = False
-        is_template = False
 
-        if os.path.isdir(location):
-            raise RuntimeError("The UUID is already in use by another jail.")
+        if os.path.isdir(location) or os.path.isdir(
+                f"{self.iocroot}/templates/{jail_uuid}"):
+            raise RuntimeError(f"Jail: {jail_uuid} already exists!")
 
         if self.migrate:
             config = self.config
@@ -201,7 +200,7 @@ class IOCCreate(object):
                                f"{self.pool}/iocage/jails/{self.release}"
                                f"@{jail_uuid}"], stderr=su.PIPE)
             except su.CalledProcessError:
-                raise RuntimeError(f"Jail: {self.jail} not found!")
+                raise RuntimeError(f"Jail: {jail_uuid} not found!")
 
             su.Popen(["zfs", "clone",
                       f"{self.pool}/iocage/jails/{self.release}@"
@@ -224,11 +223,7 @@ class IOCCreate(object):
 
             # Clones are expected to be as identical as possible.
             for k, v in config.items():
-                if k == "tag":
-                    if v == clone_uuid:
-                        v = datetime.datetime.utcnow().strftime("%F@%T:%f")
-                else:
-                    v = v.replace(clone_uuid, jail_uuid)
+                v = v.replace(clone_uuid, jail_uuid)
 
                 config[k] = v
         else:
@@ -247,8 +242,8 @@ class IOCCreate(object):
                             "level"  : "EXCEPTION",
                             "message": f"Snapshot: {snapshot.name} exists!\n"
                                        "Please manually run zfs destroy"
-                                       f" {snapshot.name} if wish to destroy"
-                                       " it."
+                                       f" {snapshot.name} if you wish to "
+                                       "destroy it."
                         },
                             _callback=self.callback,
                             silent=self.silent)
@@ -272,11 +267,12 @@ class IOCCreate(object):
 
         # This test is to avoid the same warnings during install_packages.
         if not self.plugin:
+            # TODO
+            # print(self.props)
             for prop in self.props:
                 key, _, value = prop.partition("=")
 
-                if key == "tag":
-                    if value == "default":
+                if jail_uuid == "default":
                         iocage.lib.ioc_destroy.IOCDestroy(
                         ).__destroy_parse_datasets__(
                             f"{self.pool}/iocage/jails/{jail_uuid}")
@@ -287,15 +283,10 @@ class IOCCreate(object):
                         },
                             _callback=self.callback,
                             silent=self.silent)
-                    elif self.num != 0:
-                        if key == "tag":
-                            value = f"{value}_{self.num}"
                 elif key == "boot" and value == "on":
                     start = True
                 elif key == "template" and value == "yes":
-                    # We will set this properly later
-                    is_template = True
-                    continue
+                    iocjson.json_set_value("template=yes")
 
                 try:
                     iocjson.json_check_prop(key, value, config)
@@ -323,13 +314,6 @@ class IOCCreate(object):
                     # open_atomic will empty the file, we need these still.
                     for line in _clone_fstab.readlines():
                         _fstab.write(line.replace(clone_uuid, jail_uuid))
-
-        _tag = self.create_link(jail_uuid, config["tag"])
-
-        if is_template:
-            _tag = _tag.replace("@", "_")
-
-        config["tag"] = _tag
 
         if not self.empty:
             self.create_rc(location, config["host_hostname"])
@@ -359,10 +343,9 @@ class IOCCreate(object):
                 su.Popen(["rm", "-r", "-f", destination]).communicate()
                 os.mkdir(destination)
 
-                iocage.lib.ioc_fstab.IOCFstab(jail_uuid, _tag, "add", source,
-                                              destination,
-                                              "nullfs", "ro", "0", "0",
-                                              silent=True)
+                iocage.lib.ioc_fstab.IOCFstab(jail_uuid, "add", source,
+                                              destination, "nullfs", "ro", "0",
+                                              "0", silent=True)
                 config["basejail"] = "yes"
 
             iocjson.json_write(config)
@@ -375,9 +358,9 @@ class IOCCreate(object):
 
         if not self.plugin:
             if self.clone:
-                msg = f"{jail_uuid} ({_tag}) successfully cloned!"
+                msg = f"{jail_uuid} successfully cloned!"
             else:
-                msg = f"{jail_uuid} ({_tag}) successfully created!"
+                msg = f"{jail_uuid} successfully created!"
 
             iocage.lib.ioc_common.logit({
                 "level"  : "INFO",
@@ -396,16 +379,10 @@ class IOCCreate(object):
                     _callback=self.callback,
                     silent=self.silent)
             else:
-                self.create_install_packages(jail_uuid, location, _tag, config)
-
-        if is_template:
-            # If we don't, the tag is the bad one with the @ if that's been
-            # replaced
-            iocjson.json_write(config)
-            iocjson.json_set_value("template=yes")
+                self.create_install_packages(jail_uuid, location, config)
 
         if start:
-            iocage.lib.ioc_start.IOCStart(jail_uuid, _tag, location, config,
+            iocage.lib.ioc_start.IOCStart(jail_uuid, location, config,
                                           silent=self.silent)
 
         return jail_uuid
@@ -422,7 +399,6 @@ class IOCCreate(object):
         # values.
         jail_props["host_hostname"] = jail_uuid
         jail_props["host_hostuuid"] = jail_uuid
-        jail_props["tag"] = datetime.datetime.utcnow().strftime("%F@%T:%f")
         jail_props["release"] = release
         jail_props["cloned_release"] = self.release
         jail_props["jail_zfs_dataset"] = f"iocage/jails/{jail_uuid}/data"
@@ -430,7 +406,7 @@ class IOCCreate(object):
 
         return jail_props
 
-    def create_install_packages(self, jail_uuid, location, _tag, config,
+    def create_install_packages(self, jail_uuid, location, config,
                                 repo="pkg.freebsd.org", site="FreeBSD"):
         """
         Takes a list of pkg's to install into the target jail. The resolver
@@ -440,7 +416,7 @@ class IOCCreate(object):
         err = False
 
         if not status:
-            iocage.lib.ioc_start.IOCStart(jail_uuid, _tag, location, config,
+            iocage.lib.ioc_start.IOCStart(jail_uuid, location, config,
                                           silent=True)
             status, jid = iocage.lib.ioc_list.IOCList().list_get_jid(jail_uuid)
 
@@ -455,8 +431,8 @@ class IOCCreate(object):
             _callback=self.callback,
             silent=self.silent)
         srv_connection, srv_err = iocage.lib.ioc_exec.IOCExec(
-            srv_connect_cmd, jail_uuid, _tag, location,
-            plugin=self.plugin, silent=True).exec_jail()
+            srv_connect_cmd, jail_uuid, location, plugin=self.plugin,
+            silent=True).exec_jail()
 
         if srv_err:
             raise RuntimeError(f"{srv_connection}\n"
@@ -469,8 +445,8 @@ class IOCCreate(object):
             _callback=self.callback,
             silent=self.silent)
         dnssec_connection, dnssec_err = iocage.lib.ioc_exec.IOCExec(
-            dnssec_connect_cmd, jail_uuid, _tag, location,
-            plugin=self.plugin, silent=True).exec_jail()
+            dnssec_connect_cmd, jail_uuid, location, plugin=self.plugin,
+            silent=True).exec_jail()
 
         if dnssec_err:
             raise RuntimeError(f"{dnssec_connection}\n"
@@ -494,7 +470,7 @@ class IOCCreate(object):
         os.environ["ASSUME_ALWAYS_YES"] = "yes"
         cmd = ("pkg-static", "upgrade", "-f", "-q", "-y")
         pkg_upgrade, pkgupgrade_err = iocage.lib.ioc_exec.IOCExec(
-            cmd, jail_uuid, _tag, location, plugin=self.plugin).exec_jail()
+            cmd, jail_uuid, location, plugin=self.plugin).exec_jail()
 
         if pkgupgrade_err:
             iocage.lib.ioc_common.logit({
@@ -520,7 +496,7 @@ class IOCCreate(object):
                 silent=self.silent)
             cmd = ("pkg", "install", "-q", "-y", pkg)
             pkg_install, pkg_err = iocage.lib.ioc_exec.IOCExec(
-                cmd, jail_uuid, _tag, location, plugin=self.plugin,
+                cmd, jail_uuid, location, plugin=self.plugin,
                 silent=self.silent).exec_jail()
 
             if pkg_err:
@@ -535,59 +511,11 @@ class IOCCreate(object):
         os.remove(f"{location}/root/etc/resolv.conf")
 
         if status:
-            iocage.lib.ioc_stop.IOCStop(jail_uuid, _tag, location, config,
+            iocage.lib.ioc_stop.IOCStop(jail_uuid, location, config,
                                         silent=True)
 
         if self.plugin and err:
             return err
-
-    def create_link(self, jail_uuid, tag, old_tag=None):
-        """
-        Creates a symlink from iocroot/jails/jail_uuid to iocroot/tags/tag
-        """
-        # If this exists, another jail has used this tag.
-        try:
-            readlink_mount = os.readlink(f"{self.iocroot}/tags/{tag}")
-            readlink_uuid = readlink_mount.split("/jails/")[-1]
-        except OSError:
-            pass
-
-        tag_date = datetime.datetime.utcnow().strftime("%F@%T:%f")
-        jail_location = f"{self.iocroot}/jails/{jail_uuid}"
-
-        if not os.path.exists(f"{self.iocroot}/tags"):
-            os.mkdir(f"{self.iocroot}/tags")
-
-        if not os.path.exists(f"{self.iocroot}/tags/{tag}"):
-            # We can have stale tags sometimes that aren't valid
-            try:
-                os.remove(f"{self.iocroot}/tags/{tag}")
-            except OSError:
-                pass
-
-            try:
-                os.remove(f"{self.iocroot}/tags/{old_tag}")
-            except OSError:
-                pass
-            finally:
-                os.symlink(jail_location, f"{self.iocroot}/tags/{tag}")
-
-                return tag
-        else:
-            iocage.lib.ioc_common.logit({
-                "level"  : "WARNING",
-                "message": f"\n  tag: \"{tag}\" in use by {readlink_uuid}!\n"
-                           f"  Renaming {jail_uuid}'s tag to {tag_date}.\n"
-            },
-                _callback=self.callback,
-                silent=self.silent)
-
-            os.symlink(jail_location, f"{self.iocroot}/tags/{tag_date}")
-            iocage.lib.ioc_json.IOCJson(jail_location,
-                                        silent=True).json_set_value(
-                f"tag={tag_date}", create_func=True)
-
-            return tag_date
 
     @staticmethod
     def create_rc(location, host_hostname):
