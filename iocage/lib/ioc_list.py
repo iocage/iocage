@@ -38,7 +38,7 @@ class IOCList(object):
     List jails that are a specified type.
 
     Format is:
-        JID UID BOOT STATE TAG TYPE IP4 RELEASE
+        JID UID BOOT STATE TYPE IP4 RELEASE
     """
 
     def __init__(self, lst_type="all", hdr=True, full=False, _sort=None,
@@ -74,58 +74,20 @@ class IOCList(object):
             return _all
         elif self.list_type == "uuid":
             jails = {}
-            paths = {}
-            dups = {}
 
             for jail in ds:
-                jail = jail.properties["mountpoint"].value
-                conf = iocage.lib.ioc_json.IOCJson(jail).json_load()
-
-                if not set and conf["tag"] in jails:
-                    # Add the original in
-                    dups[paths[conf["tag"]]] = conf["tag"]
-                    dups[jail] = conf["tag"]
-                    tag = conf["tag"]
-
-                jails[conf["tag"]] = conf["host_hostuuid"]
-                paths[conf["tag"]] = jail
+                uuid = jail.name.rsplit("/", 1)[-1]
+                jails[uuid] = jail.properties["mountpoint"].value
 
             template_datasets = self.zfs.get_dataset(
                 f"{self.pool}/iocage/templates")
             template_datasets = template_datasets.children
 
             for template in template_datasets:
-                template = template.properties["mountpoint"].value
-                conf = iocage.lib.ioc_json.IOCJson(template).json_load()
+                uuid = template.name.rsplit("/", 1)[-1]
+                jails[uuid] = template.properties["mountpoint"].value
 
-                jails[f"{conf['tag']} (template)"] = conf["host_hostuuid"]
-                paths[f"{conf['tag']} (template)"] = template
-
-            if len(dups):
-                iocage.lib.ioc_common.logit({
-                    "level"  : "ERROR",
-                    "message": f"Duplicate tag ({tag}) detected!"
-                },
-                    _callback=self.callback,
-                    silent=self.silent)
-                for d, t in sorted(dups.items()):
-                    u = [m for m in d.split("/") if len(m) == 36 or len(m)
-                         == 8][0]
-                    iocage.lib.ioc_common.logit({
-                        "level"  : "ERROR",
-                        "message": f"  {u} ({t})"
-                    },
-                        _callback=self.callback,
-                        silent=self.silent)
-                iocage.lib.ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": "\nPlease run \"iocage set tag=NEWTAG "
-                               "UUID\" for one of the UUID's."
-                },
-                    _callback=self.callback,
-                    silent=self.silent)
-
-            return jails, paths
+            return jails
         elif self.list_type == "base":
             bases = self.list_bases(ds)
 
@@ -158,17 +120,16 @@ class IOCList(object):
 
             uuid = conf["host_hostuuid"]
             ip4 = conf["ip4_addr"]
-            tag = conf["tag"]
 
-            jail_list.append([uuid, tag, ip4])
+            jail_list.append([uuid, ip4])
 
         # Prints the table
         if self.header:
             table = texttable.Texttable(max_width=0)
 
             # We get an infinite float otherwise.
-            table.set_cols_dtype(["t", "t", "t"])
-            jail_list.insert(0, ["UUID", "TAG", "IP4"])
+            table.set_cols_dtype(["t", "t"])
+            jail_list.insert(0, ["NAME", "IP4"])
 
             table.add_rows(jail_list)
 
@@ -196,7 +157,6 @@ class IOCList(object):
             except IndexError:
                 short_ip4 = "-"
 
-            tag = conf["tag"]
             boot = conf["boot"]
             jail_type = conf["type"]
             full_release = conf["release"]
@@ -237,7 +197,7 @@ class IOCList(object):
             if "release" in template.lower() or "stable" in template.lower():
                 template = "-"
 
-            # Append the JID and the UUID to the table
+            # Append the JID and the NAME to the table
             if self.full:
                 if self.plugin:
                     if jail_type != "plugin":
@@ -245,10 +205,10 @@ class IOCList(object):
                         # list
                         continue
 
-                jail_list.append([jid, uuid, boot, state, tag, jail_type,
+                jail_list.append([jid, uuid, boot, state, jail_type,
                                   full_release, full_ip4, ip6, template])
             else:
-                jail_list.append([jid, uuid[:8], state, tag, short_release,
+                jail_list.append([jid, uuid[:8], state, short_release,
                                   short_ip4])
 
         list_type = "list_full" if self.full else "list_short"
@@ -263,15 +223,13 @@ class IOCList(object):
             if self.full:
                 # We get an infinite float otherwise.
                 table.set_cols_dtype(["t", "t", "t", "t", "t", "t", "t", "t",
-                                      "t", "t"])
-                jail_list.insert(0, ["JID", "UUID", "BOOT", "STATE", "TAG",
-                                     "TYPE", "RELEASE", "IP4", "IP6",
-                                     "TEMPLATE"])
+                                      "t"])
+                jail_list.insert(0, ["JID", "NAME", "BOOT", "STATE", "TYPE",
+                                     "RELEASE", "IP4", "IP6", "TEMPLATE"])
             else:
                 # We get an infinite float otherwise.
-                table.set_cols_dtype(["t", "t", "t", "t", "t", "t"])
-                jail_list.insert(0, ["JID", "UUID", "STATE", "TAG",
-                                     "RELEASE", "IP4"])
+                table.set_cols_dtype(["t", "t", "t", "t", "t"])
+                jail_list.insert(0, ["JID", "NAME", "STATE", "RELEASE", "IP4"])
 
             table.add_rows(jail_list)
 
