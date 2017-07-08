@@ -24,7 +24,6 @@
 """iocage destroy module."""
 import glob
 import os
-import shutil
 import subprocess as su
 
 import libzfs
