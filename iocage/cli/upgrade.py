@@ -40,23 +40,23 @@ __rootcmd__ = True
 @click.option("--release", "-r", required=True, help="RELEASE to upgrade to")
 def cli(jail, release):
     """Runs upgrade with the command given inside the specified jail."""
-    jails, paths = ioc_list.IOCList("uuid").list_datasets()
-    _jail = {tag: uuid for (tag, uuid) in jails.items() if
-             uuid.startswith(jail) or tag == jail}
+    # TODO: Move to API
+    jails = ioc_list.IOCList("uuid").list_datasets()
+    _jail = {uuid: path for (uuid, path) in jails.items() if
+             uuid.startswith(jail)}
 
     if len(_jail) == 1:
-        tag, uuid = next(iter(_jail.items()))
-        path = paths[tag]
-        root_path = "{}/root".format(path)
+        uuid, path = next(iter(_jail.items()))
+        root_path = f"{path}/root"
     elif len(_jail) > 1:
         ioc_common.logit({
             "level"  : "ERROR",
             "message": f"Multiple jails found for {jail}:"
         })
-        for t, u in sorted(_jail.items()):
+        for u, p in sorted(_jail.items()):
             ioc_common.logit({
                 "level"  : "ERROR",
-                "message": f"  {u} ({t})"
+                "message": f"  {u} ({p})"
             })
         exit(1)
     else:
@@ -79,7 +79,7 @@ def cli(jail, release):
         exit(1)
     if conf["type"] == "jail":
         if not status:
-            ioc_start.IOCStart(uuid, tag, path, conf, silent=True)
+            ioc_start.IOCStart(uuid, path, conf, silent=True)
             started = True
 
             new_release = ioc_upgrade.IOCUpgrade(conf, release,
@@ -88,14 +88,14 @@ def cli(jail, release):
         ioc_common.logit({
             "level"  : "ERROR",
             "message": "Please run \"iocage migrate\" before trying"
-                       f" to upgrade {uuid} ({tag})"
+                       f" to upgrade {uuid}"
         })
         exit(1)
     elif conf["type"] == "template":
         ioc_common.logit({
             "level"  : "ERROR",
             "message": "Please convert back to a jail before trying"
-                       f" to upgrade {uuid} ({tag})"
+                       f" to upgrade {uuid}"
         })
         exit(1)
     else:
@@ -106,10 +106,10 @@ def cli(jail, release):
         exit(1)
 
     if started:
-        ioc_stop.IOCStop(uuid, tag, path, conf, silent=True)
+        ioc_stop.IOCStop(uuid, path, conf, silent=True)
 
         ioc_common.logit({
             "level"  : "INFO",
-            "message": f"\n{uuid} ({tag}) successfully upgraded from"
+            "message": f"\n{uuid} successfully upgraded from"
                        f" {jail_release} to {new_release}!"
         })
