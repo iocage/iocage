@@ -27,6 +27,7 @@ import json
 import operator
 import os
 import subprocess as su
+import uuid
 
 import libzfs
 
@@ -97,8 +98,9 @@ class IOCage(object):
             if not skip_jails:
                 # When they need to destroy a jail with a missing or bad
                 # configuration, this gets in our way otherwise.
-                self.jails, self._paths = self.list("uuid")
+                self.jails = self.list("uuid")
 
+        self.skip_jails = skip_jails
         self.jail = jail
         self.rc = rc
         self._all = True if self.jail and 'ALL' in self.jail else False
@@ -112,7 +114,7 @@ class IOCage(object):
         for j in jail_order:
             # We want this to be the real jail now.
             self.jail = j
-            tag, uuid, path = self.__check_jail_existence__()
+            uuid, path = self.__check_jail_existence__()
             status, jid = self.list("jid", uuid=uuid)
 
             if action == 'stop':
@@ -136,7 +138,7 @@ class IOCage(object):
 
         for jail in self.jails:
             self.jail = jail
-            tag, uuid, path = self.__check_jail_existence__()
+            uuid, path = self.__check_jail_existence__()
             conf = ioc_json.IOCJson(path).json_load()
             boot = conf['boot']
             priority = conf['priority']
@@ -167,7 +169,7 @@ class IOCage(object):
             # We want this to be the real jail now.
             self.jail = j
 
-            tag, uuid, path = self.__check_jail_existence__()
+            uuid, path = self.__check_jail_existence__()
             status, _ = self.list("jid", uuid=uuid)
 
             if action == 'stop':
@@ -193,32 +195,35 @@ class IOCage(object):
         """
         Helper to check if jail dataset exists
         Return:
-                tuple: The jails tag, uuid, path
+                tuple: The jails uuid, path
         """
-        _jail = {tag: uuid for (tag, uuid) in self.jails.items() if
-                 uuid.startswith(self.jail) or tag == self.jail or
-                 tag == f"{self.jail} (template)"}
+        if os.path.isdir(f"{self.iocroot}/jails/{self.jail}"):
+            path = f"{self.iocroot}/jails/{self.jail}"
 
-        if len(_jail) == 1:
-            tag, uuid = next(iter(_jail.items()))
-            path = self._paths[tag]
+            return self.jail, path
+        elif os.path.isdir(f"{self.iocroot}/templates/{self.jail}"):
+            path = f"{self.iocroot}/templates/{self.jail}"
 
-            return tag, uuid, path
-        elif len(_jail) > 1:
-            # Do another search, this time more exact.
-            _jail = {tag: uuid for (tag, uuid) in _jail.items() if
-                     uuid == self.jail or tag == self.jail}
+            return self.jail, path
+        else:
+            if self.skip_jails:
+                # We skip jails for performance, but if they didn't match be
+                #  now need to gather the list and iterate.
+                self.jails = self.list("uuid")
+
+            # We got a partial, time to search.
+            _jail = {uuid: path for (uuid, path) in self.jails.items() if
+                     uuid.startswith(self.jail)}
 
             if len(_jail) == 1:
-                tag, uuid = next(iter(_jail.items()))
-                path = self._paths[tag]
+                uuid, path = next(iter(_jail.items()))
 
-                return tag, uuid, path
+                return uuid, path
             elif len(_jail) > 1:
                 msg = f"Multiple jails found for {self.jail}:"
 
-                for j, u in sorted(_jail.items()):
-                    msg += f"\n  {j} ({u})"
+                for u, p in sorted(_jail.items()):
+                    msg += f"\n  {u} ({p})"
 
                 ioc_common.logit({
                     "level"  : "EXCEPTION",
@@ -226,39 +231,18 @@ class IOCage(object):
                 },
                     _callback=self.callback,
                     silent=self.silent)
-            else:
-                if "(template)" in self.jail:
-                    # This will fail because it will be looking for JAIL
-                    # (template) and not just jail. Which is fine in this case.
-                    msg = f"{self.jail.rsplit('(', 1)[0].rstrip()} is " \
-                          " already a jail!"
-                else:
-                    msg = f"{self.jail} not found!"
-
-                ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": msg
-                },
-                    _callback=self.callback,
-                    silent=self.silent)
-        else:
-            if "(template)" in self.jail:
-                # This will fail because it will be looking for JAIL
-                # (template) and not just jail. Which is fine in this case.
-                msg = f"{self.jail.rsplit('(', 1)[0].rstrip()} is" \
-                      " already a jail!"
             else:
                 msg = f"{self.jail} not found!"
 
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": msg
-            },
-                _callback=self.callback,
-                silent=self.silent)
+                ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": msg
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
 
     @staticmethod
-    def __check_jail_type__(_type, uuid, tag):
+    def __check_jail_type__(_type, uuid):
         """
         Return:
             tuple: True if error with a message, or False/None
@@ -267,10 +251,10 @@ class IOCage(object):
             return False, None
         elif _type == 'basejail':
             return (True, "Please run \"iocage migrate\" before trying to"
-                          f" start {uuid} ({tag})")
+                          f" start {uuid}")
         elif _type == 'template':
             return (True, "Please convert back to a jail before trying to"
-                          f" start {uuid} ({tag})")
+                          f" start {uuid}")
         else:
             return True, f"{_type} is not a supported jail type."
 
@@ -357,7 +341,7 @@ class IOCage(object):
         if len(command) == 1:
             command = ["/bin/sh", "-c"] + command
 
-        tag, uuid, path = self.__check_jail_existence__()
+        uuid, path = self.__check_jail_existence__()
         devfs_stderr = self.__mount__(f"{path}/root/dev", "devfs")
 
         if devfs_stderr:
@@ -455,15 +439,15 @@ class IOCage(object):
                 silent=self.silent)
 
     def create(self, release, props, count=0, pkglist=None, template=False,
-               short=False, uuid=None, basejail=False, empty=False,
+               short=False, _uuid=None, basejail=False, empty=False,
                clone=None, skip_batch=False):
         """Creates the jail dataset"""
         count = 0 if count == 1 and not skip_batch else count
 
-        if short and uuid:
-            uuid = uuid[:8]
+        if short and _uuid:
+            _uuid = _uuid[:8]
 
-            if len(uuid) != 8:
+            if len(_uuid) != 8:
                 ioc_common.logit({
                     "level"  : "EXCEPTION",
                     "message": "Need a minimum of 8 characters to use --short"
@@ -512,20 +496,30 @@ class IOCage(object):
         try:
             if count > 1 and not skip_batch:
                 for j in range(1, count + 1):
+                    try:
+                        if _uuid is not None:
+                            uuid.UUID(_uuid, version=4)
+
+                        count_uuid = _uuid  # Is a UUID
+                    except ValueError:
+                        # This will allow named jails to use count
+                        # This can probably be smarter
+                        count_uuid = f"{_uuid}_{j}"
+
                     self.create(release, props, j, pkglist=pkglist,
-                                template=template, short=short, uuid=uuid,
-                                basejail=basejail, empty=empty, clone=clone,
-                                skip_batch=True)
+                                template=template, short=short,
+                                _uuid=count_uuid, basejail=basejail,
+                                empty=empty, clone=clone, skip_batch=True)
             else:
                 ioc_create.IOCCreate(release, props, count, pkglist,
-                                     template=template, short=short, uuid=uuid,
-                                     basejail=basejail, empty=empty,
-                                     clone=clone,
+                                     template=template, short=short,
+                                     uuid=_uuid, basejail=basejail,
+                                     empty=empty, clone=clone,
                                      silent=self.silent).create_jail()
-        except RuntimeError as err:
-            return True, err
+        except RuntimeError:
+            raise
 
-        return False, None
+        return
 
     def destroy_release(self, download=False):
         """Destroy supplied RELEASE and the download dataset if asked"""
@@ -559,7 +553,7 @@ class IOCage(object):
         call IOCage with skip_jails=True
         """
         try:
-            self.jails, self._paths = self.list("uuid")
+            self.jails = self.list("uuid")
         except (RuntimeError, SystemExit) as err:
             err = str(err)
 
@@ -601,20 +595,20 @@ class IOCage(object):
                     _callback=self.callback,
                     silent=self.silent)
 
-        tag, uuid, path = self.__check_jail_existence__()
+        uuid, path = self.__check_jail_existence__()
         status, _ = self.list("jid", uuid=uuid)
 
         if status:
             ioc_common.logit({
                 "level"  : "INFO",
-                "message": f"Stopping {uuid} ({tag})"
+                "message": f"Stopping {uuid}"
             },
                 _callback=self.callback,
                 silent=self.silent)
 
         ioc_common.logit({
             "level"  : "INFO",
-            "message": f"Destroying {uuid} ({tag})"
+            "message": f"Destroying {uuid}"
         },
             _callback=self.callback,
             silent=self.silent)
@@ -637,11 +631,10 @@ class IOCage(object):
             conf = ioc_json.IOCJson(path).json_load()
             mountpoint = f"{self.pool}/iocage/jails/{full_uuid}"
 
-            tag = conf["tag"]
             template = conf["type"]
 
             if template == "template":
-                mountpoint = f"{self.pool}/iocage/templates/{tag}"
+                mountpoint = f"{self.pool}/iocage/templates/{uuid}"
 
             ds = self.zfs.get_dataset(mountpoint)
             zconf = ds.properties
@@ -653,7 +646,7 @@ class IOCage(object):
             available = zconf["available"].value
 
             jail_list.append([uuid, compressratio, reservation, quota, used,
-                              available, tag])
+                              available])
 
         return jail_list
 
@@ -668,9 +661,9 @@ class IOCage(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-        tag, uuid, path = self.__check_jail_existence__()
-        msg, err = ioc_exec.IOCExec(command, uuid, tag, path, host_user,
-                                    jail_user, console=console,
+        uuid, path = self.__check_jail_existence__()
+        msg, err = ioc_exec.IOCExec(command, uuid, path, host_user, jail_user,
+                                    console=console,
                                     silent=self.silent).exec_jail()
 
         if not console:
@@ -691,19 +684,19 @@ class IOCage(object):
 
     def export(self):
         """Will export a jail"""
-        tag, uuid, path = self.__check_jail_existence__()
+        uuid, path = self.__check_jail_existence__()
         status, _ = self.list("jid", uuid=uuid)
 
         if status:
             ioc_common.logit({
                 "level"  : "EXCEPTION",
-                "message": f"{uuid} ({tag}) is runnning, stop the jail before"
+                "message": f"{uuid} is runnning, stop the jail before"
                            " exporting!"
             },
                 _callback=self.callback,
                 silent=self.silent)
 
-        ioc_image.IOCImage().export_jail(uuid, tag, path)
+        ioc_image.IOCImage().export_jail(uuid, path)
 
     def fetch(self, **kwargs):
         """Fetches a release or plugin."""
@@ -768,7 +761,7 @@ class IOCage(object):
     def fstab(self, action, source, destination, fstype, options, dump, _pass,
               index=None, add_path=False):
         """Adds an fstab entry for a jail"""
-        tag, uuid, path = self.__check_jail_existence__()
+        uuid, path = self.__check_jail_existence__()
 
         if add_path:
             destination = f"{self.iocroot}/jails/{uuid}/root{destination}"
@@ -782,7 +775,7 @@ class IOCage(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-        ioc_fstab.IOCFstab(uuid, tag, action, source, destination, fstype,
+        ioc_fstab.IOCFstab(uuid, action, source, destination, fstype,
                            options, dump, _pass, index=index)
 
     def get(self, prop, recursive=False, plugin=False, pool=False):
@@ -803,7 +796,7 @@ class IOCage(object):
                         _callback=self.callback,
                         silent=self.silent)
 
-            tag, uuid, path = self.__check_jail_existence__()
+            uuid, path = self.__check_jail_existence__()
             status, jid = self.list("jid", uuid=uuid)
 
             if prop == "state":
@@ -886,7 +879,7 @@ class IOCage(object):
         ioc_image.IOCImage().import_jail(self.jail)
 
     @staticmethod
-    def list(lst_type, header=False, long=False, sort="tag", uuid=None,
+    def list(lst_type, header=False, long=False, sort="name", uuid=None,
              plugin=False, quick=False):
         """Returns a list of lst_type"""
         if lst_type == "jid":
@@ -916,21 +909,21 @@ class IOCage(object):
 
     def rollback(self, name):
         """Rolls back a jail and all datasets to the supplied snapshot"""
-        tag, uuid, path = self.__check_jail_existence__()
+        uuid, path = self.__check_jail_existence__()
         conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
         status, _ = self.list("jid", uuid=uuid)
 
         if status:
             ioc_common.logit({
                 "level"  : "EXCEPTION",
-                "message": f"Please stop {uuid} ({tag}) before trying to"
+                "message": f"Please stop {uuid} before trying to"
                            " rollback!"
             },
                 _callback=self.callback,
                 silent=self.silent)
 
         if conf["template"] == "yes":
-            target = f"{self.pool}/iocage/templates/{tag}"
+            target = f"{self.pool}/iocage/templates/{uuid}"
         else:
             target = f"{self.pool}/iocage/jails/{uuid}"
 
@@ -969,25 +962,22 @@ class IOCage(object):
         else:
             default = False
 
-        if "template=no" in prop:
-            self.jail = f"{self.jail} (template)"
-
         if not default:
-            tag, uuid, path = self.__check_jail_existence__()
+            uuid, path = self.__check_jail_existence__()
             iocjson = ioc_json.IOCJson(path, cli=True)
 
             if "template" in prop.split("=")[0]:
                 if "templates/" in path and prop != "template=no":
                     ioc_common.logit({
                         "level"  : "EXCEPTION",
-                        "message": f"{uuid} ({tag}) is already a template!"
+                        "message": f"{uuid} is already a template!"
                     },
                         _callback=self.callback,
                         silent=self.silent)
                 elif "template" not in path and prop != "template=yes":
                     ioc_common.logit({
                         "level"  : "EXCEPTION",
-                        "message": f"{uuid} ({tag}) is already a jail!"
+                        "message": f"{uuid} is already a jail!"
                     },
                         _callback=self.callback,
                         silent=self.silent)
@@ -1016,12 +1006,12 @@ class IOCage(object):
 
     def snap_list(self, long=True):
         """Gathers a list of snapshots and returns it"""
-        tag, uuid, path = self.__check_jail_existence__()
+        uuid, path = self.__check_jail_existence__()
         conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
         snap_list = []
 
         if conf["template"] == "yes":
-            full_path = f"{self.pool}/iocage/templates/{tag}"
+            full_path = f"{self.pool}/iocage/templates/{uuid}"
         else:
             full_path = f"{self.pool}/iocage/jails/{uuid}"
 
@@ -1033,7 +1023,7 @@ class IOCage(object):
 
             if root_snap_name == "root":
                 snap_name += "/root"
-            elif root_snap_name != uuid and root_snap_name != tag:
+            elif root_snap_name != uuid:
                 # basejail datasets.
                 continue
 
@@ -1050,7 +1040,7 @@ class IOCage(object):
         Executes a soft reboot by keeping the jail network stack intact,
         but executing the rc scripts.
         """
-        tag, uuid, path = self.__check_jail_existence__()
+        uuid, path = self.__check_jail_existence__()
         status, jid = self.list("jid", uuid=uuid)
         conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
 
@@ -1078,8 +1068,7 @@ class IOCage(object):
             su.Popen(start_cmd, stdout=su.PIPE,
                      stderr=su.PIPE).communicate()
             ioc_json.IOCJson(path, silent=True).json_set_value(
-                "last_started="
-                f"{datetime.datetime.utcnow().strftime('%F %T')}")
+                f"last_started={datetime.datetime.utcnow().strftime('%F %T')}")
         else:
             ioc_common.logit({
                 "level"  : "ERROR",
@@ -1094,9 +1083,9 @@ class IOCage(object):
             if not jail:
                 self.__jail_order__("start")
         else:
-            tag, uuid, path = self.__check_jail_existence__()
+            uuid, path = self.__check_jail_existence__()
             conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
-            err, msg = self.__check_jail_type__(conf["type"], uuid, tag)
+            err, msg = self.__check_jail_type__(conf["type"], uuid)
             depends = conf["depends"].split()
 
             if not err:
@@ -1105,8 +1094,8 @@ class IOCage(object):
                         self.jail = depend
                         self.start()
 
-                ioc_start.IOCStart(uuid, tag, path, conf,
-                                   callback=self.callback, silent=self.silent)
+                ioc_start.IOCStart(uuid, path, conf, silent=self.silent,
+                                   callback=self.callback)
 
                 return False, None
             else:
@@ -1122,6 +1111,6 @@ class IOCage(object):
             if not jail:
                 self.__jail_order__("stop")
         else:
-            tag, uuid, path = self.__check_jail_existence__()
+            uuid, path = self.__check_jail_existence__()
             conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
-            ioc_stop.IOCStop(uuid, tag, path, conf, silent=self.silent)
+            ioc_stop.IOCStop(uuid, path, conf, silent=self.silent)
