@@ -75,7 +75,8 @@ def validate_count(ctx, param, value):
 @click.option("--plugins", help="List all available plugins for creation.",
               is_flag=True)
 @click.argument("props", nargs=-1)
-@click.option("--count", "-c", callback=validate_count, default="1")
+@click.option("--count", "-c", callback=validate_count, default="1",
+              help="Designate a number of plugin type jails to create.")
 @click.option("--root-dir", "-d", help="Root directory " +
                                        "containing all the RELEASEs.")
 @click.option("--update/--noupdate", "-U/-NU", default=True,
