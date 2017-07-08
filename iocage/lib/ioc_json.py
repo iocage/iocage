@@ -22,6 +22,9 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """Convert, load or write JSON."""
+import collections
+import datetime
+import fileinput
 import json
 import logging
 import os
@@ -239,7 +242,6 @@ class IOCJson(object):
                                     _callback=self.callback,
                                     silent=self.silent)
                                 iocage.lib.ioc_stop.IOCStop(full_uuid,
-                                                            conf["tag"],
                                                             self.location,
                                                             conf, silent=True)
 
@@ -426,14 +428,12 @@ class IOCJson(object):
             else:
                 return conf[prop]
 
-    def json_set_value(self, prop, create_func=False, _import=False,
-                       default=False):
+    def json_set_value(self, prop, _import=False, default=False):
         """Set a property for the specified jail."""
         key, _, value = prop.partition("=")
 
         if not default:
             conf = self.json_load()
-            old_tag = conf["tag"]
             uuid = conf["host_hostuuid"]
             status, jid = iocage.lib.ioc_list.IOCList.list_get_jid(uuid)
             conf[key] = value
@@ -447,32 +447,24 @@ class IOCJson(object):
                                                              p)]
             single_period = ["allow_raw_sockets", "allow_socket_af",
                              "allow_set_hostname"]
-            if not create_func:
-                if key == "tag":
-                    conf["tag"] = iocage.lib.ioc_create.IOCCreate(
-                        "", prop, 0).create_link(conf["host_hostuuid"], value,
-                                                 old_tag=old_tag)
-                    tag = conf["tag"]
-
             if key == "template":
                 pool, iocroot = _get_pool_and_iocroot()
                 old_location = f"{pool}/iocage/jails/{uuid}"
-                new_location = f"{pool}/iocage/templates/{old_tag}"
+                new_location = f"{pool}/iocage/templates/{uuid}"
 
                 if status:
                     iocage.lib.ioc_common.logit({
                         "level"  : "EXCEPTION",
-                        "message": f"{uuid} ({old_tag}) is running.\nPlease"
-                                   " stop it first!"
+                        "message": f"{uuid} is running.\nPlease stop it first!"
                     },
                         _callback=self.callback,
                         silent=self.silent)
 
-                jails, paths = iocage.lib.ioc_list.IOCList(
+                jails = iocage.lib.ioc_list.IOCList(
                     "uuid").list_datasets()
                 for j in jails:
                     _uuid = jails[j]
-                    _path = f"{paths[j]}/root"
+                    _path = f"{jails[j]}/root"
                     t_old_path = f"{old_location}/root@{_uuid}"
                     t_path = f"{new_location}/root@{_uuid}"
 
@@ -488,7 +480,7 @@ class IOCJson(object):
                         if _status:
                             iocage.lib.ioc_common.logit({
                                 "level"  : "EXCEPTION",
-                                "message": f"{uuid} ({old_tag}) is running.\n"
+                                "message": f"{uuid} is running.\n"
                                            "Please stop it first!"
                             },
                                 _callback=self.callback,
@@ -504,8 +496,7 @@ class IOCJson(object):
 
                         iocage.lib.ioc_common.logit({
                             "level"  : "INFO",
-                            "message": f"{uuid} ({old_tag}) converted to a"
-                                       " template."
+                            "message": f"{uuid} converted to a template."
                         },
                             _callback=self.callback,
                             silent=self.silent)
@@ -528,8 +519,7 @@ class IOCJson(object):
 
                         iocage.lib.ioc_common.logit({
                             "level"  : "INFO",
-                            "message": f"{uuid} ({old_tag}) converted to a"
-                                       " jail."
+                            "message": f"{uuid} converted to a jail."
                         },
                             _callback=self.callback,
                             silent=self.silent)
@@ -549,11 +539,6 @@ class IOCJson(object):
             },
                 _callback=self.callback,
                 silent=self.silent)
-
-            # Used for import
-            if not create_func:
-                if key == "tag":
-                    return tag
 
             # We can attempt to set a property in realtime to jail.
             if status:
@@ -602,7 +587,7 @@ class IOCJson(object):
     @staticmethod
     def json_get_version():
         """Sets the iocage configuration version."""
-        version = "7"
+        version = "8"
         return version
 
     def json_check_config(self, conf, default=False):
@@ -619,7 +604,7 @@ class IOCJson(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-        _, iocroot = _get_pool_and_iocroot()
+        pool, iocroot = _get_pool_and_iocroot()
 
         # Version 2 keys
         try:
@@ -646,7 +631,8 @@ class IOCJson(object):
                     freebsd_version = f"{iocroot}/releases/{conf['release']}" \
                                       "/root/bin/freebsd-version"
                 except FileNotFoundError:
-                    freebsd_version = f"{iocroot}/templates/{conf['tag']}" \
+                    freebsd_version = f"{iocroot}/templates/" \
+                                      f"{conf['host_hostuuid']}" \
                                       "/root/bin/freebsd-version"
                 except KeyError:
                     # At this point it should be a real misconfigured jail
@@ -695,11 +681,94 @@ class IOCJson(object):
         # Version 7 keys
         conf["depends"] = "none"
 
+        # Version 8 migration from TAG to renaming dataset
+        try:
+            tag = conf["tag"]
+            uuid = conf["host_hostuuid"]
+
+            # These are already good to go.
+            if tag != uuid:
+                date_fmt = "%Y-%m-%d@%H:%M:%S:%f"
+                date_fmt_legacy = "%Y-%m-%d@%H:%M:%S"
+
+                # We don't want to rename datasets to a bunch of dates.
+                try:
+                    datetime.datetime.strptime(tag, date_fmt)
+
+                    # For writing later
+                    tag = uuid
+                except ValueError:
+                    try:
+                        # This will fail the first, making sure one more time
+                        datetime.datetime.strptime(tag, date_fmt_legacy)
+
+                        # For writing later
+                        tag = uuid
+                    except ValueError:
+                        try:
+                            # Can't rename when the child is in a non-global
+                            #  zone
+                            self.zfs_set_property(
+                                f"{pool}/iocage/jails/{uuid}/data", "jailed",
+                                "off")
+                            self.zfs.get_dataset(
+                                f"{pool}/iocage/jails/{uuid}").rename(
+                                f"{pool}/iocage/jails/{tag}")
+                            # Can't rename when the child is in a non-global
+                            #  zone
+                            self.zfs_set_property(
+                                f"{pool}/iocage/jails/{tag}/data", "jailed",
+                                "on")
+
+                            # Easier.
+                            su.check_call(["zfs", "rename", "-r",
+                                           f"{pool}/iocage@{uuid}", f"@{tag}"])
+
+                            for line in fileinput.input(
+                                    f"{iocroot}/jails/{tag}/root/etc/rc.conf",
+                                    inplace=1):
+                                print(line.replace(f'hostname="{uuid}"',
+                                                   f'hostname="{tag}"').rstrip(
+                                ))
+                        except libzfs.ZFSException as err:
+                            print(err)
+                            # A template, already renamed to a TAG
+                            pass
+                conf["host_hostuuid"] = tag
+
+                if conf["host_hostname"] == uuid:
+                    # They may have set their own, we don't want to trample it.
+                    conf["host_hostname"] = tag
+        except KeyError:
+            # New jail creation
+            pass
+
         # Set all keys, even if it's the same value.
         conf["CONFIG_VERSION"] = self.json_get_version()
 
         if not default:
-            self.json_write(conf)
+            try:
+                self.json_write(conf)
+            except FileNotFoundError:
+                # Dataset was renamed.
+                self.location = f"{iocroot}/jails/{tag}"
+                self.json_write(conf)
+                messages = collections.OrderedDict([
+                    ("1-NOTICE", "*" * 80),
+                    ("2-WARNING", f"Jail: {uuid} was renamed to {tag}"),
+                    ("3-NOTICE", f"{'*' * 80}\n"),
+                    ("4-EXCEPTION", "Please issue your command again.")
+                ])
+
+                for level, msg in messages.items():
+                    level = level.partition("-")[2]
+
+                    iocage.lib.ioc_common.logit({
+                        "level"  : level,
+                        "message": msg
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
 
         return conf
 
@@ -787,7 +856,6 @@ class IOCJson(object):
             "shmsize"              : ("off", "on"),
             "wallclock"            : ("off", "on"),
             # Custom properties
-            "tag"                  : ("string",),
             "bpf"                  : ("off", "on"),
             "dhcp"                 : ("off", "on"),
             "boot"                 : ("off", "on"),
@@ -825,10 +893,10 @@ class IOCJson(object):
 
             if conf["template"] == "yes":
                 _type = "templates"
-                uuid = conf["tag"]  # I know, but it's easier this way.
             else:
                 _type = "jails"
-                uuid = conf["host_hostuuid"]
+
+            uuid = conf["host_hostuuid"]
 
             if key == "quota":
                 if value != "none" and not value.upper().endswith(("M", "G",
@@ -919,7 +987,6 @@ class IOCJson(object):
         pool, iocroot = _get_pool_and_iocroot()
         conf = self.json_load()
         uuid = conf["host_hostuuid"]
-        tag = conf["tag"]
         _path = self.zfs_get_property(f"{pool}/iocage/jails/{uuid}",
                                       "mountpoint")
 
@@ -939,8 +1006,8 @@ class IOCJson(object):
                 if len(_prop) > 1:
                     return iocage.lib.ioc_common.get_nested_key(settings, prop)
                 else:
-                    return iocage.lib.ioc_exec.IOCExec(prop_cmd, uuid, tag,
-                                                       _path).exec_jail()
+                    return iocage.lib.ioc_exec.IOCExec(prop_cmd,
+                                                       uuid, _path).exec_jail()
             else:
                 return settings
         except KeyError:
@@ -951,7 +1018,6 @@ class IOCJson(object):
         pool, iocroot = _get_pool_and_iocroot()
         conf = self.json_load()
         uuid = conf["host_hostuuid"]
-        tag = conf["tag"]
         _path = self.zfs_get_property(f"{pool}/iocage/jails/{uuid}",
                                       "mountpoint")
         status, _ = iocage.lib.ioc_list.IOCList().list_get_jid(uuid)
@@ -1003,7 +1069,7 @@ class IOCJson(object):
                 },
                     _callback=self.callback,
                     silent=self.silent)
-            iocage.lib.ioc_exec.IOCExec(prop_cmd, uuid, tag, _path).exec_jail()
+            iocage.lib.ioc_exec.IOCExec(prop_cmd, uuid, _path).exec_jail()
 
             if restart:
                 iocage.lib.ioc_common.logit({
@@ -1018,8 +1084,8 @@ class IOCJson(object):
                 },
                     _callback=self.callback,
                     silent=self.silent)
-                iocage.lib.ioc_exec.IOCExec(servicerestart, uuid, tag, _path
-                                            ).exec_jail()
+                iocage.lib.ioc_exec.IOCExec(servicerestart, uuid,
+                                            _path).exec_jail()
 
             iocage.lib.ioc_common.logit({
                 "level"  : "INFO",
