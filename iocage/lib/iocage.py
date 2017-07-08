@@ -479,7 +479,7 @@ class IOCage(object):
                                silent=self.silent).fetch_release()
 
         if clone:
-            _, clone_uuid, _ = self.__check_jail_existence__()
+            clone_uuid, _ = self.__check_jail_existence__()
             status, _ = self.list("jid", uuid=clone_uuid)
             if status:
                 ioc_common.logit({
@@ -519,7 +519,7 @@ class IOCage(object):
         except RuntimeError:
             raise
 
-        return
+        return False, None
 
     def destroy_release(self, download=False):
         """Destroy supplied RELEASE and the download dataset if asked"""
