@@ -33,7 +33,7 @@ require_zpool = pytest.mark.require_zpool
 @require_root
 @require_zpool
 def test_stop():
-    jails = ["test", "test_short"]
+    jails = ["771ec0cf-afdd-455d-9245-4a890e228325", "dfb013e5"]
     runner = CliRunner()
 
     for jail in jails:
