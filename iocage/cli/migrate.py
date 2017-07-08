@@ -22,6 +22,7 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """migrate module for the cli."""
+import datetime
 import fileinput
 import os
 import shutil
@@ -45,7 +46,8 @@ __rootcmd__ = True
               help="Delete the old dataset after it has been migrated.")
 def cli(force, delete):
     """Migrates all the iocage_legacy develop basejails to clone jails."""
-    jails, paths = ioc_list.IOCList("uuid").list_datasets()
+    # TODO: Move to API
+    jails = ioc_list.IOCList("uuid").list_datasets()
 
     if not force:
         ioc_common.logit({
@@ -59,13 +61,19 @@ def cli(force, delete):
         if not click.confirm("\nAre you sure?"):
             exit()
 
-    for tag, uuid in jails.items():
+    for uuid, path in jails.items():
         pool = ioc_json.IOCJson().json_get_value("pool")
         iocroot = ioc_json.IOCJson(pool).json_get_value("iocroot")
         jail = f"{pool}/iocage/jails/{uuid}"
         jail_old = f"{pool}/iocage/jails_old/{uuid}"
-        path = paths[tag]
         conf = ioc_json.IOCJson(path).json_load()
+
+        try:
+            tag = conf["tag"]
+        except KeyError:
+            # These are actually NEW jails.
+            continue
+
         release = conf["cloned_release"]
 
         if conf["type"] == "basejail":
@@ -84,9 +92,20 @@ def cli(force, delete):
             except OSError:
                 pass
 
+            date_fmt_legacy = "%Y-%m-%d@%H:%M:%S"
+
+            # We don't want to rename datasets to a bunch of dates.
+            try:
+                datetime.datetime.strptime(tag, date_fmt_legacy)
+                _name = str(uuid.uuid4())
+            except ValueError:
+                # They already named this jail, making it like our new ones.
+                _name = tag
+
             new_uuid = ioc_create.IOCCreate(release, "", 0, None, migrate=True,
                                             config=conf,
-                                            silent=True).create_jail()
+                                            silent=True,
+                                            uuid=_name).create_jail()
             new_prop = ioc_json.IOCJson(f"{iocroot}/jails/{new_uuid}",
                                         silent=True).json_set_value
             new_prop(f"host_hostname={new_uuid}")
@@ -96,7 +115,7 @@ def cli(force, delete):
 
             ioc_common.logit({
                 "level"  : "INFO",
-                "message": f"Copying files for {uuid} ({tag}), please wait..."
+                "message": f"Copying files for {new_uuid}, please wait..."
             })
 
             ioc_common.copytree(f"{iocroot}/jails_old/{uuid}/root",
@@ -107,11 +126,8 @@ def cli(force, delete):
                         f"{iocroot}/jails/{new_uuid}/fstab")
             for line in fileinput.input(f"{iocroot}/jails/{new_uuid}/root/etc/"
                                         "rc.conf", inplace=1):
-                ioc_common.logit({
-                    "level"  : "INFO",
-                    "message": line.replace(f'hostname="{uuid}"',
-                                            f'hostname="{new_uuid}"').rstrip()
-                })
+                print(line.replace(f'hostname="{uuid}"',
+                                   f'hostname="{new_uuid}"').rstrip())
 
             if delete:
                 try:
@@ -129,8 +145,7 @@ def cli(force, delete):
                     # We just want the top level dataset gone, no big deal.
                     pass
 
-                    ioc_common.logit({
-                        "level"  : "INFO",
-                        "message": f"{uuid} ({tag}) migrated to {new_uuid}"
-                                   f" ({tag})!\n"
-                    })
+            ioc_common.logit({
+                "level"  : "INFO",
+                "message": f"{uuid} ({tag}) migrated to {new_uuid}!\n"
+            })
