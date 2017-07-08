@@ -64,8 +64,7 @@ def validate_count(ctx, param, value):
               help="Specify a JSON file which manages the installation of"
                    " each package in the newly created jail.")
 @click.option("--name", "-n", default=None,
-              help="Provide a specific name and tag instead of an UUID for"
-                   " this jail.")
+              help="Provide a specific name instead of an UUID for this jail.")
 @click.option("--uuid", "-u", "_uuid", default=None,
               help="Provide a specific UUID for this jail.")
 @click.option("--basejail", "-b", is_flag=True, default=False,
@@ -91,17 +90,6 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
                 "message": f"Invalid character in {name}, please remove it."
             })
 
-        _props = []
-        if f"tag={name}" not in props:
-            _props.append(f"tag={name}")
-
-        for prop in props:
-            replace = f"tag={name}"
-            prop = re.sub(r"tag=.*", replace, prop)
-            _props.append(prop)
-
-        props = tuple(_props)
-
         # At this point we don't care
         _uuid = name
 
@@ -110,23 +98,6 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
             "level"  : "EXCEPTION",
             "message": "Please supply a valid RELEASE!"
         })
-
-    if template:
-        try:
-            uuid.UUID(template, version=4)
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": "Template creation only supports TAGs!"
-            })
-        except ValueError:
-            if not force:
-                ioc_common.logit({
-                    "level"  : "WARNING",
-                    "message": "This may be a short UUID, "
-                               "template creation only supports TAGs"
-                })
-                if not click.confirm("\nProceed?"):
-                    exit()
 
     # We don't really care it's not a RELEASE at this point.
     release = template if template else release
@@ -164,30 +135,26 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
 
     iocage = ioc.IOCage(skip_jails=True)
 
-    if count == 1:
-        err, msg = iocage.create(release, props, pkglist=pkglist,
-                                 template=template, short=short,
-                                 uuid=_uuid, basejail=basejail,
-                                 empty=empty)
-        if err:
+    try:
+        iocage.create(release, props, count, pkglist=pkglist,
+                      template=template, short=short, _uuid=_uuid,
+                      basejail=basejail, empty=empty)
+    except RuntimeError as err:
+        if template:
+            # We want to list the available templates first
             ioc_common.logit({
                 "level"  : "ERROR",
-                "message": msg
+                "message": f"Template: {release} not found!"
             })
-
-            if template:
+            templates = ioc.IOCage().list("template")
+            for temp in templates:
                 ioc_common.logit({
-                    "level"  : "INFO",
-                    "message": "Created Templates:"
+                    "level"  : "EXCEPTION",
+                    "message": f"Created Templates:\n  {temp[1]}"
                 })
-                templates = ioc.IOCage().list("template")
-                for temp in templates:
-                    ioc_common.logit({
-                        "level"  : "INFO",
-                        "message": f"  {temp[3]}"
-                    })
-                exit(1)
-    else:
-        iocage.create(release, props, count, pkglist=pkglist,
-                      template=template, short=short, uuid=_uuid,
-                      basejail=basejail, empty=empty)
+        else:
+            # Standard errors
+            ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": err
+            })
