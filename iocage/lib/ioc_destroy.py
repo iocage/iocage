@@ -57,16 +57,20 @@ class IOCDestroy(object):
                 if dataset.type == libzfs.DatasetType.FILESYSTEM:
                     _path = dataset.properties["mountpoint"].value.replace(
                         "/root", "")
+                    # It gives us a string that says "none", not terribly
+                    # useful, fixing that.
+                    _path = _path if _path != "none" else None
 
                     if dataset.name.endswith(uuid) or root:
-                        conf = iocage.lib.ioc_json.IOCJson(_path).json_load()
-                        iocage.lib.ioc_stop.IOCStop(uuid, "", _path, conf,
-                                                    silent=True)
+                        if _path is not None:
+                            conf = iocage.lib.ioc_json.IOCJson(
+                                _path).json_load()
+                            iocage.lib.ioc_stop.IOCStop(uuid, _path, conf,
+                                                        silent=True)
 
     def __destroy_leftovers__(self, dataset, clean=False):
-        """Removes tags, parent datasets and logs."""
+        """Removes parent datasets and logs."""
         uuid = dataset.name.rsplit("/root")[0].split("/")[-1]
-        tags = f"{self.iocroot}/tags"
         snapshot = False
 
         try:
@@ -85,27 +89,9 @@ class IOCDestroy(object):
             snapshot = True
 
         if path:
-            path = path.replace("/root", "")
-
-            if "templates" in path and clean:
-                for file in glob.glob(f"{tags}/*"):
-                    if os.readlink(file) == f"{self.iocroot}/jails/" \
-                                            f"{uuid}" or file == \
-                            f"{self.iocroot}/tags/{uuid}":
-                        os.remove(file)
-            elif "jails" in path and clean:
-                shutil.rmtree(f"{self.iocroot}/tags", ignore_errors=True)
-                os.mkdir(f"{self.iocroot}/tags")
-
-                shutil.rmtree(f"{self.iocroot}/log", ignore_errors=True)
-            else:
-                for file in glob.glob(f"{tags}/*"):
-                    if os.readlink(file) == path:
-                        os.remove(file)
-
-                for file in glob.glob(f"{self.iocroot}/log/*"):
-                    if file == f"{self.iocroot}/log/{uuid}-console.log":
-                        os.remove(file)
+            for file in glob.glob(f"{self.iocroot}/log/*"):
+                if file == f"{self.iocroot}/log/{uuid}-console.log":
+                    os.remove(file)
 
             # Dangling mounts are bad...mmkay?
             su.Popen(["umount", "-afF", f"{umount_path}/fstab"],
@@ -209,7 +195,7 @@ class IOCDestroy(object):
         else:
             try:
                 conf = iocage.lib.ioc_json.IOCJson(path).json_load()
-                iocage.lib.ioc_stop.IOCStop(uuid, "", path, conf, silent=True)
+                iocage.lib.ioc_stop.IOCStop(uuid, path, conf, silent=True)
             except (FileNotFoundError, RuntimeError, libzfs.ZFSException):
                 # Broad exception as we don't care why this failed. iocage
                 # may have been killed before configuration could be made,
