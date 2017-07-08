@@ -43,11 +43,11 @@ class IOCImage(object):
         self.callback = callback
         self.silent = silent
 
-    def export_jail(self, uuid, tag, path):
+    def export_jail(self, uuid, path):
         """Make a recursive snapshot of the jail and export to a file."""
         images = f"{self.iocroot}/images"
         name = f"{uuid}_{self.date}"
-        image = f"{images}/{name}_{tag}"
+        image = f"{images}/{name}"
         export_type, jail_name = path.rsplit('/', 2)[-2:]
         image_path = f"{self.pool}/iocage/{export_type}/{jail_name}"
         jail_list = []
@@ -62,11 +62,10 @@ class IOCImage(object):
         except su.CalledProcessError as err:
             raise RuntimeError(f"{err.output.decode('utf-8').rstrip()}")
 
-        datasets = su.Popen(["zfs", "list", "-H", "-r",
-                             "-o", "name", image_path],
-                            stdout=su.PIPE, stderr=su.PIPE).communicate()[
-            0].decode(
-            "utf-8").split()
+        datasets = su.Popen([
+            "zfs", "list", "-H", "-r", "-o", "name", image_path],
+            stdout=su.PIPE,
+            stderr=su.PIPE).communicate()[0].decode("utf-8").split()
 
         for dataset in datasets:
             if dataset.split("/")[-1] == jail_name:
@@ -137,22 +136,14 @@ class IOCImage(object):
         """Import from an iocage export."""
         image_dir = f"{self.iocroot}/images"
         exports = os.listdir(image_dir)
-        uuid_matches = fnmatch.filter(exports, f"{jail}*.zip")
-        tag_matches = fnmatch.filter(exports, f"*{jail}.zip")
-
-        # We want to allow the user some flexibility.
-        if uuid_matches:
-            matches = uuid_matches
-        else:
-            matches = tag_matches
+        matches = fnmatch.filter(exports, f"{jail}*.zip")
 
         if len(matches) == 1:
             image_target = f"{image_dir}/{matches[0]}"
             uuid = matches[0].rsplit("_")[0]
-            date = matches[0].rsplit("_")[1]
-            tag = matches[0].replace(".zip", "").rsplit("-", 1)[-1][3:]
+            date = matches[0].rsplit("_")[1].strip(".zip")
         elif len(matches) > 1:
-            msg = f"Multiple exports found for {jail}:"
+            msg = f"Multiple images found for {jail}:"
 
             for j in sorted(matches):
                 msg += f"\n  {j}"
@@ -163,25 +154,16 @@ class IOCImage(object):
 
         with zipfile.ZipFile(image_target, "r") as _import:
             for z in _import.namelist():
-                # Split on date, cut out the days, and split the tag/dataset
-                #  out
-                z_dataset = z.rsplit("-", 1)[-1][3:].rsplit("_", 2)[-3:]
-                z_dataset = "_".join(z_dataset)
-                z_dataset_type = z_dataset.rsplit("_root", 1)[-1]
+                # Split the children dataset out
+                z_dataset_type = z.split("_", 1)[-1]
+                z_dataset_type = z_dataset_type.partition("_")[2]
+                z_dataset_type =\
+                    f"{uuid}/{z_dataset_type.replace('_', '/')}".rstrip("/")
 
-                # Nicer progress and needed for proper import of each dataset.
-                if not z_dataset_type:
-                    z_dataset_type = "root"
-                elif z_dataset_type == f"{tag}_data":
-                    z_dataset_type = "data"
-                elif z_dataset_type != f"{tag}_data" and z_dataset_type != tag:
-                    z_dataset_type = f"root{z_dataset_type}".replace("_", "/")
+                cmd = ["zfs", "recv", "-F",
+                       f"{self.pool}/iocage/jails/{z_dataset_type}"]
 
-                _z = f"{uuid}/{z_dataset_type}" if z_dataset_type != tag \
-                    else uuid
-                cmd = ["zfs", "recv", "-F", f"{self.pool}/iocage/jails/{_z}"]
-
-                msg = f"Importing dataset: {_z}"
+                msg = f"Importing dataset: {z_dataset_type}"
                 iocage.lib.ioc_common.logit({
                     "level"  : "INFO",
                     "message": msg
@@ -210,14 +192,10 @@ class IOCImage(object):
         iocage.lib.ioc_json.IOCJson(f"{self.iocroot}/jails/{uuid}",
                                     silent=True).json_set_value("type=jail")
         iocage.lib.ioc_json.IOCJson(f"{self.iocroot}/jails/{uuid}",
-                                    silent=True).json_set_value("template=no"
-                                                                "",
+                                    silent=True).json_set_value("template=no",
                                                                 _import=True)
-        tag = iocage.lib.ioc_json.IOCJson(f"{self.iocroot}/jails/{uuid}",
-                                          silent=True).json_set_value(
-            f"tag={tag}")
 
-        msg = f"\nImported: {uuid} ({tag})"
+        msg = f"\nImported: {uuid}"
         iocage.lib.ioc_common.logit({
             "level"  : "INFO",
             "message": msg
