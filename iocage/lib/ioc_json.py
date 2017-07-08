@@ -706,23 +706,31 @@ class IOCJson(object):
                         tag = uuid
                     except ValueError:
                         try:
-                            # Can't rename when the child is in a non-global
-                            #  zone
-                            self.zfs_set_property(
-                                f"{pool}/iocage/jails/{uuid}/data", "jailed",
-                                "off")
+                            try:
+                                # Can't rename when the child is
+                                # in a non-global zone
+                                self.zfs_set_property(
+                                    f"{pool}/iocage/jails/{uuid}/data",
+                                    "jailed", "off")
+                            except libzfs.ZFSException:
+                                # No data dataset exists
+                                pass
+
                             self.zfs.get_dataset(
                                 f"{pool}/iocage/jails/{uuid}").rename(
                                 f"{pool}/iocage/jails/{tag}")
-                            # Can't rename when the child is in a non-global
-                            #  zone
-                            self.zfs_set_property(
-                                f"{pool}/iocage/jails/{tag}/data", "jailed",
-                                "on")
 
                             # Easier.
                             su.check_call(["zfs", "rename", "-r",
                                            f"{pool}/iocage@{uuid}", f"@{tag}"])
+
+                            try:
+                                self.zfs_set_property(
+                                    f"{pool}/iocage/jails/{tag}/data",
+                                    "jailed", "on")
+                            except libzfs.ZFSException:
+                                # No data dataset exists
+                                pass
 
                             for line in fileinput.input(
                                     f"{iocroot}/jails/{tag}/root/etc/rc.conf",
@@ -730,10 +738,10 @@ class IOCJson(object):
                                 print(line.replace(f'hostname="{uuid}"',
                                                    f'hostname="{tag}"').rstrip(
                                 ))
-                        except libzfs.ZFSException as err:
-                            print(err)
+                        except libzfs.ZFSException:
                             # A template, already renamed to a TAG
                             pass
+
                 conf["host_hostuuid"] = tag
 
                 if conf["host_hostname"] == uuid:
