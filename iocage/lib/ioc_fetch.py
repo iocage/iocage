@@ -558,7 +558,7 @@ class IOCFetch(object):
                             if hashes[f] != sha256.hexdigest():
                                 if not _missing:
                                     iocage.lib.ioc_common.logit({
-                                        "level"  : "INFO",
+                                        "level"  : "WARNING",
                                         "message": f"{f} failed verification,"
                                                    " will redownload!"
                                     },
@@ -727,7 +727,7 @@ class IOCFetch(object):
             member = self.__fetch_extract_remove__(f)
             f.extractall(dest, members=member)
 
-    def fetch_update(self, cli=False, uuid=None, tag=None):
+    def fetch_update(self, cli=False, uuid=None):
         """This calls 'freebsd-update' to update the fetched RELEASE."""
         if cli:
             cmd = ["mount", "-t", "devfs", "devfs",
@@ -737,7 +737,7 @@ class IOCFetch(object):
             iocage.lib.ioc_common.logit({
                 "level"  : "INFO",
                 "message":
-                    f"\n* Updating {uuid} ({tag}) to the latest patch "
+                    f"\n* Updating {uuid} to the latest patch "
                     f"level... "
             },
                 _callback=self.callback,
@@ -870,16 +870,15 @@ class IOCFetch(object):
         self.release = conf['release']
         self.__fetch_plugin_inform__(conf, num, plugins, accept_license)
         props, pkg = self.__fetch_plugin_props__(conf, props, num)
-        jail_uuid = str(uuid.uuid4())
-        location = f"{self.iocroot}/jails/{jail_uuid}"
+        jail_name = conf["name"]
+        location = f"{self.iocroot}/jails/{jail_name}"
 
         try:
-            tag, jaildir, _conf, repo_dir = self.__fetch_plugin_create__(
-                props, jail_uuid)
-            self.__fetch_plugin_install_packages__(jail_uuid, tag, jaildir,
-                                                   conf, _conf, pkg, props,
-                                                   repo_dir)
-            self.__fetch_plugin_post_install__(conf, _conf, jaildir, jail_uuid)
+            jaildir, _conf, repo_dir = self.__fetch_plugin_create__(props,
+                                                                    jail_name)
+            self.__fetch_plugin_install_packages__(jail_name, jaildir, conf,
+                                                   _conf, pkg, props, repo_dir)
+            self.__fetch_plugin_post_install__(conf, _conf, jaildir, jail_name)
         except KeyboardInterrupt:
             iocage.lib.ioc_destroy.IOCDestroy().destroy_jail(location)
             sys.exit(1)
@@ -1006,24 +1005,12 @@ class IOCFetch(object):
                                 '"')
 
         # We set our properties that we need, and then iterate over the user
-        # supplied properties replacing ours. Finally we add _1, _2 etc to
-        # the tag with the final iteration if the user supplied count.
+        # supplied properties replacing ours.
         create_props = [f"cloned_release={self.release}",
                         f"release={release}", "type=plugin", "boot=on"]
 
-        # If the user supplied a tag, we shouldn't add ours.
-        if "tag" not in [p.split("=")[0] for p in props]:
-            _tag = f"tag={conf['name']}"
-            create_props += [_tag]
-        else:
-            for p in props:
-                _p = p.split("=")[0]
-                _tag = p if _p == "tag" else ""
-
         create_props = [f"{k}={v}" for k, v in
                         (p.split("=") for p in props)] + create_props
-        create_props = [f"{k}_{num}" if k == f"{_tag}" and num != 0 else k
-                        for k in create_props]
 
         return create_props, pkg_repos
 
@@ -1035,7 +1022,6 @@ class IOCFetch(object):
         repo_dir = f"{jaildir}/root/usr/local/etc/pkg/repos"
         path = f"{self.pool}/iocage/jails/{uuid}"
         _conf = iocage.lib.ioc_json.IOCJson(jaildir).json_load()
-        tag = _conf["tag"]
 
         # We do this test again as the user could supply a malformed IP to
         # fetch that bypasses the more naive check in cli/fetch
@@ -1056,13 +1042,13 @@ class IOCFetch(object):
             iocage.lib.ioc_destroy.IOCDestroy().destroy_jail(path)
             raise RuntimeError()
 
-        return tag, jaildir, _conf, repo_dir
+        return jaildir, _conf, repo_dir
 
-    def __fetch_plugin_install_packages__(self, uuid, tag, jaildir, conf,
+    def __fetch_plugin_install_packages__(self, uuid, jaildir, conf,
                                           _conf, pkg_repos, create_props,
                                           repo_dir):
         """Attempts to start the jail and install the packages"""
-        iocage.lib.ioc_start.IOCStart(uuid, tag, jaildir, _conf, silent=True)
+        iocage.lib.ioc_start.IOCStart(uuid, jaildir, _conf, silent=True)
         kmods = conf.get("kmods", {})
 
         for kmod in kmods:
@@ -1141,8 +1127,7 @@ fingerprint: {fingerprint}
         err = iocage.lib.ioc_create.IOCCreate(
             self.release, create_props, 0, pkglist=conf[
                 "pkgs"], silent=True).create_install_packages(
-            uuid, jaildir, tag, _conf, repo=conf["packagesite"],
-            site=repo_name)
+            uuid, jaildir, _conf, repo=conf["packagesite"], site=repo_name)
 
         if err:
             iocage.lib.ioc_common.logit({
@@ -1207,11 +1192,9 @@ fingerprint: {fingerprint}
                     silent=self.silent)
 
                 command = ["sh", "/root/post_install.sh"]
-                msg, err = iocage.lib.ioc_exec.IOCExec(command, uuid,
-                                                       conf["name"],
-                                                       jaildir,
-                                                       skip=True,
-                                                       plugin=True).exec_jail()
+                msg, err = iocage.lib.ioc_exec.IOCExec(command, uuid, jaildir,
+                                                       plugin=True,
+                                                       skip=True).exec_jail()
                 iocage.lib.ioc_common.logit({
                     "level"  : "INFO",
                     "message": msg
