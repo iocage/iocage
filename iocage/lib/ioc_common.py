@@ -61,7 +61,7 @@ def callback(log):
             raise RuntimeError(log['message'])
         else:
             lgr.error(log['message'])
-            raise SystemExit(log['message'])
+            raise SystemExit()
 
 
 def logit(content, _callback=None, silent=False):
@@ -100,14 +100,13 @@ def ioc_sort(caller, s_type, data=None):
         s_type = s_type.lower()
     except AttributeError:
         # When a failed template is attempted, it will set s_type to None.
-        s_type = "tag"
+        s_type = "name"
 
     sort_funcs = {
         "jid"     : sort_jid,
-        "uuid"    : sort_uuid,
+        "name"    : sort_name,
         "boot"    : sort_boot,
         "state"   : sort_state,
-        "tag"     : sort_tag,
         "type"    : sort_type,
         "release" : sort_release,
         "ip4"     : sort_ip,
@@ -120,10 +119,10 @@ def ioc_sort(caller, s_type, data=None):
         "ava"     : sort_ava
     }
 
-    list_full_sorts = ["jid", "uuid", "boot", "state", "tag", "type",
+    list_full_sorts = ["jid", "name", "boot", "state", "type",
                        "release", "ip4", "ip6", "template"]
-    list_short_sorts = ["jid", "uuid", "state", "tag", "release", "ip4"]
-    df_sorts = ["uuid", "crt", "res", "qta", "use", "ava", "tag"]
+    list_short_sorts = ["jid", "name", "state", "release", "ip4"]
+    df_sorts = ["name", "crt", "res", "qta", "use", "ava"]
 
     if caller == "list_full" and s_type not in list_full_sorts:
         raise_sort_error(list_full_sorts)
@@ -226,11 +225,11 @@ def sort_jid(jid):
     return jid[0] if jid[0] != "-" else "a"
 
 
-def sort_uuid(uuid):
+def sort_name(name):
     """Sort the list by UUID."""
-    list_length = len(uuid)
+    list_length = len(name)
 
-    return uuid[1] if list_length != 7 else uuid[0]
+    return name[1] if list_length != 7 else name[0]
 
 
 def sort_template(template):
@@ -241,35 +240,6 @@ def sort_template(template):
     _template = template[9] if template[9] != "-" else "z" * 999999
 
     return sort_name(_template)
-
-
-def sort_tag(tag):
-    """Helper function for tags to be sorted in sort_name"""
-    # Length 10 is list -l, 7 is df, 6 is list
-    list_length = len(tag)
-
-    if list_length == 10:
-        _tag = tag[4]
-    elif list_length == 7:
-        _tag = tag[6]
-    elif list_length == 6:
-        _tag = tag[3]
-    else:
-        _tag = tag[1]
-
-    return sort_name(_tag)
-
-
-def sort_name(name):
-    """Sort the list by name."""
-    _sort = name.rsplit('_', 1)
-
-    # We want to sort names that have been created with count > 1. But not
-    # foo_bar
-    if len(_sort) > 1 and _sort[1].isdigit():
-        return _sort[0], int(_sort[1])
-    else:
-        return name, 0
 
 
 def sort_release(releases, split=False):
