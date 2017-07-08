@@ -41,36 +41,36 @@ def test_list(release, hardened):
         release = re.sub(r"\W\w.", "-", release)
 
     if hardened:
+        # This has a couple less spaces than on vanilla FreeBSD.
         result_output = \
-            '+-----+----------+-------+---------------+-----------+-----+\n' \
-            '| JID |   UUID   | STATE |      TAG      |  RELEASE  | IP4 ' \
-            '|\n+=====+==========+=======+===============+===========+=====+' \
-            f'\n| -   | 771ec0cf | down  | newtest       | {release} | -   |' \
-            '\n+-----+----------+-------+---------------+-----------+-----+' \
-            f'\n| -   | dfb013e5 | down  | newtest_short | {release} | -   |' \
-            '\n+-----+----------+-------+---------------+-----------+-----+\n'
+            '+-----+----------+-------+-----------+-----+\n' \
+            '| JID |   NAME   | STATE |  RELEASE  | IP4 |\n' \
+            '+=====+==========+=======+===========+=====+\n' \
+            f'| -   | 771ec0cf | down  | {release} | -   |\n' \
+            '+-----+----------+-------+-----------+-----+\n' \
+            f'| -   | dfb013e5 | down  | {release} | -   |\n' \
+            '+-----+----------+-------+-----------+-----+\n'
 
         result_release_header_output = \
             '+---------------+\n| Bases fetched ' \
             f'|\n+===============+\n| {release}     |\n+---------------+\n'
     else:
         result_output = \
-            '+-----+----------+-------+---------------+--------------+-----+' \
-            '\n| JID |   UUID   | STATE |      TAG      |   RELEASE    | IP4' \
-            ' |\n+=====+==========+=======+===============+==============+' \
-            f'=====+\n| -   | 771ec0cf | down  | newtest       | {release} |' \
-            ' -   |\n+-----+----------+-------+---------------+-------------' \
-            f'-+-----+\n| -   | dfb013e5 | down  | newtest_short | {release}' \
-            ' | -   |\n+-----+----------+-------+---------------+-----------' \
-            '---+-----+\n'
+            '+-----+----------+-------+--------------+-----+\n' \
+            '| JID |   NAME   | STATE |   RELEASE    | IP4 |' \
+            '\n+=====+==========+=======+==============+=====+\n' \
+            f'| -   | 771ec0cf | down  | {release} | -   |\n' \
+            '+-----+----------+-------+--------------+-----+\n' \
+            f'| -   | dfb013e5 | down  | {release} | -   |\n' \
+            '+-----+----------+-------+--------------+-----+\n'
 
         result_release_header_output = \
             '+---------------+\n| Bases fetched |\n+===============+\n' \
             f'| {release}  |\n+---------------+\n'
 
-    result_noheader_output = f'-\t771ec0cf\tdown\tnewtest\t{release}\t-\n' \
-                             f'-\tdfb013e5\tdown\tnewtest_short\t{release}' \
-                             '\t-\n'
+    result_noheader_output = f'-\t771ec0cf\tdown\t{release}\t-\n' \
+                             f'-\tdfb013e5\tdown\t{release}\t-\n'
+
     result_release_noheader_output = f'{release}\n'
 
     result_header = runner.invoke(ioc.cli, ["list"])
