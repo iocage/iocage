@@ -33,12 +33,11 @@ import iocage.lib.ioc_start
 class IOCExec(object):
     """Run jexec with a user inside the specified jail."""
 
-    def __init__(self, command, uuid, tag, path, host_user="root",
-                 jail_user=None, plugin=False, skip=False, console=False,
-                 silent=False, callback=None):
+    def __init__(self, command, uuid, path, host_user="root", jail_user=None,
+                 plugin=False, skip=False, console=False, silent=False,
+                 callback=None):
         self.command = command
         self.uuid = uuid
-        self.tag = tag
         self.path = path
         self.host_user = host_user
         self.jail_user = jail_user
@@ -63,21 +62,19 @@ class IOCExec(object):
             if not self.plugin and not self.skip:
                 iocage.lib.ioc_common.logit({
                     "level"  : "INFO",
-                    "message": f"{self.uuid} ({self.tag}) is not running,"
-                               " starting jail"
+                    "message": f"{self.uuid} is not running, starting jail"
                 },
                     _callback=self.callback,
                     silent=self.silent)
 
             if conf["type"] in ("jail", "plugin"):
-                iocage.lib.ioc_start.IOCStart(self.uuid, self.tag, self.path,
-                                              conf,
+                iocage.lib.ioc_start.IOCStart(self.uuid, self.path, conf,
                                               silent=True)
             elif conf["type"] == "basejail":
                 iocage.lib.ioc_common.logit({
                     "level"  : "EXCEPTION",
                     "message": "Please run \"iocage migrate\" before trying"
-                               f" to start {self.uuid} ({self.tag})"
+                               f" to start {self.uuid}"
                 },
                     _callback=self.callback,
                     silent=self.silent)
@@ -85,7 +82,7 @@ class IOCExec(object):
                 iocage.lib.ioc_common.logit({
                     "level"  : "EXCEPTION",
                     "message": "Please convert back to a jail before trying"
-                               f" to start {self.uuid} ({self.tag})"
+                               f" to start {self.uuid}"
                 },
                     _callback=self.callback,
                     silent=self.silent)
