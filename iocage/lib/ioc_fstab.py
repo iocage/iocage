@@ -36,14 +36,12 @@ import iocage.lib.ioc_list
 class IOCFstab(object):
     """Will add or remove an entry, and mount or umount the filesystem."""
 
-    def __init__(self, uuid, tag, action, source, destination, fstype,
-                 fsoptions, fsdump, fspass, index=None, silent=False,
-                 callback=None):
+    def __init__(self, uuid, action, source, destination, fstype, fsoptions,
+                 fsdump, fspass, index=None, silent=False, callback=None):
         self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage.lib.ioc_json.IOCJson(self.pool).json_get_value(
             "iocroot")
         self.uuid = uuid
-        self.tag = tag
         self.action = action
         self.src = source
         self.dest = destination
@@ -90,8 +88,7 @@ class IOCFstab(object):
 
         iocage.lib.ioc_common.logit({
             "level"  : "INFO",
-            "message": f"Successfully added mount to {self.uuid}"
-                       f" ({self.tag})'s fstab"
+            "message": f"Successfully added mount to {self.uuid}'s fstab"
         },
             _callback=self.callback,
             silent=self.silent)
@@ -123,7 +120,7 @@ class IOCFstab(object):
             iocage.lib.ioc_common.logit({
                 "level"  : "INFO",
                 "message": f"Successfully removed mount from {self.uuid}"
-                           f" ({self.tag})'s fstab"
+                           "'s fstab"
             },
                 _callback=self.callback,
                 silent=self.silent)
