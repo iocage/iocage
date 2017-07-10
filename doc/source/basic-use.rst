@@ -93,7 +93,7 @@ Here is an example of creating a normal jail from the *11.0-RELEASE*:
 
 This normal jail is a clone of the specified RELEASE.
 
-To create a multiple jails, use the **-c** option:
+To create multiple jails, use the **-c** option:
 
 :samp:`# iocage create -r 11.0-RELEASE -c 2`
 
