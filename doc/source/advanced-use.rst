@@ -81,6 +81,9 @@ To clone a jail, run:
 
 :command:`iocage clone [UUID|NAME] --name [testupdate]`
 
+.. note:: The **--name** flag is optional. :command:`iocage` assigns a
+   new UUID to the clone regardless of **--name** usage.
+
 .. index:: Upgrade Jails
 .. _Upgrading Jails:
 
@@ -179,11 +182,11 @@ space, as only changing data is recorded.
 
 List snapshots for a jail:
 
-:command:`iocage snaplist [UUID|TAG]`
+:command:`iocage snaplist [UUID|NAME]`
 
 Create a new snapshot:
 
-:command:`iocage snapshot [UUID|TAG]`
+:command:`iocage snapshot [UUID|NAME]`
 
 This creates a snapshot based on the current time.
 
@@ -279,28 +282,6 @@ Double check the jail's current limits to confirm the functionality:
 
 :samp:`# iocage limits testjail`
 
-.. index:: Reset Jail Properties
-.. _Reset Jail Properties:
-
-Reset Jail Properties
-+++++++++++++++++++++
-
-:command:`iocage` easily allows resetting jail properties back to the
-defaults!
-
-To reset to defaults:
-
-:command:`iocage reset [UUID | TAG]`
-
-You can also reset every jail to the default properties:
-
-:command:`iocage reset ALL`
-
-Resetting a jail retains the jail's UUID and TAG. All other non-standard
-settings are lost. Be sure to reset any needed custom properties. If
-anything is set by :command:`iocage set [PROPERTY] default`, there is
-nothing else required!
-
 .. index:: Automatic Package Installation
 .. _Automatic Package Installation:
 
@@ -320,13 +301,20 @@ Create a :file:`pkgs.json` file and add package names to it.
 
 :file:`pkgs.json`:
 
-.. code-block:: none
+.. code-block:: json
 
-   nginx
-   tmux
+   {
+       "pkgs": [
+       "nginx",
+       "tmux"
+       ]
+   }
 
 Now, create a jail and supply :file:`pkgs.json`:
 
 :command:`iocage create -r [RELEASE] -p [path-to/pkgs.json] -n [NAME]`
+
+.. note:: The **-n** flag is optional. A UUID is assigned to the new
+   jail regardless of its use.
 
 This installs **nginx** and **tmux** in the newly created jail.
