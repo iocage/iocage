@@ -34,16 +34,16 @@ class JailConfigResolver(list):
 
     if self.method == "copy":
       shutil.copy(self.conf_file_path, remote_path)
-      print("resolv.conf copied from host")
+      #print("resolv.conf copied from host")
 
     elif self.method == "manual":
       with open(remote_path, "w") as f:
         f.write("\n".join(self))
         f.close()
-      print("resolv.conf written manually")
+      #print("resolv.conf written manually")
 
-    else:
-      print("resolv.conf not touched")
+    #else:
+    #  print("resolv.conf not touched")
 
   def update(self, value=None, notify=True):
     value = value if value != None else self.value
