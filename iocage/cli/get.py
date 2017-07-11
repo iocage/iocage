@@ -62,7 +62,7 @@ def cli(prop, _all, _pool, jail, recursive, header, plugin):
         })
         exit()
     else:
-        if not jail:
+        if not jail and not recursive:
             ioc_common.logit({
                 "level"  : "EXCEPTION",
                 "message": "You must specify a jail!"

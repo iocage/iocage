@@ -849,9 +849,7 @@ class IOCage(object):
         else:
             jail_list = []
 
-            for j in self.jails:
-                uuid = self.jails[j]
-                path = self._paths[j]
+            for uuid, path in self.jails.items():
                 try:
                     if prop == "state":
                         status, _ = self.list("jid", uuid=uuid)
@@ -861,15 +859,15 @@ class IOCage(object):
                         else:
                             state = "down"
 
-                        jail_list.append([uuid, j, state])
+                        jail_list.append([uuid, state])
                     elif prop == "all":
                         props = ioc_json.IOCJson(path).json_get_value(prop)
 
                         for p, v in props.items():
-                            jail_list.append([uuid, j, f"{p}:{v}"])
+                            jail_list.append([uuid, f"{p}:{v}"])
                     else:
                         jail_list.append(
-                            [uuid, j, ioc_json.IOCJson(path).json_get_value(
+                            [uuid, ioc_json.IOCJson(path).json_get_value(
                                 prop)])
                 except KeyError:
                     ioc_common.logit({
@@ -971,7 +969,6 @@ class IOCage(object):
             },
                 _callback=self.callback,
                 silent=self.silent)
-
 
         if self.jail == "default":
             ioc_json.IOCJson().json_check_default_config()
