@@ -46,8 +46,8 @@ To make further customizations or just patch the template, there are two
 options:
 
 * Convert the template back to a jail with
-  :command:`iocage set template=no [UUID-of-template]`, then start the
-  jail with :command:`iocage start [UUID | NAME]`.
+  :command:`iocage set template=no [UUID | NAME]`, then start the jail
+  with :command:`iocage start [UUID | NAME]`.
 * If network access is unnecessary to make the changes, use
-  :command:`iocage chroot [template-UUID] [Command ...]` to run the
+  :command:`iocage chroot [UUID | NAME] [Command ...]` to run the
   needed commands inside the template.
