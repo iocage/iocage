@@ -21,39 +21,10 @@ like :command:`cd` into :file:`.zfs/snapshots`, :command:`tar`, etc.
 
 ZFS snapshot creation and rollback is not affected.
 
-To work around this issue, **iocage 1.6.0** introduced a **hack88**
-property.
-
-Example:
-
-Shut down jail:
-
-:samp:`# iocage stop myjail`
-
-Set the **hack88** property to *1*:
-
-:samp:`# iocage set hack88=1 myjail`
-
-Start jail:
-
-:samp:`# iocage start myjail`
-
-Revert back to full paths by repeating the procedure, but setting
-**hack88=0**.
-
-Create a system wide default (introduced in **1.6.0**) for all newly
-created jails with :command:`iocage set hack88=1 default`
-
-.. index:: Known Issues, Property Validation
-.. _Property Validation:
-
-Property Validation
--------------------
-
-:command:`iocage` does not currently validate properties. Please refer
-to the :file:`iocage.8` manual page to see what is supported for each
-property. By default, :command:`iocage` preconfigures each property with
-a safe default.
+To work around this issue, :command:`iocage` allows the user to
+assign and use a unique *NAME* for the jail. Alternately, using the
+**[-s | --short]** flag at jail creation tells :command:`iocage` to
+assign a shortened UUID to the jail.
 
 .. index:: Known Issues, VNET/VIMAGE
 .. _VNETVIMAGE:
@@ -66,12 +37,12 @@ are destroyed. In other words, when the jail process is killed, removed,
 or stopped.
 
 As a workaround, :command:`iocage` allows a soft restart without
-destroying the jail. By default, :command:`iocage restart` executes a
-soft restart.
+destroying the jail. :command:`iocage restart -s [UUID | NAME]` executes
+a soft restart of the jail.
 
 Example:
 
-:samp:`# iocage restart examplejail`
+:samp:`# iocage restart -s examplejail`
 
 FreeBSD 10.1-RELEASE is stable enough to run with VNET and soft
 restarts. There are production machines with :command:`iocage` and VNET
