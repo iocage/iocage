@@ -3,6 +3,7 @@ import subprocess
 
 from iocage.lib.JailConfig import JailConfig
 from iocage.lib.Network import Network
+from iocage.lib.Storage import Storage
 from iocage.lib.Command import Command
 from iocage.lib.Host import Host
 
@@ -25,6 +26,7 @@ class Jail:
     self.host = Host()
     self.config = JailConfig(data=data)
     self.networks = []
+    self.storage = Storage(jail=self, auto_create=True, safe_mode=False)
 
     try:
       self.config.dataset = self.dataset
@@ -32,14 +34,20 @@ class Jail:
     except:
       pass
 
+  @property
+  def zfs_pool_name(self):
+    return self.root_dataset.name.split("/", maxsplit=1)[0]
+
   def start(self):
     self.require_jail_existing()
     self.require_jail_stopped()
+    self.storage.umount_nullfs()
     self.launch_jail()
     if self.config.vnet:
       self.start_network()
       self.set_routes()
     self.set_nameserver()
+    self.storage.apply()
 
   def stop(self):
     self.require_jail_existing()
@@ -136,7 +144,6 @@ class Jail:
       print("Failed", exc.returncode, exc.output)
       raise
 
-
   def start_network(self):
 
     if not self.config.vnet:
@@ -210,7 +217,6 @@ class Jail:
       pass
 
     raise "This Jail does not have any identifier yet"
-
 
   def _get_stopped(self):
     return self.running != True;

@@ -28,11 +28,9 @@ class JailConfig(JailConfigJSON, JailConfigZFS):
 
     self.clone(data);
 
-
   def clone(self, data):
     for key in data:
       self.__setattr__(key, data[key])
-
 
   def update_special_property(self, name, new_property_handler=None):
 
@@ -40,7 +38,6 @@ class JailConfig(JailConfigJSON, JailConfigZFS):
       self.special_properties[name] = new_property_handler
 
     self.data[name] = str(self.special_properties[name])
-
 
   def _set_name(self, value):
 
@@ -52,15 +49,12 @@ class JailConfig(JailConfigJSON, JailConfigZFS):
       self.host_hostname = value
       pass
 
-
   def save(self):
     JailConfigJSON.save(self)
     JailConfigZFS.save(self)
 
-
   def _set_uuid(self, uuid):
       object.__setattr__(self, 'uuid', str(UUID(uuid)))
-
 
   def _get_ip4_addr(self):
     try:
@@ -68,71 +62,90 @@ class JailConfig(JailConfigJSON, JailConfigZFS):
     except:
       return None
     
-  
   def _set_ip4_addr(self, value):
     self.special_properties["ip4_addr"] = JailConfigAddresses(value, jail_config=self, property_name="ip4_addr")
     self.update_special_property("ip4_addr")
 
-  
+
   def _get_ip6_addr(self):
     try:
       return self.special_properties["ip6_addr"]
     except:
       return None
 
-
   def _set_ip6_addr(self, value):
     self.special_properties["ip6_addr"] = JailConfigAddresses(value, jail_config=self, property_name="ip6_addr")
     self.update_special_property("ip6_addr")
 
-
   def _get_interfaces(self):
     return self.special_properties["interfaces"]
     
-
   def _set_interfaces(self, value):
     self.special_properties["interfaces"] = JailConfigInterfaces(value, jail_config=self)
     self.update_special_property("interfaces")
 
-
   def _get_defaultrouter(self):
     value = self.data['defaultrouter']
     return value if (value != "none" and value != None) else None
-
 
   def _set_defaultrouter(self, value):
     if value == None:
       value = 'none'
     self.data['defaultrouter'] = value
 
-
   def _get_defaultrouter6(self):
     value = self.data['defaultrouter6']
     return value if (value != "none" and value != None) else None
-
 
   def _set_defaultrouter6(self, value):
     if value == None:
       value = 'none'
     self.data['defaultrouter6'] = value
 
-
   def _get_vnet(self):
     return self.data["vnet"] == "on"
-
 
   def _set_vnet(self, value):
     vnet_enabled = (value == "on") or (value == True)
     self.data["vnet"] = "on" if vnet_enabled else "off"
 
+  def _get_jail_zfs_dataset(self):
+    try:
+      return self.data["jail_zfs_dataset"].split()
+    except:
+      pass
+    return []
+
+  def _set_jail_zfs_dataset(self, value):
+    value = [value] if isinstance(value, str) else value
+    self.data["jail_zfs_dataset"] = " ".join(value)
+
+  def _get_jail_zfs(self):
+    enabled = self.data["jail_zfs"] == "on"
+    if not enabled:
+      if len(self.jail_zfs_dataset) > 0:
+        raise Exception("jail_zfs is disabled despite jail_zfs_dataset is configured")
+    return enabled
+
+  def _set_jail_zfs(self, value):
+    if (value == None) or (value == ""):
+      del self.data["jail_zfs"]
+      return
+    enabled = (value == "on") or (value == True)
+    self.data["jail_zfs"] = "on" if enabled else "off"
+
+  def _default_jail_zfs(self):
+    # if self.data["jail_zfs"] does not explicitly exist, _get_jail_zfs would raise
+    try:
+      return len(self.jail_zfs_dataset) > 0
+    except:
+      return False
 
   def _default_mac_prefix():
     return "02ff60"
 
-
   def _get_resolver(self):
     return self.__create_special_property_resolver()
-
 
   def _set_resolver(self, value):
   
@@ -142,7 +155,6 @@ class JailConfig(JailConfigJSON, JailConfigZFS):
     else:
       resolver = JailConfigResolver(jail_config=self)
       resolver.update(value, notify=True)
-
 
   def __create_special_property_resolver(self):
     
@@ -159,7 +171,6 @@ class JailConfig(JailConfigJSON, JailConfigZFS):
       self.special_properties["resolver"] = resolver
 
     return self.special_properties["resolver"]
-
 
   def __getattr__(self, key):
 
@@ -192,7 +203,6 @@ class JailConfig(JailConfigJSON, JailConfigZFS):
     except:
       raise Exception(f"Variable {key} not found")
 
-
   def __setattr__(self, key, value):
 
     # passthrough existing properties
@@ -212,7 +222,6 @@ class JailConfig(JailConfigJSON, JailConfigZFS):
 
     if setter_method != None:
       return setter_method(value)
-
 
   def __str__(self):
     return JailConfigJSON.toJSON(self)
