@@ -69,6 +69,13 @@ def cli(jail, release):
     status, jid = ioc_list.IOCList.list_get_jid(uuid)
     conf = ioc_json.IOCJson(path).json_load()
     jail_release = conf["release"]
+
+    if release in jail_release:
+        ioc_common.logit({
+            "level"  : "EXCEPTION",
+            "message": f"Jail: {uuid} is already at version {release}!"
+        })
+
     started = False
 
     if conf["release"] == "EMPTY":
