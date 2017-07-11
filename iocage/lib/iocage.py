@@ -959,7 +959,6 @@ class IOCage(object):
 
     def set(self, prop, plugin=False):
         """Sets a property for a jail or plugin"""
-        prop = " ".join(prop)  # We don't want a tuple.
         try:
             key, value = prop.split("=", 1)
         except ValueError:
