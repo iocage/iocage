@@ -4,10 +4,9 @@
 Jail Types
 ==========
 
-iocage supports five different jail types:
+iocage supports several different jail types:
 
-* Full (default)
-* Clone (lightweight)
+* Clone (default)
 * Basejail
 * Template
 * Empty
@@ -16,28 +15,15 @@ All jail types have specific benefits and drawbacks, serving a variety
 of unique needs. This section describes and has creation examples for
 each of these jail types.
 
-.. index:: Full Jails
-.. _Full:
-
-Full
-----
-
-The default **full** type jail is created with this command:
-
-:samp:`# iocage create -r 11.0-RELEASE`
-
-A **full** jail contains a fully independent ZFS dataset suitable for
-network replication (ZFS send/recv).
-
 .. index:: Clone Jails
 .. _Clone:
 
-Clone (lightweight)
--------------------
+Clone (default)
+---------------
 
 Clone jails are created with:
 
-:samp:`# iocage create -r 11.0-RELEASE -c 2`
+:samp:`# iocage create -r 11.0-RELEASE`
 
 Clone jails are duplicated from the appropriate RELEASE at creation
 time. These consume a small amount of space, preserving only the
@@ -52,16 +38,16 @@ Basejail
 The original basejail concept was based on nullfs mounts. It was
 popularized by `ezjail <http://erdgeist.org/arts/software/ezjail/>`_,
 but :command:`iocage` basejails are a little different. Basejails in
-:command:`iocage` use independent read-only ZFS filesystem clones to
-achieve the same functionality.
+:command:`iocage` are mounts in a jail **fstab** that are mounted at
+jail startup.
 
 Create a basejail by typing:
 
 :command:`iocage create -r [RELEASE] -b`
 
-Basejails re-clone their base filesystems at each startup. They are
-ideal for environments where immediate patching or upgrading of multiple
-jails is requires.
+Basejails mount their **fstab** mounts at each startup. They are ideal
+for environments where immediate patching or upgrading of multiple
+jails is required.
 
 .. index:: Template Jails
 .. _Template:
@@ -84,7 +70,7 @@ After this operation the jail is found in the *templates* list:
 
 And new jails with the user customized networking can be created:
 
-:samp:`# iocage create -t examplejail tag=newexampjail`
+:samp:`# iocage create -t examplejail -n newexamplejail`
 
 Template jails are convertable by setting the *template=*
 property.
