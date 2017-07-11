@@ -1,76 +1,88 @@
+.. index:: Jail Types
+.. _Jail Types:
+
+Jail Types
 ==========
-Jail types
-==========
 
-iocage supports five different jail types:
+iocage supports several different jail types:
 
-* thick (default)
-* thin
-* base
-* template
-* empty
+* Clone (default)
+* Basejail
+* Template
+* Empty
 
-All types have their pros & cons and serves different needs.
+All jail types have specific benefits and drawbacks, serving a variety
+of unique needs. This section describes and has creation examples for
+each of these jail types.
 
-Full (thick)
-------------
+.. index:: Clone Jails
+.. _Clone:
 
-Full (thick) jail is the default type and it is created with the following command:
+Clone (default)
+---------------
 
-``iocage create``
+Clone jails are created with:
 
-A full jail has a fully independent ZFS dataset suitable for network replication
-(ZFS send/recv).
+:samp:`# iocage create -r 11.0-RELEASE`
 
-Clone (thin)
-------------
+Clone jails are duplicated from the appropriate RELEASE at creation
+time. These consume a small amount of space, preserving only the
+changing data.
 
-Thin jails are lightweight clones created with:
+.. index:: Basejails
+.. _Basejail:
 
-``iocage create -c``
+Basejail
+--------
 
-Thin jails are cloned from the appropriate RELEASE at creation time and consume
-only a fraction of space, preserving only the changing data.
+The original basejail concept was based on nullfs mounts. It was
+popularized by `ezjail <http://erdgeist.org/arts/software/ezjail/>`_,
+but :command:`iocage` basejails are a little different. Basejails in
+:command:`iocage` are mounts in a jail **fstab** that are mounted at
+jail startup.
 
-Base
-----
+Create a basejail by typing:
 
-The original basejail concept based on nullfs mounts got popularized by ezjail.
-iocage basejails use independent read-only ZFS filesystem clones to achieve the
-same functionality.
+:command:`iocage create -r [RELEASE] -b`
 
-To create a basejail execute:
+Basejails mount their **fstab** mounts at each startup. They are ideal
+for environments where immediate patching or upgrading of multiple
+jails is required.
 
-``iocage create -b``
-
-Basejails re-clone their base filesystems at each startup. They are ideal for
-environments where patching or upgrades are required at once to multiple jails.
+.. index:: Template Jails
+.. _Template:
 
 Template
 --------
 
-Template is just another jail where the "template" property is set to "yes".
+Template jails are customized jails used to quickly create further
+custom jails.
 
-To turn a jail into a template simply execute:
+For example, after creating a jail, the user customizes
+that jail's networking properties. Once satisfied, the user then changes
+the jail into a template with:
 
-``iocage set template=yes UUID|TAG``
+:samp:`# iocage set template=yes examplejail`
 
-After this operation the jail can be listed with:
+After this operation the jail is found in the *templates* list:
 
-``iocage list -t``
+:samp:`# iocage list -t`
 
-To deploy a jail from this template, execute:
+And new jails with the user customized networking can be created:
 
-``iocage clone TEMPLATE_UUID tag=mynewjail``
+:samp:`# iocage create -t examplejail -n newexamplejail`
 
-Templates can be converted back and forth with setting the "template" property.
+Template jails are convertable by setting the *template=*
+property.
+
+.. index:: Empty Jails
+.. _Empty:
 
 Empty
 -----
 
-Empty jails are intended for unsupported jail setups or testing.
-To create an empty jail run:
+Empty jails are intended for unsupported jail setups or testing. Create
+an empty jail with :command:`iocage create -e`.
 
-``iocage create -e``
-
-These are ideal for experimentation with unsupported RELEASES or Linux jails.
+These are ideal for experimentation with unsupported RELEASES or Linux
+jails.
