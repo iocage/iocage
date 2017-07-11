@@ -24,6 +24,7 @@
 """iocage export and import module"""
 import datetime
 import fnmatch
+import hashlib
 import os
 import subprocess as su
 import zipfile
@@ -60,7 +61,13 @@ class IOCImage(object):
                 ["zfs", "snapshot", "-r", target],
                 stderr=su.STDOUT)
         except su.CalledProcessError as err:
-            raise RuntimeError(f"{err.output.decode('utf-8').rstrip()}")
+            msg = err.output.decode('utf-8').rstrip()
+            iocage.lib.ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": msg
+            },
+                self.callback,
+                silent=self.silent)
 
         datasets = su.Popen([
             "zfs", "list", "-H", "-r", "-o", "name", image_path],
@@ -93,7 +100,12 @@ class IOCImage(object):
 
                     su.check_call(["zfs", "send", target], stdout=export)
             except su.CalledProcessError as err:
-                raise RuntimeError(err)
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": err
+                },
+                    self.callback,
+                    silent=self.silent)
 
         msg = f"\nPreparing zip file: {image}.zip."
         iocage.lib.ioc_common.logit({
@@ -127,7 +139,13 @@ class IOCImage(object):
                 os.remove(jail)
 
         except su.CalledProcessError as err:
-            raise RuntimeError(f"{err.output.decode('utf-8').rstrip()}")
+            msg = err.output.decode('utf-8').rstrip()
+            iocage.lib.ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": msg
+            },
+                self.callback,
+                silent=self.silent)
 
         msg = f"\nExported: {image}.zip"
         iocage.lib.ioc_common.logit({
@@ -154,16 +172,26 @@ class IOCImage(object):
             for j in sorted(matches):
                 msg += f"\n  {j}"
 
-            raise RuntimeError(msg)
+            iocage.lib.ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": msg
+            },
+                self.callback,
+                silent=self.silent)
         else:
-            raise RuntimeError(f"{jail} not found!")
+            iocage.lib.ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": f"{jail} not found!"
+            },
+                self.callback,
+                silent=self.silent)
 
         with zipfile.ZipFile(image_target, "r") as _import:
             for z in _import.namelist():
                 # Split the children dataset out
                 z_dataset_type = z.split("_", 1)[-1]
                 z_dataset_type = z_dataset_type.partition("_")[2]
-                z_dataset_type =\
+                z_dataset_type = \
                     f"{uuid}/{z_dataset_type.replace('_', '/')}".rstrip("/")
 
                 cmd = ["zfs", "recv", "-F",
@@ -192,7 +220,13 @@ class IOCImage(object):
             iocage.lib.ioc_common.checkoutput(["zfs", "destroy", "-r", target],
                                               stderr=su.STDOUT)
         except su.CalledProcessError as err:
-            raise RuntimeError(f"{err.output.decode('utf-8').rstrip()}")
+            msg = err.output.decode('utf-8').rstrip()
+            iocage.lib.ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": msg
+            },
+                self.callback,
+                silent=self.silent)
 
         # Templates become jails again once imported, let's make that reality.
         iocage.lib.ioc_json.IOCJson(f"{self.iocroot}/jails/{uuid}",
