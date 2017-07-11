@@ -28,6 +28,8 @@ import shutil
 import subprocess as su
 import tempfile
 
+import texttable
+
 import iocage.lib.ioc_common
 import iocage.lib.ioc_json
 import iocage.lib.ioc_list
@@ -37,7 +39,8 @@ class IOCFstab(object):
     """Will add or remove an entry, and mount or umount the filesystem."""
 
     def __init__(self, uuid, action, source, destination, fstype, fsoptions,
-                 fsdump, fspass, index=None, silent=False, callback=None):
+                 fsdump, fspass, index=None, silent=False, callback=None,
+                 header=False, _fstab_list=None):
         self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage.lib.ioc_json.IOCJson(self.pool).json_get_value(
             "iocroot")
@@ -52,10 +55,13 @@ class IOCFstab(object):
         self.index = index
         self.mount = f"{self.src}\t{self.dest}\t{self.fstype}\t" \
                      f"{self.fsoptions}\t{self.fsdump}\t{self.fspass}"
+        self._fstab_list = _fstab_list
+        self.header = header
         self.silent = silent
         self.callback = callback
 
-        self.__fstab_parse__()
+        if action != "list":
+            self.__fstab_parse__()
 
     def __fstab_parse__(self):
         """
@@ -184,3 +190,20 @@ class IOCFstab(object):
                     fstab.write(line.decode("utf-8"))
         else:
             raise RuntimeError(f"An error occurred within {err_editor}!")
+
+    def fstab_list(self):
+        """Returns a table or a list of lists"""
+        if self.header:
+            table = texttable.Texttable(max_width=0)
+
+            # We get an infinite float otherwise.
+            table.set_cols_dtype(["t", "t"])
+            self._fstab_list.insert(0, ["INDEX", "FSTAB ENTRY"])
+
+            table.add_rows(self._fstab_list)
+
+            return table.draw()
+        else:
+            flat_fstab = [f for f in self._fstab_list]
+
+            return flat_fstab

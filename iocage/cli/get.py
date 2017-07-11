@@ -91,24 +91,6 @@ def cli(prop, _all, _pool, jail, recursive, header, plugin):
                     "level"  : "INFO",
                     "message": f"{p}:{v}"
                 })
-        elif prop == "fstab":
-            fstab_list = ioc.IOCage(jail, skip_jails=True).get(prop)
-
-            if header:
-                fstab_list.insert(0, ["INDEX", "FSTAB ENTRY"])
-                # We get an infinite float otherwise.
-                table.set_cols_dtype(["t", "t"])
-                table.add_rows(fstab_list)
-                ioc_common.logit({
-                    "level"  : "INFO",
-                    "message": table.draw()
-                })
-            else:
-                for fstab in fstab_list:
-                    ioc_common.logit({
-                        "level"  : "INFO",
-                        "message": f"{fstab[0]}\t{fstab[1]}"
-                    })
         else:
             p = ioc.IOCage(jail, skip_jails=True).get(prop)
 
