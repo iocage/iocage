@@ -962,7 +962,16 @@ class IOCage(object):
     def set(self, prop, plugin=False):
         """Sets a property for a jail or plugin"""
         prop = " ".join(prop)  # We don't want a tuple.
-        key, value = prop.split("=", 1)
+        try:
+            key, value = prop.split("=", 1)
+        except ValueError:
+            ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": f"{prop} is is missing a value!"
+            },
+                _callback=self.callback,
+                silent=self.silent)
+
 
         if self.jail == "default":
             ioc_json.IOCJson().json_check_default_config()
