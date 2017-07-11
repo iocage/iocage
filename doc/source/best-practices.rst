@@ -18,7 +18,7 @@ This section provides some generic guidelines and tips for working with
   Use the -n option with :command:`iocage create` to set a name for the
   jail. This helps avoid mistakes and easily identify jails.
 
-  Example: :samp:`iocage create -r 11.0-RELEASE -n ExampleJail`
+  Example: :samp:`iocage create -r 11.0-RELEASE -n testjail`
 
 **Set the notes property**
 
@@ -41,13 +41,6 @@ This section provides some generic guidelines and tips for working with
   allows jails to run their own firewalls. See :ref:`Known Issues` for
   more about VNET.
 
-**Don't overuse resource limiting!**
-
-  Unless absolutely necessary, allow the OS to manage system resources.
-  Set limits with :command:`log action` before enforcing
-  :command:`deny`. This allows checking logs before accidentally
-  creating any performance bottlenecks.
-
 **Discover templates!**
 
   Templates simplify using jail creation and customization, give it a
@@ -55,9 +48,9 @@ This section provides some generic guidelines and tips for working with
 
 **Use** :command:`iocage restart` **instead of start/stop**
 
-  Always restart a jail with the :command:`iocage restart` command. This
-  performs a soft restart and leaves the *VNET* stack alone, which is
-  less stressful for both kernel and user.
+  Always restart a jail with the :command:`iocage restart -s` command.
+  This performs a soft restart and leaves the *VNET* stack alone, which
+  is less stressful for both kernel and user.
 
 **Check the firewall rules**
 
