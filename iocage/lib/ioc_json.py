@@ -320,6 +320,9 @@ class IOCJson(object):
             with open(f"{iocroot}/defaults.json", "r") as default_json:
                 conf = json.load(default_json)
 
+            if prop == "all":
+                return conf
+
             return conf[prop]
 
         if prop == "pool":
