@@ -106,8 +106,10 @@
 .Cm fstab
 .Ar JAIL
 .Ar FSTAB_STRING
+.Op Fl H | h | -header
 .Op Fl a | -add | Cm action
 .Op Fl e | -edit | Cm action
+.Op Fl l | -list
 .Op Fl r | -remove | Cm action
 .\" == GET ==
 .Nm
@@ -602,6 +604,9 @@ Name any options, then the jail, and finally all needed fstab strings.
 .Pp
 Options:
 .Bl -tag -width "[-r | --remove | action]"
+.It Op Fl H | h | -header
+For scripting.
+Use tabs for separators.
 .It Op Fl a | -add | Cm action
 Adds an entry to the specific jail's
 .Pa fstab
@@ -610,6 +615,8 @@ and mounts it.
 Opens the
 .Pa fstab
 file in the default editor.
+.It Op Fl l | -list
+List the jail's fstab.
 .It Op Fl r | -remove | Cm action
 Remove an entry from a specific jail's
 .Pa fstab
