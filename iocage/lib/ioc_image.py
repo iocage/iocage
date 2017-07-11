@@ -112,6 +112,12 @@ class IOCImage(object):
             for jail in jail_list:
                 final.write(jail)
 
+        image_checksum = hashlib.sha256(open(f"{image}.zip",
+                                             "rb").read()).hexdigest()
+
+        with open(f"{image}.sha256", "w") as checksum:
+            checksum.write(image_checksum)
+
         # Cleanup our mess.
         try:
             iocage.lib.ioc_common.checkoutput(["zfs", "destroy", "-r", target],
