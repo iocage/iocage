@@ -759,24 +759,42 @@ class IOCage(object):
             ioc_fetch.IOCFetch(release, **kwargs).fetch_release()
 
     def fstab(self, action, source, destination, fstype, options, dump, _pass,
-              index=None, add_path=False):
+              index=None, add_path=False, header=False):
         """Adds an fstab entry for a jail"""
         uuid, path = self.__check_jail_existence__()
 
-        if add_path:
-            destination = f"{self.iocroot}/jails/{uuid}/root{destination}"
+        if action != "list":
+            if add_path:
+                destination = f"{self.iocroot}/jails/{uuid}/root{destination}"
 
-        if len(destination) > 88:
-            ioc_common.logit({
-                "level"  : "WARNING",
-                "message": "The destination's mountpoint exceeds 88 "
-                           "characters, this may cause failure!"
-            },
-                _callback=self.callback,
-                silent=self.silent)
+            if len(destination) > 88:
+                ioc_common.logit({
+                    "level"  : "WARNING",
+                    "message": "The destination's mountpoint exceeds 88 "
+                               "characters, this may cause failure!"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+        else:
+            _fstab_list = []
+            index = 0
 
-        ioc_fstab.IOCFstab(uuid, action, source, destination, fstype,
-                           options, dump, _pass, index=index)
+            with open(f"{self.iocroot}/jails/{uuid}/fstab", "r") as _fstab:
+                for line in _fstab.readlines():
+                    line = line.rsplit("#")[0].rstrip()
+                    _fstab_list.append([index, line.replace("\t", " ")])
+                    index += 1
+
+        if action == "list":
+            fstab = ioc_fstab.IOCFstab(
+                uuid, action, source, destination, fstype, options, dump,
+                _pass, index=index, header=header,
+                _fstab_list=_fstab_list).fstab_list()
+
+            return fstab
+        else:
+            ioc_fstab.IOCFstab(uuid, action, source, destination, fstype,
+                               options, dump, _pass, index=index)
 
     def get(self, prop, recursive=False, plugin=False, pool=False):
         """Get a jail property"""
@@ -818,17 +836,6 @@ class IOCage(object):
                 props = ioc_json.IOCJson(path).json_get_value(prop)
 
                 return props
-            elif prop == "fstab":
-                fstab_list = []
-                index = 0
-
-                with open(f"{self.iocroot}/jails/{uuid}/fstab", "r") as fstab:
-                    for line in fstab.readlines():
-                        line = line.rsplit("#")[0].rstrip()
-                        fstab_list.append([index, line.replace("\t", " ")])
-                        index += 1
-
-                    return fstab_list
             else:
                 try:
                     return ioc_json.IOCJson(path).json_get_value(prop)

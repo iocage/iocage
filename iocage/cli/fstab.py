@@ -42,7 +42,11 @@ __rootcmd__ = True
 @click.option("--edit", "-e", "action",
               help="Opens up the fstab file in your environments EDITOR.",
               flag_value="edit")
-def cli(action, fstab_string, jail):
+@click.option("--list", "-l", "action",
+              help="Lists the jails fstab.", flag_value="list")
+@click.option("--header", "-h", "-H", is_flag=True, default=True,
+              help="For scripting, use tabs for separators.")
+def cli(action, fstab_string, jail, header):
     """
     Looks for the jail supplied and passes the uuid, path and configuration
     location to manipulate the fstab.
@@ -52,7 +56,7 @@ def cli(action, fstab_string, jail):
     add_path = False
     fstab_string = list(fstab_string)
 
-    if not fstab_string and action != "edit":
+    if not fstab_string and action != "edit" and action != "list":
         ioc_common.logit({
             "level"  : "EXCEPTION",
             "message": "Please supply a fstab entry or jail!"
@@ -90,6 +94,11 @@ def cli(action, fstab_string, jail):
                 options = "ro"
                 dump = "0"
                 _pass = "0"
+    elif action == "list":
+        # We don't need these
+        source, destination, fstype, options, dump, _pass = "", "", \
+                                                            "", "", \
+                                                            "", ""
     else:
         if action != "edit":
             try:
@@ -111,5 +120,19 @@ def cli(action, fstab_string, jail):
     if not _index:
         add_path = True
 
-    ioc.IOCage(jail).fstab(action, source, destination, fstype, options,
-                           dump, _pass, index=index, add_path=add_path)
+    fstab = ioc.IOCage(jail).fstab(action, source, destination, fstype,
+                                   options, dump, _pass, index=index,
+                                   add_path=add_path, header=header)
+
+    if action == "list":
+        if header:
+            ioc_common.logit({
+                "level"  : "INFO",
+                "message": fstab
+            })
+        else:
+            for f in fstab:
+                ioc_common.logit({
+                    "level"  : "INFO",
+                    "message": f"{f[0]}\t{f[1]}"
+                })
