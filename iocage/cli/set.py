@@ -31,13 +31,14 @@ __rootcmd__ = True
 
 @click.command(context_settings=dict(
     max_content_width=400, ), name="set", help="Sets the specified property.")
-@click.argument("prop", nargs=-1)
-@click.argument("jail")
+@click.argument("props", nargs=-1)
+@click.argument("jail", nargs=1)
 @click.option("--plugin", "-P",
               help="Set the specified key for a plugin jail, if accessing a"
                    " nested key use . as a separator."
                    "\n\b Example: iocage set -P foo.bar.baz=VALUE PLUGIN",
               is_flag=True)
-def cli(prop, jail, plugin):
+def cli(props, jail, plugin):
     """Get a list of jails and print the property."""
-    ioc.IOCage(jail, skip_jails=True).set(prop, plugin)
+    for prop in props:
+        ioc.IOCage(jail, skip_jails=True).set(prop, plugin)
