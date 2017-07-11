@@ -81,8 +81,8 @@ To clone a jail, run:
 
 :command:`iocage clone [UUID|NAME] --name [testupdate]`
 
-.. note:: The **--name** flag is optional. :command:`iocage` assigns a
-   new UUID to the clone regardless of **--name** usage.
+.. note:: The **[-n | --name]** flag is optional. :command:`iocage`
+   assigns an UUID to the jail if **[-n | --name]** is not used.
 
 .. index:: Upgrade Jails
 .. _Upgrading Jails:
@@ -314,7 +314,7 @@ Now, create a jail and supply :file:`pkgs.json`:
 
 :command:`iocage create -r [RELEASE] -p [path-to/pkgs.json] -n [NAME]`
 
-.. note:: The **-n** flag is optional. A UUID is assigned to the new
-   jail regardless of its use.
+.. note:: The **[-n | --name]** flag is optional. :command:`iocage`
+   assigns an UUID to the jail if **[-n | --name]** is not used.
 
 This installs **nginx** and **tmux** in the newly created jail.
