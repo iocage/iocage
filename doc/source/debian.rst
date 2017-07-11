@@ -8,7 +8,7 @@ This section shows the process to set up a Debian (GNU/kFreeBSD) jail.
 GNrUkFreeBSD is a Debian userland tailored for the FreeBSD kernel.
 
 The examples in this section use a jail with the custom tag **debjail**.
-Remember to replace **debjail** with your jail's UUID or TAG!
+Remember to replace **debjail** with your jail's UUID or NAME!
 
 .. warning:: This is not recommended for production use. The intention
    is to show :command:`iocage` can do almost anything with jails.
@@ -17,7 +17,7 @@ Remember to replace **debjail** with your jail's UUID or TAG!
 
 .. code-block:: none
 
- # iocage create -e tag=debjail exec_start="/etc/init.d/rc 3" exec_stop="/etc/init.d/rc 0"
+ # iocage create -e -n debjail exec_start="/etc/init.d/rc 3" exec_stop="/etc/init.d/rc 0"
 
 **Install debootstrap on the host:**
 
@@ -32,9 +32,10 @@ Remember to replace **debjail** with your jail's UUID or TAG!
 
 Replace *squeeze* with *wheezy*, if needed.
 
-**Edit the jail** :file:`fstab` **and add these lines:**
+**Add lines to the jail** :file:`fstab` **file:**
 
-:file:`/iocage/jails/debjail/fstab`
+Use :command:`iocage fstab -e [UUID | NAME]` to edit the :file:`fstab`
+file of *debjail* directly. Add these lines to the file:
 
 .. code-block:: none
 
