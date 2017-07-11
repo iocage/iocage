@@ -5,7 +5,7 @@ FAQ
 ===
 
 **What is iocage?**
-    :command:`iocage` is a jail management script aiming to simplify
+    :command:`iocage` is a jail management program designed to simplify
     jail administration tasks.
 
 **What is a jail?**
@@ -19,7 +19,7 @@ FAQ
 
 **How do I configure network interfaces in a VNET or shared IPjail?**
     Both are configured in the same way:
-    :command:`iocage set ip4_add="[interface]|[IP]/[netmask]" [UUID | TAG]`.
+    :command:`iocage set ip4_add="[interface]|[IP]/[netmask]" [UUID | NAME]`.
     For more info, please refer to the :ref:`Networking` section of this
     documentation.
 
@@ -38,8 +38,7 @@ FAQ
     Yes, make sure you allow traffic on both in/out for your jails.
 
 **Can I create custom jail templates?**
-    Yes, and thin provisioning is supported too! Starting with version
-    **1.3**, there is also a *package* option for jail packaging.
+    Yes, and thin provisioning is supported too!
 
 **What is a jail clone?**
     **Clones** are ZFS clones. These are fully writable copies of the
@@ -51,7 +50,7 @@ FAQ
     of this documentation for more details.
 
 **Is there a way to display resource consumption?**
-    Yes - :command:`iocage df [UUID | TAG]`
+    Yes - :command:`iocage df [UUID | NAME]`
 
 **Is NAT supported for jails?**
     Yes. NAT is built into FreeBSD. Treat your server as a core
