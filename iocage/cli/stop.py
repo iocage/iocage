@@ -49,7 +49,7 @@ def cli(rc, jails):
         exit(1)
 
     if rc:
-        ioc.IOCage(rc=rc, silent=True).start()
+        ioc.IOCage(rc=rc, silent=True).stop()
     else:
         for jail in jails:
             ioc.IOCage(jail, rc=rc).stop()
