@@ -14,19 +14,15 @@ learn command syntax.
 
 **FEATURES:**
 
-- Templates, clones, basejails, and fully independent jails
+- Templates, basejails, and normal jails
 - Easy to use
-- Zero configuration files
 - Rapid thin provisioning within seconds
 - Automatic package installation
 - Virtual networking stacks (vnet)
 - Shared IP based jails (non vnet)
-- Resource limiting (CPU, MEMORY, etc.)
-- Filesystem quotas and reservations
 - Dedicated ZFS datasets inside jails
 - Transparent ZFS snapshot management
 - Binary updates
-- Differential jail packaging
 - Export and import
 - And many more!
 
