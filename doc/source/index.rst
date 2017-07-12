@@ -42,7 +42,6 @@ Documentation:
    best-practices
    advanced-use
    templates
-   jail-package
    debian
    known-issues
    faq
