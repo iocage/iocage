@@ -979,34 +979,6 @@ interface.
 A netmask in either dotted-quad or CIDR form given after the IP
 address is used when adding the IP alias.
 .Pp
-The IP address is automatically assigned at the first start of the
-jail.
-This requires the
-.Dv ip4_autostart
-and
-.Dv ip4_autoend
-variables are set on the "default" property source.
-If used, the IP4 address is set to the first available based upon the
-given range and existing jails.
-.Pp
-Example:
-.Bd -literal -offset indent
-.Pp
-.Nm
-set ip4_autostart="100" default
-.Pp
-.Nm
-set ip4_autoend="150" default
-.Pp
-.Nm
-set ip4_autosubnet="24" default
-.Ed
-.Pp
-This results in the automatic IPv4 address being assigned in the base
-range of the default network interface.
-That is, if the local default NIC is set to 192.168.0.XXX, then the
-new address will be 192.168.0.[100-150]/24.
-.Pp
 In VNET jails, the interface is configured with the IP addresses
 listed.
 .Pp
