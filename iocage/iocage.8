@@ -19,7 +19,7 @@
 .\" == CHROOT ==
 .Nm
 .Cm chroot
-.Ar UUID | TAG
+.Ar UUID | NAME
 .Op Ar COMMAND
 .\" == CLEAN ==
 .Nm
@@ -32,13 +32,13 @@
 .\"== CLONE ==
 .Nm
 .Cm clone
-.Ar UUID | TAG
+.Ar UUID | NAME
 .Ar PROPERTIES
 .Op Fl c | -count
 .\" == CONSOLE ==
 .Nm
 .Cm console
-.Ar UUID | TAG
+.Ar UUID | NAME
 .\" == CREATE ==
 .Nm
 .Cm create
@@ -59,7 +59,7 @@
 .Op Fl d | -download
 .Op Fl f | -force
 .Op Fl r | -release
-.Ar UUID | TAG
+.Ar UUID | NAME
 .\" == DF ==
 .Nm
 .Cm df
@@ -71,12 +71,12 @@
 .Cm exec
 .Op Fl U | -jail_user Ar NAME
 .Op Fl u | -host_user Ar NAME
-.Ar TAG | UUID
+.Ar UUID | NAME
 .Cm COMMAND Op Ar ARGS
 .\" == EXPORT ==
 .Nm
 .Cm export
-.Ar UUID | TAG
+.Ar UUID | NAME
 .\" == FETCH ==
 .Nm
 .Cm fetch
@@ -115,7 +115,7 @@
 .Nm
 .Cm get
 .Ar PROPERTY
-.Ar UUID | TAG
+.Ar UUID | NAME
 .Op Fl H | h | -header
 .Op Fl P | -plugin
 .Op Fl a | -all | Cm _all
@@ -124,7 +124,7 @@
 .\" == IMPORT ==
 .Nm
 .Cm import
-.Ar UUID | TAG
+.Ar UUID | NAME
 .\" == LIST ==
 .Nm
 .Cm list
@@ -145,59 +145,59 @@
 .\" == PKG ==
 .Nm
 .Cm pkg
-.Ar UUID | TAG
+.Ar UUID | NAME
 .Ar COMMAND
 .\" == RESTART ==
 .Nm
 .Cm restart
 .Op Fl s | -soft
-.Ar UUID | TAG
+.Ar UUID | NAME
 .\" == ROLLBACK ==
 .Nm
 .Cm rollback
 .Op Fl f | -force
 .Fl n | -name Ar TEXT
-.Ar UUID | TAG
+.Ar UUID | NAME
 .\" == SET ==
 .Nm
 .Cm set
 .Ar PROPERTY
-.Ar UUID | TAG
+.Ar UUID | NAME
 .Op Fl P | -plugin Ar KEY
 .\" == SNAPLIST ==
 .Nm
 .Cm snaplist
 .Op Fl H | h | -header
 .Op Fl l | -long | Cm _long
-.Op Ar UUID | TAG
+.Op Ar UUID | NAME
 .\" == SNAPREMOVE ==
 .Nm
 .Cm snapremove
 .Op Fl n | -name Ar TEXT
-.Ar UUID | TAG | ALL
+.Ar UUID | NAME | ALL
 .\" == SNAPSHOT ==
 .Nm
 .Cm snapshot
 .Op Fl n | -name Ar TEXT
-.Ar UUID | TAG
+.Ar UUID | NAME
 .\" == START ==
 .Nm
 .Cm start
 .Op Fl -rc
-.Op Ar UUID | TAG | ALL
+.Op Ar UUID | NAME | ALL
 .\" == STOP ==
 .Nm
 .Cm stop
 .Op Fl -rc
-.Op Ar UUID | TAG | ALL
+.Op Ar UUID | NAME | ALL
 .\" == UPDATE ==
 .Nm
 .Cm update
-.Ar UUID | TAG
+.Ar UUID | NAME
 .\" == UPGRADE ==
 .Nm
 .Cm upgrade
-.Ar UUID | TAG
+.Ar UUID | NAME
 .Fl r | -release Ar RELEASE
 .Sh DESCRIPTION
 .Nm
@@ -222,13 +222,7 @@ can be used in the form of
 .Ar adae47cb
 or just
 .Ar adae .
-In addition to partial UUID calling, jail TAGs can be used
-interchangeably.
-.Pp
-To ease jail identification, a TAG field is included in list mode
-which can be set to any string (hostname, label, note, etc.).
-If unset, the TAG field contains the creation date and time stamp by
-default.
+In addition to partial UUID calling, jail NAMEs can also be used.
 .Pp
 Jails can be easily moved with ZFS
 .Cm send
@@ -333,9 +327,9 @@ is named.
 .Pp
 Example:
 .Pp
-.Dl # iocage clone 38114a58 tag=cloneexample1
+.Dl # iocage clone 38114a58 --name cloneexample1
 .Pp
-Clone jail 38114a58 and add the tag property cloneexample1.
+Clone jail 38114a58 and add the name cloneexample1 to the new jail.
 .Pp
 .\" == CONSOLE ==
 .It Cm console
@@ -366,7 +360,7 @@ Create an empty jail for unsupported or custom jails.
 .It Op Fl f | -force
 Skip prompts, auto-confirming them with yes.
 .It Op Fl n | -name
-Provide a name and tag instead of a UUID for the new jail.
+Provide a NAME instead of a UUID for the new jail.
 .It Op Fl p | -pkglist Ar TEXT
 Specify a JSON file which manages the installation of each
 package in the newly created jail.
@@ -392,12 +386,12 @@ Create a FreeBSD 11.0 jail with a shortened UUID.
 .Pp
 Create a FreeBSD 11.0 jail with the custom UUID 12345678.
 .Pp
-.Dl # iocage create -c 3 -r 11.0-RELEASE tag=examplejail
+.Dl # iocage create -c 3 -r 11.0-RELEASE -n examplejail
 .Pp
 This command creates three identical jails based off the
 FreeBSD 11.0 RELEASE.
-These jails are sequentially tagged based on the
-custom tag property.
+These jails are sequentially numbered  based on the
+custom NAME.
 .\" == DESTROY ==
 .It Cm destroy
 Destroy the specified jail.
@@ -445,7 +439,7 @@ disk quota
 used space
 .It AVA
 available space
-.It TAG
+.It NAME
 jail name
 .El
 .Pp
@@ -470,7 +464,7 @@ Displays the usage table with the full UUID of each jail.
 Execute a command inside the specified jail.
 This is an
 .Nm
-UUID/tag wrapper for
+UUID/NAME wrapper for
 .Xr jexec 8 .
 After invoking
 .Cm exec ,
@@ -630,7 +624,7 @@ Example:
 .\" == GET ==
 .It Cm get
 Display the specified property.
-List the property, then the UUID or TAG of the jail to search.
+List the property, then the UUID or NAME of the jail to search.
 .Pp
 Options:
 .Bl -tag -width "[-H | -h | --header]"
@@ -662,7 +656,7 @@ through
 .Pp
 .Dl # iocage get -r dhcp
 .Pp
-Displays a table with each jail's UUID, TAG, and the
+Displays a table with each jail's UUID or NAME and the
 status of the requested property.
 .Pp
 .\" == IMPORT ==
@@ -719,8 +713,8 @@ Unique identifcation number.
 .It STATE
 Displays the active state of the jail.
 Can be up or down.
-.It TAG
-The user added tag value.
+.It NAME
+The user assigned NAME.
 .It RELEASE
 The jail's FreeBSD RELEASE.
 .It IP4
@@ -752,7 +746,7 @@ no further user interaction.
 Run desired
 .Cm pkg
 commands in the specified jail.
-List the jail's UUID or TAG, then any desired commands.
+List the jail's UUID or NAME, then any desired commands.
 .Pp
 .\" == RESTART ==
 .It Cm restart
@@ -804,8 +798,6 @@ If accessing a nested key, use "." as a separator.
 Examples:
 .Pp
 .Dl # iocage set -P foo.bar.baz=VALUE PLUGIN
-.Pp
-.Dl # iocage set tag=examplejail1 b1ebda86
 .Pp
 .\" == SNAPLIST ==
 .It Cm snaplist
@@ -874,7 +866,7 @@ Example:
 Start a jail identified by
 .Ar UUID
 or
-.Ar TAG .
+.Ar NAME .
 Use
 .Op Ar ALL
 to start all installed jails instead.
@@ -895,7 +887,7 @@ Example:
 Stop a jail identified by
 .Ar UUID
 or
-.Ar TAG .
+.Ar NAME .
 Use
 .Op Ar ALL
 to stop all active jails instead.
