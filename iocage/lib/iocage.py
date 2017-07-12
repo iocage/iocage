@@ -183,6 +183,9 @@ class IOCage(object):
                     self.callback({'level': 'INFO', 'message': message})
             elif action == 'start':
                 if not status:
+                    message = f"  Starting {uuid}"
+                    self.callback({'level': 'INFO', 'message': message})
+
                     err, msg = self.start(j)
 
                     if err:
