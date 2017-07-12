@@ -62,6 +62,7 @@ def child_test(zfs, iocroot, name, _type, force=False):
     for child in children:
         _name = child.name.rsplit("@", 1)[-1]
         if _type == "jail":
+            path = path.replace(name, _name)
             if os.path.isdir(path):
                 # We only want jails, not every snap they have.
                 _children.append(f"  {_name}\n")
