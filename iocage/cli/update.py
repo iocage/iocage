@@ -42,7 +42,7 @@ __rootcmd__ = True
 def cli(jail):
     """Runs update with the command given inside the specified jail."""
     # TODO: Move to API
-    jails, paths = ioc_list.IOCList("uuid").list_datasets()
+    jails = ioc_list.IOCList("uuid").list_datasets()
     _jail = {uuid: path for (uuid, path) in jails.items() if
              uuid.startswith(jail)}
 
