@@ -226,10 +226,17 @@ def sort_jid(jid):
 
 
 def sort_name(name):
-    """Sort the list by UUID."""
+    """Sort list by the name."""
     list_length = len(name)
+    name = name[1] if list_length != 7 else name[0]
+    _sort = name.rsplit('_', 1)
 
-    return name[1] if list_length != 7 else name[0]
+    # We want to sort names that have been created with count > 1. But not
+    # foo_bar
+    if len(_sort) > 1 and _sort[1].isdigit():
+        return _sort[0], int(_sort[1])
+    else:
+        return name, 0
 
 
 def sort_template(template):
