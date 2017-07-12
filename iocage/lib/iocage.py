@@ -174,12 +174,12 @@ class IOCage(object):
 
             if action == 'stop':
                 if status:
-                    message = f"  Stopping {uuid} ({j})"
+                    message = f"  Stopping {uuid}"
                     self.callback({'level': 'INFO', 'message': message})
 
                     self.stop(j)
                 else:
-                    message = f"{uuid} ({j}) is not running!"
+                    message = f"{uuid} is not running!"
                     self.callback({'level': 'INFO', 'message': message})
             elif action == 'start':
                 if not status:
@@ -191,7 +191,7 @@ class IOCage(object):
                     if err:
                         self.callback({'level': 'ERROR', 'message': msg})
                 else:
-                    message = f"{uuid} ({j}) is already running!"
+                    message = f"{uuid} is already running!"
                     self.callback({'level': 'WARNING', 'message': message})
 
     def __check_jail_existence__(self):
