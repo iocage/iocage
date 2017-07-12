@@ -1544,10 +1544,10 @@ Default: UUID
 .Pp
 Source:
 .Xr jail 8
-.It tag="any string"
+.It name="any string"
 Custom string for aliasing jails.
 .Pp
-Default: date@time
+Default: UUID
 .Pp
 Source: local
 .It Pf template= Op yes | no
@@ -1739,7 +1739,7 @@ iocage fetch
 .Pp
 Create first jail:
 .Bd -literal -offset indent
-iocage create -r 11.0-RELEASE tag=myjail
+iocage create -r 11.0-RELEASE -n myjail
 .Ed
 .Pp
 List jails:
