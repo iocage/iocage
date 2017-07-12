@@ -239,13 +239,14 @@ class IOCFetch(object):
                     silent=self.silent)
                 shutil.copy(f, dataset)
 
-                iocage.lib.ioc_common.logit({
-                    "level"  : "INFO",
-                    "message": f"Extracting: {f}... "
-                },
-                    _callback=self.callback,
-                    silent=self.silent)
-                self.fetch_extract(f)
+                if f != "MANIFEST":
+                    iocage.lib.ioc_common.logit({
+                        "level"  : "INFO",
+                        "message": f"Extracting: {f}... "
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
+                    self.fetch_extract(f)
         else:
             if self.eol and self.verify:
                 eol = self.__fetch_eol_check__()
