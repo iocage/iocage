@@ -22,12 +22,55 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """destroy module for the cli."""
+import os
+
 import click
+import libzfs
 
 import iocage.lib.ioc_common as ioc_common
 import iocage.lib.iocage as ioc
 
 __rootcmd__ = True
+
+
+def child_test(zfs, iocroot, name, _type, force=False):
+    """Tests for dependent children"""
+    if _type == "jail":
+        path = f"{iocroot}/jails/{name}/root"
+    else:
+        # RELEASE
+        path = f"{iocroot}/releases/{name}"
+
+    children = zfs.get_dataset_by_path(path).snapshots_recursive
+    _children = []
+
+    for child in children:
+        _name = child.name.rsplit("@", 1)[-1]
+        if _type == "jail":
+            if os.path.isdir(path):
+                # We only want jails, not every snap they have.
+                _children.append(f"  {_name}\n")
+        else:
+            _children.append(f"  {_name}\n")
+
+    sort = ioc_common.ioc_sort("", "name", data=_children)
+    _children.sort(key=sort)
+
+    if len(_children) != 0:
+        if not force:
+            ioc_common.logit({
+                "level"  : "WARNING",
+                "message": f"\n{name} has dependent jails,"
+                           " use --force to destroy: "
+            })
+
+            ioc_common.logit({
+                "level"  : "WARNING",
+                "message": "".join(_children)
+            })
+            exit(1)
+        else:
+            return
 
 
 @click.command(name="destroy", help="Destroy specified jail(s).")
@@ -41,6 +84,9 @@ __rootcmd__ = True
 @click.argument("jails", nargs=-1)
 def cli(force, release, download, jails):
     """Destroys the jail's 2 datasets and the snapshot from the RELEASE."""
+    # Want these here, otherwise they're reinstanced for each jail.
+    zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
+    iocroot = ioc.PoolAndDataset().get_iocroot()
 
     if download and not release:
         ioc_common.logit({
@@ -59,18 +105,21 @@ def cli(force, release, download, jails):
                 if not click.confirm("\nAre you sure?"):
                     continue  # no, continue to next jail
 
+            child_test(zfs, iocroot, jail, "jail", force=force)
+
             ioc.IOCage(jail, skip_jails=True).destroy_jail()
     elif jails and release:
         for release in jails:
             if not force:
                 ioc_common.logit({
                     "level"  : "WARNING",
-                    "message": f"\nThis will destroy RELEASE: {release} and "
-                               "any jail that was created with it."
+                    "message": f"\nThis will destroy RELEASE: {release}"
                 })
 
                 if not click.confirm("\nAre you sure?"):
                     continue
+
+            child_test(zfs, iocroot, release, "release", force=force)
 
             ioc.IOCage(release, skip_jails=True).destroy_release(download)
     elif not jails and release:
