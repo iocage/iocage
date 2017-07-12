@@ -41,7 +41,22 @@ def child_test(zfs, iocroot, name, _type, force=False):
         # RELEASE
         path = f"{iocroot}/releases/{name}"
 
-    children = zfs.get_dataset_by_path(path).snapshots_recursive
+    # While we would like to catch the zfs exception, it still prints to the
+    #  display, this is the next best test.
+    if os.path.isdir(path):
+        children = zfs.get_dataset_by_path(path).snapshots_recursive
+    else:
+        if not force:
+            ioc_common.logit({
+                "level"  : "WARNING",
+                "message": "Partial UUID/NAME supplied, cannot check for "
+                           "dependant jails."
+            })
+            if not click.confirm("\nProceed?"):
+                return
+        else:
+            return
+
     _children = []
 
     for child in children:
