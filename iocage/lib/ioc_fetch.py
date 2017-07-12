@@ -197,6 +197,14 @@ class IOCFetch(object):
             if not self.root_dir:
                 raise RuntimeError("Please supply --root-dir or -d.")
 
+            if self.release is None:
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": "Please supply a RELEASE!"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+
             try:
                 os.chdir(f"{self.root_dir}/{self.release}")
             except OSError as err:
