@@ -622,22 +622,14 @@ class IOCage(object):
         """Returns a list containing the resource usage of all jails"""
         jail_list = []
 
-        for jail in self.jails:
-            full_uuid = self.jails[jail]
-
-            if not long:
-                uuid = full_uuid[:8]
-            else:
-                uuid = full_uuid
-
-            path = self._paths[jail]
+        for jail, path in self.jails.items():
             conf = ioc_json.IOCJson(path).json_load()
-            mountpoint = f"{self.pool}/iocage/jails/{full_uuid}"
+            mountpoint = f"{self.pool}/iocage/jails/{jail}"
 
             template = conf["type"]
 
             if template == "template":
-                mountpoint = f"{self.pool}/iocage/templates/{uuid}"
+                mountpoint = f"{self.pool}/iocage/templates/{jail}"
 
             ds = self.zfs.get_dataset(mountpoint)
             zconf = ds.properties
@@ -648,7 +640,7 @@ class IOCage(object):
             used = zconf["used"].value
             available = zconf["available"].value
 
-            jail_list.append([uuid, compressratio, reservation, quota, used,
+            jail_list.append([jail, compressratio, reservation, quota, used,
                               available])
 
         return jail_list
