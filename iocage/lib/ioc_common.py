@@ -61,7 +61,7 @@ def callback(log):
             raise RuntimeError(log['message'])
         else:
             lgr.error(log['message'])
-            raise SystemExit()
+            raise SystemExit(1)
 
 
 def logit(content, _callback=None, silent=False):
