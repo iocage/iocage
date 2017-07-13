@@ -714,6 +714,28 @@ class IOCFetch(object):
                     else:
                         pass
 
+    def __fetch_check_members__(self, members):
+        """Checks if the members are relative, if not, log a warning."""
+        _members = []
+
+        for m in members:
+            if m.name == ".":
+                continue
+
+            if ".." in m.name or not m.name.startswith("./"):
+                iocage.lib.ioc_common.logit({
+                    "level"  : "WARNING",
+                    "message":
+                        f"{m.name} is not a relative file, skipping "
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+                continue
+
+            _members.append(m)
+
+        return _members
+
     def fetch_extract(self, f):
         """
         Takes a src and dest then creates the RELEASE dataset for the data.
@@ -733,6 +755,7 @@ class IOCFetch(object):
             # Extracting over the same files is much slower then
             # removing them first.
             member = self.__fetch_extract_remove__(f)
+            member = self.__fetch_check_members__(member)
             f.extractall(dest, members=member)
 
     def fetch_update(self, cli=False, uuid=None):
