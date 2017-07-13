@@ -151,6 +151,7 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
                     "level"  : "EXCEPTION",
                     "message": f"Created Templates:\n  {temp[1]}"
                 })
+            exit(1)
         else:
             # Standard errors
             ioc_common.logit({
