@@ -1,10 +1,12 @@
-import libzfs
-import subprocess
-
 import iocage.lib.JailConfig
 import iocage.lib.Network
 import iocage.lib.Storage
+import iocage.lib.Releases
 import iocage.lib.helpers
+
+import libzfs
+import subprocess
+import uuid
 
 class Jail:
 
@@ -13,7 +15,7 @@ class Jail:
     iocage.lib.helpers.init_zfs(self, zfs)
     iocage.lib.helpers.init_host(self, host)
 
-    self.config = iocage.lib.JailConfig.JailConfig(data=data)
+    self.config = iocage.lib.JailConfig.JailConfig(data=data, jail=self)
     self.networks = []
     self.storage = iocage.lib.Storage.Storage(jail=self, auto_create=True, safe_mode=False)
 
@@ -25,16 +27,23 @@ class Jail:
 
   @property
   def zfs_pool_name(self):
-    return self.host.datasets.root_dataset.name.split("/", maxsplit=1)[0]
+    return self.host.datasets.root.name.split("/", maxsplit=1)[0]
 
   def start(self):
     self.require_jail_existing()
     self.require_jail_stopped()
+    
     self.storage.umount_nullfs()
+
+    if self.config.type == "clonejail":
+      self.storage.clone_basedirs()
+
     self.launch_jail()
+
     if self.config.vnet:
       self.start_network()
       self.set_routes()
+    
     self.set_nameserver()
     self.storage.apply()
 
@@ -42,6 +51,41 @@ class Jail:
     self.require_jail_existing()
     self.require_jail_running()
     self.destroy_jail()
+
+  def create(self, release_name):
+    self.require_jail_not_existing()
+  
+    # check if release exists
+    releases = iocage.lib.Releases.Releases(host=self.host, zfs=self.zfs)
+    try:
+      release = releases.find_by_name(release_name)
+    except:
+      fetched_release = ", ".join(list(map(lambda x: x.name, releases.local)))
+      raise Exception(f"Can only create from a fetched release ({fetched_release})")
+    self.config.release = release.name
+
+    try:
+      if not isinstance(self.uuid, uuid.UUID):
+        raise
+    except:
+      self.config.uuid = uuid.uuid4()
+      print(f"New UUID is {self.config.uuid}")
+
+    self.storage.create_jail_dataset()
+    self.config.fstab.write()
+
+    if self.config.type == "clonejail":
+      self.config.cloned_release = release.name
+      self.storage.clone_release(release)
+    else:
+      self.storage.create_jail_root_dataset()
+      raise Exception("Only clonejail creation supported yet.")
+
+    self.config.save()
+
+  def clone_release(self, release):
+    self.require_root_not_existing()
+
 
   def exec(self, command):
     command = [
@@ -64,11 +108,14 @@ class Jail:
     if self.config.vnet:
       command.append('vnet')
     else:
+      ip4_addr = self.config.ip4_addr if self.config.ip4_addr != None else ""
+      ip6_addr = self.config.ip6_addr if self.config.ip6_addr != None else ""
+
       command += [
-        f"ip4.addr={self.config.ip4_addr}",
+        f"ip4.addr={ip4_addr}",
         f"ip4.saddrsel={self.config.ip4_saddrsel}",
         f"ip4={self.config.ip4}",
-        f"ip6.addr={self.config.ip6_addr}",
+        f"ip6.addr={ip6_addr}",
         f"ip6.saddrsel={self.config.ip6_saddrsel}",
         f"ip6={self.config.ip6}"
       ]
@@ -181,6 +228,18 @@ class Jail:
 
     self.exec(command)
 
+  def require_root_not_existing(self):
+    existing = False
+    try:
+      if self.storage.jail_root_dataset:
+        raise Exception(f"Jail {self.humanreadable_name} already exists")
+    except:
+      pass
+
+  def require_jail_not_existing(self):
+    if self.exists:
+      raise Exception(f"Jail {self.humanreadable_name} already exists")
+
   def require_jail_existing(self):
     if not self.exists:
       raise Exception(f"Jail {self.humanreadable_name} does not exist")
@@ -241,8 +300,11 @@ class Jail:
   def _get_uuid(self):
     return self.config.uuid
 
+  def _get_jail_type(self):
+    return self.config.type
+
   def _get_dataset_name(self):
-    return f"{self.host.datasets.root_dataset.name}/jails/{self.config.uuid}"
+    return f"{self.host.datasets.root.name}/jails/{self.config.uuid}"
 
   def _get_dataset(self):
     return self.zfs.get_dataset(self._get_dataset_name())
@@ -251,7 +313,7 @@ class Jail:
     return self.dataset.mountpoint
 
   def _get_logfile_path(self):
-    return f"{self.host.datasets.root_dataset.mountpoint}/log/{self.identifier}-console.log"
+    return f"{self.host.datasets.root.mountpoint}/log/{self.identifier}-console.log"
 
   def __getattr__(self, key):
     try:

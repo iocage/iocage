@@ -54,11 +54,7 @@ class Distribution:
         host=self.host,
         zfs=self.zfs
       ),
-      filter(lambda y: y not in Distribution.release_name_blacklist,
-        map(lambda z: z.strip("\"/"),
-          re.findall(Distribution.mirror_link_pattern, response, re.MULTILINE)
-        )
-      )
+      self._parse_links(response)
     ))
 
     self.available_releases = available_releases
@@ -69,3 +65,16 @@ class Distribution:
     if not self.available_releases:
       self.fetch_releases()
     return self.available_releases
+
+  def _parse_links(self, text):
+
+    matches = filter(lambda y: y not in Distribution.release_name_blacklist,
+      map(lambda z: z.strip("\"/"),
+        re.findall(Distribution.mirror_link_pattern, text, re.MULTILINE)
+      )
+    )
+
+    if self.name == "HardenedBSD":
+      matches = filter(lambda x: x.endswith(f"-{self.host.processor}-LATEST"))
+
+    return matches

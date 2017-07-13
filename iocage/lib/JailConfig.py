@@ -2,21 +2,31 @@ import iocage.lib.JailConfigJSON
 import iocage.lib.JailConfigInterfaces
 import iocage.lib.JailConfigAddresses
 import iocage.lib.JailConfigResolver
+import iocage.lib.JailConfigFstab
 
 from uuid import UUID
 
 class JailConfig(iocage.lib.JailConfigJSON.JailConfigJSON):
 
-  def __init__(self, data = {}):
+  def __init__(self, data = {}, jail=None):
 
     object.__setattr__(self, 'data', {})
-    object.__setattr__(self, 'dataset', None)
     object.__setattr__(self, 'special_properties', {})
+
+    # jail is required for various operations (write, fstab, etc)
+    if jail:
+      object.__setattr__(self, 'jail', jail)
+      fstab = iocage.lib.JailConfigFstab.JailConfigFstab(jail=jail)
+      object.__setattr__(self, 'fstab', fstab)
+    else:
+      self.jail = None
+      self.fstab = None
 
     # the UUID is used in many other variables and needs to be set first
     try:
       self._set_uuid(data.uuid)
     except:
+      object.__setattr__(self, 'uuid', None)
       pass
 
     # be aware of iocage-legacy jails for migration
@@ -51,8 +61,64 @@ class JailConfig(iocage.lib.JailConfigJSON.JailConfigJSON):
   def save(self):
     iocage.lib.JailConfigJSON.JailConfigJSON.save(self)
 
-  def _set_uuid(self, uuid):
-      object.__setattr__(self, 'uuid', str(UUID(uuid)))
+  def set_uuid(self, uuid):
+    if isinstance(uuid, str):
+      uuid = str(UUID(uuid))
+    object.__setattr__(self, 'uuid', uuid)
+
+  def _get_type(self):
+    current_type = None
+
+    try:
+      if (self.data["type"] == "jail") or (self.data["type"] == ""):
+        current_type = "jail"
+    except:
+      current_type = "jail"
+
+    if current_type == "jail":
+      if self.basejail:
+        return "basejail"
+      elif self.clonejail:
+        return "clonejail"
+      else:
+        return "jail"
+
+    return self.data["type"]
+
+  def _set_type(self, value):
+
+    if value == "basejail":
+      self.basejail = True
+      self.clonejail = False
+      self.data["type"] = "jail"
+
+    elif value == "clonejail":
+      self.basejail = False
+      self.clonejail = True
+      self.data["type"] = "jail"
+
+    else:
+      self.basejail = False
+      self.clonejail = False
+      self.data["type"] = value
+
+  def _get_basejail(self):
+    return self.data["basejail"] == "on"
+
+  def _default_basejail(self):
+    return False
+
+  def _set_basejail(self, value):
+    self.data["basejail"] = "on" if (value == True) or (value == "on") else "off"
+
+  def _get_clonejail(self):
+    return self.data["clonejail"] == "on"
+
+  def _default_clonejail(self):
+    return True
+
+  def _set_clonejail(self, value):
+    self.data["clonejail"] = "on" if (value == True) or (value == "on") else "off"
 
   def _get_ip4_addr(self):
     try:
@@ -63,7 +129,6 @@ class JailConfig(iocage.lib.JailConfigJSON.JailConfigJSON):
   def _set_ip4_addr(self, value):
     self.special_properties["ip4_addr"] = iocage.lib.JailConfigAddresses.JailConfigAddresses(value, jail_config=self, property_name="ip4_addr")
     self.update_special_property("ip4_addr")
-
 
   def _get_ip6_addr(self):
     try:
@@ -154,6 +219,120 @@ class JailConfig(iocage.lib.JailConfigJSON.JailConfigJSON):
       resolver = iocage.lib.JailConfigResolver.JailConfigResolver(jail_config=self)
       resolver.update(value, notify=True)
 
+  def _default_vnet(self):
+    return False
+
+  def _default_ip4_saddrsel(self):
+    return 1
+
+  def _default_ip6_saddrsel(self):
+    return 1
+
+  def _default_ip4(self):
+    return "new"
+
+  def _default_ip6(self):
+    return "new"
+
+  def _default_host_hostname(self):
+    return self.jail.humanreadable_name
+
+  def _default_host_hostuuid(self):
+    return self.uuid
+
+  def _default_host_domainname(self):
+    return "none"
+
+  def _default_devfs_ruleset(self):
+    return "4"
+
+  def _default_enforce_statfs(self):
+    return "2"
+
+  def _default_children_max(self):
+    return "0"
+
+  def _default_allow_set_hostname(self):
+    return "1"
+
+  def _default_allow_sysvipc(self):
+    return "0"
+
+  def _default_allow_raw_sockets(self):
+    return "0"
+
+  def _default_allow_chflags(self):
+    return "0"
+
+  def _default_allow_mount(self):
+    return "0"
+
+  def _default_allow_mount_devfs(self):
+    return "0"
+
+  def _default_allow_mount_nullfs(self):
+    return "0"
+
+  def _default_allow_mount_procfs(self):
+    return "0"
+
+  def _default_allow_mount_zfs(self):
+    return "0"
+
+  def _default_allow_mount_tmpfs(self):
+    return "0"
+
+  def _default_allow_quotas(self):
+    return "0"
+
+  def _default_allow_socket_af(self):
+    return "0"
+
+  def _default_sysvmsg(self):
+    return "new"
+  
+  def _default_sysvsem(self):
+    return "new"
+
+  def _default_sysvshm(self):
+    return "new"
+
+  def _default_exec_clean(self):
+    return "1"
+
+  def _default_exec_fib(self):
+    return "0"
+
+  def _default_exec_prestart(self):
+    return "/usr/bin/true"
+
+  def _default_exec_start(self):
+    return "/bin/sh /etc/rc"
+
+  def _default_exec_poststart(self):
+    return "/usr/bin/true"
+
+  def _default_exec_prestop(self):
+    return "/usr/bin/true"
+
+  def _default_exec_stop(self):
+    return "/bin/sh /etc/rc.shutdown"
+
+  def _default_exec_poststop(self):
+    return "/usr/bin/true"
+
+  def _default_exec_timeout(self):
+    return "60"
+
+  def _default_stop_timeout(self):
+    return "30"
+
+  def _default_mount_devfs(self):
+    return "1"
+
+  def _default_mount_fdescfs(self):
+    return "1"
+
   def __create_special_property_resolver(self):
     
     create_new = False
@@ -182,11 +361,9 @@ class JailConfig(iocage.lib.JailConfigJSON.JailConfigJSON):
     get_method = None
     try:
       get_method = self.__getattribute__(f"_get_{key}")
+      return get_method()
     except:
       pass
-
-    if get_method:
-      return get_method()
 
     # plain data attribute
     try:

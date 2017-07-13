@@ -37,3 +37,21 @@ def shell(command):
 
   print(f"Executing Shell: {command}")
   return subprocess.check_output(command, shell=True, universal_newlines=True, stderr=subprocess.DEVNULL)
+
+def get_basedir_list():
+  return [
+    "bin",
+    "boot",
+    "lib",
+    "libexec",
+    "rescue",
+    "sbin",
+    "usr/bin",
+    "usr/include",
+    "usr/lib",
+    "usr/libexec",
+    "usr/sbin",
+    "usr/share",
+    "usr/libdata",
+    "usr/lib32"
+  ]

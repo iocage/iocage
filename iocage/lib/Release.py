@@ -43,7 +43,7 @@ class Release:
 
   @property
   def releases_folder(self):      
-    return self.host.datasets.releases_dataset.mountpoint
+    return self.host.datasets.releases.mountpoint
 
   @property
   def download_directory(self):
@@ -76,7 +76,7 @@ class Release:
   @property
   def zfs_pool(self):
     try:
-      return self.host.datasets.releases_dataset.pool
+      return self.host.datasets.releases.pool
     except:
       raise
       pass
@@ -90,7 +90,7 @@ class Release:
 
   @property
   def dataset_name(self):
-    return f"{self.host.datasets.releases_dataset.name}/{self.name}/root"
+    return f"{self.host.datasets.releases.name}/{self.name}/root"
 
   def download(self):
     self._require_empty_root_dir()
@@ -110,8 +110,7 @@ class Release:
     options = {
       "compression": "lz4"
     }
-    a = self.zfs_pool.create(self.dataset_name, options, create_ancestors=True)
-
+    self.zfs_pool.create(self.dataset_name, options, create_ancestors=True)
     self._dataset = self.zfs.get_dataset(self.dataset_name)
 
   def _ensure_dataset_mounted(self):

@@ -8,20 +8,14 @@ class JailConfigJSON:
     }
 
   def toJSON(self):
+    data = list(map(lambda x: x if x != None else "none", self.data))
     return json.dumps(self.data, sort_keys=True, indent=4)
 
   def save(self):
-
-    print("Changes would have been written")
-    print(JailConfigJSON.toJSON(self))
-    return
-
-    # ToDo: read file and see if the contents have changed
-
-    with open(JailConfigJSON.__get_config_json_path(self), "r+") as f:
-      f.seek(0)
+    config_file_path = JailConfigJSON.__get_config_json_path(self)
+    with open(config_file_path, "w") as f:
       f.write(JailConfigJSON.toJSON(self))
-      f.truncate()
+      print(f"Config written to {config_file_path}")
 
   def read(self):
     return self.clone(JailConfigJSON.read_data(self))
@@ -32,6 +26,6 @@ class JailConfigJSON:
 
   def __get_config_json_path(self):
     try:
-      return f"{self.dataset.mountpoint}/config.json"
+      return f"{self.jail.dataset.mountpoint}/config.json"
     except:
       raise "Dataset not found or not mounted"
