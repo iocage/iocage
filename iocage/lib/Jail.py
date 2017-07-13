@@ -1,32 +1,21 @@
 import libzfs
 import subprocess
 
-from iocage.lib.JailConfig import JailConfig
-from iocage.lib.Network import Network
-from iocage.lib.Storage import Storage
-from iocage.lib.Command import Command
-from iocage.lib.Host import Host
+import iocage.lib.JailConfig
+import iocage.lib.Network
+import iocage.lib.Storage
+import iocage.lib.helpers
 
 class Jail:
 
-  def __init__(self, data = {}, root_dataset="zroot/iocage", zfs=None):
+  def __init__(self, data = {}, zfs=None, host=None):
 
-    if isinstance(zfs, libzfs.ZFS):
-      self.zfs = zfs
-    else:
-      self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
+    iocage.lib.helpers.init_zfs(self, zfs)
+    iocage.lib.helpers.init_host(self, host)
 
-    if isinstance(root_dataset, libzfs.ZFSDataset):
-      self.root_dataset = root_dataset
-    elif isinstance(root_dataset, str):
-      self.root_dataset = self.zfs.get_dataset(root_dataset)
-    else:
-      raise Exception("root_dataset is invalid")
-
-    self.host = Host()
-    self.config = JailConfig(data=data)
+    self.config = iocage.lib.JailConfig.JailConfig(data=data)
     self.networks = []
-    self.storage = Storage(jail=self, auto_create=True, safe_mode=False)
+    self.storage = iocage.lib.Storage.Storage(jail=self, auto_create=True, safe_mode=False)
 
     try:
       self.config.dataset = self.dataset
@@ -36,7 +25,7 @@ class Jail:
 
   @property
   def zfs_pool_name(self):
-    return self.root_dataset.name.split("/", maxsplit=1)[0]
+    return self.host.datasets.root_dataset.name.split("/", maxsplit=1)[0]
 
   def start(self):
     self.require_jail_existing()
@@ -59,7 +48,7 @@ class Jail:
       "/usr/sbin/jexec",
       self.identifier
     ] + command
-    return Command.exec(self, command)
+    return iocage.lib.helpers.exec(command)
 
   def destroy_jail(self):
 
@@ -165,7 +154,7 @@ class Jail:
       except:
         ipv6_addresses = []
 
-      net = Network(jail=self, nic=nic, ipv4_addresses=ipv4_addresses, ipv6_addresses=ipv6_addresses, bridges=bridges)
+      net = iocage.lib.Network.Network(jail=self, nic=nic, ipv4_addresses=ipv4_addresses, ipv6_addresses=ipv6_addresses, bridges=bridges)
       net.setup()
       self.networks.append(net)
 
@@ -253,7 +242,7 @@ class Jail:
     return self.config.uuid
 
   def _get_dataset_name(self):
-    return f"{self.root_dataset.name}/jails/{self.config.uuid}"
+    return f"{self.host.datasets.root_dataset.name}/jails/{self.config.uuid}"
 
   def _get_dataset(self):
     return self.zfs.get_dataset(self._get_dataset_name())
@@ -262,7 +251,7 @@ class Jail:
     return self.dataset.mountpoint
 
   def _get_logfile_path(self):
-    return f"{self.root_dataset.mountpoint}/log/{self.identifier}-console.log"
+    return f"{self.host.datasets.root_dataset.mountpoint}/log/{self.identifier}-console.log"
 
   def __getattr__(self, key):
     try:

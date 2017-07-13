@@ -1,4 +1,4 @@
-from iocage.lib.Command import Command
+import iocage.lib.helpers
 
 import libzfs
 import pwd
@@ -10,10 +10,7 @@ class Storage:
 
   def __init__(self, jail, zfs=None, auto_create=False, safe_mode=True, fsopts={}):
 
-    if isinstance(zfs, libzfs.ZFS):
-      self.zfs = zfs
-    else:
-      self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
+    iocage.lib.helpers.init_zfs(self, zfs)
 
     self.jail = jail
 
@@ -92,7 +89,11 @@ class Storage:
           pass
 
       if (len(mounts) > 0):
-        Command.exec(Command, ["umount"] + mounts)
+        try:
+          iocage.lib.helpers.exec(["umount"] + mounts)
+        except:
+          # in case directories were not mounted
+          pass
 
   def _require_datasets_exist_and_jailed(self):
     existing_datasets = self.get_zfs_datasets(auto_create=False)
@@ -112,7 +113,7 @@ class Storage:
       self._unmount_local(dataset);
 
       # ToDo: bake jail feature into py-libzfs
-      Command.exec(Command, ["zfs", "jail", self.jail.identifier, dataset.name])
+      iocage.lib.helpers.exec(["zfs", "jail", self.jail.identifier, dataset.name])
 
       if dataset.properties['mountpoint']:
         for child in list(dataset.children):
@@ -122,14 +123,13 @@ class Storage:
   def _mount_procfs(self):
     try:
       if jail.config.mount_procfs:
-        Command.exec(Command, [
+        iocage.lib.helpers.exec([
           "mount"
           "-t",
           "procfs"
           "proc"
           f"{self.path}/root/proc"
         ])
-        print("procfs mounted")
     except:
       pass
 
@@ -145,14 +145,13 @@ class Storage:
 
     try:
       if jail.config.mount_procfs:
-        Command.exec(Command, [
+        iocage.lib.helpers.exec([
           "mount"
           "-t",
           "linprocfs"
           "linproc"
           f"{self.path}/root/{linproc_path}"
         ])
-        print("procfs mounted")
     except:
       pass
 

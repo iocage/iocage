@@ -1,5 +1,3 @@
-from iocage.lib.Command import Command
-
 import shutil
 
 class JailConfigResolver(list):

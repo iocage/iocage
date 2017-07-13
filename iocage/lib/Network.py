@@ -2,7 +2,7 @@ import subprocess
 from hashlib import md5
 import re
 
-from iocage.lib.NetworkInterface import NetworkInterface
+import iocage.lib.NetworkInterface
 
 class Network:
 
@@ -52,7 +52,7 @@ class Network:
 
     mac_a, mac_b = self.__generate_mac_address_pair()
 
-    host_if = NetworkInterface(
+    host_if = iocage.lib.NetworkInterface.NetworkInterface(
       name=epair_a,
       mac=mac_a,
       mtu=self.mtu,
@@ -62,14 +62,14 @@ class Network:
 
     # add host_if to bridges
     for bridge in self.bridges:
-      NetworkInterface(
+      iocage.lib.NetworkInterface.NetworkInterface(
         name=bridge,
         addm=self.nic_local_name,
         extra_settings=["up"]
       )
 
     # up host_if
-    NetworkInterface(
+    iocage.lib.NetworkInterface.NetworkInterface(
       name=self.nic_local_name,
       extra_settings=["up"]
     )
@@ -77,7 +77,7 @@ class Network:
     # assign epair_b to jail
     self.__assign_vnet_iface_to_jail(epair_b, self.jail.identifier)
 
-    jail_if = NetworkInterface(
+    jail_if = iocage.lib.NetworkInterface.NetworkInterface(
       name=epair_b,
       mac=mac_b,
       mtu=self.mtu,
@@ -92,7 +92,7 @@ class Network:
 
 
   def __assign_vnet_iface_to_jail(self, nic, jail_name):
-    NetworkInterface(
+    iocage.lib.NetworkInterface.NetworkInterface(
       name=nic,
       vnet=jail_name
     )

@@ -1,12 +1,11 @@
-from iocage.lib.JailConfigJSON import JailConfigJSON
-from iocage.lib.JailConfigZFS import JailConfigZFS
-from iocage.lib.JailConfigInterfaces import JailConfigInterfaces
-from iocage.lib.JailConfigAddresses import JailConfigAddresses
-from iocage.lib.JailConfigResolver import JailConfigResolver
+import iocage.lib.JailConfigJSON
+import iocage.lib.JailConfigInterfaces
+import iocage.lib.JailConfigAddresses
+import iocage.lib.JailConfigResolver
 
 from uuid import UUID
 
-class JailConfig(JailConfigJSON, JailConfigZFS):
+class JailConfig(iocage.lib.JailConfigJSON.JailConfigJSON):
 
   def __init__(self, data = {}):
 
@@ -50,8 +49,7 @@ class JailConfig(JailConfigJSON, JailConfigZFS):
       pass
 
   def save(self):
-    JailConfigJSON.save(self)
-    JailConfigZFS.save(self)
+    iocage.lib.JailConfigJSON.JailConfigJSON.save(self)
 
   def _set_uuid(self, uuid):
       object.__setattr__(self, 'uuid', str(UUID(uuid)))
@@ -63,7 +61,7 @@ class JailConfig(JailConfigJSON, JailConfigZFS):
       return None
     
   def _set_ip4_addr(self, value):
-    self.special_properties["ip4_addr"] = JailConfigAddresses(value, jail_config=self, property_name="ip4_addr")
+    self.special_properties["ip4_addr"] = iocage.lib.JailConfigAddresses.JailConfigAddresses(value, jail_config=self, property_name="ip4_addr")
     self.update_special_property("ip4_addr")
 
 
@@ -74,14 +72,14 @@ class JailConfig(JailConfigJSON, JailConfigZFS):
       return None
 
   def _set_ip6_addr(self, value):
-    self.special_properties["ip6_addr"] = JailConfigAddresses(value, jail_config=self, property_name="ip6_addr")
+    self.special_properties["ip6_addr"] = iocage.lib.JailConfigAddresses.JailConfigAddresses(value, jail_config=self, property_name="ip6_addr")
     self.update_special_property("ip6_addr")
 
   def _get_interfaces(self):
     return self.special_properties["interfaces"]
     
   def _set_interfaces(self, value):
-    self.special_properties["interfaces"] = JailConfigInterfaces(value, jail_config=self)
+    self.special_properties["interfaces"] = iocage.lib.JailConfigInterfaces.JailConfigInterfaces(value, jail_config=self)
     self.update_special_property("interfaces")
 
   def _get_defaultrouter(self):
@@ -153,7 +151,7 @@ class JailConfig(JailConfigJSON, JailConfigZFS):
       self.data["resolver"] = value
       resolver = self.resolver
     else:
-      resolver = JailConfigResolver(jail_config=self)
+      resolver = iocage.lib.JailConfigResolver.JailConfigResolver(jail_config=self)
       resolver.update(value, notify=True)
 
   def __create_special_property_resolver(self):
@@ -166,7 +164,7 @@ class JailConfig(JailConfigJSON, JailConfigZFS):
       pass
 
     if create_new:
-      resolver = JailConfigResolver(jail_config=self)
+      resolver = iocage.lib.JailConfigResolver.JailConfigResolver(jail_config=self)
       resolver.update(notify=False)
       self.special_properties["resolver"] = resolver
 
@@ -224,4 +222,4 @@ class JailConfig(JailConfigJSON, JailConfigZFS):
       return setter_method(value)
 
   def __str__(self):
-    return JailConfigJSON.toJSON(self)
+    return iocage.lib.JailConfigJSON.JailConfigJSON.toJSON(self)
