@@ -54,6 +54,7 @@ def child_test(zfs, iocroot, name, _type, force=False):
             })
             if not click.confirm("\nProceed?"):
                 return
+            children = []
         else:
             return
 
