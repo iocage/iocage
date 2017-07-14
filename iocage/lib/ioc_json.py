@@ -794,10 +794,10 @@ class IOCJson(object):
             "host_domainname"      : ("string",),
             "host_hostname"        : ("string",),
             "exec_fib"             : ("string",),
-            "ip4_addr"             : ("|",),
+            "ip4_addr"             : ("string",),
             "ip4_saddrsel"         : ("0", "1",),
             "ip4"                  : ("new", "inherit", "none"),
-            "ip6_addr"             : ("|",),
+            "ip6_addr"             : ("string",),
             "ip6_saddrsel"         : ("0", "1"),
             "ip6"                  : ("new", "inherit", "none"),
             "defaultrouter"        : ("string",),
@@ -932,27 +932,11 @@ class IOCJson(object):
             if props[key][0] == "string":
                 return
             else:
-                if key == "ip4_addr" or key == "ip6_addr" and value == "none":
-                    err = ""
-                else:
-                    err = f"{value} is not a valid value for {key}.\n"
+                err = f"{value} is not a valid value for {key}.\n"
 
-                if key not in ("interfaces", "ip4_addr", "ip6_addr",
-                               "memoryuse"):
+                if key not in ("interfaces", "memoryuse"):
                     msg = f"Value must be {' or '.join(props[key])}"
 
-                elif key == "ip4_addr":
-                    msg = "IP address must contain both an interface and IP " \
-                          "address.\nEXAMPLE: em0|192.168.1.10"
-
-                    if value == "none":
-                        return
-                elif key == "ip6_addr":
-                    msg = "IP address must contain both an interface and IP " \
-                          "address.\nEXAMPLE: em0|fe80::5400:ff:fe54:1"
-
-                    if value == "none":
-                        return
                 elif key == "interfaces":
                     msg = "Interfaces must be specified as a pair.\n" \
                           "EXAMPLE: vnet0:bridge0, vnet1:bridge1"

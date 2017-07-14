@@ -211,6 +211,9 @@ class IOCStop(object):
             if ip4_addr != "inherit" and vnet == "off":
                 if ip4_addr != "none":
                     for ip4 in ip4_addr.split(","):
+                        # Don't try to remove an alias if there's no interface.
+                        if "|" not in ip4:
+                            continue
                         try:
                             iface, addr = ip4.split("/")[0].split("|")
                             addr = addr.split()
@@ -218,16 +221,6 @@ class IOCStop(object):
                                 ["ifconfig", iface] + addr +
                                 ["-alias"],
                                 stderr=su.STDOUT)
-                        except ValueError:
-                            # Likely a misconfigured ip_addr with no interface.
-                            msg = "  ! IP4 address is missing an interface," \
-                                  " set ip4_addr to \"INTERFACE|IPADDR\""
-                            iocage.lib.ioc_common.logit({
-                                "level"  : "INFO",
-                                "message": msg
-                            },
-                                _callback=self.callback,
-                                silent=self.silent)
                         except su.CalledProcessError as err:
                             if "Can't assign requested address" in \
                                     err.output.decode("utf-8"):
@@ -243,22 +236,15 @@ class IOCStop(object):
             if ip6_addr != "inherit" and vnet == "off":
                 if ip6_addr != "none":
                     for ip6 in ip6_addr.split(","):
+                        # Don't try to remove an alias if there's no interface.
+                        if "|" not in ip6:
+                            continue
                         try:
                             iface, addr = ip6.split("/")[0].split("|")
                             addr = addr.split()
                             iocage.lib.ioc_common.checkoutput(
                                 ["ifconfig", iface, "inet6"] + addr +
                                 ["-alias"], stderr=su.STDOUT)
-                        except ValueError:
-                            # Likely a misconfigured ip_addr with no interface.
-                            msg = "  ! IP6 address is missing an interface," \
-                                  " set ip6_addr to \"INTERFACE|IPADDR\""
-                            iocage.lib.ioc_common.logit({
-                                "level"  : "INFO",
-                                "message": msg
-                            },
-                                _callback=self.callback,
-                                silent=self.silent)
                         except su.CalledProcessError as err:
                             if "Can't assign requested address" in \
                                     err.output.decode("utf-8"):

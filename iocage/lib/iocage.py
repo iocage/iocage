@@ -729,7 +729,7 @@ class IOCage(object):
                     "level"  : "EXCEPTION",
                     "message": "An IP address is needed to fetch a plugin!\n"
                                "Please specify ip(4|6)"
-                               "_addr=\"INTERFACE|IPADDRESS\"!"
+                               "_addr=\"[INTERFACE|]IPADDRESS\"!"
                 },
                     _callback=self.callback,
                     silent=self.silent)
