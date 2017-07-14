@@ -85,40 +85,86 @@ class Storage:
   def _pool(self):
     return self.jail.host.datasets.root.pool
 
-  def apply(self, auto_create=False):
+  def mount_zfs_shares(self, auto_create=False):
     if self.zfs_enabled:
       self._mount_procfs()
       self._mount_jail_datasets(auto_create=auto_create)
 
-  def clone_basedirs(self):
-    if not self.jail.config.clonejail:
-      raise Exception(f"Jail {self.jail.humanreadable_name} is not a clonejail.")
+  def _delete_clone_target_datasets(self, root=None):
 
-    # Ensure basedirs do not exist
+    if root == None:
+      root = list(self.jail_root_dataset.children)
+
     basedirs = iocage.lib.helpers.get_basedir_list()
-    # ToDo
+
+    for child in root:
+      relative_name = child.name.replace(f"{self.jail_root_dataset_name}/","")
+
+      if relative_name in basedirs:
+
+        # Unmount if mounted
+        try:
+          child.umount()
+        except:
+          pass
+
+        # Delete existing snapshots
+        for snapshot in child.snapshots:
+          try:
+            snapshot.delete()
+          except:
+            pass
+
+        child.delete()
+
+      else:
+        self._delete_clone_target_datasets(list(child.children))
+
+
+  def clone_zfs_basejail(self, release):
+    if not self.jail.config.basejail_type == "zfs":
+      raise Exception(f"Jail {self.jail.humanreadable_name} is not a zfs basejail.")
+
+    self._delete_clone_target_datasets()
+
+    for basedir in iocage.lib.helpers.get_basedir_list():
+      source_dataset_name = f"{release.base_dataset.name}/{basedir}"
+      target_dataset_name = f"{self.jail_root_dataset_name}/{basedir}"
+      self._clone_zfs_dataset(source_dataset_name, target_dataset_name)
 
   def clone_release(self, release):
+    self._clone_zfs_dataset(release.dataset, self.jail_root_dataset_name)
 
-    snapshot_name = f"{release.dataset.name}@ioc-{self.jail.uuid}"
+  def _clone_zfs_dataset(self, source, target):
+
+    snapshot_name = f"{source}@{self.jail.uuid}"
 
     # delete existing snapshot if existing
+    existing_snapshot = None
     try:
-      self.zfs.get_snapshot(snapshot_name).delete()
+      existing_snapshot = self.zfs.get_snapshot(snapshot_name)
     except:
       pass
 
+    if existing_snapshot:
+      existing_snapshot.delete()
+
     # snapshot release
-    release.dataset.snapshot(snapshot_name)
+    self.zfs.get_dataset(source).snapshot(snapshot_name)
     snapshot = self.zfs.get_snapshot(snapshot_name)
 
     # clone snapshot
-    snapshot.clone(self.jail_root_dataset_name)
-    print(f"Snapshot {snapshot_name} cloned to dataset {self.jail_root_dataset_name}")
+    try:
+      snapshot.clone(target)
+    except:
+      parent = "/".join(basedir.split("/")[:-1])
+      pool = self.jail.host.datasets.root.pool
+      pool.create(parent, {}, recursive=True)
+      snapshot.clone(target)
 
-    # mount new dataset
-    self.jail_root_dataset.mount()
-
+    target_dataset = self.zfs.get_dataset(target)
+    target_dataset.mount()
+    print(f"Cloned to {target}")
 
   def create_jail_dataset(self):
     self._create_dataset(self.jail.dataset_name)
@@ -210,7 +256,6 @@ class Storage:
       pass
 
   def _mount_jail_dataset(self, dataset_name):
-    print(f"mounting {dataset_name}")
     self.jail.exec(['zfs', 'mount', dataset_name])
 
   def _get_pool_name_from_dataset_name(self, dataset_name):

@@ -3,15 +3,18 @@ import iocage.lib.JailConfigInterfaces
 import iocage.lib.JailConfigAddresses
 import iocage.lib.JailConfigResolver
 import iocage.lib.JailConfigFstab
+import iocage.lib.JailConfigLegacy
+import iocage.lib.JailConfigZFS
 
 from uuid import UUID
 
-class JailConfig(iocage.lib.JailConfigJSON.JailConfigJSON):
+class JailConfig():
 
   def __init__(self, data = {}, jail=None):
 
     object.__setattr__(self, 'data', {})
     object.__setattr__(self, 'special_properties', {})
+    object.__setattr__(self, 'legacy', False)
 
     # jail is required for various operations (write, fstab, etc)
     if jail:
@@ -41,6 +44,29 @@ class JailConfig(iocage.lib.JailConfigJSON.JailConfigJSON):
     for key in data:
       self.__setattr__(key, data[key])
 
+  def read(self):
+
+    try:
+      iocage.lib.JailConfigJSON.JailConfigJSON.read(self)
+      object.__setattr__(self, 'legacy', False)
+      return
+    except:
+      pass
+
+    try:
+      iocage.lib.JailConfigLegacy.JailConfigLegacy.read(self)
+      object.__setattr__(self, 'legacy', True)
+      return
+    except:
+      pass
+
+    #try:
+    print("READING ZFS")
+    iocage.lib.JailConfigZFS.JailConfigZFS.read(self)
+    object.__setattr__(self, 'legacy', True)
+    # except:
+    #   pass
+
   def update_special_property(self, name, new_property_handler=None):
 
     if new_property_handler != None:
@@ -59,6 +85,12 @@ class JailConfig(iocage.lib.JailConfigJSON.JailConfigJSON):
       pass
 
   def save(self):
+    if not self.legacy:
+      self.save_json()
+    else:
+      iocage.lib.JailConfigLegacy.JailConfigLegacy.save(self)
+
+  def save_json(self):
     iocage.lib.JailConfigJSON.JailConfigJSON.save(self)
 
   def set_uuid(self, uuid):
@@ -204,7 +236,7 @@ class JailConfig(iocage.lib.JailConfigJSON.JailConfigJSON):
     except:
       return False
 
-  def _default_mac_prefix():
+  def _default_mac_prefix(self):
     return "02ff60"
 
   def _get_resolver(self):
@@ -218,6 +250,17 @@ class JailConfig(iocage.lib.JailConfigJSON.JailConfigJSON):
     else:
       resolver = iocage.lib.JailConfigResolver.JailConfigResolver(jail_config=self)
       resolver.update(value, notify=True)
+
+  def _get_basejail_type(self):
+    return self.data["basejail_type"]
+
+  def _default_basejail_type(self):
+    try:
+      if self.basejail:
+        return "nullfs"
+    except:
+      pass
+    return None
 
   def _default_vnet(self):
     return False

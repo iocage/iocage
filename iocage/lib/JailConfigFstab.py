@@ -16,7 +16,7 @@ class JailConfigFstab:
 
   def __str__(self):
 
-    if not self.jail.config.basejail:
+    if not self.jail.config.basejail or not self.jail.config.basejail_type == "nullfs":
       return ""
 
     fstab_lines = []

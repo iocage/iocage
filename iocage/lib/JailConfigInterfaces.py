@@ -33,7 +33,7 @@ class JailConfigInterfaces(dict):
 
 
   def read(self, value):
-    nic_pairs = value.split(" ")
+    nic_pairs = value.replace(",", " ").split(" ")
     for nic_pair in nic_pairs:
       jail_if, bridge_if = nic_pair.split(":", maxsplit=1)
       self.add(jail_if, bridge_if, notify=False)

@@ -46,6 +46,12 @@ class Release:
     return self.host.datasets.releases.mountpoint
 
   @property
+  def base_dataset(self):
+    # base datasets are created from releases. required to start zfs-basejails
+    base_dataset_name = f"{self.host.datasets.base.name}/{self.name}/root"
+    return self.zfs.get_dataset(base_dataset_name)
+
+  @property
   def download_directory(self):
     return f"{self.releases_folder}/{self.name}"
 

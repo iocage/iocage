@@ -2,6 +2,7 @@ import iocage.lib.JailConfig
 import iocage.lib.Network
 import iocage.lib.Storage
 import iocage.lib.Releases
+import iocage.lib.Release
 import iocage.lib.helpers
 
 import libzfs
@@ -15,15 +16,15 @@ class Jail:
     iocage.lib.helpers.init_zfs(self, zfs)
     iocage.lib.helpers.init_host(self, host)
 
+    if isinstance(data, str):
+      print("STRING!")
+      data = { "uuid": data }
+
     self.config = iocage.lib.JailConfig.JailConfig(data=data, jail=self)
     self.networks = []
     self.storage = iocage.lib.Storage.Storage(jail=self, auto_create=True, safe_mode=False)
 
-    try:
-      self.config.dataset = self.dataset
-      self.config.read()
-    except:
-      pass
+    self.config.read()
 
   @property
   def zfs_pool_name(self):
@@ -32,11 +33,16 @@ class Jail:
   def start(self):
     self.require_jail_existing()
     self.require_jail_stopped()
-    
+   
+    release = self.release
+ 
     self.storage.umount_nullfs()
-
+    
+    if self.config.basejail_type == "zfs":
+      self.storage.clone_zfs_basejail(release)
+    
     if self.config.type == "clonejail":
-      self.storage.clone_basedirs()
+      self.storage.clone_basedirs(release)
 
     self.launch_jail()
 
@@ -45,7 +51,7 @@ class Jail:
       self.set_routes()
     
     self.set_nameserver()
-    self.storage.apply()
+    self.storage.mount_zfs_shares()
 
   def stop(self):
     self.require_jail_existing()
@@ -81,6 +87,7 @@ class Jail:
       self.storage.create_jail_root_dataset()
       raise Exception("Only clonejail creation supported yet.")
 
+    self.config.data["release"] = release.name
     self.config.save()
 
   def clone_release(self, release):
@@ -299,6 +306,9 @@ class Jail:
 
   def _get_uuid(self):
     return self.config.uuid
+
+  def _get_release(self):
+    return iocage.lib.Release.Release(name=self.config.release)
 
   def _get_jail_type(self):
     return self.config.type

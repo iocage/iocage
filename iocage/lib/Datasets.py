@@ -7,7 +7,7 @@ class Datasets:
   def __init__(self, root=None, zfs=None):
     iocage.lib.helpers.init_zfs(self, zfs)
 
-    self._releases_dataset = None
+    self._datasets = {}
 
     if(isinstance(root, libzfs.ZFSDataset)):
       self.root = root
@@ -22,10 +22,27 @@ class Datasets:
 
   @property
   def releases(self):
+    return self._get_or_create_dataset("releases")
 
-    if not self._releases_dataset:
-      name = f"{self.root.name}/releases"
-      releases_dataset = self.zfs.get_dataset(name)
-      self._releases_dataset = releases_dataset
-    
-    return self._releases_dataset
+  @property
+  def base(self):
+    return self._get_or_create_dataset("base")
+
+  def _get_or_create_dataset(self, name):
+
+    try:
+      return self.datasets[name]
+    except:
+      pass
+
+    name = f"{self.root.name}/{name}"
+    try:
+      dataset = self.zfs.get_dataset(name)
+    except:
+      self.root.pool.create(name, {})
+      dataset = self.zfs.get_dataset(name)
+      dataset.mount()
+    self._datasets[name] = dataset
+
+    return dataset
+
