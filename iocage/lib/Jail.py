@@ -229,7 +229,7 @@ class Jail:
 
   def set_routes(self):
 
-    self.logger.log(f"Setting Routes (IPv4={self.config.defaultrouter}, IPv6={self.config.defaultrouer6}", jail=self)
+    self.logger.log(f"Setting Routes (IPv4={self.config.defaultrouter}, IPv6={self.config.defaultrouter6}", jail=self)
 
     if self.config.defaultrouter:
       self._set_route(self.config.defaultrouter)

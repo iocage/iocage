@@ -138,18 +138,20 @@ class JailConfig():
       self.data["type"] = "jail"
 
     else:
-      self.basejail = False
-      self.clonejail = False
       self.data["type"] = value
 
   def _get_basejail(self):
-    return self.data["basejail"] == "on"
+    return (self.data["basejail"] == "on") or (self.data["basejail"] == "yes") 
 
   def _default_basejail(self):
     return False
 
   def _set_basejail(self, value):
-    self.data["basejail"] = "on" if (value == True) or (value == "on") else "off"
+    enabled = (value == True) or (value == "on") or (value == "yes")
+    if self.legacy:
+      self.data["basejail"] = "on" if enabled else "off"
+    else:
+      self.data["basejail"] = "yes" if enabled else "no"
 
   def _get_clonejail(self):
     return self.data["clonejail"] == "on"
@@ -204,6 +206,9 @@ class JailConfig():
       value = 'none'
     self.data['defaultrouter'] = value
 
+  def _default_defaultrouter(self):
+    return "none"
+
   def _get_defaultrouter6(self):
     value = self.data['defaultrouter6']
     return value if (value != "none" and value != None) else None
@@ -212,6 +217,9 @@ class JailConfig():
     if value == None:
       value = 'none'
     self.data['defaultrouter6'] = value
+
+  def _default_defaultrouter6(self):
+    return "none"
 
   def _get_vnet(self):
     return self.data["vnet"] == "on"

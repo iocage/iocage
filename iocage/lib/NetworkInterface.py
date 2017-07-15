@@ -4,7 +4,7 @@ class NetworkInterface:
 
   ifconfig_command = "/sbin/ifconfig"
 
-  def __init__(self, name="vnet0", ipv4_addresses=[], ipv6_addresses=[], mac=None, mtu=None, description=None, rename=None, addm=None, vnet=None, jail=None, extra_settings=[], auto_apply=True):
+  def __init__(self, name="vnet0", ipv4_addresses=[], ipv6_addresses=[], mac=None, mtu=None, description=None, rename=None, addm=None, vnet=None, jail=None, extra_settings=[], auto_apply=True, logger=None):
 
     self.jail = jail
 
