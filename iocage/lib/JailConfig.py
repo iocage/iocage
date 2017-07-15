@@ -22,7 +22,7 @@ class JailConfig():
     # jail is required for various operations (write, fstab, etc)
     if jail:
       object.__setattr__(self, 'jail', jail)
-      fstab = iocage.lib.JailConfigFstab.JailConfigFstab(jail=jail)
+      fstab = iocage.lib.JailConfigFstab.JailConfigFstab(jail=jail, logger=self.logger)
       object.__setattr__(self, 'fstab', fstab)
     else:
       self.jail = None

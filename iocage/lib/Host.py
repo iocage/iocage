@@ -8,11 +8,12 @@ import libzfs
 
 class Host:
 
-  def __init__(self, root_dataset=None, zfs=None):
+  def __init__(self, root_dataset=None, zfs=None, logger=None):
 
+    iocage.lib.helpers.init_logger(self, logger)
     iocage.lib.helpers.init_zfs(self, zfs)
-    self.datasets = iocage.lib.Datasets.Datasets(root=root_dataset)
-    self.distribution = iocage.lib.Distribution.Distribution(host=self)
+    self.datasets = iocage.lib.Datasets.Datasets(root=root_dataset, logger=self.logger)
+    self.distribution = iocage.lib.Distribution.Distribution(host=self, logger=self.logger)
     
     self.releases_dataset = None
 

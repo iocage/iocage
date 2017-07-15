@@ -31,7 +31,7 @@ class JailConfigResolver(list):
 
   def apply(self, jail):
 
-    self.logger.log(f"Configuring nameserver for Jail '{jail.humanreadable_name}'")
+    self.logger.verbose(f"Configuring nameserver for Jail '{jail.humanreadable_name}'")
       
     remote_path = f"{jail.path}/root{self.conf_file_path}"
 

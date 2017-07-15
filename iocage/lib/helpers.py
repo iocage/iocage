@@ -12,10 +12,16 @@ def init_zfs(self, zfs):
     self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
 
 def init_host(self, host=None):
+
   if host:
     self.host = host
   else:
-    self.host = iocage.lib.Host.Host()
+    try:
+      logger = self.logger
+    except:
+      logger = None
+
+    self.host = iocage.lib.Host.Host(logger=logger)
 
 def init_datasets(self, datasets=None):
   if datasets:

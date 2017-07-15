@@ -24,31 +24,21 @@
 """start module for the cli."""
 import click
 
-import iocage.lib.ioc_common as ioc_common
-import iocage.lib.iocage as ioc
+import iocage.lib.Jail
+import iocage.lib.Logger
 
 __rootcmd__ = True
-
 
 @click.command(name="start", help="Starts the specified jails or ALL.")
 @click.option("--rc", default=False, is_flag=True,
               help="Will start all jails with boot=on, in the specified"
                    " order with smaller value for priority starting first.")
+@click.option("--log-level", "-d", default="info")
 @click.argument("jails", nargs=-1)
-def cli(rc, jails):
+def cli(rc, jails, log_level):
     """
-    Looks for the jail supplied and passes the uuid, path and configuration
-    location to start_jail.
+    Starts Jails
     """
-    if not jails and not rc:
-        ioc_common.logit({
-            "level"  : "EXCEPTION",
-            "message": 'Usage: iocage start [OPTIONS] JAILS...\n'
-                       '\nError: Missing argument "jails".'
-        }, exit_on_error=True)
-
-    if rc:
-        ioc.IOCage(exit_on_error=True, rc=rc, silent=True).start()
-    else:
-        for jail in jails:
-            ioc.IOCage(exit_on_error=True, jail=jail, rc=rc).start()
+    logger = iocage.lib.Logger.Logger(print_level=log_level)
+    for jail in jails:
+        iocage.lib.Jail.Jail(jail, logger=logger).start()

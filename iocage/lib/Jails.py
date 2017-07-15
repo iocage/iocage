@@ -1,10 +1,12 @@
-from iocage.lib.Jail import Jail
+import iocage.lib.Jail
+import iocage.lib.helpers
 
 import libzfs
 
 class Jails:
 
-  def __init__(self, root_dataset_name="zroot/iocage"):
+  def __init__(self, root_dataset_name="zroot/iocage", logger=None):
+    iocage.lib.helpers.init_logger(self, logger)
     self.root_dataset_name = "zroot/iocage"
     self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
 
@@ -17,8 +19,8 @@ class Jails:
     jail_datasets = list(jails_dataset.children)
 
     return list(map(
-      lambda x: Jail({
+      lambda x: iocage.lib.Jail.Jail({
         "uuid": x.name.split("/").pop()
-      }),
+      }, logger=self.logger),
       jail_datasets
     ))

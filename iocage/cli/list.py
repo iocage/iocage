@@ -23,10 +23,14 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """list module for the cli."""
 import click
+import texttable
 
 import iocage.lib.ioc_common as ioc_common
 import iocage.lib.ioc_fetch as ioc_fetch
 import iocage.lib.iocage as ioc
+from iocage.lib.Jails import Jails
+from iocage.lib.Host import Host
+from iocage.lib.Logger import Logger
 
 
 @click.command(name="list", help="List a specified dataset type, by default"
@@ -42,13 +46,18 @@ import iocage.lib.iocage as ioc
 @click.option("--remote", "-R", is_flag=True, help="Show remote's available "
                                                    "RELEASEs.")
 @click.option("--plugins", "-P", is_flag=True, help="Show available plugins.")
-@click.option("--http", default=False,
-              help="Have --remote use HTTP instead.", is_flag=True)
 @click.option("--sort", "-s", "_sort", default="name", nargs=1,
               help="Sorts the list by the given type")
 @click.option("--quick", "-q", is_flag=True, default=False,
               help="Lists all jails with less processing and fields.")
-def cli(dataset_type, header, _long, remote, http, plugins, _sort, quick):
+@click.option("--log-level", "-d", default="info")
+def cli(dataset_type, header, _long, remote, plugins, _sort, quick, log_level):
+
+    logger = Logger(print_level=log_level)
+    host = Host(logger=logger)
+    jails = Jails(logger=logger)
+    hardened = host.distribution.name == "HardenedBSD"
+
     """This passes the arg and calls the jail_datasets function."""
     freebsd_version = ioc_common.checkoutput(["freebsd-version"])
     iocage = ioc.IOCage(exit_on_error=True, skip_jails=True)
@@ -57,37 +66,43 @@ def cli(dataset_type, header, _long, remote, http, plugins, _sort, quick):
         dataset_type = "all"
 
     if remote and not plugins:
-        if "HBSD" in freebsd_version:
-            hardened = True
-        else:
-            hardened = False
-
-        ioc_fetch.IOCFetch("", http=http, hardened=hardened).fetch_release(
-            _list=True)
+        
+        available_releases = host.distribution.releases
+        for available_release in available_releases:
+            print(available_release.name)
+        return
 
     if plugins and remote:
-        _list = ioc_fetch.IOCFetch("").fetch_plugin_index("", _list=True,
-                                                          list_header=header,
-                                                          list_long=_long)
+        raise Exception("ToDo")
     else:
-        _list = iocage.list(dataset_type, header, _long, _sort,
-                            plugin=plugins, quick=quick)
 
-    if not header:
-        if dataset_type == "base":
-            for item in _list:
-                ioc_common.logit({
-                    "level"  : "INFO",
-                    "message": item
-                })
+        columns = ["jid", "name"]
+
+        if _long:
+            columns += ["uuid", "running", "release", "ip4.addr", "ip6.addr"]
         else:
-            for item in _list:
-                ioc_common.logit({
-                    "level"  : "INFO",
-                    "message": "\t".join(item)
-                })
-    else:
-        ioc_common.logit({
-            "level"  : "INFO",
-            "message": _list
-        })
+            columns += ["running", "ip4.addr"]
+
+        table = texttable.Texttable(max_width=0)
+        table.set_cols_dtype(["t"] * len(columns))
+
+        table_data = []
+        table_data.append([x.upper() for x in columns])
+
+        for jail in jails.list():
+            table_data.append([
+                str(jail.__getattr__(x)) if x in [
+                    "jid",
+                    "name",
+                    "running",
+                    "ip4.addr",
+                    "ip6.addr"
+                ] else str(jail.config.__getattr__(x)
+            ) for x in columns])
+
+        table.add_rows(table_data)
+        print(table.draw())
+        return
+
+
+    return

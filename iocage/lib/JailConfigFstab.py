@@ -2,7 +2,8 @@ import iocage.lib.helpers
 
 class JailConfigFstab:
 
-  def __init__(self, jail):
+  def __init__(self, jail, logger=None):
+    iocage.lib.helpers.init_logger(self, logger)
     self.jail = jail
 
   @property
@@ -12,7 +13,7 @@ class JailConfigFstab:
   def write(self):
     with open(self.path, "w") as f:
       f.write(self.__str__())
-      print(f"{self.path} written")
+      self.logger.verbose(f"{self.path} written")
 
   def __str__(self):
 

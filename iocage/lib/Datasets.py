@@ -4,7 +4,8 @@ import libzfs
 
 class Datasets:
 
-  def __init__(self, root=None, zfs=None):
+  def __init__(self, root=None, zfs=None, logger=None):
+    #iocage.lib.helpers.init_logger(self, logger)
     iocage.lib.helpers.init_zfs(self, zfs)
 
     self._datasets = {}
@@ -27,6 +28,10 @@ class Datasets:
   @property
   def base(self):
     return self._get_or_create_dataset("base")
+
+  @property
+  def jails(self):
+    return self._get_or_create_dataset("jails")
 
   def _get_or_create_dataset(self, name):
 

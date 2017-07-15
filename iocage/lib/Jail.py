@@ -22,13 +22,15 @@ class Jail:
     iocage.lib.helpers.init_host(self, host)
 
     if isinstance(data, str):
-      data = { "uuid": data }
+      data = { "uuid": self._resolve_uuid(data) }
 
     self.config = iocage.lib.JailConfig.JailConfig(data=data, jail=self, logger=self.logger)
     self.networks = []
     self.storage = iocage.lib.Storage.Storage(jail=self, auto_create=True, safe_mode=False, logger=self.logger)
+    self.jail_state = None
 
     self.config.read()
+    self.update_jail_state()
 
   @property
   def zfs_pool_name(self):
@@ -72,6 +74,7 @@ class Jail:
     self.require_jail_existing()
     self.require_jail_running()
     self.destroy_jail()
+    self.update_jail_state()
 
   def create(self, release_name):
     self.require_jail_not_existing()
@@ -205,6 +208,7 @@ class Jail:
 
     try:
       output = subprocess.check_output(command, shell=False, stderr=subprocess.STDOUT)
+      self.update_jail_state()
       self.logger.log(f"Jail '{self.humanreadable_name}' started with JID {self.jid}", jail=self)
     except subprocess.CalledProcessError as exc:
       self.logger.error(f"Jail '{self.humanreadable_name}' failed with exit code {exc.returncode}", jail=self)
@@ -282,6 +286,36 @@ class Jail:
     if not self.running:
       raise Exception(f"Jail {self.humanreadable_name} is not running")
 
+  def update_jail_state(self):
+    try:
+      stdout = subprocess.check_output([
+        "/usr/sbin/jls",
+        "-j",
+        self.identifier,
+        "-v",
+        "-h"
+      ], shell=False, stderr=subprocess.DEVNULL)
+      output = stdout.decode("utf-8").strip()
+
+      keys, values = [x.split(" ") for x in output.split("\n")]
+      self.jail_state = dict(zip(keys, values))
+
+    except:
+      self.jail_state = None
+
+  def _resolve_uuid(self, text):
+    jails_dataset = self.host.datasets.jails
+    for dataset in list(jails_dataset.children):
+      dataset_uuid = dataset.name[len(jails_dataset.name)+1:]
+      if text in dataset_uuid:
+        self.logger.debug(f"Resolved {text} to uuid {dataset_uuid}")
+        return dataset_uuid
+
+    raise Exception(f"No jail matching {text} was found")
+
+  def _get_name(self):
+    return self.humanreadable_name()
+
   def _get_humanreadable_name(self):
 
     try:
@@ -290,7 +324,7 @@ class Jail:
       pass
 
     try:
-      return self.config.uuid
+      return self.config.uuid[:8]
     except:
       pass
 
@@ -303,19 +337,11 @@ class Jail:
     return self._get_jid() != None
 
   def _get_jid(self):
+    # self.update_jail_state()
     try:
-      stdout = subprocess.check_output([
-        "/usr/sbin/jls",
-        "-j",
-        self.identifier,
-        "-v",
-        "jid"
-      ], shell=False, stderr=subprocess.DEVNULL)
-      jid = stdout.decode("utf-8").strip()
+      return self.jail_state['jid'];
     except:
-      jid = None
-
-    return jid
+      return None
 
   def _get_identifier(self):
     return f"ioc-{self.uuid}"
@@ -353,4 +379,12 @@ class Jail:
       method = self.__getattribute__(f"_get_{key}")
       return method()
     except:
-      raise Exception(f"Jail property {key} not found")
+      pass
+
+    if self.jail_state != None:
+      try:
+        return self.jail_state[key]
+      except:
+        pass
+
+    raise Exception(f"Jail property {key} not found")
