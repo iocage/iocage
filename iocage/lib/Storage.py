@@ -5,10 +5,9 @@ import pwd
 import grp
 import os
 
-
 class Storage:
 
-  def __init__(self, jail, zfs=None, auto_create=False, safe_mode=True, fsopts={}, logger=None):
+  def __init__(self, jail, zfs=None, auto_create=False, safe_mode=True, logger=None):
 
     iocage.lib.helpers.init_logger(self, logger)
     iocage.lib.helpers.init_zfs(self, zfs)
@@ -22,57 +21,9 @@ class Storage:
     # safe-mody only attaches zfs datasets to jails that were tagged with jailed=on already exist
     self.safe_mode = safe_mode
 
-    # additional fsopts
-    self._set_fsopts(fsopts)
-
-  @property
-  def zfs_enabled(self):
-    try:
-      return self.jail.config.jail_zfs == True
-    except:
-      return False
-
   @property
   def zfs_datasets(self):
     return self.get_zfs_datasets(self.auto_create)
-
-  def get_zfs_datasets(self, auto_create=None):
-    dataset_names = self.jail.config.jail_zfs_dataset
-    dataset_not_found_error = False
-
-    auto_create = self.auto_create if auto_create == None else auto_create
-
-    datasets = set()
-    for name in dataset_names:
-
-      zpool = None
-      try:
-        zpool = self._get_pool_from_dataset_name(name)
-      except:
-        pass
-
-      try:
-        # legacy support (datasets not prefixed with pool/)
-        zpool = self._get_pool_from_dataset_name(f"{self.jail.zfs_pool_name}/{name}")
-        name = f"{self.jail.zfs_pool_name}/{name}"
-      except:
-
-        pass
-
-      try:
-        if auto_create:
-          zpool.create(name, self.fsopts, create_ancestors=True)
-      except Exception as e:
-        print(e)
-        pass
-      
-      try:
-        dataset = self.zfs.get_dataset(name)
-        datasets.add(dataset);
-      except:
-        raise Exception(f"Neither the dataset {name} nor {self.jail.zfs_pool_name}/{name} could be found")
-
-    return datasets
 
   @property
   def jail_root_dataset(self):
@@ -86,57 +37,11 @@ class Storage:
   def _pool(self):
     return self.jail.host.datasets.root.pool
 
-  def mount_zfs_shares(self, auto_create=False):
-    if self.zfs_enabled:
-      self._mount_procfs()
-      self._mount_jail_datasets(auto_create=auto_create)
-
-  def _delete_clone_target_datasets(self, root=None):
-
-    if root == None:
-      root = list(self.jail_root_dataset.children)
-
-    basedirs = iocage.lib.helpers.get_basedir_list()
-
-    for child in root:
-      relative_name = child.name.replace(f"{self.jail_root_dataset_name}/","")
-
-      if relative_name in basedirs:
-
-        # Unmount if mounted
-        try:
-          child.umount()
-        except:
-          pass
-
-        # Delete existing snapshots
-        for snapshot in child.snapshots:
-          try:
-            snapshot.delete()
-          except:
-            pass
-
-        child.delete()
-
-      else:
-        self._delete_clone_target_datasets(list(child.children))
-
-
-  def clone_zfs_basejail(self, release):
-    if not self.jail.config.basejail_type == "zfs":
-      raise Exception(f"Jail {self.jail.humanreadable_name} is not a zfs basejail.")
-
-    self._delete_clone_target_datasets()
-
-    for basedir in iocage.lib.helpers.get_basedir_list():
-      source_dataset_name = f"{release.base_dataset.name}/{basedir}"
-      target_dataset_name = f"{self.jail_root_dataset_name}/{basedir}"
-      self._clone_zfs_dataset(source_dataset_name, target_dataset_name)
-
   def clone_release(self, release):
-    self._clone_zfs_dataset(release.dataset, self.jail_root_dataset_name)
+    self.clone_zfs_dataset(release.dataset.name, self.jail_root_dataset_name)
+    self.logger.verbose(f"Cloned release '{release.name}' to {self.jail.humanreadable_name}", jail=self.jail)
 
-  def _clone_zfs_dataset(self, source, target):
+  def clone_zfs_dataset(self, source, target):
 
     snapshot_name = f"{source}@{self.jail.uuid}"
 
@@ -173,38 +78,18 @@ class Storage:
   def create_jail_root_dataset(self):
     self._create_dataset(self.jail_root_dataset_name)
 
+  def get_or_create_jail_root_dataset(self):
+    try:
+      return self.jail_root_dataset
+    except:
+      self.create_jail_root_dataset()
+    return self.jail_root_dataset
+
   def _create_dataset(self, name, mount=True):
     self._pool.create(name, {}, create_ancestors=True)
     if mount:
       ds = self.zfs.get_dataset(name)
       ds.mount()
-
-  def umount_nullfs(self):
-
-    with open(f"{self.jail.path}/fstab") as f:
-      mounts = []
-      for mount in f.read().splitlines():
-        try:
-          mounts.append(mount.replace("\t", " ").split(" ")[1])
-        except:
-          pass
-
-      if (len(mounts) > 0):
-        try:
-          iocage.lib.helpers.exec(["umount"] + mounts)
-        except:
-          # in case directories were not mounted
-          pass
-
-  def create_nullfs_directories(self):
-    basedirs = iocage.lib.helpers.get_basedir_list() + ["dev", "etc"]
-    jail_root = self.jail_root_dataset.mountpoint
-
-    for basedir in basedirs:
-      basedir = f"{jail_root}/{basedir}"
-      if not os.path.isdir(basedir):
-        self.logger.verbose(f"Creating nullfs mountpoint {basedir}")
-        os.makedirs(basedir)
 
   def _require_datasets_exist_and_jailed(self):
     existing_datasets = self.get_zfs_datasets(auto_create=False)
@@ -244,6 +129,7 @@ class Storage:
     except:
       pass
 
+  # ToDo: Remove unused function?
   def _mount_linprocfs(self):
     try:
       if not jail.config.mount_linprocfs:
@@ -266,9 +152,6 @@ class Storage:
     except:
       pass
 
-  def _mount_jail_dataset(self, dataset_name):
-    self.jail.exec(['zfs', 'mount', dataset_name])
-
   def _get_pool_name_from_dataset_name(self, dataset_name):
     return dataset_name.split("/", maxsplit=1)[0]
 
@@ -290,16 +173,3 @@ class Storage:
     if not os.path.isdir(folder):
       os.mkdirs(folder, permissions)
       os.chown(folder, uid, gid, follow_symlinks=False)
-
-  def _set_fsopts(self, fsopts):
-    self.fsopts = fsopts
-
-    default_fsopts = {
-      "compression": "lz4"
-    }
-
-    for key in default_fsopts:
-      try:
-        self.fsopts[key]
-      except:
-        self.fsopts[key] = default_fsopts[key]

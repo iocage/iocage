@@ -5,6 +5,10 @@ import iocage.lib.Releases
 import iocage.lib.Release
 import iocage.lib.helpers
 
+import iocage.lib.ZFSBasejailStorage
+import iocage.lib.NullFSBasejailStorage
+import iocage.lib.StandaloneJailStorage
+
 import libzfs
 import subprocess
 import uuid
@@ -36,16 +40,21 @@ class Jail:
    
     release = self.release
  
-    self.storage.umount_nullfs()
+    iocage.lib.NullFSBasejailStorage.NullFSBasejailStorage.umount_nullfs(self.storage)
+
+    storage_backend = None
     
     if self.config.basejail_type == "zfs":
-      self.storage.clone_zfs_basejail(release)
+      storage_backend = iocage.lib.ZFSBasejailStorage.ZFSBasejailStorage
 
     if self.config.basejail_type == "nullfs":
-        self.storage.create_nullfs_directories()
+      storage_backend = iocage.lib.NullFSBasejailStorage.NullFSBasejailStorage
 
-    if self.config.type == "clonejail":
-      self.storage.clone_basedirs(release)
+    # if self.config.type == "clonejail":
+    #   pass
+
+    if storage_backend != None:
+      storage_backend.apply(self.storage, release)
 
     self.config.fstab.write()
     self.launch_jail()
@@ -54,9 +63,10 @@ class Jail:
       self.start_vimage_network()
       self.set_routes()
     
-    self.logger.log("Starting VNET/VIMAGE", jail=self)
     self.set_nameserver()
-    self.storage.mount_zfs_shares()
+
+    if self.config.jail_zfs == True:
+      iocage.lib.ZFSShareStorage.mount_zfs_shares(self.storage)
 
   def stop(self):
     self.require_jail_existing()
@@ -86,18 +96,25 @@ class Jail:
     self.storage.create_jail_dataset()
     self.config.fstab.write()
 
-    if self.config.type == "clonejail":
+    storage_backend = None
+
+    if self.config.type == "basejail":
+
+      if self.config.basejail_type == "nullfs":
+        storage_backend = iocage.lib.NullFSBasejailStorage.NullFSBasejailStorage
+      
+      elif self.config.basejail_type == "zfs":
+        storage_backend = iocage.lib.ZFSBasejailStorage.ZFSBasejailStorage
+
+    elif self.config.type == "clonejail":
       self.config.cloned_release = release.name
-      self.storage.clone_release(release)
-    else:
-      self.storage.create_jail_root_dataset()
+      storage_backend = iocage.lib.StandaloneJailStorage.StandaloneJailStorage
+
+    if storage_backend != None:
+      storage_backend.setup(self.storage, release)
     
     self.config.data["release"] = release.name
     self.config.save()
-
-  def clone_release(self, release):
-    self.require_root_not_existing()
-
 
   def exec(self, command):
     command = [
@@ -196,7 +213,7 @@ class Jail:
 
   def start_vimage_network(self):
 
-    self.logger.log("Starting VNET/VIMAGE")
+    self.logger.log("Starting VNET/VIMAGE", jail=self)
 
     nics = self.config.interfaces
     for nic in nics:
@@ -248,14 +265,6 @@ class Jail:
     ]
 
     self.exec(command)
-
-  def require_root_not_existing(self):
-    existing = False
-    try:
-      if self.storage.jail_root_dataset:
-        raise Exception(f"Jail {self.humanreadable_name} already exists")
-    except:
-      pass
 
   def require_jail_not_existing(self):
     if self.exists:

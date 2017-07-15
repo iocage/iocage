@@ -65,6 +65,9 @@ class Logger:
   def error(self, message, jail=None):
     self.log(message, level="error", jail=jail)
 
+  def warn(self, message, jail=None):
+    self.log(message, level="warning", jail=jail)
+
   def _print(self, message, level, jail=None):
     if Logger.LOG_LEVELS.index(level) > Logger.LOG_LEVELS.index(self.print_level):
       return

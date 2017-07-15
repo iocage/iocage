@@ -107,7 +107,33 @@ class Release:
     self._extract_assets()
     self._cleanup()
 
-  def _create_dataset(self):
+  """
+  Depending on the version of iocage that was used the releases are stored
+  in different formats. The most generic form is the to split it in multiple
+  datasets that represent the basedir structure
+  """
+  def create_basejail_datasets(self):
+    base_dataset = self.host.datasets.base
+
+    if self._basejail_datasets_already_exists(self.name):
+      return
+
+    for basedir in iocage.lib.helper.get_basedir_list():
+      self._create_dataset()
+
+
+  def _basejail_datasets_already_exists(self, release_name):
+    base_dataset = self.host.datasets.base
+    for dataset in base_dataset.children:
+      if dataset.name == f"{base_dataset.name}/release_name":
+        return True
+    return False
+
+  def _create_dataset(self, name=None):
+
+    if name == None:
+      name = self.dataset_name
+
     try:
       if isinstance(self.dataset, libzfs.ZFSDataset):
         return
@@ -117,8 +143,8 @@ class Release:
     options = {
       "compression": "lz4"
     }
-    self.zfs_pool.create(self.dataset_name, options, create_ancestors=True)
-    self._dataset = self.zfs.get_dataset(self.dataset_name)
+    self.zfs_pool.create(name, options, create_ancestors=True)
+    self._dataset = self.zfs.get_dataset(name)
 
   def _ensure_dataset_mounted(self):
     if not self.dataset.mountpoint:
