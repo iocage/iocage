@@ -8,8 +8,9 @@ import os
 
 class Storage:
 
-  def __init__(self, jail, zfs=None, auto_create=False, safe_mode=True, fsopts={}):
+  def __init__(self, jail, zfs=None, auto_create=False, safe_mode=True, fsopts={}, logger=None):
 
+    iocage.lib.helpers.init_logger(self, logger)
     iocage.lib.helpers.init_zfs(self, zfs)
 
     self.jail = jail
@@ -164,7 +165,7 @@ class Storage:
 
     target_dataset = self.zfs.get_dataset(target)
     target_dataset.mount()
-    print(f"Cloned to {target}")
+    self.logger.log(f"Cloned to {target}")
 
   def create_jail_dataset(self):
     self._create_dataset(self.jail.dataset_name)
@@ -173,7 +174,7 @@ class Storage:
     self._create_dataset(self.jail_root_dataset_name)
 
   def _create_dataset(self, name, mount=True):
-    self._pool.create(name, {})
+    self._pool.create(name, {}, create_ancestors=True)
     if mount:
       ds = self.zfs.get_dataset(name)
       ds.mount()
@@ -194,6 +195,16 @@ class Storage:
         except:
           # in case directories were not mounted
           pass
+
+  def create_nullfs_directories(self):
+    basedirs = iocage.lib.helpers.get_basedir_list() + ["dev", "etc"]
+    jail_root = self.jail_root_dataset.mountpoint
+
+    for basedir in basedirs:
+      basedir = f"{jail_root}/{basedir}"
+      if not os.path.isdir(basedir):
+        self.logger.verbose(f"Creating nullfs mountpoint {basedir}")
+        os.makedirs(basedir)
 
   def _require_datasets_exist_and_jailed(self):
     existing_datasets = self.get_zfs_datasets(auto_create=False)

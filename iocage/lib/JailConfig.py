@@ -5,12 +5,15 @@ import iocage.lib.JailConfigResolver
 import iocage.lib.JailConfigFstab
 import iocage.lib.JailConfigLegacy
 import iocage.lib.JailConfigZFS
+import iocage.lib.helpers
 
 from uuid import UUID
 
 class JailConfig():
 
-  def __init__(self, data = {}, jail=None):
+  def __init__(self, data = {}, jail=None, logger=None):
+
+    iocage.lib.helpers.init_logger(self, logger)
 
     object.__setattr__(self, 'data', {})
     object.__setattr__(self, 'special_properties', {})
@@ -49,6 +52,7 @@ class JailConfig():
     try:
       iocage.lib.JailConfigJSON.JailConfigJSON.read(self)
       object.__setattr__(self, 'legacy', False)
+      self.logger.log("Configuration loaded from JSON", level="verbose")
       return
     except:
       pass
@@ -56,16 +60,20 @@ class JailConfig():
     try:
       iocage.lib.JailConfigLegacy.JailConfigLegacy.read(self)
       object.__setattr__(self, 'legacy', True)
+      self.logger.log("Configuration loaded from UCL config file (iocage-legacy)", level="verbose")
       return
     except:
       pass
 
-    #try:
-    print("READING ZFS")
-    iocage.lib.JailConfigZFS.JailConfigZFS.read(self)
-    object.__setattr__(self, 'legacy', True)
-    # except:
-    #   pass
+    try:
+      iocage.lib.JailConfigZFS.JailConfigZFS.read(self)
+      object.__setattr__(self, 'legacy', True)
+      self.logger.log("Configuration loaded from ZFS properties (iocage-legacy)", level="verbose")
+      return
+    except:
+      pass
+
+    self.logger.log("No configuration was found", level="verbose")
 
   def update_special_property(self, name, new_property_handler=None):
 
@@ -159,7 +167,11 @@ class JailConfig():
       return None
     
   def _set_ip4_addr(self, value):
-    self.special_properties["ip4_addr"] = iocage.lib.JailConfigAddresses.JailConfigAddresses(value, jail_config=self, property_name="ip4_addr")
+    self.special_properties["ip4_addr"] = iocage.lib.JailConfigAddresses.JailConfigAddresses(
+      value,
+      jail_config=self,
+      property_name="ip4_addr"
+    )
     self.update_special_property("ip4_addr")
 
   def _get_ip6_addr(self):
@@ -169,7 +181,11 @@ class JailConfig():
       return None
 
   def _set_ip6_addr(self, value):
-    self.special_properties["ip6_addr"] = iocage.lib.JailConfigAddresses.JailConfigAddresses(value, jail_config=self, property_name="ip6_addr")
+    self.special_properties["ip6_addr"] = iocage.lib.JailConfigAddresses.JailConfigAddresses(
+      value,
+      jail_config=self,
+      property_name="ip6_addr"
+    )
     self.update_special_property("ip6_addr")
 
   def _get_interfaces(self):
@@ -250,6 +266,12 @@ class JailConfig():
     else:
       resolver = iocage.lib.JailConfigResolver.JailConfigResolver(jail_config=self)
       resolver.update(value, notify=True)
+
+  def _get_cloned_release(self):
+    try:
+      return self.data["cloned_release"]
+    except:
+      return self.release
 
   def _get_basejail_type(self):
     return self.data["basejail_type"]
@@ -386,7 +408,7 @@ class JailConfig():
       pass
 
     if create_new:
-      resolver = iocage.lib.JailConfigResolver.JailConfigResolver(jail_config=self)
+      resolver = iocage.lib.JailConfigResolver.JailConfigResolver(jail_config=self, logger=self.logger)
       resolver.update(notify=False)
       self.special_properties["resolver"] = resolver
 

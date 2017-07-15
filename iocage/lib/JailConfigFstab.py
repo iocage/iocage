@@ -21,9 +21,9 @@ class JailConfigFstab:
 
     fstab_lines = []
     for basedir in iocage.lib.helpers.get_basedir_list():
-      release_directory = self.jail.host.datasets.releases
+      release_directory = self.jail.host.datasets.releases.mountpoint
 
-      source = f"{release_directory}/{self.jail.config.cloned_release}/{basedir}"
+      source = f"{release_directory}/{self.jail.config.cloned_release}/root/{basedir}"
       destination = f"{self.jail.path}/root/{basedir}"
       fstab_lines.append("\t".join([
         source,

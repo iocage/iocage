@@ -1,9 +1,12 @@
+import iocage.lib.helpers
+
 import shutil
 
 class JailConfigResolver(list):
 
-  def __init__(self, jail_config):
+  def __init__(self, jail_config, logger=None):
     list.__init__(self, [])
+    iocage.lib.helpers.init_logger(self, logger)
     self.jail_config = jail_config
     self.jail_config.update_special_property("resolver", new_property_handler=self)
 
@@ -27,21 +30,23 @@ class JailConfigResolver(list):
     return self.jail_config.data["resolver"]
 
   def apply(self, jail):
+
+    self.logger.log(f"Configuring nameserver for Jail '{jail.humanreadable_name}'")
       
     remote_path = f"{jail.path}/root{self.conf_file_path}"
 
     if self.method == "copy":
       shutil.copy(self.conf_file_path, remote_path)
-      #print("resolv.conf copied from host")
+      self.logger.verbose("resolv.conf copied from host")
 
     elif self.method == "manual":
       with open(remote_path, "w") as f:
         f.write("\n".join(self))
         f.close()
-      #print("resolv.conf written manually")
+      self.logger.verbose("resolv.conf written manually")
 
-    #else:
-    #  print("resolv.conf not touched")
+    else:
+     self.logger.verbose("resolv.conf not touched")
 
   def update(self, value=None, notify=True):
     value = value if value != None else self.value

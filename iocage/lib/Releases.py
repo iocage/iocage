@@ -3,7 +3,7 @@ import iocage.lib.helpers
 
 class Releases:
 
-  def __init__(self, host=None, zfs=None):
+  def __init__(self, host=None, zfs=None, logger=None):
     iocage.lib.helpers.init_host(self, host)
     self.zfs = zfs
 

@@ -1,12 +1,15 @@
+import iocage.lib.NetworkInterface
+import iocage.lib.helpers
+
 import subprocess
 from hashlib import md5
 import re
 
-import iocage.lib.NetworkInterface
-
 class Network:
 
-  def __init__(self, jail, nic="vnet0", ipv4_addresses=[], ipv6_addresses=[], mtu=1500, bridges=None):
+  def __init__(self, jail, nic="vnet0", ipv4_addresses=[], ipv6_addresses=[], mtu=1500, bridges=None, logger=None):
+
+    iocage.lib.helpers.init_logger(self, logger)
 
     if bridges != None:
       if not isinstance(bridges, list):
@@ -20,7 +23,6 @@ class Network:
     self.ipv4_addresses = ipv4_addresses
     self.ipv6_addresses = ipv6_addresses
 
-
   def setup(self):
     if self.vnet:
 
@@ -29,18 +31,15 @@ class Network:
 
       jail_if, host_if = self.__create_vnet_iface()
 
-
   @property
   def nic_local_name(self):
     self.jail.require_jail_running()
 
     return f"{self.nic}:{self.jail.jid}"
 
-
   @property
   def nic_local_description(self):
     return f"associated with jail: {self.jail.humanreadable_name}"  
-
 
   def __create_vnet_iface(self):
 
@@ -57,7 +56,8 @@ class Network:
       mac=mac_a,
       mtu=self.mtu,
       description=self.nic_local_description,
-      rename=self.nic_local_name
+      rename=self.nic_local_name,
+      logger=self.logger
     )
 
     # add host_if to bridges
@@ -65,13 +65,15 @@ class Network:
       iocage.lib.NetworkInterface.NetworkInterface(
         name=bridge,
         addm=self.nic_local_name,
-        extra_settings=["up"]
+        extra_settings=["up"],
+        logger=self.logger
       )
 
     # up host_if
     iocage.lib.NetworkInterface.NetworkInterface(
       name=self.nic_local_name,
-      extra_settings=["up"]
+      extra_settings=["up"],
+      logger=self.logger
     )
 
     # assign epair_b to jail
@@ -85,18 +87,18 @@ class Network:
       jail=self.jail,
       extra_settings=["up"],
       ipv4_addresses=self.ipv4_addresses,
-      ipv6_addresses=self.ipv6_addresses
+      ipv6_addresses=self.ipv6_addresses,
+      logger=self.logger
     )
 
     return jail_if, host_if
 
-
   def __assign_vnet_iface_to_jail(self, nic, jail_name):
     iocage.lib.NetworkInterface.NetworkInterface(
       name=nic,
-      vnet=jail_name
+      vnet=jail_name,
+      logger=self.logger
     )
-
 
   def __generate_mac_bytes(self):
     m = md5()
@@ -104,7 +106,6 @@ class Network:
     m.update(self.nic.encode("utf-8"))
     prefix = self.jail.config.mac_prefix
     return f"{prefix}{m.hexdigest()[0:12-len(prefix)]}"
-
 
   def __generate_mac_address_pair(self):
     mac_a = self.__generate_mac_bytes()

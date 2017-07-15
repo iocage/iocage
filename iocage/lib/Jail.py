@@ -11,18 +11,18 @@ import uuid
 
 class Jail:
 
-  def __init__(self, data = {}, zfs=None, host=None):
+  def __init__(self, data = {}, zfs=None, host=None, logger=None):
 
+    iocage.lib.helpers.init_logger(self, logger)
     iocage.lib.helpers.init_zfs(self, zfs)
     iocage.lib.helpers.init_host(self, host)
 
     if isinstance(data, str):
-      print("STRING!")
       data = { "uuid": data }
 
-    self.config = iocage.lib.JailConfig.JailConfig(data=data, jail=self)
+    self.config = iocage.lib.JailConfig.JailConfig(data=data, jail=self, logger=self.logger)
     self.networks = []
-    self.storage = iocage.lib.Storage.Storage(jail=self, auto_create=True, safe_mode=False)
+    self.storage = iocage.lib.Storage.Storage(jail=self, auto_create=True, safe_mode=False, logger=self.logger)
 
     self.config.read()
 
@@ -40,16 +40,21 @@ class Jail:
     
     if self.config.basejail_type == "zfs":
       self.storage.clone_zfs_basejail(release)
-    
+
+    if self.config.basejail_type == "nullfs":
+        self.storage.create_nullfs_directories()
+
     if self.config.type == "clonejail":
       self.storage.clone_basedirs(release)
 
+    self.config.fstab.write()
     self.launch_jail()
 
     if self.config.vnet:
-      self.start_network()
+      self.start_vimage_network()
       self.set_routes()
     
+    self.logger.log("Starting VNET/VIMAGE", jail=self)
     self.set_nameserver()
     self.storage.mount_zfs_shares()
 
@@ -62,7 +67,7 @@ class Jail:
     self.require_jail_not_existing()
   
     # check if release exists
-    releases = iocage.lib.Releases.Releases(host=self.host, zfs=self.zfs)
+    releases = iocage.lib.Releases.Releases(host=self.host, zfs=self.zfs, logger=self.logger)
     try:
       release = releases.find_by_name(release_name)
     except:
@@ -75,7 +80,8 @@ class Jail:
         raise
     except:
       self.config.uuid = uuid.uuid4()
-      print(f"New UUID is {self.config.uuid}")
+
+    self.logger.log(f"Creating new Jail with uuid={self.config.uuid}")
 
     self.storage.create_jail_dataset()
     self.config.fstab.write()
@@ -85,8 +91,7 @@ class Jail:
       self.storage.clone_release(release)
     else:
       self.storage.create_jail_root_dataset()
-      raise Exception("Only clonejail creation supported yet.")
-
+    
     self.config.data["release"] = release.name
     self.config.save()
 
@@ -183,15 +188,15 @@ class Jail:
 
     try:
       output = subprocess.check_output(command, shell=False, stderr=subprocess.STDOUT)
+      self.logger.log(f"Jail '{self.humanreadable_name}' started with JID {self.jid}", jail=self)
     except subprocess.CalledProcessError as exc:
-      print("Failed", exc.returncode, exc.output)
+      self.logger.error(f"Jail '{self.humanreadable_name}' failed with exit code {exc.returncode}", jail=self)
+      self.logger.verbose(exc.output, jail=self)
       raise
 
-  def start_network(self):
+  def start_vimage_network(self):
 
-    if not self.config.vnet:
-      # Not necessary without VNET
-      return
+    self.logger.log("Starting VNET/VIMAGE")
 
     nics = self.config.interfaces
     for nic in nics:
@@ -208,7 +213,14 @@ class Jail:
       except:
         ipv6_addresses = []
 
-      net = iocage.lib.Network.Network(jail=self, nic=nic, ipv4_addresses=ipv4_addresses, ipv6_addresses=ipv6_addresses, bridges=bridges)
+      net = iocage.lib.Network.Network(
+        jail=self,
+        nic=nic,
+        ipv4_addresses=ipv4_addresses,
+        ipv6_addresses=ipv6_addresses,
+        bridges=bridges,
+        logger=self.logger
+      )
       net.setup()
       self.networks.append(net)
 
@@ -216,6 +228,8 @@ class Jail:
     self.config.resolver.apply(self)
 
   def set_routes(self):
+
+    self.logger.log(f"Setting Routes (IPv4={self.config.defaultrouter}, IPv6={self.config.defaultrouer6}", jail=self)
 
     if self.config.defaultrouter:
       self._set_route(self.config.defaultrouter)

@@ -7,8 +7,9 @@ import urllib.request
 
 class Release:
 
-  def __init__(self, dataset=None, name=None, host=None, zfs=None):
+  def __init__(self, dataset=None, name=None, host=None, zfs=None, logger=None):
 
+    iocage.lib.helpers.init_logger(self, logger)
     iocage.lib.helpers.init_zfs(self, zfs)
     iocage.lib.helpers.init_host(self, host)
 
@@ -129,10 +130,10 @@ class Release:
       path = self._get_asset_location(asset)
 
       if os.path.isfile(path):
-        print(f"{path} already exists. Skipping download.")
+        self.logger.log(f"{path} already exists. Skipping download.")
         return
       else:
-        print(f"Fetching {url}")
+        self.logger.log(f"Fetching {url}")
         urllib.request.urlretrieve(url, path)
 
   def _require_empty_root_dir(self):
@@ -145,9 +146,9 @@ class Release:
   def _extract_assets(self):
     for asset in self.assets:
       with tarfile.open(self._get_asset_location(asset)) as f:
-        print(f"Verifying file structure in {asset}")
+        self.logger.log(f"Verifying file structure in {asset}")
         self._check_tar_files(f.getmembers())
-        print(f"Extracting {asset}")
+        self.logger.log(f"Extracting {asset}")
         f.extractall(self.root_dir)
 
   def _update_name_from_dataset(self):
@@ -163,7 +164,6 @@ class Release:
       if i.name == ".":
         continue
       if not i.name.startswith("./"):
-        print(i.name)
         raise Exception("Filenames in txz release files must be relative paths begining with './'")
       if ".." in i.name:
         raise Exceptions("FIlenames in txz release files must not contain '..'")
