@@ -267,8 +267,6 @@ class IOCCreate(object):
 
         # This test is to avoid the same warnings during install_packages.
         if not self.plugin:
-            # TODO
-            # print(self.props)
             for prop in self.props:
                 key, _, value = prop.partition("=")
 
@@ -286,6 +284,9 @@ class IOCCreate(object):
                 elif key == "boot" and value == "on":
                     start = True
                 elif key == "template" and value == "yes":
+                    iocjson.json_write(config)  # Set counts on this.
+                    location = location.replace("/jails/", "/templates/")
+
                     iocjson.json_set_value("template=yes")
 
                 try:
@@ -306,7 +307,7 @@ class IOCCreate(object):
 
         # Just "touch" the fstab file, since it won't exist.
         if not self.clone:
-            open(f"{self.iocroot}/jails/{jail_uuid}/fstab", "wb").close()
+            open(f"{location}/fstab", "wb").close()
         else:
             with open(clone_fstab, "r") as _clone_fstab:
                 with iocage.lib.ioc_common.open_atomic(
