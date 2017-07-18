@@ -287,6 +287,7 @@ class IOCCreate(object):
                     iocjson.json_write(config)  # Set counts on this.
                     location = location.replace("/jails/", "/templates/")
 
+                    iocjson.json_set_value("type=template")
                     iocjson.json_set_value("template=yes")
 
                 try:
