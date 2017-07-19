@@ -56,6 +56,11 @@ becomes the source and the source jail is demoted to a clone.
 Updating Jails
 --------------
 
+.. warning:: Updating a basejail is currently not implemented in iocage.
+   Refer to iocage
+   `GitHub issue #50 <https://github.com/iocage/iocage/issues/50>`_ for
+   more information.
+
 Updates are handled with the freebsd-update(8) utility. Jails can be
 updated while they are stopped or running. While updating can seem
 routine, it is always recommended to use ZFS snapshot functionality to
