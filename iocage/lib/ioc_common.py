@@ -85,11 +85,9 @@ def raise_sort_error(sort_list):
         msg += f"  {s}\n"
 
     logit({
-        "level"  : "ERROR",
+        "level"  : "EXCEPTION",
         "message": msg.rstrip()
     })
-
-    raise RuntimeError()
 
 
 def ioc_sort(caller, s_type, data=None):

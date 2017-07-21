@@ -57,7 +57,6 @@ def get_args(cls, dist, header=None):
     """
     if header is None:
         header = cls.get_header()
-    spec = str(dist.as_requirement())
     for type_ in 'console', 'gui':
         group = type_ + '_scripts'
         for name, ep in dist.get_entry_map(group).items():
