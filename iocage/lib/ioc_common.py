@@ -429,8 +429,8 @@ def checkoutput(*args, **kwargs):
         out = su.check_output(*args, **kwargs)
 
         out = out.decode("utf-8")
-    except su.CalledProcessError:
-        raise
+    except su.CalledProcessError as err:
+        raise RuntimeError(err.output.decode("utf-8").rstrip())
 
     return out
 

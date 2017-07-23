@@ -86,6 +86,106 @@ class IOCCreate(object):
             iocage.lib.ioc_destroy.IOCDestroy().destroy_jail(location)
             sys.exit(1)
 
+    def _get_template_config_fn(self, jail_uuid, path):
+        config_fn = iocage.lib.ioc_json.IOCJson(path).json_get_value
+        try:
+            config_fn("cloned_release")
+        except (IOError, OSError, FileNotFoundError, UnboundLocalError):
+            # Unintuitevly a missing template will throw a
+            # UnboundLocalError as the missing file will kick the
+            # migration routine for zfs props. We don't need that :)
+            raise RuntimeError(f"Template: {self.release} not found!")
+
+        return config_fn
+
+    def _get_clone_config_fn(self, jail_uuid, path):
+        config_fn = iocage.lib.ioc_json.IOCJson(path).json_get_value
+        try:
+            config_fn("cloned_release")
+        except (IOError, OSError, FileNotFoundError, UnboundLocalError):
+            if os.path.isdir(f"{self.iocroot}/templates/{self.release}"):
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": "You cannot clone a template, "
+                               "use create -t instead."
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+            else:
+                # Yep, self.release is actually the source jail.
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": f"Jail: {self.release} not found!"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+        return config_fn
+
+    def _get_release_config(self, jail_uuid, path):
+        freebsd_version = f"{path}/root/bin/freebsd-version"
+
+        if self.empty:
+            return "EMPTY"
+
+        if self.release[:4].endswith("-"):
+            # 9.3-RELEASE and under don't actually have this binary.
+            return self.release
+
+        try:
+            with open(freebsd_version, "r") as r:
+                for line in r:
+                    if line.startswith("USERLAND_VERSION"):
+                        # Long lines ftw?
+                        cloned_release = line.rstrip().partition("=")[2]
+                        return cloned_release.strip('"')
+
+        except (IOError, OSError, FileNotFoundError, UnboundLocalError):
+            iocage.lib.ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": f"RELEASE: {self.release} not found!"
+            },
+                _callback=self.callback,
+                silent=self.silent)
+
+    def _su_check_call(self, jail_uuid, path, _type):
+        if self.empty:
+            return
+
+        rec = "-r" if _type == "clone" else ""
+
+        if _type == "template":
+            dataset = f"{path}/root@{jail_uuid}"
+            err = f"Template {self.release} not found!"
+        if _type == "releases":
+            dataset = f"{path}/root@{jail_uuid}"
+            err = f"RELEASE {self.release} not found!"
+        elif _type == "clone":
+            dataset = f"{path}@{jail_uuid}"
+            err = f"Jail {jail_uuid} not found!"
+
+        try:
+            su.check_call(["zfs", "snapshot", rec, dataset], stderr=su.PIPE)
+        except su.CalledProcessError:
+            try:
+                snapshot = self.zfs.get_snapshot(dataset)
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": f"Snapshot: {snapshot.name} exists!\n"
+                               "Please manually run zfs destroy"
+                               f" {snapshot.name} if you wish to "
+                               "destroy it."
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+
+            except libzfs.ZFSException:
+                pass
+            raise RuntimeError(err)
+
+    def _zfs_clone(src, dst, *opts):
+        su.Popen(["zfs", "clone", opts, src, dst],
+                 stdout=su.PIPE).communicate()
+
     def _create_jail(self, jail_uuid, location):
         """
         Create a snapshot of the user specified RELEASE dataset and clone a
@@ -100,126 +200,48 @@ class IOCCreate(object):
 
         if self.migrate:
             config = self.config
+        elif self.template:
+            _type = 'template'
+            config = self.config
+            basepath = f"{self.iocroot}/templates/{self.release}"
+            config_fn = self._get_template_config_fn(jail_uuid, basepath)
+        elif self.clone:
+            _type = 'clone'
+            config = self.config
+            basepath = f"{self.iocroot}/jails/{self.release}"
+            config_fn = self._get_clone_config_fn(jail_uuid, basepath)
         else:
-            try:
-                if self.template:
-                    _type = "templates"
-                    temp_path = f"{self.iocroot}/{_type}/{self.release}"
-                    template_config = iocage.lib.ioc_json.IOCJson(
-                        temp_path).json_get_value
-                    cloned_release = template_config("cloned_release")
-                elif self.clone:
-                    _type = "jails"
-                    clone_path = f"{self.iocroot}/{_type}/{self.release}"
-                    clone_config = iocage.lib.ioc_json.IOCJson(
-                        clone_path).json_get_value
-                    cloned_release = clone_config("cloned_release")
-                    clone_uuid = clone_config("host_hostuuid")
-                else:
-                    _type = "releases"
-                    rel_path = f"{self.iocroot}/{_type}/{self.release}"
-
-                    freebsd_version = f"{rel_path}/root/bin/freebsd-version"
-
-                    if not self.empty:
-                        if self.release[:4].endswith("-"):
-                            # 9.3-RELEASE and under don't actually have this
-                            # binary.
-                            cloned_release = self.release
-                        else:
-                            with open(freebsd_version, "r") as r:
-                                for line in r:
-                                    if line.startswith("USERLAND_VERSION"):
-                                        # Long lines ftw?
-                                        cl = line.rstrip().partition("=")[2]
-                                        cloned_release = cl.strip('"')
-                    else:
-                        cloned_release = "EMPTY"
-            except (IOError, OSError, FileNotFoundError, UnboundLocalError):
-                # Unintuitevly a missing template will throw a
-                # UnboundLocalError as the missing file will kick the
-                # migration routine for zfs props. We don't need that :)
-                if self.template:
-                    raise RuntimeError(f"Template: {self.release} not found!")
-                elif self.clone:
-                    if os.path.isdir(f"{self.iocroot}/templates/"
-                                     f"{self.release}"):
-                        iocage.lib.ioc_common.logit({
-                            "level"  : "EXCEPTION",
-                            "message": "You cannot clone a template, "
-                                       "use create -t instead."
-                        },
-                            _callback=self.callback,
-                            silent=self.silent)
-                    else:
-                        # Yep, self.release is actually the source jail.
-                        iocage.lib.ioc_common.logit({
-                            "level"  : "EXCEPTION",
-                            "message": f"Jail: {self.release} not found!"
-                        },
-                            _callback=self.callback,
-                            silent=self.silent)
-                else:
-                    iocage.lib.ioc_common.logit({
-                        "level"  : "EXCEPTION",
-                        "message": f"RELEASE: {self.release} not found!"
-                    },
-                        _callback=self.callback,
-                        silent=self.silent)
-
-            if not self.clone:
-                config = self.create_config(jail_uuid, cloned_release)
-            else:
-                clone_config = f"{self.iocroot}/jails/{jail_uuid}/config.json"
-                clone_fstab = f"{self.iocroot}/jails/{jail_uuid}/fstab"
+            _type = "releases"
+            config = self.config
+            basepath = f"{self.iocroot}/releases/{self.release}"
+            config_fn = self._get_release_config(jail_uuid, basepath)
 
         jail = f"{self.pool}/iocage/jails/{jail_uuid}/root"
+        self._su_check_call(jail_uuid, basepath, _type)
 
         if self.template:
-            try:
-                su.check_call(["zfs", "snapshot",
-                               f"{self.pool}/iocage/templates/{self.release}/"
-                               f"root@{jail_uuid}"], stderr=su.PIPE)
-            except su.CalledProcessError:
-                raise RuntimeError(f"Template: {self.release} not found!")
-
-            su.Popen(["zfs", "clone", "-p",
-                      f"{self.pool}/iocage/templates/{self.release}/root@"
-                      f"{jail_uuid}", jail], stdout=su.PIPE).communicate()
+            self._zfs_clone(f"{basepath}/root@{jail_uuid}", jail, "-p")
 
             # self.release is actually the templates name
-            config["release"] = iocage.lib.ioc_json.IOCJson(
-                f"{self.iocroot}/templates/{self.release}").json_get_value(
-                "release")
-            config["cloned_release"] = iocage.lib.ioc_json.IOCJson(
-                f"{self.iocroot}/templates/{self.release}").json_get_value(
-                "cloned_release")
+            config["release"] = config_fn("release")
+            config["cloned_release"] = config_fn("cloned_release")
+            config["type"] = "template"
         elif self.clone:
-            try:
-                su.check_call(["zfs", "snapshot", "-r",
-                               f"{self.pool}/iocage/jails/{self.release}"
-                               f"@{jail_uuid}"], stderr=su.PIPE)
-            except su.CalledProcessError:
-                raise RuntimeError(f"Jail: {jail_uuid} not found!")
+            self._zfs_clone("{basepath}@{jail_uuid}",
+                            jail.replace("/root", ""))
+            self._zfs_clone(f"{basepath}/root@{jail_uuid}", jail)
 
-            su.Popen(["zfs", "clone",
-                      f"{self.pool}/iocage/jails/{self.release}@"
-                      f"{jail_uuid}", jail.replace("/root", "")],
-                     stdout=su.PIPE).communicate()
-            su.Popen(["zfs", "clone",
-                      f"{self.pool}/iocage/jails/{self.release}/root@"
-                      f"{jail_uuid}", jail], stdout=su.PIPE).communicate()
+            clone_config = f"{self.iocroot}/jails/{jail_uuid}/config.json"
+            clone_fstab = f"{self.iocroot}/jails/{jail_uuid}/fstab"
 
             with open(clone_config, "r") as _clone_config:
                 config = json.load(_clone_config)
 
             # self.release is actually the clones name
-            config["release"] = iocage.lib.ioc_json.IOCJson(
-                f"{self.iocroot}/jails/{self.release}").json_get_value(
-                "release")
-            config["cloned_release"] = iocage.lib.ioc_json.IOCJson(
-                f"{self.iocroot}/jails/{self.release}").json_get_value(
-                "cloned_release")
+            config["release"] = config_fn("release")
+            config["cloned_release"] = config_fn("cloned_release")
+
+            clone_uuid = config_fn("host_hostuuid")
 
             # Clones are expected to be as identical as possible.
             for k, v in config.items():
@@ -230,38 +252,11 @@ class IOCCreate(object):
             if not self.empty:
                 dataset = f"{self.pool}/iocage/releases/{self.release}/" \
                           f"root@{jail_uuid}"
-                try:
-                    su.check_call(["zfs", "snapshot",
-                                   f"{self.pool}/iocage/releases/"
-                                   f"{self.release}/"
-                                   f"root@{jail_uuid}"], stderr=su.PIPE)
-                except su.CalledProcessError:
-                    try:
-                        snapshot = self.zfs.get_snapshot(dataset)
-                        iocage.lib.ioc_common.logit({
-                            "level"  : "EXCEPTION",
-                            "message": f"Snapshot: {snapshot.name} exists!\n"
-                                       "Please manually run zfs destroy"
-                                       f" {snapshot.name} if you wish to "
-                                       "destroy it."
-                        },
-                            _callback=self.callback,
-                            silent=self.silent)
 
-                    except libzfs.ZFSException:
-                        raise RuntimeError(
-                            f"RELEASE: {self.release} not found!")
-
-                su.Popen(["zfs", "clone", "-p",
-                          f"{self.pool}/iocage/releases/{self.release}/root@"
-                          f"{jail_uuid}", jail], stdout=su.PIPE).communicate()
+                self._zfs_clone(dataset, jail)
             else:
-                try:
-                    iocage.lib.ioc_common.checkoutput(
-                        ["zfs", "create", "-p", jail],
-                        stderr=su.PIPE)
-                except su.CalledProcessError as err:
-                    raise RuntimeError(err.output.decode("utf-8").rstrip())
+                iocage.lib.ioc_common.checkoutput(["zfs", "create", "-p",
+                                                   jail], stderr=su.PIPE)
 
         iocjson = iocage.lib.ioc_json.IOCJson(location, silent=True)
 
@@ -331,12 +326,6 @@ class IOCCreate(object):
                 basedirs.remove("usr/lib32")
 
             for bdir in basedirs:
-                if "-RELEASE" not in self.release and "-STABLE" not in \
-                        self.release:
-                    _type = "templates"
-                else:
-                    _type = "releases"
-
                 source = f"{self.iocroot}/{_type}/{self.release}/root/{bdir}"
                 destination = f"{self.iocroot}/jails/{jail_uuid}/root/{bdir}"
 
