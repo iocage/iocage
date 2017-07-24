@@ -28,8 +28,9 @@ import re
 
 import click
 
-import iocage.lib.ioc_common as ioc_common
-import iocage.lib.iocage as ioc
+import iocage.lib.Releases
+import iocage.lib.Jail
+import iocage.lib.Logger
 
 __rootcmd__ = True
 
@@ -78,84 +79,29 @@ def validate_count(ctx, param, value):
                    " 36.")
 @click.option("--force", "-f", is_flag=True, default=False,
               help="Skip the interactive question.")
+@click.option("--log-level", "-d", default="info")
 @click.argument("props", nargs=-1)
 def cli(release, template, count, props, pkglist, basejail, empty, short,
-        name, _uuid, force):
+        name, _uuid, force, log_level):
+
+    logger = iocage.lib.Logger.Logger()
     if name:
         # noinspection Annotator
         valid = True if re.match("^[a-zA-Z0-9\._-]+$", name) else False
         if not valid:
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": f"Invalid character in {name}, please remove it."
-            }, exit_on_error=True)
+            error_message = f"Invalid character in {name}, please remove it."
+            self.logger.error(error_message)
+            raise Exception(error_message)
 
-        # At this point we don't care
-        _uuid = name
+    print(release)
+    release = iocage.lib.Release.Release(name=release)
+    if not release.fetched:
+        if not release.available:
+            error_message = f"The release '{release.name}' does not exist"
+            logger.error(error_message)
+            raise Exception(error_message)
+        error_message = "The release '{release.name}' is available but not downloaded yet"
+        logger.error(error_message)
+        raise Exception(error_message)
 
-    if release and "=" in release:
-        ioc_common.logit({
-            "level"  : "EXCEPTION",
-            "message": "Please supply a valid RELEASE!"
-        }, exit_on_error=True)
-
-    # We don't really care it's not a RELEASE at this point.
-    release = template if template else release
-
-    if pkglist:
-        _pkgformat = """
-{
-    "pkgs": [
-    "foo",
-    "bar"
-    ]
-}"""
-
-        if not os.path.isfile(pkglist):
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": f"{pkglist} does not exist!\n"
-                           "Please supply a JSON file with the format:"
-                           f" {_pkgformat}"
-            }, exit_on_error=True)
-        else:
-            try:
-                # Just try to open the JSON with the right key.
-                with open(pkglist, "r") as p:
-                    json.load(p)["pkgs"]  # noqa
-            except json.JSONDecodeError:
-                ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": "Please supply a valid"
-                               f" JSON file with the format:{_pkgformat}"
-                }, exit_on_error=True)
-
-    if empty:
-        release = "EMPTY"
-
-    iocage = ioc.IOCage(exit_on_error=True, skip_jails=True)
-
-    try:
-        iocage.create(release, props, count, pkglist=pkglist,
-                      template=template, short=short, _uuid=_uuid,
-                      basejail=basejail, empty=empty)
-    except RuntimeError as err:
-        if template:
-            # We want to list the available templates first
-            ioc_common.logit({
-                "level"  : "ERROR",
-                "message": f"Template: {release} not found!"
-            })
-            templates = ioc.IOCage(exit_on_error=True).list("template")
-            for temp in templates:
-                ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": f"Created Templates:\n  {temp[1]}"
-                }, exit_on_error=True)
-            exit(1)
-        else:
-            # Standard errors
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": err
-            }, exit_on_error=True)
+    iocage.lib.Jail.Jail({ "basejail": True }).create(release.name)

@@ -25,13 +25,9 @@
 import click
 import texttable
 
-import iocage.lib.ioc_common as ioc_common
-import iocage.lib.ioc_fetch as ioc_fetch
-import iocage.lib.iocage as ioc
 from iocage.lib.Jails import Jails
 from iocage.lib.Host import Host
 from iocage.lib.Logger import Logger
-
 
 @click.command(name="list", help="List a specified dataset type, by default"
                                  " lists all jails.")
@@ -51,16 +47,13 @@ from iocage.lib.Logger import Logger
 @click.option("--quick", "-q", is_flag=True, default=False,
               help="Lists all jails with less processing and fields.")
 @click.option("--log-level", "-d", default="info")
-def cli(dataset_type, header, _long, remote, plugins, _sort, quick, log_level):
+@click.option("--output", "-o", default=None)
+def cli(dataset_type, header, _long, remote, plugins, _sort, quick, log_level, output):
 
     logger = Logger(print_level=log_level)
     host = Host(logger=logger)
     jails = Jails(logger=logger)
     hardened = host.distribution.name == "HardenedBSD"
-
-    """This passes the arg and calls the jail_datasets function."""
-    freebsd_version = ioc_common.checkoutput(["freebsd-version"])
-    iocage = ioc.IOCage(exit_on_error=True, skip_jails=True)
 
     if dataset_type is None:
         dataset_type = "all"
@@ -76,12 +69,15 @@ def cli(dataset_type, header, _long, remote, plugins, _sort, quick, log_level):
         raise Exception("ToDo")
     else:
 
-        columns = ["jid", "name"]
-
-        if _long:
-            columns += ["uuid", "running", "release", "ip4.addr", "ip6.addr"]
+        if output:
+            columns = output.strip().split(',')
         else:
-            columns += ["running", "ip4.addr"]
+            columns = ["jid", "name"]
+
+            if _long:
+                columns += ["uuid", "running", "release", "ip4.addr", "ip6.addr"]
+            else:
+                columns += ["running", "ip4.addr"]
 
         table = texttable.Texttable(max_width=0)
         table.set_cols_dtype(["t"] * len(columns))
@@ -91,7 +87,7 @@ def cli(dataset_type, header, _long, remote, plugins, _sort, quick, log_level):
 
         for jail in jails.list():
             table_data.append([
-                str(jail.__getattr__(x)) if x in [
+                str(jail.getattr_str(x)) if x in [
                     "jid",
                     "name",
                     "running",

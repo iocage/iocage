@@ -11,7 +11,7 @@ class NullFSBasejailStorage:
     NullFSBasejailStorage.create_nullfs_directories(self)
 
   def setup(self, release):
-    iocage.lib.StandaloneJailStorage.setup(self, release)
+    iocage.lib.StandaloneJailStorage.StandaloneJailStorage.setup(self, release)
 
   """
   In preparation of starting the jail with nullfs mounts

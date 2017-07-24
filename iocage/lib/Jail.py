@@ -26,11 +26,11 @@ class Jail:
 
     self.config = iocage.lib.JailConfig.JailConfig(data=data, jail=self, logger=self.logger)
     self.networks = []
-    self.storage = iocage.lib.Storage.Storage(jail=self, auto_create=True, safe_mode=False, logger=self.logger)
+    self.storage = iocage.lib.Storage.Storage(jail=self, auto_create=True, safe_mode=False, logger=self.logger, zfs=self.zfs)
     self.jail_state = None
 
     self.config.read()
-    self.update_jail_state()
+#    self.update_jail_state()
 
   @property
   def zfs_pool_name(self):
@@ -314,7 +314,7 @@ class Jail:
     raise Exception(f"No jail matching {text} was found")
 
   def _get_name(self):
-    return self.humanreadable_name()
+    return self.humanreadable_name
 
   def _get_humanreadable_name(self):
 
@@ -324,11 +324,11 @@ class Jail:
       pass
 
     try:
-      return self.config.uuid[:8]
+      return str(self.config.uuid)[:8]
     except:
       pass
 
-    raise "This Jail does not have any identifier yet"
+    raise Exception("This Jail does not have any identifier yet")
 
   def _get_stopped(self):
     return self.running != True;
@@ -386,5 +386,12 @@ class Jail:
         return self.jail_state[key]
       except:
         pass
-
+ 
     raise Exception(f"Jail property {key} not found")
+
+  def getattr_str(self, key):
+    try:
+      return self.__getattr__(key)
+    except:
+      return "-"
+

@@ -1,3 +1,5 @@
+import time
+
 class StandaloneJailStorage:
 
   def apply(self, release):
@@ -12,4 +14,7 @@ class StandaloneJailStorage:
       pass
 
     # Clone the release once to the root dataset
+    start_time = time.time()
     self.clone_release(release)
+    end_time = time.time()
+    print("--- %s seconds ---" % (time.time() - start_time))

@@ -30,7 +30,7 @@ class JailConfig():
 
     # the UUID is used in many other variables and needs to be set first
     try:
-      self._set_uuid(data.uuid)
+      self.set_uuid(data.uuid)
     except:
       object.__setattr__(self, 'uuid', None)
       pass

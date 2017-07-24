@@ -39,7 +39,7 @@ class Storage:
 
   def clone_release(self, release):
     self.clone_zfs_dataset(release.dataset.name, self.jail_root_dataset_name)
-    self.logger.verbose(f"Cloned release '{release.name}' to {self.jail.humanreadable_name}", jail=self.jail)
+    self.logger.verbose(f"Cloned release '{release.name}' to {self.jail.name}", jail=self.jail)
 
   def clone_zfs_dataset(self, source, target):
 
