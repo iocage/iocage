@@ -207,7 +207,7 @@ class JailConfig():
     self.data['defaultrouter'] = value
 
   def _default_defaultrouter(self):
-    return "none"
+    return None
 
   def _get_defaultrouter6(self):
     value = self.data['defaultrouter6']
@@ -219,7 +219,7 @@ class JailConfig():
     self.data['defaultrouter6'] = value
 
   def _default_defaultrouter6(self):
-    return "none"
+    return None
 
   def _get_vnet(self):
     return self.data["vnet"] == "on"
