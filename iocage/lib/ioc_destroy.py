@@ -102,21 +102,21 @@ class IOCDestroy(object):
             su.Popen(["umount", "-f", f"{umount_path}/root/compat/linux/proc"],
                      stderr=su.PIPE).communicate()
 
-        if not snapshot:
-            if any(_type in dataset.name for _type in ("jails", "templates",
-                                                       "releases")):
-                # The jails parent won't show in the list.
-                j_parent = self.ds(f"{dataset.name.replace('/root','')}")
-                j_dependents = j_parent.dependents
+        if not snapshot and \
+           any(_type in dataset.name for _type
+               in ("jails", "templates", "releases")):
+            # The jails parent won't show in the list.
+            j_parent = self.ds(f"{dataset.name.replace('/root','')}")
+            j_dependents = j_parent.dependents
 
-                for j_dependent in j_dependents:
-                    if j_dependent.type == libzfs.DatasetType.FILESYSTEM:
-                        j_dependent.umount(force=True)
+            for j_dependent in j_dependents:
+                if j_dependent.type == libzfs.DatasetType.FILESYSTEM:
+                    j_dependent.umount(force=True)
 
-                    j_dependent.delete()
+                j_dependent.delete()
 
-                j_parent.umount(force=True)
-                j_parent.delete()
+            j_parent.umount(force=True)
+            j_parent.delete()
 
     def __destroy_dataset__(self, dataset):
         """Destroys the given datasets and snapshots."""
