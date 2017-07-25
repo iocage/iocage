@@ -123,21 +123,22 @@ class IOCList(object):
 
             jail_list.append([uuid, ip4])
 
-        # Prints the table
-        if self.header:
-            table = texttable.Texttable(max_width=0)
-
-            # We get an infinite float otherwise.
-            table.set_cols_dtype(["t", "t"])
-            jail_list.insert(0, ["NAME", "IP4"])
-
-            table.add_rows(jail_list)
-
-            return table.draw()
-        else:
+        # return the list
+        if not self.header:
             flat_jail = [j for j in jail_list]
 
             return flat_jail
+
+        # Prints the table
+        table = texttable.Texttable(max_width=0)
+
+        # We get an infinite float otherwise.
+        table.set_cols_dtype(["t", "t"])
+        jail_list.insert(0, ["NAME", "IP4"])
+
+        table.add_rows(jail_list)
+
+        return table.draw()
 
     def list_all(self, jails):
         """List all jails."""
@@ -216,28 +217,28 @@ class IOCList(object):
                                               data=jail_list)
         jail_list.sort(key=sort)
 
-        # Prints the table
-        if self.header:
-            table = texttable.Texttable(max_width=0)
-
-            if self.full:
-                # We get an infinite float otherwise.
-                table.set_cols_dtype(["t", "t", "t", "t", "t", "t", "t", "t",
-                                      "t"])
-                jail_list.insert(0, ["JID", "NAME", "BOOT", "STATE", "TYPE",
-                                     "RELEASE", "IP4", "IP6", "TEMPLATE"])
-            else:
-                # We get an infinite float otherwise.
-                table.set_cols_dtype(["t", "t", "t", "t", "t"])
-                jail_list.insert(0, ["JID", "NAME", "STATE", "RELEASE", "IP4"])
-
-            table.add_rows(jail_list)
-
-            return table.draw()
-        else:
+        # return the list...
+        if not self.header:
             flat_jail = [j for j in jail_list]
 
             return flat_jail
+
+        # Prints the table
+        table = texttable.Texttable(max_width=0)
+
+        if self.full:
+            # We get an infinite float otherwise.
+            table.set_cols_dtype(["t", "t", "t", "t", "t", "t", "t", "t", "t"])
+            jail_list.insert(0, ["JID", "NAME", "BOOT", "STATE", "TYPE",
+                                 "RELEASE", "IP4", "IP6", "TEMPLATE"])
+        else:
+            # We get an infinite float otherwise.
+            table.set_cols_dtype(["t", "t", "t", "t", "t"])
+            jail_list.insert(0, ["JID", "NAME", "STATE", "RELEASE", "IP4"])
+
+        table.add_rows(jail_list)
+
+        return table.draw()
 
     def list_bases(self, datasets):
         """Lists all bases."""
@@ -245,17 +246,17 @@ class IOCList(object):
                                                    data=datasets)
         table = texttable.Texttable(max_width=0)
 
-        if self.header:
-            base_list.insert(0, ["Bases fetched"])
-            table.add_rows(base_list)
-            # We get an infinite float otherwise.
-            table.set_cols_dtype(["t"])
-
-            return table.draw()
-        else:
+        if not self.header:
             flat_base = [b for b in base_list for b in b]
 
             return flat_base
+
+        base_list.insert(0, ["Bases fetched"])
+        table.add_rows(base_list)
+        # We get an infinite float otherwise.
+        table.set_cols_dtype(["t"])
+
+        return table.draw()
 
     @classmethod
     def list_get_jid(cls, uuid):
