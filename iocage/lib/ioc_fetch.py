@@ -155,32 +155,32 @@ class IOCFetch(object):
         if self.release.lower() == "exit":
             exit()
 
-        if len(self.release) <= 2:
-            try:
-                self.release = releases[int(self.release)]
-            except IndexError:
-                raise RuntimeError(f"[{self.release}] is not in the list!")
-            except ValueError:
-                # We want to use their host as RELEASE, but it may
-                # not be on the mirrors anymore.
-                try:
-                    self.release = self.__fetch_host_release__()
-
-                    if "-STABLE" in self.release:
-                        # Custom HardenedBSD server
-                        self.hardened = True
-                        return self.release
-
-                    releases.index(self.release)
-                except ValueError:
-                    raise RuntimeError("Please select an item!")
-        else:
+        if len(self.release) > 2:
             # Quick list validation
             try:
                 releases.index(self.release)
             except ValueError as err:
                 raise RuntimeError(err)
+            return self.release
 
+        try:
+            self.release = releases[int(self.release)]
+        except IndexError:
+            raise RuntimeError(f"[{self.release}] is not in the list!")
+        except ValueError:
+            # We want to use their host as RELEASE, but it may
+            # not be on the mirrors anymore.
+            try:
+                self.release = self.__fetch_host_release__()
+
+                if "-STABLE" in self.release:
+                    # Custom HardenedBSD server
+                    self.hardened = True
+                    return self.release
+
+                releases.index(self.release)
+            except ValueError:
+                raise RuntimeError("Please select an item!")
         return self.release
 
     def fetch_release(self, _list=False):
