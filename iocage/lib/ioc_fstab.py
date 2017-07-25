@@ -142,17 +142,17 @@ class IOCFstab(object):
     def __fstab_mount__(self):
         """Mounts the users mount if the jail is running."""
         status, _ = iocage.lib.ioc_list.IOCList().list_get_jid(self.uuid)
+        if not status:
+            return
 
         os.makedirs(self.dest, exist_ok=True)
-        if status:
-            proc = su.Popen(["mount", "-t", self.fstype, "-o", self.fsoptions,
-                             self.src, self.dest], stdout=su.PIPE,
-                            stderr=su.PIPE)
+        proc = su.Popen(["mount", "-t", self.fstype, "-o", self.fsoptions,
+                         self.src, self.dest], stdout=su.PIPE, stderr=su.PIPE)
 
-            stdout_data, stderr_data = proc.communicate()
+        stdout_data, stderr_data = proc.communicate()
 
-            if stderr_data:
-                raise RuntimeError(f"{stderr_data.decode('utf-8')}")
+        if stderr_data:
+            raise RuntimeError(f"{stderr_data.decode('utf-8')}")
 
     def __fstab_umount__(self, dest):
         """
@@ -161,14 +161,14 @@ class IOCFstab(object):
         :param dest: The destination to umount.
         """
         status, _ = iocage.lib.ioc_list.IOCList().list_get_jid(self.uuid)
+        if not status:
+            return
 
-        if status:
-            proc = su.Popen(["umount", "-f", dest], stdout=su.PIPE,
-                            stderr=su.PIPE)
-            stdout_data, stderr_data = proc.communicate()
+        proc = su.Popen(["umount", "-f", dest], stdout=su.PIPE, stderr=su.PIPE)
+        stdout_data, stderr_data = proc.communicate()
 
-            if stderr_data:
-                raise RuntimeError(f"{stderr_data.decode('utf-8')}")
+        if stderr_data:
+            raise RuntimeError(f"{stderr_data.decode('utf-8')}")
 
     def __fstab_edit__(self):
         """
@@ -183,26 +183,26 @@ class IOCFstab(object):
         shutil.copy2(jail_fstab, tmp_fstab.name)
         proc = su.call([editor, tmp_fstab.name])
 
-        if proc == 0:
-            with open(jail_fstab, "w") as fstab:
-                for line in tmp_fstab.readlines():
-                    fstab.write(line.decode("utf-8"))
-        else:
+        if proc != 0:
             raise RuntimeError(f"An error occurred within {err_editor}!")
 
+        with open(jail_fstab, "w") as fstab:
+            for line in tmp_fstab.readlines():
+                fstab.write(line.decode("utf-8"))
+
     def fstab_list(self):
-        """Returns a table or a list of lists"""
-        if self.header:
-            table = texttable.Texttable(max_width=0)
-
-            # We get an infinite float otherwise.
-            table.set_cols_dtype(["t", "t"])
-            self._fstab_list.insert(0, ["INDEX", "FSTAB ENTRY"])
-
-            table.add_rows(self._fstab_list)
-
-            return table.draw()
-        else:
+        """Returns list of lists, or a table"""
+        if not self.header:
             flat_fstab = [f for f in self._fstab_list]
 
             return flat_fstab
+
+        table = texttable.Texttable(max_width=0)
+
+        # We get an infinite float otherwise.
+        table.set_cols_dtype(["t", "t"])
+        self._fstab_list.insert(0, ["INDEX", "FSTAB ENTRY"])
+
+        table.add_rows(self._fstab_list)
+
+        return table.draw()
