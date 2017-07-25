@@ -118,9 +118,8 @@ class IOCFstab(object):
                         removed = True
                         dest = line.split()[1]
                         continue
-                    else:
-                        _fstab.write(line)
 
+                    _fstab.write(line)
                     index += 1
         if removed:
             iocage.lib.ioc_common.logit({
@@ -131,14 +130,14 @@ class IOCFstab(object):
                 _callback=self.callback,
                 silent=self.silent)
             return dest  # Needed for umounting, otherwise we lack context.
-        else:
-            iocage.lib.ioc_common.logit({
-                "level"  : "INFO",
-                "message": "No matching fstab entry."
-            },
-                _callback=self.callback,
-                silent=self.silent)
-            exit()
+
+        iocage.lib.ioc_common.logit({
+            "level"  : "INFO",
+            "message": "No matching fstab entry."
+        },
+            _callback=self.callback,
+            silent=self.silent)
+        exit()
 
     def __fstab_mount__(self):
         """Mounts the users mount if the jail is running."""
