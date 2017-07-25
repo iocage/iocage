@@ -162,13 +162,8 @@ class IOCImage(object):
         exports = os.listdir(image_dir)
         matches = fnmatch.filter(exports, f"{jail}*.zip")
 
-        if len(matches) == 1:
-            image_target = f"{image_dir}/{matches[0]}"
-            uuid = matches[0].rsplit("_")[0]
-            date = matches[0].rsplit("_")[1].strip(".zip")
-        elif len(matches) > 1:
+        if len(matches) > 1:
             msg = f"Multiple images found for {jail}:"
-
             for j in sorted(matches):
                 msg += f"\n  {j}"
 
@@ -178,13 +173,17 @@ class IOCImage(object):
             },
                 self.callback,
                 silent=self.silent)
-        else:
+        elif len(matches) < 1:
             iocage.lib.ioc_common.logit({
                 "level"  : "EXCEPTION",
                 "message": f"{jail} not found!"
             },
                 self.callback,
                 silent=self.silent)
+
+        image_target = f"{image_dir}/{matches[0]}"
+        uuid = matches[0].rsplit("_")[0]
+        date = matches[0].rsplit("_")[1].strip(".zip")
 
         with zipfile.ZipFile(image_target, "r") as _import:
             for z in _import.namelist():
