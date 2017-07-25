@@ -48,24 +48,23 @@ class IOCDestroy(object):
     @staticmethod
     def __stop_jails__(datasets, path=None, root=False):
         for dataset in datasets.dependents:
-            if "jails" in dataset.name:
-                # This is just to setup a replacement.
-                path = path.replace("templates", "jails")
-                uuid = dataset.name.partition(f"{path}/")[2].rsplit("/", 1)[0]
-                # We want the real path now.
-                if dataset.type == libzfs.DatasetType.FILESYSTEM:
-                    _path = dataset.properties["mountpoint"].value.replace(
-                        "/root", "")
-                    # It gives us a string that says "none", not terribly
-                    # useful, fixing that.
-                    _path = _path if _path != "none" else None
+            if "jails" not in dataset.name:
+                continue
+            if dataset.type != libzfs.DatasetType.FILESYSTEM:
+                continue
 
-                    if dataset.name.endswith(uuid) or root:
-                        if _path is not None:
-                            conf = iocage.lib.ioc_json.IOCJson(
-                                _path).json_load()
-                            iocage.lib.ioc_stop.IOCStop(uuid, _path, conf,
-                                                        silent=True)
+            # This is just to setup a replacement.
+            path = path.replace("templates", "jails")
+            uuid = dataset.name.partition(f"{path}/")[2].rsplit("/", 1)[0]
+            # We want the real path now.
+            _path = dataset.properties["mountpoint"].value.replace("/root", "")
+            # It gives us a string that says "none", not terribly
+            # useful, fixing that.
+            _path = _path if _path != "none" else None
+
+            if (dataset.name.endswith(uuid) or root) and _path is not None:
+                conf = iocage.lib.ioc_json.IOCJson(_path).json_load()
+                iocage.lib.ioc_stop.IOCStop(uuid, _path, conf, silent=True)
 
     def __destroy_leftovers__(self, dataset, clean=False):
         """Removes parent datasets and logs."""
