@@ -77,10 +77,9 @@ class IOCDestroy(object):
         except libzfs.ZFSException as err:
             # This is either not mounted or doesn't exist anymore,
             # we don't care either way.
-            if err.code == libzfs.Error.NOENT:
-                path = None
-            else:
+            if err.code != libzfs.Error.NOENT:
                 raise
+            path = None
         except KeyError:
             # This is a snapshot
             path = None
@@ -190,19 +189,20 @@ class IOCDestroy(object):
 
         if clean:
             self.__destroy_parse_datasets__(path)
-        else:
-            try:
-                conf = iocage.lib.ioc_json.IOCJson(path).json_load()
-                iocage.lib.ioc_stop.IOCStop(uuid, path, conf, silent=True)
-            except (FileNotFoundError, RuntimeError, libzfs.ZFSException):
-                # Broad exception as we don't care why this failed. iocage
-                # may have been killed before configuration could be made,
-                # it's meant to be nuked.
-                pass
+            return
 
-            try:
-                self.__destroy_parse_datasets__(
-                    f"{self.pool}/iocage/{dataset_type}/{uuid}")
-            except libzfs.ZFSException:
-                # The dataset doesn't exist, we don't care :)
-                pass
+        try:
+            conf = iocage.lib.ioc_json.IOCJson(path).json_load()
+            iocage.lib.ioc_stop.IOCStop(uuid, path, conf, silent=True)
+        except (FileNotFoundError, RuntimeError, libzfs.ZFSException):
+            # Broad exception as we don't care why this failed. iocage
+            # may have been killed before configuration could be made,
+            # it's meant to be nuked.
+            pass
+
+        try:
+            self.__destroy_parse_datasets__(
+                f"{self.pool}/iocage/{dataset_type}/{uuid}")
+        except libzfs.ZFSException:
+            # The dataset doesn't exist, we don't care :)
+            pass
