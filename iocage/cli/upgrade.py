@@ -87,8 +87,8 @@ def cli(jail, release):
             ioc_start.IOCStart(uuid, path, conf, silent=True)
             started = True
 
-            new_release = ioc_upgrade.IOCUpgrade(conf, release,
-                                                 root_path).upgrade_jail()
+        new_release = ioc_upgrade.IOCUpgrade(conf, release,
+                                             root_path).upgrade_jail()
     elif conf["type"] == "basejail":
         ioc_common.logit({
             "level"  : "EXCEPTION",
