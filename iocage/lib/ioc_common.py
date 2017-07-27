@@ -267,9 +267,6 @@ def sort_release(releases, split=False):
             # We don't want the -p* stuff.
             releases = releases[6].rsplit("-", 1)[0]
             list_sort = True
-        elif length == 6:
-            releases = releases[4]
-            list_sort = True
     except TypeError:
         # This is list -r
         pass
@@ -306,10 +303,10 @@ def sort_release(releases, split=False):
 
     for r, t in ordered_r_dict.items():
         if split:
-            release_list.insert(index, ["{}-{}".format(r, t)])
+            release_list.insert(index, [f"{r}-{t}"])
             index += 1
         else:
-            release_list.insert(index, "{}-{}".format(r, t))
+            release_list.insert(index, f"{r}-{t}")
             index += 1
 
     return release_list
