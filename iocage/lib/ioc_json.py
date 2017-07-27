@@ -627,8 +627,18 @@ class IOCJson(object):
         # Version 3 keys
         if not default:
             try:
-                release = conf["release"]
-                cloned_release = conf["cloned_release"]
+                try:
+                    release = conf["release"]
+                    cloned_release = conf["cloned_release"]
+                except KeyError:
+                    err_name = self.location.rsplit("/", 1)[-1]
+                    iocage.lib.ioc_common.logit({
+                        "level"  : "EXCEPTION",
+                        "message": f"{err_name} has a corrupt configuration,"
+                                   "please destroy the jail."
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
             except KeyError:
                 try:
                     freebsd_version = f"{iocroot}/releases/{conf['release']}" \
