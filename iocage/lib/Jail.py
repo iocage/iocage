@@ -74,6 +74,8 @@ class Jail:
     self.require_jail_existing()
     self.require_jail_running()
     self.destroy_jail()
+    if self.config.vnet:
+      self.stop_vimage_network()
     self.update_jail_state()
 
   def create(self, release_name):
@@ -244,6 +246,11 @@ class Jail:
       )
       net.setup()
       self.networks.append(net)
+
+  def stop_vimage_network(self):
+    for network in self.networks:
+      network.teardown()
+      self.networks.remove(network)
 
   def set_nameserver(self):
     self.config.resolver.apply(self)

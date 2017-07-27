@@ -31,6 +31,15 @@ class Network:
 
       jail_if, host_if = self.__create_vnet_iface()
 
+  def teardown(self):
+    if self.vnet:
+      # down host_if
+      iocage.lib.NetworkInterface.NetworkInterface(
+        name=self.nic_local_name,
+        extra_settings=["down"],
+        logger=self.logger
+      )
+
   @property
   def nic_local_name(self):
     self.jail.require_jail_running()
