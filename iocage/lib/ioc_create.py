@@ -290,6 +290,11 @@ class IOCCreate(object):
                     iocjson.json_set_value("type=template")
                     iocjson.json_set_value("template=yes")
 
+                    # If you supply pkglist and templates without setting the
+                    # config's type, you will end up with a type of jail
+                    # instead of template like we want.
+                    config["type"] = "template"
+
                 try:
                     iocjson.json_check_prop(key, value, config)
 
