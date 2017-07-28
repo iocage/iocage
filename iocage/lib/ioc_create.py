@@ -375,8 +375,8 @@ class IOCCreate(object):
             if config["ip4_addr"] == "none" and config["ip6_addr"] == "none":
                 iocage.lib.ioc_common.logit({
                     "level"  : "WARNING",
-                    "message": " You need an IP address for the jail to"
-                               "install packages!\n"
+                    "message": "You need an IP address for the jail to"
+                               " install packages!\n"
                 },
                     _callback=self.callback,
                     silent=self.silent)
