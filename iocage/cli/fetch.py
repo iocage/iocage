@@ -24,8 +24,7 @@
 """fetch module for the cli."""
 import click
 
-import iocage.lib.ioc_common as ioc_common
-import iocage.lib.iocage as ioc
+from iocage.lib.Release import Release
 
 __rootcmd__ = True
 
@@ -50,46 +49,46 @@ def validate_count(ctx, param, value):
     max_content_width=400, ),
     name="fetch", help="Fetch a version of FreeBSD for jail usage or a"
                        " preconfigured plugin.")
-@click.option("--http", "-h", default=False,
-              help="Have --server define a HTTP server instead.", is_flag=True)
-@click.option("--file", "-f", "_file", default=False,
-              help="Use a local file directory for root-dir instead of FTP or"
-                   " HTTP.", is_flag=True)
-@click.option("--files", "-F", multiple=True,
-              help="Specify the files to fetch from the mirror.")
-@click.option("--server", "-s", default="ftp.freebsd.org",
-              help="FTP server to login to.")
-@click.option("--user", "-u", default="anonymous", help="The user to use.")
-@click.option("--password", "-p", default="anonymous@",
-              help="The password to use.")
-@click.option("--auth", "-a", default=None, help="Authentication method for "
-                                                 "HTTP fetching. Valid "
-                                                 "values: basic, digest")
-@click.option("--verify/--noverify", "-V/-NV", default=True,
-              help="Enable or disable verifying SSL cert for HTTP fetching.")
+#@click.option("--http", "-h", default=False,
+#              help="Have --server define a HTTP server instead.", is_flag=True)
+#@click.option("--file", "-f", "_file", default=False,
+#              help="Use a local file directory for root-dir instead of FTP or"
+#                   " HTTP.", is_flag=True)
+#@click.option("--files", "-F", multiple=True,
+#              help="Specify the files to fetch from the mirror.")
+#@click.option("--server", "-s", default="ftp.freebsd.org",
+#              help="FTP server to login to.")
+#@click.option("--user", "-u", default="anonymous", help="The user to use.")
+#@click.option("--password", "-p", default="anonymous@",
+#              help="The password to use.")
+#@click.option("--auth", "-a", default=None, help="Authentication method for "
+#                                                 "HTTP fetching. Valid "
+#                                                 "values: basic, digest")
+# @click.option("--verify/--noverify", "-V/-NV", default=True,
+#               help="Enable or disable verifying SSL cert for HTTP fetching.")
 @click.option("--release", "-r", help="The FreeBSD release to fetch.")
-@click.option("--plugin-file", "-P", is_flag=True,
-              help="This is a plugin file outside the INDEX, but exists in "
-                   "that location.\nDeveloper option, most will prefer to "
-                   "use --plugins.")
-@click.option("--plugins", help="List all available plugins for creation.",
-              is_flag=True)
-@click.argument("props", nargs=-1)
-@click.option("--count", "-c", callback=validate_count, default="1",
-              help="Designate a number of plugin type jails to create.")
-@click.option("--root-dir", "-d", help="Root directory " +
-                                       "containing all the RELEASEs.")
-@click.option("--update/--noupdate", "-U/-NU", default=True,
-              help="Decide whether or not to update the fetch to the latest "
-                   "patch level.")
-@click.option("--eol/--noeol", "-E/-NE", default=True,
-              help="Enable or disable EOL checking with upstream.")
-@click.option("--name", "-n", help="Supply a plugin name for --plugins to "
-                                   "fetch or use a autocompleted filename"
-                                   " for --plugin-file.\nAlso accepts full"
-                                   " path for --plugin-file.")
-@click.option("--accept/--noaccept", default=False,
-              help="Accept the plugin's LICENSE agreement.")
-def cli(**kwargs):
-    """CLI command that calls fetch_release()"""
-    ioc.IOCage(exit_on_error=True).fetch(**kwargs)
+#@click.option("--plugin-file", "-P", is_flag=True,
+#              help="This is a plugin file outside the INDEX, but exists in "
+#                   "that location.\nDeveloper option, most will prefer to "
+#                   "use --plugins.")
+#@click.option("--plugins", help="List all available plugins for creation.",
+#              is_flag=True)
+#@click.argument("props", nargs=-1)
+#@click.option("--count", "-c", callback=validate_count, default="1",
+#              help="Designate a number of plugin type jails to create.")
+# @click.option("--root-dir", "-d", help="Root directory " +
+#                                        "containing all the RELEASEs.")
+# @click.option("--update/--noupdate", "-U/-NU", default=True,
+#               help="Decide whether or not to update the fetch to the latest "
+#                    "patch level.")
+# @click.option("--eol/--noeol", "-E/-NE", default=True,
+#               help="Enable or disable EOL checking with upstream.")
+# @click.option("--name", "-n", help="Supply a plugin name for --plugins to "
+#                                    "fetch or use a autocompleted filename"
+#                                    " for --plugin-file.\nAlso accepts full"
+#                                    " path for --plugin-file.")
+# @click.option("--accept/--noaccept", default=False,
+#              help="Accept the plugin's LICENSE agreement.")
+def cli(release):
+    release = Release(name=release)
+    release.fetch()

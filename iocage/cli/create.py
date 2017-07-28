@@ -23,6 +23,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """create module for the cli."""
 import json
+import sys
 import os
 import re
 
@@ -67,6 +68,9 @@ def validate_count(ctx, param, value):
               help="Provide a specific name instead of an UUID for this jail.")
 @click.option("--uuid", "-u", "_uuid", default=None,
               help="Provide a specific UUID for this jail.")
+@click.option("--clonejail" "-cj", is_flag=True, default=False,
+              help="Set the new jail type to a clonejail. Clonejails"
+                   "zfs clone the specified RELEASE datasets when starting a jail")
 @click.option("--basejail", "-b", is_flag=True, default=False,
               help="Set the new jail type to a basejail. Basejails"
                    " mount the specified RELEASE directories as nullfs"
@@ -81,19 +85,23 @@ def validate_count(ctx, param, value):
               help="Skip the interactive question.")
 @click.option("--log-level", "-d", default="info")
 @click.argument("props", nargs=-1)
-def cli(release, template, count, props, pkglist, basejail, empty, short,
+def cli(release, template, count, props, pkglist, basejail, clonejail_cj, empty, short,
         name, _uuid, force, log_level):
 
     logger = iocage.lib.Logger.Logger()
+
+    if basejail and clonejail_cj:
+      logger.error("A jail can either be a basejail or a clonejail")
+      sys.exit(1)
+    
     if name:
         # noinspection Annotator
         valid = True if re.match("^[a-zA-Z0-9\._-]+$", name) else False
         if not valid:
             error_message = f"Invalid character in {name}, please remove it."
-            self.logger.error(error_message)
+            logger.error(error_message)
             raise Exception(error_message)
 
-    print(release)
     release = iocage.lib.Release.Release(name=release)
     if not release.fetched:
         if not release.available:
@@ -104,4 +112,18 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
         logger.error(error_message)
         raise Exception(error_message)
 
-    iocage.lib.Jail.Jail({ "basejail": True }).create(release.name)
+    for i in range(count):
+      jail = iocage.lib.Jail.Jail({
+        "basejail": basejail,
+        "clonejail": clonejail_cj
+      })
+
+      if props:
+        for prop in props:
+          try:
+            key, value = prop.split("=", maxsplit=1)
+          except:
+            logger.error(f"Invalid property {prop}")
+            sys.exit(1)
+
+      jail.create(release.name)

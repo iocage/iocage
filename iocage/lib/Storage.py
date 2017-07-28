@@ -45,6 +45,15 @@ class Storage:
 
     snapshot_name = f"{source}@{self.jail.uuid}"
 
+    # delete target dataset if it already exists
+    try:
+      existing_dataset = self.zfs.get_dataset(target)
+      existing_dataset.umount()
+      existing_dataset.delete()
+      del existing_dataset
+    except:
+      pass
+
     # delete existing snapshot if existing
     existing_snapshot = None
     try:
@@ -63,9 +72,9 @@ class Storage:
     try:
       snapshot.clone(target)
     except:
-      parent = "/".join(basedir.split("/")[:-1])
+      parent = "/".join(target.split("/")[:-1])
       pool = self.jail.host.datasets.root.pool
-      pool.create(parent, {}, recursive=True)
+      pool.create(parent, {}, create_ancestors=True)
       snapshot.clone(target)
 
     target_dataset = self.zfs.get_dataset(target)

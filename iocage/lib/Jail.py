@@ -344,9 +344,14 @@ class Jail:
     return self._get_jid() != None
 
   def _get_jid(self):
-    # self.update_jail_state()
     try:
-      return self.jail_state['jid'];
+      return self.jail_state["jid"]
+    except:
+      pass
+
+    try:
+      self.update_jail_state()
+      return self.jail_state["jid"]
     except:
       return None
 

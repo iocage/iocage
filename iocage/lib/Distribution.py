@@ -44,6 +44,13 @@ class Distribution:
     else:
       raise Exception(f"Unknown Distribution '{distribution}'")
 
+  @property
+  def signature_file(self):
+    if self.name == "FreeBSD":
+      return "MANIFEST"
+    elif self.name == "HardenedBSD":
+      return "CHECKSUMS.SHA256"
+
   def fetch_releases(self):
     
     resource = urllib.request.urlopen(self.mirror_url)
