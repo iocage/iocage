@@ -589,6 +589,13 @@ class IOCStart(object):
 
 
 def find_bridge_mtu(bridge):
+    try:
+        su.check_call(["ifconfig", bridge, "create"], stdout=su.PIPE,
+                      stderr=su.PIPE)
+    except su.CalledProcessError:
+        # The bridge already exists, this is just best effort.
+        pass
+
     memberif = [x for x in
                 iocage.lib.ioc_common.checkoutput(
                     ["ifconfig", bridge]).splitlines()
