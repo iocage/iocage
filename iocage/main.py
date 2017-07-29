@@ -97,7 +97,7 @@ class IOCageCLI(click.MultiCommand):
 
 
 @click.command(cls=IOCageCLI)
-@click.version_option(version="0.9.9-ALPHA", prog_name="iocage",
+@click.version_option(version="0.9.9 07/28/2017", prog_name="iocage",
                       message="%(version)s")
 def cli():
     """A jail manager."""
