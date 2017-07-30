@@ -97,7 +97,7 @@ class Release:
                 return self._mirror_url
         except:
             pass
-        return "self.host.distribution.mirror_url"
+        return self.host.distribution.mirror_url
 
     @mirror_url.setter
     def mirror_url(self, value):
@@ -346,7 +346,7 @@ class Release:
 
     def _read_asset_hash(self, asset_name):
         asset_location = self._get_asset_location(asset_name)
-        sha256 = hashsha256()
+        sha256 = hashlib.sha256()
         with open(asset_location, 'rb') as f:
             for block in iter(lambda: f.read(65536), b''):
                 sha256.update(block)
