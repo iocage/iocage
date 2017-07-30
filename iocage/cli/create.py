@@ -29,9 +29,9 @@ import re
 
 import click
 
-import iocage.lib.Releases
-import iocage.lib.Jail
-import iocage.lib.Logger
+import Release
+import Jail
+import Logger
 
 __rootcmd__ = True
 
@@ -88,7 +88,7 @@ def validate_count(ctx, param, value):
 def cli(release, template, count, props, pkglist, basejail, clonejail_cj, empty, short,
         name, _uuid, force, log_level):
 
-    logger = iocage.lib.Logger.Logger()
+    logger = Logger.Logger()
 
     if basejail and clonejail_cj:
       logger.error("A jail can either be a basejail or a clonejail")
@@ -102,7 +102,7 @@ def cli(release, template, count, props, pkglist, basejail, clonejail_cj, empty,
             logger.error(error_message)
             raise Exception(error_message)
 
-    release = iocage.lib.Release.Release(name=release)
+    release = Release.Release(name=release)
     if not release.fetched:
         if not release.available:
             error_message = f"The release '{release.name}' does not exist"
@@ -113,7 +113,7 @@ def cli(release, template, count, props, pkglist, basejail, clonejail_cj, empty,
         raise Exception(error_message)
 
     for i in range(count):
-      jail = iocage.lib.Jail.Jail({
+      jail = Jail.Jail({
         "basejail": basejail,
         "clonejail": clonejail_cj
       })
