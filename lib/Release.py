@@ -1,4 +1,4 @@
-import iocage.lib.helpers
+import helpers
 
 import os
 import sys
@@ -19,9 +19,9 @@ class Release:
                  logger=None,
                  check_hashes=True):
 
-        iocage.lib.helpers.init_logger(self, logger)
-        iocage.lib.helpers.init_zfs(self, zfs)
-        iocage.lib.helpers.init_host(self, host)
+        helpers.init_logger(self, logger)
+        helpers.init_zfs(self, zfs)
+        helpers.init_host(self, host)
 
         self.name = name
         self._hashes = None
@@ -180,7 +180,7 @@ class Release:
         if self._basejail_datasets_already_exists(self.name):
             return
 
-        for basedir in iocage.lib.helper.get_basedir_list():
+        for basedir in helper.get_basedir_list():
             self._create_dataset()
 
     def _basejail_datasets_already_exists(self, release_name):
@@ -299,7 +299,7 @@ class Release:
         base_dataset = self.base_dataset
         pool = self.host.datasets.base.pool
 
-        for folder in iocage.lib.helpers.get_basedir_list():
+        for folder in helpers.get_basedir_list():
             pool.create(
                 f"{self.base_dataset.name}/{folder}",
                 {},
@@ -346,7 +346,7 @@ class Release:
 
     def _read_asset_hash(self, asset_name):
         asset_location = self._get_asset_location(asset_name)
-        sha256 = hashlib.sha256()
+        sha256 = hashsha256()
         with open(asset_location, 'rb') as f:
             for block in iter(lambda: f.read(65536), b''):
                 sha256.update(block)

@@ -1,13 +1,13 @@
-import iocage.lib.JailConfig
-import iocage.lib.Network
-import iocage.lib.Storage
-import iocage.lib.Releases
-import iocage.lib.Release
-import iocage.lib.helpers
+import JailConfig
+import Network
+import Storage
+import Releases
+import Release
+import helpers
 
-import iocage.lib.ZFSBasejailStorage
-import iocage.lib.NullFSBasejailStorage
-import iocage.lib.StandaloneJailStorage
+import ZFSBasejailStorage
+import NullFSBasejailStorage
+import StandaloneJailStorage
 
 import subprocess
 import uuid
@@ -17,19 +17,19 @@ class Jail:
 
     def __init__(self, data={}, zfs=None, host=None, logger=None):
 
-        iocage.lib.helpers.init_logger(self, logger)
-        iocage.lib.helpers.init_zfs(self, zfs)
-        iocage.lib.helpers.init_host(self, host)
+        helpers.init_logger(self, logger)
+        helpers.init_zfs(self, zfs)
+        helpers.init_host(self, host)
 
         if isinstance(data, str):
             data = {"uuid": self._resolve_uuid(data)}
 
-        self.config = iocage.lib.JailConfig.JailConfig(
+        self.config = JailConfig.JailConfig(
             data=data, jail=self, logger=self.logger)
         
         self.networks = []
         
-        self.storage = iocage.lib.Storage.Storage(
+        self.storage = Storage.Storage(
             auto_create=True, safe_mode=False,
             jail=self, logger=self.logger, zfs=self.zfs)
 
@@ -48,16 +48,16 @@ class Jail:
 
         release = self.release
 
-        iocage.lib.NullFSBasejailStorage.NullFSBasejailStorage.umount_nullfs(
+        NullFSBasejailStorage.NullFSBasejailStorage.umount_nullfs(
             self.storage)
 
         storage_backend = None
 
         if self.config.basejail_type == "zfs":
-            storage_backend = iocage.lib.ZFSBasejailStorage.ZFSBasejailStorage
+            storage_backend = ZFSBasejailStorage.ZFSBasejailStorage
 
         if self.config.basejail_type == "nullfs":
-            storage_backend = iocage.lib.NullFSBasejailStorage.NullFSBasejailStorage
+            storage_backend = NullFSBasejailStorage.NullFSBasejailStorage
 
         # if self.config.type == "clonejail":
         #   pass
@@ -75,7 +75,7 @@ class Jail:
         self.set_nameserver()
 
         if self.config.jail_zfs == True:
-            iocage.lib.ZFSShareStorage.mount_zfs_shares(self.storage)
+            ZFSShareStorage.mount_zfs_shares(self.storage)
 
     def stop(self):
         self.require_jail_existing()
@@ -89,7 +89,7 @@ class Jail:
         self.require_jail_not_existing()
 
         # check if release exists
-        releases = iocage.lib.Releases.Releases(
+        releases = Releases.Releases(
             host=self.host, zfs=self.zfs, logger=self.logger)
         try:
             release = releases.find_by_name(release_name)
@@ -115,14 +115,14 @@ class Jail:
         if self.config.type == "basejail":
 
             if self.config.basejail_type == "nullfs":
-                storage_backend = iocage.lib.NullFSBasejailStorage.NullFSBasejailStorage
+                storage_backend = NullFSBasejailStorage.NullFSBasejailStorage
 
             elif self.config.basejail_type == "zfs":
-                storage_backend = iocage.lib.ZFSBasejailStorage.ZFSBasejailStorage
+                storage_backend = ZFSBasejailStorage.ZFSBasejailStorage
 
         elif self.config.type == "clonejail":
             self.config.cloned_release = release.name
-            storage_backend = iocage.lib.StandaloneJailStorage.StandaloneJailStorage
+            storage_backend = StandaloneJailStorage.StandaloneJailStorage
 
         if storage_backend != None:
             storage_backend.setup(self.storage, release)
@@ -135,7 +135,7 @@ class Jail:
             "/usr/sbin/jexec",
             self.identifier
         ] + command
-        return iocage.lib.helpers.exec(command)
+        return helpers.exec(command)
 
     def destroy_jail(self):
 
@@ -247,7 +247,7 @@ class Jail:
             except:
                 ipv6_addresses = []
 
-            net = iocage.lib.Network.Network(
+            net = Network.Network(
                 jail=self,
                 nic=nic,
                 ipv4_addresses=ipv4_addresses,
@@ -380,7 +380,7 @@ class Jail:
         return self.config.uuid
 
     def _get_release(self):
-        return iocage.lib.Release.Release(name=self.config.release)
+        return Release.Release(name=self.config.release)
 
     def _get_jail_type(self):
         return self.config.type

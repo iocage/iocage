@@ -1,4 +1,4 @@
-import iocage.lib.helpers
+import helpers
 
 
 class NetworkInterface:
@@ -89,7 +89,7 @@ class NetworkInterface:
         if self.__is_jail():
             return self.jail.exec(command)
         else:
-            return iocage.lib.helpers.exec(command)
+            return helpers.exec(command)
 
     def __is_jail(self):
         return self.jail != None

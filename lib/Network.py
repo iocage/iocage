@@ -1,5 +1,5 @@
-import iocage.lib.NetworkInterface
-import iocage.lib.helpers
+import NetworkInterface
+import helpers
 
 import subprocess
 from hashlib import md5
@@ -16,7 +16,7 @@ class Network:
                  bridges=None,
                  logger=None):
 
-        iocage.lib.helpers.init_logger(self, logger)
+        helpers.init_logger(self, logger)
 
         if bridges != None:
             if not isinstance(bridges, list):
@@ -43,7 +43,7 @@ class Network:
     def teardown(self):
         if self.vnet:
             # down host_if
-            iocage.lib.NetworkInterface.NetworkInterface(
+            NetworkInterface.NetworkInterface(
                 name=self.nic_local_name,
                 extra_settings=["down"],
                 logger=self.logger
@@ -70,7 +70,7 @@ class Network:
 
         mac_a, mac_b = self.__generate_mac_address_pair()
 
-        host_if = iocage.lib.NetworkInterface.NetworkInterface(
+        host_if = NetworkInterface.NetworkInterface(
             name=epair_a,
             mac=mac_a,
             mtu=self.mtu,
@@ -81,7 +81,7 @@ class Network:
 
         # add host_if to bridges
         for bridge in self.bridges:
-            iocage.lib.NetworkInterface.NetworkInterface(
+            NetworkInterface.NetworkInterface(
                 name=bridge,
                 addm=self.nic_local_name,
                 extra_settings=["up"],
@@ -89,7 +89,7 @@ class Network:
             )
 
         # up host_if
-        iocage.lib.NetworkInterface.NetworkInterface(
+        NetworkInterface.NetworkInterface(
             name=self.nic_local_name,
             extra_settings=["up"],
             logger=self.logger
@@ -98,7 +98,7 @@ class Network:
         # assign epair_b to jail
         self.__assign_vnet_iface_to_jail(epair_b, self.jail.identifier)
 
-        jail_if = iocage.lib.NetworkInterface.NetworkInterface(
+        jail_if = NetworkInterface.NetworkInterface(
             name=epair_b,
             mac=mac_b,
             mtu=self.mtu,
@@ -113,7 +113,7 @@ class Network:
         return jail_if, host_if
 
     def __assign_vnet_iface_to_jail(self, nic, jail_name):
-        iocage.lib.NetworkInterface.NetworkInterface(
+        NetworkInterface.NetworkInterface(
             name=nic,
             vnet=jail_name,
             logger=self.logger

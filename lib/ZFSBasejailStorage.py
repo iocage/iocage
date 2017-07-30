@@ -1,4 +1,4 @@
-import iocage.lib.helpers
+import helpers
 
 class ZFSBasejailStorage:
 
@@ -18,7 +18,7 @@ class ZFSBasejailStorage:
     if not self.jail.config.basejail_type == "zfs":
       raise Exception(f"Jail {self.jail.humanreadable_name} is not a zfs basejail.")
 
-    for basedir in iocage.lib.helpers.get_basedir_list():
+    for basedir in helpers.get_basedir_list():
       source_dataset_name = f"{release.base_dataset.name}/{basedir}"
       target_dataset_name = f"{self.jail_root_dataset_name}/{basedir}"
       self.clone_zfs_dataset(source_dataset_name, target_dataset_name)
@@ -30,7 +30,7 @@ class ZFSBasejailStorage:
 
     for child in root:
       relative_name = child.name.replace(f"{self.jail_root_dataset_name}/","")
-      basedirs = iocage.lib.helpers.get_basedir_list()
+      basedirs = helpers.get_basedir_list()
 
       if relative_name in basedirs:
 

@@ -1,5 +1,5 @@
-import iocage.lib.StandaloneJailStorage
-import iocage.lib.helpers
+import StandaloneJailStorage
+import helpers
 
 import os
 
@@ -12,7 +12,7 @@ class NullFSBasejailStorage:
         NullFSBasejailStorage.create_nullfs_directories(self)
 
     def setup(self, release):
-        iocage.lib.StandaloneJailStorage.StandaloneJailStorage.setup(
+        StandaloneJailStorage.StandaloneJailStorage.setup(
             self, release)
 
     """
@@ -32,13 +32,13 @@ class NullFSBasejailStorage:
 
             if (len(mounts) > 0):
                 try:
-                    iocage.lib.helpers.exec(["umount"] + mounts)
+                    helpers.exec(["umount"] + mounts)
                 except:
                     # in case directories were not mounted
                     pass
 
     def create_nullfs_directories(self):
-        basedirs = iocage.lib.helpers.get_basedir_list() + ["dev", "etc"]
+        basedirs = helpers.get_basedir_list() + ["dev", "etc"]
         jail_root = self.jail_root_dataset.mountpoint
 
         for basedir in basedirs:

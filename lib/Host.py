@@ -1,6 +1,6 @@
-import iocage.lib.Distribution
-import iocage.lib.Datasets
-import iocage.lib.helpers
+import Distribution
+import Datasets
+import helpers
 
 import os
 import platform
@@ -11,13 +11,13 @@ class Host:
 
     def __init__(self, root_dataset=None, zfs=None, logger=None):
 
-        iocage.lib.helpers.init_logger(self, logger)
-        iocage.lib.helpers.init_zfs(self, zfs)
-        self.datasets = iocage.lib.Datasets.Datasets(
+        helpers.init_logger(self, logger)
+        helpers.init_zfs(self, zfs)
+        self.datasets = Datasets.Datasets(
             root=root_dataset,
             logger=self.logger
         )
-        self.distribution = iocage.lib.Distribution.Distribution(
+        self.distribution = Distribution.Distribution(
             host=self,
             logger=self.logger
         )

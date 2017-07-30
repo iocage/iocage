@@ -1,4 +1,4 @@
-import iocage.lib.helpers
+import helpers
 
 import libzfs
 
@@ -6,8 +6,8 @@ import libzfs
 class Datasets:
 
     def __init__(self, root=None, zfs=None, logger=None):
-        #iocage.lib.helpers.init_logger(self, logger)
-        iocage.lib.helpers.init_zfs(self, zfs)
+        #helpers.init_logger(self, logger)
+        helpers.init_zfs(self, zfs)
 
         self._datasets = {}
 

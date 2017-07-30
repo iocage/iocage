@@ -1,10 +1,10 @@
-import iocage.lib.helpers
+import helpers
 
 
 class JailConfigFstab:
 
     def __init__(self, jail, logger=None):
-        iocage.lib.helpers.init_logger(self, logger)
+        helpers.init_logger(self, logger)
         self.jail = jail
 
     @property
@@ -24,7 +24,7 @@ class JailConfigFstab:
             return ""
 
         fstab_lines = []
-        for basedir in iocage.lib.helpers.get_basedir_list():
+        for basedir in helpers.get_basedir_list():
             release_directory = self.jail.host.datasets.releases.mountpoint
 
             cloned_release = self.jail.config.cloned_release

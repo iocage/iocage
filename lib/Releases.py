@@ -1,11 +1,11 @@
-import iocage.lib.Release
-import iocage.lib.helpers
+import Release
+import helpers
 
 
 class Releases:
 
     def __init__(self, host=None, zfs=None, logger=None):
-        iocage.lib.helpers.init_host(self, host)
+        helpers.init_host(self, host)
         self.zfs = zfs
 
     @property
@@ -16,7 +16,7 @@ class Releases:
     def local(self):
         release_datasets = self.dataset.children
         return list(map(
-            lambda x: iocage.lib.Release.Release(
+            lambda x: Release.Release(
                 name=x.name.split("/").pop(),
                 host=self.host,
                 zfs=self.zfs
