@@ -3,6 +3,7 @@
 *.pyo
 *.egg-info/
 *.egg
+*.swp
 .DS_Store
 .tox/
 .cache/
