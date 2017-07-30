@@ -24,7 +24,7 @@
 """stop module for the cli."""
 import click
 
-from iocage.lib.Jail import Jail
+import Jail
 
 __rootcmd__ = True
 
@@ -40,4 +40,4 @@ def cli(rc, jails):
     location to stop_jail.
     """
     for jail in jails:
-        Jail(jail).stop()
+        Jail.Jail(jail).stop()

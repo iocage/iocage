@@ -25,9 +25,9 @@
 import click
 import texttable
 
-from iocage.lib.Jails import Jails
-from iocage.lib.Host import Host
-from iocage.lib.Logger import Logger
+import Jails
+import Host
+import Logger
 
 @click.command(name="list", help="List a specified dataset type, by default"
                                  " lists all jails.")
@@ -50,9 +50,9 @@ from iocage.lib.Logger import Logger
 @click.option("--output", "-o", default=None)
 def cli(dataset_type, header, _long, remote, plugins, _sort, quick, log_level, output):
 
-    logger = Logger(print_level=log_level)
-    host = Host(logger=logger)
-    jails = Jails(logger=logger)
+    logger = Logger.Logger(print_level=log_level)
+    host = Host.Host(logger=logger)
+    jails = Jails.Jails(logger=logger)
     hardened = host.distribution.name == "HardenedBSD"
 
     if dataset_type is None:
@@ -99,6 +99,5 @@ def cli(dataset_type, header, _long, remote, plugins, _sort, quick, log_level, o
         table.add_rows(table_data)
         print(table.draw())
         return
-
 
     return

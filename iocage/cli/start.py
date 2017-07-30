@@ -24,8 +24,8 @@
 """start module for the cli."""
 import click
 
-import iocage.lib.Jail
-import iocage.lib.Logger
+import Jail
+import Logger
 
 __rootcmd__ = True
 
@@ -39,6 +39,6 @@ def cli(rc, jails, log_level):
     """
     Starts Jails
     """
-    logger = iocage.lib.Logger.Logger(print_level=log_level)
+    logger = Logger.Logger(print_level=log_level)
     for jail in jails:
-        iocage.lib.Jail.Jail(jail, logger=logger).start()
+        Jail.Jail(jail, logger=logger).start()
