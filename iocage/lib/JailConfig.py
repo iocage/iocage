@@ -469,6 +469,9 @@ class JailConfig():
         except:
             raise Exception(f"Variable {key} not found")
 
+    def __delattr__(self, key):
+        del self.data[key]
+
     def __setattr__(self, key, value):
 
         # passthrough existing properties

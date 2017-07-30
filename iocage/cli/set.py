@@ -24,7 +24,7 @@
 """set module for the cli."""
 import click
 
-import iocage.lib.iocage as ioc
+import Jail
 
 __rootcmd__ = True
 
@@ -33,13 +33,29 @@ __rootcmd__ = True
     max_content_width=400, ), name="set", help="Sets the specified property.")
 @click.argument("props", nargs=-1)
 @click.argument("jail", nargs=1)
-@click.option("--plugin", "-P",
-              help="Set the specified key for a plugin jail, if accessing a"
-                   " nested key use . as a separator."
-                   "\n\b Example: iocage set -P foo.bar.baz=VALUE PLUGIN",
-              is_flag=True)
-def cli(props, jail, plugin):
+# @click.option("--plugin", "-P",
+#               help="Set the specified key for a plugin jail, if accessing a"
+#                    " nested key use . as a separator."
+#                    "\n\b Example: iocage set -P foo.bar.baz=VALUE PLUGIN",
+#               is_flag=True)
+#def cli(props, jail, plugin):
+
+def cli(props, jail):
     """Get a list of jails and print the property."""
+    print(jail, props)
+    jail = Jail.Jail(jail)
     for prop in props:
-        ioc.IOCage(exit_on_error=True, jail=jail, skip_jails=True).set(prop,
-                                                                       plugin)
+        
+        delete = False
+
+        try:
+            key, value = prop.split("=", maxsplit=1)
+        except:
+            delete = True
+
+        if delete:
+            del jail.config[key]
+        else:
+            jail.config.__setattr__(key, value)
+
+    jail.config.save()
