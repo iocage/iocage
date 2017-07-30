@@ -9,7 +9,6 @@ import iocage.lib.ZFSBasejailStorage
 import iocage.lib.NullFSBasejailStorage
 import iocage.lib.StandaloneJailStorage
 
-import libzfs
 import subprocess
 import uuid
 
