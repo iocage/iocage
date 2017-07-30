@@ -7,6 +7,7 @@ import hashlib
 import libzfs
 import urllib.request
 import shutil
+from urllib.parse import urlparse
 
 class Release:
 
@@ -22,10 +23,9 @@ class Release:
     self.dataset = dataset
     self.check_signatures = (check_signatures == True)
     
-    self.assets = ["base"]
-
+    self._assets = ["base"]
     if self.host.distribution.name != "HardenedBSD":
-      self.assets.append("lib32")
+      self._assets.append("lib32")
 
   @property
   def dataset(self):
@@ -72,8 +72,36 @@ class Release:
       return f"{self.releases_folder}/{self.name}/root"
 
   @property
+  def assets(self):
+    return self._assets
+
+  @assets.setter
+  def assets(self, value):
+    value = [value] if isinstance(value, str) else value
+    self._assets = map(
+      lambda x: x if not x.endswith(".txz") else x[:-4],
+      value
+    )
+
+  @property
+  def mirror_url(self):
+    try:
+      if self._mirror_url:
+        return self._mirror_url;
+    except:
+      pass
+    return "self.host.distribution.mirror_url"
+
+  @mirror_url.setter
+  def mirror_url(self, value):
+    url = urlparse(value)
+    if url.scheme not in self._supported_url_schemes:
+      raise Exception(f"Invalid URL scheme '{url.scheme}'")
+    self._mirror_url = url.geturl()
+
+  @property
   def remote_url(self):
-    return f"{self.host.distribution.mirror_url}/{self.name}"      
+    return f"{self.mirror_url}/{self.name}"
 
   @property
   def available(self):
@@ -116,6 +144,10 @@ class Release:
       self._signatures = self.read_signatures()
 
     return self._signatures
+
+  @property
+  def _supported_url_schemes(self):
+    return ["https", "http", "ftp"]
 
   def fetch(self):
     self._require_empty_root_dir()
@@ -247,21 +279,31 @@ class Release:
       self.base_dataset.mount()
     except:
       for child_dataset in  self.base_dataset.children:
+        child_dataset.umount()
         child_dataset.delete()
 
     base_dataset = self.base_dataset
 
     for folder in iocage.lib.helpers.get_basedir_list():
       self.host.datasets.base.pool.create(f"{self.base_dataset.name}/{folder}", {}, create_ancestors=True)
-      self.zfs.get_dataset("{self.base_dataset.name}/{folder}").mount()
+      self.zfs.get_dataset(f"{self.base_dataset.name}/{folder}").mount()
 
       src_path = f"{self.dataset.mountpoint}/{folder}"
       dst_path = f"{self.base_dataset.mountpoint}/{folder}"
 
       self.logger.verbose(f"Copying {folder} from {src_path} to {dst_path}")
-      shutil.copytree(src_path, dst_path)
+      self._copytree(src_path, dst_path)
 
     self.logger.debug(f"Updated release base datasets for {self.name}")
+
+  def _copytree(self, src_path, dst_path):
+    for item in os.listdir(src_path):
+      src = os.path.join(src_path, item)
+      dst = os.path.join(dst_path, item)
+      if os.path.isdir(src):
+        shutil.copytree(src, dst)
+      else:
+        shutil.copy2(src, dst)
 
   def _cleanup(self):
     for asset in self.assets:

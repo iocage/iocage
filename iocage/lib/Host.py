@@ -19,7 +19,11 @@ class Host:
 
   @property
   def userland_version(self):
-    return float(os.uname()[2].partition("-")[0])
+    return float(self.release_version.partition("-")[0])
+
+  @property
+  def release_version(self):
+    return os.uname()[2]
 
   @property
   def processor(self):

@@ -37,7 +37,7 @@ class Logger:
     "spam"
   ]
 
-  def __init__(self, print_level="info", log_directory="/var/log/iocage"):
+  def __init__(self, print_level="spam", log_directory="/var/log/iocage"):
     self.print_level = print_level
     self._set_log_directory(log_directory)
 

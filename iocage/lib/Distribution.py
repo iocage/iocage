@@ -66,6 +66,11 @@ class Distribution:
       self._parse_links(response)
     ))
 
+    available_releases = sorted(
+      available_releases,
+      key=lambda x: float(x.name.partition("-")[0])
+    )
+
     self.available_releases = available_releases
     return available_releases
 

@@ -21,7 +21,7 @@ class Releases:
 
   @property
   def available(self):
-    return self.host.distribution.releases  
+    return self.host.distribution.releases
   
   @property
   def releases_folder(self):
