@@ -1,38 +1,42 @@
 import iocage.lib.helpers
 
+
 class JailConfigFstab:
 
-  def __init__(self, jail, logger=None):
-    iocage.lib.helpers.init_logger(self, logger)
-    self.jail = jail
+    def __init__(self, jail, logger=None):
+        iocage.lib.helpers.init_logger(self, logger)
+        self.jail = jail
 
-  @property
-  def path(self):
-    return f"{self.jail.path}/fstab"
+    @property
+    def path(self):
+        return f"{self.jail.path}/fstab"
 
-  def write(self):
-    with open(self.path, "w") as f:
-      f.write(self.__str__())
-      self.logger.verbose(f"{self.path} written")
+    def write(self):
+        with open(self.path, "w") as f:
+            f.write(self.__str__())
+            self.logger.verbose(f"{self.path} written")
 
-  def __str__(self):
+    def __str__(self):
 
-    if not self.jail.config.basejail or not self.jail.config.basejail_type == "nullfs":
-      return ""
+        basejail = self.jail.config.basejail
+        basejail_type = self.jail.config.basejail_type
+        if not basejail or not basejail_type == "nullfs":
+            return ""
 
-    fstab_lines = []
-    for basedir in iocage.lib.helpers.get_basedir_list():
-      release_directory = self.jail.host.datasets.releases.mountpoint
+        fstab_lines = []
+        for basedir in iocage.lib.helpers.get_basedir_list():
+            release_directory = self.jail.host.datasets.releases.mountpoint
 
-      source = f"{release_directory}/{self.jail.config.cloned_release}/root/{basedir}"
-      destination = f"{self.jail.path}/root/{basedir}"
-      fstab_lines.append("\t".join([
-        source,
-        destination,
-        "nullfs",
-        "ro",
-        "0",
-        "0"
-      ]))
+            cloned_release = self.jail.config.cloned_release
+            source = f"{release_directory}/{cloned_release}/root/{basedir}"
+            destination = f"{self.jail.path}/root/{basedir}"
+            fstab_lines.append("\t".join([
+                source,
+                destination,
+                "nullfs",
+                "ro",
+                "0",
+                "0"
+            ]))
 
-    return "\n".join(fstab_lines)
+        return "\n".join(fstab_lines)
