@@ -241,7 +241,7 @@ class Jail:
         try:
             helpers.exec(command, logger=self.logger)
             self.update_jail_state()
-            self.logger.info(
+            self.logger.log(
                 f"Jail '{humanreadable_name}' started with JID {self.jid}",
                 jail=self
             )
