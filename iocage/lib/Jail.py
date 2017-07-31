@@ -374,7 +374,7 @@ class Jail:
     def _resolve_uuid(self, text):
         jails_dataset = self.host.datasets.jails
         for dataset in list(jails_dataset.children):
-            dataset_uuid = dataset.name[len(jails_dataset.name)+1:]
+            dataset_uuid = dataset.name[(len(jails_dataset.name) + 1):]
             if text in dataset_uuid:
                 self.logger.debug(f"Resolved {text} to uuid {dataset_uuid}")
                 return dataset_uuid

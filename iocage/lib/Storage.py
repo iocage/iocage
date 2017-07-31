@@ -19,7 +19,7 @@ class Storage:
         self.jail = jail
 
         # when auto_create is enabled, non-existing zfs volumes will be
-        # automatically created if not enabled, accessing non-existent 
+        # automatically created if not enabled, accessing non-existent
         # datasets will raise an error
         self.auto_create = auto_create
 
