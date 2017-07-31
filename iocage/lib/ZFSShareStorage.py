@@ -31,7 +31,6 @@ class ZFSShareStorage:
                 if auto_create:
                     zpool.create(name, {}, create_ancestors=True)
             except Exception as e:
-                print(e)
                 pass
 
             try:

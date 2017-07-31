@@ -16,7 +16,7 @@ class JailConfigJSON:
         config_file_path = JailConfigJSON.__get_config_json_path(self)
         with open(config_file_path, "w") as f:
             f.write(JailConfigJSON.toJSON(self))
-            print(f"Config written to {config_file_path}")
+            self.logger.verbose(f"Config written to {config_file_path}")
 
     def read(self):
         return self.clone(JailConfigJSON.read_data(self))

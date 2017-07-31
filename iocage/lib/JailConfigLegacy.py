@@ -10,7 +10,7 @@ class JailConfigLegacy:
         config_file_path = JailConfigLegacy.__get_config_path(self)
         with open(config_file_path, "w") as f:
             f.write(JailConfigLegacy.toLegacyConfig(self))
-            print(f"Legacy config written to {config_file_path}")
+            self.logger.verbose(f"Legacy config written to {config_file_path}")
 
     def read_data(self):
         with open(JailConfigLegacy.__get_config_path(self), "r") as conf:
