@@ -169,17 +169,14 @@ class Release:
         self._cleanup()
 
     """
-  Depending on the version of iocage that was used the releases are stored
-  in different formats. The most generic form is the to split it in multiple
-  datasets that represent the basedir structure
-  """
+    Depending on the version of iocage that was used the releases are stored
+    in different formats. The most generic form is the to split it in multiple
+    datasets that represent the basedir structure
+    """
 
     def create_basejail_datasets(self):
-        base_dataset = self.host.datasets.base
-
         if self._basejail_datasets_already_exists(self.name):
             return
-
         for basedir in helpers.get_basedir_list():
             self._create_dataset()
 
@@ -357,11 +354,10 @@ class Release:
             if i.name == ".":
                 continue
             if not i.name.startswith("./"):
-                msg = "Filenames in txz release files must be relative paths"
-                    "begining with './'"
+                msg = "Names in txz files must be relative and begin with './'"
                 self.logger.error(msg)
                 raise Exception(msg)
             if ".." in i.name:
-                msg = "Filenames in txz release files must not contain '..'"
+                msg = "Names in txz files must not contain '..'"
                 self.logger.error(msg)
                 raise Exception(msg)

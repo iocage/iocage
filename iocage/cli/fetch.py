@@ -23,6 +23,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """fetch module for the cli."""
 import click
+import sys
 
 import iocage.lib.Release
 import iocage.lib.Host
@@ -68,11 +69,11 @@ def release_prompt_title():
 # ToDo: remove disabled feature
 # def _prettify_release_names(x):
 #     if x.name == host.release_version:
-#         return f"\033[1m{x.name}\033[0m" 
-#     else: 
+#         return f"\033[1m{x.name}\033[0m"
+#     else:
 #         return x.name
 # def release_choice():
-#     version = 
+#     version =
 #     return click.Choice(list(map(
 #         _prettify_release_names,
 #         host.distribution.releases
@@ -87,7 +88,7 @@ def release_prompt_title():
               help="Remote URL with path to the release/snapshot directory")
 @click.option("--file", "-F", multiple=True,
               help="Specify the files to fetch from the mirror.")
-#@click.option("--auth", "-a", default=None, help="Authentication method for "
+# @click.option("--auth", "-a", default=None, help="Authentication method for "
 #                                                 "HTTP fetching. Valid "
 #                                                 "values: basic, digest")
 # @click.option("--verify/--noverify", "-V/-NV", default=True,
@@ -97,13 +98,13 @@ def release_prompt_title():
               default=release_prompt,
               # type=release_choice(),
               help="The FreeBSD release to fetch.")
-#@click.option("--plugin-file", "-P", is_flag=True,
+# @click.option("--plugin-file", "-P", is_flag=True,
 #              help="This is a plugin file outside the INDEX, but exists in "
 #                   "that location.\nDeveloper option, most will prefer to "
 #                   "use --plugins.")
-#@click.option("--plugins", help="List all available plugins for creation.",
+# @click.option("--plugins", help="List all available plugins for creation.",
 #              is_flag=True)
-#@click.argument("props", nargs=-1)
+# @click.argument("props", nargs=-1)
 @click.option("--update/--noupdate", "-U/-NU", default=True,
               help="Decide whether or not to update the fetch to the latest "
                    "patch level.")
@@ -120,7 +121,8 @@ def release_prompt_title():
               help="Have --server define a HTTP server instead.", is_flag=True)
 # Compat files
 @click.option("--files", multiple=True,
-              help="Specify the files to fetch from the mirror. (Deprecared: renamed to --file)")
+              help="Specify the files to fetch from the mirror. "
+              "(Deprecared: renamed to --file)")
 # def cli(url, files, release, update):
 def cli(**kwargs):
 
@@ -140,7 +142,7 @@ def cli(**kwargs):
 
     # optional --url
     try:
-        url = kwargs['url']
+        url = kwargs["url"]
         if url:
             release.mirror_url = url
     except:
@@ -148,7 +150,7 @@ def cli(**kwargs):
 
     # optional --files
     try:
-        files = kwargs['files']:
+        files = kwargs["files"]
         if files:
             release.assets = list(files)
     except:

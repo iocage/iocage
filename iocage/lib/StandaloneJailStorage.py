@@ -1,11 +1,8 @@
-import time
-
-
 class StandaloneJailStorage:
 
     def apply(self, release):
         self.logger.warn(
-            "Standalone jails do not require storage operations to start.",
+            "Standalone jails do not require storage operations to start",
             jail=self.jail
         )
 
@@ -21,8 +18,5 @@ class StandaloneJailStorage:
         except:
             pass
 
-        # Clone the release once to the root dataset
-        start_time = time.time()
+        self.logger.verbose("Clone the release once to the root dataset")
         self.clone_release(release)
-        end_time = time.time()
-        print("--- %s seconds ---" % (time.time() - start_time))

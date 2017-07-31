@@ -38,8 +38,9 @@ class ZFSShareStorage:
                 dataset = self.zfs.get_dataset(name)
                 datasets.add(dataset)
             except:
-                msg = f"Neither the dataset {name} nor {pool_name} could be found"
-                raise Exception()
+                msg = f"Neither the dataset {name} nor {pool_name} were found"
+                self.logger.error(msg)
+                raise Exception(msg)
 
         return datasets
 

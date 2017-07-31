@@ -31,7 +31,8 @@ class JailConfigZFS:
         # ToDo: Delete unnecessary ZFS options
         # existing_property_names = list(
         #   map(lambda x: JailConfigZFS._get_iocage_property_name(self, x),
-        #     filter(lambda name: JailConfigZFS._is_iocage_property(self, name),
+        #     filter(
+        #       lambda name: JailConfigZFS._is_iocage_property(self, name),
         #       self.jail.dataset.properties
         #     )
         #   )

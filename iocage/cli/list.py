@@ -55,7 +55,6 @@ def cli(dataset_type, header, _long, remote, plugins,
     logger = Logger.Logger(print_level=log_level)
     host = Host.Host(logger=logger)
     jails = Jails.Jails(logger=logger)
-    hardened = host.distribution.name == "HardenedBSD"
 
     if dataset_type is None:
         dataset_type = "all"
@@ -68,7 +67,7 @@ def cli(dataset_type, header, _long, remote, plugins,
         return
 
     if plugins and remote:
-        raise Exception("ToDo")
+        raise Exception("ToDo: Plugins")
     else:
 
         if output:

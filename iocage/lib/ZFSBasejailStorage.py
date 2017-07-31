@@ -16,7 +16,7 @@ class ZFSBasejailStorage:
         if not self.jail.config.basejail_type == "zfs":
             msg = f"Jail {self.jail.humanreadable_name} is not a zfs basejail."
             self.logger.error(msg)
-            raise Error(msg)
+            raise Exception(msg)
 
         for basedir in helpers.get_basedir_list():
             source_dataset_name = f"{release.base_dataset.name}/{basedir}"

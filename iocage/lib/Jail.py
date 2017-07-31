@@ -6,6 +6,7 @@ import Release
 import helpers
 
 import ZFSBasejailStorage
+import ZFSShareStorage
 import NullFSBasejailStorage
 import StandaloneJailStorage
 
@@ -166,9 +167,6 @@ class Jail:
             command.append('vnet')
         else:
 
-            ip4_addr = self.config.ip4_addr if self.config.ip4_addr is not None else ""
-            ip6_addr = self.config.ip6_addr if self.config.ip6_addr is not None else ""
-
             if self.config.ip4_addr is not None:
                 ip4_addr = self.config.ip4_addr
                 command += [
@@ -239,13 +237,20 @@ class Jail:
             "persist"
         ]
 
+        humanreadable_name = self.humanreadable_name
         try:
-            output = subprocess.check_output(
-                command, shell=False, stderr=subprocess.STDOUT)
+            helpers.exec(command, logger=self.logger)
             self.update_jail_state()
-            self.logger.log(f"Jail '{self.humanreadable_name}' started with JID {self.jid}", jail=self)
+            self.logger.info(
+                f"Jail '{humanreadable_name}' started with JID {self.jid}",
+                jail=self
+            )
         except subprocess.CalledProcessError as exc:
-            self.logger.error(f"Jail '{self.humanreadable_name}' failed with exit code {exc.returncode}", jail=self)
+            code = exc.returncode
+            self.logger.error(
+                f"Jail '{humanreadable_name}' failed with exit code {code}",
+                jail=self
+            )
             self.logger.verbose(exc.output, jail=self)
             raise
 
@@ -289,20 +294,36 @@ class Jail:
 
     def set_routes(self):
 
-        self.logger.log(f"Setting Routes (IPv4={self.config.defaultrouter}, IPv6={self.config.defaultrouter6}", jail=self)
+        defaultrouter = self.config.defaultrouter
+        defaultrouter6 = self.config.defaultrouter6
 
-        if self.config.defaultrouter:
-            self._set_route(self.config.defaultrouter)
+        if not defaultrouter or defaultrouter6:
+            self.logger.spam("no static routes configured")
+            return
 
-        if self.config.defaultrouter6:
-            self._set_route(self.config.defaultrouter6, ipv6=True)
+        if defaultrouter:
+            self.logger.verbose(
+                f"setting default IPv4 gateway to {defaultrouter}",
+                jail=self
+            )
+            self._set_route(defaultrouter)
+
+        if defaultrouter6:
+            self._set_route(defaultrouter6, ipv6=True)
 
     def _set_route(self, gateway, ipv6=False):
+
+        ip_version = 4 + 2 * (ipv6 is True)
+
+        self.logger.verbose(
+            f"setting default IPv{ip_version} gateway to {gateway}",
+            jail=self
+        )
 
         command = [
             "/sbin/route",
             "add"
-        ] + (["-6"] if ipv6 else []) + [
+        ] + (["-6"] if (ipv6 is True) else []) + [
             "default",
             gateway
         ]
@@ -311,19 +332,27 @@ class Jail:
 
     def require_jail_not_existing(self):
         if self.exists:
-            raise Exception(f"Jail {self.humanreadable_name} already exists")
+            msg = f"Jail {self.humanreadable_name} already exists"
+            self.logger.error(msg)
+            raise Exception(msg)
 
     def require_jail_existing(self):
         if not self.exists:
-            raise Exception(f"Jail {self.humanreadable_name} does not exist")
+            msg = f"Jail {self.humanreadable_name} does not exist"
+            self.logger.error(msg)
+            raise Exception(msg)
 
     def require_jail_stopped(self):
         if self.running:
-            raise Exception(f"Jail {self.humanreadable_name} is already running")
+            msg = f"Jail {self.humanreadable_name} is already running"
+            self.logger.error(msg)
+            raise Exception(msg)
 
     def require_jail_running(self):
         if not self.running:
-            raise Exception(f"Jail {self.humanreadable_name} is not running")
+            msg = f"Jail {self.humanreadable_name} is not running"
+            self.logger.error(msg)
+            raise Exception(msg)
 
     def update_jail_state(self):
         try:
@@ -416,7 +445,8 @@ class Jail:
         return self.dataset.mountpoint
 
     def _get_logfile_path(self):
-        return f"{self.host.datasets.root.mountpoint}/log/{self.identifier}-console.log"
+        root_mountpoint = self.host.datasets.root.mountpoint
+        return f"{root_mountpoint}/log/{self.identifier}-console.log"
 
     def __getattr__(self, key):
         try:

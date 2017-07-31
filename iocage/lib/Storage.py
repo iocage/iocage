@@ -1,6 +1,5 @@
 import helpers
 
-import libzfs
 import pwd
 import grp
 import os
@@ -19,8 +18,9 @@ class Storage:
 
         self.jail = jail
 
-        # when auto_create is enabled, non-existing zfs volumes will be automatically created
-        # if not enabled, accessing non-existent datasets will raise an error
+        # when auto_create is enabled, non-existing zfs volumes will be
+        # automatically created if not enabled, accessing non-existent 
+        # datasets will raise an error
         self.auto_create = auto_create
 
         # safe-mody only attaches zfs datasets to jails that were tagged with
@@ -143,7 +143,7 @@ class Storage:
 
     def _mount_procfs(self):
         try:
-            if jail.config.mount_procfs:
+            if self.jail.config.mount_procfs:
                 helpers.exec([
                     "mount"
                     "-t",
@@ -152,12 +152,14 @@ class Storage:
                     f"{self.path}/root/proc"
                 ])
         except:
-            pass
+            msg = "Failed mounting procfs"
+            self.logger.error(msg)
+            raise Exception(msg)
 
     # ToDo: Remove unused function?
     def _mount_linprocfs(self):
         try:
-            if not jail.config.mount_linprocfs:
+            if not self.jail.config.mount_linprocfs:
                 return
         except:
             pass
@@ -166,7 +168,7 @@ class Storage:
         self._jail_mkdirp(f"{self.path}/root/{linproc_path}")
 
         try:
-            if jail.config.mount_procfs:
+            if self.jail.config.mount_procfs:
                 helpers.exec([
                     "mount"
                     "-t",
@@ -175,7 +177,9 @@ class Storage:
                     f"{self.path}/root/{linproc_path}"
                 ])
         except:
-            pass
+            msg = "Failed mounting linprocfs"
+            self.logger.error(msg)
+            raise Exception(msg)
 
     def _get_pool_name_from_dataset_name(self, dataset_name):
         return dataset_name.split("/", maxsplit=1)[0]
