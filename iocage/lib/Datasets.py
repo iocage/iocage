@@ -6,7 +6,7 @@ import libzfs
 class Datasets:
 
     def __init__(self, root=None, zfs=None, logger=None):
-        #helpers.init_logger(self, logger)
+        # helpers.init_logger(self, logger)
         helpers.init_zfs(self, zfs)
 
         self._datasets = {}

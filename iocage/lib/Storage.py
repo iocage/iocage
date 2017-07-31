@@ -122,8 +122,8 @@ class Storage:
 
     def _mount_jail_datasets(self, auto_create=None):
 
-        auto_create = self.auto_create if auto_create == None else (
-            auto_create == True)
+        auto_create = self.auto_create if auto_create is None else (
+            auto_create is True)
 
         if self.safe_mode:
             self._require_datasets_exist_and_jailed()

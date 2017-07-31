@@ -39,7 +39,7 @@ class JailConfig():
 
         # be aware of iocage-legacy jails for migration
         try:
-            self.legacy = data.legacy == True
+            self.legacy = data.legacy is True
         except:
             self.legacy = False
 
@@ -81,7 +81,7 @@ class JailConfig():
 
     def update_special_property(self, name, new_property_handler=None):
 
-        if new_property_handler != None:
+        if new_property_handler is not None:
             self.special_properties[name] = new_property_handler
 
         self.data[name] = str(self.special_properties[name])
@@ -152,7 +152,7 @@ class JailConfig():
         return False
 
     def _set_basejail(self, value):
-        enabled = (value == True) or (value == "on") or (value == "yes")
+        enabled = (value is True) or (value == "on") or (value == "yes")
         if self.legacy:
             self.data["basejail"] = "on" if enabled else "off"
         else:
@@ -166,7 +166,7 @@ class JailConfig():
 
     def _set_clonejail(self, value):
         self.data["clonejail"] = "on" if (
-            value == True) or (value == "on") else "off"
+            value is True) or (value == "on") else "off"
 
     def _get_ip4_addr(self):
         try:
@@ -195,7 +195,7 @@ class JailConfig():
             jail_config=self,
             property_name="ip6_addr"
         )
-        self.special_properties["ip6_addr"]
+        self.special_properties["ip6_addr"] = ip6_addr
         self.update_special_property("ip6_addr")
 
     def _get_interfaces(self):
@@ -211,10 +211,10 @@ class JailConfig():
 
     def _get_defaultrouter(self):
         value = self.data['defaultrouter']
-        return value if (value != "none" and value != None) else None
+        return value if (value != "none" and value is not None) else None
 
     def _set_defaultrouter(self, value):
-        if value == None:
+        if value is None:
             value = 'none'
         self.data['defaultrouter'] = value
 
@@ -223,10 +223,10 @@ class JailConfig():
 
     def _get_defaultrouter6(self):
         value = self.data['defaultrouter6']
-        return value if (value != "none" and value != None) else None
+        return value if (value != "none" and value is not None) else None
 
     def _set_defaultrouter6(self, value):
-        if value == None:
+        if value is None:
             value = 'none'
         self.data['defaultrouter6'] = value
 
@@ -237,7 +237,7 @@ class JailConfig():
         return self.data["vnet"] == "on"
 
     def _set_vnet(self, value):
-        vnet_enabled = (value == "on") or (value == True)
+        vnet_enabled = (value == "on") or (value is True)
         self.data["vnet"] = "on" if vnet_enabled else "off"
 
     def _get_jail_zfs_dataset(self):
@@ -262,10 +262,10 @@ class JailConfig():
         return enabled
 
     def _set_jail_zfs(self, value):
-        if (value == None) or (value == ""):
+        if (value is None) or (value == ""):
             del self.data["jail_zfs"]
             return
-        enabled = (value == "on") or (value == True)
+        enabled = (value == "on") or (value is True)
         self.data["jail_zfs"] = "on" if enabled else "off"
 
     def _default_jail_zfs(self):
@@ -308,6 +308,28 @@ class JailConfig():
         except:
             pass
         return None
+
+    def _get_login_flags(self):
+        return self.data["login_flags"].split()
+
+    def _set_login_flags(self, value):
+
+        if value is None:
+            try:
+                del self.data["login_flags"]
+            except:
+                pass
+        else:
+
+            if isinstance(value, list):
+                self.data["login_flags"] = " ".join(value)
+            elif isinstance(value, str):
+                self.data["login_flags"] = value
+            else:
+                raise Exception("Invalid login_flags")
+
+    def _default_login_flags(self):
+        return ["-f", "root"]
 
     def _default_vnet(self):
         return False
@@ -489,7 +511,7 @@ class JailConfig():
             self.data[key] = value
             pass
 
-        if setter_method != None:
+        if setter_method is not None:
             return setter_method(value)
 
     def __str__(self):

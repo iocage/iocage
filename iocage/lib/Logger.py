@@ -54,11 +54,11 @@ class Logger:
             level=level,
             jail=jail
         )
-        self._write(
-            message=message,
-            level=level,
-            jail=jail
-        )
+        # self._write(
+        #     message=message,
+        #     level=level,
+        #     jail=jail
+        # )
 
     def verbose(self, message, jail=None):
         self.log(message, level="verbose", jail=jail)
@@ -87,9 +87,9 @@ class Logger:
 
         print(self._colorize(message, color))
 
-    def _write(self, message, level, jail=None):
-        log_file = self._get_log_file_path(level=level, jail=jail)
-        # ToDo: support file logging
+    # ToDo: support file logging
+    # def _write(self, message, level, jail=None):
+    #     log_file = self._get_log_file_path(level=level, jail=jail)
 
     def _get_log_file_path(self, level, jail=None):
         return self.log_directory

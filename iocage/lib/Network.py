@@ -3,7 +3,6 @@ import helpers
 
 import subprocess
 from hashlib import md5
-import re
 
 
 class Network:
@@ -18,10 +17,12 @@ class Network:
 
         helpers.init_logger(self, logger)
 
-        if bridges != None:
+        if bridges is not None:
             if not isinstance(bridges, list):
                 raise Exception(
-                    "Invalid parameter bridges: None or List of Strings expected")
+                    "Invalid parameter bridges: "
+                    "None or List of Strings expected"
+                )
 
         self.vnet = True
         self.bridges = bridges

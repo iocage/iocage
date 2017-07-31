@@ -26,9 +26,9 @@ class Jail:
 
         self.config = JailConfig.JailConfig(
             data=data, jail=self, logger=self.logger)
-        
+
         self.networks = []
-        
+
         self.storage = Storage.Storage(
             auto_create=True, safe_mode=False,
             jail=self, logger=self.logger, zfs=self.zfs)
@@ -36,7 +36,7 @@ class Jail:
         self.jail_state = None
 
         self.config.read()
-        #self.update_jail_state()
+        # self.update_jail_state()
 
     @property
     def zfs_pool_name(self):
@@ -62,7 +62,7 @@ class Jail:
         # if self.config.type == "clonejail":
         #   pass
 
-        if storage_backend != None:
+        if storage_backend is not None:
             storage_backend.apply(self.storage, release)
 
         self.config.fstab.write()
@@ -74,7 +74,7 @@ class Jail:
 
         self.set_nameserver()
 
-        if self.config.jail_zfs == True:
+        if self.config.jail_zfs is True:
             ZFSShareStorage.mount_zfs_shares(self.storage)
 
     def stop(self):
@@ -96,7 +96,10 @@ class Jail:
         except:
             fetched_release = ", ".join(
                 list(map(lambda x: x.name, releases.local)))
-            raise Exception(f"Can only create from a fetched release ({fetched_release})")
+            msg = f"Can only create from a fetched release ({fetched_release})"
+            self.logger.error(msg)
+            raise Exception(msg)
+
         self.config.release = release.name
 
         try:
@@ -124,7 +127,7 @@ class Jail:
             self.config.cloned_release = release.name
             storage_backend = StandaloneJailStorage.StandaloneJailStorage
 
-        if storage_backend != None:
+        if storage_backend is not None:
             storage_backend.setup(self.storage, release)
 
         self.config.data["release"] = release.name
@@ -135,7 +138,17 @@ class Jail:
             "/usr/sbin/jexec",
             self.identifier
         ] + command
-        return helpers.exec(command)
+        return helpers.exec(command, logger=self.logger)
+
+    def exec_console(self):
+        return helpers.exec_passthru(
+            [
+                "/usr/sbin/jexec",
+                self.identifier,
+                "/usr/bin/login"
+            ] + self.config.login_flags,
+            logger=self.logger
+        )
 
     def destroy_jail(self):
 
@@ -152,17 +165,25 @@ class Jail:
         if self.config.vnet:
             command.append('vnet')
         else:
-            ip4_addr = self.config.ip4_addr if self.config.ip4_addr != None else ""
-            ip6_addr = self.config.ip6_addr if self.config.ip6_addr != None else ""
 
-            command += [
-                f"ip4.addr={ip4_addr}",
-                f"ip4.saddrsel={self.config.ip4_saddrsel}",
-                f"ip4={self.config.ip4}",
-                f"ip6.addr={ip6_addr}",
-                f"ip6.saddrsel={self.config.ip6_saddrsel}",
-                f"ip6={self.config.ip6}"
-            ]
+            ip4_addr = self.config.ip4_addr if self.config.ip4_addr is not None else ""
+            ip6_addr = self.config.ip6_addr if self.config.ip6_addr is not None else ""
+
+            if self.config.ip4_addr is not None:
+                ip4_addr = self.config.ip4_addr
+                command += [
+                    f"ip4.addr={ip4_addr}",
+                    f"ip4.saddrsel={self.config.ip4_saddrsel}",
+                    f"ip4={self.config.ip4}",
+                ]
+
+            if self.config.ip6_addr is not None:
+                ip6_addr = self.config.ip6_addr
+                command += [
+                    f"ip6.addr={ip6_addr}",
+                    f"ip6.saddrsel={self.config.ip6_saddrsel}",
+                    f"ip6={self.config.ip6}",
+                ]
 
         command += [
             f"name={self.identifier}",
@@ -349,10 +370,10 @@ class Jail:
         raise Exception("This Jail does not have any identifier yet")
 
     def _get_stopped(self):
-        return self.running != True
+        return self.running is not True
 
     def _get_running(self):
-        return self._get_jid() != None
+        return self._get_jid() is not None
 
     def _get_jid(self):
         try:
@@ -404,7 +425,7 @@ class Jail:
         except:
             pass
 
-        if self.jail_state != None:
+        if self.jail_state is not None:
             try:
                 return self.jail_state[key]
             except:

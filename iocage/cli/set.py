@@ -38,14 +38,13 @@ __rootcmd__ = True
 #                    " nested key use . as a separator."
 #                    "\n\b Example: iocage set -P foo.bar.baz=VALUE PLUGIN",
 #               is_flag=True)
-#def cli(props, jail, plugin):
-
+# def cli(props, jail, plugin):
 def cli(props, jail):
     """Get a list of jails and print the property."""
     print(jail, props)
     jail = Jail.Jail(jail)
     for prop in props:
-        
+
         delete = False
 
         try:

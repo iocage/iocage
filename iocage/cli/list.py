@@ -29,6 +29,7 @@ import Jails
 import Host
 import Logger
 
+
 @click.command(name="list", help="List a specified dataset type, by default"
                                  " lists all jails.")
 @click.option("--release", "--base", "-r", "-b", "dataset_type",
@@ -48,7 +49,8 @@ import Logger
               help="Lists all jails with less processing and fields.")
 @click.option("--log-level", "-d", default="info")
 @click.option("--output", "-o", default=None)
-def cli(dataset_type, header, _long, remote, plugins, _sort, quick, log_level, output):
+def cli(dataset_type, header, _long, remote, plugins,
+        _sort, quick, log_level, output):
 
     logger = Logger.Logger(print_level=log_level)
     host = Host.Host(logger=logger)
@@ -59,7 +61,7 @@ def cli(dataset_type, header, _long, remote, plugins, _sort, quick, log_level, o
         dataset_type = "all"
 
     if remote and not plugins:
-        
+
         available_releases = host.distribution.releases
         for available_release in available_releases:
             print(available_release.name)
@@ -75,7 +77,8 @@ def cli(dataset_type, header, _long, remote, plugins, _sort, quick, log_level, o
             columns = ["jid", "name"]
 
             if _long:
-                columns += ["uuid", "running", "release", "ip4.addr", "ip6.addr"]
+                columns += ["uuid", "running",
+                            "release", "ip4.addr", "ip6.addr"]
             else:
                 columns += ["running", "ip4.addr"]
 
@@ -94,7 +97,7 @@ def cli(dataset_type, header, _long, remote, plugins, _sort, quick, log_level, o
                     "ip4.addr",
                     "ip6.addr"
                 ] else str(jail.config.__getattr__(x)
-            ) for x in columns])
+                           ) for x in columns])
 
         table.add_rows(table_data)
         print(table.draw())

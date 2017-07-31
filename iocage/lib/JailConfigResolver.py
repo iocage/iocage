@@ -53,7 +53,7 @@ class JailConfigResolver(list):
             self.logger.verbose("resolv.conf not touched")
 
     def update(self, value=None, notify=True):
-        value = value if value != None else self.value
+        value = value if value is not None else self.value
         self.clear()
 
         if self.method == "manual":

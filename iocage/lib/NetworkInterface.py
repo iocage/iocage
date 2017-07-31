@@ -29,19 +29,19 @@ class NetworkInterface:
         self.extra_settings = extra_settings
         self.settings = {}
 
-        if mac != None:
+        if mac is not None:
             self.settings["link"] = mac
 
-        if mtu != None:
+        if mtu is not None:
             self.settings["mtu"] = str(mtu)
 
-        if description != None:
+        if description is not None:
             self.settings["description"] = f"\"{description}\""
 
-        if vnet != None:
+        if vnet is not None:
             self.settings["vnet"] = vnet
 
-        if addm != None:
+        if addm is not None:
             self.settings["addm"] = addm
 
         # rename interface when applying settings next time
@@ -92,4 +92,4 @@ class NetworkInterface:
             return helpers.exec(command)
 
     def __is_jail(self):
-        return self.jail != None
+        return self.jail is not None

@@ -27,7 +27,7 @@ class Release:
         self._hashes = None
         self._dataset = None
         self.dataset = dataset
-        self.check_hashes = (check_hashes == True)
+        self.check_hashes = check_hashes is True
 
         self._assets = ["base"]
         if self.host.distribution.name != "HardenedBSD":
@@ -35,7 +35,7 @@ class Release:
 
     @property
     def dataset(self):
-        if self._dataset == None:
+        if self._dataset is None:
             self._dataset = self.zfs.get_dataset(self.dataset_name)
         return self._dataset
 
@@ -180,7 +180,7 @@ class Release:
         if self._basejail_datasets_already_exists(self.name):
             return
 
-        for basedir in helper.get_basedir_list():
+        for basedir in helpers.get_basedir_list():
             self._create_dataset()
 
     def _basejail_datasets_already_exists(self, release_name):
@@ -192,7 +192,7 @@ class Release:
 
     def _create_dataset(self, name=None):
 
-        if name == None:
+        if name is None:
             name = self.dataset_name
 
         try:
@@ -278,7 +278,7 @@ class Release:
                 self.logger.debug(f"Extracting {asset}")
                 f.extractall(self.root_dir)
                 self.logger.verbose(
-                  f"Asset {asset} was extracted to {self.root_dir}"
+                    f"Asset {asset} was extracted to {self.root_dir}"
                 )
 
     def _update_name_from_dataset(self):
@@ -301,14 +301,14 @@ class Release:
 
         for folder in helpers.get_basedir_list():
             pool.create(
-                f"{self.base_dataset.name}/{folder}",
+                f"{base_dataset.name}/{folder}",
                 {},
                 create_ancestors=True
             )
-            self.zfs.get_dataset(f"{self.base_dataset.name}/{folder}").mount()
+            self.zfs.get_dataset(f"{base_dataset.name}/{folder}").mount()
 
             src = f"{self.dataset.mountpoint}/{folder}"
-            dst = f"{self.base_dataset.mountpoint}/{folder}"
+            dst = f"{base_dataset.mountpoint}/{folder}"
 
             self.logger.verbose(f"Copying {folder} from {src} to {dst}")
             self._copytree(src, dst)
@@ -357,10 +357,11 @@ class Release:
             if i.name == ".":
                 continue
             if not i.name.startswith("./"):
-                raise Exception(
-                    "Filenames in txz release files must be relative paths"
+                msg = "Filenames in txz release files must be relative paths"
                     "begining with './'"
-                )
+                self.logger.error(msg)
+                raise Exception(msg)
             if ".." in i.name:
-                raise Exceptions(
-                    "FIlenames in txz release files must not contain '..'")
+                msg = "Filenames in txz release files must not contain '..'"
+                self.logger.error(msg)
+                raise Exception(msg)

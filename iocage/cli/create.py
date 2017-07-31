@@ -22,9 +22,7 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """create module for the cli."""
-import json
 import sys
-import os
 import re
 
 import click
@@ -33,6 +31,7 @@ import Release
 import Jail
 import Logger
 
+logger = Logger.Logger()
 __rootcmd__ = True
 
 
@@ -44,10 +43,8 @@ def validate_count(ctx, param, value):
 
             return int(value)
         except ValueError:
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": f"{value} is not a valid integer."
-            }, exit_on_error=True)
+            logger.log.error(f"{value} is not a valid integer.")
+            sys.exit(1)
     else:
         return int(value)
 
@@ -68,9 +65,6 @@ def validate_count(ctx, param, value):
               help="Provide a specific name instead of an UUID for this jail.")
 @click.option("--uuid", "-u", "_uuid", default=None,
               help="Provide a specific UUID for this jail.")
-@click.option("--clonejail" "-cj", is_flag=True, default=False,
-              help="Set the new jail type to a clonejail. Clonejails"
-                   "zfs clone the specified RELEASE datasets when starting a jail")
 @click.option("--basejail", "-b", is_flag=True, default=False,
               help="Set the new jail type to a basejail. Basejails"
                    " mount the specified RELEASE directories as nullfs"
@@ -85,15 +79,13 @@ def validate_count(ctx, param, value):
               help="Skip the interactive question.")
 @click.option("--log-level", "-d", default="info")
 @click.argument("props", nargs=-1)
-def cli(release, template, count, props, pkglist, basejail, clonejail_cj, empty, short,
-        name, _uuid, force, log_level):
-
-    logger = Logger.Logger()
+def cli(release, template, count, props, pkglist, basejail, clonejail_cj,
+        empty, short, name, _uuid, force, log_level):
 
     if basejail and clonejail_cj:
-      logger.error("A jail can either be a basejail or a clonejail")
-      sys.exit(1)
-    
+        logger.error("A jail can either be a basejail or a clonejail")
+        sys.exit(1)
+
     if name:
         # noinspection Annotator
         valid = True if re.match("^[a-zA-Z0-9\._-]+$", name) else False
@@ -104,26 +96,27 @@ def cli(release, template, count, props, pkglist, basejail, clonejail_cj, empty,
 
     release = Release.Release(name=release)
     if not release.fetched:
+        name = release.name
         if not release.available:
-            error_message = f"The release '{release.name}' does not exist"
+            error_message = f"The release '{name}' does not exist"
             logger.error(error_message)
             raise Exception(error_message)
-        error_message = "The release '{release.name}' is available but not downloaded yet"
-        logger.error(error_message)
-        raise Exception(error_message)
+        msg = f"The release '{name}' is available, but not downloaded yet"
+        logger.error(msg)
+        raise Exception(msg)
 
     for i in range(count):
-      jail = Jail.Jail({
-        "basejail": basejail,
-        "clonejail": clonejail_cj
-      })
+        jail = Jail.Jail({
+            "basejail": basejail,
+            "clonejail": clonejail_cj
+        })
 
-      if props:
-        for prop in props:
-          try:
-            key, value = prop.split("=", maxsplit=1)
-          except:
-            logger.error(f"Invalid property {prop}")
-            sys.exit(1)
+        if props:
+            for prop in props:
+                try:
+                    key, value = prop.split("=", maxsplit=1)
+                except:
+                    logger.error(f"Invalid property {prop}")
+                    sys.exit(1)
 
-      jail.create(release.name)
+        jail.create(release.name)

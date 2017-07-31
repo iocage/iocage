@@ -33,6 +33,7 @@ __rootcmd__ = True
 logger = iocage.lib.Logger.Logger()
 host = iocage.lib.Host.Host(logger=logger)
 
+
 def validate_count(ctx, param, value):
     """Takes a string, removes the commas and returns an int."""
     if isinstance(value, str):
@@ -41,12 +42,12 @@ def validate_count(ctx, param, value):
 
             return int(value)
         except ValueError:
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": f"({value} is not a valid integer."
-            }, exit_on_error=True)
+            msg = f"({value} is not a valid integer"
+            logger.error(msg)
+            sys.exit(1)
     else:
         return int(value)
+
 
 def release_prompt():
     i = 0
@@ -60,24 +61,32 @@ def release_prompt():
         i += 1
     return default
 
+
 def release_prompt_title():
     return f"Release ({host.release_version})"
 
+# ToDo: remove disabled feature
+# def _prettify_release_names(x):
+#     if x.name == host.release_version:
+#         return f"\033[1m{x.name}\033[0m" 
+#     else: 
+#         return x.name
 # def release_choice():
+#     version = 
 #     return click.Choice(list(map(
-#         lambda x: f"\033[1m{x.name}\033[0m" if x.name == host.release_version else x.name,
+#         _prettify_release_names,
 #         host.distribution.releases
 #     )))
+
 
 @click.command(context_settings=dict(
     max_content_width=400, ),
     name="fetch", help="Fetch a version of FreeBSD for jail usage or a"
                        " preconfigured plugin.")
-
 @click.option("--url", "-u",
-    help="Remote URL with path to the release/snapshot directory")
+              help="Remote URL with path to the release/snapshot directory")
 @click.option("--file", "-F", multiple=True,
-    help="Specify the files to fetch from the mirror.")
+              help="Specify the files to fetch from the mirror.")
 #@click.option("--auth", "-a", default=None, help="Authentication method for "
 #                                                 "HTTP fetching. Valid "
 #                                                 "values: basic, digest")
@@ -86,7 +95,7 @@ def release_prompt_title():
 @click.option("--release", "-r",
               prompt=release_prompt_title(),
               default=release_prompt,
-              #type=release_choice(),
+              # type=release_choice(),
               help="The FreeBSD release to fetch.")
 #@click.option("--plugin-file", "-P", is_flag=True,
 #              help="This is a plugin file outside the INDEX, but exists in "
@@ -106,24 +115,22 @@ def release_prompt_title():
 #                                    " path for --plugin-file.")
 # @click.option("--accept/--noaccept", default=False,
 #              help="Accept the plugin's LICENSE agreement.")
-
 # Compat
 @click.option("--http", "-h", default=False,
               help="Have --server define a HTTP server instead.", is_flag=True)
-
 # Compat files
 @click.option("--files", multiple=True,
               help="Specify the files to fetch from the mirror. (Deprecared: renamed to --file)")
-
-#def cli(url, files, release, update):
+# def cli(url, files, release, update):
 def cli(**kwargs):
 
     print(kwargs)
 
     try:
-      release = host.distribution.releases[int(kwargs["release"])]
+        release = host.distribution.releases[int(kwargs["release"])]
     except:
-      release = iocage.lib.Release.Release(name=kwargs["release"], host=host, logger=logger)
+        release = iocage.lib.Release.Release(
+            name=kwargs["release"], host=host, logger=logger)
 
     print(release.name)
     # Deprecated options
@@ -131,11 +138,20 @@ def cli(**kwargs):
     import sys
     sys.exit(1)
 
+    # optional --url
+    try:
+        url = kwargs['url']
+        if url:
+            release.mirror_url = url
+    except:
+        pass
 
-    if url:
-        release.mirror_url = url
-
-    if files:
-        release.assets = list(files)
+    # optional --files
+    try:
+        files = kwargs['files']:
+        if files:
+            release.assets = list(files)
+    except:
+        pass
 
     release.fetch()

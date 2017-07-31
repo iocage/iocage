@@ -81,11 +81,6 @@ class JailConfigAddresses(dict):
         dict.__setitem__(self, key, prop)
         return prop
 
-    def __reset(self):
-
-        for prop in self:
-            pront(f"delete {prop}")
-
     def __str__(self):
         out = []
         for nic in self:

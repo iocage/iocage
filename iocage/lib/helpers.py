@@ -48,7 +48,7 @@ def exec(command, logger=None):
 
     command_str = " ".join(command)
     if logger:
-        self.logger.log(f"Executing: {command_str}", level="spam")
+        logger.log(f"Executing: {command_str}", level="spam")
 
     return subprocess.check_output(
         command,
@@ -57,13 +57,25 @@ def exec(command, logger=None):
     )
 
 
+def exec_passthru(command, logger=None):
+
+    if isinstance(command, str):
+        command = [command]
+
+    command_str = " ".join(command)
+    if logger:
+        logger.log(f"Executing (interactive): {command_str}", level="spam")
+
+    return subprocess.Popen(command).communicate()
+
+
 def shell(command, logger=None):
     if not isinstance(command, str):
         command = " ".join(command)
 
     if logger:
-        self.logger.log(f"Executing Shell: {command}", level="spam")
-    
+        logger.log(f"Executing Shell: {command}", level="spam")
+
     return subprocess.check_output(
         command,
         shell=True,

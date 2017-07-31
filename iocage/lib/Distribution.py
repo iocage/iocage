@@ -4,7 +4,6 @@ import helpers
 import os
 import platform
 import re
-import libzfs
 import urllib.request
 
 

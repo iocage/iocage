@@ -1,58 +1,62 @@
 import helpers
 
+
 class ZFSBasejailStorage:
 
-  def prepare(self):
+    def prepare(self):
+        self._delete_clone_target_datasets()
 
-    release = self.jail.config.release
-    root_dataset = self.get_or_create_jail_root_dataset()
+    def apply(self, release=None):
+        release = release if (
+            release is not None) else self.jail.cloned_release
+        return ZFSBasejailStorage.clone(self, release)
 
-    self._delete_clone_target_datasets()
+    def clone(self, release):
 
-  def apply(self, release=None):
-    release = release if release else self.jail.cloned_release
-    return ZFSBasejailStorage.clone(self, release)
+        if not self.jail.config.basejail_type == "zfs":
+            msg = f"Jail {self.jail.humanreadable_name} is not a zfs basejail."
+            self.logger.error(msg)
+            raise Error(msg)
 
-  def clone(self, release):
+        for basedir in helpers.get_basedir_list():
+            source_dataset_name = f"{release.base_dataset.name}/{basedir}"
+            target_dataset_name = f"{self.jail_root_dataset_name}/{basedir}"
+            self.clone_zfs_dataset(source_dataset_name, target_dataset_name)
 
-    if not self.jail.config.basejail_type == "zfs":
-      raise Exception(f"Jail {self.jail.humanreadable_name} is not a zfs basejail.")
+    def _delete_clone_target_datasets(self, root=None):
 
-    for basedir in helpers.get_basedir_list():
-      source_dataset_name = f"{release.base_dataset.name}/{basedir}"
-      target_dataset_name = f"{self.jail_root_dataset_name}/{basedir}"
-      self.clone_zfs_dataset(source_dataset_name, target_dataset_name)
+        if root is None:
+            root = list(self.jail_root_dataset.children)
 
-  def _delete_clone_target_datasets(self, root=None):
+        for child in root:
+            root_dataset_prefix = f"{self.jail_root_dataset_name}/"
+            relative_name = child.name.replace(root_dataset_prefix, "")
+            basedirs = helpers.get_basedir_list()
 
-    if root == None:
-      root = list(self.jail_root_dataset.children)
+            if relative_name in basedirs:
 
-    for child in root:
-      relative_name = child.name.replace(f"{self.jail_root_dataset_name}/","")
-      basedirs = helpers.get_basedir_list()
+                # Unmount if mounted
+                try:
+                    current_mountpoint = child.mountpoint
+                    if current_mountpoint:
+                        child.umount()
+                        self.logger.verbose(
+                            f"Clone target {current_mountpoint} unmounted"
+                        )
+                except:
+                    pass
 
-      if relative_name in basedirs:
+                # Delete existing snapshots
+                for snapshot in child.snapshots:
+                    try:
+                        snapshot.delete()
+                        self.logger.verbose(
+                            f"Snapshot {current_mountpoint} deleted"
+                        )
+                    except:
+                        pass
 
-        # Unmount if mounted
-        try:
-          current_mountpoint = child.mountpoint
-          if current_mountpoint:
-            child.umount()
-            self.logger.verbose(f"Clone target {current_mountpoint} unmounted")
-        except:
-          pass
+                child.delete()
 
-        # Delete existing snapshots
-        for snapshot in child.snapshots:
-          try:
-            snapshot_name = snapshot.name
-            snapshot.delete()
-            self.logger.verbose(f"Snapshot {current_mountpoint} deleted")
-          except:
-            pass
-
-        child.delete()
-
-      else:
-        self._delete_clone_target_datasets(list(child.children))
+            else:
+                self._delete_clone_target_datasets(list(child.children))
