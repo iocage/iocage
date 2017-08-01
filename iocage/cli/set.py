@@ -50,6 +50,7 @@ def cli(props, jail):
         try:
             key, value = prop.split("=", maxsplit=1)
         except:
+            key = prop
             delete = True
 
         if delete:
