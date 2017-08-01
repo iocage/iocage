@@ -48,24 +48,23 @@ class IOCDestroy(object):
     @staticmethod
     def __stop_jails__(datasets, path=None, root=False):
         for dataset in datasets.dependents:
-            if "jails" in dataset.name:
-                # This is just to setup a replacement.
-                path = path.replace("templates", "jails")
-                uuid = dataset.name.partition(f"{path}/")[2].rsplit("/", 1)[0]
-                # We want the real path now.
-                if dataset.type == libzfs.DatasetType.FILESYSTEM:
-                    _path = dataset.properties["mountpoint"].value.replace(
-                        "/root", "")
-                    # It gives us a string that says "none", not terribly
-                    # useful, fixing that.
-                    _path = _path if _path != "none" else None
+            if "jails" not in dataset.name:
+                continue
+            if dataset.type != libzfs.DatasetType.FILESYSTEM:
+                continue
 
-                    if dataset.name.endswith(uuid) or root:
-                        if _path is not None:
-                            conf = iocage.lib.ioc_json.IOCJson(
-                                _path).json_load()
-                            iocage.lib.ioc_stop.IOCStop(uuid, _path, conf,
-                                                        silent=True)
+            # This is just to setup a replacement.
+            path = path.replace("templates", "jails")
+            uuid = dataset.name.partition(f"{path}/")[2].rsplit("/", 1)[0]
+            # We want the real path now.
+            _path = dataset.properties["mountpoint"].value.replace("/root", "")
+            # It gives us a string that says "none", not terribly
+            # useful, fixing that.
+            _path = _path if _path != "none" else None
+
+            if (dataset.name.endswith(uuid) or root) and _path is not None:
+                conf = iocage.lib.ioc_json.IOCJson(_path).json_load()
+                iocage.lib.ioc_stop.IOCStop(uuid, _path, conf, silent=True)
 
     def __destroy_leftovers__(self, dataset, clean=False):
         """Removes parent datasets and logs."""
@@ -78,10 +77,9 @@ class IOCDestroy(object):
         except libzfs.ZFSException as err:
             # This is either not mounted or doesn't exist anymore,
             # we don't care either way.
-            if err.code == libzfs.Error.NOENT:
-                path = None
-            else:
+            if err.code != libzfs.Error.NOENT:
                 raise
+            path = None
         except KeyError:
             # This is a snapshot
             path = None
@@ -104,21 +102,21 @@ class IOCDestroy(object):
             su.Popen(["umount", "-f", f"{umount_path}/root/compat/linux/proc"],
                      stderr=su.PIPE).communicate()
 
-        if not snapshot:
-            if any(_type in dataset.name for _type in ("jails", "templates",
-                                                       "releases")):
-                # The jails parent won't show in the list.
-                j_parent = self.ds(f"{dataset.name.replace('/root','')}")
-                j_dependents = j_parent.dependents
+        if not snapshot and \
+           any(_type in dataset.name for _type
+               in ("jails", "templates", "releases")):
+            # The jails parent won't show in the list.
+            j_parent = self.ds(f"{dataset.name.replace('/root','')}")
+            j_dependents = j_parent.dependents
 
-                for j_dependent in j_dependents:
-                    if j_dependent.type == libzfs.DatasetType.FILESYSTEM:
-                        j_dependent.umount(force=True)
+            for j_dependent in j_dependents:
+                if j_dependent.type == libzfs.DatasetType.FILESYSTEM:
+                    j_dependent.umount(force=True)
 
-                    j_dependent.delete()
+                j_dependent.delete()
 
-                j_parent.umount(force=True)
-                j_parent.delete()
+            j_parent.umount(force=True)
+            j_parent.delete()
 
     def __destroy_dataset__(self, dataset):
         """Destroys the given datasets and snapshots."""
@@ -191,19 +189,20 @@ class IOCDestroy(object):
 
         if clean:
             self.__destroy_parse_datasets__(path)
-        else:
-            try:
-                conf = iocage.lib.ioc_json.IOCJson(path).json_load()
-                iocage.lib.ioc_stop.IOCStop(uuid, path, conf, silent=True)
-            except (FileNotFoundError, RuntimeError, libzfs.ZFSException):
-                # Broad exception as we don't care why this failed. iocage
-                # may have been killed before configuration could be made,
-                # it's meant to be nuked.
-                pass
+            return
 
-            try:
-                self.__destroy_parse_datasets__(
-                    f"{self.pool}/iocage/{dataset_type}/{uuid}")
-            except libzfs.ZFSException:
-                # The dataset doesn't exist, we don't care :)
-                pass
+        try:
+            conf = iocage.lib.ioc_json.IOCJson(path).json_load()
+            iocage.lib.ioc_stop.IOCStop(uuid, path, conf, silent=True)
+        except (FileNotFoundError, RuntimeError, libzfs.ZFSException):
+            # Broad exception as we don't care why this failed. iocage
+            # may have been killed before configuration could be made,
+            # it's meant to be nuked.
+            pass
+
+        try:
+            self.__destroy_parse_datasets__(
+                f"{self.pool}/iocage/{dataset_type}/{uuid}")
+        except libzfs.ZFSException:
+            # The dataset doesn't exist, we don't care :)
+            pass

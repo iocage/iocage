@@ -378,15 +378,17 @@ class IOCStart(object):
 
         :param vnet: Boolean
         """
-        if vnet:
-            _, jid = iocage.lib.ioc_list.IOCList().list_get_jid(self.uuid)
-            net_configs = (
-                (self.get("ip4_addr"), self.get("defaultrouter"), False),
-                (self.get("ip6_addr"), self.get("defaultrouter6"), True))
-            nics = self.get("interfaces").split(",")
+        if not vnet:
+            return
 
-            for nic in nics:
-                self.start_network_interface_vnet(nic, net_configs, jid)
+        _, jid = iocage.lib.ioc_list.IOCList().list_get_jid(self.uuid)
+        net_configs = (
+            (self.get("ip4_addr"), self.get("defaultrouter"), False),
+            (self.get("ip6_addr"), self.get("defaultrouter6"), True))
+        nics = self.get("interfaces").split(",")
+
+        for nic in nics:
+            self.start_network_interface_vnet(nic, net_configs, jid)
 
     def start_network_interface_vnet(self, nic_defs, net_configs, jid):
         """
@@ -534,12 +536,13 @@ class IOCStart(object):
 
     def start_copy_localtime(self):
         host_time = self.get("host_time")
-        if host_time == "yes":
-            try:
-                shutil.copy("/etc/localtime",
-                            f"{self.path}/root/etc/localtime")
-            except FileNotFoundError:
-                return
+        if host_time != "yes":
+            return
+
+        try:
+            shutil.copy("/etc/localtime", f"{self.path}/root/etc/localtime")
+        except FileNotFoundError:
+            return
 
     def start_generate_resolv(self):
         resolver = self.get("resolver")
