@@ -36,9 +36,10 @@ user_locale = os.environ.get("LANG", "en_US.UTF-8")
 locale.setlocale(locale.LC_ALL, user_locale)
 
 # inject ./cli to path
-__dirname = os.path.dirname(__file__)
+__dirname = os.path.abspath(os.path.dirname(__file__))
 iocage_cmd_folder = os.path.join(__dirname, "cli")
-sys.path = [iocage_cmd_folder] + sys.path
+iocage_lib_folder = os.path.join(__dirname, "lib")
+sys.path = [iocage_cmd_folder, iocage_lib_folder] + sys.path
 
 # @formatter:off
 # Sometimes SIGINT won't be installed.
