@@ -33,11 +33,25 @@ def zfs():
     return libzfs.ZFS(history=True, history_prefix="<iocage>")
 
 @pytest.fixture
-def pool(zfs):
-    try:
-        return zfs.get_dataset_by_path("/iocage").pool
-    except:
-        raise Exception("Please activate iocage before running tests")
+def pool(zfs, logger):
+
+    # find active zpool
+    active_pool = None
+    for pool in zfs.pools:
+        properties = pool.root_dataset.properties
+        try:
+            value = properties["org.freebsd.ioc:active"].value
+            if value == "yes":
+                active_pool = pool
+        except:
+            pass
+
+    if active_pool is None:
+        logger.error("No ZFS pool was activated."
+            "Please activate or specify a pool using the --pool option")
+        sys.exit(1)
+
+    return active_pool
 
 @pytest.fixture
 def logger():
