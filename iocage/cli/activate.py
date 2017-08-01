@@ -23,9 +23,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """activate module for the cli."""
 import click
+import sys
+import libzfs
 
-import iocage.lib.ioc_common as ioc_common
-import iocage.lib.iocage as ioc
+import Datasets
+import Logger
 
 __rootcmd__ = True
 
@@ -34,9 +36,21 @@ __rootcmd__ = True
 @click.argument("zpool")
 def cli(zpool):
     """Calls ZFS set to change the property org.freebsd.ioc:active to yes."""
-    ioc.IOCage(activate=True).activate(zpool)
+    logger = Logger.Logger()
+    zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
+    iocage_pool = None
 
-    ioc_common.logit({
-        "level"  : "INFO",
-        "message": f"ZFS pool '{zpool}' successfully activated."
-    })
+    for pool in zfs.pools:
+      if pool.name == zpool:
+        iocage_pool = pool
+
+    if iocage_pool is None:
+      logger.error(f"ZFS pool '{zpool}' not found")
+      sys.exit(1)
+
+    try:
+      datasets = Datasets.Datasets(pool=iocage_pool, zfs=zfs, logger=logger)
+      datasets.activate()
+      logger.log(f"ZFS pool '{zpool}' activated")
+    except:
+      sys.exit(1)
