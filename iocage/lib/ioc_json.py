@@ -699,6 +699,21 @@ class IOCJson(object):
             tag = conf["tag"]
             uuid = conf["host_hostuuid"]
 
+            try:
+                state = iocage.lib.ioc_common.checkoutput(
+                    ["jls", "-j", f"ioc-{uuid}"], stderr=su.PIPE).split()[5]
+            except su.CalledProcessError:
+                state = False
+
+            if state:
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": f"{tag} is running, all jails must be stopped"
+                               " before iocage will continue migration"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+
             # These are already good to go.
             if tag != uuid:
                 date_fmt = "%Y-%m-%d@%H:%M:%S:%f"
@@ -722,9 +737,21 @@ class IOCJson(object):
                             try:
                                 # Can't rename when the child is
                                 # in a non-global zone
+                                data_dataset = self.zfs.get_dataset(
+                                    f"{pool}/iocage/jails/{uuid}/data"
+                                )
+                                dependents = data_dataset.dependents
+
                                 self.zfs_set_property(
                                     f"{pool}/iocage/jails/{uuid}/data",
                                     "jailed", "off")
+                                for dep in dependents:
+                                    if dep.type != "FILESYSTEM":
+                                        continue
+
+                                    d = dep.name
+                                    self.zfs_set_property(d, "jailed", "off")
+
                             except libzfs.ZFSException:
                                 # No data dataset exists
                                 pass
@@ -738,6 +765,7 @@ class IOCJson(object):
                                            f"{pool}/iocage@{uuid}", f"@{tag}"])
 
                             try:
+                                # The childern will also inherit this
                                 self.zfs_set_property(
                                     f"{pool}/iocage/jails/{tag}/data",
                                     "jailed", "on")
