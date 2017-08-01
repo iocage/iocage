@@ -29,15 +29,18 @@ class Datasets:
             self.logger.error(msg)
             raise Exception(msg)
         else:
-            self.root = active_pool.root_dataset
+            self.root = self.zfs.get_dataset(f"{active_pool.name}/iocage")
                 
 
     @property
     def active_pool(self):
         prop = self.ZFS_POOL_ACTIVE_PROPERTY
         for pool in self.zfs.pools:
-            if pool.root_dataset.properties[prop] == "yes":
-                return pool
+            try:
+                if pool.root_dataset.properties[prop].value == "yes":
+                    return pool
+            except:
+                pass
         return None
 
     @property
