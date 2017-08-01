@@ -115,6 +115,7 @@ def cli(release, template, count, props, pkglist, basejail, clonejail_cj,
             for prop in props:
                 try:
                     key, value = prop.split("=", maxsplit=1)
+                    jail.config.__setattr__(key, value)
                 except:
                     logger.error(f"Invalid property {prop}")
                     sys.exit(1)
