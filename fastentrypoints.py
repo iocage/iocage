@@ -57,7 +57,6 @@ def get_args(cls, dist, header=None):
     """
     if header is None:
         header = cls.get_header()
-    spec = str(dist.as_requirement())
     for type_ in 'console', 'gui':
         group = type_ + '_scripts'
         for name, ep in dist.get_entry_map(group).items():
@@ -99,9 +98,10 @@ def main():
         with open(setup_path, 'a+') as setup:
             setup.seek(0)
             setup_content = setup.read()
-            if not 'import fastentrypoints' in setup_content:
+            if 'import fastentrypoints' not in setup_content:
                 setup.seek(0)
                 setup.truncate()
                 setup.write('import fastentrypoints\n' + setup_content)
+
 
 print(__name__)
