@@ -1,9 +1,11 @@
+##### iocage must be installed for the tests to function
+
 # Code testing
 All the tests are written using the `pytest` unit testing framework. Code coverage is provided by `pytest-cov`
 
 Before running tests, test dependencies can be installed by running:
 ```
-$ pip install pytest-cov pytest-pep8
+$ pip3.6 install pytest-cov pytest-pep8
 ```
 
 ## Unit tests
@@ -55,8 +57,6 @@ auth
 
 
 # Example
-```
-$ git clone https://github.com/iocage/iocage.git
-$ cd iocage/iocage
-$ sudo pytest --zpool="TEST" --server="custom_server"
-```
+- Follow [README.md](https://github.com/iocage/iocage/blob/master/README.md)
+- cd iocage/iocage
+- sudo pytest --zpool="TEST" --server="custom_server"
