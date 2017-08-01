@@ -57,6 +57,6 @@ auth
 
 
 # Example
-- Follow [README.md](https://github.com/iocage/iocage/blob/master/README.md)
+- Follow [GitHub Installation in README.md](https://github.com/iocage/iocage/blob/master/README.md)
 - cd iocage/iocage
 - sudo pytest --zpool="TEST" --server="custom_server"
