@@ -4,6 +4,7 @@
 *.egg-info/
 *.egg
 *.swp
+._*
 .DS_Store
 .tox/
 .cache/
