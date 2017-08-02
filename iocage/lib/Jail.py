@@ -465,6 +465,6 @@ class Jail:
 
     def getattr_str(self, key):
         try:
-            return self.__getattr__(key)
+            return str(self.__getattr__(key))
         except:
             return "-"

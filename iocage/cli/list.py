@@ -85,21 +85,36 @@ def cli(dataset_type, header, _long, remote, plugins,
         table.set_cols_dtype(["t"] * len(columns))
 
         table_data = []
-        table_data.append([x.upper() for x in columns])
+        table_data.append(list(x.upper() for x in columns))
+
+        try:
+            sort_index = columns.index(_sort)
+        except:
+            sort_index = None
 
         for jail in jails.list():
-            table_data.append([
-                str(jail.getattr_str(x)) if x in [
-                    "jid",
-                    "name",
-                    "running",
-                    "ip4.addr",
-                    "ip6.addr"
-                ] else str(jail.config.__getattr__(x)
-                           ) for x in columns])
+            table_data.append([lookup_jail_value(jail, x) for x in columns])
+
+
+        if sort_index is not None:
+            table_data.sort(key=lambda x: x[sort_index])
 
         table.add_rows(table_data)
         print(table.draw())
         return
 
     return
+
+def lookup_jail_value(jail, key):
+    jail_keys = [
+        "jid",
+        "name",
+        "running",
+        "ip4.addr",
+        "ip6.addr"
+    ]
+
+    if key in jail_keys:
+        return jail.getattr_str(key)
+    else:
+        return str(jail.config.__getattr__(key))

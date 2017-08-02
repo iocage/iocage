@@ -46,7 +46,6 @@ def cli(props, jail):
     for prop in props:
 
         delete = False
-
         try:
             key, value = prop.split("=", maxsplit=1)
         except:
