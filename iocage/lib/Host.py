@@ -14,7 +14,8 @@ class Host:
         helpers.init_zfs(self, zfs)
         self.datasets = Datasets.Datasets(
             root=root_dataset,
-            logger=self.logger
+            logger=self.logger,
+            zfs=self.zfs
         )
         self.distribution = Distribution.Distribution(
             host=self,

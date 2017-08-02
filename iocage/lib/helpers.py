@@ -10,8 +10,10 @@ def init_zfs(self, zfs):
     if isinstance(zfs, libzfs.ZFS):
         self.zfs = zfs
     else:
-        self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
+        self.zfs = get_zfs()
 
+def get_zfs():
+    return libzfs.ZFS(history=True, history_prefix="<iocage>")
 
 def init_host(self, host=None):
 

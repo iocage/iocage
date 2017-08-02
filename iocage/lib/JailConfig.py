@@ -12,7 +12,7 @@ from uuid import UUID
 
 class JailConfig():
 
-    def __init__(self, data={}, jail=None, logger=None):
+    def __init__(self, data={}, jail=None, logger=None, new=False):
 
         helpers.init_logger(self, logger)
 

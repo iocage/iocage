@@ -6,6 +6,7 @@ class Releases:
 
     def __init__(self, host=None, zfs=None, logger=None):
         helpers.init_host(self, host)
+        self.logger = logger
         self.zfs = zfs
 
     @property
@@ -18,6 +19,7 @@ class Releases:
         return list(map(
             lambda x: Release.Release(
                 name=x.name.split("/").pop(),
+                logger=self.logger,
                 host=self.host,
                 zfs=self.zfs
             ),

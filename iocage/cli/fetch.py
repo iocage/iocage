@@ -25,15 +25,16 @@
 import click
 import sys
 
-import iocage.lib.Release
-import iocage.lib.Host
-import iocage.lib.Logger
+import Release
+import Host
+import Logger
+import Prompts
 
 __rootcmd__ = True
 
-logger = iocage.lib.Logger.Logger()
-host = iocage.lib.Host.Host(logger=logger)
-
+logger = Logger.Logger()
+host = Host.Host(logger=logger)
+prompts = Prompts.Prompts(host=host)
 
 def validate_count(ctx, param, value):
     """Takes a string, removes the commas and returns an int."""
@@ -48,23 +49,6 @@ def validate_count(ctx, param, value):
             sys.exit(1)
     else:
         return int(value)
-
-
-def release_prompt():
-    i = 0
-    default = None
-    for available_release in host.distribution.releases:
-        if available_release.name == host.release_version:
-            default = i
-            print(f"[{i}] \033[1m{available_release.name}\033[0m")
-        else:
-            print(f"[{i}] {available_release.name}")
-        i += 1
-    return default
-
-
-def release_prompt_title():
-    return f"Release ({host.release_version})"
 
 # ToDo: remove disabled feature
 # def _prettify_release_names(x):
@@ -94,8 +78,8 @@ def release_prompt_title():
 # @click.option("--verify/--noverify", "-V/-NV", default=True,
 #               help="Enable or disable verifying SSL cert for HTTP fetching.")
 @click.option("--release", "-r",
-              prompt=release_prompt_title(),
-              default=release_prompt,
+              prompt=f"Release ({host.release_version})",
+              default=prompts.release,
               # type=release_choice(),
               help="The FreeBSD release to fetch.")
 # @click.option("--plugin-file", "-P", is_flag=True,
@@ -126,25 +110,32 @@ def release_prompt_title():
 # def cli(url, files, release, update):
 def cli(**kwargs):
 
-    print(kwargs)
+    release_input = kwargs["release"]
+
+    if isinstance(release_input, int):
+        try:
+            release = host.distribution.releases[int(release_input)]
+        except:
+            logger.error("Selection {release_input} out of range")
+            sys.exit(1)
 
     try:
-        release = host.distribution.releases[int(kwargs["release"])]
+        release = Release.Release(
+            name=release_input,
+            host=host,
+            logger=logger
+        )
     except:
-        release = iocage.lib.Release.Release(
-            name=kwargs["release"], host=host, logger=logger)
+        self.logger.error("Invalid Release '{release_input}'")
 
-    print(release.name)
-    # Deprecated options
-
-    import sys
-    sys.exit(1)
+    url_or_files_selected = False
 
     # optional --url
     try:
         url = kwargs["url"]
         if url:
             release.mirror_url = url
+            url_or_files_selected = True
     except:
         pass
 
@@ -153,7 +144,13 @@ def cli(**kwargs):
         files = kwargs["files"]
         if files:
             release.assets = list(files)
+            url_or_files_selected = True
     except:
         pass
 
+    if (url_or_files_selected is False) and (release.available is False):
+        logger.error("The release '{release.name}' is not available")
+        sys.exit(1)
+
+    logger.log("Fetching release '{release.name}' from '{release.mirror_url}'")
     release.fetch()

@@ -1,9 +1,15 @@
 import pytest
 import uuid
+import json
+import os
 
 import Jail
 
 import helper_functions
+
+def read_jail_config_json(config_file):
+    with open(config_file, "r") as conf:
+        return json.load(conf)
 
 class TestJail(object):
 
@@ -21,13 +27,15 @@ class TestJail(object):
 
         del release
 
+
     def test_create_jail(self, host, local_release, logger, zfs, root_dataset):
 
         jail = Jail.Jail(host=host, logger=logger, zfs=zfs)
         jail.create(local_release.name)
 
+        dataset = zfs.get_dataset(f"{root_dataset.name}/jails/{jail.uuid}")
+
         def cleanup():
-            dataset = zfs.get_dataset(f"{root_dataset.name}/jails/{jail.uuid}")
             helper_functions.unmount_and_destroy_dataset_recursive(dataset)
 
         try:
@@ -35,10 +43,26 @@ class TestJail(object):
             assert len(str(jail.uuid)) == 36
             assert jail.config.basejail == False
             assert not jail.config.basejail_type
+
+            assert dataset.mountpoint is not None
+            assert os.path.isfile(f"{dataset.mountpoint}/config.json")
+            assert os.path.isdir(f"{dataset.mountpoint}/root")
+
+            data = read_jail_config_json(f"{dataset.mountpoint}/config.json")
+
+            try:
+                assert data["basejail"] is "no"
+            except (KeyError) as e:
+                pass
+
+            try:
+                assert (data["basejail"] is "") or (data["basejail"] == "none")
+            except (KeyError) as e:
+                pass
+
         except Exception as e:
             cleanup()
-            print(e)
-            raise
+            raise e
 
         cleanup()
         
@@ -50,8 +74,9 @@ class TestJail(object):
         }, host=host, logger=logger, zfs=zfs)
         jail.create(local_release.name)
 
+        dataset = zfs.get_dataset(f"{root_dataset.name}/jails/{jail.uuid}")
+
         def cleanup():
-            dataset = zfs.get_dataset(f"{root_dataset.name}/jails/{jail.uuid}")
             helper_functions.unmount_and_destroy_dataset_recursive(dataset)
 
         try:
@@ -59,9 +84,22 @@ class TestJail(object):
             assert len(str(jail.uuid)) == 36
             assert jail.config.basejail == True
             assert jail.config.basejail_type == "nullfs"
+
+            assert dataset.mountpoint is not None
+            assert os.path.isfile(f"{dataset.mountpoint}/config.json")
+            assert os.path.isdir(f"{dataset.mountpoint}/root")
+
+            data = read_jail_config_json(f"{dataset.mountpoint}/config.json")
+
+            assert data["basejail"] == "yes"
+
+            try:
+                assert data["basejail_type"] == "nullfs"
+            except KeyError as e:
+                pass
+
         except Exception as e:
             cleanup()
-            print(e)
-            raise
+            raise e
 
         cleanup()

@@ -16,7 +16,7 @@ import uuid
 
 class Jail:
 
-    def __init__(self, data={}, zfs=None, host=None, logger=None):
+    def __init__(self, data={}, zfs=None, host=None, logger=None, new=False):
 
         helpers.init_logger(self, logger)
         helpers.init_zfs(self, zfs)
@@ -36,7 +36,8 @@ class Jail:
 
         self.jail_state = None
 
-        self.config.read()
+        if new is False:
+            self.config.read()
         # self.update_jail_state()
 
     @property
@@ -86,7 +87,7 @@ class Jail:
             self.stop_vimage_network()
         self.update_jail_state()
 
-    def create(self, release_name):
+    def create(self, release_name, auto_download=False):
         self.require_jail_not_existing()
 
         # check if release exists
@@ -109,7 +110,11 @@ class Jail:
         except:
             self.config.uuid = uuid.uuid4()
 
-        self.logger.log(f"Creating new Jail with uuid={self.config.uuid}")
+        self.logger.verbose(
+            f"Creating jail with UUID {self.config.uuid}", 
+            jail=self
+        )
+        self.logger.spam(list(self.config.data), jail=self)
 
         self.storage.create_jail_dataset()
         self.config.fstab.write()
@@ -430,7 +435,12 @@ class Jail:
         return self.config.uuid
 
     def _get_release(self):
-        return Release.Release(name=self.config.release)
+        return Release.Release(
+            name=self.config.release,
+            logger=self.logger,
+            host=self.host,
+            zfs=self.zfs
+        )
 
     def _get_jail_type(self):
         return self.config.type

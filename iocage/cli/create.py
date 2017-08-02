@@ -30,9 +30,15 @@ import click
 import Release
 import Jail
 import Logger
+import Host
+import helpers
+
+zfs = helpers.get_zfs()
 
 logger = Logger.Logger()
 __rootcmd__ = True
+
+host = Host.Host(logger=logger, zfs=zfs)
 
 
 def validate_count(ctx, param, value):
@@ -67,57 +73,96 @@ def validate_count(ctx, param, value):
               help="Provide a specific UUID for this jail.")
 @click.option("--basejail", "-b", is_flag=True, default=False,
               help="Set the new jail type to a basejail. Basejails"
-                   " mount the specified RELEASE directories as nullfs"
-                   " mounts over the jail's directories.")
+                   " mount the specified RELEASE directories"
+                   " over the jail's directories.")
+@click.option("--basejail-type", type=click.Choice(['nullfs', 'zfs']),
+              help="The method of mounting release datasets into"
+                   " the basejail on start.")
 @click.option("--empty", "-e", is_flag=True, default=False,
               help="Create an empty jail used for unsupported or custom"
                    " jails.")
 @click.option("--short", "-s", is_flag=True, default=False,
               help="Use a short UUID of 8 characters instead of the default"
                    " 36.")
+@click.option("--no-fetch", is_flag=True, default=False,
+              help="Do not automatically fetch releases")
 @click.option("--force", "-f", is_flag=True, default=False,
               help="Skip the interactive question.")
 @click.option("--log-level", "-d", default="info")
 @click.argument("props", nargs=-1)
-def cli(release, template, count, props, pkglist, basejail, clonejail_cj,
-        empty, short, name, _uuid, force, log_level):
+def cli(release, template, count, props, pkglist, basejail, basejail_type,
+        empty, short, name, _uuid, no_fetch, force, log_level):
 
-    if basejail and clonejail_cj:
-        logger.error("A jail can either be a basejail or a clonejail")
-        sys.exit(1)
+    if short is True:
+      logger.error("ToDo: Support short UUIDS")
+      sys.exit(1)
+
+    if release is None:
+      logger.spam(f"No release selected (-r, --release)."
+        f" Selecting host release '{host.release_version}' as default.")
+      release = host.release_version
 
     if name:
         # noinspection Annotator
         valid = True if re.match("^[a-zA-Z0-9\._-]+$", name) else False
         if not valid:
-            error_message = f"Invalid character in {name}, please remove it."
-            logger.error(error_message)
-            raise Exception(error_message)
+            logger.error(
+              f"Invalid character in {name}, please remove it."
+            )
+            sys.exit(1)
 
-    release = Release.Release(name=release)
+    release = Release.Release(name=release, logger=logger, host=host, zfs=zfs)
     if not release.fetched:
         name = release.name
         if not release.available:
-            error_message = f"The release '{name}' does not exist"
-            logger.error(error_message)
-            raise Exception(error_message)
+            msg = f"The release '{name}' does not exist"
+            logger.error(msg)
+            sys.exit(1)
+
         msg = f"The release '{name}' is available, but not downloaded yet"
-        logger.error(msg)
-        raise Exception(msg)
+        if no_fetch:  
+          logger.error(msg)
+          sys.exit(1)
+        else:
+          logger.spam(msg)
+          logger.log("Automatically fetching release '{release}'")
+          release.fetch()
+
+    jail_data = {}
+
+    if basejail:
+      jail_data["basejail"] = True
+
+    if basejail_type is not None:
+      if not basejail:
+        logger.error("Cannot set --basejail-type without --basejail option")
+        sys.exit(1)
+      jail_data["basejail_type"] = basejail_type
+
+    if props:
+      for prop in props:
+          try:
+              key, value = prop.split("=", maxsplit=1)
+              jail_data[key] = value
+          except:
+              logger.error(f"Invalid property {prop}")
+              sys.exit(1)
 
     for i in range(count):
-        jail = Jail.Jail({
-            "basejail": basejail,
-            "clonejail": clonejail_cj
-        })
 
-        if props:
-            for prop in props:
-                try:
-                    key, value = prop.split("=", maxsplit=1)
-                    jail.config.__setattr__(key, value)
-                except:
-                    logger.error(f"Invalid property {prop}")
-                    sys.exit(1)
+        jail = Jail.Jail(
+          jail_data,
+          logger=logger,
+          host=host,
+          zfs=zfs,
+          new=True
+        )
 
-        jail.create(release.name)
+        if count > 1:
+          msg = f"Creating Jail {i}/{count}"
+        else:
+          msg = "Creating Jail"
+        
+        logger.log(msg)
+
+        jail.create(release.name, auto_download=True)

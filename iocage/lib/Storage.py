@@ -105,6 +105,7 @@ class Storage:
         return self.jail_root_dataset
 
     def _create_dataset(self, name, mount=True):
+        self.logger.verbose(f"Creating ZFS dataset {name}")
         self._pool.create(name, {}, create_ancestors=True)
         if mount:
             ds = self.zfs.get_dataset(name)

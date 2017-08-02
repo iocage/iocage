@@ -9,14 +9,17 @@ class JailConfigJSON:
         }
 
     def toJSON(self):
-        data = list(map(lambda x: x if x is not None else "none", self.data))
+        data = self.data
+        for key in data.keys():
+            if data[key] is None:
+                data[key] = "none"
         return json.dumps(data, sort_keys=True, indent=4)
 
     def save(self):
         config_file_path = JailConfigJSON.__get_config_json_path(self)
         with open(config_file_path, "w") as f:
+            self.logger.verbose(f"Writing JSON config to {config_file_path}")
             f.write(JailConfigJSON.toJSON(self))
-            self.logger.verbose(f"Config written to {config_file_path}")
 
     def read(self):
         return self.clone(JailConfigJSON.read_data(self))

@@ -11,6 +11,9 @@ class ZFSBasejailStorage:
             release is not None) else self.jail.cloned_release
         return ZFSBasejailStorage.clone(self, release)
 
+    def setup(self, release):
+        pass
+
     def clone(self, release):
 
         if not self.jail.config.basejail_type == "zfs":
