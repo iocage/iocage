@@ -656,8 +656,7 @@ class IOCFetch(object):
                                        " {rate_fmt}"
                                        " Elapsed: {elapsed}"
                                        " Remaining: {remaining}",
-                            unit="bit",
-                            unit_scale="mega")
+                            unit="Mb")
                         pbar.set_description(f"Downloading: {f}")
 
                         for chunk in r.iter_content(chunk_size=1024):
@@ -697,8 +696,7 @@ class IOCFetch(object):
                                                             "elapsed}"
                                                             " Remaining: {"
                                                             "remaining}",
-                                                 unit="bit",
-                                                 unit_scale="mega")
+                                                 unit="Mb")
                                 pbar.set_description(
                                     f"Downloading: {f}")
 
