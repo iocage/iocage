@@ -478,3 +478,15 @@ class Jail:
             return str(self.__getattr__(key))
         except:
             return "-"
+
+    def __dir__(self):
+
+        properties = set()
+
+        for prop in dict.__dir__(self):
+            if prop.startswith("_get_"):
+                properties.add(prop[5:])
+            elif not prop.startswith("_"):
+                properties.add(prop)
+
+        return list(properties)

@@ -310,7 +310,7 @@ class JailConfig():
         return None
 
     def _get_login_flags(self):
-        return self.data["login_flags"].split()
+        return JailConfigList(self.data["login_flags"].split())
 
     def _set_login_flags(self, value):
 
@@ -329,7 +329,7 @@ class JailConfig():
                 raise Exception("Invalid login_flags")
 
     def _default_login_flags(self):
-        return ["-f", "root"]
+        return JailConfigList(["-f", "root"])
 
     def _default_vnet(self):
         return False
@@ -462,11 +462,11 @@ class JailConfig():
 
         return self.special_properties["resolver"]
 
-    def __getattr__(self, key):
+    def __getattr__(self, key, string=False):
 
         # passthrough existing properties
         try:
-            return self.__getattribute__(key)
+            return self.stringify(self.__getattribute__(key), string)
         except:
             pass
 
@@ -474,20 +474,20 @@ class JailConfig():
         get_method = None
         try:
             get_method = self.__getattribute__(f"_get_{key}")
-            return get_method()
+            return self.stringify(get_method(), string)
         except:
             pass
 
         # plain data attribute
         try:
-            return self.data[key]
+            return self.stringify(self.data[key], string)
         except:
             pass
 
         # then fall back to default
         try:
             fallback_method = self.__getattribute__(f"_default_{key}")
-            return fallback_method()
+            return self.stringify(fallback_method(), string)
         except:
             raise Exception(f"Variable {key} not found")
 
@@ -516,3 +516,50 @@ class JailConfig():
 
     def __str__(self):
         return JailConfigJSON.JailConfigJSON.toJSON(self)
+
+    def __dir__(self):
+
+        properties = set()
+
+        for prop in dict.__dir__(self):
+            if prop.startswith("_default_"):
+                properties.add(prop[9:])
+            elif not prop.startswith("_"):
+               properties.add(prop)
+
+        for key in self.data.keys():
+             properties.add(key)
+
+        return list(properties)
+
+    @property
+    def all_properties(self):
+
+        properties = set()
+
+        for prop in dict.__dir__(self):
+            if prop.startswith("_default_"):
+                properties.add(prop[9:])
+
+        for key in self.data.keys():
+             properties.add(key)
+
+        return list(properties)
+
+    def stringify(self, value, enabled=True):
+
+        if not enabled:
+            return value
+        elif value is None:
+            return "-"
+        elif value is True:
+            return "on"
+        elif value is False:
+            return "off"
+        else:
+            return str(value)
+
+
+class JailConfigList(list):
+    def __str__(self):
+        return " ".join(self)
