@@ -41,7 +41,6 @@ __rootcmd__ = True
 # def cli(props, jail, plugin):
 def cli(props, jail):
     """Get a list of jails and print the property."""
-    print(jail, props)
     jail = Jail.Jail(jail)
     for prop in props:
 

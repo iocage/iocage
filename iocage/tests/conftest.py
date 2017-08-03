@@ -20,9 +20,6 @@ def pytest_addoption(parser):
 def pytest_generate_tests(metafunc):
     _force_clean = metafunc.config.getoption("force_clean")
 
-print("force_clean?", _force_clean)
-
-
 @pytest.fixture
 def force_clean():
     return _force_clean

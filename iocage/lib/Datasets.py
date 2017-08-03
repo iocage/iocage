@@ -79,7 +79,6 @@ class Datasets:
             #raise Exception(msg)
 
         if not isinstance(zfs_pool, libzfs.ZFSPool):
-            print(zfs_pool)
             msg = "Cannot activate invalid ZFS pool"
             self.logger.error(msg)
             raise Exception(msg)
