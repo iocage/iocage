@@ -29,7 +29,7 @@ import Logger
 import Jail
 import Host
 
-logger = Logger.Logger()
+logger = Logger.Logger(print_level=False)
 host = Host.Host(logger=logger)
 
 @click.command(context_settings=dict(
@@ -40,8 +40,12 @@ host = Host.Host(logger=logger)
                                           "specified jail.", is_flag=True)
 @click.option("--pool", "-p", "_pool", help="Get the currently activated "
                                             "zpool.", is_flag=True)
-def cli(prop, _all, _pool, jail):
+@click.option("--log-level", "-d", default=None)
+def cli(prop, _all, _pool, jail, log_level):
     """Get a list of jails and print the property."""
+
+    logger.print_level = log_level
+
     if _pool is True:
         try:
             print(host.datasets.active_pool.name)

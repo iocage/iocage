@@ -24,8 +24,10 @@
 """exec module for the cli."""
 import click
 
-import iocage.lib.ioc_common as ioc_common
-import iocage.lib.iocage as ioc
+import Jail
+import Logger
+
+logger = Logger.Logger(print_level=False)
 
 __rootcmd__ = True
 
@@ -38,22 +40,31 @@ __rootcmd__ = True
 @click.option("--jail_user", "-U", help="The jail user to use.")
 @click.argument("jail", required=True, nargs=1)
 @click.argument("command", nargs=-1, type=click.UNPROCESSED)
-def cli(command, jail, host_user, jail_user):
+@click.option("--log-level", "-d", default=None)
+def cli(command, jail, host_user, jail_user, log_level):
     """Runs the command given inside the specified jail as the supplied
     user."""
-    # We may be getting ';', '&&' and so forth. Adding the shell for safety.
-    if len(command) == 1:
-        command = ("/bin/sh", "-c") + command
+    logger.print_level = log_level
 
     if jail.startswith("-"):
-        ioc_common.logit({
-            "level"  : "EXCEPTION",
-            "message": "Please specify a jail first!"
-        }, exit_on_error=True)
+        logger.error("Please specify a jail first!")
+        exit(1)
 
-    # They haven't set a host_user then, and actually want a jail one,
-    # unsetting the convenience default
-    host_user = "" if jail_user and host_user == "root" else host_user
+    user_command = " ".join(list(command))
 
-    ioc.IOCage(exit_on_error=True, jail=jail).exec(command, host_user,
-                                                   jail_user)
+    if jail_user:
+        command = ["/bin/su", "-m", escape_shell_arg(jail_user), "-c", user_command]
+    else:
+        command = ["/bin/sh", "-c", user_command]
+
+    jail = Jail.Jail(jail, logger=logger)
+    jail.update_jail_state()
+
+    if not jail.exists:
+      logger.error(f"The jail {jail.humanreadable_name} does not exist")
+      exit(1)
+    if not jail.running:
+      logger.error(f"The jail {jail.humanreadable_name} is not running")
+      exit(1)
+    else:
+      jail.passthru(command)

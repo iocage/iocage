@@ -88,10 +88,13 @@ def validate_count(ctx, param, value):
               help="Do not automatically fetch releases")
 @click.option("--force", "-f", is_flag=True, default=False,
               help="Skip the interactive question.")
-@click.option("--log-level", "-d", default="info")
+@click.option("--log-level", "-d", default=None)
 @click.argument("props", nargs=-1)
 def cli(release, template, count, props, pkglist, basejail, basejail_type,
         empty, short, name, _uuid, no_fetch, force, log_level):
+
+    if log_level is not None:
+      logger.print_level = log_level
 
     if short is True:
       logger.error("ToDo: Support short UUIDS")

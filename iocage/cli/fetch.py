@@ -107,8 +107,12 @@ def validate_count(ctx, param, value):
 @click.option("--files", multiple=True,
               help="Specify the files to fetch from the mirror. "
               "(Deprecared: renamed to --file)")
+@click.option("--log-level", "-d", default=None)
 # def cli(url, files, release, update):
 def cli(**kwargs):
+
+    if kwargs["log_level"] is not None:
+        logger.print_level = kwargs["log_level"]
 
     release_input = kwargs["release"]
 

@@ -25,6 +25,9 @@
 import click
 
 import Jail
+import Logger
+
+logger = Logger.Logger(print_level=False)
 
 __rootcmd__ = True
 
@@ -34,10 +37,22 @@ __rootcmd__ = True
               help="Will stop all jails with boot=on, in the specified"
                    " order with higher value for priority stopping first.")
 @click.argument("jails", nargs=-1)
-def cli(rc, jails):
+@click.option("--log-level", "-d", default=None)
+def cli(rc, jails, log_level):
     """
     Looks for the jail supplied and passes the uuid, path and configuration
     location to stop_jail.
     """
-    for jail in jails:
-        Jail.Jail(jail).stop()
+
+    logger.print_level = log_level
+
+    for jail_identifier in jails:
+        jail = Jail.Jail(jail_identifier, logger=logger)
+        logger.log(f"Stopping jail {jail.humanreadable_name}")
+        try:
+          jail.stop()
+        except Exception as e:
+          exit(1)
+
+        logger.log("done")
+        exit(0)

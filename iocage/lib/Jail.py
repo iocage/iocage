@@ -146,14 +146,22 @@ class Jail:
         ] + command
         return helpers.exec(command, logger=self.logger)
 
-    def exec_console(self):
+    def passthru(self, command):
+
+        if isinstance(command, str):
+            command = [command]
+
         return helpers.exec_passthru(
             [
                 "/usr/sbin/jexec",
-                self.identifier,
-                "/usr/bin/login"
-            ] + self.config.login_flags,
+                self.identifier
+            ] + command,
             logger=self.logger
+        )
+
+    def exec_console(self):
+        return self.passthru(
+            ["/usr/bin/login"] + self.config.login_flags
         )
 
     def destroy_jail(self):
@@ -246,7 +254,7 @@ class Jail:
         try:
             helpers.exec(command, logger=self.logger)
             self.update_jail_state()
-            self.logger.log(
+            self.logger.verbose(
                 f"Jail '{humanreadable_name}' started with JID {self.jid}",
                 jail=self
             )

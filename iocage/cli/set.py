@@ -25,6 +25,9 @@
 import click
 
 import Jail
+import Logger
+
+logger = Logger.Logger(print_level=False)
 
 __rootcmd__ = True
 
@@ -33,15 +36,13 @@ __rootcmd__ = True
     max_content_width=400, ), name="set", help="Sets the specified property.")
 @click.argument("props", nargs=-1)
 @click.argument("jail", nargs=1)
-# @click.option("--plugin", "-P",
-#               help="Set the specified key for a plugin jail, if accessing a"
-#                    " nested key use . as a separator."
-#                    "\n\b Example: iocage set -P foo.bar.baz=VALUE PLUGIN",
-#               is_flag=True)
-# def cli(props, jail, plugin):
-def cli(props, jail):
+@click.option("--log-level", "-d", default=None)
+def cli(props, jail, log_level):
     """Get a list of jails and print the property."""
-    jail = Jail.Jail(jail)
+
+    logger.print_level = log_level
+
+    jail = Jail.Jail(jail, logger=logger)
     for prop in props:
 
         delete = False

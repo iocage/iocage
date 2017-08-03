@@ -38,9 +38,24 @@ class Logger:
         "spam"
     ]
 
-    def __init__(self, print_level="spam", log_directory="/var/log/iocage"):
-        self.print_level = print_level
+    def __init__(self, print_level=None, log_directory="/var/log/iocage"):
+        self._print_level = print_level
         self._set_log_directory(log_directory)
+
+    @property
+    def default_print_level(self):
+        return "spam"
+
+    @property
+    def print_level(self):
+        if self._print_level is None:
+            return self.default_print_level
+        else:
+            return self._print_level
+
+    @print_level.setter
+    def print_level(self, value):
+        self._print_level = value
 
     def _set_log_directory(self, log_directory):
         self.log_directory = os.path.abspath(log_directory)
@@ -76,6 +91,9 @@ class Logger:
         self.log(message, level="spam", jail=jail)
 
     def _print(self, message, level, jail=None):
+        if self.print_level is False:
+            return
+
         print_level = Logger.LOG_LEVELS.index(self.print_level)
         if Logger.LOG_LEVELS.index(level) > print_level:
             return

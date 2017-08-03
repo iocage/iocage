@@ -26,16 +26,30 @@
 import click
 
 import Jail
+import Logger
+
+logger = Logger.Logger(print_level=False)
 
 __rootcmd__ = True
 
 
 @click.command(name="console", help="Login to a jail.")
 @click.argument("jail")
-def cli(jail):
+@click.option("--log-level", "-d", default=None)
+def cli(jail, log_level):
     """
     Runs jexec to login into the specified jail.
     """
-    print(jail)
-    jail = Jail.Jail(jail)
-    jail.exec_console()
+    logger.print_level = log_level
+
+    jail = Jail.Jail(jail, logger=logger)
+    jail.update_jail_state()
+
+    if not jail.exists:
+      logger.error(f"The jail {jail.humanreadable_name} does not exist")
+      exit(1)
+    if not jail.running:
+      logger.error(f"The jail {jail.humanreadable_name} is not running")
+      exit(1)
+    else:
+      jail.exec_console()

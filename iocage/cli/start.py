@@ -27,6 +27,8 @@ import click
 import Jail
 import Logger
 
+logger = Logger.Logger(print_level=False)
+
 __rootcmd__ = True
 
 
@@ -34,12 +36,22 @@ __rootcmd__ = True
 @click.option("--rc", default=False, is_flag=True,
               help="Will start all jails with boot=on, in the specified"
                    " order with smaller value for priority starting first.")
-@click.option("--log-level", "-d", default="info")
+@click.option("--log-level", "-d", default=None)
 @click.argument("jails", nargs=-1)
 def cli(rc, jails, log_level):
     """
     Starts Jails
     """
-    logger = Logger.Logger(print_level=log_level)
-    for jail in jails:
-        Jail.Jail(jail, logger=logger).start()
+    
+    logger.print_level = log_level
+
+    for jail_identifier in jails:
+        jail = Jail.Jail(jail_identifier, logger=logger)
+        logger.log(f"Starting jail '{jail.humanreadable_name}'")
+        try:
+          jail.start()
+        except Exception as e:
+          exit(1)
+
+        logger.log(f"running as JID {jail.jid}")
+        exit(0)
