@@ -84,8 +84,8 @@ def cli(dataset_type, header, _long, remote, plugins,
         table = texttable.Texttable(max_width=0)
         table.set_cols_dtype(["t"] * len(columns))
 
+        table_head = (list(x.upper() for x in columns))
         table_data = []
-        table_data.append(list(x.upper() for x in columns))
 
         try:
             sort_index = columns.index(_sort)
@@ -99,7 +99,7 @@ def cli(dataset_type, header, _long, remote, plugins,
         if sort_index is not None:
             table_data.sort(key=lambda x: x[sort_index])
 
-        table.add_rows(table_data)
+        table.add_rows([table_head] + table_data)
         print(table.draw())
         return
 
