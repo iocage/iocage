@@ -53,4 +53,5 @@ def cli(zpool):
       datasets.activate()
       logger.log(f"ZFS pool '{zpool}' activated")
     except:
+      raise
       sys.exit(1)

@@ -18,7 +18,11 @@ class Datasets:
             return
 
         if isinstance(pool, libzfs.ZFSPool):
-            self.root = self._get_or_create_dataset("iocage", root_name=pool.name)
+            self.root = self._get_or_create_dataset(
+                "iocage",
+                root_name=pool.name,
+                pool=pool
+            )
             return
 
         active_pool = self.active_pool
@@ -71,8 +75,8 @@ class Datasets:
 
         if is_pool_already_active:
             msg = f"ZFS pool '{zfs_pool.name}' is already active"
-            self.logger.error(msg)
-            raise Exception(msg)
+            self.logger.warn(msg)
+            #raise Exception(msg)
 
         if not isinstance(zfs_pool, libzfs.ZFSPool):
             print(zfs_pool)
@@ -90,6 +94,19 @@ class Datasets:
                 self._set_zfs_property(pool.root_dataset, prop, "no")
 
         self._set_zfs_property(zfs_pool.root_dataset, prop, "yes")
+        iocage_dataset_name = f"{zfs_pool.name}/iocage"
+
+        try:
+            dataset = self.zfs.get_dataset(iocage_dataset_name)
+        except:
+            self.logger.verbose(f"Creating iocage root dataset {iocage_dataset_name}")
+            zfs_pool.create(iocage_dataset_name, {
+                "mountpoint": "/iocage"
+            }, create_ancestors=True)
+            dataset = self.get_dataset(iocage_dataset_name)
+            dataset.mount()
+
+        self.root = dataset
 
     def _set_zfs_property(self, dataset, name, value):
 
@@ -105,7 +122,7 @@ class Datasets:
             )
             dataset.properties[name] = libzfs.ZFSUserProperty(value)
 
-    def _get_or_create_dataset(self, name, root_name=None):
+    def _get_or_create_dataset(self, name, root_name=None, pool=None):
 
         try:
             return self.datasets[name]
@@ -115,11 +132,14 @@ class Datasets:
         if root_name is None:
             root_name = self.root.name
 
+        if pool is None:
+            pool = self.root.pool
+
         name = f"{root_name}/{name}"
         try:
             dataset = self.zfs.get_dataset(name)
         except:
-            self.root.pool.create(name, {})
+            pool.create(name, {})
             dataset = self.zfs.get_dataset(name)
             dataset.mount()
         self._datasets[name] = dataset
