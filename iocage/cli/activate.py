@@ -46,7 +46,7 @@ def cli(zpool):
 
     if iocage_pool is None:
       logger.error(f"ZFS pool '{zpool}' not found")
-      sys.exit(1)
+      exit(1)
 
     try:
       datasets = Datasets.Datasets(pool=iocage_pool, zfs=zfs, logger=logger)
@@ -54,4 +54,4 @@ def cli(zpool):
       logger.log(f"ZFS pool '{zpool}' activated")
     except:
       raise
-      sys.exit(1)
+      exit(1)

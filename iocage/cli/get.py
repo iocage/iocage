@@ -47,7 +47,7 @@ def cli(prop, _all, _pool, jail):
             print(host.datasets.active_pool.name)
         except:
             print("No active pool found")
-        sys.exit(1)
+        exit(1)
 
     if jail == "":
         jail_identifier = prop
@@ -64,7 +64,7 @@ def cli(prop, _all, _pool, jail):
 
     if not jail.exists:
         logger.error("Jail '{jail}' does not exist")
-        sys.exit(1)
+        exit(1)
 
     if _all is True:
         prop = None
@@ -75,10 +75,10 @@ def cli(prop, _all, _pool, jail):
     if (prop is None) and (jail_identifier == "") and not _all:
         logger.error("Missing arguments property and jail")
         raise Exception("foo")
-        sys.exit(1)
+        exit(1)
     elif (prop is not None) and (jail_identifier == ""):
         logger.error("Missing argument property name or -a/--all argument")
-        sys.exit(1)
+        exit(1)
 
     if prop:
         try:

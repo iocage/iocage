@@ -46,7 +46,7 @@ def validate_count(ctx, param, value):
         except ValueError:
             msg = f"({value} is not a valid integer"
             logger.error(msg)
-            sys.exit(1)
+            exit(1)
     else:
         return int(value)
 
@@ -117,7 +117,7 @@ def cli(**kwargs):
             release = host.distribution.releases[int(release_input)]
         except:
             logger.error(f"Selection {release_input} out of range")
-            sys.exit(1)
+            exit(1)
     else:
         try:
             release = Release.Release(
@@ -127,7 +127,7 @@ def cli(**kwargs):
             )
         except:
             self.logger.error(f"Invalid Release '{release_input}'")
-            sys.exit(1)
+            exit(1)
 
     url_or_files_selected = False
 
@@ -151,7 +151,7 @@ def cli(**kwargs):
 
     if (url_or_files_selected is False) and (release.available is False):
         logger.error(f"The release '{release.name}' is not available")
-        sys.exit(1)
+        exit(1)
 
     logger.log(f"Fetching release '{release.name}' from '{release.mirror_url}'")
     release.fetch()

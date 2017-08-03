@@ -46,7 +46,7 @@ def pool(zfs, logger):
     if active_pool is None:
         logger.error("No ZFS pool was activated."
             "Please activate or specify a pool using the --pool option")
-        sys.exit(1)
+        exit(1)
 
     return active_pool
 

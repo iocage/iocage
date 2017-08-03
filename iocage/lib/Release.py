@@ -231,7 +231,7 @@ class Release:
     def _require_empty_root_dir(self):
         if os.path.isdir(self.root_dir) and os.listdir(self.root_dir) != []:
             self.logger.error(f"The directory '{self.root_dir}' is not empty")
-            sys.exit(1)
+            exit(1)
 
     def read_hashes(self):
         # yes, this can read HardenedBSD and FreeBSD hash files

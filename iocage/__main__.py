@@ -53,7 +53,7 @@ try:
     su.check_call(["sysctl", "vfs.zfs.version.spa"],
                   stdout=su.PIPE, stderr=su.PIPE)
 except su.CalledProcessError:
-    sys.exit("ZFS is required to use iocage.\n"
+    raise Exception("ZFS is required to use iocage.\n"
              "Try calling 'kldload zfs' as root.")
 
 
@@ -81,8 +81,10 @@ class IOCageCLI(click.MultiCommand):
                 if mod.__rootcmd__ and "--help" not in sys.argv[1:]:
                     if len(sys.argv) != 1:
                         if os.geteuid() != 0:
-                            sys.exit("You need to have root privileges to"
-                                     f" run {mod.__name__}")
+                            raise Exception(
+                                f"You need to have root privileges"
+                                f" to run {mod.__name__}"
+                            )
             except AttributeError:
                 # It's not a root required command.
                 pass
