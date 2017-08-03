@@ -95,7 +95,6 @@ def cli(dataset_type, header, _long, remote, plugins,
         for jail in jails.list():
             table_data.append([lookup_jail_value(jail, x) for x in columns])
 
-
         if sort_index is not None:
             table_data.sort(key=lambda x: x[sort_index])
 
@@ -104,6 +103,7 @@ def cli(dataset_type, header, _long, remote, plugins,
         return
 
     return
+
 
 def lookup_jail_value(jail, key):
     jail_keys = [

@@ -32,8 +32,7 @@ logger = Logger.Logger(print_level=False)
 __rootcmd__ = True
 
 
-@click.command(context_settings=dict(
-    ignore_unknown_options=True, ),
+@click.command(context_settings=dict(ignore_unknown_options=True),
     name="exec", help="Run a command inside a specified jail.")
 @click.option("--host_user", "-u", default="root",
               help="The host user to use.")
@@ -53,7 +52,8 @@ def cli(command, jail, host_user, jail_user, log_level):
     user_command = " ".join(list(command))
 
     if jail_user:
-        command = ["/bin/su", "-m", escape_shell_arg(jail_user), "-c", user_command]
+        command = ["/bin/su", "-m",
+                   escape_shell_arg(jail_user), "-c", user_command]
     else:
         command = ["/bin/sh", "-c", user_command]
 
@@ -61,10 +61,16 @@ def cli(command, jail, host_user, jail_user, log_level):
     jail.update_jail_state()
 
     if not jail.exists:
-      logger.error(f"The jail {jail.humanreadable_name} does not exist")
-      exit(1)
+        logger.error(f"The jail {jail.humanreadable_name} does not exist")
+        exit(1)
     if not jail.running:
-      logger.error(f"The jail {jail.humanreadable_name} is not running")
-      exit(1)
+        logger.error(f"The jail {jail.humanreadable_name} is not running")
+        exit(1)
     else:
-      jail.passthru(command)
+        jail.passthru(command)
+
+
+def escape_shell_arg(text):
+    text = text.replace("\\", "\\\\")
+    text = text.replace("'", "\\'")
+    return f"'{text}'"

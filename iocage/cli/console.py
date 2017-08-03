@@ -46,10 +46,10 @@ def cli(jail, log_level):
     jail.update_jail_state()
 
     if not jail.exists:
-      logger.error(f"The jail {jail.humanreadable_name} does not exist")
-      exit(1)
+        logger.error(f"The jail {jail.humanreadable_name} does not exist")
+        exit(1)
     if not jail.running:
-      logger.error(f"The jail {jail.humanreadable_name} is not running")
-      exit(1)
+        logger.error(f"The jail {jail.humanreadable_name} is not running")
+        exit(1)
     else:
-      jail.exec_console()
+        jail.exec_console()

@@ -23,7 +23,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """fetch module for the cli."""
 import click
-import sys
 
 import Release
 import Host
@@ -35,6 +34,7 @@ __rootcmd__ = True
 logger = Logger.Logger()
 host = Host.Host(logger=logger)
 prompts = Prompts.Prompts(host=host)
+
 
 def validate_count(ctx, param, value):
     """Takes a string, removes the commas and returns an int."""
@@ -157,5 +157,7 @@ def cli(**kwargs):
         logger.error(f"The release '{release.name}' is not available")
         exit(1)
 
-    logger.log(f"Fetching release '{release.name}' from '{release.mirror_url}'")
+    logger.log(
+        f"Fetching release '{release.name}' from '{release.mirror_url}'"
+    )
     release.fetch()

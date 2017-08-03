@@ -22,7 +22,6 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """create module for the cli."""
-import sys
 import re
 
 import click
@@ -94,23 +93,25 @@ def cli(release, template, count, props, pkglist, basejail, basejail_type,
         empty, short, name, _uuid, no_fetch, force, log_level):
 
     if log_level is not None:
-      logger.print_level = log_level
+        logger.print_level = log_level
 
     if short is True:
-      logger.error("ToDo: Support short UUIDS")
-      exit(1)
+        logger.error("ToDo: Support short UUIDS")
+        exit(1)
 
     if release is None:
-      logger.spam(f"No release selected (-r, --release)."
-        f" Selecting host release '{host.release_version}' as default.")
-      release = host.release_version
+        logger.spam(
+            f"No release selected (-r, --release)."
+            f" Selecting host release '{host.release_version}' as default."
+        )
+        release = host.release_version
 
     if name:
         # noinspection Annotator
         valid = True if re.match("^[a-zA-Z0-9\._-]+$", name) else False
         if not valid:
             logger.error(
-              f"Invalid character in {name}, please remove it."
+                f"Invalid character in {name}, please remove it."
             )
             exit(1)
 
@@ -123,49 +124,50 @@ def cli(release, template, count, props, pkglist, basejail, basejail_type,
             exit(1)
 
         msg = f"The release '{name}' is available, but not downloaded yet"
-        if no_fetch:  
-          logger.error(msg)
-          exit(1)
+        if no_fetch:
+            logger.error(msg)
+            exit(1)
         else:
-          logger.spam(msg)
-          logger.log("Automatically fetching release '{release}'")
-          release.fetch()
+            logger.spam(msg)
+            logger.log("Automatically fetching release '{release}'")
+            release.fetch()
 
     jail_data = {}
 
     if basejail:
-      jail_data["basejail"] = True
+        jail_data["basejail"] = True
 
     if basejail_type is not None:
-      if not basejail:
-        logger.error("Cannot set --basejail-type without --basejail option")
-        exit(1)
-      jail_data["basejail_type"] = basejail_type
+        if not basejail:
+            logger.error(
+                "Cannot set --basejail-type without --basejail option")
+            exit(1)
+        jail_data["basejail_type"] = basejail_type
 
     if props:
-      for prop in props:
-          try:
-              key, value = prop.split("=", maxsplit=1)
-              jail_data[key] = value
-          except:
-              logger.error(f"Invalid property {prop}")
-              exit(1)
+        for prop in props:
+            try:
+                key, value = prop.split("=", maxsplit=1)
+                jail_data[key] = value
+            except:
+                logger.error(f"Invalid property {prop}")
+                exit(1)
 
     for i in range(count):
 
         jail = Jail.Jail(
-          jail_data,
-          logger=logger,
-          host=host,
-          zfs=zfs,
-          new=True
+            jail_data,
+            logger=logger,
+            host=host,
+            zfs=zfs,
+            new=True
         )
 
         if count > 1:
-          msg = f"Creating Jail {i}/{count}"
+            msg = f"Creating Jail {i}/{count}"
         else:
-          msg = "Creating Jail"
-        
+            msg = "Creating Jail"
+
         logger.log(msg)
 
         jail.create(release.name, auto_download=True)

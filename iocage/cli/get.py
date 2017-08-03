@@ -23,7 +23,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """get module for the cli."""
 import click
-import sys
 
 import Logger
 import Jail
@@ -31,6 +30,7 @@ import Host
 
 logger = Logger.Logger(print_level=False)
 host = Host.Host(logger=logger)
+
 
 @click.command(context_settings=dict(
     max_content_width=400, ), name="get", help="Gets the specified property.")
@@ -93,9 +93,10 @@ def cli(prop, _all, _pool, jail, log_level):
             logger.error(f"Unknown property '{prop}'")
 
     for key in jail.config.all_properties:
-        if (prop == None) or (key == prop):
+        if (prop is None) or (key == prop):
             value = jail.config.__getattr__(key, string=True)
             print_property(key, value)
+
 
 def print_property(key, value):
     key = str(key)

@@ -34,7 +34,6 @@ class Datasets:
             raise Exception(msg)
         else:
             self.root = self.zfs.get_dataset(f"{active_pool.name}/iocage")
-                
 
     @property
     def active_pool(self):
@@ -76,7 +75,6 @@ class Datasets:
         if is_pool_already_active:
             msg = f"ZFS pool '{zfs_pool.name}' is already active"
             self.logger.warn(msg)
-            #raise Exception(msg)
 
         if not isinstance(zfs_pool, libzfs.ZFSPool):
             msg = "Cannot activate invalid ZFS pool"
@@ -98,7 +96,9 @@ class Datasets:
         try:
             dataset = self.zfs.get_dataset(iocage_dataset_name)
         except:
-            self.logger.verbose(f"Creating iocage root dataset {iocage_dataset_name}")
+            self.logger.verbose(
+                f"Creating iocage root dataset {iocage_dataset_name}"
+            )
             zfs_pool.create(iocage_dataset_name, {
                 "mountpoint": "/iocage"
             }, create_ancestors=True)
@@ -117,7 +117,8 @@ class Datasets:
 
         if current_value != value:
             self.logger.verbose(
-                f"Set ZFS property {name}='{value}' on dataset '{dataset.name}'"
+                f"Set ZFS property {name}='{value}'"
+                f" on dataset '{dataset.name}'"
             )
             dataset.properties[name] = libzfs.ZFSUserProperty(value)
 

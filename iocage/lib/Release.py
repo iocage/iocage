@@ -1,7 +1,6 @@
 import helpers
 
 import os
-import sys
 import tarfile
 import hashlib
 import libzfs

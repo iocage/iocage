@@ -111,7 +111,7 @@ class Jail:
             self.config.uuid = uuid.uuid4()
 
         self.logger.verbose(
-            f"Creating jail with UUID {self.config.uuid}", 
+            f"Creating jail with UUID {self.config.uuid}",
             jail=self
         )
         self.logger.spam(list(self.config.data), jail=self)

@@ -525,10 +525,10 @@ class JailConfig():
             if prop.startswith("_default_"):
                 properties.add(prop[9:])
             elif not prop.startswith("_"):
-               properties.add(prop)
+                properties.add(prop)
 
         for key in self.data.keys():
-             properties.add(key)
+            properties.add(key)
 
         return list(properties)
 
@@ -542,7 +542,7 @@ class JailConfig():
                 properties.add(prop[9:])
 
         for key in self.data.keys():
-             properties.add(key)
+            properties.add(key)
 
         return list(properties)
 

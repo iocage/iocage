@@ -50,9 +50,9 @@ def cli(rc, jails, log_level):
         jail = Jail.Jail(jail_identifier, logger=logger)
         logger.log(f"Stopping jail {jail.humanreadable_name}")
         try:
-          jail.stop()
+            jail.stop()
         except Exception as e:
-          exit(1)
+            exit(1)
 
         logger.log("done")
         exit(0)
