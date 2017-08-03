@@ -116,17 +116,18 @@ def cli(**kwargs):
         try:
             release = host.distribution.releases[int(release_input)]
         except:
-            logger.error("Selection {release_input} out of range")
+            logger.error(f"Selection {release_input} out of range")
             sys.exit(1)
-
-    try:
-        release = Release.Release(
-            name=release_input,
-            host=host,
-            logger=logger
-        )
-    except:
-        self.logger.error("Invalid Release '{release_input}'")
+    else:
+        try:
+            release = Release.Release(
+                name=release_input,
+                host=host,
+                logger=logger
+            )
+        except:
+            self.logger.error(f"Invalid Release '{release_input}'")
+            sys.exit(1)
 
     url_or_files_selected = False
 
@@ -149,8 +150,8 @@ def cli(**kwargs):
         pass
 
     if (url_or_files_selected is False) and (release.available is False):
-        logger.error("The release '{release.name}' is not available")
+        logger.error(f"The release '{release.name}' is not available")
         sys.exit(1)
 
-    logger.log("Fetching release '{release.name}' from '{release.mirror_url}'")
+    logger.log(f"Fetching release '{release.name}' from '{release.mirror_url}'")
     release.fetch()
