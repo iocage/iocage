@@ -69,6 +69,20 @@ class TestJail(object):
         
 class TestNullFSBasejail(object):
 
+    @pytest.fixture
+    def local_release(self, release, root_dataset, force_clean, zfs):
+
+        if not release.fetched:
+            release.fetch()
+
+        yield release
+
+        if force_clean:
+            release.dataset.umount()
+            release.dataset.delete()
+
+        del release
+
     def test_can_be_created(self, host, local_release, logger, zfs, root_dataset):
 
         jail = Jail.Jail({
