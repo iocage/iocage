@@ -25,6 +25,7 @@
 import json
 import re
 import subprocess as su
+import uuid as _uuid
 
 import libzfs
 import texttable
@@ -150,6 +151,18 @@ class IOCList(object):
             conf = iocage.lib.ioc_json.IOCJson(mountpoint).json_load()
 
             uuid = conf["host_hostuuid"]
+
+            if not self.full:
+                # We only want to show the first 8 characters of a UUID,
+                # if it's not a UUID, we will show the whole name no matter
+                # what.
+                try:
+                    uuid = str(_uuid.UUID(uuid, version=4))[:8]
+                except ValueError:
+                    # We leave the "uuid" untouched, as it's not a valid
+                    # UUID, but instead a named jail.
+                    pass
+
             full_ip4 = conf["ip4_addr"]
             ip6 = conf["ip6_addr"]
 
@@ -209,8 +222,7 @@ class IOCList(object):
                 jail_list.append([jid, uuid, boot, state, jail_type,
                                   full_release, full_ip4, ip6, template])
             else:
-                jail_list.append([jid, uuid[:8], state, short_release,
-                                  short_ip4])
+                jail_list.append([jid, uuid, state, short_release, short_ip4])
 
         list_type = "list_full" if self.full else "list_short"
         sort = iocage.lib.ioc_common.ioc_sort(list_type, self.sort,
