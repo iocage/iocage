@@ -57,7 +57,7 @@ class JailConfig():
             self.logger.log("Configuration loaded from JSON", level="verbose")
             return
         except:
-            pass
+            raise
 
         try:
             JailConfigLegacy.JailConfigLegacy.read(self)
@@ -81,10 +81,14 @@ class JailConfig():
 
     def update_special_property(self, name, new_property_handler=None):
 
-        if new_property_handler is not None:
-            self.special_properties[name] = new_property_handler
+        try:
+            if new_property_handler is not None:
+                self.special_properties[name] = new_property_handler
 
-        self.data[name] = str(self.special_properties[name])
+            self.data[name] = str(self.special_properties[name])
+        except:
+            # pass when there is no handler for the notifying propery
+            pass
 
     def _set_name(self, value):
 
