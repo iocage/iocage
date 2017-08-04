@@ -707,15 +707,6 @@ class IOCJson(object):
             except su.CalledProcessError:
                 state = False
 
-            if state:
-                iocage.lib.ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": f"{tag} is running, all jails must be stopped"
-                               " before iocage will continue migration"
-                },
-                    _callback=self.callback,
-                    silent=self.silent)
-
             # These are already good to go.
             if tag != uuid:
                 date_fmt = "%Y-%m-%d@%H:%M:%S:%f"
@@ -737,6 +728,17 @@ class IOCJson(object):
                     except ValueError:
                         try:
                             try:
+                                if state:
+                                    iocage.lib.ioc_common.logit({
+                                        "level"  : "EXCEPTION",
+                                        "message": f"{tag} is running,"
+                                                   " all jails must be stopped"
+                                                   " before iocage will"
+                                                   " continue migration"
+                                    },
+                                        _callback=self.callback,
+                                        silent=self.silent)
+
                                 # Can't rename when the child is
                                 # in a non-global zone
                                 data_dataset = self.zfs.get_dataset(
