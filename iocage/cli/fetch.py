@@ -130,7 +130,7 @@ def cli(**kwargs):
                 logger=logger
             )
         except:
-            self.logger.error(f"Invalid Release '{release_input}'")
+            logger.error(f"Invalid Release '{release_input}'")
             exit(1)
 
     url_or_files_selected = False

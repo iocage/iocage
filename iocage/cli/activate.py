@@ -23,7 +23,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """activate module for the cli."""
 import click
-import sys
 import libzfs
 
 import Datasets
@@ -42,17 +41,17 @@ def cli(zpool, log_level):
     iocage_pool = None
 
     for pool in zfs.pools:
-      if pool.name == zpool:
-        iocage_pool = pool
+        if pool.name == zpool:
+            iocage_pool = pool
 
     if iocage_pool is None:
-      logger.error(f"ZFS pool '{zpool}' not found")
-      exit(1)
+        logger.error(f"ZFS pool '{zpool}' not found")
+        exit(1)
 
     try:
-      datasets = Datasets.Datasets(pool=iocage_pool, zfs=zfs, logger=logger)
-      datasets.activate()
-      logger.log(f"ZFS pool '{zpool}' activated")
+        datasets = Datasets.Datasets(pool=iocage_pool, zfs=zfs, logger=logger)
+        datasets.activate()
+        logger.log(f"ZFS pool '{zpool}' activated")
     except:
-      raise
-      exit(1)
+        raise
+        exit(1)

@@ -33,7 +33,7 @@ __rootcmd__ = True
 
 
 @click.command(context_settings=dict(ignore_unknown_options=True),
-    name="exec", help="Run a command inside a specified jail.")
+               name="exec", help="Run a command inside a specified jail.")
 @click.option("--host_user", "-u", default="root",
               help="The host user to use.")
 @click.option("--jail_user", "-U", help="The jail user to use.")
