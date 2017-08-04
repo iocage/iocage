@@ -41,7 +41,7 @@ class Distribution:
             release_path = f"/pub/FreeBSD/releases/{processor}/{processor}"
             return f"http://ftp.freebsd.org{release_path}"
         elif distribution == "HardenedBSD":
-            return f"http://http://jenkins.hardenedbsd.org/builds"
+            return f"http://jenkins.hardenedbsd.org/builds"
         else:
             raise Exception(f"Unknown Distribution '{distribution}'")
 

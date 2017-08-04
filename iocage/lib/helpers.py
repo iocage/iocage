@@ -12,8 +12,10 @@ def init_zfs(self, zfs):
     else:
         self.zfs = get_zfs()
 
+
 def get_zfs():
     return libzfs.ZFS(history=True, history_prefix="<iocage>")
+
 
 def init_host(self, host=None):
 

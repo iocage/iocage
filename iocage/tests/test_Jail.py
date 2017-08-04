@@ -28,7 +28,7 @@ class TestJail(object):
         del release
 
 
-    def test_create_jail(self, host, local_release, logger, zfs, root_dataset):
+    def test_can_be_created(self, host, local_release, logger, zfs, root_dataset, capsys):
 
         jail = Jail.Jail(host=host, logger=logger, zfs=zfs)
         jail.create(local_release.name)
@@ -65,9 +65,11 @@ class TestJail(object):
             raise e
 
         cleanup()
-        
 
-    def test_create_basejail(self, host, local_release, logger, zfs, root_dataset):
+        
+class TestNullFSBasejail(object):
+
+    def test_can_be_created(self, host, local_release, logger, zfs, root_dataset):
 
         jail = Jail.Jail({
             "basejail": True

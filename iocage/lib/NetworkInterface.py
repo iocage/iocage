@@ -29,19 +29,19 @@ class NetworkInterface:
         self.extra_settings = extra_settings
         self.settings = {}
 
-        if mac is not None:
+        if mac:
             self.settings["link"] = mac
 
-        if mtu is not None:
+        if mtu:
             self.settings["mtu"] = str(mtu)
 
-        if description is not None:
+        if description:
             self.settings["description"] = f"\"{description}\""
 
-        if vnet is not None:
+        if vnet:
             self.settings["vnet"] = vnet
 
-        if addm is not None:
+        if addm:
             self.settings["addm"] = addm
 
         # rename interface when applying settings next time

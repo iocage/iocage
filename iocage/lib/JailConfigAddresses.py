@@ -16,10 +16,7 @@ class AddressSet(set):
             self.__notify()
 
     def __notify(self):
-        try:
-            self.jail_config.update_special_property(self.property_name)
-        except:
-            raise
+        self.jail_config.update_special_property(self.property_name)
 
 
 class JailConfigAddresses(dict):
@@ -47,7 +44,7 @@ class JailConfigAddresses(dict):
 
         try:
             prop = dict.__getitem__(self, nic)
-        except:
+        except KeyError:
             prop = self.__empty_prop(nic)
 
         for address in addresses:
@@ -60,7 +57,7 @@ class JailConfigAddresses(dict):
 
         try:
             dict.__delitem__(self, key)
-        except:
+        except KeyError:
             pass
 
         self.add(key, values)
@@ -70,10 +67,7 @@ class JailConfigAddresses(dict):
         self.__notify()
 
     def __notify(self):
-        try:
-            self.jail_config.update_special_property(self.property_name)
-        except:
-            pass
+        self.jail_config.update_special_property(self.property_name)
 
     def __empty_prop(self, key):
 

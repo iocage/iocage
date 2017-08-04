@@ -45,16 +45,14 @@ def cli(props, jail, log_level):
     jail = Jail.Jail(jail, logger=logger)
     for prop in props:
 
-        delete = False
-        try:
+        if _is_setter_property(prop):
             key, value = prop.split("=", maxsplit=1)
-        except:
-            key = prop
-            delete = True
-
-        if delete:
-            del jail.config[key]
-        else:
             jail.config.__setattr__(key, value)
+        else:
+            key = prop
+            jail.config.__delattr__(key)
 
     jail.config.save()
+
+def _is_setter_property(property_string):
+    return "=" in property_string

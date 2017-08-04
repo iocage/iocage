@@ -89,8 +89,8 @@ def cli(prop, _all, _pool, jail, log_level):
             print_property(prop, jail.config.__getattr__(prop, string=True))
             return
         except:
-            raise
             logger.error(f"Unknown property '{prop}'")
+            exit(1)
 
     for key in jail.config.all_properties:
         if (prop is None) or (key == prop):

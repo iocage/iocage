@@ -127,7 +127,6 @@ class Release:
         try:
             return self.host.datasets.releases.pool
         except:
-            raise
             pass
 
         try:

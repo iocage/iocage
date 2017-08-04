@@ -118,7 +118,7 @@ def cli(**kwargs):
 
     if isinstance(release_input, int):
         try:
-            release = host.distribution.releases[int(release_input)]
+            release = host.distribution.releases[release_input]
         except:
             logger.error(f"Selection {release_input} out of range")
             exit(1)
@@ -135,23 +135,13 @@ def cli(**kwargs):
 
     url_or_files_selected = False
 
-    # optional --url
-    try:
-        url = kwargs["url"]
-        if url:
-            release.mirror_url = url
-            url_or_files_selected = True
-    except:
-        pass
+    if is_option_enabled(kwargs, "url"):
+        release.mirror_url = kwargs["url"]
+        url_or_files_selected = True
 
-    # optional --files
-    try:
-        files = kwargs["files"]
-        if files:
-            release.assets = list(files)
-            url_or_files_selected = True
-    except:
-        pass
+    if is_option_enabled(kwargs, "files"):
+        release.assets = list(kwargs["files"])
+        url_or_files_selected = True
 
     if (url_or_files_selected is False) and (release.available is False):
         logger.error(f"The release '{release.name}' is not available")
@@ -161,3 +151,14 @@ def cli(**kwargs):
         f"Fetching release '{release.name}' from '{release.mirror_url}'"
     )
     release.fetch()
+
+def is_option_enabled(args, name):
+
+    try:
+        value = args[name]
+        if value:
+            return True
+    except:
+        pass
+
+    return False
