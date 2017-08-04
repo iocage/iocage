@@ -69,6 +69,7 @@ def cli(prop, _all, _pool, jail, recursive, header, plugin):
             })
 
     if _all and recursive:
+        # TODO: Port this back
         ioc_common.logit({
             "level"  : "EXCEPTION",
             "message": "You cannot use --all (-a) and --recursive (-r) "
