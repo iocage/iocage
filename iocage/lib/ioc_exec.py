@@ -37,7 +37,7 @@ class IOCExec(object):
                  plugin=False, skip=False, console=False, silent=False,
                  callback=None):
         self.command = command
-        self.uuid = uuid
+        self.uuid = uuid.replace(".", "_")
         self.path = path
         self.host_user = host_user
         self.jail_user = jail_user

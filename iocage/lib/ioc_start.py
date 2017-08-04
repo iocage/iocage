@@ -44,7 +44,7 @@ class IOCStart(object):
         self.pool = iocage.lib.ioc_json.IOCJson(" ").json_get_value("pool")
         self.iocroot = iocage.lib.ioc_json.IOCJson(self.pool).json_get_value(
             "iocroot")
-        self.uuid = uuid
+        self.uuid = uuid.replace(".", "_")
         self.path = path
         self.conf = conf
         self.get = iocage.lib.ioc_json.IOCJson(self.path,
