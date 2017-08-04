@@ -82,7 +82,7 @@ def validate_count(ctx, param, value):
 def cli(release, template, count, props, pkglist, basejail, empty, short,
         name, _uuid, force):
     if name:
-        valid = True if re.match("^[a-zA-Z0-9_-]+$", name) else False
+        valid = True if re.match("^[a-zA-Z0-9\._-]+$", name) else False
         if not valid:
             ioc_common.logit({
                 "level"  : "EXCEPTION",
