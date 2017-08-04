@@ -701,7 +701,9 @@ class IOCJson(object):
 
             try:
                 state = iocage.lib.ioc_common.checkoutput(
-                    ["jls", "-j", f"ioc-{uuid}"], stderr=su.PIPE).split()[5]
+                    ["jls", "-j",
+                     f"ioc-{uuid.replace('.', '_')}"], stderr=su.PIPE).split(
+                )[5]
             except su.CalledProcessError:
                 state = False
 

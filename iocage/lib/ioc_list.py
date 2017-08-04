@@ -275,7 +275,8 @@ class IOCList(object):
         """Return a tuple containing True or False and the jail's id or '-'."""
         try:
             jid = iocage.lib.ioc_common.checkoutput(
-                ["jls", "-j", f"ioc-{uuid}"], stderr=su.PIPE).split()[5]
+                ["jls", "-j", f"ioc-{uuid.replace('.', '_')}"],
+                stderr=su.PIPE).split()[5]
             return True, jid
         except su.CalledProcessError:
             return False, "-"
