@@ -854,16 +854,20 @@ class IOCage(object):
                         else:
                             state = "down"
 
-                        jail_list.append([uuid, state])
+                        jail_list.append({
+                            uuid: state
+                        })
                     elif prop == "all":
                         props = ioc_json.IOCJson(path).json_get_value(prop)
 
-                        for p, v in props.items():
-                            jail_list.append([uuid, f"{p}:{v}"])
+                        jail_list.append({
+                            uuid: props
+                        })
                     else:
-                        jail_list.append(
-                            [uuid, ioc_json.IOCJson(path).json_get_value(
-                                prop)])
+                        jail_list.append({
+                            uuid: ioc_json.IOCJson(path).json_get_value(
+                                prop)
+                        })
                 except KeyError:
                     ioc_common.logit({
                         "level"  : "EXCEPTION",

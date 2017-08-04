@@ -68,6 +68,13 @@ def cli(prop, _all, _pool, jail, recursive, header, plugin):
                 "message": "You must specify a jail!"
             })
 
+    if _all and recursive:
+        ioc_common.logit({
+            "level"  : "EXCEPTION",
+            "message": "You cannot use --all (-a) and --recursive (-r) "
+                       "together. "
+        })
+
     if not recursive:
         if prop == "state":
             state = ioc.IOCage(jail).get(prop)
@@ -99,21 +106,22 @@ def cli(prop, _all, _pool, jail, recursive, header, plugin):
                 "message": p
             })
     else:
-        jail_list = ioc.IOCage().get(prop, recursive=True)
+        jails = ioc.IOCage().get(prop, recursive=True)
+        table.header(["NAME", f"PROP - {prop}"])
 
-        # Prints the table
+        for jail_dict in jails:
+            for jail, prop in jail_dict.items():
+                if header:
+                    table.add_row([jail, prop])
+                else:
+                    ioc_common.logit({
+                        "level"  : "INFO",
+                        "message": f"{jail}\t{prop}"
+                    })
+
         if header:
-            jail_list.insert(0, ["NAME", f"PROP - {prop}"])
-            # We get an infinite float otherwise.
-            table.set_cols_dtype(["t", "t"])
-            table.add_rows(jail_list)
+            # Prints the table
             ioc_common.logit({
                 "level"  : "INFO",
                 "message": table.draw()
             })
-        else:
-            for jail in jail_list:
-                ioc_common.logit({
-                    "level"  : "INFO",
-                    "message": "\t".join(jail)
-                })
