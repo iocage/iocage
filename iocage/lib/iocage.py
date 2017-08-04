@@ -1070,14 +1070,14 @@ class IOCage(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-            stop_cmd = ["setfib", exec_fib, "jexec", f"ioc-{uuid}"] + \
-                       exec_stop
+            stop_cmd = ["setfib", exec_fib, "jexec",
+                        f"ioc-{uuid.replace('.', '_')}"] + exec_stop
             su.Popen(stop_cmd, stdout=su.PIPE,
                      stderr=su.PIPE).communicate()
 
             su.Popen(["pkill", "-j", jid]).communicate()
-            start_cmd = ["setfib", exec_fib, "jexec", f"ioc-{uuid}"] + \
-                        exec_start
+            start_cmd = ["setfib", exec_fib, "jexec",
+                         f"ioc-{uuid.replace('.', '_')}"] + exec_start
             su.Popen(start_cmd, stdout=su.PIPE,
                      stderr=su.PIPE).communicate()
             ioc_json.IOCJson(path, silent=True).json_set_value(
