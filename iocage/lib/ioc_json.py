@@ -1043,8 +1043,9 @@ class IOCJson(object):
                 if len(_prop) > 1:
                     return iocage.lib.ioc_common.get_nested_key(settings, prop)
                 else:
-                    return iocage.lib.ioc_exec.IOCExec(prop_cmd,
-                                                       uuid, _path).exec_jail()
+                    return iocage.lib.ioc_exec.IOCExec(
+                        prop_cmd, uuid, _path, plugin=True,
+                        silent=True).exec_jail()
             else:
                 return settings
         except KeyError:
