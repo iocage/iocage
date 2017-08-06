@@ -21,8 +21,7 @@ class Jails:
         return jails
 
     def _get_existing_jails(self):
-        jail_dataset_name = f"{self.host.datasets.root.name}/jails"
-        jails_dataset = self.zfs.get_dataset(jail_dataset_name)
+        jails_dataset = self.host.datasets.jails
         jail_datasets = list(jails_dataset.children)
 
         return list(map(

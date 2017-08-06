@@ -64,7 +64,13 @@ class Release:
     @property
     def root_dataset(self):
         if self._root_dataset is None:
-            self._root_dataset = self.zfs.get_dataset(self.root_dataset_name)
+            try:
+                self._root_dataset = self.zfs.get_dataset(self.root_dataset_name)
+            except:
+                self.host.datasets.releases.pool.create(self.root_dataset_name, {}, create_ancestors=True)
+                self._root_dataset = self.zfs.get_dataset(self.root_dataset_name)
+                self._root_dataset.mount()
+
         return self._root_dataset
 
     @property
@@ -96,9 +102,12 @@ class Release:
     @property
     def root_dir(self):
         try:
-            return self.root_dataset.mountpoint
+            if self.root_dataset.mountpoint:
+                return self.root_dataset.mountpoint
         except:
-            return f"{self.releases_folder}/{self.name}/root"
+            pass
+
+        return f"{self.releases_folder}/{self.name}/root"
 
     @property
     def assets(self):
@@ -143,7 +152,16 @@ class Release:
 
     @property
     def fetched(self):
-        return os.path.isdir(self.root_dir)
+        if not os.path.isdir(self.root_dir):
+            return False
+
+        root_dir_index = os.listdir(self.root_dir)
+
+        for expected_directory in ["dev", "var", "etc"]:
+            if expected_directory not in root_dir_index:
+                return False
+
+        return True
 
     @property
     def zfs_pool(self):
