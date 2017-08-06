@@ -54,5 +54,6 @@ def cli(props, jail, log_level):
 
     jail.config.save()
 
+
 def _is_setter_property(property_string):
     return "=" in property_string

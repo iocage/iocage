@@ -65,11 +65,16 @@ class Release:
     def root_dataset(self):
         if self._root_dataset is None:
             try:
-                self._root_dataset = self.zfs.get_dataset(self.root_dataset_name)
+                ds = self.zfs.get_dataset(self.root_dataset_name)
             except:
-                self.host.datasets.releases.pool.create(self.root_dataset_name, {}, create_ancestors=True)
-                self._root_dataset = self.zfs.get_dataset(self.root_dataset_name)
-                self._root_dataset.mount()
+                self.host.datasets.releases.pool.create(
+                    self.root_dataset_name,
+                    {},
+                    create_ancestors=True
+                )
+                ds = self.zfs.get_dataset(self.root_dataset_name)
+                ds.mount()
+            self._root_dataset = ds
 
         return self._root_dataset
 
@@ -198,16 +203,11 @@ class Release:
     def release_updates_dir(self):
         return f"{self.dataset.mountpoint}/updates"
 
-    @property
-    def _is_root_dir_empty(self):
-        root_dir_exists = os.path.isdir(self.root_dir)
-        return not (root_dir_exists and os.listdir(self.root_dir) != [])
-
     def fetch(self, update=None, fetch_updates=None):
 
         release_changed = False
 
-        if self._is_root_dir_empty:
+        if self.fetched:
             self._require_empty_root_dir()
             self._create_dataset()
             self._ensure_dataset_mounted()
@@ -219,7 +219,7 @@ class Release:
                 "Release was already downloaded. Skipping download."
             )
 
-        fetch_updates_on = self.auto_fetch_updates and fetch_updates is not False
+        fetch_updates_on = self.auto_fetch_updates and fetch_updates
         if fetch_updates_on or fetch_updates:
             self.fetch_updates()
 

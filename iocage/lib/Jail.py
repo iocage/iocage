@@ -113,6 +113,8 @@ class Jail:
             successful = False
             self.logger.warn(str(e))
 
+        return successful
+
     def create(self, release_name, auto_download=False):
         self.require_jail_not_existing()
 
@@ -436,7 +438,7 @@ class Jail:
                 helpers.umount(
                     mountpoint,
                     force=True,
-                    ignore_error=True # maybe it was not mounted
+                    ignore_error=True  # maybe it was not mounted
                 )
 
     def _resolve_uuid(self, text):
