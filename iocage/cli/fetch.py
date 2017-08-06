@@ -145,7 +145,7 @@ def cli(**kwargs):
         logger.log(
             f"Fetching release '{release.name}' from '{release.mirror_url}'"
         )
-        release.fetch(auto_update=False, fetch_updates=False)
+        release.fetch(update=False, fetch_updates=False)
 
     if kwargs["fetch_updates"] is True:
         logger.log("Fetching updates")
