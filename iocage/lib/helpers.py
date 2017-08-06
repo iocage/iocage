@@ -45,20 +45,52 @@ def init_logger(self, logger=None):
         object.__setattr__(self, 'logger', new_logger)
 
 
-def exec(command, logger=None):
+def exec(command, logger=None, ignore_error=False):
 
     if isinstance(command, str):
         command = [command]
 
     command_str = " ".join(command)
+
     if logger:
         logger.log(f"Executing: {command_str}", level="spam")
 
-    return subprocess.check_output(
+    child = subprocess.Popen(
         command,
         shell=False,
-        stderr=subprocess.DEVNULL
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
     )
+
+    stdout, stderr = child.communicate()
+    stdout = stdout.decode("UTF-8").strip()
+    stderr = stderr.decode("UTF-8").strip()
+
+    if logger and stdout:
+        logger.spam(_prettify_output(stdout))
+
+    if child.returncode > 0:
+
+        if logger:
+            log_level = "spam" if ignore_error else "warning"
+            logger.log(
+                f"Command exited with {child.returncode}: {command_str}",
+                level=log_level
+            )
+            if stderr:
+                logger.log(_prettify_output(stderr), level=log_level)
+
+        if ignore_error is False:
+            raise Exception(f"Command exited with {child.returncode}")
+
+    return child, stdout, stderr
+
+
+def _prettify_output(output):
+    return "\n".join(map(
+        lambda line: f"    {line}",
+        output.split("\n")
+    ))
 
 
 def exec_passthru(command, logger=None):
@@ -86,6 +118,31 @@ def shell(command, logger=None):
         universal_newlines=True,
         stderr=subprocess.DEVNULL
     )
+
+
+# ToDo: replace with (u)mount library
+def umount(mountpoint, force=False, ignore_error=False, logger=None):
+
+    cmd = ["/sbin/umount"]
+
+    if force is True:
+        cmd.append("-f")
+
+    cmd.append(mountpoint)
+
+    try:
+        exec(cmd)
+        if logger is not None:
+            logger.debug(
+                f"Jail mountpoint {mountpoint} umounted"
+            )
+    except:
+        if logger is not None:
+            logger.spam(
+                f"Jail mountpoint {mountpoint} not unmounted"
+            )
+        if ignore_error is False:
+            raise
 
 
 def get_basedir_list():

@@ -7,8 +7,6 @@ import os
 class NullFSBasejailStorage:
 
     def apply(self, release=None):
-
-        NullFSBasejailStorage.umount_nullfs(self)
         NullFSBasejailStorage.create_nullfs_directories(self)
 
     def setup(self, release):
@@ -21,7 +19,6 @@ class NullFSBasejailStorage:
   """
 
     def umount_nullfs(self):
-
         with open(f"{self.jail.path}/fstab") as f:
             mounts = []
             for mount in f.read().splitlines():

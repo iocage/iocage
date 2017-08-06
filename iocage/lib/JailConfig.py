@@ -57,7 +57,7 @@ class JailConfig():
             self.logger.log("Configuration loaded from JSON", level="verbose")
             return
         except:
-            raise
+            pass
 
         try:
             JailConfigLegacy.JailConfigLegacy.read(self)

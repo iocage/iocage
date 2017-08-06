@@ -75,6 +75,24 @@ class Distribution:
         self.available_releases = available_releases
         return available_releases
 
+    def get_release_trunk_file_url(self, release, filename):
+
+        if self.host.distribution.name == "HardenedBSD":
+            # ToDo: implement HardenedBSD release updates
+            raise Exception(
+                "Updates of HardenedBSD releases not supported yet"
+            )
+        elif self.host.distribution.name == "FreeBSD":
+
+            if release.name == "11.0-RELEASE":
+                release_name = "11.0.1"
+            else:
+                fragments = release.name.split("-", maxsplit=1)
+                release_name = f"{fragments[0]}.0"
+
+            base_url = "https://svnweb.freebsd.org/base/release"
+            return f"{base_url}/{release_name}/{filename}?view=co"
+
     @property
     def releases(self):
         if not self.available_releases:

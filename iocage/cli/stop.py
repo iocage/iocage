@@ -51,7 +51,7 @@ def cli(rc, jails, log_level):
         logger.log(f"Stopping jail {jail.humanreadable_name}")
         try:
             jail.stop()
-        except Exception as e:
+        except:
             exit(1)
 
         logger.log("done")

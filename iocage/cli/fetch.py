@@ -72,34 +72,16 @@ def validate_count(ctx, param, value):
               help="Remote URL with path to the release/snapshot directory")
 @click.option("--file", "-F", multiple=True,
               help="Specify the files to fetch from the mirror.")
-# @click.option("--auth", "-a", default=None, help="Authentication method for "
-#                                                 "HTTP fetching. Valid "
-#                                                 "values: basic, digest")
-# @click.option("--verify/--noverify", "-V/-NV", default=True,
-#               help="Enable or disable verifying SSL cert for HTTP fetching.")
 @click.option("--release", "-r",
               prompt=f"Release ({host.release_version})",
               default=prompts.release,
               # type=release_choice(),
               help="The FreeBSD release to fetch.")
-# @click.option("--plugin-file", "-P", is_flag=True,
-#              help="This is a plugin file outside the INDEX, but exists in "
-#                   "that location.\nDeveloper option, most will prefer to "
-#                   "use --plugins.")
-# @click.option("--plugins", help="List all available plugins for creation.",
-#              is_flag=True)
-# @click.argument("props", nargs=-1)
-@click.option("--update/--noupdate", "-U/-NU", default=True,
+@click.option("--update/--no-update", "-U/-NU", default=True,
               help="Decide whether or not to update the fetch to the latest "
                    "patch level.")
-# @click.option("--eol/--noeol", "-E/-NE", default=True,
-#               help="Enable or disable EOL checking with upstream.")
-# @click.option("--name", "-n", help="Supply a plugin name for --plugins to "
-#                                    "fetch or use a autocompleted filename"
-#                                    " for --plugin-file.\nAlso accepts full"
-#                                    " path for --plugin-file.")
-# @click.option("--accept/--noaccept", default=False,
-#              help="Accept the plugin's LICENSE agreement.")
+@click.option("--fetch-updates/--no-fetch-updates", default=True,
+              help="Skip fetching release updates")
 # Compat
 @click.option("--http", "-h", default=False,
               help="Have --server define a HTTP server instead.", is_flag=True)
@@ -108,6 +90,11 @@ def validate_count(ctx, param, value):
               help="Specify the files to fetch from the mirror. "
               "(Deprecared: renamed to --file)")
 @click.option("--log-level", "-d", default=None)
+# @click.option("--auth", "-a", default=None, help="Authentication method for "
+#                                                 "HTTP fetching. Valid "
+#                                                 "values: basic, digest")
+# @click.option("--verify/--noverify", "-V/-NV", default=True,
+#               help="Enable or disable verifying SSL cert for HTTP fetching.")
 # def cli(url, files, release, update):
 def cli(**kwargs):
 
@@ -147,10 +134,30 @@ def cli(**kwargs):
         logger.error(f"The release '{release.name}' is not available")
         exit(1)
 
-    logger.log(
-        f"Fetching release '{release.name}' from '{release.mirror_url}'"
-    )
-    release.fetch()
+    if release.fetched:
+        msg = f"Release '{release.name}' is already fetched"
+        if kwargs["update"] is True:
+            logger.log(f"{msg} - updating only")
+        else:
+            logger.log(f"{msg} - skipping download and updates")
+            exit(0)
+    else:
+        logger.log(
+            f"Fetching release '{release.name}' from '{release.mirror_url}'"
+        )
+        release.fetch(auto_update=False, fetch_updates=False)
+
+    if kwargs["fetch_updates"] is True:
+        logger.log("Fetching updates")
+        release.fetch_updates()
+
+    if kwargs["update"] is True:
+        logger.log("Updating release")
+        release.update()
+
+    logger.log('done')
+    exit(0)
+
 
 def is_option_enabled(args, name):
 

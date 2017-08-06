@@ -12,6 +12,7 @@ import StandaloneJailStorage
 
 import subprocess
 import uuid
+import os
 
 
 class Jail:
@@ -35,10 +36,10 @@ class Jail:
             jail=self, logger=self.logger, zfs=self.zfs)
 
         self.jail_state = None
+        self._dataset_name = None
 
         if new is False:
             self.config.read()
-        # self.update_jail_state()
 
     @property
     def zfs_pool_name(self):
@@ -50,9 +51,6 @@ class Jail:
 
         release = self.release
 
-        NullFSBasejailStorage.NullFSBasejailStorage.umount_nullfs(
-            self.storage)
-
         storage_backend = None
 
         if self.config.basejail_type == "zfs":
@@ -61,13 +59,11 @@ class Jail:
         if self.config.basejail_type == "nullfs":
             storage_backend = NullFSBasejailStorage.NullFSBasejailStorage
 
-        # if self.config.type == "clonejail":
-        #   pass
-
         if storage_backend is not None:
             storage_backend.apply(self.storage, release)
 
-        self.config.fstab.write()
+        self.config.fstab.read_file()
+        self.config.fstab.save_with_basedirs()
         self.launch_jail()
 
         if self.config.vnet:
@@ -85,14 +81,47 @@ class Jail:
         self.destroy_jail()
         if self.config.vnet:
             self.stop_vimage_network()
+        self._teardown_mounts()
         self.update_jail_state()
+
+    def force_stop(self):
+
+        successful = True
+
+        try:
+            self.destroy_jail()
+        except Exception as e:
+            successful = False
+            self.logger.warn(str(e))
+
+        if self.config.vnet:
+            try:
+                self.stop_vimage_network()
+            except Exception as e:
+                successful = False
+                self.logger.warn(str(e))
+
+        try:
+            self._teardown_mounts()
+        except Exception as e:
+            successful = False
+            self.logger.warn(str(e))
+
+        try:
+            self.update_jail_state()
+        except Exception as e:
+            successful = False
+            self.logger.warn(str(e))
 
     def create(self, release_name, auto_download=False):
         self.require_jail_not_existing()
 
         # check if release exists
         releases = Releases.Releases(
-            host=self.host, zfs=self.zfs, logger=self.logger)
+            host=self.host,
+            zfs=self.zfs,
+            logger=self.logger
+        )
         try:
             release = releases.find_by_name(release_name)
         except:
@@ -117,7 +146,7 @@ class Jail:
         self.logger.spam(list(self.config.data), jail=self)
 
         self.storage.create_jail_dataset()
-        self.config.fstab.write()
+        self.config.fstab.update()
 
         storage_backend = None
 
@@ -139,12 +168,12 @@ class Jail:
         self.config.data["release"] = release.name
         self.config.save()
 
-    def exec(self, command):
+    def exec(self, command, **kwargs):
         command = [
             "/usr/sbin/jexec",
             self.identifier
         ] + command
-        return helpers.exec(command, logger=self.logger)
+        return helpers.exec(command, logger=self.logger, **kwargs)
 
     def passthru(self, command):
 
@@ -169,8 +198,11 @@ class Jail:
         command = ["jail", "-r"]
         command.append(self.identifier)
 
-        subprocess.check_output(command, shell=False,
-                                stderr=subprocess.DEVNULL)
+        subprocess.check_output(
+            command,
+            shell=False,
+            stderr=subprocess.DEVNULL
+        )
 
     def launch_jail(self):
 
@@ -227,10 +259,11 @@ class Jail:
             f"allow.mount.zfs={self.config.allow_mount_zfs}",
             f"allow.quotas={self.config.allow_quotas}",
             f"allow.socket_af={self.config.allow_socket_af}",
-            f"exec.prestart={self.config.exec_prestart}",
-            f"exec.poststart={self.config.exec_poststart}",
-            f"exec.prestop={self.config.exec_prestop}",
-            f"exec.stop={self.config.exec_stop}",
+            f"exec.prestart='{self.config.exec_prestart}'",
+            f"exec.poststart='{self.config.exec_poststart}'",
+            f"exec.prestop='{self.config.exec_prestop}'",
+            # f"exec.start='{self.config.exec_start}'",
+            f"exec.stop='{self.config.exec_stop}'",
             f"exec.clean={self.config.exec_clean}",
             f"exec.timeout={self.config.exec_timeout}",
             f"stop.timeout={self.config.stop_timeout}",
@@ -264,7 +297,6 @@ class Jail:
                 f"Jail '{humanreadable_name}' failed with exit code {code}",
                 jail=self
             )
-            self.logger.verbose(exc.output, jail=self)
             raise
 
     def start_vimage_network(self):
@@ -384,6 +416,29 @@ class Jail:
         except:
             self.jail_state = None
 
+    def _teardown_mounts(self):
+
+        mountpoints = list(map(
+            lambda mountpoint: f"{self.path}/root{mountpoint}",
+            [
+                "/dev/fd",
+                "/dev",
+                "/proc",
+                "/root/compat/linux/proc"
+            ]
+        ))
+
+        mountpoints += list(map(lambda x: x["destination"],
+                                list(self.config.fstab)))
+
+        for mountpoint in mountpoints:
+            if os.path.isdir(mountpoint):
+                helpers.umount(
+                    mountpoint,
+                    force=True,
+                    ignore_error=True # maybe it was not mounted
+                )
+
     def _resolve_uuid(self, text):
         jails_dataset = self.host.datasets.jails
         for dataset in list(jails_dataset.children):
@@ -453,8 +508,14 @@ class Jail:
     def _get_jail_type(self):
         return self.config.type
 
+    def set_dataset_name(self, value=None):
+        self._dataset_name = value
+
     def _get_dataset_name(self):
-        return f"{self.host.datasets.root.name}/jails/{self.config.uuid}"
+        if self._dataset_name is not None:
+            return self._dataset_name
+        else:
+            return f"{self.host.datasets.root.name}/jails/{self.config.uuid}"
 
     def _get_dataset(self):
         return self.zfs.get_dataset(self._get_dataset_name())
@@ -463,8 +524,7 @@ class Jail:
         return self.dataset.mountpoint
 
     def _get_logfile_path(self):
-        root_mountpoint = self.host.datasets.root.mountpoint
-        return f"{root_mountpoint}/log/{self.identifier}-console.log"
+        return f"{self.host.datasets.logs.mountpoint}-console.log"
 
     def __getattr__(self, key):
         try:

@@ -6,7 +6,6 @@ class Prompts:
     def __init__(self, host=None):
         helpers.init_host(self, host)
 
-    @property
     def release(self):
         i = 0
         default = None

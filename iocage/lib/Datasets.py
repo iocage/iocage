@@ -58,6 +58,10 @@ class Datasets:
     def jails(self):
         return self._get_or_create_dataset("jails")
 
+    @property
+    def logs(self):
+        return self._get_or_create_dataset("log")
+
     def activate(self):
         self.activate_pool(self.root.pool)
 
