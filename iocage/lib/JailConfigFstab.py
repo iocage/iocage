@@ -150,13 +150,15 @@ class JailConfigFstab(set):
         return fstab_basejail_lines
 
     def __str__(self):
-        fstab_lines = list(self)
-        return "\n".join(map(_line_to_string, fstab_lines)) + "\n"
+        return "\n".join(map(
+            _line_to_string,
+            list(self)
+        )) + "\n"
 
-    def __list__(self):
-        fstab_lines = set.__list__(self)
+    def __iter__(self):
+        fstab_lines = list(set.__iter__(self))
         fstab_lines += self.basejail_lines
-        return fstab_lines
+        return iter(fstab_lines)
 
     def __contains__(self, value):
         for entry in self:
