@@ -35,7 +35,6 @@ class JailConfig():
             self.set_uuid(data.uuid)
         except:
             object.__setattr__(self, 'uuid', None)
-            pass
 
         # be aware of iocage-legacy jails for migration
         try:
@@ -98,7 +97,6 @@ class JailConfig():
             self.host_hostname
         except:
             self.host_hostname = value
-            pass
 
     def save(self):
         if not self.legacy:

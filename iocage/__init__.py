@@ -20,8 +20,8 @@ class Releases:
 class Release:
 
    def __new__(*args, **kwargs):
-      import Releases
-      return Releases.Releases(*args[1:], **kwargs)
+      import Release
+      return Release.Release(*args[1:], **kwargs)
 
 
 class Jails:

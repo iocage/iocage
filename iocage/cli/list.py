@@ -100,21 +100,22 @@ def cli(dataset_type, header, _long, remote, plugins,
 
         table.add_rows([table_head] + table_data)
         print(table.draw())
-        return
 
     return
 
 
-def lookup_jail_value(jail, key):
-    jail_keys = [
-        "jid",
-        "name",
-        "running",
-        "ip4.addr",
-        "ip6.addr"
-    ]
+_jail_keys = [
+    "jid",
+    "name",
+    "running",
+    "ip4.addr",
+    "ip6.addr"
+]
 
-    if key in jail_keys:
+
+def lookup_jail_value(jail, key):
+
+    if key in _jail_keys:
         return jail.getattr_str(key)
     else:
         return str(jail.config.__getattr__(key))

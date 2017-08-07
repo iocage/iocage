@@ -78,7 +78,6 @@ def cli(prop, _all, _pool, jail, log_level):
 
     if (prop is None) and (jail_identifier == "") and not _all:
         logger.error("Missing arguments property and jail")
-        raise Exception("foo")
         exit(1)
     elif (prop is not None) and (jail_identifier == ""):
         logger.error("Missing argument property name or -a/--all argument")
@@ -99,6 +98,4 @@ def cli(prop, _all, _pool, jail, log_level):
 
 
 def print_property(key, value):
-    key = str(key)
-    value = str(value)
     print(f"{key}:{value}")

@@ -3,7 +3,7 @@ import os
 
 class Logger:
 
-    COLORS = [
+    COLORS = (
         "black",
         "red",
         "green",
@@ -11,8 +11,8 @@ class Logger:
         "blue",
         "margenta",
         "cyan",
-        "white"
-    ]
+        "white",
+    )
 
     RESET_SEQ = "\033[0m"
     BOLD_SEQ = "\033[1m"
@@ -28,15 +28,15 @@ class Logger:
         "warning": {"color": "yellow"}
     }
 
-    LOG_LEVELS = [
+    LOG_LEVELS = (
         "critical",
         "error",
         "warning",
         "info",
         "verbose",
         "debug",
-        "spam"
-    ]
+        "spam",
+    )
 
     def __init__(self, print_level=None, log_directory="/var/log/iocage"):
         self._print_level = print_level

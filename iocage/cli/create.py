@@ -48,7 +48,7 @@ def validate_count(ctx, param, value):
 
             return int(value)
         except ValueError:
-            logger.log.error(f"{value} is not a valid integer.")
+            logger.error(f"{value} is not a valid integer.")
             exit(1)
     else:
         return int(value)

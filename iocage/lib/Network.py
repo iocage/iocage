@@ -34,7 +34,6 @@ class Network:
 
     def setup(self):
         if self.vnet:
-
             if not self.bridges or len(self.bridges) == 0:
                 raise Exception(
                     "VNET is enabled and requires setting a bridge")

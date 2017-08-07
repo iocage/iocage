@@ -37,13 +37,9 @@ class Datasets:
 
     @property
     def active_pool(self):
-        prop = self.ZFS_POOL_ACTIVE_PROPERTY
         for pool in self.zfs.pools:
-            try:
-                if pool.root_dataset.properties[prop].value == "yes":
-                    return pool
-            except:
-                pass
+            if self._is_pool_active(pool):
+                return pool
         return None
 
     @property
@@ -65,59 +61,63 @@ class Datasets:
     def activate(self):
         self.activate_pool(self.root.pool)
 
-    def activate_pool(self, zfs_pool):
+    def activate_pool(self, pool):
 
-        prop = self.ZFS_POOL_ACTIVE_PROPERTY
-
-        is_pool_already_active = False
-        try:
-            if zfs_pool.root_dataset.properties[prop].value == "yes":
-                is_pool_already_active = True
-        except:
-            pass
-
-        if is_pool_already_active:
-            msg = f"ZFS pool '{zfs_pool.name}' is already active"
+        if self._is_pool_active(pool):
+            msg = f"ZFS pool '{pool.name}' is already active"
             self.logger.warn(msg)
 
-        if not isinstance(zfs_pool, libzfs.ZFSPool):
+        if not isinstance(pool, libzfs.ZFSPool):
             msg = "Cannot activate invalid ZFS pool"
             self.logger.error(msg)
             raise Exception(msg)
 
-        if zfs_pool.status == "UNAVAIL":
-            msg = f"ZFS pool '{zfs_pool.name}' is UNAVAIL"
+        if pool.status == "UNAVAIL":
+            msg = f"ZFS pool '{pool.name}' is UNAVAIL"
             self.logger.error(msg)
             raise Exception(msg)
 
-        for pool in self.zfs.pools:
-            if (pool.name != zfs_pool.name):
-                self._set_zfs_property(pool.root_dataset, prop, "no")
+        other_pools = filter(lambda x: x.name != pool.name, self.zfs.pools)
+        for other_pool in other_pools:
+            self._deactivate_pool(other_pool)
 
-        self._set_zfs_property(zfs_pool.root_dataset, prop, "yes")
-        iocage_dataset_name = f"{zfs_pool.name}/iocage"
+        self._activate_pool(pool)
 
+        self.root = self._get_or_create_dataset(
+            "iocage",
+            pool=pool
+        )
+
+    def _is_pool_active(self, pool):
+        prop = self.ZFS_POOL_ACTIVE_PROPERTY
+        return self._get_pool_property(pool, prop) == "yes"
+
+    def _get_pool_property(self, pool, prop):
         try:
-            dataset = self.zfs.get_dataset(iocage_dataset_name)
+            return pool.root_dataset.properties[prop].value
         except:
-            self.logger.verbose(
-                f"Creating iocage root dataset {iocage_dataset_name}"
-            )
-            zfs_pool.create(iocage_dataset_name, {
-                "mountpoint": "/iocage"
-            }, create_ancestors=True)
-            dataset = self.get_dataset(iocage_dataset_name)
-            dataset.mount()
+            return None
 
-        self.root = dataset
-
-    def _set_zfs_property(self, dataset, name, value):
-
-        current_value = None
+    def _get_dataset_property(self, dataset, prop):
         try:
             current_value = dataset.properties[name].value
         except:
-            pass
+            return None
+
+    def _activate_pool(self, pool):
+        self._set_pool_activation(pool.root_dataset, True)
+
+    def _deactivate_pool(self, pool):
+        self._set_pool_activation(pool.root_dataset, False)
+
+    def _set_pool_activation(self, pool, state):
+        prop = self.ZFS_POOL_ACTIVE_PROPERTY
+        value = "yes" if state is True else "no"
+        self._set_zfs_property(pool.root_dataset, prop, value)
+
+    def _set_zfs_property(self, dataset, name, value):
+
+        current_value = self._get_dataset_property(name)
 
         if current_value != value:
             self.logger.verbose(
