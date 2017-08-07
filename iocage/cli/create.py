@@ -68,8 +68,6 @@ def validate_count(ctx, param, value):
                    " each package in the newly created jail.")
 @click.option("--name", "-n", default=None,
               help="Provide a specific name instead of an UUID for this jail.")
-@click.option("--uuid", "-u", "_uuid", default=None,
-              help="Provide a specific UUID for this jail.")
 @click.option("--basejail", "-b", is_flag=True, default=False,
               help="Set the new jail type to a basejail. Basejails"
                    " mount the specified RELEASE directories"
@@ -80,9 +78,6 @@ def validate_count(ctx, param, value):
 @click.option("--empty", "-e", is_flag=True, default=False,
               help="Create an empty jail used for unsupported or custom"
                    " jails.")
-@click.option("--short", "-s", is_flag=True, default=False,
-              help="Use a short UUID of 8 characters instead of the default"
-                   " 36.")
 @click.option("--no-fetch", is_flag=True, default=False,
               help="Do not automatically fetch releases")
 @click.option("--force", "-f", is_flag=True, default=False,
@@ -90,14 +85,12 @@ def validate_count(ctx, param, value):
 @click.option("--log-level", "-d", default=None)
 @click.argument("props", nargs=-1)
 def cli(release, template, count, props, pkglist, basejail, basejail_type,
-        empty, short, name, _uuid, no_fetch, force, log_level):
+        empty, name, no_fetch, force, log_level):
 
     if log_level is not None:
         logger.print_level = log_level
 
-    if short is True:
-        logger.error("ToDo: Support short UUIDS")
-        exit(1)
+    jail_data = {}
 
     if release is None:
         logger.spam(
@@ -107,32 +100,28 @@ def cli(release, template, count, props, pkglist, basejail, basejail_type,
         release = host.release_version
 
     if name:
-        # noinspection Annotator
-        valid = True if re.match("^[a-zA-Z0-9\._-]+$", name) else False
-        if not valid:
-            logger.error(
-                f"Invalid character in {name}, please remove it."
-            )
-            exit(1)
+        jail_data["name"] = name
 
     release = Release.Release(name=release, logger=logger, host=host, zfs=zfs)
     if not release.fetched:
         name = release.name
         if not release.available:
-            msg = f"The release '{name}' does not exist"
-            logger.error(msg)
+            logger.error(
+                f"The release '{release.name}' does not exist"
+            )
             exit(1)
 
-        msg = f"The release '{name}' is available, but not downloaded yet"
+        msg = (
+            f"The release '{release.name}' is available,"
+            "but not downloaded yet"
+        )
         if no_fetch:
             logger.error(msg)
             exit(1)
         else:
             logger.spam(msg)
-            logger.log("Automatically fetching release '{release}'")
+            logger.log("Automatically fetching release '{release.name}'")
             release.fetch()
-
-    jail_data = {}
 
     if basejail:
         jail_data["basejail"] = True
@@ -163,11 +152,9 @@ def cli(release, template, count, props, pkglist, basejail, basejail_type,
             new=True
         )
 
-        if count > 1:
-            msg = f"Creating Jail {i}/{count}"
-        else:
-            msg = "Creating Jail"
-
-        logger.log(msg)
-
         jail.create(release.name, auto_download=True)
+
+        msg = f"{jail.humanreadable_name} successfully created!"
+        if count > 1:
+             msg += " ({i}/{count})"
+        logger.log(msg)

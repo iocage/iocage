@@ -24,7 +24,7 @@ class Jail:
         helpers.init_host(self, host)
 
         if isinstance(data, str):
-            data = {"uuid": self._resolve_uuid(data)}
+            data = {"id": self._resolve_name(data)}
 
         self.config = JailConfig.JailConfig(
             data=data, jail=self, logger=self.logger)
@@ -135,14 +135,11 @@ class Jail:
 
         self.config.release = release.name
 
-        try:
-            if not isinstance(self.uuid, uuid.UUID):
-                raise
-        except:
-            self.config.uuid = uuid.uuid4()
+        if not self.config.id:
+            self.config.name = str(uuid.uuid4())
 
         self.logger.verbose(
-            f"Creating jail with UUID {self.config.uuid}",
+            f"Creating jail '{self.config.id}'",
             jail=self
         )
         self.logger.spam(dict(self.config.data), jail=self)
@@ -236,7 +233,7 @@ class Jail:
             f"host.domainname={self.config.host_domainname}",
             f"path={self.path}/root",
             # f"securelevel={securelevel}",
-            f"host.hostuuid={self.uuid}",
+            f"host.hostuuid={self.name}",
             f"devfs_ruleset={self.config.devfs_ruleset}",
             f"enforce_statfs={self.config.enforce_statfs}",
             f"children.max={self.config.children_max}",
@@ -441,32 +438,33 @@ class Jail:
                     ignore_error=True  # maybe it was not mounted
                 )
 
-    def _resolve_uuid(self, text):
+    def _resolve_name(self, text):
         jails_dataset = self.host.datasets.jails
         for dataset in list(jails_dataset.children):
-            dataset_uuid = dataset.name[(len(jails_dataset.name) + 1):]
-            if text in dataset_uuid:
-                self.logger.debug(f"Resolved {text} to uuid {dataset_uuid}")
-                return dataset_uuid
+            dataset_name = dataset.name[(len(jails_dataset.name) + 1):]
+            if text in dataset_name:
+                self.logger.debug(f"Resolved {text} to uuid {dataset_name}")
+                return dataset_name
 
         raise Exception(f"No jail matching {text} was found")
 
     def _get_name(self):
-        return self.humanreadable_name
+        return self.config.id
 
     def _get_humanreadable_name(self):
 
         try:
-            return self.config.name
+            uuid.UUID(self.name)
+            return str(self.name)[:8]
         except:
             pass
 
         try:
-            return str(self.config.uuid)[:8]
+            return self.name
         except:
             pass
 
-        raise Exception("This Jail does not have any identifier yet")
+        raise Exception("This Jail has no identifier yet")
 
     def _get_stopped(self):
         return self.running is not True
@@ -487,7 +485,7 @@ class Jail:
             return None
 
     def _get_identifier(self):
-        return f"ioc-{self.uuid}"
+        return f"ioc-{self.config.id}"
 
     def _get_exists(self):
         try:
@@ -495,9 +493,6 @@ class Jail:
             return True
         except:
             return False
-
-    def _get_uuid(self):
-        return self.config.uuid
 
     def _get_release(self):
         return Release.Release(
@@ -517,7 +512,7 @@ class Jail:
         if self._dataset_name is not None:
             return self._dataset_name
         else:
-            return f"{self.host.datasets.root.name}/jails/{self.config.uuid}"
+            return f"{self.host.datasets.root.name}/jails/{self.config.id}"
 
     def _get_dataset(self):
         return self.zfs.get_dataset(self._get_dataset_name())
@@ -530,14 +525,19 @@ class Jail:
 
     def __getattr__(self, key):
         try:
-            method = self.__getattribute__(f"_get_{key}")
+            method = object.__getattribute__(self, f"_get_{key}")
             return method()
         except:
             pass
 
-        if self.jail_state is not None:
+        try:
+            jail_state = object.__getattribute__(self, "jail_state")
+        except:
+            jail_state = None
+
+        if jail_state is not None:
             try:
-                return self.jail_state[key]
+                return jail_state[key]
             except:
                 pass
 

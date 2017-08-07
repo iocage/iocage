@@ -3,11 +3,6 @@ import json
 
 class JailConfigJSON:
 
-    def __init__(self, data={}):
-        self.options_json = {
-            "path": f"{self.uuid}"
-        }
-
     def toJSON(self):
         data = self.data
         for key in data.keys():

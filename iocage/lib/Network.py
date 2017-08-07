@@ -121,7 +121,7 @@ class Network:
 
     def __generate_mac_bytes(self):
         m = md5()
-        m.update(self.jail.uuid.encode("utf-8"))
+        m.update(self.jail.id.encode("utf-8"))
         m.update(self.nic.encode("utf-8"))
         prefix = self.jail.config.mac_prefix
         return f"{prefix}{m.hexdigest()[0:12-len(prefix)]}"

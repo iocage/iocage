@@ -44,16 +44,18 @@ class Storage:
         return self.jail.host.datasets.root.pool
 
     def clone_release(self, release):
-        self.clone_zfs_dataset(release.root_dataset.name,
-                               self.jail_root_dataset_name)
+        self.clone_zfs_dataset(
+            release.root_dataset.name,
+            self.jail_root_dataset_name
+        )
         self.logger.verbose(
-            f"Cloned release '{release.name}' to {self.jail.name}",
+            f"Cloned release '{release.name}' to {self.jail.humanreadable_name}",
             jail=self.jail
         )
 
     def clone_zfs_dataset(self, source, target):
 
-        snapshot_name = f"{source}@{self.jail.uuid}"
+        snapshot_name = f"{source}@{self.jail.name}"
 
         # delete target dataset if it already exists
         try:

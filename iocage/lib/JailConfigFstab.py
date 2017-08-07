@@ -39,6 +39,7 @@ class JailConfigFstab(set):
 
             try:
                 line, comment = line.split("#", maxsplit=1)
+                comment = comment.strip("# ")
                 ignored_comment = JailConfigFstab.AUTO_COMMENT_IDENTIFIER
                 if ignore_auto_created and (comment == ignored_comment):
                     break
@@ -162,7 +163,7 @@ class JailConfigFstab(set):
 
     def __contains__(self, value):
         for entry in self:
-            if value.destination == entry.destionation:
+            if value["destination"] == entry["destination"]:
                 return True
             else:
                 return False
@@ -180,6 +181,6 @@ def _line_to_string(line):
 
     if line["comment"] is not None:
         comment = line["comment"]
-        output += f"# {comment}"
+        output += f" # {comment}"
 
     return output

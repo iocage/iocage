@@ -1,3 +1,6 @@
+from uuid import UUID
+import re
+
 import JailConfigJSON
 import JailConfigInterfaces
 import JailConfigAddresses
@@ -6,9 +9,6 @@ import JailConfigFstab
 import JailConfigLegacy
 import JailConfigZFS
 import helpers
-
-from uuid import UUID
-
 
 class JailConfig():
 
@@ -30,11 +30,15 @@ class JailConfig():
             self.jail = None
             self.fstab = None
 
+        data_keys = data.keys()
+
         # the UUID is used in many other variables and needs to be set first
-        try:
-            self.set_uuid(data.uuid)
-        except:
-            object.__setattr__(self, 'uuid', None)
+        if "name" in data_keys:
+            self.name = data["name"]
+        elif "uuid" in data_keys:
+            self.uuid = data["uuid"]
+        else:
+            object.__setattr__(self, 'id', None)   
 
         # be aware of iocage-legacy jails for migration
         try:
@@ -89,15 +93,6 @@ class JailConfig():
             # pass when there is no handler for the notifying propery
             pass
 
-    def _set_name(self, value):
-
-        self.name = value
-
-        try:
-            self.host_hostname
-        except:
-            self.host_hostname = value
-
     def save(self):
         if not self.legacy:
             self.save_json()
@@ -107,10 +102,35 @@ class JailConfig():
     def save_json(self):
         JailConfigJSON.JailConfigJSON.save(self)
 
-    def set_uuid(self, uuid):
-        if isinstance(uuid, str):
-            uuid = str(UUID(uuid))
-        object.__setattr__(self, 'uuid', uuid)
+    def _set_name(self, name):
+
+        allowed_characters_pattern = "([^A-z0-9\\._\\-]|\\^)"
+        invalid_characters = re.findall(allowed_characters_pattern, name)
+        if len(invalid_characters) > 0:
+            msg = (
+                f"Invalid character in name: "
+                " ".join(invalid_characters)
+            )
+            self.logger.error(msg)
+            raise Exception(msg)
+
+        name_pattern = f"^[A-z0-9]([A-z0-9\\._\\-]+[A-z0-9])*$"
+        if not re.match(name_pattern, name):
+            msg = f"Names have to begin and end with an alphanumeric character"
+            self.logger.error(msg)
+            raise Exception(msg)
+
+        self.__setattr__("id", name)
+
+        try:
+            self.host_hostname
+        except:
+            self.host_hostname = name
+
+        self.logger.spam(
+            f"Set jail name to {name}",
+            jail=self.jail
+        )
 
     def _get_type(self):
         current_type = None
@@ -352,7 +372,7 @@ class JailConfig():
         return self.jail.humanreadable_name
 
     def _default_host_hostuuid(self):
-        return self.uuid
+        return self.id
 
     def _default_host_domainname(self):
         return "none"
