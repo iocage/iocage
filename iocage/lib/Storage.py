@@ -48,8 +48,9 @@ class Storage:
             release.root_dataset.name,
             self.jail_root_dataset_name
         )
+        jail_name = self.jail.humanreadable_name
         self.logger.verbose(
-            f"Cloned release '{release.name}' to {self.jail.humanreadable_name}",
+            f"Cloned release '{release.name}' to {jail_name}",
             jail=self.jail
         )
 
@@ -103,7 +104,7 @@ class Storage:
                 jail=self.jail
             )
             self._create_dataset(parent)
-            pool.create(parent, {}, create_ancestors=True)
+            self._pool.create(parent, {}, create_ancestors=True)
             snapshot.clone(target)
 
         target_dataset = self.zfs.get_dataset(target)

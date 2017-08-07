@@ -100,7 +100,7 @@ class Datasets:
 
     def _get_dataset_property(self, dataset, prop):
         try:
-            current_value = dataset.properties[name].value
+            return dataset.properties[prop].value
         except:
             return None
 

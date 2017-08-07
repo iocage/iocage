@@ -98,7 +98,9 @@ def cli(dataset_type, header, _long, remote, plugins,
 
         for jail in jails.list():
             if jail_matches_filters(jail, jail_filters):
-                table_data.append([lookup_jail_value(jail, x) for x in columns])
+                table_data.append(
+                    [lookup_jail_value(jail, x) for x in columns]
+                )
 
         if sort_index is not None:
             table_data.sort(key=lambda x: x[sort_index])
@@ -156,7 +158,8 @@ def split_filter_values(value):
     for block in escaped_comma_blocks:
         n = len(values)
         if n > 0:
-            values[n-1] += f",{block[0]}"
+            index = n - 1
+            values[index] += f",{block[0]}"
         else:
             values.append(block[0])
         if len(block) > 1:

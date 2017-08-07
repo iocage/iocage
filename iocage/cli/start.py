@@ -47,13 +47,11 @@ def cli(rc, jails, log_level):
 
     for jail_identifier in jails:
         jail = Jail.Jail(jail_identifier, logger=logger)
-        logger.log(f"Starting jail '{jail.humanreadable_name}'")
+        logger.log(f"Starting {jail.humanreadable_name}")
         try:
             jail.start()
         except Exception as e:
-            raise
-            logger.error(str(e))
             exit(1)
 
-        logger.log(f"running as JID {jail.jid}")
+        logger.log(f"{jail.humanreadable_name} running as JID {jail.jid}")
         exit(0)

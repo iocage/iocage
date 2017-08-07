@@ -22,8 +22,6 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """create module for the cli."""
-import re
-
 import click
 
 import Release
@@ -156,5 +154,5 @@ def cli(release, template, count, props, pkglist, basejail, basejail_type,
 
         msg = f"{jail.humanreadable_name} successfully created!"
         if count > 1:
-             msg += " ({i}/{count})"
+            msg += " ({i}/{count})"
         logger.log(msg)

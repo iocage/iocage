@@ -1,4 +1,3 @@
-from uuid import UUID
 import re
 
 import JailConfigJSON
@@ -9,6 +8,7 @@ import JailConfigFstab
 import JailConfigLegacy
 import JailConfigZFS
 import helpers
+
 
 class JailConfig():
 
@@ -38,7 +38,7 @@ class JailConfig():
         elif "uuid" in data_keys:
             self.name = data["uuid"]
         else:
-            object.__setattr__(self, 'id', None)   
+            object.__setattr__(self, 'id', None)
 
         # be aware of iocage-legacy jails for migration
         try:
@@ -350,7 +350,7 @@ class JailConfig():
 
     def _set_tags(self, value):
         if isinstance(value, str):
-            self.tags = split
+            self.tags = value.split(",")
         elif isinstance(value, list):
             self.tags = set(value)
         elif isinstance(value, set):
