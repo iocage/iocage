@@ -36,7 +36,7 @@ class JailConfig():
         if "name" in data_keys:
             self.name = data["name"]
         elif "uuid" in data_keys:
-            self.uuid = data["uuid"]
+            self.name = data["uuid"]
         else:
             object.__setattr__(self, 'id', None)   
 
@@ -335,20 +335,28 @@ class JailConfig():
         return JailConfigList(self.data["login_flags"].split())
 
     def _set_login_flags(self, value):
-
         if value is None:
             try:
                 del self.data["login_flags"]
             except:
                 pass
         else:
-
             if isinstance(value, list):
                 self.data["login_flags"] = " ".join(value)
             elif isinstance(value, str):
                 self.data["login_flags"] = value
             else:
                 raise Exception("Invalid login_flags")
+
+    def _set_tags(self, value):
+        if isinstance(value, str):
+            self.tags = split
+        elif isinstance(value, list):
+            self.tags = set(value)
+        elif isinstance(value, set):
+            self.tags = value
+        else:
+            raise Exception("Invalid tags")
 
     def _default_login_flags(self):
         return JailConfigList(["-f", "root"])
@@ -466,6 +474,9 @@ class JailConfig():
 
     def _default_mount_fdescfs(self):
         return "1"
+
+    def _default_tags(self):
+        return []
 
     def __create_special_property_resolver(self):
 
