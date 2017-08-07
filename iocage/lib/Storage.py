@@ -44,7 +44,7 @@ class Storage:
         return self.jail.host.datasets.root.pool
 
     def clone_release(self, release):
-        self.clone_zfs_dataset(release.dataset.name,
+        self.clone_zfs_dataset(release.root_dataset.name,
                                self.jail_root_dataset_name)
         self.logger.verbose(
             f"Cloned release '{release.name}' to {self.jail.name}",
@@ -57,6 +57,10 @@ class Storage:
 
         # delete target dataset if it already exists
         try:
+            self.logger.verbose(
+                f"Deleting existing dataset {target}",
+                jail=self.jail
+            )
             existing_dataset = self.zfs.get_dataset(target)
             existing_dataset.umount()
             existing_dataset.delete()
@@ -72,6 +76,10 @@ class Storage:
             pass
 
         if existing_snapshot:
+            self.logger.verbose(
+                f"Deleting existing snapshot {snapshot_name}",
+                jail=self.jail
+            )
             existing_snapshot.delete()
 
         # snapshot release
@@ -80,16 +88,28 @@ class Storage:
 
         # clone snapshot
         try:
+            self.logger.verbose(
+                f"Cloning snapshot {snapshot_name} to {target}",
+                jail=self.jail
+            )
             snapshot.clone(target)
         except:
             parent = "/".join(target.split("/")[:-1])
-            pool = self.jail.host.datasets.root.pool
+            self.logger.debug(
+                "Cloning was unsuccessful -"
+                " trying to create the dataset first",
+                jail=self.jail
+            )
+            self._create_dataset(parent)
             pool.create(parent, {}, create_ancestors=True)
             snapshot.clone(target)
 
         target_dataset = self.zfs.get_dataset(target)
         target_dataset.mount()
-        self.logger.log(f"Cloned to {target}")
+        self.logger.verbose(
+            f"Successfully cloned {source} to {target}",
+            jail=self.jail
+        )
 
     def create_jail_dataset(self):
         self._create_dataset(self.jail.dataset_name)

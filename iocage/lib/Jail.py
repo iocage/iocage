@@ -145,7 +145,7 @@ class Jail:
             f"Creating jail with UUID {self.config.uuid}",
             jail=self
         )
-        self.logger.spam(list(self.config.data), jail=self)
+        self.logger.spam(dict(self.config.data), jail=self)
 
         self.storage.create_jail_dataset()
         self.config.fstab.update()
