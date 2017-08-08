@@ -42,14 +42,14 @@ class JailConfigFstab(set):
                 comment = comment.strip("# ")
                 ignored_comment = JailConfigFstab.AUTO_COMMENT_IDENTIFIER
                 if ignore_auto_created and (comment == ignored_comment):
-                    break
+                    continue
             except:
                 comment = None
 
             line = line.strip()
 
             if line == "":
-                break
+                continue
 
             fragments = line.split()
             if len(fragments) != 6:
@@ -57,7 +57,7 @@ class JailConfigFstab(set):
                     f"Invalid line in fstab file {self.fstab_file_path}"
                     " - skipping line"
                 )
-                break
+                continue
 
             destination = os.path.abspath(fragments[1])
 
