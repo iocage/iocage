@@ -38,6 +38,8 @@ class Logger:
         "spam",
     )
 
+    INDENT_PREFIX = "  "
+
     def __init__(self, print_level=None, log_directory="/var/log/iocage"):
         self._print_level = print_level
         self._set_log_directory(log_directory)
@@ -63,34 +65,59 @@ class Logger:
             self._create_log_directory()
         self.log(f"Log directory set to '{log_directory}'", level="spam")
 
-    def log(self, message, level="info", jail=None):
-        self._print(
+    def log(self, *args, **kwargs):
+        
+        args = list(args)
+
+        if ("message" not in kwargs) and (len(args) > 0):
+            kwargs["message"] = args.pop(0)
+
+        if ("level" not in kwargs) and (len(args) > 0):
+            kwargs["level"] = args.pop(0)
+
+        if not "level" in kwargs:
+            kwargs["level"] = self.default_print_level
+
+        self._print(**kwargs)
+        # self._write(**kwargs)
+
+    def verbose(self, message, jail=None, indent=0):
+        self.log(
             message=message,
-            level=level,
-            jail=jail
+            level="verbose",
+            jail=jail,
+            indent=indent
         )
-        # self._write(
-        #     message=message,
-        #     level=level,
-        #     jail=jail
-        # )
 
-    def verbose(self, message, jail=None):
-        self.log(message, level="verbose", jail=jail)
+    def error(self,
+              message,
+              jail=None,
+              indent=0):
 
-    def error(self, message, jail=None):
-        self.log(message, level="error", jail=jail)
+        self.log(message, level="error", jail=jail, indent=indent)
 
-    def warn(self, message, jail=None):
-        self.log(message, level="warning", jail=jail)
+    def warn(self,
+             message,
+             jail=None,
+             indent=0):
 
-    def debug(self, message, jail=None):
-        self.log(message, level="debug", jail=jail)
+        self.log(message, level="warning", jail=jail, indent=indent)
 
-    def spam(self, message, jail=None):
-        self.log(message, level="spam", jail=jail)
+    def debug(self,
+              message,
+              jail=None,
+              indent=0):
 
-    def _print(self, message, level, jail=None):
+        self.log(message, level="debug", jail=jail, indent=indent)
+
+    def spam(self,
+             message,
+             jail=None,
+             indent=0):
+
+        self.log(message, level="spam", jail=jail, indent=indent)
+
+    def _print(self, message, level, jail=None, indent=0):
         if self.print_level is False:
             return
 
@@ -103,7 +130,13 @@ class Logger:
         except:
             color = "none"
 
-        print(self._colorize(message, color))
+        message = self._indent(message, indent)
+        message = self._colorize(message, color)
+        print(message)
+
+    def _indent(self, message, level):
+        indent = Logger.INDENT_PREFIX * level
+        return f"{indent}{message}"
 
     # ToDo: support file logging
     # def _write(self, message, level, jail=None):

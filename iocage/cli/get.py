@@ -28,9 +28,6 @@ import Logger
 import Jail
 import Host
 
-logger = Logger.Logger(print_level=False)
-host = Host.Host(logger=logger)
-
 
 @click.command(context_settings=dict(
     max_content_width=400, ), name="get", help="Gets the specified property.")
@@ -44,7 +41,8 @@ host = Host.Host(logger=logger)
 def cli(prop, _all, _pool, jail, log_level):
     """Get a list of jails and print the property."""
 
-    logger.print_level = log_level
+    logger = Logger.Logger(print_level=log_level)
+    host = Host.Host(logger=logger)
 
     if _pool is True:
         try:

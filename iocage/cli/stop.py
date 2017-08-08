@@ -27,7 +27,6 @@ import click
 import Jail
 import Logger
 
-logger = Logger.Logger(print_level=False)
 
 __rootcmd__ = True
 
@@ -43,8 +42,7 @@ def cli(rc, jails, log_level):
     Looks for the jail supplied and passes the uuid, path and configuration
     location to stop_jail.
     """
-
-    logger.print_level = log_level
+    logger = Logger.Logger(print_level=log_level)
 
     for jail_identifier in jails:
         jail = Jail.Jail(jail_identifier, logger=logger)

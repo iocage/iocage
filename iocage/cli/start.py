@@ -27,7 +27,6 @@ import click
 import Jail
 import Logger
 
-logger = Logger.Logger(print_level=False)
 
 __rootcmd__ = True
 
@@ -42,8 +41,7 @@ def cli(rc, jails, log_level):
     """
     Starts Jails
     """
-
-    logger.print_level = log_level
+    logger = Logger.Logger(print_level=log_level)
 
     for jail_identifier in jails:
         jail = Jail.Jail(jail_identifier, logger=logger)

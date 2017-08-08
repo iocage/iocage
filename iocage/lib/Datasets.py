@@ -58,10 +58,10 @@ class Datasets:
     def logs(self):
         return self._get_or_create_dataset("log")
 
-    def activate(self):
-        self.activate_pool(self.root.pool)
+    def activate(self, mountpoint=None):
+        self.activate_pool(self.root.pool, mountpoint)
 
-    def activate_pool(self, pool):
+    def activate_pool(self, pool, mountpoint=None):
 
         if self._is_pool_active(pool):
             msg = f"ZFS pool '{pool.name}' is already active"
@@ -83,9 +83,16 @@ class Datasets:
 
         self._activate_pool(pool)
 
+        root_dataset_args = {
+            "pool": pool
+        }
+
+        if mountpoint is not None:
+            root_dataset_args["mountpoint"] = mountpoint
+
         self.root = self._get_or_create_dataset(
             "iocage",
-            pool=pool
+            *root_dataset_args
         )
 
     def _is_pool_active(self, pool):

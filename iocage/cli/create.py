@@ -30,12 +30,8 @@ import Logger
 import Host
 import helpers
 
-zfs = helpers.get_zfs()
-
-logger = Logger.Logger()
 __rootcmd__ = True
 
-host = Host.Host(logger=logger, zfs=zfs)
 
 
 def validate_count(ctx, param, value):
@@ -84,6 +80,10 @@ def validate_count(ctx, param, value):
 @click.argument("props", nargs=-1)
 def cli(release, template, count, props, pkglist, basejail, basejail_type,
         empty, name, no_fetch, force, log_level):
+
+    zfs = helpers.get_zfs()
+    logger = Logger.Logger()
+    host = Host.Host(logger=logger, zfs=zfs)
 
     if log_level is not None:
         logger.print_level = log_level
@@ -140,6 +140,7 @@ def cli(release, template, count, props, pkglist, basejail, basejail_type,
                 logger.error(f"Invalid property {prop}")
                 exit(1)
 
+    errors = False
     for i in range(count):
 
         jail = Jail.Jail(
@@ -150,9 +151,15 @@ def cli(release, template, count, props, pkglist, basejail, basejail_type,
             new=True
         )
 
-        jail.create(release.name, auto_download=True)
+        msg_suffix = " ({i}/{count})" if count > 1 else ""
 
-        msg = f"{jail.humanreadable_name} successfully created!"
-        if count > 1:
-            msg += " ({i}/{count})"
-        logger.log(msg)
+        try:
+            jail.create(release.name, auto_download=True)
+            msg = f"{jail.humanreadable_name} successfully created!{msg_suffix}"
+            logger.log(msg)
+        except:
+            errors = True
+            msg = f"{jail.humanreadable_name} could not be created!{msg_suffix}"
+            logger.warn(msg)
+
+    exit(1 if errors is True else 0)

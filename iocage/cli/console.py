@@ -28,8 +28,6 @@ import click
 import Jail
 import Logger
 
-logger = Logger.Logger(print_level=False)
-
 __rootcmd__ = True
 
 
@@ -40,6 +38,7 @@ def cli(jail, log_level):
     """
     Runs jexec to login into the specified jail.
     """
+    logger = Logger.Logger(print_level=False)
     logger.print_level = log_level
 
     jail = Jail.Jail(jail, logger=logger)

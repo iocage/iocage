@@ -29,11 +29,8 @@ import Host
 import Logger
 import Prompts
 
-__rootcmd__ = True
 
-logger = Logger.Logger()
-host = Host.Host(logger=logger)
-prompts = Prompts.Prompts(host=host)
+__rootcmd__ = True
 
 
 def validate_count(ctx, param, value):
@@ -63,6 +60,7 @@ def validate_count(ctx, param, value):
 #         host.distribution.releases
 #     )))
 
+host = None
 
 @click.command(context_settings=dict(
     max_content_width=400, ),
@@ -98,8 +96,13 @@ def validate_count(ctx, param, value):
 # def cli(url, files, release, update):
 def cli(**kwargs):
 
+    logger = Logger.Logger()
+
     if kwargs["log_level"] is not None:
         logger.print_level = kwargs["log_level"]
+
+    host = Host.Host(logger=logger)
+    prompts = Prompts.Prompts(host=host)
 
     release_input = kwargs["release"]
 

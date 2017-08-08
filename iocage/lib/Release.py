@@ -15,6 +15,12 @@ import Jail
 
 class Release:
 
+    DEFAULT_RC_CONF_SERVICES = {
+        "netif": False,
+        "sendmail": False,
+        "sendmail_submit": False
+    }
+
     def __init__(self, name=None,
                  dataset=None,
                  host=None,
@@ -207,12 +213,13 @@ class Release:
 
         release_changed = False
 
-        if self.fetched:
-            self._require_empty_root_dir()
+        if not self.fetched:
+            self._clean_dataset()
             self._create_dataset()
             self._ensure_dataset_mounted()
             self._fetch_assets()
             self._extract_assets()
+            self._create_default_rcconf()
             release_changed = True
         else:
             self.logger.warn(
@@ -301,10 +308,11 @@ class Release:
         dataset.snapshot(snapshot_name, recursive=True)
 
         jail = Jail.Jail({
-            "uuid": uuid.uuid4(),
+            "uuid": str(uuid.uuid4()),
             "basejail": False,
             "allow_mount_nullfs": "1",
-            "release": self.name
+            "release": self.name,
+            "securelevel": "0"
         },
             logger=self.logger,
             zfs=self.zfs,
@@ -419,11 +427,22 @@ class Release:
                 urllib.request.urlretrieve(url, path)
                 self.logger.verbose(f"{url} was saved to {path}")
 
-    def _require_empty_root_dir(self):
-        if not self._is_root_dir_empty:
-            msg = f"The directory '{self.root_dir}' is not empty"
-            self.logger.error(msg)
-            raise Exception(msg)
+    def _clean_dataset(self):
+
+        if not os.path.isdir(self.root_dir):
+            return
+
+        root_dir_index = os.listdir(self.root_dir)
+        if not len(root_dir_index) > 0:
+            return
+
+        self.logger.verbose(
+            f"Remove existing fragments from {self.root_dir}"
+        )
+        for directory in root_dir_index:
+            asset_path = os.path.join(self.root_dir, directory)
+            self.logger.spam(f"Purging {asset_path}")
+            self._rmtree(asset_path)
 
     def read_hashes(self):
         # yes, this can read HardenedBSD and FreeBSD hash files
@@ -469,6 +488,26 @@ class Release:
                 self.logger.verbose(
                     f"Asset {asset} was extracted to {self.root_dir}"
                 )
+
+    def _create_default_rcconf(self):
+        file = f"{self.root_dir}/etc/rc.conf"
+        
+        content = "\n".join(map(
+            lambda key: self._generate_default_rcconf_line(key),
+            Release.DEFAULT_RC_CONF_SERVICES.keys()
+        ))
+
+        with open(file, "w") as f:
+            f.write(content)
+            f.truncate()
+            f.close()
+
+    def _generate_default_rcconf_line(self, service_name):
+        if Release.DEFAULT_RC_CONF_SERVICES[service_name] is True:
+            state = "YES"
+        else:
+            state = "NO"
+        return f"enable_{service_name}=\"{state}\""
 
     def _update_name_from_dataset(self):
         if self.dataset:

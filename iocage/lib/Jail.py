@@ -142,7 +142,10 @@ class Jail:
             f"Creating jail '{self.config.id}'",
             jail=self
         )
-        self.logger.spam(dict(self.config.data), jail=self)
+
+        for key in self.config.data.keys():
+            msg = f"{key} = {self.config.data[key]}"
+            self.logger.spam(msg, jail=self, indent=1)
 
         self.storage.create_jail_dataset()
         self.config.fstab.update()
@@ -261,7 +264,7 @@ class Jail:
             f"exec.prestart={self.config.exec_prestart}",
             f"exec.poststart={self.config.exec_poststart}",
             f"exec.prestop={self.config.exec_prestop}",
-            f"exec.start={self.config.exec_start}",
+            #f"exec.start={self.config.exec_start}",
             f"exec.stop={self.config.exec_stop}",
             f"exec.clean={self.config.exec_clean}",
             f"exec.timeout={self.config.exec_timeout}",

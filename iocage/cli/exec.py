@@ -27,7 +27,6 @@ import click
 import Jail
 import Logger
 
-logger = Logger.Logger(print_level=False)
 
 __rootcmd__ = True
 
@@ -43,7 +42,7 @@ __rootcmd__ = True
 def cli(command, jail, host_user, jail_user, log_level):
     """Runs the command given inside the specified jail as the supplied
     user."""
-    logger.print_level = log_level
+    logger = Logger.Logger(print_level=log_level)
 
     if jail.startswith("-"):
         logger.error("Please specify a jail first!")

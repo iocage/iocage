@@ -27,7 +27,6 @@ import click
 import Jail
 import Logger
 
-logger = Logger.Logger(print_level=False)
 
 __rootcmd__ = True
 
@@ -40,7 +39,7 @@ __rootcmd__ = True
 def cli(props, jail, log_level):
     """Get a list of jails and print the property."""
 
-    logger.print_level = log_level
+    logger = Logger.Logger(print_level=log_level)
 
     jail = Jail.Jail(jail, logger=logger)
     for prop in props:
