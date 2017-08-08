@@ -66,7 +66,7 @@ class Logger:
         self.log(f"Log directory set to '{log_directory}'", level="spam")
 
     def log(self, *args, **kwargs):
-        
+
         args = list(args)
 
         if ("message" not in kwargs) and (len(args) > 0):
@@ -75,7 +75,7 @@ class Logger:
         if ("level" not in kwargs) and (len(args) > 0):
             kwargs["level"] = args.pop(0)
 
-        if not "level" in kwargs:
+        if "level" not in kwargs:
             kwargs["level"] = "info"
 
         self._print(**kwargs)

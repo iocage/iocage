@@ -493,7 +493,7 @@ class Release:
 
     def _create_default_rcconf(self):
         file = f"{self.root_dir}/etc/rc.conf"
-        
+
         content = "\n".join(map(
             lambda key: self._generate_default_rcconf_line(key),
             Release.DEFAULT_RC_CONF_SERVICES.keys()

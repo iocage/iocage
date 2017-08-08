@@ -92,7 +92,7 @@ class Datasets:
 
         self.root = self._get_or_create_dataset(
             "iocage",
-            *root_dataset_args
+            **root_dataset_args
         )
 
     def _is_pool_active(self, pool):
@@ -124,7 +124,7 @@ class Datasets:
 
     def _set_zfs_property(self, dataset, name, value):
 
-        current_value = self._get_dataset_property(name)
+        current_value = self._get_dataset_property(dataset, name)
 
         if current_value != value:
             self.logger.verbose(
@@ -133,7 +133,11 @@ class Datasets:
             )
             dataset.properties[name] = libzfs.ZFSUserProperty(value)
 
-    def _get_or_create_dataset(self, name, root_name=None, pool=None):
+    def _get_or_create_dataset(self,
+                               name,
+                               root_name=None,
+                               pool=None,
+                               mountpoint=None):
 
         try:
             return self.datasets[name]
@@ -152,6 +156,11 @@ class Datasets:
         except:
             pool.create(name, {})
             dataset = self.zfs.get_dataset(name)
+
+            if mountpoint is not None:
+                mountpoint_property = libzfs.ZFSUserProperty(mountpoint)
+                dataset.properties["mountpoint"] = mountpoint_property
+
             dataset.mount()
         self._datasets[name] = dataset
 

@@ -13,7 +13,7 @@
 # THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
 # IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANYw
 # DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
 # DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
 # OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
@@ -93,8 +93,6 @@ def cli(dataset_type, header, _long, remote, plugins,
         except:
             sort_index = None
 
-        jail_filters = list(map(lambda x: x.split("=", maxsplit=1), filters))
-
         for jail in jails.list(filters=filters):
             table_data.append(
                 [_lookup_jail_value(jail, x) for x in columns]
@@ -114,4 +112,3 @@ def _lookup_jail_value(jail, key):
         return jail.getattr_str(key)
     else:
         return str(jail.config.__getattr__(key))
-

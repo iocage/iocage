@@ -33,11 +33,71 @@ import iocage.lib.iocage as ioc
 __rootcmd__ = True
 
 
+def child_test(zfs, iocroot, name, _type, force=False):
+    """Tests for dependent children"""
+    if _type == "jail":
+        path = f"{iocroot}/jails/{name}/root"
+    else:
+        # RELEASE
+        path = f"{iocroot}/releases/{name}"
+
+    # While we would like to catch the zfs exception, it still prints to the
+    #  display, this is the next best test.
+    if os.path.isdir(path):
+        children = zfs.get_dataset_by_path(path).snapshots_recursive
+    else:
+        if not force:
+            ioc_common.logit({
+                "level"  : "WARNING",
+                "message": "Partial UUID/NAME supplied, cannot check for "
+                           "dependant jails."
+            })
+            if not click.confirm("\nProceed?"):
+                return
+            children = []
+        else:
+            return
+
+    _children = []
+
+    for child in children:
+        _name = child.name.rsplit("@", 1)[-1]
+        if _type == "jail":
+            path = path.replace(name, _name)
+            if os.path.isdir(path):
+                # We only want jails, not every snap they have.
+                _children.append(f"  {_name}\n")
+        else:
+            _children.append(f"  {_name}\n")
+
+    sort = ioc_common.ioc_sort("", "name", data=_children)
+    _children.sort(key=sort)
+
+    if len(_children) != 0:
+        if not force:
+            ioc_common.logit({
+                "level"  : "WARNING",
+                "message": f"\n{name} has dependent jails,"
+                           " use --force to destroy: "
+            })
+
+            ioc_common.logit({
+                "level"  : "WARNING",
+                "message": "".join(_children)
+            })
+            exit(1)
+        else:
+            return
+
+
 @click.command(name="destroy", help="Destroy specified jail(s).")
 @click.option("--force", "-f", default=False, is_flag=True,
               help="Destroy the jail without warnings or more user input.")
 @click.option("--release", "-r", default=False, is_flag=True,
               help="Destroy a specified RELEASE dataset.")
+@click.option("--download", "-d", default=False, is_flag=True,
+              help="Destroy the download dataset of the specified RELEASE as"
+                   " well.")
 @click.argument("jails", nargs=-1)
 def cli(force, release, download, jails, recursive):
     """Destroys the jail's 2 datasets and the snapshot from the RELEASE."""

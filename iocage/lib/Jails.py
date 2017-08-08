@@ -28,8 +28,6 @@ class Jails:
 
     def list(self, filters=None):
 
-        use_shortcut = False
-
         if len(filters) == 1:
             chars = "+*="
             name = filters[0]
@@ -103,7 +101,6 @@ class Jails:
                 return False
         return True
 
-
     def _matches_filter(self, filter_value, value):
         escaped_characters = [".", "$", "^", "(", ")"]
         for character in escaped_characters:
@@ -116,13 +113,11 @@ class Jails:
         match = re.match(pattern, value)
         return match is not None
 
-
     def _lookup_jail_value(self, jail, key):
         if key in Jails.JAIL_KEYS:
             return jail.getattr_str(key)
         else:
             return str(jail.config.__getattr__(key))
-
 
     def _split_filter_values(self, value):
         values = []
@@ -139,7 +134,8 @@ class Jails:
                 values.append(block[0])
             if len(block) > 1:
                 values += block[1:]
-        return values    
+        return values
+
 
 def _split_filter_map(x):
     try:
