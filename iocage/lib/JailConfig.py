@@ -475,6 +475,9 @@ class JailConfig():
     def _default_mount_fdescfs(self):
         return "1"
 
+    def _default_securelevel(self):
+        return "2"
+
     def _default_tags(self):
         return []
 
