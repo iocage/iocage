@@ -18,7 +18,9 @@ class Release:
     DEFAULT_RC_CONF_SERVICES = {
         "netif": False,
         "sendmail": False,
-        "sendmail_submit": False
+        "sendmail_submit": False,
+        "sendmail_msp_queue": False,
+        "sendmail_outbound": False
     }
 
     def __init__(self, name=None,
@@ -495,7 +497,7 @@ class Release:
         content = "\n".join(map(
             lambda key: self._generate_default_rcconf_line(key),
             Release.DEFAULT_RC_CONF_SERVICES.keys()
-        ))
+        )) + "\n"
 
         with open(file, "w") as f:
             f.write(content)
@@ -507,7 +509,7 @@ class Release:
             state = "YES"
         else:
             state = "NO"
-        return f"enable_{service_name}=\"{state}\""
+        return f"{service_name}_enable=\"{state}\""
 
     def _update_name_from_dataset(self):
         if self.dataset:

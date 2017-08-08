@@ -38,7 +38,7 @@ def init_datasets(self, datasets=None):
 
 
 def init_logger(self, logger=None):
-    if logger:
+    if logger is not None:
         object.__setattr__(self, 'logger', logger)
     else:
         new_logger = Logger.Logger()

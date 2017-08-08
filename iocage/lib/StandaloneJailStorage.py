@@ -18,5 +18,5 @@ class StandaloneJailStorage:
         except:
             pass
 
-        self.logger.verbose("Clone the release once to the root dataset")
+        self.logger.verbose("Cloning the release once to the root dataset")
         self.clone_release(release)

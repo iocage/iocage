@@ -112,10 +112,10 @@ class Datasets:
             return None
 
     def _activate_pool(self, pool):
-        self._set_pool_activation(pool.root_dataset, True)
+        self._set_pool_activation(pool, True)
 
     def _deactivate_pool(self, pool):
-        self._set_pool_activation(pool.root_dataset, False)
+        self._set_pool_activation(pool, False)
 
     def _set_pool_activation(self, pool, state):
         prop = self.ZFS_POOL_ACTIVE_PROPERTY

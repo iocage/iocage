@@ -76,7 +76,7 @@ class Logger:
             kwargs["level"] = args.pop(0)
 
         if not "level" in kwargs:
-            kwargs["level"] = self.default_print_level
+            kwargs["level"] = "info"
 
         self._print(**kwargs)
         # self._write(**kwargs)

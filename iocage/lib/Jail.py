@@ -27,7 +27,10 @@ class Jail:
             data = {"id": self._resolve_name(data)}
 
         self.config = JailConfig.JailConfig(
-            data=data, jail=self, logger=self.logger)
+            data=data,
+            jail=self,
+            logger=self.logger
+        )
 
         self.networks = []
 
@@ -83,6 +86,17 @@ class Jail:
             self.stop_vimage_network()
         self._teardown_mounts()
         self.update_jail_state()
+
+    def destroy(self, force=False):
+
+        self.update_jail_state()
+
+        if self.running is True and force is True:
+            self.stop(force=True)
+        else:
+            self.require_jail_stopped()
+
+        self.storage.delete_dataset_recursive(self.dataset)
 
     def force_stop(self):
 
@@ -264,7 +278,7 @@ class Jail:
             f"exec.prestart={self.config.exec_prestart}",
             f"exec.poststart={self.config.exec_poststart}",
             f"exec.prestop={self.config.exec_prestop}",
-            #f"exec.start={self.config.exec_start}",
+            f"exec.start={self.config.exec_start}",
             f"exec.stop={self.config.exec_stop}",
             f"exec.clean={self.config.exec_clean}",
             f"exec.timeout={self.config.exec_timeout}",

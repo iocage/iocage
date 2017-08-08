@@ -24,7 +24,6 @@
 """list module for the cli."""
 import click
 import texttable
-import re
 
 import Jails
 import Host
@@ -96,11 +95,10 @@ def cli(dataset_type, header, _long, remote, plugins,
 
         jail_filters = list(map(lambda x: x.split("=", maxsplit=1), filters))
 
-        for jail in jails.list():
-            if jail_matches_filters(jail, jail_filters):
-                table_data.append(
-                    [lookup_jail_value(jail, x) for x in columns]
-                )
+        for jail in jails.list(filters=filters):
+            table_data.append(
+                [_lookup_jail_value(jail, x) for x in columns]
+            )
 
         if sort_index is not None:
             table_data.sort(key=lambda x: x[sort_index])
@@ -111,57 +109,9 @@ def cli(dataset_type, header, _long, remote, plugins,
     return
 
 
-_jail_keys = [
-    "jid",
-    "name",
-    "running",
-    "ip4.addr",
-    "ip6.addr"
-]
-
-
-def jail_matches_filters(jail, filters):
-    for filter_key, filter_value_string in filters:
-        for filter_value in split_filter_values(filter_value_string):
-            jail_value = lookup_jail_value(jail, filter_key)
-            if not _matches_filter(filter_value, jail_value):
-                return False
-    return True
-
-
-def _matches_filter(filter_value, value):
-    escaped_characters = [".", "$", "^", "(", ")"]
-    for character in escaped_characters:
-        filter_value = filter_value.replace(character, f"\\{character}")
-    filter_value = filter_value.replace("$", "\\$")
-    filter_value = filter_value.replace(".", "\\.")
-    filter_value = filter_value.replace("*", ".*")
-    filter_value = filter_value.replace("+", ".+")
-    pattern = f"^{filter_value}$"
-    match = re.match(pattern, value)
-    return match is not None
-
-
-def lookup_jail_value(jail, key):
-    if key in _jail_keys:
+def _lookup_jail_value(jail, key):
+    if key in Jails.Jails.JAIL_KEYS:
         return jail.getattr_str(key)
     else:
         return str(jail.config.__getattr__(key))
 
-
-def split_filter_values(value):
-    values = []
-    escaped_comma_blocks = map(
-        lambda block: block.split(","),
-        value.split("\\,")
-    )
-    for block in escaped_comma_blocks:
-        n = len(values)
-        if n > 0:
-            index = n - 1
-            values[index] += f",{block[0]}"
-        else:
-            values.append(block[0])
-        if len(block) > 1:
-            values += block[1:]
-    return values

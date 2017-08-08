@@ -80,7 +80,7 @@ class JailConfig():
         except:
             pass
 
-        self.logger.verbose("No configuration was found")
+        self.logger.debug("No configuration was found")
 
     def update_special_property(self, name, new_property_handler=None):
 
@@ -104,6 +104,16 @@ class JailConfig():
 
     def _set_name(self, name):
 
+        try:
+            # We do not want to set the same name twice.
+            # This can occur when the Jail is initialized
+            # with it's name and the same name is read from
+            # the configuration
+            if self.id == name:
+                return
+        except:
+            pass
+
         allowed_characters_pattern = "([^A-z0-9\\._\\-]|\\^)"
         invalid_characters = re.findall(allowed_characters_pattern, name)
         if len(invalid_characters) > 0:
@@ -112,7 +122,6 @@ class JailConfig():
                 " ".join(invalid_characters)
             )
             self.logger.error(msg)
-            raise Exception(msg)
 
         name_pattern = f"^[A-z0-9]([A-z0-9\\._\\-]+[A-z0-9])*$"
         if not re.match(name_pattern, name):
@@ -133,8 +142,9 @@ class JailConfig():
         )
 
     def _get_type(self):
-        current_type = None
 
+        # ToDo: Implement template jails or remove
+        current_type = None
         try:
             if (self.data["type"] == "jail") or (self.data["type"] == ""):
                 current_type = "jail"
@@ -597,5 +607,6 @@ class JailConfig():
 
 
 class JailConfigList(list):
+
     def __str__(self):
         return " ".join(self)

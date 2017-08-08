@@ -33,7 +33,6 @@ import helpers
 __rootcmd__ = True
 
 
-
 def validate_count(ctx, param, value):
     """Takes a string, removes the commas and returns an int."""
     if isinstance(value, str):
@@ -151,15 +150,14 @@ def cli(release, template, count, props, pkglist, basejail, basejail_type,
             new=True
         )
 
-        msg_suffix = " ({i}/{count})" if count > 1 else ""
-
+        suffix = " ({i}/{count})" if count > 1 else ""
         try:
             jail.create(release.name, auto_download=True)
-            msg = f"{jail.humanreadable_name} successfully created!{msg_suffix}"
+            msg = f"{jail.humanreadable_name} successfully created!{suffix}"
             logger.log(msg)
         except:
             errors = True
-            msg = f"{jail.humanreadable_name} could not be created!{msg_suffix}"
+            msg = f"{jail.humanreadable_name} could not be created!{suffix}"
             logger.warn(msg)
 
     exit(1 if errors is True else 0)

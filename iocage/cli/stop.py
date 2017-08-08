@@ -24,7 +24,7 @@
 """stop module for the cli."""
 import click
 
-import Jail
+import Jails
 import Logger
 
 
@@ -43,9 +43,9 @@ def cli(rc, jails, log_level):
     location to stop_jail.
     """
     logger = Logger.Logger(print_level=log_level)
+    ioc_jails = Jails.Jails(logger=logger)
 
-    for jail_identifier in jails:
-        jail = Jail.Jail(jail_identifier, logger=logger)
+    for jail in ioc_jails.list(filters=jails):
         logger.log(f"Stopping jail {jail.humanreadable_name}")
         try:
             jail.stop()

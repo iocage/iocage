@@ -24,7 +24,7 @@
 """start module for the cli."""
 import click
 
-import Jail
+import Jails
 import Logger
 
 
@@ -41,10 +41,11 @@ def cli(rc, jails, log_level):
     """
     Starts Jails
     """
-    logger = Logger.Logger(print_level=log_level)
 
-    for jail_identifier in jails:
-        jail = Jail.Jail(jail_identifier, logger=logger)
+    logger = Logger.Logger(print_level=log_level)
+    ioc_jails = Jails.Jails(logger=logger)
+
+    for jail in ioc_jails.list(filters=jails):
         logger.log(f"Starting {jail.humanreadable_name}")
         try:
             jail.start()

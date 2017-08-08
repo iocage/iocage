@@ -33,20 +33,6 @@ import Prompts
 __rootcmd__ = True
 
 
-def validate_count(ctx, param, value):
-    """Takes a string, removes the commas and returns an int."""
-    if isinstance(value, str):
-        try:
-            value = value.replace(",", "")
-
-            return int(value)
-        except ValueError:
-            msg = f"{value} is not a valid integer"
-            logger.error(msg)
-            exit(1)
-    else:
-        return int(value)
-
 # ToDo: remove disabled feature
 # def _prettify_release_names(x):
 #     if x.name == host.release_version:
@@ -59,8 +45,10 @@ def validate_count(ctx, param, value):
 #         _prettify_release_names,
 #         host.distribution.releases
 #     )))
+logger = Logger.Logger()
+host = Host.Host()
+prompts = Prompts.Prompts(host=host)
 
-host = None
 
 @click.command(context_settings=dict(
     max_content_width=400, ),
@@ -96,13 +84,8 @@ host = None
 # def cli(url, files, release, update):
 def cli(**kwargs):
 
-    logger = Logger.Logger()
-
     if kwargs["log_level"] is not None:
         logger.print_level = kwargs["log_level"]
-
-    host = Host.Host(logger=logger)
-    prompts = Prompts.Prompts(host=host)
 
     release_input = kwargs["release"]
 

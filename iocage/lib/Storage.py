@@ -54,18 +54,42 @@ class Storage:
             jail=self.jail
         )
 
+    def delete_dataset_recursive(self, dataset, delete_snapshots=True):
+
+        for child in dataset.children:
+            self.delete_dataset_recursive(child)
+
+        if dataset.mountpoint is not None:
+            self.logger.spam("Unmounting {dataset.name}")
+            dataset.umount()
+
+        origin = None
+        if delete_snapshots is False:
+            origin_property = dataset.properties["origin"]
+            if origin_property.value != "":
+                origin = origin_property
+
+        self.logger.verbose("Deleting dataset {dataset.name}")
+        dataset.delete()
+
+        if origin is not None:
+            self.logger.verbose("Deleting snapshot {origin}")
+            origin_snapshot = self.zfs.get_snapshot(origin)
+            origin_snapshot.delete()
+
     def clone_zfs_dataset(self, source, target):
 
         snapshot_name = f"{source}@{self.jail.name}"
 
         # delete target dataset if it already exists
         try:
+            existing_dataset = self.zfs.get_dataset(target)
             self.logger.verbose(
                 f"Deleting existing dataset {target}",
                 jail=self.jail
             )
-            existing_dataset = self.zfs.get_dataset(target)
-            existing_dataset.umount()
+            if existing_dataset.mountpoint is not None:
+                existing_dataset.umount()
             existing_dataset.delete()
             del existing_dataset
         except:
