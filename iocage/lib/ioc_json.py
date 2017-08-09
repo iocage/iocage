@@ -590,7 +590,7 @@ class IOCJson(object):
     @staticmethod
     def json_get_version():
         """Sets the iocage configuration version."""
-        version = "8"
+        version = "9"
         return version
 
     def json_check_config(self, conf, default=False):
@@ -796,6 +796,14 @@ class IOCJson(object):
             # New jail creation
             pass
 
+        # Version 9 keys
+        try:
+            dhcp = conf["dhcp"]
+            bpf = conf["bpf"]
+        except KeyError:
+            dhcp = "off"
+            bpf = "no"
+
         # Set all keys, even if it's the same value.
         conf["CONFIG_VERSION"] = self.json_get_version()
 
@@ -909,7 +917,7 @@ class IOCJson(object):
             "shmsize"              : ("off", "on"),
             "wallclock"            : ("off", "on"),
             # Custom properties
-            "bpf"                  : ("off", "on"),
+            "bpf"                  : ("no", "yes"),
             "dhcp"                 : ("off", "on"),
             "boot"                 : ("off", "on"),
             "notes"                : ("string",),
@@ -1228,7 +1236,7 @@ class IOCJson(object):
                 "shmsize"              : "off",
                 "wallclock"            : "off",
                 "type"                 : "jail",
-                "bpf"                  : "off",
+                "bpf"                  : "no",
                 "dhcp"                 : "off",
                 "boot"                 : "off",
                 "notes"                : "none",

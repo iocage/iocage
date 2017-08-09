@@ -112,6 +112,29 @@ class IOCStart(object):
         sysvmsg = self.conf["sysvmsg"]
         sysvsem = self.conf["sysvsem"]
         sysvshm = self.conf["sysvshm"]
+        bpf = self.conf["bpf"]
+        dhcp = self.conf["dhcp"]
+        prop_missing = False
+
+        if dhcp == "on":
+            if bpf != "yes":
+                msg = f"{self.uuid} requires bpf=yes!"
+                prop_missing = True
+            elif self.conf["vnet"] != "on":
+                # We are already setting a vnet variable below.
+                msg = f"{self.uuid} requires vnet=on!"
+                prop_missing = True
+
+            if prop_missing:
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": msg
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+
+            self.__check_dhcp__()
+            devfs_ruleset = "5"
 
         if mount_procfs == "1":
             su.Popen(["mount", "-t", "procfs", "proc", self.path +
@@ -205,6 +228,9 @@ class IOCStart(object):
         else:
             net = ["vnet"]
             vnet = True
+
+        if bpf == "yes":
+            self.__generate_bpf_ruleset()
 
         msg = f"* Starting {self.uuid}"
         iocage.lib.ioc_common.logit({
@@ -398,9 +424,14 @@ class IOCStart(object):
 
             try:
                 membermtu = find_bridge_mtu(bridge)
+                dhcp = self.get("dhcp")
 
                 ifaces = []
                 for addrs, gw, ipv6 in net_configs:
+                    if dhcp == "on":
+                        # Spoofing IP address, it doesn't matter with DHCP
+                        addrs = f"{nic}|''"
+
                     if addrs == 'none':
                         continue
 
@@ -502,6 +533,7 @@ class IOCStart(object):
         :param defaultgw: The gateway IP to assign to the nic
         :return: If an error occurs it returns the error. Otherwise, it's None
         """
+        dhcp = self.get("dhcp")
 
         # Crude check to see if it's a IPv6 address
         if ipv6:
@@ -512,13 +544,24 @@ class IOCStart(object):
             route = ["add", "default", defaultgw]
 
         try:
-            # Jail side
-            iocage.lib.ioc_common.checkoutput(
-                ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
-                 "ifconfig"] + ifconfig, stderr=su.STDOUT)
-            iocage.lib.ioc_common.checkoutput(
-                ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
-                 "route"] + route, stderr=su.STDOUT)
+            if dhcp == "off":
+                # Jail side
+                iocage.lib.ioc_common.checkoutput(
+                    ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
+                     "ifconfig"] + ifconfig, stderr=su.STDOUT)
+                iocage.lib.ioc_common.checkoutput(
+                    ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
+                     "route"] + route, stderr=su.STDOUT)
+            else:
+                if ipv6:
+                    # Requires either rtsol or ISC dhclient, the user likely
+                    #  knows which they want, DHCP is for IP4 in iocage.
+                    return
+
+                iocage.lib.ioc_common.checkoutput(
+                    ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
+                     "service", "dhclient", "start", iface],
+                    stderr=su.STDOUT)
         except su.CalledProcessError as err:
             return f"{err.output.decode('utf-8')}".rstrip()
         else:
@@ -580,11 +623,68 @@ class IOCStart(object):
 
         return mac_a, mac_b
 
+    @staticmethod
+    def __generate_bpf_ruleset():
+        """
+        Will add the bpf ruleset to the hosts /etc/devfs.rules if it doesn't
+        exist, otherwise it will do nothing.
+        """
+        devfs_cmd = ["service", "devfs", "restart"]
+        bpf_ruleset = """
+## IOCAGE -- Add DHCP to ruleset 4
+[devfsrules_jail_dhcp=5]
+add include $devfsrules_hide_all
+add include $devfsrules_unhide_basic
+add include $devfsrules_unhide_login
+add path zfs unhide
+add path 'bpf*' unhide
+"""
+        with open("/etc/devfs.rules", "a+") as devfs:
+            devfs.seek(0, 0)
+
+            for line in devfs:
+                if "## IOCAGE -- Add DHCP to ruleset 4" in line:
+                    break
+            else:
+                # Not found, else is ran if break statement isn't executed
+                devfs.write(bpf_ruleset)
+                su.check_call(devfs_cmd, stdout=su.PIPE, stderr=su.PIPE)
+
+    def __check_dhcp__(self):
+        nic_list = self.get("interfaces").split(",")
+        nics = list(map(lambda x: x.split(":")[0], nic_list))
+        _rc = open(f"{self.path}/root/etc/rc.conf").readlines()
+
+        for nic in nics:
+            replaced = False
+
+            for no, line in enumerate(_rc):
+                if f"ifconfig_{nic}" in line:
+                    _rc[no] = f'ifconfig_{nic}="DHCP"\n'
+                    replaced = True
+
+            if not replaced:
+                # They didn't have any interface in their rc.conf,
+                # fresh jail perhaps?
+                _rc.insert(0, f'ifconfig_{nic}="DHCP"\n')
+
+            with open(f"{self.path}/root/etc/rc.conf", "w") as rc:
+                for line in _rc:
+                    rc.write(line)
+
 
 def find_bridge_mtu(bridge):
     try:
-        su.check_call(["ifconfig", bridge, "create"], stdout=su.PIPE,
-                      stderr=su.PIPE)
+        default_iface_cmd = ["netstat", "-f", "inet", "-nrW"]
+        default_iface = su.check_output(default_iface_cmd)
+        default_if = ""
+
+        for line in default_iface.splitlines():
+            if b"default" in line:
+                default_if = line.split()[5].decode()
+
+        su.check_call(["ifconfig", bridge, "create", "addm", default_if],
+                      stdout=su.PIPE, stderr=su.PIPE)
     except su.CalledProcessError:
         # The bridge already exists, this is just best effort.
         pass
