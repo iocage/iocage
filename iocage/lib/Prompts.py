@@ -1,10 +1,10 @@
-import helpers
+import iocage.lib.helpers
 
 
 class Prompts:
 
     def __init__(self, host=None):
-        helpers.init_host(self, host)
+        iocage.lib.helpers.init_host(self, host)
 
     def release(self):
         i = 0

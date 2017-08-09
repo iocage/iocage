@@ -25,9 +25,9 @@
 import click
 import texttable
 
-import Jails
-import Host
-import Logger
+import iocage.lib.Jails
+import iocage.lib.Host
+import iocage.lib.Logger
 
 
 @click.command(name="list", help="List a specified dataset type, by default"
@@ -53,9 +53,9 @@ import Logger
 def cli(dataset_type, header, _long, remote, plugins,
         _sort, quick, log_level, output, filters):
 
-    logger = Logger.Logger(print_level=log_level)
-    host = Host.Host(logger=logger)
-    jails = Jails.Jails(logger=logger)
+    logger = lib.Logger.Logger(print_level=log_level)
+    host = lib.Host.Host(logger=logger)
+    jails = lib.Jails.Jails(logger=logger)
 
     if dataset_type is None:
         dataset_type = "all"
@@ -108,7 +108,7 @@ def cli(dataset_type, header, _long, remote, plugins,
 
 
 def _lookup_jail_value(jail, key):
-    if key in Jails.Jails.JAIL_KEYS:
+    if key in lib.Jails.Jails.JAIL_KEYS:
         return jail.getattr_str(key)
     else:
         return str(jail.config.__getattr__(key))

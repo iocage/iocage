@@ -25,8 +25,8 @@
 
 import click
 
-import Jail
-import Logger
+import iocage.lib.Jail
+import iocage.lib.Logger
 
 __rootcmd__ = True
 
@@ -38,10 +38,10 @@ def cli(jail, log_level):
     """
     Runs jexec to login into the specified jail.
     """
-    logger = Logger.Logger(print_level=False)
+    logger = lib.Logger.Logger(print_level=False)
     logger.print_level = log_level
 
-    jail = Jail.Jail(jail, logger=logger)
+    jail = lib.Jail.Jail(jail, logger=logger)
     jail.update_jail_state()
 
     if not jail.exists:

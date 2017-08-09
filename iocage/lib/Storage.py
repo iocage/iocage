@@ -1,4 +1,4 @@
-import helpers
+import iocage.lib.helpers
 
 import pwd
 import grp
@@ -13,8 +13,8 @@ class Storage:
                  safe_mode=True,
                  logger=None):
 
-        helpers.init_logger(self, logger)
-        helpers.init_zfs(self, zfs)
+        iocage.lib.helpers.init_logger(self, logger)
+        iocage.lib.helpers.init_zfs(self, zfs)
 
         self.jail = jail
 
@@ -181,7 +181,7 @@ class Storage:
             self._unmount_local(dataset)
 
             # ToDo: bake jail feature into py-libzfs
-            helpers.exec(
+            iocage.lib.helpers.exec(
                 ["zfs", "jail", self.jail.identifier, dataset.name])
 
             if dataset.properties['mountpoint']:
@@ -192,7 +192,7 @@ class Storage:
     def _mount_procfs(self):
         try:
             if self.jail.config.mount_procfs:
-                helpers.exec([
+                iocage.lib.helpers.exec([
                     "mount"
                     "-t",
                     "procfs"
@@ -217,7 +217,7 @@ class Storage:
 
         try:
             if self.jail.config.mount_procfs:
-                helpers.exec([
+                iocage.lib.helpers.exec([
                     "mount"
                     "-t",
                     "linprocfs"

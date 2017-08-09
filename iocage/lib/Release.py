@@ -1,4 +1,4 @@
-import helpers
+import iocage.lib.helpers
 
 import os
 import tarfile
@@ -10,7 +10,7 @@ import uuid
 import datetime
 from urllib.parse import urlparse
 
-import Jail
+import iocage.lib.Jail
 
 
 class Release:
@@ -32,9 +32,9 @@ class Release:
                  auto_fetch_updates=True,
                  auto_update=True):
 
-        helpers.init_logger(self, logger)
-        helpers.init_zfs(self, zfs)
-        helpers.init_host(self, host)
+        iocage.lib.helpers.init_logger(self, logger)
+        iocage.lib.helpers.init_zfs(self, zfs)
+        iocage.lib.helpers.init_host(self, host)
 
         self.name = name
         self._hashes = None
@@ -292,7 +292,7 @@ class Release:
             )
 
         self.logger.verbose(f"Fetching updates for release '{self.name}'")
-        helpers.exec([
+        iocage.lib.helpers.exec([
             f"{self.release_updates_dir}/freebsd-update.sh",
             "-d",
             release_update_download_dir,
@@ -309,7 +309,7 @@ class Release:
         # create snapshot before the changes
         dataset.snapshot(snapshot_name, recursive=True)
 
-        jail = Jail.Jail({
+        jail = iocage.lib.Jail.Jail({
             "uuid": str(uuid.uuid4()),
             "basejail": False,
             "allow_mount_nullfs": "1",
@@ -527,7 +527,7 @@ class Release:
         base_dataset = self.base_dataset
         pool = self.host.datasets.base.pool
 
-        for folder in helpers.get_basedir_list():
+        for folder in iocage.lib.helpers.get_basedir_list():
             try:
                 pool.create(
                     f"{base_dataset.name}/{folder}",

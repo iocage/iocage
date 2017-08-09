@@ -24,11 +24,11 @@
 """create module for the cli."""
 import click
 
-import Release
-import Jail
-import Logger
-import Host
-import helpers
+import iocage.lib.Release
+import iocage.lib.Jail
+import iocage.lib.Logger
+import iocage.lib.Host
+import iocage.lib.helpers
 
 __rootcmd__ = True
 
@@ -41,7 +41,7 @@ def validate_count(ctx, param, value):
 
             return int(value)
         except ValueError:
-            logger = Logger.Logger()
+            logger = lib.Logger.Logger()
             logger.error(f"{value} is not a valid integer.")
             exit(1)
     else:
@@ -81,9 +81,9 @@ def validate_count(ctx, param, value):
 def cli(release, template, count, props, pkglist, basejail, basejail_type,
         empty, name, no_fetch, force, log_level):
 
-    zfs = helpers.get_zfs()
-    logger = Logger.Logger()
-    host = Host.Host(logger=logger, zfs=zfs)
+    zfs = lib.helpers.get_zfs()
+    logger = lib.Logger.Logger()
+    host = lib.Host.Host(logger=logger, zfs=zfs)
 
     if log_level is not None:
         logger.print_level = log_level
@@ -100,7 +100,7 @@ def cli(release, template, count, props, pkglist, basejail, basejail_type,
     if name:
         jail_data["name"] = name
 
-    release = Release.Release(name=release, logger=logger, host=host, zfs=zfs)
+    release = lib.Release.Release(name=release, logger=logger, host=host, zfs=zfs)
     if not release.fetched:
         name = release.name
         if not release.available:
@@ -143,7 +143,7 @@ def cli(release, template, count, props, pkglist, basejail, basejail_type,
     errors = False
     for i in range(count):
 
-        jail = Jail.Jail(
+        jail = lib.Jail.Jail(
             jail_data,
             logger=logger,
             host=host,

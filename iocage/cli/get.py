@@ -24,9 +24,9 @@
 """get module for the cli."""
 import click
 
-import Logger
-import Jail
-import Host
+import iocage.lib.Logger
+import iocage.lib.Jail
+import iocage.lib.Host
 
 
 @click.command(context_settings=dict(
@@ -41,8 +41,8 @@ import Host
 def cli(prop, _all, _pool, jail, log_level):
     """Get a list of jails and print the property."""
 
-    logger = Logger.Logger(print_level=log_level)
-    host = Host.Host(logger=logger)
+    logger = lib.Logger.Logger(print_level=log_level)
+    host = lib.Host.Host(logger=logger)
 
     if _pool is True:
         try:
@@ -58,7 +58,7 @@ def cli(prop, _all, _pool, jail, log_level):
         jail_identifier = jail
 
     jail_identifier = jail
-    jail = Jail.Jail(
+    jail = lib.Jail.Jail(
         jail_identifier,
         host=host,
         logger=logger

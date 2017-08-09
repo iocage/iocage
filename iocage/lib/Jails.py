@@ -1,8 +1,8 @@
 import libzfs
 import re
 
-import Jail
-import helpers
+import iocage.lib.Jail
+import iocage.lib.helpers
 
 
 class Jails:
@@ -21,9 +21,9 @@ class Jails:
                  logger=None,
                  zfs=None):
 
-        helpers.init_logger(self, logger)
-        helpers.init_zfs(self, zfs)
-        helpers.init_host(self, host)
+        iocage.lib.helpers.init_logger(self, logger)
+        iocage.lib.helpers.init_zfs(self, zfs)
+        iocage.lib.helpers.init_host(self, host)
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
 
     def list(self, filters=None):
@@ -32,7 +32,7 @@ class Jails:
             chars = "+*="
             name = filters[0]
             if not any(x in name for x in chars):
-                single_jail = Jail.Jail(
+                single_jail = iocage.lib.Jail.Jail(
                     {
                         "name": name
                     },
@@ -88,7 +88,7 @@ class Jails:
         jail_datasets = list(jails_dataset.children)
 
         return list(map(
-            lambda x: Jail.Jail({
+            lambda x: iocage.lib.Jail.Jail({
                 "name": x.name.split("/").pop()
             }, logger=self.logger, host=self.host, zfs=self.zfs),
             jail_datasets

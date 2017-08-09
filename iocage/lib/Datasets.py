@@ -1,4 +1,4 @@
-import helpers
+import iocage.lib.helpers
 
 import libzfs
 
@@ -8,8 +8,8 @@ class Datasets:
     ZFS_POOL_ACTIVE_PROPERTY = "org.freebsd.ioc:active"
 
     def __init__(self, root=None, pool=None, zfs=None, logger=None):
-        helpers.init_logger(self, logger)
-        helpers.init_zfs(self, zfs)
+        iocage.lib.helpers.init_logger(self, logger)
+        iocage.lib.helpers.init_zfs(self, zfs)
 
         self._datasets = {}
 

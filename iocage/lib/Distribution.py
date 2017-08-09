@@ -1,5 +1,5 @@
-import Release
-import helpers
+import iocage.lib.Release
+import iocage.lib.helpers
 
 import os
 import platform
@@ -19,8 +19,8 @@ class Distribution:
     mirror_link_pattern = r"a href=\"([A-z0-9\-_\.]+)/\""
 
     def __init__(self, host, zfs=None, logger=None):
-        helpers.init_logger(self, logger)
-        helpers.init_zfs(self, zfs)
+        iocage.lib.helpers.init_logger(self, logger)
+        iocage.lib.helpers.init_zfs(self, zfs)
         self.host = host
         self.available_releases = None
 
@@ -58,7 +58,7 @@ class Distribution:
         charset = resource.headers.get_content_charset()
         response = resource.read().decode(charset if charset else "UTF-8")
 
-        available_releases = list(map(lambda x: Release.Release(
+        available_releases = list(map(lambda x: iocage.lib.Release.Release(
             name=x,
             host=self.host,
             zfs=self.zfs,

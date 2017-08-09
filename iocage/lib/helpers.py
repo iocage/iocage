@@ -1,6 +1,6 @@
-import Host
-import Datasets
-import Logger
+import iocage.lib.Host
+import iocage.lib.Datasets
+import iocage.lib.Logger
 
 import libzfs
 import subprocess
@@ -27,21 +27,21 @@ def init_host(self, host=None):
         except:
             logger = None
 
-        self.host = Host.Host(logger=logger)
+        self.host = iocage.lib.Host.Host(logger=logger)
 
 
 def init_datasets(self, datasets=None):
     if datasets:
         self.datasets = datasets
     else:
-        self.datasets = Datasets.Datasets()
+        self.datasets = iocage.lib.Datasets.Datasets()
 
 
 def init_logger(self, logger=None):
     if logger is not None:
         object.__setattr__(self, 'logger', logger)
     else:
-        new_logger = Logger.Logger()
+        new_logger = iocage.lib.Logger.Logger()
         object.__setattr__(self, 'logger', new_logger)
 
 

@@ -24,8 +24,8 @@
 """set module for the cli."""
 import click
 
-import Jail
-import Logger
+import iocage.lib.Jail
+import iocage.lib.Logger
 
 
 __rootcmd__ = True
@@ -39,9 +39,9 @@ __rootcmd__ = True
 def cli(props, jail, log_level):
     """Get a list of jails and print the property."""
 
-    logger = Logger.Logger(print_level=log_level)
+    logger = lib.Logger.Logger(print_level=log_level)
 
-    jail = Jail.Jail(jail, logger=logger)
+    jail = lib.Jail.Jail(jail, logger=logger)
     for prop in props:
 
         if _is_setter_property(prop):

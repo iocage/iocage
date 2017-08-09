@@ -1,14 +1,14 @@
-import JailConfig
-import Network
-import Storage
-import Releases
-import Release
-import helpers
+import iocage.lib.JailConfig
+import iocage.lib.Network
+import iocage.lib.Storage
+import iocage.lib.Releases
+import iocage.lib.Release
+import iocage.lib.helpers
 
-import ZFSBasejailStorage
-import ZFSShareStorage
-import NullFSBasejailStorage
-import StandaloneJailStorage
+import iocage.lib.ZFSBasejailStorage
+import iocage.lib.ZFSShareStorage
+import iocage.lib.NullFSBasejailStorage
+import iocage.lib.StandaloneJailStorage
 
 import subprocess
 import uuid
@@ -19,14 +19,14 @@ class Jail:
 
     def __init__(self, data={}, zfs=None, host=None, logger=None, new=False):
 
-        helpers.init_logger(self, logger)
-        helpers.init_zfs(self, zfs)
-        helpers.init_host(self, host)
+        iocage.lib.helpers.init_logger(self, logger)
+        iocage.lib.helpers.init_zfs(self, zfs)
+        iocage.lib.helpers.init_host(self, host)
 
         if isinstance(data, str):
             data = {"id": self._resolve_name(data)}
 
-        self.config = JailConfig.JailConfig(
+        self.config = iocage.lib.JailConfig.JailConfig(
             data=data,
             jail=self,
             logger=self.logger
@@ -34,7 +34,7 @@ class Jail:
 
         self.networks = []
 
-        self.storage = Storage.Storage(
+        self.storage = iocage.lib.Storage.Storage(
             auto_create=True, safe_mode=False,
             jail=self, logger=self.logger, zfs=self.zfs)
 
@@ -57,10 +57,10 @@ class Jail:
         storage_backend = None
 
         if self.config.basejail_type == "zfs":
-            storage_backend = ZFSBasejailStorage.ZFSBasejailStorage
+            storage_backend = iocage.lib.ZFSBasejailStorage.ZFSBasejailStorage
 
         if self.config.basejail_type == "nullfs":
-            storage_backend = NullFSBasejailStorage.NullFSBasejailStorage
+            storage_backend = iocage.lib.NullFSBasejailStorage.NullFSBasejailStorage
 
         if storage_backend is not None:
             storage_backend.apply(self.storage, release)
@@ -133,7 +133,7 @@ class Jail:
         self.require_jail_not_existing()
 
         # check if release exists
-        releases = Releases.Releases(
+        releases = iocage.lib.Releases.Releases(
             host=self.host,
             zfs=self.zfs,
             logger=self.logger
@@ -169,14 +169,14 @@ class Jail:
         if self.config.type == "basejail":
 
             if self.config.basejail_type == "nullfs":
-                storage_backend = NullFSBasejailStorage.NullFSBasejailStorage
+                storage_backend = iocage.lib.NullFSBasejailStorage.NullFSBasejailStorage
 
             elif self.config.basejail_type == "zfs":
-                storage_backend = ZFSBasejailStorage.ZFSBasejailStorage
+                storage_backend = iocage.lib.ZFSBasejailStorage.ZFSBasejailStorage
 
         elif self.config.type == "clonejail":
             self.config.cloned_release = release.name
-            storage_backend = StandaloneJailStorage.StandaloneJailStorage
+            storage_backend = iocage.lib.StandaloneJailStorage.StandaloneJailStorage
 
         if storage_backend is not None:
             storage_backend.setup(self.storage, release)
@@ -189,14 +189,14 @@ class Jail:
             "/usr/sbin/jexec",
             self.identifier
         ] + command
-        return helpers.exec(command, logger=self.logger, **kwargs)
+        return iocage.lib.helpers.exec(command, logger=self.logger, **kwargs)
 
     def passthru(self, command):
 
         if isinstance(command, str):
             command = [command]
 
-        return helpers.exec_passthru(
+        return iocage.lib.helpers.exec_passthru(
             [
                 "/usr/sbin/jexec",
                 self.identifier
@@ -301,7 +301,7 @@ class Jail:
 
         humanreadable_name = self.humanreadable_name
         try:
-            helpers.exec(command, logger=self.logger)
+            iocage.lib.helpers.exec(command, logger=self.logger)
             self.update_jail_state()
             self.logger.verbose(
                 f"Jail '{humanreadable_name}' started with JID {self.jid}",
@@ -334,7 +334,7 @@ class Jail:
             except:
                 ipv6_addresses = []
 
-            net = Network.Network(
+            net = iocage.lib.Network.Network(
                 jail=self,
                 nic=nic,
                 ipv4_addresses=ipv4_addresses,
@@ -449,7 +449,7 @@ class Jail:
 
         for mountpoint in mountpoints:
             if os.path.isdir(mountpoint):
-                helpers.umount(
+                iocage.lib.helpers.umount(
                     mountpoint,
                     force=True,
                     ignore_error=True  # maybe it was not mounted
@@ -512,7 +512,7 @@ class Jail:
             return False
 
     def _get_release(self):
-        return Release.Release(
+        return iocage.lib.Release.Release(
             name=self.config.release,
             logger=self.logger,
             host=self.host,

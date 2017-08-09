@@ -24,10 +24,10 @@
 """fetch module for the cli."""
 import click
 
-import Release
-import Host
-import Logger
-import Prompts
+import iocage.lib.Release
+import iocage.lib.Host
+import iocage.lib.Logger
+import iocage.lib.Prompts
 
 
 __rootcmd__ = True
@@ -45,9 +45,9 @@ __rootcmd__ = True
 #         _prettify_release_names,
 #         host.distribution.releases
 #     )))
-logger = Logger.Logger()
-host = Host.Host()
-prompts = Prompts.Prompts(host=host)
+logger = lib.Logger.Logger()
+host = lib.Host.Host()
+prompts = lib.Prompts.Prompts(host=host)
 
 
 @click.command(context_settings=dict(
@@ -97,7 +97,7 @@ def cli(**kwargs):
             exit(1)
     else:
         try:
-            release = Release.Release(
+            release = lib.Release.Release(
                 name=release_input,
                 host=host,
                 logger=logger

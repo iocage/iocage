@@ -1,4 +1,4 @@
-import helpers
+import iocage.lib.helpers
 
 import shutil
 
@@ -7,7 +7,7 @@ class JailConfigResolver(list):
 
     def __init__(self, jail_config, logger=None):
         list.__init__(self, [])
-        helpers.init_logger(self, logger)
+        iocage.lib.helpers.init_logger(self, logger)
         self.jail_config = jail_config
         self.jail_config.update_special_property(
             "resolver", new_property_handler=self)
