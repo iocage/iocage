@@ -5,12 +5,12 @@ import os
 import helper_functions
 
 # Inject lib directory to path
-iocage_lib_dir = os.path.abspath(os.path.join(
-    os.path.dirname(__file__),
-    "..", "lib"
-))
-if iocage_lib_dir not in sys.path:
-    sys.path = [iocage_lib_dir] + sys.path
+# iocage_lib_dir = os.path.abspath(os.path.join(
+#     os.path.dirname(__file__),
+#     "..", "lib"
+# ))
+# if iocage_lib_dir not in sys.path:
+#     sys.path = [iocage_lib_dir] + sys.path
 
 _force_clean = False
 def pytest_addoption(parser):
@@ -52,8 +52,8 @@ def pool(zfs, logger):
 
 @pytest.fixture
 def logger():
-    import Logger
-    return Logger.Logger()
+    import iocage.lib.Logger
+    return iocage.lib.Logger.Logger()
 
 @pytest.fixture
 def root_dataset(force_clean, zfs, pool):
@@ -85,12 +85,12 @@ def root_dataset(force_clean, zfs, pool):
 
 @pytest.fixture
 def host(root_dataset, logger, zfs):
-    import Host
-    host = Host.Host(root_dataset=root_dataset, logger=logger, zfs=zfs)
+    import iocage.lib.Host
+    host = iocage.lib.Host.Host(root_dataset=root_dataset, logger=logger, zfs=zfs)
     yield host
     del host
     
 @pytest.fixture
 def release(host, logger, zfs):
-    import Release
-    return Release.Release(name=host.release_version, host=host, logger=logger, zfs=zfs)
+    import iocage.lib.Release
+    return iocage.lib.Release.Release(name=host.release_version, host=host, logger=logger, zfs=zfs)

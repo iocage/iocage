@@ -45,9 +45,9 @@ __rootcmd__ = True
 #         _prettify_release_names,
 #         host.distribution.releases
 #     )))
-logger = lib.Logger.Logger()
-host = lib.Host.Host()
-prompts = lib.Prompts.Prompts(host=host)
+logger = iocage.lib.Logger.Logger()
+host = iocage.lib.Host.Host()
+prompts = iocage.lib.Prompts.Prompts(host=host)
 
 
 @click.command(context_settings=dict(
@@ -97,7 +97,7 @@ def cli(**kwargs):
             exit(1)
     else:
         try:
-            release = lib.Release.Release(
+            release = iocage.lib.Release.Release(
                 name=release_input,
                 host=host,
                 logger=logger

@@ -42,8 +42,8 @@ def cli(rc, jails, log_level):
     Looks for the jail supplied and passes the uuid, path and configuration
     location to stop_jail.
     """
-    logger = lib.Logger.Logger(print_level=log_level)
-    ioc_jails = lib.Jails.Jails(logger=logger)
+    logger = iocage.lib.Logger.Logger(print_level=log_level)
+    ioc_jails = iocage.lib.Jails.Jails(logger=logger)
 
     for jail in ioc_jails.list(filters=jails):
         logger.log(f"Stopping jail {jail.humanreadable_name}")

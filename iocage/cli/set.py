@@ -39,9 +39,9 @@ __rootcmd__ = True
 def cli(props, jail, log_level):
     """Get a list of jails and print the property."""
 
-    logger = lib.Logger.Logger(print_level=log_level)
+    logger = iocage.lib.Logger.Logger(print_level=log_level)
 
-    jail = lib.Jail.Jail(jail, logger=logger)
+    jail = iocage.lib.Jail.Jail(jail, logger=logger)
     for prop in props:
 
         if _is_setter_property(prop):

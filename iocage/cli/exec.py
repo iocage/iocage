@@ -42,7 +42,7 @@ __rootcmd__ = True
 def cli(command, jail, host_user, jail_user, log_level):
     """Runs the command given inside the specified jail as the supplied
     user."""
-    logger = lib.Logger.Logger(print_level=log_level)
+    logger = iocage.lib.Logger.Logger(print_level=log_level)
 
     if jail.startswith("-"):
         logger.error("Please specify a jail first!")
@@ -56,7 +56,7 @@ def cli(command, jail, host_user, jail_user, log_level):
     else:
         command = ["/bin/sh", "-c", user_command]
 
-    jail = lib.Jail.Jail(jail, logger=logger)
+    jail = iocage.lib.Jail.Jail(jail, logger=logger)
     jail.update_jail_state()
 
     if not jail.exists:

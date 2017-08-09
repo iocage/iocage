@@ -42,8 +42,8 @@ def cli(rc, jails, log_level):
     Starts Jails
     """
 
-    logger = lib.Logger.Logger(print_level=log_level)
-    ioc_jails = lib.Jails.Jails(logger=logger)
+    logger = iocage.lib.Logger.Logger(print_level=log_level)
+    ioc_jails = iocage.lib.Jails.Jails(logger=logger)
 
     for jail in ioc_jails.list(filters=jails):
         logger.log(f"Starting {jail.humanreadable_name}")

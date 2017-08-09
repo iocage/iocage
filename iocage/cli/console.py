@@ -38,10 +38,10 @@ def cli(jail, log_level):
     """
     Runs jexec to login into the specified jail.
     """
-    logger = lib.Logger.Logger(print_level=False)
+    logger = iocage.lib.Logger.Logger(print_level=False)
     logger.print_level = log_level
 
-    jail = lib.Jail.Jail(jail, logger=logger)
+    jail = iocage.lib.Jail.Jail(jail, logger=logger)
     jail.update_jail_state()
 
     if not jail.exists:

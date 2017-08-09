@@ -29,10 +29,10 @@ from setuptools import find_packages, setup
 
 if os.path.isdir("/usr/local/etc/init.d"):
     _data = [('/usr/local/etc/init.d', ['rc.d/iocage']),
-             ('/usr/local/man/man8', ['iocage/iocage.8.gz'])]
+             ('/usr/local/man/man8', ['man/iocage.8.gz'])]
 else:
     _data = [('/usr/local/etc/rc.d', ['rc.d/iocage']),
-             ('/usr/local/man/man8', ['iocage/iocage.8.gz'])]
+             ('/usr/local/man/man8', ['man/iocage.8.gz'])]
 
 if sys.version_info < (3, 6):
     exit("Only Python 3.6 and higher is supported.")
@@ -59,7 +59,7 @@ setup(name='iocage',
       setup_requires=['pytest-runner'],
       entry_points={
           'console_scripts': [
-              'iocage = iocage.__main__:cli'
+              'iocage = iocage.cli:cli'
           ]
       },
       data_files=_data,

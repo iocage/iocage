@@ -1,7 +1,7 @@
 import pytest
 import uuid
 
-import Datasets
+import iocage.lib
 
 import helper_functions
 
@@ -10,7 +10,7 @@ class TestDatasets(object):
     @pytest.fixture
     def MockedDatasets(self, logger, pool):
         
-        class DatasetsMock(Datasets.Datasets):
+        class DatasetsMock(iocage.lib.Datasets.Datasets):
             ZFS_POOL_ACTIVE_PROPERTY = "org.freebsd.ioc-test:active"
         
         yield DatasetsMock

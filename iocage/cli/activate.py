@@ -37,7 +37,7 @@ __rootcmd__ = True
 @click.option("--mountpoint", "-m", default="/iocage")
 def cli(zpool, log_level, mountpoint):
     """Calls ZFS set to change the property org.freebsd.ioc:active to yes."""
-    logger = lib.Logger.Logger(print_level=log_level)
+    logger = iocage.lib.Logger.Logger(print_level=log_level)
     zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
     iocage_pool = None
 
@@ -50,7 +50,7 @@ def cli(zpool, log_level, mountpoint):
         exit(1)
 
     try:
-        datasets = lib.Datasets.Datasets(pool=iocage_pool, zfs=zfs, logger=logger)
+        datasets = iocage.lib.Datasets.Datasets(pool=iocage_pool, zfs=zfs, logger=logger)
         datasets.activate(mountpoint=mountpoint)
         logger.log(f"ZFS pool '{zpool}' activated")
     except:
