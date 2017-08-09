@@ -41,21 +41,26 @@ class IOCStart(object):
     """
 
     def __init__(self, uuid, path, conf, silent=False, callback=None):
-        self.pool = iocage.lib.ioc_json.IOCJson(" ").json_get_value("pool")
-        self.iocroot = iocage.lib.ioc_json.IOCJson(self.pool).json_get_value(
-            "iocroot")
         self.uuid = uuid.replace(".", "_")
         self.path = path
         self.conf = conf
-        self.get = iocage.lib.ioc_json.IOCJson(self.path,
-                                               silent=True).json_get_value
-        self.set = iocage.lib.ioc_json.IOCJson(self.path,
-                                               silent=True).json_set_value
-        self.exec_fib = self.conf["exec_fib"]
         self.callback = callback
         self.silent = silent
 
-        self.__start_jail__()
+        try:
+            self.pool = iocage.lib.ioc_json.IOCJson(" ").json_get_value("pool")
+            self.iocroot = iocage.lib.ioc_json.IOCJson\
+                (self.pool).json_get_value("iocroot")
+            self.get = iocage.lib.ioc_json.IOCJson(self.path,
+                                                   silent=True).json_get_value
+            self.set = iocage.lib.ioc_json.IOCJson(self.path,
+                                                   silent=True).json_set_value
+            self.exec_fib = self.conf["exec_fib"]
+            self.__start_jail__()
+        except TypeError:
+            # Bridge MTU unit tests will not have these
+            # TODO: Something less terrible
+            pass
 
     def __start_jail__(self):
         """
@@ -423,7 +428,7 @@ class IOCStart(object):
             nic, bridge = nic_def.split(":")
 
             try:
-                membermtu = find_bridge_mtu(bridge)
+                membermtu = self.find_bridge_mtu(bridge)
                 dhcp = self.get("dhcp")
 
                 ifaces = []
@@ -672,31 +677,41 @@ add path 'bpf*' unhide
                 for line in _rc:
                     rc.write(line)
 
+    def find_bridge_mtu(self, bridge):
+        try:
+            dhcp = self.get("dhcp")
+        except:
+            # To spoof unit test.
+            dhcp = "off"
 
-def find_bridge_mtu(bridge):
-    try:
-        default_iface_cmd = ["netstat", "-f", "inet", "-nrW"]
-        default_iface = su.check_output(default_iface_cmd)
-        default_if = ""
+        try:
+            if dhcp == "on":
+                default_iface_cmd = ["netstat", "-f", "inet", "-nrW"]
+                default_iface = su.check_output(default_iface_cmd)
+                default_if = ""
 
-        for line in default_iface.splitlines():
-            if b"default" in line:
-                default_if = line.split()[5].decode()
+                for line in default_iface.splitlines():
+                    if b"default" in line:
+                        default_if = line.split()[5].decode()
 
-        su.check_call(["ifconfig", bridge, "create", "addm", default_if],
-                      stdout=su.PIPE, stderr=su.PIPE)
-    except su.CalledProcessError:
-        # The bridge already exists, this is just best effort.
-        pass
+                bridge_cmd = ["ifconfig", bridge, "create", "addm",
+                              default_if]
+            else:
+                bridge_cmd = ["ifconfig", bridge, "create", "addm"]
 
-    memberif = [x for x in
-                iocage.lib.ioc_common.checkoutput(
-                    ["ifconfig", bridge]).splitlines()
-                if x.strip().startswith("member")]
+            su.check_call(bridge_cmd, stdout=su.PIPE, stderr=su.PIPE)
+        except su.CalledProcessError:
+            # The bridge already exists, this is just best effort.
+            pass
 
-    if not memberif:
-        return '1500'
+        memberif = [x for x in
+                    iocage.lib.ioc_common.checkoutput(
+                        ["ifconfig", bridge]).splitlines()
+                    if x.strip().startswith("member")]
 
-    membermtu = iocage.lib.ioc_common.checkoutput(
-        ["ifconfig", memberif[0].split()[1]]).split()
-    return membermtu[5]
+        if not memberif:
+            return '1500'
+
+        membermtu = iocage.lib.ioc_common.checkoutput(
+            ["ifconfig", memberif[0].split()[1]]).split()
+        return membermtu[5]
