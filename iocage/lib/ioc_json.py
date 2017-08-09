@@ -805,6 +805,10 @@ class IOCJson(object):
             bpf = "no"
 
         # Set all keys, even if it's the same value.
+        conf["dhcp"] = dhcp
+        conf["bpf"] = bpf
+
+        # Set all keys, even if it's the same value.
         conf["CONFIG_VERSION"] = self.json_get_version()
 
         if not default:
