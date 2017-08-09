@@ -100,7 +100,12 @@ def cli(release, template, count, props, pkglist, basejail, basejail_type,
     if name:
         jail_data["name"] = name
 
-    release = iocage.lib.Release.Release(name=release, logger=logger, host=host, zfs=zfs)
+    release = iocage.lib.Release.Release(
+        name=release,
+        logger=logger,
+        host=host,
+        zfs=zfs
+    )
     if not release.fetched:
         name = release.name
         if not release.available:

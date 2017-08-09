@@ -54,16 +54,16 @@ class Jail:
 
         release = self.release
 
-        storage_backend = None
+        backend = None
 
         if self.config.basejail_type == "zfs":
-            storage_backend = iocage.lib.ZFSBasejailStorage.ZFSBasejailStorage
+            backend = iocage.lib.ZFSBasejailStorage.ZFSBasejailStorage
 
         if self.config.basejail_type == "nullfs":
-            storage_backend = iocage.lib.NullFSBasejailStorage.NullFSBasejailStorage
+            backend = iocage.lib.NullFSBasejailStorage.NullFSBasejailStorage
 
-        if storage_backend is not None:
-            storage_backend.apply(self.storage, release)
+        if backend is not None:
+            backend.apply(self.storage, release)
 
         self.config.fstab.read_file()
         self.config.fstab.save_with_basedirs()
@@ -76,7 +76,9 @@ class Jail:
         self.set_nameserver()
 
         if self.config.jail_zfs is True:
-            ZFSShareStorage.mount_zfs_shares(self.storage)
+            iocage.lib.ZFSShareStorage.ZFSShareStorage.mount_zfs_shares(
+                self.storage
+            )
 
     def stop(self):
         self.require_jail_existing()
@@ -164,22 +166,16 @@ class Jail:
         self.storage.create_jail_dataset()
         self.config.fstab.update()
 
-        storage_backend = None
+        backend = None
 
-        if self.config.type == "basejail":
+        is_basejail = self.config.type == "basejail"
+        if is_basejail and self.config.basejail_type == "nullfs":
+            backend = iocage.lib.NullFSBasejailStorage.NullFSBasejailStorage
+        elif is_basejail and self.config.basejail_type == "zfs":
+            backend = iocage.lib.ZFSBasejailStorage.ZFSBasejailStorage
 
-            if self.config.basejail_type == "nullfs":
-                storage_backend = iocage.lib.NullFSBasejailStorage.NullFSBasejailStorage
-
-            elif self.config.basejail_type == "zfs":
-                storage_backend = iocage.lib.ZFSBasejailStorage.ZFSBasejailStorage
-
-        elif self.config.type == "clonejail":
-            self.config.cloned_release = release.name
-            storage_backend = iocage.lib.StandaloneJailStorage.StandaloneJailStorage
-
-        if storage_backend is not None:
-            storage_backend.setup(self.storage, release)
+        if backend is not None:
+            backend.setup(self.storage, release)
 
         self.config.data["release"] = release.name
         self.config.save()

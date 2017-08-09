@@ -53,8 +53,10 @@ try:
     su.check_call(["sysctl", "vfs.zfs.version.spa"],
                   stdout=su.PIPE, stderr=su.PIPE)
 except su.CalledProcessError:
-    raise Exception("ZFS is required to use iocage.\n"
-             "Try calling 'kldload zfs' as root.")
+    raise Exception(
+        "ZFS is required to use iocage.\n"
+        "Try calling 'kldload zfs' as root."
+    )
 
 
 class IOCageCLI(click.MultiCommand):
@@ -99,4 +101,3 @@ class IOCageCLI(click.MultiCommand):
                       message="%(version)s")
 def cli():
     """A jail manager."""
-

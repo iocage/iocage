@@ -45,10 +45,6 @@ __rootcmd__ = True
 #         _prettify_release_names,
 #         host.distribution.releases
 #     )))
-logger = iocage.lib.Logger.Logger()
-host = iocage.lib.Host.Host()
-prompts = iocage.lib.Prompts.Prompts(host=host)
-
 
 @click.command(context_settings=dict(
     max_content_width=400, ),
@@ -59,8 +55,6 @@ prompts = iocage.lib.Prompts.Prompts(host=host)
 @click.option("--file", "-F", multiple=True,
               help="Specify the files to fetch from the mirror.")
 @click.option("--release", "-r",
-              prompt=f"Release ({host.release_version})",
-              default=prompts.release,
               # type=release_choice(),
               help="The FreeBSD release to fetch.")
 @click.option("--update/--no-update", "-U/-NU", default=True,
@@ -84,17 +78,13 @@ prompts = iocage.lib.Prompts.Prompts(host=host)
 # def cli(url, files, release, update):
 def cli(**kwargs):
 
-    if kwargs["log_level"] is not None:
-        logger.print_level = kwargs["log_level"]
+    logger = iocage.lib.Logger.Logger()
+    host = iocage.lib.Host.Host(logger=logger)
+    prompts = iocage.lib.Prompts.Prompts(host=host)
 
     release_input = kwargs["release"]
-
-    if isinstance(release_input, int):
-        try:
-            release = host.distribution.releases[release_input]
-        except:
-            logger.error(f"Selection {release_input} out of range")
-            exit(1)
+    if release_input is None:
+        release = prompts.release()
     else:
         try:
             release = iocage.lib.Release.Release(
@@ -105,6 +95,9 @@ def cli(**kwargs):
         except:
             logger.error(f"Invalid Release '{release_input}'")
             exit(1)
+
+    if kwargs["log_level"] is not None:
+        logger.print_level = kwargs["log_level"]
 
     url_or_files_selected = False
 

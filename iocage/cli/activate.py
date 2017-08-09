@@ -50,7 +50,11 @@ def cli(zpool, log_level, mountpoint):
         exit(1)
 
     try:
-        datasets = iocage.lib.Datasets.Datasets(pool=iocage_pool, zfs=zfs, logger=logger)
+        datasets = iocage.lib.Datasets.Datasets(
+            pool=iocage_pool,
+            zfs=zfs,
+            logger=logger
+        )
         datasets.activate(mountpoint=mountpoint)
         logger.log(f"ZFS pool '{zpool}' activated")
     except:
