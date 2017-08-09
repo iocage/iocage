@@ -49,8 +49,8 @@ class IOCStart(object):
 
         try:
             self.pool = iocage.lib.ioc_json.IOCJson(" ").json_get_value("pool")
-            self.iocroot = iocage.lib.ioc_json.IOCJson\
-                (self.pool).json_get_value("iocroot")
+            self.iocroot = iocage.lib.ioc_json.IOCJson(
+                self.pool).json_get_value("iocroot")
             self.get = iocage.lib.ioc_json.IOCJson(self.path,
                                                    silent=True).json_get_value
             self.set = iocage.lib.ioc_json.IOCJson(self.path,
