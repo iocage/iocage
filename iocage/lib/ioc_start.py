@@ -254,7 +254,6 @@ class IOCStart(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-
         start = su.Popen([x for x in ["jail", "-c"] + net +
                           [f"name=ioc-{self.uuid}",
                            f"host.domainname={host_domainname}",
