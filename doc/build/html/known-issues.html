@@ -6,15 +6,15 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Known Issues &#8212; iocage 0.9.3 documentation</title>
+    <title>Known Issues &#8212; iocage 0.9.9.2 ALPHA documentation</title>
     
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/agogo.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '0.9.3',
+        VERSION:     '0.9.9.2 ALPHA',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -25,89 +25,99 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="top" title="iocage 0.9.3 documentation" href="index.html" />
+    <link rel="top" title="iocage 0.9.9.2 ALPHA documentation" href="index.html" />
     <link rel="next" title="FAQ" href="faq.html" />
-    <link rel="prev" title="Create a Debian Squeeze jail (GNU/kFreeBSD)" href="debian.html" />
-   
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
-
+    <link rel="prev" title="Create a Debian Squeeze Jail (GNU/kFreeBSD)" href="debian.html" /> 
   </head>
-  <body role="document">  
+  <body role="document">
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="index.html">iocage 0.9.9.2 ALPHA documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="debian.html" title="Create a Debian Squeeze Jail (GNU/kFreeBSD)"
+             accesskey="P">previous</a> |
+          <a href="faq.html" title="FAQ"
+             accesskey="N">next</a> |
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
 
-    <div class="document">
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
       <div class="documentwrapper">
         <div class="bodywrapper">
           <div class="body" role="main">
             
   <div class="section" id="known-issues">
-<h1>Known Issues<a class="headerlink" href="#known-issues" title="Permalink to this headline">¶</a></h1>
-<p>This is a short list of known issues.</p>
-<div class="section" id="character-mount-path-limitation">
-<h2>88 character mount path limitation<a class="headerlink" href="#character-mount-path-limitation" title="Permalink to this headline">¶</a></h2>
-<p>There is a know mountpoint path length limitation issue on FreeBSD which is set to a historical 88 character limit.</p>
-<p>This issue does not affect iocage jails from functioning properly, but can present challenges
-when diving into ZFS snapshots (cd into .zfs/snapshots, tar, etc.).</p>
+<span id="index-0"></span><span id="id1"></span><h1>Known Issues<a class="headerlink" href="#known-issues" title="Permalink to this headline">¶</a></h1>
+<p>This section provides a short list of known issues.</p>
+<div class="section" id="mount-path-limit">
+<span id="index-1"></span><span id="id2"></span><h2>Mount Path Limit<a class="headerlink" href="#mount-path-limit" title="Permalink to this headline">¶</a></h2>
+<p>There is a known mountpoint path length limitation issue on FreeBSD.
+Path length has an historical 88 character limit.</p>
+<p>This issue does not affect <strong class="command">iocage</strong> jails from functioning
+properly, but can present challenges when diving into ZFS snapshots,
+like <strong class="command">cd</strong> into <code class="file docutils literal"><span class="pre">.zfs/snapshots</span></code>, <strong class="command">tar</strong>, etc.</p>
 <p>ZFS snapshot creation and rollback is not affected.</p>
-<p>To workaround this issue iocage 1.6.0 introduced a <code class="docutils literal"><span class="pre">hack88</span></code> property.</p>
-<p>Example:</p>
-<p>Shut down jail:</p>
-<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">stop</span> <span class="pre">myjail</span></code></p>
-<p>Set the <code class="docutils literal"><span class="pre">hack88</span></code> property to &#8220;1&#8221;:</p>
-<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">set</span> <span class="pre">hack88=1</span></code></p>
-<p>Start jail:</p>
-<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">start</span> <span class="pre">myjail</span></code></p>
-<p>To revert back to full paths repeat the procedure but set <code class="docutils literal"><span class="pre">hack88=0</span></code>.</p>
-<p>To create a system wide default (introduced in 1.6.0) for all newly created jails use:</p>
-<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">set</span> <span class="pre">hack88=1</span> <span class="pre">default</span></code></p>
-</div>
-<div class="section" id="property-validation">
-<h2>Property validation<a class="headerlink" href="#property-validation" title="Permalink to this headline">¶</a></h2>
-<p>iocage does not validate properties right now. Please refer to man page to see what is supported
-for each property. By default iocage pre-configures each property with a safe default.</p>
+<p>To work around this issue, <strong class="command">iocage</strong> allows the user to
+assign and use a unique <em>NAME</em> for the jail. Alternately, using the
+<strong>[-s | &#8211;short]</strong> flag at jail creation tells <strong class="command">iocage</strong> to
+assign a shortened UUID to the jail.</p>
 </div>
 <div class="section" id="vnet-vimage-issues">
-<h2>VNET/VIMAGE issues<a class="headerlink" href="#vnet-vimage-issues" title="Permalink to this headline">¶</a></h2>
-<p>VNET/VIMAGE can cause unexpected system crashes when VNET enabled jails are destroyed - that is when the
-jail process is killed, removed, stopped.</p>
-<p>As a workaround iocage allows a warm restart without destroying the jail.
-By default the restart sub-command will execute a warm restart.</p>
+<span id="vnetvimage"></span><span id="index-2"></span><h2>VNET/VIMAGE Issues<a class="headerlink" href="#vnet-vimage-issues" title="Permalink to this headline">¶</a></h2>
+<p>VNET/VIMAGE can cause unexpected system crashes when VNET enabled jails
+are destroyed. In other words, when the jail process is killed, removed,
+or stopped.</p>
+<p>As a workaround, <strong class="command">iocage</strong> allows a soft restart without
+destroying the jail. <strong class="command">iocage restart -s [UUID | NAME]</strong> executes
+a soft restart of the jail.</p>
 <p>Example:</p>
-<p><code class="docutils literal"><span class="pre">iocage</span> <span class="pre">restart</span> <span class="pre">UUID</span></code></p>
-<p>FreeBSD 10.1-RELEASE is stable enough to run with VNET and warm restarts.
-There are production machines with iocage and VNET jails running well beyond 100 days of uptime
-running both PF and IPFW.</p>
-</div>
+<p><code class="samp docutils literal"><span class="pre">#</span> <span class="pre">iocage</span> <span class="pre">restart</span> <span class="pre">-s</span> <span class="pre">examplejail</span></code></p>
+<p>FreeBSD 10.1-RELEASE is stable enough to run with VNET and soft
+restarts. There are production machines with <strong class="command">iocage</strong> and VNET
+jails running well over 100 days of uptime running both PF and IPFW.</p>
 <div class="section" id="vnet-vimage-issues-w-altq">
-<h2>VNET/VIMAGE issues w/ ALTQ<a class="headerlink" href="#vnet-vimage-issues-w-altq" title="Permalink to this headline">¶</a></h2>
-<p>As recent as FreeBSD 10.1-RELEASE-p10, there is some <em>interesting</em> interaction between VNET/VIMAGE and ALTQ,
-which is an ALTernate Queueing system used by PF and other routing software.  Should you compile a kernel, make
-sure that you do not have any of the following lines in your kernconf (unless you want to disable VNET):</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">options</span>     <span class="n">ALTQ</span>
-<span class="n">options</span>     <span class="n">ALTQ_CBQ</span>
-<span class="n">options</span>     <span class="n">ALTQ_RED</span>
-<span class="n">options</span>     <span class="n">ALTQ_RIO</span>
-<span class="n">options</span>     <span class="n">ALTQ_HFSC</span>
-<span class="n">options</span>     <span class="n">ALTQ_CDNR</span>
-<span class="n">options</span>     <span class="n">ALTQ_PRIQ</span>
+<span id="vnetvimage-and-altq"></span><span id="index-3"></span><h3>VNET/VIMAGE issues w/ ALTQ<a class="headerlink" href="#vnet-vimage-issues-w-altq" title="Permalink to this headline">¶</a></h3>
+<p>As recent as FreeBSD 10.1-RELEASE-p10, there are some <em>interesting</em>
+interactions between VNET/VIMAGE and the ALTernate Queueing (ALTQ)
+system used by PF and other routing software. When compiling a kernel,
+be sure these lines are <strong>not</strong> in the <code class="file docutils literal"><span class="pre">kernconf</span></code> file (unless
+disabling VNET):</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>options     ALTQ
+options     ALTQ_CBQ
+options     ALTQ_RED
+options     ALTQ_RIO
+options     ALTQ_HFSC
+options     ALTQ_CDNR
+options     ALTQ_PRIQ
 </pre></div>
 </div>
-<p>Otherwise, should you try to start a jail with VNET support enabled, your host system will more than likely crash.
-You can read a little more at the mailing list post <a class="reference external" href="http://lists.freebsd.org/pipermail/freebsd-jail/2014-July/002635.html">here</a>.</p>
+<p>Otherwise, when starting a jail with VNET support enabled, the host
+system is likely to crash. Read a more about this issue from a
+<a class="reference external" href="http://lists.freebsd.org/pipermail/freebsd-jail/2014-July/002635.html">2014 mailing list post</a>.</p>
+</div>
 </div>
 <div class="section" id="ipv6-host-bind-failures">
-<h2>IPv6 host bind failures<a class="headerlink" href="#ipv6-host-bind-failures" title="Permalink to this headline">¶</a></h2>
-<p>In some cases a jail with an ip6 address may take too long adding the address
-to the interface, and services defined to bind specifically to that address
-may fail. In such cases, adding the following sysctl do disable DAD (duplicate
-address detection) probe packets.</p>
-<p>To set, <code class="docutils literal"><span class="pre">sysctl</span> <span class="pre">net.inet6.ip6.dad_count=0</span></code>. To make it permanent, add the
-setting to sysctl.conf.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># disable duplicated address detection probe packets for jails</span>
-<span class="n">net</span><span class="o">.</span><span class="n">inet6</span><span class="o">.</span><span class="n">ip6</span><span class="o">.</span><span class="n">dad_count</span><span class="o">=</span><span class="mi">0</span>
+<span id="index-4"></span><span id="id3"></span><h2>IPv6 host bind failures<a class="headerlink" href="#ipv6-host-bind-failures" title="Permalink to this headline">¶</a></h2>
+<p>In some cases, a jail with an <em>ip6</em> address may take too long adding the
+address to the interface. Services defined to bind specifically to the
+address may then fail. If this happens, add this to <code class="file docutils literal"><span class="pre">sysctl.conf</span></code>
+to disable DAD (duplicate address detection) probe packets:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span># disable duplicated address detection probe packets for jails
+net.inet6.ip6.dad_count=0
 </pre></div>
 </div>
-<p>You can read a little more about this <a class="reference external" href="https://github.com/iocage/iocage/issues/119">here</a> and at the mailing list post <a class="reference external" href="https://lists.freebsd.org/pipermail/freebsd-jail/2013-July/002347.html">here</a>.</p>
+<p>Adding these lines permanently disables DAD. To set this for ONLY the
+current system boot, type <strong class="command">sysctl net.inet6.ip6.dad_count=0</strong> in
+a command line interface (CLI). More information about this issue is
+available from a
+<a class="reference external" href="https://lists.freebsd.org/pipermail/freebsd-jail/2013-July/002347.html">2013 mailing list post</a>.</p>
 </div>
 </div>
 
@@ -115,63 +125,64 @@ setting to sysctl.conf.</p>
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table Of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">Known Issues</a><ul>
-<li><a class="reference internal" href="#character-mount-path-limitation">88 character mount path limitation</a></li>
-<li><a class="reference internal" href="#property-validation">Property validation</a></li>
-<li><a class="reference internal" href="#vnet-vimage-issues">VNET/VIMAGE issues</a></li>
-<li><a class="reference internal" href="#vnet-vimage-issues-w-altq">VNET/VIMAGE issues w/ ALTQ</a></li>
-<li><a class="reference internal" href="#ipv6-host-bind-failures">IPv6 host bind failures</a></li>
+        </div>
+        <div class="sidebar">
+          <h3>Table Of Contents</h3>
+          <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="basic-use.html">Basic Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="networking.html">Networking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="jailtypes.html">Jail Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best-practices.html">Best Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advanced-use.html">Advanced Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="templates.html">Using Templates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debian.html">Create a Debian Squeeze Jail (GNU/kFreeBSD)</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Known Issues</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#mount-path-limit">Mount Path Limit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#vnet-vimage-issues">VNET/VIMAGE Issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ipv6-host-bind-failures">IPv6 host bind failures</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a></li>
 </ul>
-<div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="debian.html" title="previous chapter">Create a Debian Squeeze jail (GNU/kFreeBSD)</a></li>
-      <li>Next: <a href="faq.html" title="next chapter">FAQ</a></li>
-  </ul></li>
-</ul>
-</div>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="_sources/known-issues.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <form class="search" action="search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+            </form>
+          </div>
         </div>
+        <div class="clearer"></div>
       </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="footer">
-      &copy;2014-2017, iocage.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.8</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
-      
-      |
-      <a href="_sources/known-issues.txt"
-          rel="nofollow">Page source</a>
     </div>
 
-    
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="debian.html" title="Create a Debian Squeeze Jail (GNU/kFreeBSD)"
+              >previous</a> |
+            <a href="faq.html" title="FAQ"
+              >next</a> |
+            <a href="genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
 
-    
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014-2017, iocage.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
   </body>
 </html>
