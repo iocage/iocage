@@ -768,8 +768,8 @@ class IOCFetch(object):
             iocage.lib.ioc_common.logit({
                 "level"  : "INFO",
                 "message":
-                    f"\n* Updating {uuid} to the latest patch "
-                    f"level... "
+                    f"\n* Updating {uuid} to the latest patch"
+                    " level... "
             },
                 _callback=self.callback,
                 silent=self.silent)

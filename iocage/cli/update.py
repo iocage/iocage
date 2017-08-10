@@ -103,7 +103,7 @@ def cli(jail):
         if started:
             ioc_stop.IOCStop(uuid, path, conf, silent=True)
     else:
-        ioc_fetch.IOCFetch(conf["cloned_release"]).fetch_update(True, uuid)
+        ioc_fetch.IOCFetch(conf["release"]).fetch_update(True, uuid)
 
         if started:
             ioc_stop.IOCStop(uuid, path, conf, silent=True)
