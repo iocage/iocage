@@ -211,6 +211,18 @@ class IOCList(object):
             if "release" in template.lower() or "stable" in template.lower():
                 template = "-"
 
+            if conf["dhcp"] == "on" and status:
+                interface = conf["interfaces"].split(",")[0].split(":")[0]
+                short_ip4 = "DHCP"
+                full_ip4_cmd = ["jexec", f"ioc-{uuid}", "ifconfig",
+                                interface, "inet"]
+                out = su.check_output(full_ip4_cmd)
+                full_ip4 = f"{interface}|" \
+                           f"{out.splitlines()[2].split()[1].decode()}"
+            elif conf["dhcp"] == "on":
+                short_ip4 = "DHCP"
+                full_ip4 = "DHCP (not running)"
+
             # Append the JID and the NAME to the table
             if self.full:
                 if self.plugin:
