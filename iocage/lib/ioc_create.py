@@ -281,7 +281,7 @@ class IOCCreate(object):
                         },
                             _callback=self.callback,
                             silent=self.silent)
-                elif key == "boot" and value == "on":
+                elif key == "boot" and value == "on" and not self.empty:
                     start = True
                 elif key == "template" and value == "yes":
                     iocjson.json_write(config)  # Set counts on this.
@@ -294,6 +294,7 @@ class IOCCreate(object):
                     # config's type, you will end up with a type of jail
                     # instead of template like we want.
                     config["type"] = "template"
+                    start = False
 
                 try:
                     iocjson.json_check_prop(key, value, config)
