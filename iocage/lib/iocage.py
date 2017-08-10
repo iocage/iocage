@@ -1129,5 +1129,6 @@ class IOCage(object):
                 self.__jail_order__("stop")
         else:
             uuid, path = self.__check_jail_existence__()
-            conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
+            conf = ioc_json.IOCJson(path, silent=self.silent,
+                                    stop=True).json_load()
             ioc_stop.IOCStop(uuid, path, conf, silent=self.silent)
