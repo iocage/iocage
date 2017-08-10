@@ -790,6 +790,14 @@ class IOCJson(object):
                                 print(line.replace(f'hostname="{uuid}"',
                                                    f'hostname="{tag}"').rstrip(
                                 ))
+
+                            if conf["basejail"] == "yes":
+                                for line in fileinput.input(
+                                        f"{iocroot}/jails/{tag}/fstab",
+                                        inplace=1):
+                                    print(line.replace(
+                                        f'{uuid}', f'{tag}').rstrip())
+
                         except libzfs.ZFSException:
                             # A template, already renamed to a TAG
                             pass
