@@ -23,6 +23,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """List all datasets by type"""
 import json
+import os
 import re
 import subprocess as su
 import uuid as _uuid
@@ -211,7 +212,7 @@ class IOCList(object):
             if "release" in template.lower() or "stable" in template.lower():
                 template = "-"
 
-            if conf["dhcp"] == "on" and status:
+            if conf["dhcp"] == "on" and status and os.geteuid() == 0:
                 interface = conf["interfaces"].split(",")[0].split(":")[0]
                 short_ip4 = "DHCP"
                 full_ip4_cmd = ["jexec", f"ioc-{uuid}", "ifconfig",
@@ -219,9 +220,12 @@ class IOCList(object):
                 out = su.check_output(full_ip4_cmd)
                 full_ip4 = f"{interface}|" \
                            f"{out.splitlines()[2].split()[1].decode()}"
-            elif conf["dhcp"] == "on":
+            elif conf["dhcp"] == "on" and not status:
                 short_ip4 = "DHCP"
                 full_ip4 = "DHCP (not running)"
+            elif conf["dhcp"] == "on" and os.geteuid() != 0:
+                short_ip4 = "DHCP"
+                full_ip4 = "DHCP (running -- address requires root)"
 
             # Append the JID and the NAME to the table
             if self.full:
