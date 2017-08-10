@@ -35,7 +35,7 @@ class IOCLogger(object):
     def __init__(self):
         self.cli_logger = verboselogs.VerboseLogger("iocage")
         self.log_file = os.environ.get("IOCAGE_LOGFILE", "/var/log/iocage.log")
-        self.colorize = os.environ.get("IOCAGE_COLOR", "TRUE")
+        self.colorize = os.environ.get("IOCAGE_COLOR", "FALSE")
 
         default_logging = {
             'version'                 : 1,
