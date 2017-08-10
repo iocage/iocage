@@ -941,6 +941,20 @@ The Source listed with each property shows whether it is a local
 .Nm
 property or where more information can be located.
 .Bl -tag -width "pkglist=none"
+.It Pf bpf= Op on | off
+Toggle starting the jail with Berkely Packet Filter devices enabled.
+.Pp
+Default: off
+.Pp
+Source: local
+.It Pf dhcp= Op on | off
+This controls starting the jail with the Dynamic Host Configuration
+Protocol enabled.
+To enable dhcp, vnet and bpf must also be enabled.
+.Pp
+Default: off
+.Pp
+Source: local
 .It Pf pkglist= Op none | path-to-file
 A json file listing one package per entry.
 Packages are automatically installed when a jail is created.

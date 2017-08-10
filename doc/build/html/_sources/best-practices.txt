@@ -1,56 +1,74 @@
-Best practices
+.. index:: Best Practices
+.. _Best Practices:
+
+Best Practices
 --------------
 
-These are some generic guidelines for working with iocage managed jails.
+This section provides some generic guidelines and tips for working with
+:command:`iocage` managed jails.
 
 **Use PF as a module**
 
-  This is the default setting in the ``GENERIC`` kernel. There seems to be a VNET bug which is only
-  triggered when PF is directly compiled into the kernel.
+  This is the default setting in the *GENERIC* kernel. There seems to be
+  a VNET bug which is only triggered when PF is directly compiled into
+  the kernel.
 
-**Always tag your jails and templates!**
+**Always name jails and templates!**
 
-  This will help you avoid mistakes and easily identify jails.
+  Use the -n option with :command:`iocage create` to set a name for the
+  jail. This helps avoid mistakes and easily identify jails.
+
+  Example: :samp:`iocage create -r 11.0-RELEASE -n testjail`
 
 **Set the notes property**
 
-  Set the ``notes`` property to something meaningful, especially for templates
-  and jails you might use only once in a while.
+  Set the **notes** property to something meaningful, especially for
+  templates and jails used infrequently.
+
+  Example:
+
+  .. code-block:: none
+
+   [root@tester ~]# iocage set notes="This is a test jail." testjail
+   Property: notes has been updated to This is a test jail.
+
+   [root@tester ~]# iocage get notes testjail
+   This is a test jail.
 
 **VNET**
 
-  ``VNET`` will give you more control and isolation. Also allows to run per jail firewalls.
-  See known issues about VNET.
-
-**Don't overuse resource limiting!**
-
-  Unless really needed, let the OS decide how to do it best. Set limits with
-  the "log action" before enforcing "deny". This way you can check the logs
-  before creating any performance bottlenecks.
+  *VNET* provides more fine control and isolation for jails. VNET also
+  allows jails to run their own firewalls. See :ref:`Known Issues` for
+  more about VNET.
 
 **Discover templates!**
 
-  Templates will make your life easy, try them!
+  Templates simplify using jail creation and customization, give it a
+  try! See :ref:`Using Templates` to get started.
 
-**Use the restart command instead of start/stop**
+**Use** :command:`iocage restart` **instead of start/stop**
 
-  If you wish to restart a jail use the ``restart`` command which performs a
-  soft restart and it leaves the ``VNET`` stack alone, less stressful for the
-  kernel and you.
+  Always restart a jail with the :command:`iocage restart -s` command.
+  This performs a soft restart and leaves the *VNET* stack alone, which
+  is less stressful for both kernel and user.
 
-**Check your firewall rules**
+**Check the firewall rules**
 
-  When using ``IPFW`` inside a ``VNET`` jail put ``firewall_enable="YES"``
-  ``firewall_type="open"`` into ``/etc/rc.conf`` for a start. This way you can exclude
-  the firewall from blocking you right from the beginning! Lock it down once you've tested
-  everything. Also check PF firewall rules on the host if you happen to mix both.
+  When using *IPFW* inside a *VNET* jail, put **firewall_enable="YES"**
+  and **firewall_type="open"** into :file:`/etc/rc.conf`. This excludes
+  the firewall from accidentally blocking the user right from the
+  beginning! Re-lock it once finished testing. It is also recommended to
+  check the *PF* firewall rules on the host if jail and host rules are
+  mixed.
 
-**Get rid of old snapshots**
+**Delete old snapshots**
 
-  Remove snapshots you don't need, especially from jails where data is changing a lot!
+  Remove unnecessary snapshots, especially from jails where data is
+  constantly changing!
 
-**Use the chroot sub-command**
- 
-  In case you need to access or modify files in a template or a jail which is in a
-  stopped state, use ``iocage chroot UUID | TAG``. This way you don't need to spin up the
-  jail or convert the template.
+**Use** :command:`iocage chroot`
+
+  When accessing or modifying files in a template or stopped jail, use
+  :command:`iocage chroot [UUID | NAME] [Command ...]`. This
+  way you don't need to spin up the jail or convert the template.
+  

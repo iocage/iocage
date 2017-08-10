@@ -1,185 +1,217 @@
-==========
+.. index:: Networking
+.. _Networking:
+
 Networking
 ==========
 
-Intro
-------
+Jails have multiple networking options to better serve a user's needs.
+Traditionally, jails have only supported IP alias based networking. This
+is where an IP address is assigned to the host's interface and then used
+by the jail for network communication. This is typically known as
+"shared IP" based jails.
 
-Jails have multiple networking options based on what features are desired. Traditionally jails
-only supported IP alias based networking where an IP address is assigned to the host's interface
-which is then utilized by the jail for network communication. This is known as "shared IP" based jails.
+Another recently developed option is called VNET or sometimes VIMAGE.
+VNET is a fully virtualized networking stack which is isolated per jail.
+VNET abstracts virtual network interfaces to jails, which then behave in
+the same way as physical interfaces.
 
-Anoter option emerged in recent years, called VNET or sometimes referred to as VIMAGE.
-VNET is a fully virtualized, isolated per jail networking stack.
-VNET abstracts virtual network interfaces to jails, which behave the same way as physical interfaces.
+By default, iocage does not enable VNET, but users can enable and
+configure VNET for a jail by configuring that jail's properties using
+the instructions in the :ref:`Configure a Jail` section of this
+documentation.
 
-iocage will try to guess whether VNET support is available in the system and if it is will enable it by
-default for newly created jails.
+The rest of this section shows more depth of the **Shared IP** and
+**VNET** networking options, along with instructions for
+:ref:`Configuring Network Interfaces`.
+
+.. warning:: In the examples in this section, **em0** is used as the
+   network adapter. **em0** is a placeholder and must be replaced with
+   the user's specific network adapter.
+
+.. index:: Shared IP
+.. _Shared IP:
 
 Shared IP
 ---------
 
-Stability: It is rock solid and battle tested well over a decade.
+The *Shared IP* networking option is rock solid, with over a decade of
+heavy use and testing.
 
-System requirements
-+++++++++++++++++++
+It has no specific system requirements, as everything needed is built
+directly into the default GENERIC kernel.
 
-None, everything is built into the default GENERIC kernel.
+.. index:: Using Shared IP
+.. _Using Shared IP:
 
-Usage
-+++++
+Using Shared IP
++++++++++++++++
 
-**Make sure VNET is disabled**
+There are a few steps to follow when setting up *Shared IP*:
 
-``iocage get vnet UUID | TAG``
+**Check the VNET property status**
 
-**If set to "on" disable it**
+:samp:`# iocage get vnet examplejail1`
 
-``iocage set vnet=off UUID | TAG``
+If **vnet** is on, disable it:
 
-A system wide default can be configured if required. This will take effect for newly created jails only.
-
-``iocage set vnet=off default``
+:samp:`# iocage set vnet=off examplejail1`
 
 **Configure an IP address**
 
-``iocage set ip4_addr="em0|10.1.1.10/24" UUID| TAG``
+:samp:`# iocage set ip4_addr="em0|10.1.1.10/24" examplejail1`
 
-If multiple addresses are desired just separate the configuration directives with a comma.
+If multiple addresses are desired, separate the configuration directives
+with a :kbd:`,`:
 
-Example:
+:samp:`# iocage set ip4_addr="em0|10.1.1.10/24,em0|10.1.1.11/24" examplejail1`
 
-``iocage set ip4_addr="em0|10.1.1.10/24,em0|10.1.1.11/24" UUID| TAG``
+**Start the jail**
 
-**Start jail:**
-
-``iocage start UUID | TAG``
+:samp:`iocage start examplejail1`
 
 **Verify visible IP configuration in the jail**
 
-*(jail must be running for this to work)*
+:samp:`# iocage exec examplejail1 ifconfig`
 
-``iocage exec UUID | TAG ifconfig``
-
+.. index:: VIMAGE_VNET
+.. _VIMAGEVNET:
 
 VIMAGE/VNET
 -----------
 
-Stability: VIMAGE is considered experimental, unexpected system crashes can occur (for details please see known issues section)
+VNET is considered experimental. Unexpected system crashes
+can occur. More details about issues with VNET are available in the
+:ref:`Known Issues` section of this documentation.
 
-System requirements
-+++++++++++++++++++
+There are a number of required steps when configuring a jail to use
+VNET:
 
 **Kernel**
 
-Rebuild the kernel with the following options:
+.. tip:: If not required, disable SCTP.
 
-*(also disable SCTP if not required)*
+Rebuild the kernel with these options:
 
-::
+.. code-block:: none
 
-  nooptions       SCTP   # Stream Control Transmission Protocol
-  options         VIMAGE # VNET/Vimage support
-  options         RACCT  # Resource containers
-  options         RCTL   # same as above
+   nooptions       SCTP   # Stream Control Transmission Protocol
+   options         VIMAGE # VNET/Vimage support
+   options         RACCT  # Resource containers
+   options         RCTL   # same as above
 
 **/etc/rc.conf**
 
-Add bridge configuration to /etc/rc.conf:
+On the host node, add this bridge configuration to :file:`/etc/rc.conf`:
 
-*(on the host node)*
+.. code-block:: none
 
-::
+   # set up two bridge interfaces for iocage
+   cloned_interfaces="bridge0 bridge1"
 
-  # set up two bridge interfaces for iocage
-  cloned_interfaces="bridge0 bridge1"
-
-  # plumb interface em0 into bridge0
-  ifconfig_bridge0="addm em0 up"
-  ifconfig_em0="up"
+   # plumb interface em0 into bridge0
+   ifconfig_bridge0="addm em0 up"
+   ifconfig_em0="up"
 
 **/etc/sysctl.conf**
 
-Add these tunables to /etc/sysctl.conf:
+Add these tunables to :file:`/etc/sysctl.conf`:
 
-::
+.. code-block:: none
 
-  net.inet.ip.forwarding=1       # Enable IP forwarding between interfaces
-  net.link.bridge.pfil_onlyip=0  # Only pass IP packets when pfil is enabled
-  net.link.bridge.pfil_bridge=0  # Packet filter on the bridge interface
-  net.link.bridge.pfil_member=0  # Packet filter on the member interface
+   net.inet.ip.forwarding=1       # Enable IP forwarding between interfaces
+   net.link.bridge.pfil_onlyip=0  # Only pass IP packets when pfil is enabled
+   net.link.bridge.pfil_bridge=0  # Packet filter on the bridge interface
+   net.link.bridge.pfil_member=0  # Packet filter on the member interface
 
-**Configure default GW for jail**
+**Configure jail's default gateway**
 
-Example: ``iocage set defaultrouter=10.1.1.254 UUID | TAG``
+:samp:`# iocage set defaultrouter=10.1.1.254 examplejail`
 
 **Configure an IP address**
 
-``iocage set ip4_addr="vnet0|10.1.1.10/24" UUID | TAG``
+:samp:`iocage set ip4_addr="vnet0|10.1.1.10/24" examplejail`
 
-**Start jail and ping default gateway**
+**Start jail and ping the default gateway**
 
 Start the jail:
 
-``iocage start UUID | TAG``
+:samp:`# iocage start examplejail`
 
-Drop into jail:
+Open the system console inside the jail:
 
-``iocage console UUID | TAG``
+:samp:`iocage console examplejail`
 
-Ping default gateway, example:
+Ping the previously configured default gateway:
 
-``ping 10.1.1.254``
+:samp:`# ping 10.1.1.254`
 
-Gotchas
-+++++++
+.. index:: VNET tips
+.. _VNET Tips:
+
+Tips
+++++
 
 **Routes**
 
-Make sure default gateway knows the route back to the VNET subnets.
+Be sure the default gateway knows the route back to the VNET subnets.
 
-**If using VLANs**
+**Using VLANs**
 
-If you are using VLAN interfaces for the jail host you not only have
-to add the vlan interface as bridge member but the parent interface
-of the VLAN as bridge member as well.
+If using VLAN interfaces for the jail host, add the VLAN interface AND
+parent interface of the VLAN as bridge members.
+
+.. index:: Configure Network Interfaces
+.. _Configuring Network Interfaces:
 
 Configuring Network Interfaces
 ------------------------------
 
-iocage handles network configuration for both, shared IP and VNET jails transparently.
+:command:`iocage` transparently handles network configuration for both
+*Shared IP* and *VNET* jails.
 
-Configuring a shared IP jail
+.. index:: Configure Shared IP jail
+.. _Configuring a Shared IP Jail:
+
+Configuring a Shared IP Jail
 ++++++++++++++++++++++++++++
 
 **IPv4**
 
-``iocage set ip4_addr="em0|192.168.0.10/24" UUID|TAG``
+:samp:`# iocage set ip4_addr="em0|192.168.0.10/24" examplejail`
 
 **IPv6**
 
-``iocage set ip6_addr="em0|2001:123:456:242::5/64" UUID|TAG``
+:samp:`# iocage set ip6_addr="em0|2001:123:456:242::5/64" examplejail`
 
-This will add an IP alias 192.168.0.10/24 to interface em0 for the shared IP jail at start time, as well as 2001:123:456::5/64.
+These examples add IP alias *192.168.0.10/24* and *2001:123:456::5/64*
+to interface *em0* of the shared IP jail, at start time.
 
-Configuring a VNET jail
+.. index:: Configure VNET Jail
+.. _Configuring a VNET Jail:
+
+Configuring a VNET Jail
 +++++++++++++++++++++++
 
 To configure both IPv4 and IPv6:
 
-``iocage set ip4_addr="vnet0|192.168.0.10/24" UUID|TAG``
+:samp:`# iocage set ip4_addr="vnet0|192.168.0.10/24" examplejail`
 
-``iocage set ip6_addr="vnet0|2001:123:456:242::5/64" UUID|TAG``
+:samp:`# iocage set ip6_addr="vnet0|2001:123:456:242::5/64" examplejail`
 
-``iocage set defaultrouter6="2001:123:456:242::1" UUID|TAG``
+:samp:`# iocage set defaultrouter6="2001:123:456:242::1" examplejail`
 
-*NOTE: For VNET jails a default route has to be specified too.*
+.. note:: For VNET jails, a default route has to also be specified.
 
-Hints
-+++++
+.. index:: Tips for configuring VNET
+.. _Tips for Configuring VNET:
 
-To start a jail with no IPv4/6 address whatsoever set these properties:
+Tips for Configuring VNET
++++++++++++++++++++++++++
 
-``iocage set ip4_addr=none ip6_addr=none UUID|TAG``
+To start a jail with no IPv4/6 address, **set** the *ip4_addr* and
+*ip6_addr* properties, then the *defaultrouter* and *defaultrouter6*
+properties:
 
-``iocage set defaultrouter=none defaultrouter6=none UUID|TAG``
+:samp:`# iocage set ip4_addr=none ip6_addr=none examplejail`
+
+:samp:`# iocage set defaultrouter=none defaultrouter6=none examplejail`
