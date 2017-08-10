@@ -82,6 +82,7 @@ def cli(jail, release):
             "level"  : "EXCEPTION",
             "message": "Upgrading is not supported for empty jails."
         })
+
     if conf["type"] == "jail":
         if not status:
             ioc_start.IOCStart(uuid, path, conf, silent=True)
