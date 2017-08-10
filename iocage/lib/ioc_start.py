@@ -428,7 +428,6 @@ class IOCStart(object):
         :param net_configs: Tuple of IP address and router pairs
         :param jid: The jails ID
         """
-
         nic_defs = nic_defs.split(",")
         nics = list(map(lambda x: x.split(":")[0], nic_defs))
 
@@ -452,22 +451,8 @@ class IOCStart(object):
                     for addr in addrs.split(','):
                         iface, ip = addr.split("|")
                         if iface not in nics:
-                            err = f"\n  Invalid interface supplied: {iface}"
-                            iocage.lib.ioc_common.logit({
-                                "level"  : "ERROR",
-                                "message": f"{err}"
-                            },
-                                _callback=self.callback,
-                                silent=self.silent)
-
-                            err = f"  Did you mean {nic}?\n"
-                            iocage.lib.ioc_common.logit({
-                                "level"  : "ERROR",
-                                "message": f"{err}"
-                            },
-                                _callback=self.callback,
-                                silent=self.silent)
                             continue
+
                         if iface not in ifaces:
                             self.start_network_vnet_iface(nic, bridge,
                                                           membermtu, jid)
