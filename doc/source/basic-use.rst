@@ -14,6 +14,9 @@ iocage has a basic "flow" when first used. As a new user interacts with
 iocage for the first time, this flow guides them through initializing
 iocage, then interacting with newly created jails.
 
+.. tip:: iocage has an experimental "color" mode enabled by setting the
+   environment variable :command:`IOCAGE_COLOR` to **TRUE**.
+
 .. index:: Activate iocage
 .. _Activate iocage:
 

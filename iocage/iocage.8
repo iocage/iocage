@@ -1754,6 +1754,12 @@ Import package on another host:
 iocage import UUID
 .Ed
 .Sh HINTS
+By defaut,
+.Nm
+doesn't have colors enabled.
+Set the environment variable IOCAGE_COLOR=TRUE to enable this
+experimental feature.
+.Pp
 When using VNET and an outside connection is needed, add the node's
 physical NIC into one of the bridges.
 Also see
