@@ -55,10 +55,12 @@ class IOCJson(object):
     format, will set and get properties.
     """
 
-    def __init__(self, location="", silent=False, cli=False, callback=None):
+    def __init__(self, location="", silent=False, cli=False,
+                 stop=False, callback=None):
         self.location = location
         self.lgr = logging.getLogger('ioc_json')
         self.cli = cli
+        self.stop = stop
         self.silent = silent
         self.callback = callback
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
@@ -727,18 +729,23 @@ class IOCJson(object):
                         tag = uuid
                     except ValueError:
                         try:
-                            try:
-                                if state:
-                                    iocage.lib.ioc_common.logit({
-                                        "level"  : "EXCEPTION",
-                                        "message": f"{tag} is running,"
-                                                   " all jails must be stopped"
-                                                   " before iocage will"
-                                                   " continue migration"
-                                    },
-                                        _callback=self.callback,
-                                        silent=self.silent)
+                            if self.stop and state:
+                                # This will allow the user to actually stop
+                                # the running jails before migration.
+                                return conf
 
+                            if state:
+                                iocage.lib.ioc_common.logit({
+                                    "level"  : "EXCEPTION",
+                                    "message": f"{uuid} ({tag}) is running,"
+                                               " all jails must be stopped"
+                                               " before iocage will"
+                                               " continue migration"
+                                },
+                                    _callback=self.callback,
+                                    silent=self.silent)
+
+                            try:
                                 # Can't rename when the child is
                                 # in a non-global zone
                                 data_dataset = self.zfs.get_dataset(
