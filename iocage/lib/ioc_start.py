@@ -139,7 +139,7 @@ class IOCStart(object):
                     silent=self.silent)
 
             self.__check_dhcp__()
-            devfs_ruleset = "5"
+            devfs_ruleset = "5" if devfs_ruleset == "4" else devfs_ruleset
 
         if mount_procfs == "1":
             su.Popen(["mount", "-t", "procfs", "proc", self.path +
@@ -244,6 +244,16 @@ class IOCStart(object):
         },
             _callback=self.callback,
             silent=self.silent)
+
+        if devfs_ruleset != "5" and dhcp == "on":
+            iocage.lib.ioc_common.logit({
+                "level"  : "WARNING",
+                "message": "  You are not using the iocage devfs_ruleset"
+                           " of 5, DHCP may not work."
+            },
+                _callback=self.callback,
+                silent=self.silent)
+
 
         start = su.Popen([x for x in ["jail", "-c"] + net +
                           [f"name=ioc-{self.uuid}",
