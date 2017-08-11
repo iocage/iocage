@@ -146,7 +146,7 @@ def is_option_enabled(args, name):
         value = args[name]
         if value:
             return True
-    except:
+    except KeyError:
         pass
 
     return False

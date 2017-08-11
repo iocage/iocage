@@ -10,7 +10,7 @@ import iocage.lib.JailConfigZFS
 import iocage.lib.helpers
 
 
-class JailConfig():
+class JailConfig:
 
     def __init__(self, data={}, jail=None, logger=None, new=False):
 
@@ -89,7 +89,7 @@ class JailConfig():
                 self.special_properties[name] = new_property_handler
 
             self.data[name] = str(self.special_properties[name])
-        except:
+        except KeyError:
             # pass when there is no handler for the notifying propery
             pass
 
@@ -507,6 +507,9 @@ class JailConfig():
             self.special_properties["resolver"] = resolver
 
         return self.special_properties["resolver"]
+
+    def get_string(self, key):
+        return self.__getattr__(key, string=True)
 
     def __getattr__(self, key, string=False):
 

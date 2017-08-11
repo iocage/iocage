@@ -96,13 +96,15 @@ class Datasets:
         )
 
     def _is_pool_active(self, pool):
-        prop = self.ZFS_POOL_ACTIVE_PROPERTY
-        return self._get_pool_property(pool, prop) == "yes"
+        return "yes" == self._get_pool_property(
+            pool,
+            self.ZFS_POOL_ACTIVE_PROPERTY
+        )
 
     def _get_pool_property(self, pool, prop):
         try:
             return pool.root_dataset.properties[prop].value
-        except:
+        except (KeyError, ValueError):
             return None
 
     def _get_dataset_property(self, dataset, prop):
@@ -118,14 +120,15 @@ class Datasets:
         self._set_pool_activation(pool, False)
 
     def _set_pool_activation(self, pool, state):
-        prop = self.ZFS_POOL_ACTIVE_PROPERTY
         value = "yes" if state is True else "no"
-        self._set_zfs_property(pool.root_dataset, prop, value)
+        self._set_zfs_property(
+            pool.root_dataset,
+            self.ZFS_POOL_ACTIVE_PROPERTY,
+            value
+        )
 
     def _set_zfs_property(self, dataset, name, value):
-
         current_value = self._get_dataset_property(dataset, name)
-
         if current_value != value:
             self.logger.verbose(
                 f"Set ZFS property {name}='{value}'"
@@ -141,7 +144,7 @@ class Datasets:
 
         try:
             return self.datasets[name]
-        except:
+        except KeyError:
             pass
 
         if root_name is None:

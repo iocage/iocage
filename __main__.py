@@ -33,5 +33,5 @@ import click
 
 from iocage.cli import cli
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli(prog_name="iocage")

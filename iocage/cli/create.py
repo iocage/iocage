@@ -92,7 +92,7 @@ def cli(release, template, count, props, pkglist, basejail, basejail_type,
 
     if release is None:
         logger.spam(
-            f"No release selected (-r, --release)."
+            "No release selected (-r, --release)."
             f" Selecting host release '{host.release_version}' as default."
         )
         release = host.release_version
@@ -141,7 +141,7 @@ def cli(release, template, count, props, pkglist, basejail, basejail_type,
             try:
                 key, value = prop.split("=", maxsplit=1)
                 jail_data[key] = value
-            except:
+            except (ValueError, KeyError):
                 logger.error(f"Invalid property {prop}")
                 exit(1)
 
@@ -156,7 +156,7 @@ def cli(release, template, count, props, pkglist, basejail, basejail_type,
             new=True
         )
 
-        suffix = " ({i}/{count})" if count > 1 else ""
+        suffix = f" ({i}/{count})" if count > 1 else ""
         try:
             jail.create(release.name, auto_download=True)
             msg = f"{jail.humanreadable_name} successfully created!{suffix}"
@@ -166,4 +166,4 @@ def cli(release, template, count, props, pkglist, basejail, basejail_type,
             msg = f"{jail.humanreadable_name} could not be created!{suffix}"
             logger.warn(msg)
 
-    exit(1 if errors is True else 0)
+    exit(int(errors))

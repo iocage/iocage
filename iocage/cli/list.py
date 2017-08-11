@@ -93,7 +93,7 @@ def cli(ctx, dataset_type, header, _long, remote, plugins,
 
         try:
             sort_index = columns.index(_sort)
-        except:
+        except ValueError:
             sort_index = None
 
         for jail in jails.list(filters=filters):

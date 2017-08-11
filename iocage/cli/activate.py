@@ -62,5 +62,4 @@ def cli(ctx, zpool, log_level, mountpoint):
         datasets.activate(mountpoint=mountpoint)
         logger.log(f"ZFS pool '{zpool}' activated")
     except:
-        raise
         exit(1)

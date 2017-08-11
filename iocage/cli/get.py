@@ -49,7 +49,7 @@ def cli(ctx, prop, _all, _pool, jail, log_level):
     if _pool is True:
         try:
             print(host.datasets.active_pool.name)
-        except:
+        except Exception:
             print("No active pool found")
         exit(1)
 
@@ -93,7 +93,7 @@ def cli(ctx, prop, _all, _pool, jail, log_level):
 
     for key in jail.config.all_properties:
         if (prop is None) or (key == prop):
-            value = jail.config.__getattr__(key, string=True)
+            value = jail.config.get_string(key)
             print_property(key, value)
 
 

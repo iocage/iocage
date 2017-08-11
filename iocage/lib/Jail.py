@@ -159,8 +159,8 @@ class Jail:
             jail=self
         )
 
-        for key in self.config.data.keys():
-            msg = f"{key} = {self.config.data[key]}"
+        for key, value in self.config.data:
+            msg = f"{key} = {value}"
             self.logger.spam(msg, jail=self, indent=1)
 
         self.storage.create_jail_dataset()
@@ -420,7 +420,7 @@ class Jail:
                 "-v",
                 "-h"
             ], shell=False, stderr=subprocess.DEVNULL)
-            output = stdout.decode("utf-8").strip()
+            output = stdout.decode().strip()
 
             keys, values = [x.split(" ") for x in output.split("\n")]
             self.jail_state = dict(zip(keys, values))
@@ -469,12 +469,12 @@ class Jail:
         try:
             uuid.UUID(self.name)
             return str(self.name)[:8]
-        except:
+        except (TypeError, ValueError):
             pass
 
         try:
             return self.name
-        except:
+        except AttributeError:
             pass
 
         raise Exception("This Jail has no identifier yet")
@@ -488,13 +488,13 @@ class Jail:
     def _get_jid(self):
         try:
             return self.jail_state["jid"]
-        except:
+        except AttributeError, KeyError:
             pass
 
         try:
             self.update_jail_state()
             return self.jail_state["jid"]
-        except:
+        except AttributeError, KeyError:
             return None
 
     def _get_identifier(self):
@@ -554,12 +554,12 @@ class Jail:
             except:
                 pass
 
-        raise Exception(f"Jail property {key} not found")
+        raise AttributeError(f"Jail property {key} not found")
 
     def getattr_str(self, key):
         try:
             return str(self.__getattr__(key))
-        except:
+        except AttributeError:
             return "-"
 
     def __dir__(self):
