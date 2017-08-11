@@ -807,8 +807,8 @@ class IOCage(object):
             if self.jail == "default":
                 try:
                     return ioc_json.IOCJson(
-                        exit_on_error=self.exit_on_error).json_get_value(prop,
-                                                             default=True)
+                        exit_on_error=self.exit_on_error).json_get_value(
+                        prop, default=True)
                 except KeyError:
                     ioc_common.logit({
                         "level"  : "EXCEPTION",
