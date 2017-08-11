@@ -8,6 +8,7 @@ install:
 	pip3.6 install -U Cython
 	cd py-libzfs && python3.6 setup.py build && python3.6 setup.py install
 	pkg install -q -y libgit2
+	gzip --keep --force man/iocage.8.gz
 	pip3.6 install -U .
 uninstall:
 	pip3.6 uninstall -y iocage

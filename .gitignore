@@ -14,3 +14,4 @@ venv/
 build/
 venv-*/
 .python-version
+man/iocage.8.gz
