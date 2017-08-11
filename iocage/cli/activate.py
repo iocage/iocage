@@ -32,12 +32,16 @@ __rootcmd__ = True
 
 
 @click.command(name="activate", help="Set a zpool active for iocage usage.")
+@click.pass_context
 @click.argument("zpool")
 @click.option("--log-level", "-d", default=None)
 @click.option("--mountpoint", "-m", default="/iocage")
-def cli(zpool, log_level, mountpoint):
-    """Calls ZFS set to change the property org.freebsd.ioc:active to yes."""
-    logger = iocage.lib.Logger.Logger(print_level=log_level)
+def cli(ctx, zpool, log_level, mountpoint):
+    """
+    Calls ZFS set to change the property org.freebsd.ioc:active to yes.
+    """
+    logger = ctx.parent.logger
+    logger.print_level = log_level
     zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
     iocage_pool = None
 

@@ -32,13 +32,14 @@ __rootcmd__ = True
 
 
 @click.command(name="console", help="Login to a jail.")
+@click.pass_context
 @click.argument("jail")
 @click.option("--log-level", "-d", default=None)
-def cli(jail, log_level):
+def cli(ctx, jail, log_level):
     """
     Runs jexec to login into the specified jail.
     """
-    logger = iocage.lib.Logger.Logger(print_level=False)
+    logger = ctx.parent.logger
     logger.print_level = log_level
 
     jail = iocage.lib.Jail.Jail(jail, logger=logger)

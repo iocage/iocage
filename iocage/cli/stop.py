@@ -32,17 +32,19 @@ __rootcmd__ = True
 
 
 @click.command(name="stop", help="Stops the specified jails or ALL.")
+@click.pass_context
 @click.option("--rc", default=False, is_flag=True,
               help="Will stop all jails with boot=on, in the specified"
                    " order with higher value for priority stopping first.")
 @click.argument("jails", nargs=-1)
 @click.option("--log-level", "-d", default=None)
-def cli(rc, jails, log_level):
+def cli(ctx, rc, jails, log_level):
     """
     Looks for the jail supplied and passes the uuid, path and configuration
     location to stop_jail.
     """
-    logger = iocage.lib.Logger.Logger(print_level=log_level)
+    logger = ctx.parent.logger
+    logger.print_level = log_level
     ioc_jails = iocage.lib.Jails.Jails(logger=logger)
 
     for jail in ioc_jails.list(filters=jails):

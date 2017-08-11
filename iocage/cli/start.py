@@ -32,17 +32,19 @@ __rootcmd__ = True
 
 
 @click.command(name="start", help="Starts the specified jails or ALL.")
+@click.pass_context
 @click.option("--rc", default=False, is_flag=True,
               help="Will start all jails with boot=on, in the specified"
                    " order with smaller value for priority starting first.")
 @click.option("--log-level", "-d", default=None)
 @click.argument("jails", nargs=-1)
-def cli(rc, jails, log_level):
+def cli(ctx, rc, jails, log_level):
     """
     Starts Jails
     """
 
-    logger = iocage.lib.Logger.Logger(print_level=log_level)
+    logger = ctx.parent.logger
+    logger.print_level = log_level
     ioc_jails = iocage.lib.Jails.Jails(logger=logger)
 
     for jail in ioc_jails.list(filters=jails):

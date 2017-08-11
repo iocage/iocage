@@ -32,6 +32,7 @@ import iocage.lib.Logger
 
 @click.command(name="list", help="List a specified dataset type, by default"
                                  " lists all jails.")
+@click.pass_context
 @click.option("--release", "--base", "-r", "-b", "dataset_type",
               flag_value="base", help="List all bases.")
 @click.option("--template", "-t", "dataset_type", flag_value="template",
@@ -47,13 +48,15 @@ import iocage.lib.Logger
               help="Sorts the list by the given type")
 @click.option("--quick", "-q", is_flag=True, default=False,
               help="Lists all jails with less processing and fields.")
-@click.option("--log-level", "-d", default="info")
+@click.option("--log-level", "-d", default=None)
 @click.option("--output", "-o", default=None)
 @click.argument("filters", nargs=-1)
-def cli(dataset_type, header, _long, remote, plugins,
+def cli(ctx, dataset_type, header, _long, remote, plugins,
         _sort, quick, log_level, output, filters):
+    
+    logger = ctx.parent.logger
+    logger.print_level = log_level
 
-    logger = iocage.lib.Logger.Logger(print_level=log_level)
     host = iocage.lib.Host.Host(logger=logger)
     jails = iocage.lib.Jails.Jails(logger=logger)
 

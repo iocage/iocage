@@ -31,6 +31,7 @@ import iocage.lib.Host
 
 @click.command(context_settings=dict(
     max_content_width=400, ), name="get", help="Gets the specified property.")
+@click.pass_context
 @click.argument("prop", required=True, default="")
 @click.argument("jail", required=True, default="")
 @click.option("--all", "-a", "_all", help="Get all properties for the "
@@ -38,10 +39,11 @@ import iocage.lib.Host
 @click.option("--pool", "-p", "_pool", help="Get the currently activated "
                                             "zpool.", is_flag=True)
 @click.option("--log-level", "-d", default=None)
-def cli(prop, _all, _pool, jail, log_level):
+def cli(ctx, prop, _all, _pool, jail, log_level):
     """Get a list of jails and print the property."""
 
-    logger = iocage.lib.Logger.Logger(print_level=log_level)
+    logger = ctx.parent.logger
+    logger.print_level = log_level
     host = iocage.lib.Host.Host(logger=logger)
 
     if _pool is True:

@@ -35,11 +35,7 @@ click.core._verify_python3_env = lambda: None
 user_locale = os.environ.get("LANG", "en_US.UTF-8")
 locale.setlocale(locale.LC_ALL, user_locale)
 
-# inject ./cli to path
-__dirname = os.path.abspath(os.path.dirname(__file__))
-iocage_cmd_folder = __dirname
-iocage_lib_folder = os.path.join(__dirname, "iocage/lib")
-sys.path = [iocage_cmd_folder, iocage_lib_folder] + sys.path
+IOCAGE_CMD_FOLDER = os.path.abspath(os.path.dirname(__file__))
 
 # @formatter:off
 # Sometimes SIGINT won't be installed.
@@ -49,14 +45,18 @@ signal.signal(signal.SIGINT, signal.default_int_handler)
 signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 # @formatter:on
 
+from ..lib.Logger import Logger
+logger = Logger()
+
 try:
     su.check_call(["sysctl", "vfs.zfs.version.spa"],
                   stdout=su.PIPE, stderr=su.PIPE)
 except su.CalledProcessError:
-    raise Exception(
+    logger.error(
         "ZFS is required to use iocage.\n"
         "Try calling 'kldload zfs' as root."
     )
+    exit(1)
 
 
 class IOCageCLI(click.MultiCommand):
@@ -67,7 +67,7 @@ class IOCageCLI(click.MultiCommand):
     def list_commands(self, ctx):
         rv = []
 
-        for filename in os.listdir(iocage_cmd_folder):
+        for filename in os.listdir(IOCAGE_CMD_FOLDER):
             if filename.endswith('.py') and \
                     not filename.startswith('__init__'):
                 rv.append(re.sub(".py$", "", filename))
@@ -76,21 +76,22 @@ class IOCageCLI(click.MultiCommand):
         return rv
 
     def get_command(self, ctx, name):
+        ctx.logger = logger
         try:
-            mod = __import__(name, None, None, ["cli"])
+            mod = __import__(f"iocage.cli.{name}", None, None, ["cli"])
 
             try:
                 if mod.__rootcmd__ and "--help" not in sys.argv[1:]:
                     if len(sys.argv) != 1:
                         if os.geteuid() != 0:
-                            raise Exception(
+                            logger.error(
                                 f"You need to have root privileges"
                                 f" to run {mod.__name__}"
                             )
+                            exit(1)
             except AttributeError:
                 # It's not a root required command.
                 pass
-
             return mod.cli
         except (ImportError, AttributeError):
             return

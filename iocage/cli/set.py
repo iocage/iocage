@@ -33,13 +33,15 @@ __rootcmd__ = True
 
 @click.command(context_settings=dict(
     max_content_width=400, ), name="set", help="Sets the specified property.")
+@click.pass_context
 @click.argument("props", nargs=-1)
 @click.argument("jail", nargs=1)
 @click.option("--log-level", "-d", default=None)
-def cli(props, jail, log_level):
+def cli(ctx, props, jail, log_level):
     """Get a list of jails and print the property."""
 
-    logger = iocage.lib.Logger.Logger(print_level=log_level)
+    logger = ctx.parent.logger
+    logger.print_level = log_level
 
     jail = iocage.lib.Jail.Jail(jail, logger=logger)
     for prop in props:

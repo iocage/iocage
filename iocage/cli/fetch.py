@@ -50,6 +50,7 @@ __rootcmd__ = True
     max_content_width=400, ),
     name="fetch", help="Fetch a version of FreeBSD for jail usage or a"
                        " preconfigured plugin.")
+@click.pass_context
 @click.option("--url", "-u",
               help="Remote URL with path to the release/snapshot directory")
 @click.option("--file", "-F", multiple=True,
@@ -76,9 +77,10 @@ __rootcmd__ = True
 # @click.option("--verify/--noverify", "-V/-NV", default=True,
 #               help="Enable or disable verifying SSL cert for HTTP fetching.")
 # def cli(url, files, release, update):
-def cli(**kwargs):
+def cli(ctx, **kwargs):
 
-    logger = iocage.lib.Logger.Logger()
+    logger = ctx.parent.logger
+    logger.print_level = log_level
     host = iocage.lib.Host.Host(logger=logger)
     prompts = iocage.lib.Prompts.Prompts(host=host)
 
