@@ -84,6 +84,7 @@ class JailConfigFstab(set):
             with open(self.fstab_file_path, "r") as f:
                 self.parse_lines(f.read())
                 f.close()
+                self.logger.debug(f"fstab loaded from {self.fstab_file_path}")
 
     def save(self):
         self.logger.verbose(f"Writing fstab to {self.fstab_file_path}")
@@ -125,8 +126,8 @@ class JailConfigFstab(set):
 
     @property
     def basejail_lines(self):
-        basejail = self.jail.config.basejail
-        basejail_type = self.jail.config.basejail_type
+        basejail = self.jail.config["basejail"]
+        basejail_type = self.jail.config["basejail_type"]
 
         if not (basejail and basejail_type == "nullfs"):
             return []
@@ -135,7 +136,7 @@ class JailConfigFstab(set):
         for basedir in iocage.lib.helpers.get_basedir_list():
             release_directory = self.jail.host.datasets.releases.mountpoint
 
-            cloned_release = self.jail.config.cloned_release
+            cloned_release = self.jail.config["cloned_release"]
             source = f"{release_directory}/{cloned_release}/root/{basedir}"
             destination = f"{self.jail.path}/root/{basedir}"
             fstab_basejail_lines.append({

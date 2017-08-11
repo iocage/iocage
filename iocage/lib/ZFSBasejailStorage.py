@@ -16,7 +16,7 @@ class ZFSBasejailStorage:
 
     def clone(self, release):
 
-        if not self.jail.config.basejail_type == "zfs":
+        if not self.jail.config["basejail_type"] == "zfs":
             msg = f"Jail {self.jail.humanreadable_name} is not a zfs basejail."
             self.logger.error(msg)
             raise Exception(msg)

@@ -31,6 +31,9 @@ import sys
 
 import click
 
+from ..lib.Logger import Logger
+logger = Logger()
+
 click.core._verify_python3_env = lambda: None
 user_locale = os.environ.get("LANG", "en_US.UTF-8")
 locale.setlocale(locale.LC_ALL, user_locale)
@@ -44,9 +47,6 @@ signal.signal(signal.SIGINT, signal.default_int_handler)
 # If a utility decides to cut off the pipe, we don't care (IE: head)
 signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 # @formatter:on
-
-from ..lib.Logger import Logger
-logger = Logger()
 
 try:
     su.check_call(["sysctl", "vfs.zfs.version.spa"],

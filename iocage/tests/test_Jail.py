@@ -41,8 +41,8 @@ class TestJail(object):
         try:
             uuid.UUID(jail.name)
             assert len(str(jail.name)) == 36
-            assert jail.config.basejail == False
-            assert not jail.config.basejail_type
+            assert jail.config["basejail"] == False
+            assert not jail.config["basejail_type"]
 
             assert dataset.mountpoint is not None
             assert os.path.isfile(f"{dataset.mountpoint}/config.json")
@@ -98,8 +98,8 @@ class TestNullFSBasejail(object):
         try:
             uuid.UUID(jail.name)
             assert len(str(jail.name)) == 36
-            assert jail.config.basejail == True
-            assert jail.config.basejail_type == "nullfs"
+            assert jail.config["basejail"] == True
+            assert jail.config["basejail_type"] == "nullfs"
 
             assert dataset.mountpoint is not None
             assert os.path.isfile(f"{dataset.mountpoint}/config.json")

@@ -85,15 +85,15 @@ def cli(ctx, prop, _all, _pool, jail, log_level):
 
     if prop:
         try:
-            print_property(prop, jail.config.__getattr__(prop, string=True))
+            print_property(prop, jail.config["__getattr__"](prop, string=True))
             return
         except:
             logger.error(f"Unknown property '{prop}'")
             exit(1)
 
-    for key in jail.config.all_properties:
+    for key in jail.config["all_properties"]:
         if (prop is None) or (key == prop):
-            value = jail.config.get_string(key)
+            value = jail.config["get_string"](key)
             print_property(key, value)
 
 

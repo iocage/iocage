@@ -56,10 +56,10 @@ class Jail:
 
         backend = None
 
-        if self.config.basejail_type == "zfs":
+        if self.config["basejail_type"] == "zfs":
             backend = iocage.lib.ZFSBasejailStorage.ZFSBasejailStorage
 
-        if self.config.basejail_type == "nullfs":
+        if self.config["basejail_type"] == "nullfs":
             backend = iocage.lib.NullFSBasejailStorage.NullFSBasejailStorage
 
         if backend is not None:
@@ -69,22 +69,26 @@ class Jail:
         self.config.fstab.save_with_basedirs()
         self.launch_jail()
 
-        if self.config.vnet:
+        if self.config["vnet"]:
             self.start_vimage_network()
             self.set_routes()
 
         self.set_nameserver()
 
-        if self.config.jail_zfs is True:
+        if self.config["jail_zfs"] is True:
             iocage.lib.ZFSShareStorage.ZFSShareStorage.mount_zfs_shares(
                 self.storage
             )
 
-    def stop(self):
+    def stop(self, force=False):
+
+        if force is True:
+            return self.force_stop()
+
         self.require_jail_existing()
         self.require_jail_running()
         self.destroy_jail()
-        if self.config.vnet:
+        if self.config["vnet"]:
             self.stop_vimage_network()
         self._teardown_mounts()
         self.update_jail_state()
@@ -110,7 +114,7 @@ class Jail:
             successful = False
             self.logger.warn(str(e))
 
-        if self.config.vnet:
+        if self.config["vnet"]:
             try:
                 self.stop_vimage_network()
             except Exception as e:
@@ -149,17 +153,17 @@ class Jail:
             self.logger.error(msg)
             raise Exception(msg)
 
-        self.config.release = release.name
+        self.config["release"] = release.name
 
-        if not self.config.id:
-            self.config.name = str(uuid.uuid4())
+        if not self.config["id"]:
+            self.config["name"] = str(uuid.uuid4())
 
         self.logger.verbose(
-            f"Creating jail '{self.config.id}'",
+            f"Creating jail '{self.config['id']}'",
             jail=self
         )
 
-        for key, value in self.config.data:
+        for key, value in self.config.data.items():
             msg = f"{key} = {value}"
             self.logger.spam(msg, jail=self, indent=1)
 
@@ -168,10 +172,12 @@ class Jail:
 
         backend = None
 
-        is_basejail = self.config.type == "basejail"
-        if is_basejail and self.config.basejail_type == "nullfs":
+        is_basejail = self.config["type"] == "basejail"
+        if not is_basejail:
+            backend = iocage.lib.StandaloneJailStorage.StandaloneJailStorage
+        if is_basejail and self.config["basejail_type"] == "nullfs":
             backend = iocage.lib.NullFSBasejailStorage.NullFSBasejailStorage
-        elif is_basejail and self.config.basejail_type == "zfs":
+        elif is_basejail and self.config["basejail_type"] == "zfs":
             backend = iocage.lib.ZFSBasejailStorage.ZFSBasejailStorage
 
         if backend is not None:
@@ -202,7 +208,7 @@ class Jail:
 
     def exec_console(self):
         return self.passthru(
-            ["/usr/bin/login"] + self.config.login_flags
+            ["/usr/bin/login"] + self.config["login_flags"]
         )
 
     def destroy_jail(self):
@@ -220,73 +226,73 @@ class Jail:
 
         command = ["jail", "-c"]
 
-        if self.config.vnet:
+        if self.config["vnet"]:
             command.append('vnet')
         else:
 
-            if self.config.ip4_addr is not None:
-                ip4_addr = self.config.ip4_addr
+            if self.config["ip4_addr"] is not None:
+                ip4_addr = self.config["ip4_addr"]
                 command += [
                     f"ip4.addr={ip4_addr}",
-                    f"ip4.saddrsel={self.config.ip4_saddrsel}",
-                    f"ip4={self.config.ip4}",
+                    f"ip4.saddrsel={self.config['ip4_saddrsel']}",
+                    f"ip4={self.config['ip4']}",
                 ]
 
-            if self.config.ip6_addr is not None:
-                ip6_addr = self.config.ip6_addr
+            if self.config['ip6_addr'] is not None:
+                ip6_addr = self.config['ip6_addr']
                 command += [
                     f"ip6.addr={ip6_addr}",
-                    f"ip6.saddrsel={self.config.ip6_saddrsel}",
-                    f"ip6={self.config.ip6}",
+                    f"ip6.saddrsel={self.config['ip6_saddrsel']}",
+                    f"ip6={self.config['ip6']}",
                 ]
 
         command += [
             f"name={self.identifier}",
-            f"host.hostname={self.config.host_hostname}",
-            f"host.domainname={self.config.host_domainname}",
+            f"host.hostname={self.config['host_hostname']}",
+            f"host.domainname={self.config['host_domainname']}",
             f"path={self.path}/root",
-            f"securelevel={self.config.securelevel}",
+            f"securelevel={self.config['securelevel']}",
             f"host.hostuuid={self.name}",
-            f"devfs_ruleset={self.config.devfs_ruleset}",
-            f"enforce_statfs={self.config.enforce_statfs}",
-            f"children.max={self.config.children_max}",
-            f"allow.set_hostname={self.config.allow_set_hostname}",
-            f"allow.sysvipc={self.config.allow_sysvipc}"
+            f"devfs_ruleset={self.config['devfs_ruleset']}",
+            f"enforce_statfs={self.config['enforce_statfs']}",
+            f"children.max={self.config['children_max']}",
+            f"allow.set_hostname={self.config['allow_set_hostname']}",
+            f"allow.sysvipc={self.config['allow_sysvipc']}"
         ]
 
         if self.host.userland_version > 10.3:
             command += [
-                f"sysvmsg={self.config.sysvmsg}",
-                f"sysvsem={self.config.sysvsem}",
-                f"sysvshm={self.config.sysvshm}"
+                f"sysvmsg={self.config['sysvmsg']}",
+                f"sysvsem={self.config['sysvsem']}",
+                f"sysvshm={self.config['sysvshm']}"
             ]
 
         command += [
-            f"allow.raw_sockets={self.config.allow_raw_sockets}",
-            f"allow.chflags={self.config.allow_chflags}",
-            f"allow.mount={self.config.allow_mount}",
-            f"allow.mount.devfs={self.config.allow_mount_devfs}",
-            f"allow.mount.nullfs={self.config.allow_mount_nullfs}",
-            f"allow.mount.procfs={self.config.allow_mount_procfs}",
-            f"allow.mount.zfs={self.config.allow_mount_zfs}",
-            f"allow.quotas={self.config.allow_quotas}",
-            f"allow.socket_af={self.config.allow_socket_af}",
-            f"exec.prestart={self.config.exec_prestart}",
-            f"exec.poststart={self.config.exec_poststart}",
-            f"exec.prestop={self.config.exec_prestop}",
-            f"exec.start={self.config.exec_start}",
-            f"exec.stop={self.config.exec_stop}",
-            f"exec.clean={self.config.exec_clean}",
-            f"exec.timeout={self.config.exec_timeout}",
-            f"stop.timeout={self.config.stop_timeout}",
+            f"allow.raw_sockets={self.config['allow_raw_sockets']}",
+            f"allow.chflags={self.config['allow_chflags']}",
+            f"allow.mount={self.config['allow_mount']}",
+            f"allow.mount.devfs={self.config['allow_mount_devfs']}",
+            f"allow.mount.nullfs={self.config['allow_mount_nullfs']}",
+            f"allow.mount.procfs={self.config['allow_mount_procfs']}",
+            f"allow.mount.zfs={self.config['allow_mount_zfs']}",
+            f"allow.quotas={self.config['allow_quotas']}",
+            f"allow.socket_af={self.config['allow_socket_af']}",
+            f"exec.prestart={self.config['exec_prestart']}",
+            f"exec.poststart={self.config['exec_poststart']}",
+            f"exec.prestop={self.config['exec_prestop']}",
+            f"exec.start={self.config['exec_start']}",
+            f"exec.stop={self.config['exec_stop']}",
+            f"exec.clean={self.config['exec_clean']}",
+            f"exec.timeout={self.config['exec_timeout']}",
+            f"stop.timeout={self.config['stop_timeout']}",
             f"mount.fstab={self.path}/fstab",
-            f"mount.devfs={self.config.mount_devfs}"
+            f"mount.devfs={self.config['mount_devfs']}"
         ]
 
         if self.host.userland_version > 9.3:
             command += [
-                f"mount.fdescfs={self.config.mount_fdescfs}",
-                f"allow.mount.tmpfs={self.config.allow_mount_tmpfs}"
+                f"mount.fdescfs={self.config['mount_fdescfs']}",
+                f"allow.mount.tmpfs={self.config['allow_mount_tmpfs']}"
             ]
 
         command += [
@@ -315,18 +321,18 @@ class Jail:
 
         self.logger.log("Starting VNET/VIMAGE", jail=self)
 
-        nics = self.config.interfaces
+        nics = self.config["interfaces"]
         for nic in nics:
 
-            bridges = list(self.config.interfaces[nic])
+            bridges = list(self.config["interfaces"][nic])
 
             try:
-                ipv4_addresses = self.config.ip4_addr[nic]
+                ipv4_addresses = self.config["ip4_addr"][nic]
             except:
                 ipv4_addresses = []
 
             try:
-                ipv6_addresses = self.config.ip6_addr[nic]
+                ipv6_addresses = self.config["ip6_addr"][nic]
             except:
                 ipv6_addresses = []
 
@@ -347,12 +353,12 @@ class Jail:
             self.networks.remove(network)
 
     def set_nameserver(self):
-        self.config.resolver.apply(self)
+        self.config["resolver"].apply(self)
 
     def set_routes(self):
 
-        defaultrouter = self.config.defaultrouter
-        defaultrouter6 = self.config.defaultrouter6
+        defaultrouter = self.config["defaultrouter"]
+        defaultrouter6 = self.config["defaultrouter6"]
 
         if not defaultrouter or defaultrouter6:
             self.logger.spam("no static routes configured")
@@ -462,7 +468,7 @@ class Jail:
         raise Exception(f"No jail matching {text} was found")
 
     def _get_name(self):
-        return self.config.id
+        return self.config["id"]
 
     def _get_humanreadable_name(self):
 
@@ -488,17 +494,17 @@ class Jail:
     def _get_jid(self):
         try:
             return self.jail_state["jid"]
-        except AttributeError, KeyError:
+        except (TypeError, AttributeError, KeyError):
             pass
 
         try:
             self.update_jail_state()
             return self.jail_state["jid"]
-        except AttributeError, KeyError:
+        except (TypeError, AttributeError, KeyError):
             return None
 
     def _get_identifier(self):
-        return f"ioc-{self.config.id}"
+        return f"ioc-{self.config['id']}"
 
     def _get_exists(self):
         try:
@@ -509,14 +515,14 @@ class Jail:
 
     def _get_release(self):
         return iocage.lib.Release.Release(
-            name=self.config.release,
+            name=self.config["release"],
             logger=self.logger,
             host=self.host,
             zfs=self.zfs
         )
 
     def _get_jail_type(self):
-        return self.config.type
+        return self.config["type"]
 
     def set_dataset_name(self, value=None):
         self._dataset_name = value
@@ -525,7 +531,7 @@ class Jail:
         if self._dataset_name is not None:
             return self._dataset_name
         else:
-            return f"{self.host.datasets.root.name}/jails/{self.config.id}"
+            return f"{self.host.datasets.root.name}/jails/{self.config['id']}"
 
     def _get_dataset(self):
         return self.zfs.get_dataset(self._get_dataset_name())
@@ -547,6 +553,7 @@ class Jail:
             jail_state = object.__getattribute__(self, "jail_state")
         except:
             jail_state = None
+            raise
 
         if jail_state is not None:
             try:
@@ -560,6 +567,7 @@ class Jail:
         try:
             return str(self.__getattr__(key))
         except AttributeError:
+            raise
             return "-"
 
     def __dir__(self):

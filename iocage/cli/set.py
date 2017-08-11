@@ -48,10 +48,10 @@ def cli(ctx, props, jail, log_level):
 
         if _is_setter_property(prop):
             key, value = prop.split("=", maxsplit=1)
-            jail.config.__setattr__(key, value)
+            jail.config[key] = value
         else:
             key = prop
-            jail.config.__delattr__(key)
+            del jail.config[key]
 
     jail.config.save()
 

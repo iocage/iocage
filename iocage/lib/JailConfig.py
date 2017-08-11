@@ -10,22 +10,24 @@ import iocage.lib.JailConfigZFS
 import iocage.lib.helpers
 
 
-class JailConfig:
+class JailConfig(dict, object):
 
     def __init__(self, data={}, jail=None, logger=None, new=False):
 
+        dict.__init__(self)
+
         iocage.lib.helpers.init_logger(self, logger)
 
-        object.__setattr__(self, 'data', {})
-        object.__setattr__(self, 'special_properties', {})
-        object.__setattr__(self, 'legacy', False)
+        self.data = {}
+        self.special_properties = {}
+        self["legacy"] = False
 
         # jail is required for various operations (write, fstab, etc)
         if jail:
-            object.__setattr__(self, 'jail', jail)
+            self.jail = jail
             fstab = iocage.lib.JailConfigFstab.JailConfigFstab(
                 jail=jail, logger=self.logger)
-            object.__setattr__(self, 'fstab', fstab)
+            self.fstab = fstab
         else:
             self.jail = None
             self.fstab = None
@@ -34,29 +36,29 @@ class JailConfig:
 
         # the UUID is used in many other variables and needs to be set first
         if "name" in data_keys:
-            self.name = data["name"]
+            self["name"] = data["name"]
         elif "uuid" in data_keys:
-            self.name = data["uuid"]
+            self["name"] = data["uuid"]
         else:
-            object.__setattr__(self, 'id', None)
+            self["id"] = None
 
         # be aware of iocage-legacy jails for migration
         try:
-            self.legacy = data.legacy is True
+            self["legacy"] = data["legacy"] is True
         except:
-            self.legacy = False
+            self["legacy"] = False
 
         self.clone(data)
 
     def clone(self, data):
         for key in data:
-            self.__setattr__(key, data[key])
+            self.__setitem__(key, data[key])
 
     def read(self):
 
         try:
             iocage.lib.JailConfigJSON.JailConfigJSON.read(self)
-            object.__setattr__(self, 'legacy', False)
+            self["legacy"] = False
             self.logger.log("Configuration loaded from JSON", level="verbose")
             return
         except:
@@ -64,7 +66,7 @@ class JailConfig:
 
         try:
             iocage.lib.JailConfigLegacy.JailConfigLegacy.read(self)
-            object.__setattr__(self, 'legacy', True)
+            self["legacy"] = True
             self.logger.verbose(
                 "Configuration loaded from UCL config file (iocage-legacy)")
             return
@@ -73,7 +75,7 @@ class JailConfig:
 
         try:
             iocage.lib.JailConfigZFS.JailConfigZFS.read(self)
-            object.__setattr__(self, 'legacy', True)
+            self["legacy"] = True
             self.logger.verbose(
                 "Configuration loaded from ZFS properties (iocage-legacy)")
             return
@@ -94,7 +96,7 @@ class JailConfig:
             pass
 
     def save(self):
-        if not self.legacy:
+        if not self["legacy"]:
             self.save_json()
         else:
             iocage.lib.JailConfigLegacy.JailConfigLegacy.save(self)
@@ -129,7 +131,7 @@ class JailConfig:
             self.logger.error(msg)
             raise Exception(msg)
 
-        self.__setattr__("id", name)
+        self.id = name
 
         try:
             self.host_hostname
@@ -152,9 +154,9 @@ class JailConfig:
             current_type = "jail"
 
         if current_type == "jail":
-            if self.basejail:
+            if self["basejail"]:
                 return "basejail"
-            elif self.clonejail:
+            elif self["clonejail"]:
                 return "clonejail"
             else:
                 return "jail"
@@ -164,13 +166,13 @@ class JailConfig:
     def _set_type(self, value):
 
         if value == "basejail":
-            self.basejail = True
-            self.clonejail = False
+            self["basejail"] = True
+            self["clonejail"] = False
             self.data["type"] = "jail"
 
         elif value == "clonejail":
-            self.basejail = False
-            self.clonejail = True
+            self["basejail"] = False
+            self["clonejail"] = True
             self.data["type"] = "jail"
 
         else:
@@ -184,8 +186,9 @@ class JailConfig:
         return False
 
     def _set_basejail(self, value):
+        # ToDo: generalize boolean value inputs
         enabled = (value is True) or (value == "on") or (value == "yes")
-        if self.legacy:
+        if self["legacy"]:
             self.data["basejail"] = "on" if enabled else "off"
         else:
             self.data["basejail"] = "yes" if enabled else "no"
@@ -328,14 +331,14 @@ class JailConfig:
         try:
             return self.data["cloned_release"]
         except:
-            return self.release
+            return self["release"]
 
     def _get_basejail_type(self):
         return self.data["basejail_type"]
 
     def _default_basejail_type(self):
         try:
-            if self.basejail:
+            if self["basejail"]:
                 return "nullfs"
         except:
             pass
@@ -390,7 +393,7 @@ class JailConfig:
         return self.jail.humanreadable_name
 
     def _default_host_hostuuid(self):
-        return self.id
+        return self["id"]
 
     def _default_host_domainname(self):
         return "none"
@@ -509,9 +512,9 @@ class JailConfig:
         return self.special_properties["resolver"]
 
     def get_string(self, key):
-        return self.__getattr__(key, string=True)
+        return self.__getitem__(key, string=True)
 
-    def __getattr__(self, key, string=False):
+    def __getitem__(self, key, string=False):
 
         # passthrough existing properties
         try:
@@ -538,20 +541,20 @@ class JailConfig:
             fallback_method = self.__getattribute__(f"_default_{key}")
             return self.stringify(fallback_method(), string)
         except:
-            raise Exception(f"Variable {key} not found")
+            raise KeyError(f"Config variable {key} not found")
 
-    def __delattr__(self, key):
+    def __delitem__(self, key):
         del self.data[key]
 
-    def __setattr__(self, key, value):
+    def __setitem__(self, key, value):
 
         # passthrough existing properties
-        try:
-            self.__getattribute__(key)
-            object.__setattr__(self, key, value)
-            return
-        except:
-            pass
+        # try:
+        #     self.__getitem__(key)
+        #     object.__setitem__(self, key, value)
+        #     return
+        # except:
+        #     pass
 
         setter_method = None
         try:

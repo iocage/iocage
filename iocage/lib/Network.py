@@ -123,7 +123,7 @@ class Network:
         m = md5()
         m.update(self.jail.name.encode("utf-8"))
         m.update(self.nic.encode("utf-8"))
-        prefix = self.jail.config.mac_prefix
+        prefix = self.jail.config["mac_prefix"]
         return f"{prefix}{m.hexdigest()[0:12-len(prefix)]}"
 
     def __generate_mac_address_pair(self):

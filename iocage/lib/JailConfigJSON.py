@@ -27,4 +27,6 @@ class JailConfigJSON:
         try:
             return f"{self.jail.dataset.mountpoint}/config.json"
         except:
-            raise Exception("Dataset not found or not mounted")
+            raise Exception(
+                f"Dataset '{self.jail.dataset}' not found or not mounted"
+            )

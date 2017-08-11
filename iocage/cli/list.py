@@ -53,7 +53,7 @@ import iocage.lib.Logger
 @click.argument("filters", nargs=-1)
 def cli(ctx, dataset_type, header, _long, remote, plugins,
         _sort, quick, log_level, output, filters):
-    
+
     logger = ctx.parent.logger
     logger.print_level = log_level
 
@@ -111,7 +111,8 @@ def cli(ctx, dataset_type, header, _long, remote, plugins,
 
 
 def _lookup_jail_value(jail, key):
+    print(iocage.lib.Jails.Jails.JAIL_KEYS)
     if key in iocage.lib.Jails.Jails.JAIL_KEYS:
         return jail.getattr_str(key)
     else:
-        return str(jail.config.__getattr__(key))
+        return str(jail.config.__getitem__(key))

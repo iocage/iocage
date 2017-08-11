@@ -144,7 +144,7 @@ class Datasets:
 
         try:
             return self.datasets[name]
-        except KeyError:
+        except (AttributeError, KeyError):
             pass
 
         if root_name is None:

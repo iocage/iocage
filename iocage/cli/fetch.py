@@ -80,7 +80,7 @@ __rootcmd__ = True
 def cli(ctx, **kwargs):
 
     logger = ctx.parent.logger
-    logger.print_level = log_level
+    logger.print_level = kwargs["log_level"]
     host = iocage.lib.Host.Host(logger=logger)
     prompts = iocage.lib.Prompts.Prompts(host=host)
 

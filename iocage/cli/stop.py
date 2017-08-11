@@ -36,9 +36,11 @@ __rootcmd__ = True
 @click.option("--rc", default=False, is_flag=True,
               help="Will stop all jails with boot=on, in the specified"
                    " order with higher value for priority stopping first.")
-@click.argument("jails", nargs=-1)
 @click.option("--log-level", "-d", default=None)
-def cli(ctx, rc, jails, log_level):
+@click.option("--force", "-f", is_flag=True, default=False,
+              help="Skip checks and enforce jail shutdown")
+@click.argument("jails", nargs=-1)
+def cli(ctx, rc, log_level, force, jails):
     """
     Looks for the jail supplied and passes the uuid, path and configuration
     location to stop_jail.
@@ -50,7 +52,7 @@ def cli(ctx, rc, jails, log_level):
     for jail in ioc_jails.list(filters=jails):
         logger.log(f"Stopping jail {jail.humanreadable_name}")
         try:
-            jail.stop()
+            jail.stop(force=force)
         except:
             exit(1)
 

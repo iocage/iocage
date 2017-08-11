@@ -157,6 +157,7 @@ class Storage:
         if mount:
             ds = self.zfs.get_dataset(name)
             ds.mount()
+        self.logger.spam(f"ZFS dataset {name} created")
 
     def _require_datasets_exist_and_jailed(self):
         existing_datasets = self.get_zfs_datasets(auto_create=False)
@@ -191,7 +192,7 @@ class Storage:
 
     def _mount_procfs(self):
         try:
-            if self.jail.config.mount_procfs:
+            if self.jail.config["mount_procfs"]:
                 iocage.lib.helpers.exec([
                     "mount"
                     "-t",
@@ -207,7 +208,7 @@ class Storage:
     # ToDo: Remove unused function?
     def _mount_linprocfs(self):
         try:
-            if not self.jail.config.mount_linprocfs:
+            if not self.jail.config["mount_linprocfs"]:
                 return
         except:
             pass
@@ -216,7 +217,7 @@ class Storage:
         self._jail_mkdirp(f"{self.path}/root/{linproc_path}")
 
         try:
-            if self.jail.config.mount_procfs:
+            if self.jail.config["mount_procfs"]:
                 iocage.lib.helpers.exec([
                     "mount"
                     "-t",

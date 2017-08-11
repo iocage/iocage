@@ -6,7 +6,7 @@ class ZFSShareStorage:
         self._mount_jail_datasets(auto_create=auto_create)
 
     def get_zfs_datasets(self, auto_create=None):
-        dataset_names = self.jail.config.jail_zfs_dataset
+        dataset_names = self.jail.config["jail_zfs_dataset"]
 
         auto_create = self.auto_create if auto_create is None else auto_create
 
