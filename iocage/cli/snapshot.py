@@ -63,10 +63,9 @@ def cli(jail, name):
         exit(1)
     else:
         ioc_common.logit({
-            "level"  : "ERROR",
+            "level"  : "EXCEPTION",
             "message": f"{jail} not found!"
-        })
-        exit(1)
+        }, exit_on_error=True)
 
     # If they don't supply a snapshot name, we will use the date.
     if not name:
@@ -88,7 +87,6 @@ def cli(jail, name):
         })
     except su.CalledProcessError:
         ioc_common.logit({
-            "level"  : "ERROR",
+            "level"  : "EXCEPTION",
             "message": "Snapshot already exists!"
-        })
-        exit(1)
+        }, exit_on_error=True)

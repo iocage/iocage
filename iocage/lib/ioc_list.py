@@ -44,19 +44,21 @@ class IOCList(object):
     """
 
     def __init__(self, lst_type="all", hdr=True, full=False, _sort=None,
-                 silent=False, callback=None, plugin=False, quick=False):
+                 exit_on_error=False, silent=False, callback=None,
+                 plugin=False, quick=False):
         self.list_type = lst_type
         self.header = hdr
         self.full = full
         self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.sort = _sort
+        self.exit_on_error = exit_on_error
         self.silent = silent
         self.callback = callback
         self.plugin = plugin
         self.quick = quick
 
-    def list_datasets(self, set=False):
+    def list_datasets(self):
         """Lists the datasets of given type."""
 
         if self.list_type == "all" or self.list_type == "uuid":
@@ -116,8 +118,7 @@ class IOCList(object):
                     "message": f"{uuid} is missing its configuration file."
                                "\nPlease run just 'list' instead to create"
                                " it."
-                },
-                    _callback=self.callback,
+                }, exit_on_error=self.exit_on_error, _callback=self.callback,
                     silent=self.silent)
 
             uuid = conf["host_hostuuid"]
@@ -241,8 +242,9 @@ class IOCList(object):
                 jail_list.append([jid, uuid, state, short_release, short_ip4])
 
         list_type = "list_full" if self.full else "list_short"
-        sort = iocage.lib.ioc_common.ioc_sort(list_type, self.sort,
-                                              data=jail_list)
+        sort = iocage.lib.ioc_common.ioc_sort(list_type,
+                                              self.sort, data=jail_list,
+                                              exit_on_error=self.exit_on_error)
         jail_list.sort(key=sort)
 
         # return the list...
@@ -270,8 +272,9 @@ class IOCList(object):
 
     def list_bases(self, datasets):
         """Lists all bases."""
-        base_list = iocage.lib.ioc_common.ioc_sort("list_release", "release",
-                                                   data=datasets)
+        base_list = iocage.lib.ioc_common.ioc_sort(
+            "list_release", "release", data=datasets,
+            exit_on_error=self.exit_on_error)
         table = texttable.Texttable(max_width=0)
 
         if not self.header:

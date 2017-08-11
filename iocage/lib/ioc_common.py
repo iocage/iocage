@@ -37,34 +37,35 @@ import pygit2
 import iocage.lib.ioc_logger
 
 
-def callback(log):
+def callback(log, exit_on_error=False):
     """Helper to call the appropriate logging level"""
-    lgr = iocage.lib.ioc_logger.IOCLogger().cli_log()
+    lgr_stdout = iocage.lib.ioc_logger.IOCLogger().cli_log_stdout()
+    lgr_stderr = iocage.lib.ioc_logger.IOCLogger().cli_log_stderr()
 
     if log['level'] == 'CRITICAL':
-        lgr.critical(log['message'])
+        lgr_stderr.critical(log['message'])
     elif log['level'] == 'ERROR':
-        lgr.error(log['message'])
+        lgr_stderr.error(log['message'])
     elif log['level'] == 'WARNING':
-        lgr.warning(log['message'])
+        lgr_stderr.warning(log['message'])
     elif log['level'] == 'INFO':
-        lgr.info(log['message'])
+        lgr_stdout.info(log['message'])
     elif log['level'] == 'DEBUG':
-        lgr.debug(log['message'])
+        lgr_stdout.debug(log['message'])
     elif log['level'] == 'VERBOSE':
-        lgr.verbose(log['message'])
+        lgr_stdout.verbose(log['message'])
     elif log['level'] == 'NOTICE':
-        lgr.notice(log['message'])
+        lgr_stdout.notice(log['message'])
     elif log['level'] == 'EXCEPTION':
-        # TODO: Better solution?
-        if not os.isatty(sys.stdout.fileno()):
+        if not os.isatty(sys.stdout.fileno()) and not exit_on_error:
             raise RuntimeError(log['message'])
         else:
-            lgr.error(log['message'])
+            lgr_stderr.error(log['message'])
             raise SystemExit(1)
 
 
-def logit(content, _callback=None, silent=False):
+def logit(content, exit_on_error=False, _callback=None,
+          silent=False):
     """Helper to check callable status of callback or call ours."""
     level = content["level"]
     msg = content["message"]
@@ -75,10 +76,10 @@ def logit(content, _callback=None, silent=False):
 
     # This will log with our callback method if they didn't supply one.
     _callback = _callback if callable(_callback) else callback
-    _callback({"level": level, "message": msg})
+    _callback({"level": level, "message": msg}, exit_on_error)
 
 
-def raise_sort_error(sort_list):
+def raise_sort_error(sort_list, exit_on_error):
     msg = "Invalid sort type specified, use one of:\n"
 
     for s in sort_list:
@@ -87,10 +88,10 @@ def raise_sort_error(sort_list):
     logit({
         "level"  : "EXCEPTION",
         "message": msg.rstrip()
-    })
+    }, exit_on_error)
 
 
-def ioc_sort(caller, s_type, data=None):
+def ioc_sort(caller, s_type, data=None, exit_on_error=False):
     try:
         s_type = s_type.lower()
     except AttributeError:
@@ -120,11 +121,11 @@ def ioc_sort(caller, s_type, data=None):
     df_sorts = ["name", "crt", "res", "qta", "use", "ava"]
 
     if caller == "list_full" and s_type not in list_full_sorts:
-        raise_sort_error(list_full_sorts)
+        raise_sort_error(list_full_sorts, exit_on_error)
     elif caller == "list_short" and s_type not in list_short_sorts:
-        raise_sort_error(list_short_sorts)
+        raise_sort_error(list_short_sorts, exit_on_error)
     elif caller == "df" and s_type not in df_sorts:
-        raise_sort_error(df_sorts)
+        raise_sort_error(df_sorts, exit_on_error)
 
     # Most calls will use this
     if caller == "list_release" and s_type == "release":
@@ -427,7 +428,7 @@ def checkoutput(*args, **kwargs):
     return out
 
 
-def git_pull(repo, remote_name="origin", branch="master"):
+def git_pull(repo, remote_name="origin", branch="master", exit_on_error=False):
     """Method that will replicate a git pull."""
     # Adapted from:
     # @formatter:off
@@ -461,12 +462,12 @@ def git_pull(repo, remote_name="origin", branch="master"):
                     logit({
                         "level"  : "EXCEPTION",
                         "message": "Conflicts found in: {conflict[0].path}"
-                    })
+                    }, exit_on_error=exit_on_error)
 
             user = repo.default_signature
             tree = repo.index.write_tree()
             repo.create_commit('HEAD', user, user, "merged by iocage",
-                                tree, [repo.head.target, remote_master_id])
+                               tree, [repo.head.target, remote_master_id])
             # We need to do this or git CLI will think we are still
             # merging.
             repo.state_cleanup()
@@ -475,7 +476,6 @@ def git_pull(repo, remote_name="origin", branch="master"):
 
 
 def set_rcconf(jail_path, key, value):
-
     conf_file = f"{jail_path}/root/etc/rc.conf"
 
     found = False

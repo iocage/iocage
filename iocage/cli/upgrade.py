@@ -63,7 +63,7 @@ def cli(jail, release):
         ioc_common.logit({
             "level"  : "EXCEPTION",
             "message": f"{jail} not found!"
-        })
+        }, exit_on_error=True)
 
     status, jid = ioc_list.IOCList.list_get_jid(uuid)
     conf = ioc_json.IOCJson(path).json_load()
@@ -73,7 +73,7 @@ def cli(jail, release):
         ioc_common.logit({
             "level"  : "EXCEPTION",
             "message": f"Jail: {uuid} is already at version {release}!"
-        })
+        }, exit_on_error=True)
 
     started = False
 
@@ -81,7 +81,7 @@ def cli(jail, release):
         ioc_common.logit({
             "level"  : "EXCEPTION",
             "message": "Upgrading is not supported for empty jails."
-        })
+        }, exit_on_error=True)
 
     if conf["type"] == "jail":
         if not status:
@@ -95,18 +95,18 @@ def cli(jail, release):
             "level"  : "EXCEPTION",
             "message": "Please run \"iocage migrate\" before trying"
                        f" to upgrade {uuid}"
-        })
+        }, exit_on_error=True)
     elif conf["type"] == "template":
         ioc_common.logit({
             "level"  : "EXCEPTION",
             "message": "Please convert back to a jail before trying"
                        f" to upgrade {uuid}"
-        })
+        }, exit_on_error=True)
     else:
         ioc_common.logit({
             "level"  : "EXCEPTION",
             "message": f"{conf['type']} is not a supported jail type."
-        })
+        }, exit_on_error=True)
 
     if started:
         ioc_stop.IOCStop(uuid, path, conf, silent=True)

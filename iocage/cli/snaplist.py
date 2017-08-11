@@ -38,7 +38,7 @@ import iocage.lib.iocage as ioc
 def cli(header, jail, _long):
     """Allows a user to show resource usage of all jails."""
     table = texttable.Texttable(max_width=0)
-    snap_list = ioc.IOCage(jail).snap_list(_long)
+    snap_list = ioc.IOCage(exit_on_error=True, jail=jail).snap_list(_long)
 
     if header:
         snap_list.insert(0, ["NAME", "CREATED", "RSIZE", "USED"])

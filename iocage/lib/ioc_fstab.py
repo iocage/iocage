@@ -40,10 +40,11 @@ class IOCFstab(object):
 
     def __init__(self, uuid, action, source, destination, fstype, fsoptions,
                  fsdump, fspass, index=None, silent=False, callback=None,
-                 header=False, _fstab_list=None):
-        self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
-        self.iocroot = iocage.lib.ioc_json.IOCJson(self.pool).json_get_value(
-            "iocroot")
+                 header=False, _fstab_list=None, exit_on_error=False):
+        self.pool = iocage.lib.ioc_json.IOCJson(
+            exit_on_error=exit_on_error).json_get_value("pool")
+        self.iocroot = iocage.lib.ioc_json.IOCJson(
+            self.pool, exit_on_error=exit_on_error).json_get_value("iocroot")
         self.uuid = uuid
         self.action = action
         self.src = source

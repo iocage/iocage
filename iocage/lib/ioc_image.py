@@ -36,11 +36,12 @@ import iocage.lib.ioc_json
 class IOCImage(object):
     """export() and import()"""
 
-    def __init__(self, callback=None, silent=False):
+    def __init__(self, exit_on_error=False, callback=None, silent=False):
         self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage.lib.ioc_json.IOCJson(self.pool).json_get_value(
             "iocroot")
         self.date = datetime.datetime.utcnow().strftime("%F")
+        self.exit_on_error = exit_on_error
         self.callback = callback
         self.silent = silent
 
@@ -65,8 +66,7 @@ class IOCImage(object):
             iocage.lib.ioc_common.logit({
                 "level"  : "EXCEPTION",
                 "message": msg
-            },
-                self.callback,
+            }, exit_on_error=self.exit_on_error, _callback=self.callback,
                 silent=self.silent)
 
         datasets = su.Popen([
@@ -103,8 +103,7 @@ class IOCImage(object):
                 iocage.lib.ioc_common.logit({
                     "level"  : "EXCEPTION",
                     "message": err
-                },
-                    self.callback,
+                }, exit_on_error=self.exit_on_error, _callback=self.callback,
                     silent=self.silent)
 
         msg = f"\nPreparing zip file: {image}.zip."
@@ -143,8 +142,7 @@ class IOCImage(object):
             iocage.lib.ioc_common.logit({
                 "level"  : "EXCEPTION",
                 "message": msg
-            },
-                self.callback,
+            }, exit_on_error=self.exit_on_error, _callback=self.callback,
                 silent=self.silent)
 
         msg = f"\nExported: {image}.zip"
@@ -170,15 +168,13 @@ class IOCImage(object):
             iocage.lib.ioc_common.logit({
                 "level"  : "EXCEPTION",
                 "message": msg
-            },
-                self.callback,
+            }, exit_on_error=self.exit_on_error, _callback=self.callback,
                 silent=self.silent)
         elif len(matches) < 1:
             iocage.lib.ioc_common.logit({
                 "level"  : "EXCEPTION",
                 "message": f"{jail} not found!"
-            },
-                self.callback,
+            }, exit_on_error=self.exit_on_error, _callback=self.callback,
                 silent=self.silent)
 
         image_target = f"{image_dir}/{matches[0]}"
@@ -223,8 +219,7 @@ class IOCImage(object):
             iocage.lib.ioc_common.logit({
                 "level"  : "EXCEPTION",
                 "message": msg
-            },
-                self.callback,
+            }, exit_on_error=self.exit_on_error, _callback=self.callback,
                 silent=self.silent)
 
         # Templates become jails again once imported, let's make that reality.

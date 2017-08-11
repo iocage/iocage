@@ -41,7 +41,7 @@ def validate_count(ctx, param, value):
             ioc_common.logit({
                 "level"  : "EXCEPTION",
                 "message": f"({value} is not a valid integer."
-            })
+            }, exit_on_error=True)
     else:
         return int(value)
 
@@ -92,4 +92,4 @@ def validate_count(ctx, param, value):
               help="Accept the plugin's LICENSE agreement.")
 def cli(**kwargs):
     """CLI command that calls fetch_release()"""
-    ioc.IOCage().fetch(**kwargs)
+    ioc.IOCage(exit_on_error=True).fetch(**kwargs)

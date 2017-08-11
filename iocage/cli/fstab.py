@@ -60,7 +60,7 @@ def cli(action, fstab_string, jail, header):
         ioc_common.logit({
             "level"  : "EXCEPTION",
             "message": "Please supply a fstab entry or jail!"
-        })
+        }, exit_on_error=True)
 
     # The user will expect to supply a string, the API would prefer these
     # separate. If the user supplies a quoted string, we will split it,
@@ -80,11 +80,10 @@ def cli(action, fstab_string, jail, header):
                                                                     "", ""
             except TypeError:
                 ioc_common.logit({
-                    "level"  : "ERROR",
+                    "level"  : "EXCEPTION",
                     "message": "Please specify either a valid fstab "
                                "entry or an index number."
-                })
-                exit(1)
+                }, exit_on_error=True)
             except ValueError:
                 # We will assume this is just a source, and will do a readonly
                 # nullfs mount
@@ -106,12 +105,11 @@ def cli(action, fstab_string, jail, header):
                     fstab_string
             except ValueError:
                 ioc_common.logit({
-                    "level"  : "ERROR",
+                    "level"  : "EXCEPTION",
                     "message": "Please specify a valid fstab entry!\n\n"
                                "Example:\n  /the/source /dest FSTYPE "
                                "FSOPTIONS FSDUMP FSPASS"
-                })
-                exit(1)
+                }, exit_on_error=True)
         else:
             source, destination, fstype, options, dump, _pass = "", "", \
                                                                 "", "", \
@@ -120,9 +118,9 @@ def cli(action, fstab_string, jail, header):
     if not _index:
         add_path = True
 
-    fstab = ioc.IOCage(jail).fstab(action, source, destination, fstype,
-                                   options, dump, _pass, index=index,
-                                   add_path=add_path, header=header)
+    fstab = ioc.IOCage(exit_on_error=True, jail=jail).fstab(
+        action, source, destination, fstype, options, dump, _pass, index=index,
+        add_path=add_path, header=header)
 
     if action == "list":
         if header:

@@ -40,9 +40,9 @@ import iocage.lib.iocage as ioc
 def cli(header, _long, _sort):
     """Allows a user to show resource usage of all jails."""
     table = texttable.Texttable(max_width=0)
-    jail_list = ioc.IOCage().df(long=_long)
+    jail_list = ioc.IOCage(exit_on_error=True).df(long=_long)
 
-    sort = ioc_common.ioc_sort("df", _sort)
+    sort = ioc_common.ioc_sort("df", _sort, exit_on_error=True)
     jail_list.sort(key=sort)
     if header:
         jail_list.insert(0, ["NAME", "CRT", "RES", "QTA", "USE", "AVA"])

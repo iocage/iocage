@@ -70,7 +70,7 @@ def child_test(zfs, iocroot, name, _type, force=False):
         else:
             _children.append(f"  {_name}\n")
 
-    sort = ioc_common.ioc_sort("", "name", data=_children)
+    sort = ioc_common.ioc_sort("", "name", exit_on_error=True, data=_children)
     _children.sort(key=sort)
 
     if len(_children) != 0:
@@ -109,7 +109,7 @@ def cli(force, release, download, jails):
         ioc_common.logit({
             "level"  : "EXCEPTION",
             "message": "--release (-r) must be specified as well!"
-        })
+        }, exit_on_error=True)
 
     if jails and not release:
         for jail in jails:
@@ -124,7 +124,8 @@ def cli(force, release, download, jails):
 
             child_test(zfs, iocroot, jail, "jail", force=force)
 
-            ioc.IOCage(jail, skip_jails=True).destroy_jail()
+            ioc.IOCage(exit_on_error=True, jail=jail,
+                       skip_jails=True).destroy_jail()
     elif jails and release:
         for release in jails:
             if not force:
@@ -138,14 +139,15 @@ def cli(force, release, download, jails):
 
             child_test(zfs, iocroot, release, "release", force=force)
 
-            ioc.IOCage(release, skip_jails=True).destroy_release(download)
+            ioc.IOCage(exit_on_error=True, jail=release,
+                       skip_jails=True).destroy_release(download)
     elif not jails and release:
         ioc_common.logit({
             "level"  : "EXCEPTION",
             "message": "Please specify one or more RELEASEs!"
-        })
+        }, exit_on_error=True)
     else:
         ioc_common.logit({
             "level"  : "EXCEPTION",
             "message": "Please specify one or more jails!"
-        })
+        }, exit_on_error=True)

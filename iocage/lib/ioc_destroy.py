@@ -38,9 +38,11 @@ class IOCDestroy(object):
     destroy that as well.
     """
 
-    def __init__(self):
-        self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
-        self.iocroot = iocage.lib.ioc_json.IOCJson(self.pool).json_get_value(
+    def __init__(self, exit_on_error=False):
+        self.pool = iocage.lib.ioc_json.IOCJson(
+            exit_on_error=exit_on_error).json_get_value("pool")
+        self.iocroot = iocage.lib.ioc_json.IOCJson(
+            self.pool, exit_on_error=exit_on_error).json_get_value(
             "iocroot")
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.ds = self.zfs.get_dataset
@@ -103,8 +105,8 @@ class IOCDestroy(object):
                      stderr=su.PIPE).communicate()
 
         if not snapshot and \
-           any(_type in dataset.name for _type
-               in ("jails", "templates", "releases")):
+                any(_type in dataset.name for _type
+                    in ("jails", "templates", "releases")):
             # The jails parent won't show in the list.
             j_parent = self.ds(f"{dataset.name.replace('/root','')}")
             j_dependents = j_parent.dependents

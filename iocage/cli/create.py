@@ -45,7 +45,7 @@ def validate_count(ctx, param, value):
             ioc_common.logit({
                 "level"  : "EXCEPTION",
                 "message": f"{value} is not a valid integer."
-            })
+            }, exit_on_error=True)
     else:
         return int(value)
 
@@ -82,12 +82,13 @@ def validate_count(ctx, param, value):
 def cli(release, template, count, props, pkglist, basejail, empty, short,
         name, _uuid, force):
     if name:
+        # noinspection Annotator
         valid = True if re.match("^[a-zA-Z0-9\._-]+$", name) else False
         if not valid:
             ioc_common.logit({
                 "level"  : "EXCEPTION",
                 "message": f"Invalid character in {name}, please remove it."
-            })
+            }, exit_on_error=True)
 
         # At this point we don't care
         _uuid = name
@@ -96,7 +97,7 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
         ioc_common.logit({
             "level"  : "EXCEPTION",
             "message": "Please supply a valid RELEASE!"
-        })
+        }, exit_on_error=True)
 
     # We don't really care it's not a RELEASE at this point.
     release = template if template else release
@@ -116,7 +117,7 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
                 "message": f"{pkglist} does not exist!\n"
                            "Please supply a JSON file with the format:"
                            f" {_pkgformat}"
-            })
+            }, exit_on_error=True)
         else:
             try:
                 # Just try to open the JSON with the right key.
@@ -127,12 +128,12 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
                     "level"  : "EXCEPTION",
                     "message": "Please supply a valid"
                                f" JSON file with the format:{_pkgformat}"
-                })
+                }, exit_on_error=True)
 
     if empty:
         release = "EMPTY"
 
-    iocage = ioc.IOCage(skip_jails=True)
+    iocage = ioc.IOCage(exit_on_error=True, skip_jails=True)
 
     try:
         iocage.create(release, props, count, pkglist=pkglist,
@@ -145,16 +146,16 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
                 "level"  : "ERROR",
                 "message": f"Template: {release} not found!"
             })
-            templates = ioc.IOCage().list("template")
+            templates = ioc.IOCage(exit_on_error=True).list("template")
             for temp in templates:
                 ioc_common.logit({
                     "level"  : "EXCEPTION",
                     "message": f"Created Templates:\n  {temp[1]}"
-                })
+                }, exit_on_error=True)
             exit(1)
         else:
             # Standard errors
             ioc_common.logit({
                 "level"  : "EXCEPTION",
                 "message": err
-            })
+            }, exit_on_error=True)

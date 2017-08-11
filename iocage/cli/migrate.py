@@ -82,10 +82,9 @@ def cli(force, delete):
                                        stderr=su.STDOUT)
             except su.CalledProcessError as err:
                 ioc_common.logit({
-                    "level"  : "ERROR",
+                    "level"  : "EXCEPTION",
                     "message": f"{err.output.decode('utf-8').strip()}"
-                })
-                exit(1)
+                }, exit_on_error=True)
 
             try:
                 os.remove(f"{iocroot}/tags/{tag}")
@@ -103,9 +102,9 @@ def cli(force, delete):
                 _name = tag
 
             new_uuid = ioc_create.IOCCreate(release, "", 0, None, migrate=True,
-                                            config=conf,
-                                            silent=True,
-                                            uuid=_name).create_jail()
+                                            config=conf, silent=True,
+                                            uuid=_name,
+                                            exit_on_error=True).create_jail()
             new_prop = ioc_json.IOCJson(f"{iocroot}/jails/{new_uuid}",
                                         silent=True).json_set_value
             new_prop(f"host_hostname={new_uuid}")

@@ -55,12 +55,13 @@ class IOCJson(object):
     format, will set and get properties.
     """
 
-    def __init__(self, location="", silent=False, cli=False,
-                 stop=False, callback=None):
+    def __init__(self, location="", silent=False, cli=False, stop=False,
+                 exit_on_error=False, callback=None):
         self.location = location
         self.lgr = logging.getLogger('ioc_json')
         self.cli = cli
         self.stop = stop
+        self.exit_on_error = exit_on_error
         self.silent = silent
         self.callback = callback
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
@@ -184,8 +185,7 @@ class IOCJson(object):
                 iocage.lib.ioc_common.logit({
                     "level"  : "EXCEPTION",
                     "message": err
-                },
-                    _callback=self.callback,
+                }, exit_on_error=self.exit_on_error, _callback=self.callback,
                     silent=self.silent)
 
         try:
@@ -232,9 +232,8 @@ class IOCJson(object):
                                 silent=self.silent)
 
                             status, _ = iocage.lib.ioc_list.IOCList(
-
-                            ).list_get_jid(
-                                full_uuid)
+                                exit_on_error=self.exit_on_error
+                            ).list_get_jid(full_uuid)
                             if status:
                                 iocage.lib.ioc_common.logit({
                                     "level"  : "INFO",
@@ -243,9 +242,10 @@ class IOCJson(object):
                                 },
                                     _callback=self.callback,
                                     silent=self.silent)
-                                iocage.lib.ioc_stop.IOCStop(full_uuid,
-                                                            self.location,
-                                                            conf, silent=True)
+                                iocage.lib.ioc_stop.IOCStop(
+                                    full_uuid, self.location, conf,
+                                    exit_on_error=self.exit_on_error,
+                                    silent=True)
 
                             jail_zfs_prop = \
                                 "org.freebsd.iocage:jail_zfs_dataset"
@@ -380,7 +380,7 @@ class IOCJson(object):
                             "level"  : "EXCEPTION",
                             "message": "No zpools found! Please create one "
                                        "before using iocage."
-                        },
+                        }, exit_on_error=self.exit_on_error,
                             _callback=self.callback,
                             silent=self.silent)
 
@@ -440,7 +440,7 @@ class IOCJson(object):
         if not default:
             conf = self.json_load()
             uuid = conf["host_hostuuid"]
-            status, jid = iocage.lib.ioc_list.IOCList.list_get_jid(uuid)
+            status, jid = iocage.lib.ioc_list.IOCList().list_get_jid(uuid)
             conf[key] = value
             sysctls_cmd = ["sysctl", "-d", "security.jail.param"]
             jail_param_regex = re.compile("security.jail.param.")
@@ -461,12 +461,12 @@ class IOCJson(object):
                     iocage.lib.ioc_common.logit({
                         "level"  : "EXCEPTION",
                         "message": f"{uuid} is running.\nPlease stop it first!"
-                    },
+                    }, exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
 
                 jails = iocage.lib.ioc_list.IOCList(
-                    "uuid").list_datasets()
+                    "uuid", exit_on_error=self.exit_on_error).list_datasets()
                 for j in jails:
                     _uuid = jails[j]
                     _path = f"{jails[j]}/root"
@@ -479,15 +479,15 @@ class IOCJson(object):
                     origin = self.zfs_get_property(_path, 'origin')
 
                     if origin == t_old_path or origin == t_path:
-                        _status, _ = iocage.lib.ioc_list.IOCList.list_get_jid(
-                            _uuid)
+                        _status, _ = iocage.lib.ioc_list.IOCList(
+                        ).list_get_jid(_uuid)
 
                         if _status:
                             iocage.lib.ioc_common.logit({
                                 "level"  : "EXCEPTION",
                                 "message": f"{uuid} is running.\n"
                                            "Please stop it first!"
-                            },
+                            }, exit_on_error=self.exit_on_error,
                                 _callback=self.callback,
                                 silent=self.silent)
 
@@ -511,7 +511,7 @@ class IOCJson(object):
                             "level"  : "EXCEPTION",
                             "message": "A template by that name already"
                                        " exists!"
-                        },
+                        }, exit_on_error=self.exit_on_error,
                             _callback=self.callback,
                             silent=self.silent)
 
@@ -585,8 +585,7 @@ class IOCJson(object):
                 iocage.lib.ioc_common.logit({
                     "level"  : "EXCEPTION",
                     "message": f"{key} is not a valid property for default!"
-                },
-                    _callback=self.callback,
+                }, exit_on_error=self.exit_on_error, _callback=self.callback,
                     silent=self.silent)
 
     @staticmethod
@@ -605,8 +604,7 @@ class IOCJson(object):
                 "level"  : "EXCEPTION",
                 "message": "You need to be root to convert the"
                            " configurations to the new format!"
-            },
-                _callback=self.callback,
+            }, exit_on_error=self.exit_on_error, _callback=self.callback,
                 silent=self.silent)
 
         pool, iocroot = _get_pool_and_iocroot()
@@ -638,7 +636,7 @@ class IOCJson(object):
                         "level"  : "EXCEPTION",
                         "message": f"{err_name} has a corrupt configuration,"
                                    "please destroy the jail."
-                    },
+                    }, exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
             except KeyError:
@@ -741,7 +739,7 @@ class IOCJson(object):
                                                " all jails must be stopped"
                                                " before iocage will"
                                                " continue migration"
-                                },
+                                }, exit_on_error=self.exit_on_error,
                                     _callback=self.callback,
                                     silent=self.silent)
 
@@ -846,7 +844,7 @@ class IOCJson(object):
                     iocage.lib.ioc_common.logit({
                         "level"  : level,
                         "message": msg
-                    },
+                    }, exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
 
@@ -986,7 +984,7 @@ class IOCJson(object):
                     iocage.lib.ioc_common.logit({
                         "level"  : "EXCEPTION",
                         "message": err
-                    },
+                    }, exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
 
@@ -1017,8 +1015,7 @@ class IOCJson(object):
                 iocage.lib.ioc_common.logit({
                     "level"  : "EXCEPTION",
                     "message": msg
-                },
-                    _callback=self.callback,
+                }, exit_on_error=self.exit_on_error, _callback=self.callback,
                     silent=self.silent)
         else:
             if self.cli:
@@ -1032,8 +1029,7 @@ class IOCJson(object):
             iocage.lib.ioc_common.logit({
                 "level"  : "EXCEPTION",
                 "message": msg
-            },
-                _callback=self.callback,
+            }, exit_on_error=self.exit_on_error, _callback=self.callback,
                 silent=self.silent)
 
     def json_plugin_load(self):
@@ -1072,6 +1068,7 @@ class IOCJson(object):
                 else:
                     return iocage.lib.ioc_exec.IOCExec(
                         prop_cmd, uuid, _path, plugin=True,
+                        exit_on_error=self.exit_on_error,
                         silent=True).exec_jail()
             else:
                 return settings
@@ -1134,7 +1131,9 @@ class IOCJson(object):
                 },
                     _callback=self.callback,
                     silent=self.silent)
-            iocage.lib.ioc_exec.IOCExec(prop_cmd, uuid, _path).exec_jail()
+            iocage.lib.ioc_exec.IOCExec(
+                prop_cmd, uuid, _path,
+                exit_on_error=self.exit_on_error).exec_jail()
 
             if restart:
                 iocage.lib.ioc_common.logit({
@@ -1149,8 +1148,9 @@ class IOCJson(object):
                 },
                     _callback=self.callback,
                     silent=self.silent)
-                iocage.lib.ioc_exec.IOCExec(servicerestart, uuid,
-                                            _path).exec_jail()
+                iocage.lib.ioc_exec.IOCExec(
+                    servicerestart, uuid, _path,
+                    exit_on_error=self.exit_on_error).exec_jail()
 
             iocage.lib.ioc_common.logit({
                 "level"  : "INFO",
@@ -1162,8 +1162,7 @@ class IOCJson(object):
             iocage.lib.ioc_common.logit({
                 "level"  : "EXCEPTION",
                 "message": f"Key: \"{key}\" does not exist!"
-            },
-                _callback=self.callback,
+            }, exit_on_error=self.exit_on_error, _callback=self.callback,
                 silent=self.silent)
 
     def json_check_default_config(self):

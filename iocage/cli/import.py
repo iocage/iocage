@@ -33,4 +33,4 @@ __rootcmd__ = True
 @click.argument("jail", required=True)
 def cli(jail):
     """Import from an iocage export."""
-    ioc.IOCage(jail).import_()
+    ioc.IOCage(exit_on_error=True, jail=jail).import_()
