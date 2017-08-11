@@ -61,11 +61,12 @@ class IOCFetch(object):
                  password="anonymous@", auth=None, root_dir=None, http=False,
                  _file=False, verify=True, hardened=False, update=True,
                  eol=True, files=("MANIFEST", "base.txz", "lib32.txz",
-                                  "doc.txz"), silent=False, callback=None,
-                 plugin=None):
-        self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
-        self.iocroot = iocage.lib.ioc_json.IOCJson(self.pool).json_get_value(
-            "iocroot")
+                                  "doc.txz"), exit_on_error=False,
+                 silent=False, callback=None, plugin=None):
+        self.pool = iocage.lib.ioc_json.IOCJson(
+            exit_on_error=exit_on_error).json_get_value("pool")
+        self.iocroot = iocage.lib.ioc_json.IOCJson(
+            self.pool, exit_on_error=exit_on_error).json_get_value("iocroot")
         self.server = server
         self.user = user
         self.password = password
@@ -85,6 +86,7 @@ class IOCFetch(object):
         self.files = files
         self.update = update
         self.eol = eol
+        self.exit_on_error = exit_on_error
         self.silent = silent
         self.callback = callback
 
@@ -201,8 +203,7 @@ class IOCFetch(object):
                 iocage.lib.ioc_common.logit({
                     "level"  : "EXCEPTION",
                     "message": "Please supply a RELEASE!"
-                },
-                    _callback=self.callback,
+                }, exit_on_error=self.exit_on_error, _callback=self.callback,
                     silent=self.silent)
 
             try:
@@ -242,9 +243,7 @@ class IOCFetch(object):
                 iocage.lib.ioc_common.logit({
                     "level"  : "INFO",
                     "message": f"Copying: {f}... "
-                },
-                    _callback=self.callback,
-                    silent=self.silent)
+                }, _callback=self.callback, silent=self.silent)
                 shutil.copy(f, dataset)
 
                 if f != "MANIFEST":
@@ -882,16 +881,14 @@ class IOCFetch(object):
             iocage.lib.ioc_common.logit({
                 "level"  : "EXCEPTION",
                 "message": f"{_json} was not found!"
-            },
-                _callback=self.callback,
+            }, exit_on_error=self.exit_on_error, _callback=self.callback,
                 silent=self.silent)
         except json.decoder.JSONDecodeError:
             iocage.lib.ioc_common.logit({
                 "level"  : "EXCEPTION",
                 "message": "Invalid JSON file supplied, please supply a "
                            "correctly formatted JSON file."
-            },
-                _callback=self.callback,
+            }, exit_on_error=self.exit_on_error, _callback=self.callback,
                 silent=self.silent)
 
         if self.hardened:
@@ -987,7 +984,7 @@ class IOCFetch(object):
                     iocage.lib.ioc_common.logit({
                         "level"  : "EXCEPTION",
                         "message": "You must accept the license to continue!"
-                    },
+                    }, exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
 
@@ -1052,8 +1049,9 @@ class IOCFetch(object):
 
     def __fetch_plugin_create__(self, create_props, uuid):
         """Creates the plugin with the provided properties"""
-        iocage.lib.ioc_create.IOCCreate(self.release, create_props, 0,
-                                        uuid=uuid, silent=True).create_jail()
+        iocage.lib.ioc_create.IOCCreate(
+            self.release, create_props, 0, silent=True, uuid=uuid,
+            exit_on_error=self.exit_on_error).create_jail()
         jaildir = f"{self.iocroot}/jails/{uuid}"
         repo_dir = f"{jaildir}/root/usr/local/etc/pkg/repos"
         path = f"{self.pool}/iocage/jails/{uuid}"
@@ -1095,8 +1093,7 @@ class IOCFetch(object):
                 iocage.lib.ioc_common.logit({
                     "level"  : "EXCEPTION",
                     "message": "Module not found!"
-                },
-                    _callback=self.callback,
+                }, exit_on_error=self.exit_on_error, _callback=self.callback,
                     silent=self.silent)
 
         try:
@@ -1161,8 +1158,8 @@ fingerprint: {fingerprint}
                                                     fingerprint=r[
                                                         "fingerprint"]))
         err = iocage.lib.ioc_create.IOCCreate(
-            self.release, create_props, 0, pkglist=conf[
-                "pkgs"], silent=True).create_install_packages(
+            self.release, create_props, 0, pkglist=conf["pkgs"], silent=True,
+            exit_on_error=self.exit_on_error).create_install_packages(
             uuid, jaildir, _conf, repo=conf["packagesite"], site=repo_name)
 
         if err:
@@ -1271,7 +1268,8 @@ fingerprint: {fingerprint}
             except ValueError:
                 try:
                     repo = pygit2.Repository(git_working_dir)
-                    iocage.lib.ioc_common.git_pull(repo)
+                    iocage.lib.ioc_common.git_pull(
+                        repo, exit_on_error=self.exit_on_error)
                 except (pygit2.GitError, AssertionError, RuntimeError):
                     raise
 

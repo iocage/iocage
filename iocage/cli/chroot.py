@@ -23,6 +23,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """chroot module for the cli."""
 import click
+
 import iocage.lib.iocage as ioc
 
 
@@ -36,4 +37,4 @@ def cli(jail, command):
     if jail.startswith("-"):
         raise RuntimeError("Please specify a jail first!")
 
-    ioc.IOCage(jail, skip_jails=True).chroot(command)
+    ioc.IOCage(exit_on_error=True, jail=jail, skip_jails=True).chroot(command)

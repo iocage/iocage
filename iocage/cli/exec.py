@@ -49,10 +49,11 @@ def cli(command, jail, host_user, jail_user):
         ioc_common.logit({
             "level"  : "EXCEPTION",
             "message": "Please specify a jail first!"
-        })
+        }, exit_on_error=True)
 
     # They haven't set a host_user then, and actually want a jail one,
     # unsetting the convenience default
     host_user = "" if jail_user and host_user == "root" else host_user
 
-    ioc.IOCage(jail).exec(command, host_user, jail_user)
+    ioc.IOCage(exit_on_error=True, jail=jail).exec(command, host_user,
+                                                   jail_user)

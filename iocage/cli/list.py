@@ -51,7 +51,7 @@ import iocage.lib.iocage as ioc
 def cli(dataset_type, header, _long, remote, http, plugins, _sort, quick):
     """This passes the arg and calls the jail_datasets function."""
     freebsd_version = ioc_common.checkoutput(["freebsd-version"])
-    iocage = ioc.IOCage(skip_jails=True)
+    iocage = ioc.IOCage(exit_on_error=True, skip_jails=True)
 
     if dataset_type is None:
         dataset_type = "all"

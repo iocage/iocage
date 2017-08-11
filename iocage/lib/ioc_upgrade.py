@@ -73,15 +73,15 @@ class IOCUpgrade(object):
             os.chmod(tmp.name, 0o755)
 
             fetch = su.Popen([tmp.name, "-b", self.path, "-d",
-                                f"{self.path}/var/db/freebsd-update/",
-                                "-f",
-                                f"{self.path}/etc/freebsd-update.conf",
-                                "--not-running-from-cron",
-                                "--currently-running "
-                                f"{self.jail_release}",
-                                "-r",
-                                self.new_release, "upgrade"],
-                                stdin=su.PIPE)
+                              f"{self.path}/var/db/freebsd-update/",
+                              "-f",
+                              f"{self.path}/etc/freebsd-update.conf",
+                              "--not-running-from-cron",
+                              "--currently-running "
+                              f"{self.jail_release}",
+                              "-r",
+                              self.new_release, "upgrade"],
+                             stdin=su.PIPE)
             fetch.communicate(b"y")
 
             if fetch.returncode:
@@ -105,9 +105,9 @@ class IOCUpgrade(object):
                     tmp.close()
                 os.remove(tmp.name)
 
-        iocage.lib.ioc_json.IOCJson(
-            f"{self.path.replace('/root', '')}",
-            silent=True).json_set_value(f"release={new_release}")
+        iocage.lib.ioc_json.IOCJson(f"{self.path.replace('/root', '')}",
+                                    silent=True).json_set_value(
+            f"release={new_release}")
 
         return new_release
 

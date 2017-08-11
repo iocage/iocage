@@ -61,10 +61,9 @@ def cli(jail):
         exit(1)
     else:
         ioc_common.logit({
-            "level"  : "ERROR",
+            "level"  : "EXCEPTION",
             "message": f"{jail} not found!"
-        })
-        exit(1)
+        }, exit_on_error=True)
 
     freebsd_version = ioc_common.checkoutput(["freebsd-version"])
     status, jid = ioc_list.IOCList.list_get_jid(uuid)
@@ -78,24 +77,21 @@ def cli(jail):
             started = True
     elif conf["type"] == "basejail":
         ioc_common.logit({
-            "level"  : "ERROR",
+            "level"  : "EXCEPTION",
             "message": "Please run \"iocage migrate\" before trying"
                        f" to update {uuid}"
-        })
-        exit(1)
+        }, exit_on_error=True)
     elif conf["type"] == "template":
         ioc_common.logit({
-            "level"  : "ERROR",
+            "level"  : "EXCEPTION",
             "message": "Please convert back to a jail before trying"
                        f" to update {uuid}"
-        })
-        exit(1)
+        }, exit_on_error=True)
     else:
         ioc_common.logit({
-            "level"  : "ERROR",
+            "level"  : "EXCEPTION",
             "message": f"{conf['type']} is not a supported jail type."
-        })
-        exit(1)
+        }, exit_on_error=True)
 
     if "HBSD" in freebsd_version:
         su.Popen(["hbsd-update", "-j", jid]).communicate()

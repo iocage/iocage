@@ -41,4 +41,5 @@ __rootcmd__ = True
 def cli(props, jail, plugin):
     """Get a list of jails and print the property."""
     for prop in props:
-        ioc.IOCage(jail, skip_jails=True).set(prop, plugin)
+        ioc.IOCage(exit_on_error=True, jail=jail, skip_jails=True).set(prop,
+                                                                       plugin)

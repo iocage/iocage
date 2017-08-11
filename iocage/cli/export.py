@@ -33,4 +33,4 @@ __rootcmd__ = True
 @click.argument("jail", required=True)
 def cli(jail):
     """Make a recursive snapshot of the jail and export to a file."""
-    ioc.IOCage(jail).export()
+    ioc.IOCage(exit_on_error=True, jail=jail).export()

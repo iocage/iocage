@@ -35,7 +35,7 @@ class IOCExec(object):
 
     def __init__(self, command, uuid, path, host_user="root", jail_user=None,
                  plugin=False, skip=False, console=False, silent=False,
-                 callback=None):
+                 exit_on_error=False, callback=None):
         self.command = command
         self.uuid = uuid.replace(".", "_")
         self.path = path
@@ -45,6 +45,7 @@ class IOCExec(object):
         self.skip = skip
         self.console = console
         self.silent = silent
+        self.exit_on_error = exit_on_error
         self.callback = callback
 
     def exec_jail(self):
@@ -75,24 +76,21 @@ class IOCExec(object):
                     "level"  : "EXCEPTION",
                     "message": "Please run \"iocage migrate\" before trying"
                                f" to start {self.uuid}"
-                },
-                    _callback=self.callback,
+                }, exit_on_error=self.exit_on_error, _callback=self.callback,
                     silent=self.silent)
             elif conf["type"] == "template":
                 iocage.lib.ioc_common.logit({
                     "level"  : "EXCEPTION",
                     "message": "Please convert back to a jail before trying"
                                f" to start {self.uuid}"
-                },
-                    _callback=self.callback,
+                }, exit_on_error=self.exit_on_error, _callback=self.callback,
                     silent=self.silent)
             else:
                 iocage.lib.ioc_common.logit({
                     "level"  : "EXCEPTION",
                     "message": f"{conf['type']} is not a supported jail"
                                " type."
-                },
-                    _callback=self.callback,
+                }, exit_on_error=self.exit_on_error, _callback=self.callback,
                     silent=self.silent)
 
             iocage.lib.ioc_common.logit({

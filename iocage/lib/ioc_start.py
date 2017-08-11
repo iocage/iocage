@@ -40,10 +40,12 @@ class IOCStart(object):
     for them. It also finds any scripts the user supplies for exec_*
     """
 
-    def __init__(self, uuid, path, conf, silent=False, callback=None):
+    def __init__(self, uuid, path, conf, exit_on_error=False, silent=False,
+                 callback=None):
         self.uuid = uuid.replace(".", "_")
         self.path = path
         self.conf = conf
+        self.exit_on_error = exit_on_error
         self.callback = callback
         self.silent = silent
 
@@ -82,8 +84,7 @@ class IOCStart(object):
             iocage.lib.ioc_common.logit({
                 "level"  : "EXCEPTION",
                 "message": msg
-            },
-                _callback=self.callback,
+            }, exit_on_error=self.exit_on_error, _callback=self.callback,
                 silent=self.silent)
 
         mount_procfs = self.conf["mount_procfs"]
@@ -134,8 +135,7 @@ class IOCStart(object):
                 iocage.lib.ioc_common.logit({
                     "level"  : "EXCEPTION",
                     "message": msg
-                },
-                    _callback=self.callback,
+                }, exit_on_error=self.exit_on_error, _callback=self.callback,
                     silent=self.silent)
 
             self.__check_dhcp__()
@@ -310,8 +310,7 @@ class IOCStart(object):
             iocage.lib.ioc_common.logit({
                 "level"  : "EXCEPTION",
                 "message": stderr_data.decode('utf-8')
-            },
-                _callback=self.callback,
+            }, exit_on_error=self.exit_on_error, _callback=self.callback,
                 silent=self.silent)
         else:
             iocage.lib.ioc_common.logit({
@@ -366,7 +365,7 @@ class IOCStart(object):
                         iocage.lib.ioc_common.logit({
                             "level"  : "EXCEPTION",
                             "message": msg
-                        },
+                        }, exit_on_error=self.exit_on_error,
                             _callback=self.callback,
                             silent=self.silent)
 
