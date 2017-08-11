@@ -37,7 +37,7 @@ class IOCStop(object):
     def __init__(self, uuid, path, conf, exit_on_error=False, silent=False,
                  callback=None):
         self.pool = iocage.lib.ioc_json.IOCJson(
-            " ",  exit_on_error=exit_on_error).json_get_value("pool")
+            " ", exit_on_error=exit_on_error).json_get_value("pool")
         self.iocroot = iocage.lib.ioc_json.IOCJson(
             self.pool, exit_on_error=exit_on_error).json_get_value("iocroot")
         self.uuid = uuid.replace(".", "_")
