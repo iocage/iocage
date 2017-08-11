@@ -52,7 +52,7 @@ setup(name='iocage',
           'tqdm',
           'coloredlogs',
           'verboselogs',
-          'pygit2>=0.24.2',
+          'pygit2<=0.25.1',
           'libzfs'
       ],
       setup_requires=['pytest-runner'],
