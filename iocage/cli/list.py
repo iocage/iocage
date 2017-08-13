@@ -111,7 +111,6 @@ def cli(ctx, dataset_type, header, _long, remote, plugins,
 
 
 def _lookup_jail_value(jail, key):
-    print(iocage.lib.Jails.Jails.JAIL_KEYS)
     if key in iocage.lib.Jails.Jails.JAIL_KEYS:
         return jail.getattr_str(key)
     else:

@@ -1,4 +1,5 @@
 import iocage.lib.helpers
+import iocage.lib.errors
 
 import os
 import tarfile
@@ -147,7 +148,7 @@ class Release:
     def mirror_url(self, value):
         url = urlparse(value)
         if url.scheme not in self._supported_url_schemes:
-            raise Exception(f"Invalid URL scheme '{url.scheme}'")
+            raise ValueError(f"Invalid URL scheme '{url.scheme}'")
         self._mirror_url = url.geturl()
 
     @property
@@ -179,19 +180,16 @@ class Release:
     @property
     def zfs_pool(self):
         try:
-            return self.host.datasets.releases.pool
-        except:
-            pass
-
-        try:
             return self.root_dataset.pool
         except:
             pass
 
-        raise Exception(
-            "Cannot find the ZFS pool without knowing"
-            "the dataset or release_dataset"
-        )
+        try:
+            return self.host.datasets.releases.pool
+        except:
+            pass
+
+        raise iocage.lib.errors.UnknownReleasePool()
 
     @property
     def hashes(self):
@@ -356,9 +354,13 @@ class Release:
                     self.logger.debug("Already up to date")
                     changed = True
                 else:
-                    msg = ("Release '{self.name}' failed"
-                           " running freebsd-update.sh")
-                    raise Exception(msg)
+                    raise iocage.lib.errors.ReleaseUpdateFailure(
+                        reason=(
+                            "freebsd-update.sh exited "
+                            "with returncode {child.returncode}"
+                        ),
+                        logger=self.logger
+                    )
             else:
                 self.logger.debug(f"Update of release '{self.name}' finished")
                 changed = True
@@ -483,7 +485,7 @@ class Release:
             with tarfile.open(self._get_asset_location(asset)) as f:
 
                 self.logger.verbose(f"Verifying file structure in {asset}")
-                self._check_tar_files(f.getmembers())
+                self._check_tar_files(f.getmembers(), asset_name=asset)
 
                 self.logger.debug(f"Extracting {asset}")
                 f.extractall(self.root_dir)
@@ -615,7 +617,11 @@ class Release:
                 f"Asset {asset_name}.txz has an invalid signature"
                 f"(was '{local_file_hash}' but expected '{expected_hash}')"
             )
-            raise Exception("Invalid Signature")
+            raise iocage.lib.errors.InvalidReleaseAssetSignature(
+                release_name=self.name,
+                asset_name=asset_name,
+                logger=self.logger
+            )
 
         self.logger.spam(
             f"Asset {asset_name}.txz has a valid signature ({expected_hash})"
@@ -629,15 +635,23 @@ class Release:
                 sha256.update(block)
         return sha256.hexdigest()
 
-    def _check_tar_files(self, tar_infos):
+    def _check_tar_files(self, tar_infos, asset_name):
         for i in tar_infos:
-            if i.name == ".":
-                continue
-            if not i.name.startswith("./"):
-                msg = "Names in txz files must be relative and begin with './'"
-                self.logger.error(msg)
-                raise Exception(msg)
-            if ".." in i.name:
-                msg = "Names in txz files must not contain '..'"
-                self.logger.error(msg)
-                raise Exception(msg)
+            self._check_tar_info(i, asset_name)
+
+    def _check_tar_info(self, tar_info, asset_name):
+        if tar_info.name == ".":
+            return
+        if not tar_info.name.startswith("./"):
+            reason = "Names in txz files must be relative and begin with './'"
+        elif ".." in tar_info.name:
+            reason = "Names in txz files must not contain '..'"
+        else:
+            return
+
+        raise iocage.lib.errors.IllegalReleaseAssetContent(
+            release_name=self.name,
+            asset_name=asset_name,
+            reason=reason,
+            logger=self.logger
+        )

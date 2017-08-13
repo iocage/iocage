@@ -8,6 +8,7 @@ import iocage.lib.JailConfigFstab
 import iocage.lib.JailConfigLegacy
 import iocage.lib.JailConfigZFS
 import iocage.lib.helpers
+import iocage.lib.errors
 
 
 class JailConfig(dict, object):
@@ -127,9 +128,7 @@ class JailConfig(dict, object):
 
         name_pattern = f"^[A-z0-9]([A-z0-9\\._\\-]+[A-z0-9])*$"
         if not re.match(name_pattern, name):
-            msg = f"Names have to begin and end with an alphanumeric character"
-            self.logger.error(msg)
-            raise Exception(msg)
+            raise iocage.lib.errors.InvalidJailName(logger=self.logger)
 
         self.id = name
 
@@ -290,9 +289,8 @@ class JailConfig(dict, object):
         enabled = self.data["jail_zfs"] == "on"
         if not enabled:
             if len(self.jail_zfs_dataset) > 0:
-                raise Exception(
-                    "jail_zfs is disabled"
-                    "despite jail_zfs_dataset is configured"
+                raise iocage.lib.errors.JailConigZFSIsNotAllowed(
+                    logger=self.logger
                 )
         return enabled
 
@@ -359,7 +357,10 @@ class JailConfig(dict, object):
             elif isinstance(value, str):
                 self.data["login_flags"] = value
             else:
-                raise Exception("Invalid login_flags")
+                raise iocage.lib.errors.InvalidJailConfigValue(
+                    property_name="login_flags",
+                    logger=self.logger
+                )
 
     def _set_tags(self, value):
         if isinstance(value, str):
@@ -369,7 +370,10 @@ class JailConfig(dict, object):
         elif isinstance(value, set):
             self.tags = value
         else:
-            raise Exception("Invalid tags")
+            raise iocage.lib.errors.InvalidJailConfigValue(
+                property_name="tags",
+                logger=self.logger
+            )
 
     def _default_login_flags(self):
         return JailConfigList(["-f", "root"])

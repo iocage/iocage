@@ -1,4 +1,5 @@
 import iocage.lib.helpers
+import iocage.lib.errors
 
 import libzfs
 
@@ -28,10 +29,7 @@ class Datasets:
         active_pool = self.active_pool
 
         if active_pool is None:
-            msg = ("iocage is not activated yet - "
-                   "please run `iocage activate` first and select a pool")
-            self.logger.error(msg)
-            raise Exception(msg)
+            raise iocage.lib.errors.IocageNotActivated(logger=self.logger)
         else:
             self.root = self.zfs.get_dataset(f"{active_pool.name}/iocage")
 
@@ -68,14 +66,10 @@ class Datasets:
             self.logger.warn(msg)
 
         if not isinstance(pool, libzfs.ZFSPool):
-            msg = "Cannot activate invalid ZFS pool"
-            self.logger.error(msg)
-            raise Exception(msg)
+            raise iocage.lib.errors.ZFSPoolInvalid("cannot activate")
 
         if pool.status == "UNAVAIL":
-            msg = f"ZFS pool '{pool.name}' is UNAVAIL"
-            self.logger.error(msg)
-            raise Exception(msg)
+            raise iocage.lib.errors.ZFSPoolUnavailable(pool.name)
 
         other_pools = filter(lambda x: x.name != pool.name, self.zfs.pools)
         for other_pool in other_pools:

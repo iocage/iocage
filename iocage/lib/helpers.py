@@ -81,7 +81,10 @@ def exec(command, logger=None, ignore_error=False):
                 logger.log(_prettify_output(stderr), level=log_level)
 
         if ignore_error is False:
-            raise Exception(f"Command exited with {child.returncode}")
+            raise iocage.lib.errors.CommandFailure(
+                returncode=child.returncode,
+                logger=logger
+            )
 
     return child, stdout, stderr
 
@@ -100,7 +103,7 @@ def exec_passthru(command, logger=None):
 
     command_str = " ".join(command)
     if logger:
-        logger.log(f"Executing (interactive): {command_str}", level="spam")
+        logger.spam(f"Executing (interactive): {command_str}")
 
     return subprocess.Popen(command).communicate()
 
@@ -110,7 +113,7 @@ def shell(command, logger=None):
         command = " ".join(command)
 
     if logger:
-        logger.log(f"Executing Shell: {command}", level="spam")
+        logger.spam(f"Executing Shell: {command}")
 
     return subprocess.check_output(
         command,
@@ -142,7 +145,7 @@ def umount(mountpoint, force=False, ignore_error=False, logger=None):
                 f"Jail mountpoint {mountpoint} not unmounted"
             )
         if ignore_error is False:
-            raise
+            raise iocage.lib.errors.UnmountFailed(logger=logger)
 
 
 def get_basedir_list():

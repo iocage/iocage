@@ -1,5 +1,6 @@
 import iocage.lib.Release
 import iocage.lib.helpers
+import iocage.lib.errors
 
 import os
 import platform
@@ -43,7 +44,7 @@ class Distribution:
         elif distribution == "HardenedBSD":
             return f"http://jenkins.hardenedbsd.org/builds"
         else:
-            raise Exception(f"Unknown Distribution '{distribution}'")
+            raise iocage.lib.errors.DistributionUnknwon(distribution)
 
     @property
     def hash_file(self):
@@ -79,7 +80,7 @@ class Distribution:
 
         if self.host.distribution.name == "HardenedBSD":
             # ToDo: implement HardenedBSD release updates
-            raise Exception(
+            raise iocage.lib.errors.MissingFeature(
                 "Updates of HardenedBSD releases not supported yet"
             )
         elif self.host.distribution.name == "FreeBSD":

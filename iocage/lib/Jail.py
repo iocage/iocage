@@ -4,6 +4,7 @@ import iocage.lib.Storage
 import iocage.lib.Releases
 import iocage.lib.Release
 import iocage.lib.helpers
+import iocage.lib.errors
 
 import iocage.lib.ZFSBasejailStorage
 import iocage.lib.ZFSShareStorage
@@ -144,15 +145,19 @@ class Jail:
             zfs=self.zfs,
             logger=self.logger
         )
-        try:
-            release = releases.find_by_name(release_name)
-        except:
-            fetched_release = ", ".join(
-                list(map(lambda x: x.name, releases.local)))
-            msg = f"Can only create from a fetched release ({fetched_release})"
-            self.logger.error(msg)
-            raise Exception(msg)
 
+        filteres_released = list(filter(
+            lambda x: x.name == release_name,
+            releases.local
+        ))
+
+        if len(filteres_released) == 0:
+            raise iocage.lib.errors.ReleaseNotFetched(
+                release_name,
+                logger=self.logger
+            )
+
+        release = filteres_released[0]
         self.config["release"] = release.name
 
         if not self.config["id"]:
@@ -395,27 +400,31 @@ class Jail:
 
     def require_jail_not_existing(self):
         if self.exists:
-            msg = f"Jail {self.humanreadable_name} already exists"
-            self.logger.error(msg)
-            raise Exception(msg)
+            raise iocage.lib.errors.JailAlreadyExists(
+                jail=self,
+                logger=self.logger
+            )
 
     def require_jail_existing(self):
         if not self.exists:
-            msg = f"Jail {self.humanreadable_name} does not exist"
-            self.logger.error(msg)
-            raise Exception(msg)
+            raise iocage.lib.errors.JailDoesNotExist(
+                jail=self,
+                logger=self.logger
+            )
 
     def require_jail_stopped(self):
         if self.running:
-            msg = f"Jail {self.humanreadable_name} is already running"
-            self.logger.error(msg)
-            raise Exception(msg)
+            raise iocage.lib.errors.JailAlreadyRunning(
+                jail=self,
+                logger=self.logger
+            )
 
     def require_jail_running(self):
         if not self.running:
-            msg = f"Jail {self.humanreadable_name} is not running"
-            self.logger.error(msg)
-            raise Exception(msg)
+            raise iocage.lib.errors.JailNotRunning(
+                jail=self,
+                logger=self.logger
+            )
 
     def update_jail_state(self):
         try:
@@ -459,13 +468,20 @@ class Jail:
 
     def _resolve_name(self, text):
         jails_dataset = self.host.datasets.jails
+        best_guess = ""
         for dataset in list(jails_dataset.children):
             dataset_name = dataset.name[(len(jails_dataset.name) + 1):]
-            if text in dataset_name:
-                self.logger.debug(f"Resolved {text} to uuid {dataset_name}")
+            if text == dataset_name:
+                # Exact match, immediately return
                 return dataset_name
+            elif dataset_name.startswith(text) and len(text) > len(best_guess):
+                best_guess = text
 
-        raise Exception(f"No jail matching {text} was found")
+        if len(best_guess) > 0:
+            self.logger.debug(f"Resolved {text} to uuid {dataset_name}")
+            return best_guess
+
+        raise iocage.lib.errors.JailNotFound(text, logger=self.logger)
 
     def _get_name(self):
         return self.config["id"]
@@ -483,7 +499,7 @@ class Jail:
         except AttributeError:
             pass
 
-        raise Exception("This Jail has no identifier yet")
+        raise iocage.lib.errors.JailUnknownIdentifier(logger=self.logger)
 
     def _get_stopped(self):
         return self.running is not True
@@ -567,7 +583,6 @@ class Jail:
         try:
             return str(self.__getattr__(key))
         except AttributeError:
-            raise
             return "-"
 
     def __dir__(self):

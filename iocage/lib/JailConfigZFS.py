@@ -1,4 +1,5 @@
 import libzfs
+import iocage.lib.errors
 
 
 class JailConfigZFS:
@@ -16,7 +17,7 @@ class JailConfigZFS:
                     name, self.jail.dataset.properties[prop].value)
 
         if not found:
-            raise Exception("Could not read ZFS config")
+            raise iocage.lib.errors.JailConfigNotFound("ZFS")
 
         if self.data["basejail"] == "on":
             self.data["basejail"] = "on"

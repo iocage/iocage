@@ -1,5 +1,6 @@
 import iocage.lib.NetworkInterface
 import iocage.lib.helpers
+import iocage.lib.errors
 
 import subprocess
 from hashlib import md5
@@ -19,9 +20,9 @@ class Network:
 
         if bridges is not None:
             if not isinstance(bridges, list):
-                raise Exception(
-                    "Invalid parameter bridges: "
-                    "None or List of Strings expected"
+                raise iocage.lib.errors.InvalidNetworkBridge(
+                    reason="Expected None or list of strings",
+                    logger=self.logger
                 )
 
         self.vnet = True
@@ -35,8 +36,9 @@ class Network:
     def setup(self):
         if self.vnet:
             if not self.bridges or len(self.bridges) == 0:
-                raise Exception(
-                    "VNET is enabled and requires setting a bridge")
+                raise iocage.lib.errors.VnetBridgeMissing(
+                    logger=self.logger
+                )
 
             jail_if, host_if = self.__create_vnet_iface()
 

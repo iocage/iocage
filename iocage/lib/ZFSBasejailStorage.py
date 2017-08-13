@@ -7,19 +7,28 @@ class ZFSBasejailStorage:
         self._delete_clone_target_datasets()
 
     def apply(self, release=None):
-        release = release if (
-            release is not None) else self.jail.cloned_release
+
+        if release is None:
+            release = self.jail.cloned_release
+
         return ZFSBasejailStorage.clone(self, release)
 
     def setup(self, release):
-        pass
+        iocage.lib.StandaloneJailStorage.StandaloneJailStorage.setup(
+            self, release)
 
     def clone(self, release):
 
-        if not self.jail.config["basejail_type"] == "zfs":
-            msg = f"Jail {self.jail.humanreadable_name} is not a zfs basejail."
-            self.logger.error(msg)
-            raise Exception(msg)
+        current_basejail_type = self.jail.config["basejail_type"]
+        if not current_basejail_type == "zfs":
+
+            raise iocage.lib.errors.InvalidJailConfigValue(
+                property_name="basejail_type",
+                reason="Expected ZFS, but saw {current_basejail_type}",
+                logger=self.logger
+            )
+
+        ZFSBasejailStorage._create_mountpoints(self)
 
         for basedir in iocage.lib.helpers.get_basedir_list():
             source_dataset_name = f"{release.base_dataset.name}/{basedir}"
@@ -63,3 +72,7 @@ class ZFSBasejailStorage:
 
             else:
                 self._delete_clone_target_datasets(list(child.children))
+
+    def _create_mountpoints(self):
+        for basedir in ["dev", "etc"]:
+            self.create_jail_mountpoint(basedir)

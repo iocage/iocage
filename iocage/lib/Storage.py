@@ -28,10 +28,6 @@ class Storage:
         self.safe_mode = safe_mode
 
     @property
-    def zfs_datasets(self):
-        return self.get_zfs_datasets(self.auto_create)
-
-    @property
     def jail_root_dataset(self):
         return self.zfs.get_dataset(self.jail_root_dataset_name)
 
@@ -123,12 +119,11 @@ class Storage:
         except:
             parent = "/".join(target.split("/")[:-1])
             self.logger.debug(
-                "Cloning was unsuccessful -"
-                " trying to create the dataset first",
+                "Cloning was unsuccessful - "
+                f"trying to create the parent dataset '{parent}' first",
                 jail=self.jail
             )
             self._create_dataset(parent)
-            self._pool.create(parent, {}, create_ancestors=True)
             snapshot.clone(target)
 
         target_dataset = self.zfs.get_dataset(target)
@@ -151,6 +146,12 @@ class Storage:
             self.create_jail_root_dataset()
         return self.jail_root_dataset
 
+    def create_jail_mountpoint(self, basedir):
+        basedir = f"{self.jail_root_dataset.mountpoint}/{basedir}"
+        if not os.path.isdir(basedir):
+            self.logger.verbose(f"Creating mountpoint {basedir}")
+            os.makedirs(basedir)
+
     def _create_dataset(self, name, mount=True):
         self.logger.verbose(f"Creating ZFS dataset {name}")
         self._pool.create(name, {}, create_ancestors=True)
@@ -158,37 +159,6 @@ class Storage:
             ds = self.zfs.get_dataset(name)
             ds.mount()
         self.logger.spam(f"ZFS dataset {name} created")
-
-    def _require_datasets_exist_and_jailed(self):
-        existing_datasets = self.get_zfs_datasets(auto_create=False)
-        for existing_dataset in existing_datasets:
-            if existing_dataset.properties["jailed"] != "on":
-                name = existing_dataset.name
-                raise Exception(
-                    f"Dataset {name} is not jailed."
-                    f"Run 'zfs set jailed=on {name}' to allow mounting"
-                )
-
-    def _mount_jail_datasets(self, auto_create=None):
-
-        auto_create = self.auto_create if auto_create is None else (
-            auto_create is True)
-
-        if self.safe_mode:
-            self._require_datasets_exist_and_jailed()
-
-        for dataset in self.zfs_datasets:
-
-            self._unmount_local(dataset)
-
-            # ToDo: bake jail feature into py-libzfs
-            iocage.lib.helpers.exec(
-                ["zfs", "jail", self.jail.identifier, dataset.name])
-
-            if dataset.properties['mountpoint']:
-                for child in list(dataset.children):
-                    self._ensure_dataset_exists(child)
-                    self._mount_jail_dataset(child.name)
 
     def _mount_procfs(self):
         try:
@@ -201,9 +171,7 @@ class Storage:
                     f"{self.path}/root/proc"
                 ])
         except:
-            msg = "Failed mounting procfs"
-            self.logger.error(msg)
-            raise Exception(msg)
+            raise iocage.lib.errors.MountFailed("procfs")
 
     # ToDo: Remove unused function?
     def _mount_linprocfs(self):
@@ -226,19 +194,7 @@ class Storage:
                     f"{self.path}/root/{linproc_path}"
                 ])
         except:
-            msg = "Failed mounting linprocfs"
-            self.logger.error(msg)
-            raise Exception(msg)
-
-    def _get_pool_name_from_dataset_name(self, dataset_name):
-        return dataset_name.split("/", maxsplit=1)[0]
-
-    def _get_pool_from_dataset_name(self, dataset_name):
-        target_pool_name = self._get_pool_name_from_dataset_name(dataset_name)
-        for zpool in list(self.zfs.pools):
-            if zpool.name == target_pool_name:
-                return zpool
-        raise Exception(f"zpool {target_pool_name} does not exist")
+            raise iocage.lib.errors.MountFailed("linprocfs")
 
     def _unmount_local(self, dataset):
         if dataset.mountpoint:

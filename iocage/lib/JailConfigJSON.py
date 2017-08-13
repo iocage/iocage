@@ -1,4 +1,5 @@
 import json
+import iocage.lib.helpers
 
 
 class JailConfigJSON:
@@ -15,6 +16,7 @@ class JailConfigJSON:
         with open(config_file_path, "w") as f:
             self.logger.verbose(f"Writing JSON config to {config_file_path}")
             f.write(JailConfigJSON.toJSON(self))
+            self.logger.debug(f"File {config_file_path} written")
 
     def read(self):
         return self.clone(JailConfigJSON.read_data(self))
@@ -27,6 +29,7 @@ class JailConfigJSON:
         try:
             return f"{self.jail.dataset.mountpoint}/config.json"
         except:
-            raise Exception(
-                f"Dataset '{self.jail.dataset}' not found or not mounted"
+            raise iocage.lib.errors.DatasetNotMounted(
+                dataset=self.jail.dataset,
+                logger=self.logger
             )
