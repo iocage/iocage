@@ -327,7 +327,30 @@ class IOCStart(object):
             os.symlink("../var/run/log", "log")
             os.chdir(original_path)
 
-        self.start_network(vnet)
+        vnet_err = self.start_network(vnet)
+
+        if not vnet_err and vnet:
+            iocage.lib.ioc_common.logit({
+                "level"  : "INFO",
+                "message": "  + Configuring VNET OK"
+            },
+                _callback=self.callback,
+                silent=self.silent)
+        elif vnet_err and vnet:
+            iocage.lib.ioc_common.logit({
+                "level"  : "INFO",
+                "message": "  + Configuring VNET FAILED"
+            },
+                _callback=self.callback,
+                silent=self.silent)
+
+            for v_err in vnet_err:
+                iocage.lib.ioc_common.logit({
+                    "level"  : "WARNING",
+                    "message": f"  {v_err}"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
 
         if self.conf["jail_zfs"] == "on":
             for jdataset in self.conf["jail_zfs_dataset"].split():
@@ -407,6 +430,8 @@ class IOCStart(object):
 
         :param vnet: Boolean
         """
+        errors = []
+
         if not vnet:
             return
 
@@ -417,7 +442,13 @@ class IOCStart(object):
         nics = self.get("interfaces").split(",")
 
         for nic in nics:
-            self.start_network_interface_vnet(nic, net_configs, jid)
+            err = self.start_network_interface_vnet(nic, net_configs, jid)
+
+            if err:
+                errors.append(err)
+
+        if len(errors) != 0:
+            return errors
 
     def start_network_interface_vnet(self, nic_defs, net_configs, jid):
         """
@@ -460,13 +491,7 @@ class IOCStart(object):
                         self.start_network_vnet_addr(iface, ip, gw, ipv6)
 
             except su.CalledProcessError as err:
-                iocage.lib.ioc_common.logit({
-                    "level"  : "WARNING",
-                    "message": "Network failed to start:"
-                               f" {err.output.decode('utf-8')}".rstrip()
-                },
-                    _callback=self.callback,
-                    silent=self.silent)
+                return err.output.decode("utf-8").rstrip()
 
     def start_network_vnet_iface(self, nic, bridge, mtu, jid):
         """
