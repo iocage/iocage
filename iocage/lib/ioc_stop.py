@@ -192,14 +192,39 @@ class IOCStop(object):
                             err.output.decode("utf-8").rstrip()))
 
         if vnet == "on":
+            vnet_err = []
+
             for nic in self.nics.split(","):
                 nic = nic.split(":")[0]
                 try:
                     iocage.lib.ioc_common.checkoutput(
                         ["ifconfig", f"{nic}:{self.jid}", "destroy"],
                         stderr=su.STDOUT)
-                except su.CalledProcessError:
-                    pass
+                except su.CalledProcessError as err:
+                    vnet_err.append(err.output.decode().rstrip())
+
+            if not vnet_err:
+                iocage.lib.ioc_common.logit({
+                    "level"  : "INFO",
+                    "message": "  + Tearing down VNET OK"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+            elif vnet_err:
+                iocage.lib.ioc_common.logit({
+                    "level"  : "INFO",
+                    "message": "  + Tearing down VNET FAILED"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+
+                for v_err in vnet_err:
+                    iocage.lib.ioc_common.logit({
+                        "level"  : "WARNING",
+                        "message": f"  {v_err}"
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
 
         if ip4_addr != "inherit" and vnet == "off":
             if ip4_addr != "none":
