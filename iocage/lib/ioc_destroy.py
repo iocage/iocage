@@ -54,6 +54,8 @@ class IOCDestroy(object):
                 continue
             if dataset.type != libzfs.DatasetType.FILESYSTEM:
                 continue
+            if dataset.properties["mountpoint"].value == 'legacy':
+                continue
 
             # This is just to setup a replacement.
             path = path.replace("templates", "jails")
