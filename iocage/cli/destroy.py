@@ -53,7 +53,7 @@ def child_test(zfs, iocroot, name, _type, force=False):
                            "dependant jails."
             })
             if not click.confirm("\nProceed?"):
-                return
+                exit()
             children = []
         else:
             return
