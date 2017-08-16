@@ -35,26 +35,28 @@ __rootcmd__ = True
 
 def child_test(zfs, iocroot, name, _type, force=False):
     """Tests for dependent children"""
-    if _type == "jail":
-        path = f"{iocroot}/jails/{name}/root"
-    else:
-        # RELEASE
-        path = f"{iocroot}/releases/{name}"
+    path = None
+    children = []
+    paths = [f"{iocroot}/jails/{name}/root",
+             f"{iocroot}/releases/{name}",
+             f"{iocroot}/templates/{name}/root"]
 
-    # While we would like to catch the zfs exception, it still prints to the
-    #  display, this is the next best test.
-    if os.path.isdir(path):
-        children = zfs.get_dataset_by_path(path).snapshots_recursive
-    else:
+    for p in paths:
+        if os.path.isdir(p):
+            path = p
+            children = zfs.get_dataset_by_path(path).snapshots_recursive
+            break
+
+    if path is None:
         if not force:
             ioc_common.logit({
                 "level"  : "WARNING",
                 "message": "Partial UUID/NAME supplied, cannot check for "
                            "dependant jails."
             })
+
             if not click.confirm("\nProceed?"):
                 exit()
-            children = []
         else:
             return
 
@@ -62,13 +64,7 @@ def child_test(zfs, iocroot, name, _type, force=False):
 
     for child in children:
         _name = child.name.rsplit("@", 1)[-1]
-        if _type == "jail":
-            path = path.replace(name, _name)
-            if os.path.isdir(path):
-                # We only want jails, not every snap they have.
-                _children.append(f"  {_name}\n")
-        else:
-            _children.append(f"  {_name}\n")
+        _children.append(f"  {_name}\n")
 
     sort = ioc_common.ioc_sort("", "name", exit_on_error=True, data=_children)
     _children.sort(key=sort)
@@ -77,7 +73,8 @@ def child_test(zfs, iocroot, name, _type, force=False):
         if not force:
             ioc_common.logit({
                 "level"  : "WARNING",
-                "message": f"\n{name} has dependent jails,"
+                "message": f"\n{name} has dependent jails"
+                           " (who may also have dependents),"
                            " use --force to destroy: "
             })
 
