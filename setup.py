@@ -22,7 +22,8 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 import os
-
+import shutil
+import gzip
 import sys
 import fastentrypoints
 from setuptools import find_packages, setup
@@ -33,6 +34,9 @@ if os.path.isdir("/usr/local/etc/init.d"):
 else:
     _data = [('/usr/local/etc/rc.d', ['rc.d/iocage']),
              ('/usr/local/man/man8', ['man/iocage.8.gz'])]
+
+with open('man/iocage.8', 'rb') as a, gzip.open('man/iocage.8.gz', 'wb') as b:
+    shutil.copyfileobj(a, b)
 
 if sys.version_info < (3, 6):
     exit("Only Python 3.6 and higher is supported.")
