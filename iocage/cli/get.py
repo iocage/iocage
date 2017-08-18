@@ -38,7 +38,7 @@ import iocage.lib.Host
                                           "specified jail.", is_flag=True)
 @click.option("--pool", "-p", "_pool", help="Get the currently activated "
                                             "zpool.", is_flag=True)
-@click.option("--log-level", "-d", default=None)
+@click.option("--log-level", "-d", default="info")
 def cli(ctx, prop, _all, _pool, jail, log_level):
     """Get a list of jails and print the property."""
 

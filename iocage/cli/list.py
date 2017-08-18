@@ -48,7 +48,7 @@ import iocage.lib.Logger
               help="Sorts the list by the given type")
 @click.option("--quick", "-q", is_flag=True, default=False,
               help="Lists all jails with less processing and fields.")
-@click.option("--log-level", "-d", default=None)
+@click.option("--log-level", "-d", default="info")
 @click.option("--output", "-o", default=None)
 @click.argument("filters", nargs=-1)
 def cli(ctx, dataset_type, header, _long, remote, plugins,
