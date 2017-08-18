@@ -4,4 +4,4 @@ from iocage.lib.Release import Release
 from iocage.lib.Releases import Releases
 from iocage.lib.Host import Host
 from iocage.lib.Logger import Logger
-import iocage.lib.errors as errors
+from iocage.lib import errors
