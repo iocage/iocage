@@ -646,13 +646,8 @@ class IOCFetch(object):
 
                     try:
                         self.fetch_extract(f)
-                    except as err:
-                        iocage.lib.ioc_common.logit({
-                            "level"  : "EXCEPTION",
-                            "message": err
-                        }, exit_on_error=self.exit_on_error,
-                            _callback=self.callback,
-                            silent=self.silent)
+                    except:
+                        raise
 
             return missing
 
@@ -765,13 +760,8 @@ class IOCFetch(object):
                                 _ftp.retrbinary(f"RETR {f}", callback)
                                 pbar.close()
                                 _ftp.quit()
-                        except as err:
-                            iocage.lib.ioc_common.logit({
-                                "level"  : "EXCEPTION",
-                                "message": err
-                            }, exit_on_error=self.exit_on_error,
-                                _callback=self.callback,
-                                silent=self.silent)
+                        except:
+                            raise
                     else:
                         pass
 
