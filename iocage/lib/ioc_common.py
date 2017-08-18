@@ -112,13 +112,17 @@ def ioc_sort(caller, s_type, data=None, exit_on_error=False):
         "res"     : sort_res,
         "qta"     : sort_qta,
         "use"     : sort_use,
-        "ava"     : sort_ava
+        "ava"     : sort_ava,
+        "created" : sort_crt,
+        "rsize"   : sort_res,
+        "used"    : sort_qta
     }
 
     list_full_sorts = ["jid", "name", "boot", "state", "type",
                        "release", "ip4", "ip6", "template"]
     list_short_sorts = ["jid", "name", "state", "release", "ip4"]
     df_sorts = ["name", "crt", "res", "qta", "use", "ava"]
+    snaplist_sorts = ["name", "created", "rsize", "used"]
 
     if caller == "list_full" and s_type not in list_full_sorts:
         raise_sort_error(list_full_sorts, exit_on_error)
@@ -126,6 +130,8 @@ def ioc_sort(caller, s_type, data=None, exit_on_error=False):
         raise_sort_error(list_short_sorts, exit_on_error)
     elif caller == "df" and s_type not in df_sorts:
         raise_sort_error(df_sorts, exit_on_error)
+    elif caller == "snaplist" and s_type not in snaplist_sorts:
+        raise_sort_error(snaplist_sorts, exit_on_error)
 
     # Most calls will use this
     if caller == "list_release" and s_type == "release":
@@ -135,17 +141,17 @@ def ioc_sort(caller, s_type, data=None, exit_on_error=False):
 
 
 def sort_crt(crt):
-    """Sort df by CRT"""
+    """Sort df by CRT or snaplist by CREATED"""
     return crt[1]
 
 
 def sort_res(res):
-    """Sort df by RES"""
+    """Sort df by RES or snaplist by RSIZE"""
     return res[2]
 
 
 def sort_qta(qta):
-    """Sort df by QTA"""
+    """Sort df by QTA or snaplist by USED"""
     return qta[3]
 
 

@@ -1054,6 +1054,8 @@ class IOCage(object):
         conf = ioc_json.IOCJson(path, silent=self.silent,
                                 exit_on_error=self.exit_on_error).json_load()
         snap_list = []
+        snap_list_temp = []
+        snap_list_root = []
 
         if conf["template"] == "yes":
             full_path = f"{self.pool}/iocage/templates/{uuid}"
@@ -1065,9 +1067,11 @@ class IOCage(object):
         for snap in snapshots.snapshots_recursive:
             snap_name = snap.name.rsplit("@")[1] if not long else snap.name
             root_snap_name = snap.name.rsplit("@")[0].split("/")[-1]
+            root = False
 
             if root_snap_name == "root":
                 snap_name += "/root"
+                root = True
             elif root_snap_name != uuid:
                 # basejail datasets.
                 continue
@@ -1076,7 +1080,22 @@ class IOCage(object):
             used = snap.properties["used"].value
             referenced = snap.properties["referenced"].value
 
-            snap_list.append([snap_name, creation, referenced, used])
+            snap_list_temp.append([snap_name, creation, referenced, used]) \
+                if not root else snap_list_root.append([snap_name, creation,
+                                                        referenced, used])
+
+        for parent in snap_list_temp:
+            # We want the /root snapshots immediately after the parent ones
+            name = parent[0]
+            for root in snap_list_root:
+                _name = root[0]
+
+                if f"{name}/root" == _name:
+                    snap_list.append(parent)
+                    snap_list.append(root)
+
+        sort = ioc_common.ioc_sort("snaplist", "created", data=snap_list)
+        snap_list.sort(key=sort)
 
         return snap_list
 
