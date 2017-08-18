@@ -94,6 +94,7 @@ class IOCCreate(object):
         defaults.
         """
         start = False
+        is_template = False
 
         if os.path.isdir(location) or os.path.isdir(
                 f"{self.iocroot}/templates/{jail_uuid}"):
@@ -290,12 +291,15 @@ class IOCCreate(object):
 
                     iocjson.json_set_value("type=template")
                     iocjson.json_set_value("template=yes")
+                    iocjson.zfs_set_property(f"{self.pool}/iocage/templates/"
+                                             f"{jail_uuid}", "readonly", "off")
 
                     # If you supply pkglist and templates without setting the
                     # config's type, you will end up with a type of jail
                     # instead of template like we want.
                     config["type"] = "template"
                     start = False
+                    is_template = True
 
                 try:
                     iocjson.json_check_prop(key, value, config)
@@ -394,6 +398,10 @@ class IOCCreate(object):
             iocage.lib.ioc_start.IOCStart(jail_uuid, location, config,
                                           silent=self.silent)
 
+        if is_template:
+            # We have to set readonly back, since we're done with our tasks
+            iocjson.zfs_set_property(f"{self.pool}/iocage/templates/"
+                                     f"{jail_uuid}", "readonly", "on")
         return jail_uuid
 
     def create_config(self, jail_uuid, release):

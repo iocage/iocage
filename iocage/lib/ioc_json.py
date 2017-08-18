@@ -505,7 +505,21 @@ class IOCJson(object):
                         },
                             _callback=self.callback,
                             silent=self.silent)
-                        self.lgr.disabled = True
+
+                        # Writing these now since the dataset will be readonly
+                        self.json_check_prop(key, value, conf)
+                        self.json_write(conf)
+
+                        iocage.lib.ioc_common.logit({
+                            "level"  : "INFO",
+                            "message":
+                                f"Property: {key} has been updated to {value}"
+                        },
+                            _callback=self.callback,
+                            silent=self.silent)
+
+                        self.zfs_set_property(new_location, "readonly",  "on")
+                        return
                     except libzfs.ZFSException:
                         iocage.lib.ioc_common.logit({
                             "level"  : "EXCEPTION",
@@ -521,6 +535,7 @@ class IOCJson(object):
                         conf["type"] = "jail"
                         self.location = old_location.lstrip(pool).replace(
                             "/iocage", iocroot)
+                        self.zfs_set_property(old_location, "readonly", "off")
 
                         iocage.lib.ioc_common.logit({
                             "level"  : "INFO",
