@@ -1048,7 +1048,7 @@ class IOCage(object):
                              exit_on_error=self.exit_on_error).json_set_value(
                 prop, default=True)
 
-    def snap_list(self, long=True):
+    def snap_list(self, long=True, _sort="created"):
         """Gathers a list of snapshots and returns it"""
         uuid, path = self.__check_jail_existence__()
         conf = ioc_json.IOCJson(path, silent=self.silent,
@@ -1094,7 +1094,7 @@ class IOCage(object):
                     snap_list.append(parent)
                     snap_list.append(root)
 
-        sort = ioc_common.ioc_sort("snaplist", "created", data=snap_list)
+        sort = ioc_common.ioc_sort("snaplist", _sort, data=snap_list)
         snap_list.sort(key=sort)
 
         return snap_list
