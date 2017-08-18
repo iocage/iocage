@@ -58,7 +58,11 @@ setup(name='iocage',
           'verboselogs==1.6',
           'pygit2==0.25.1',
           'cffi==1.9.1',
+          'ucl',
           'libzfs'
+      ],
+      dependency_links=[
+        'git+https://github.com/freenas/py-libzfs.git#egg=libzfs'
       ],
       setup_requires=['pytest-runner'],
       entry_points={
