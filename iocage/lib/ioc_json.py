@@ -518,7 +518,7 @@ class IOCJson(object):
                             _callback=self.callback,
                             silent=self.silent)
 
-                        self.zfs_set_property(new_location, "readonly",  "on")
+                        self.zfs_set_property(new_location, "readonly", "on")
                         return
                     except libzfs.ZFSException:
                         iocage.lib.ioc_common.logit({
