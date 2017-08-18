@@ -34,11 +34,14 @@ import iocage.lib.iocage as ioc
               help="For scripting, use tabs for separators.")
 @click.option("--long", "-l", "_long", is_flag=True, default=False,
               help="Show the full dataset path for snapshot name.")
+@click.option("--sort", "-s", "_sort", default="created", nargs=1,
+              help="Sorts the list by the given type")
 @click.argument("jail")
-def cli(header, jail, _long):
+def cli(header, jail, _long, _sort):
     """Allows a user to show resource usage of all jails."""
     table = texttable.Texttable(max_width=0)
-    snap_list = ioc.IOCage(exit_on_error=True, jail=jail).snap_list(_long)
+    snap_list = ioc.IOCage(exit_on_error=True, jail=jail).snap_list(_long,
+                                                                    _sort)
 
     if header:
         snap_list.insert(0, ["NAME", "CREATED", "RSIZE", "USED"])
