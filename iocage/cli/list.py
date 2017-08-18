@@ -80,7 +80,7 @@ def cli(ctx, dataset_type, header, _long, remote, plugins,
             columns = ["jid", "name"]
 
             if _long:
-                columns += ["uuid", "running",
+                columns += ["running",
                             "release", "ip4.addr", "ip6.addr"]
             else:
                 columns += ["running", "ip4.addr"]
