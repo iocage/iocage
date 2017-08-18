@@ -162,13 +162,21 @@ class IOCFetch(object):
             try:
                 releases.index(self.release)
             except ValueError as err:
-                raise RuntimeError(err)
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": err
+                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                    silent=self.silent)
             return self.release
 
         try:
             self.release = releases[int(self.release)]
         except IndexError:
-            raise RuntimeError(f"[{self.release}] is not in the list!")
+            iocage.lib.ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": f"[{self.release}] is not in the list!"
+            }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                silent=self.silent)
         except ValueError:
             # We want to use their host as RELEASE, but it may
             # not be on the mirrors anymore.
@@ -182,7 +190,11 @@ class IOCFetch(object):
 
                 releases.index(self.release)
             except ValueError:
-                raise RuntimeError("Please select an item!")
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": "Please select an item!"
+                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                    silent=self.silent)
         return self.release
 
     def fetch_release(self, _list=False):
@@ -197,7 +209,11 @@ class IOCFetch(object):
         elif self._file:
             # Format for file directory should be: root-dir/RELEASE/*.txz
             if not self.root_dir:
-                raise RuntimeError("Please supply --root-dir or -d.")
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": "Please supply --root-dir or -d."
+                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                    silent=self.silent)
 
             if self.release is None:
                 iocage.lib.ioc_common.logit({
@@ -209,7 +225,11 @@ class IOCFetch(object):
             try:
                 os.chdir(f"{self.root_dir}/{self.release}")
             except OSError as err:
-                raise RuntimeError(f"{err}")
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": err
+                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                    silent=self.silent)
 
             dataset = f"{self.iocroot}/download/{self.release}"
 
@@ -238,7 +258,13 @@ class IOCFetch(object):
                         error = f"{f}.txz is a required file!" \
                                 f"\nPlease place it in {self.root_dir}/" \
                                 f"{self.release}"
-                    raise RuntimeError(error)
+
+                    iocage.lib.ioc_common.logit({
+                        "level"  : "EXCEPTION",
+                        "message": error
+                    }, exit_on_error=self.exit_on_error,
+                        _callback=self.callback,
+                        silent=self.silent)
 
                 iocage.lib.ioc_common.logit({
                     "level"  : "INFO",
@@ -459,7 +485,11 @@ class IOCFetch(object):
         try:
             ftp.cwd(self.release)
         except ftplib.error_perm:
-            raise RuntimeError(f"{self.release} was not found!")
+            iocage.lib.ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": f"{self.release} was not found!"
+            }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                silent=self.silent)
 
         ftp_list = self.files
         ftp.quit()
@@ -493,12 +523,20 @@ class IOCFetch(object):
             try:
                 ftp.cwd(f"/pub/FreeBSD/releases/{self.arch}")
             except:
-                raise RuntimeError(f"{self.arch} was not found!")
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": f"{self.arch} was not found!"
+                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                    silent=self.silent)
         elif self.root_dir:
             try:
                 ftp.cwd(self.root_dir)
             except:
-                raise RuntimeError(f"{self.root_dir} was not found!")
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": f"{self.root_dir} was not found!"
+                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                    silent=self.silent)
 
         return ftp
 
@@ -573,8 +611,13 @@ class IOCFetch(object):
                                         silent=self.silent)
                                     missing.append(f)
                                 else:
-                                    raise RuntimeError("Too many failed"
-                                                       " verifications!")
+                                    iocage.lib.ioc_common.logit({
+                                        "level"  : "EXCEPTION",
+                                        "message": "Too many failed"
+                                                   " verifications!"
+                                    }, exit_on_error=self.exit_on_error,
+                                        _callback=self.callback,
+                                        silent=self.silent)
                     except FileNotFoundError:
                         if not _missing:
                             iocage.lib.ioc_common.logit({
@@ -586,8 +629,12 @@ class IOCFetch(object):
                                 silent=self.silent)
                             missing.append(f)
                         else:
-                            raise RuntimeError(
-                                "Too many failed verifications!")
+                            iocage.lib.ioc_common.logit({
+                                "level"  : "EXCEPTION",
+                                "message": "Too many failed verifications!"
+                            }, exit_on_error=self.exit_on_error,
+                                _callback=self.callback,
+                                silent=self.silent)
 
                 if not missing:
                     iocage.lib.ioc_common.logit({
@@ -599,8 +646,13 @@ class IOCFetch(object):
 
                     try:
                         self.fetch_extract(f)
-                    except:
-                        raise
+                    except as err:
+                        iocage.lib.ioc_common.logit({
+                            "level"  : "EXCEPTION",
+                            "message": err
+                        }, exit_on_error=self.exit_on_error,
+                            _callback=self.callback,
+                            silent=self.silent)
 
             return missing
 
@@ -685,7 +737,12 @@ class IOCFetch(object):
                                                        if x != f)
                                     continue
                                 else:
-                                    raise RuntimeError(f"{f} is required!")
+                                    iocage.lib.ioc_common.logit({
+                                        "level"  : "EXCEPTION",
+                                        "message": f"{f} is required!"
+                                    }, exit_on_error=self.exit_on_error,
+                                        _callback=self.callback,
+                                        silent=self.silent)
 
                             with open(f, "wb") as txz:
                                 pbar = tqdm.tqdm(total=filesize,
@@ -708,8 +765,13 @@ class IOCFetch(object):
                                 _ftp.retrbinary(f"RETR {f}", callback)
                                 pbar.close()
                                 _ftp.quit()
-                        except:
-                            raise
+                        except as err:
+                            iocage.lib.ioc_common.logit({
+                                "level"  : "EXCEPTION",
+                                "message": err
+                            }, exit_on_error=self.exit_on_error,
+                                _callback=self.callback,
+                                silent=self.silent)
                     else:
                         pass
 
@@ -1067,14 +1129,13 @@ class IOCFetch(object):
             },
                 _callback=self.callback,
                 silent=self.silent)
+            iocage.lib.ioc_destroy.IOCDestroy().destroy_jail(path)
             iocage.lib.ioc_common.logit({
-                "level"  : "ERROR",
-                "message": "Destroying partial plugin."
-            },
+                "level"  : "EXCEPTION",
+                "message": "Destroyed partial plugin."
+            }, exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
-            iocage.lib.ioc_destroy.IOCDestroy().destroy_jail(path)
-            raise RuntimeError()
 
         return jaildir, _conf, repo_dir
 
@@ -1263,15 +1324,25 @@ fingerprint: {fingerprint}
         if os.geteuid() == 0:
             try:
                 pygit2.clone_repository(git_server, git_working_dir)
-            except pygit2.GitError:
-                raise
+            except pygit2.GitError as err:
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": err
+                }, exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
+                    silent=self.silent)
             except ValueError:
                 try:
                     repo = pygit2.Repository(git_working_dir)
                     iocage.lib.ioc_common.git_pull(
                         repo, exit_on_error=self.exit_on_error)
-                except (pygit2.GitError, AssertionError, RuntimeError):
-                    raise
+                except (pygit2.GitError, AssertionError, RuntimeError) as err:
+                    iocage.lib.ioc_common.logit({
+                        "level"  : "EXCEPTION",
+                        "message": err
+                    }, exit_on_error=self.exit_on_error,
+                        _callback=self.callback,
+                        silent=self.silent)
 
         with open(f"{self.iocroot}/.plugin_index/INDEX", "r") as plugins:
             plugins = json.load(plugins)
@@ -1342,7 +1413,12 @@ fingerprint: {fingerprint}
             try:
                 plugin = plugins[int(plugin)]
             except IndexError:
-                raise RuntimeError(f"[{plugin}] is not in the list!")
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": f"Plugin: {_plugin} not in list!"
+                }, exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
+                    silent=self.silent)
             except ValueError:
                 exit()
         else:
@@ -1353,9 +1429,19 @@ fingerprint: {fingerprint}
                 try:
                     plugin = plugins[int(plugin[0])]
                 except IndexError:
-                    raise RuntimeError(f"Plugin: {_plugin} not in list!")
+                    iocage.lib.ioc_common.logit({
+                        "level"  : "EXCEPTION",
+                        "message": f"Plugin: {_plugin} not in list!"
+                    }, exit_on_error=self.exit_on_error,
+                        _callback=self.callback,
+                        silent=self.silent)
             except ValueError as err:
-                raise RuntimeError(f"{err}!")
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": err
+                }, exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
+                    silent=self.silent)
 
         return plugin.rsplit("(", 1)[1].replace(")", "")
 
