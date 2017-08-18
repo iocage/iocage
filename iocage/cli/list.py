@@ -13,7 +13,7 @@
 # THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
 # IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANYw
 # DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
 # DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
 # OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
@@ -23,14 +23,16 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """list module for the cli."""
 import click
+import texttable
 
-import iocage.lib.ioc_common as ioc_common
-import iocage.lib.ioc_fetch as ioc_fetch
-import iocage.lib.iocage as ioc
+import iocage.lib.Jails
+import iocage.lib.Host
+import iocage.lib.Logger
 
 
 @click.command(name="list", help="List a specified dataset type, by default"
                                  " lists all jails.")
+@click.pass_context
 @click.option("--release", "--base", "-r", "-b", "dataset_type",
               flag_value="base", help="List all bases.")
 @click.option("--template", "-t", "dataset_type", flag_value="template",
@@ -42,52 +44,74 @@ import iocage.lib.iocage as ioc
 @click.option("--remote", "-R", is_flag=True, help="Show remote's available "
                                                    "RELEASEs.")
 @click.option("--plugins", "-P", is_flag=True, help="Show available plugins.")
-@click.option("--http", default=False,
-              help="Have --remote use HTTP instead.", is_flag=True)
 @click.option("--sort", "-s", "_sort", default="name", nargs=1,
               help="Sorts the list by the given type")
 @click.option("--quick", "-q", is_flag=True, default=False,
               help="Lists all jails with less processing and fields.")
-def cli(dataset_type, header, _long, remote, http, plugins, _sort, quick):
-    """This passes the arg and calls the jail_datasets function."""
-    freebsd_version = ioc_common.checkoutput(["freebsd-version"])
-    iocage = ioc.IOCage(exit_on_error=True, skip_jails=True)
+@click.option("--log-level", "-d", default="info")
+@click.option("--output", "-o", default=None)
+@click.argument("filters", nargs=-1)
+def cli(ctx, dataset_type, header, _long, remote, plugins,
+        _sort, quick, log_level, output, filters):
+
+    logger = ctx.parent.logger
+    logger.print_level = log_level
+
+    host = iocage.lib.Host.Host(logger=logger)
+    jails = iocage.lib.Jails.Jails(logger=logger)
 
     if dataset_type is None:
         dataset_type = "all"
 
     if remote and not plugins:
-        if "HBSD" in freebsd_version:
-            hardened = True
-        else:
-            hardened = False
 
-        ioc_fetch.IOCFetch("", http=http, hardened=hardened).fetch_release(
-            _list=True)
+        available_releases = host.distribution.releases
+        for available_release in available_releases:
+            print(available_release.name)
+        return
 
     if plugins and remote:
-        _list = ioc_fetch.IOCFetch("").fetch_plugin_index("", _list=True,
-                                                          list_header=header,
-                                                          list_long=_long)
+        raise Exception("ToDo: Plugins")
     else:
-        _list = iocage.list(dataset_type, header, _long, _sort,
-                            plugin=plugins, quick=quick)
 
-    if not header:
-        if dataset_type == "base":
-            for item in _list:
-                ioc_common.logit({
-                    "level"  : "INFO",
-                    "message": item
-                })
+        if output:
+            columns = output.strip().split(',')
         else:
-            for item in _list:
-                ioc_common.logit({
-                    "level"  : "INFO",
-                    "message": "\t".join(item)
-                })
+            columns = ["jid", "name"]
+
+            if _long:
+                columns += ["running",
+                            "release", "ip4.addr", "ip6.addr"]
+            else:
+                columns += ["running", "ip4.addr"]
+
+        table = texttable.Texttable(max_width=0)
+        table.set_cols_dtype(["t"] * len(columns))
+
+        table_head = (list(x.upper() for x in columns))
+        table_data = []
+
+        try:
+            sort_index = columns.index(_sort)
+        except ValueError:
+            sort_index = None
+
+        for jail in jails.list(filters=filters):
+            table_data.append(
+                [_lookup_jail_value(jail, x) for x in columns]
+            )
+
+        if sort_index is not None:
+            table_data.sort(key=lambda x: x[sort_index])
+
+        table.add_rows([table_head] + table_data)
+        print(table.draw())
+
+    return
+
+
+def _lookup_jail_value(jail, key):
+    if key in iocage.lib.Jails.Jails.JAIL_KEYS:
+        return jail.getattr_str(key)
     else:
-        ioc_common.logit({
-            "level"  : "INFO",
-            "message": _list
-        })
+        return str(jail.config.__getitem__(key))

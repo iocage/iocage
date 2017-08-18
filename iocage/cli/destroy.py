@@ -33,30 +33,28 @@ import iocage.lib.iocage as ioc
 __rootcmd__ = True
 
 
-def child_test(zfs, iocroot, name, _type, force=False, recursive=False):
+def child_test(zfs, iocroot, name, _type, force=False):
     """Tests for dependent children"""
-    path = None
-    children = []
-    paths = [f"{iocroot}/jails/{name}/root",
-             f"{iocroot}/releases/{name}",
-             f"{iocroot}/templates/{name}/root"]
+    if _type == "jail":
+        path = f"{iocroot}/jails/{name}/root"
+    else:
+        # RELEASE
+        path = f"{iocroot}/releases/{name}"
 
-    for p in paths:
-        if os.path.isdir(p):
-            path = p
-            children = zfs.get_dataset_by_path(path).snapshots_recursive
-            break
-
-    if path is None:
+    # While we would like to catch the zfs exception, it still prints to the
+    #  display, this is the next best test.
+    if os.path.isdir(path):
+        children = zfs.get_dataset_by_path(path).snapshots_recursive
+    else:
         if not force:
             ioc_common.logit({
                 "level"  : "WARNING",
                 "message": "Partial UUID/NAME supplied, cannot check for "
                            "dependant jails."
             })
-
             if not click.confirm("\nProceed?"):
-                exit()
+                return
+            children = []
         else:
             return
 
@@ -64,18 +62,23 @@ def child_test(zfs, iocroot, name, _type, force=False, recursive=False):
 
     for child in children:
         _name = child.name.rsplit("@", 1)[-1]
-        _children.append(f"  {_name}\n")
+        if _type == "jail":
+            path = path.replace(name, _name)
+            if os.path.isdir(path):
+                # We only want jails, not every snap they have.
+                _children.append(f"  {_name}\n")
+        else:
+            _children.append(f"  {_name}\n")
 
-    sort = ioc_common.ioc_sort("", "name", exit_on_error=True, data=_children)
+    sort = ioc_common.ioc_sort("", "name", data=_children)
     _children.sort(key=sort)
 
     if len(_children) != 0:
-        if not force and not recursive:
+        if not force:
             ioc_common.logit({
                 "level"  : "WARNING",
-                "message": f"\n{name} has dependent jails"
-                           " (who may also have dependents),"
-                           " use --recursive to destroy: "
+                "message": f"\n{name} has dependent jails,"
+                           " use --force to destroy: "
             })
 
             ioc_common.logit({
@@ -92,8 +95,6 @@ def child_test(zfs, iocroot, name, _type, force=False, recursive=False):
               help="Destroy the jail without warnings or more user input.")
 @click.option("--release", "-r", default=False, is_flag=True,
               help="Destroy a specified RELEASE dataset.")
-@click.option("--recursive", "-R", default=False, is_flag=True,
-              help="Bypass the children prompt, best used with --force (-f).")
 @click.option("--download", "-d", default=False, is_flag=True,
               help="Destroy the download dataset of the specified RELEASE as"
                    " well.")

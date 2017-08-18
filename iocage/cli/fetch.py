@@ -24,72 +24,129 @@
 """fetch module for the cli."""
 import click
 
-import iocage.lib.ioc_common as ioc_common
-import iocage.lib.iocage as ioc
+import iocage.lib.Release
+import iocage.lib.Host
+import iocage.lib.Logger
+import iocage.lib.Prompts
+
 
 __rootcmd__ = True
 
 
-def validate_count(ctx, param, value):
-    """Takes a string, removes the commas and returns an int."""
-    if isinstance(value, str):
-        try:
-            value = value.replace(",", "")
-
-            return int(value)
-        except ValueError:
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": f"({value} is not a valid integer."
-            }, exit_on_error=True)
-    else:
-        return int(value)
-
+# ToDo: remove disabled feature
+# def _prettify_release_names(x):
+#     if x.name == host.release_version:
+#         return f"\033[1m{x.name}\033[0m"
+#     else:
+#         return x.name
+# def release_choice():
+#     version =
+#     return click.Choice(list(map(
+#         _prettify_release_names,
+#         host.distribution.releases
+#     )))
 
 @click.command(context_settings=dict(
     max_content_width=400, ),
     name="fetch", help="Fetch a version of FreeBSD for jail usage or a"
                        " preconfigured plugin.")
-@click.option("--http", "-h", default=False,
-              help="Have --server define a HTTP server instead.", is_flag=True)
-@click.option("--file", "-f", "_file", default=False,
-              help="Use a local file directory for root-dir instead of FTP or"
-                   " HTTP.", is_flag=True)
-@click.option("--files", "-F", multiple=True,
+@click.pass_context
+@click.option("--url", "-u",
+              help="Remote URL with path to the release/snapshot directory")
+@click.option("--file", "-F", multiple=True,
               help="Specify the files to fetch from the mirror.")
-@click.option("--server", "-s", default="ftp.freebsd.org",
-              help="FTP server to login to.")
-@click.option("--user", "-u", default="anonymous", help="The user to use.")
-@click.option("--password", "-p", default="anonymous@",
-              help="The password to use.")
-@click.option("--auth", "-a", default=None, help="Authentication method for "
-                                                 "HTTP fetching. Valid "
-                                                 "values: basic, digest")
-@click.option("--verify/--noverify", "-V/-NV", default=True,
-              help="Enable or disable verifying SSL cert for HTTP fetching.")
-@click.option("--release", "-r", help="The FreeBSD release to fetch.")
-@click.option("--plugin-file", "-P", is_flag=True,
-              help="This is a plugin file outside the INDEX, but exists in "
-                   "that location.\nDeveloper option, most will prefer to "
-                   "use --plugins.")
-@click.option("--plugins", help="List all available plugins for creation.",
-              is_flag=True)
-@click.argument("props", nargs=-1)
-@click.option("--count", "-c", callback=validate_count, default="1",
-              help="Designate a number of plugin type jails to create.")
-@click.option("--root-dir", "-d", help="Root directory " +
-                                       "containing all the RELEASEs.")
-@click.option("--update/--noupdate", "-U/-NU", default=True,
+@click.option("--release", "-r",
+              # type=release_choice(),
+              help="The FreeBSD release to fetch.")
+@click.option("--update/--no-update", "-U/-NU", default=True,
               help="Decide whether or not to update the fetch to the latest "
                    "patch level.")
-@click.option("--eol/--noeol", "-E/-NE", default=True,
-              help="Enable or disable EOL checking with upstream.")
-@click.option("--name", "-n", help="Supply a plugin name for --plugins to "
-                                   "fetch or use a autocompleted filename"
-                                   " for --plugin-file.\nAlso accepts full"
-                                   " path for --plugin-file.")
-@click.option("--accept/--noaccept", default=False,
-              help="Accept the plugin's LICENSE agreement.")
-def cli(**kwargs):
-    """CLI command that calls fetch_release()"""
-    ioc.IOCage(exit_on_error=True).fetch(**kwargs)
+@click.option("--fetch-updates/--no-fetch-updates", default=True,
+              help="Skip fetching release updates")
+# Compat
+@click.option("--http", "-h", default=False,
+              help="Have --server define a HTTP server instead.", is_flag=True)
+# Compat files
+@click.option("--files", multiple=True,
+              help="Specify the files to fetch from the mirror. "
+              "(Deprecared: renamed to --file)")
+@click.option("--log-level", "-d", default=None)
+# @click.option("--auth", "-a", default=None, help="Authentication method for "
+#                                                 "HTTP fetching. Valid "
+#                                                 "values: basic, digest")
+# @click.option("--verify/--noverify", "-V/-NV", default=True,
+#               help="Enable or disable verifying SSL cert for HTTP fetching.")
+# def cli(url, files, release, update):
+def cli(ctx, **kwargs):
+
+    logger = ctx.parent.logger
+    logger.print_level = kwargs["log_level"]
+    host = iocage.lib.Host.Host(logger=logger)
+    prompts = iocage.lib.Prompts.Prompts(host=host)
+
+    release_input = kwargs["release"]
+    if release_input is None:
+        release = prompts.release()
+    else:
+        try:
+            release = iocage.lib.Release.Release(
+                name=release_input,
+                host=host,
+                logger=logger
+            )
+        except:
+            logger.error(f"Invalid Release '{release_input}'")
+            exit(1)
+
+    if kwargs["log_level"] is not None:
+        logger.print_level = kwargs["log_level"]
+
+    url_or_files_selected = False
+
+    if is_option_enabled(kwargs, "url"):
+        release.mirror_url = kwargs["url"]
+        url_or_files_selected = True
+
+    if is_option_enabled(kwargs, "files"):
+        release.assets = list(kwargs["files"])
+        url_or_files_selected = True
+
+    if (url_or_files_selected is False) and (release.available is False):
+        logger.error(f"The release '{release.name}' is not available")
+        exit(1)
+
+    if release.fetched:
+        msg = f"Release '{release.name}' is already fetched"
+        if kwargs["update"] is True:
+            logger.log(f"{msg} - updating only")
+        else:
+            logger.log(f"{msg} - skipping download and updates")
+            exit(0)
+    else:
+        logger.log(
+            f"Fetching release '{release.name}' from '{release.mirror_url}'"
+        )
+        release.fetch(update=False, fetch_updates=False)
+
+    if kwargs["fetch_updates"] is True:
+        logger.log("Fetching updates")
+        release.fetch_updates()
+
+    if kwargs["update"] is True:
+        logger.log("Updating release")
+        release.update()
+
+    logger.log('done')
+    exit(0)
+
+
+def is_option_enabled(args, name):
+
+    try:
+        value = args[name]
+        if value:
+            return True
+    except KeyError:
+        pass
+
+    return False

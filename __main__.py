@@ -21,45 +21,17 @@
 # STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""activate module for the cli."""
+"""The main CLI for ioc."""
+import locale
+import os
+import re
+import signal
+import subprocess as su
+import sys
+
 import click
-import libzfs
 
-import iocage.lib.Datasets
-import iocage.lib.Logger
+from iocage.cli import cli
 
-__rootcmd__ = True
-
-
-@click.command(name="activate", help="Set a zpool active for iocage usage.")
-@click.pass_context
-@click.argument("zpool")
-@click.option("--log-level", "-d", default=None)
-@click.option("--mountpoint", "-m", default="/iocage")
-def cli(ctx, zpool, log_level, mountpoint):
-    """
-    Calls ZFS set to change the property org.freebsd.ioc:active to yes.
-    """
-    logger = ctx.parent.logger
-    logger.print_level = log_level
-    zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
-    iocage_pool = None
-
-    for pool in zfs.pools:
-        if pool.name == zpool:
-            iocage_pool = pool
-
-    if iocage_pool is None:
-        logger.error(f"ZFS pool '{zpool}' not found")
-        exit(1)
-
-    try:
-        datasets = iocage.lib.Datasets.Datasets(
-            pool=iocage_pool,
-            zfs=zfs,
-            logger=logger
-        )
-        datasets.activate(mountpoint=mountpoint)
-        logger.log(f"ZFS pool '{zpool}' activated")
-    except:
-        exit(1)
+if __name__ == "__main__":
+    cli(prog_name="iocage")

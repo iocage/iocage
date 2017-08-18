@@ -22,25 +22,29 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 import os
-
+import shutil
+import gzip
 import sys
 import fastentrypoints
 from setuptools import find_packages, setup
 
 if os.path.isdir("/usr/local/etc/init.d"):
     _data = [('/usr/local/etc/init.d', ['rc.d/iocage']),
-             ('/usr/local/man/man8', ['iocage/iocage.8.gz'])]
+             ('/usr/local/man/man8', ['man/iocage.8.gz'])]
 else:
     _data = [('/usr/local/etc/rc.d', ['rc.d/iocage']),
-             ('/usr/local/man/man8', ['iocage/iocage.8.gz'])]
+             ('/usr/local/man/man8', ['man/iocage.8.gz'])]
+
+with open('man/iocage.8', 'rb') as a, gzip.open('man/iocage.8.gz', 'wb') as b:
+    shutil.copyfileobj(a, b)
 
 if sys.version_info < (3, 6):
     exit("Only Python 3.6 and higher is supported.")
 
 setup(name='iocage',
-      version='0.9.9.2a',
+      version='0.9.10',
       description='A jail manager that uses ZFS.',
-      author='Brandon Schneider and Peter Toth',
+      author='Brandon Schneider, Peter Toth and Stefan Grönke',
       author_email='brandon@ixsystems.com',
       url='https://github.com/iocage/iocage',
       packages=find_packages(),
@@ -54,12 +58,16 @@ setup(name='iocage',
           'verboselogs==1.6',
           'pygit2==0.25.1',
           'cffi==1.9.1',
+          'ucl',
           'libzfs'
+      ],
+      dependency_links=[
+        'git+https://github.com/freenas/py-libzfs.git#egg=libzfs'
       ],
       setup_requires=['pytest-runner'],
       entry_points={
           'console_scripts': [
-              'iocage = iocage.main:cli'
+              'ioc = iocage.cli:cli'
           ]
       },
       data_files=_data,

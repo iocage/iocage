@@ -25,17 +25,31 @@
 
 import click
 
-import iocage.lib.iocage as ioc
+import iocage.lib.Jail
+import iocage.lib.Logger
 
 __rootcmd__ = True
 
 
 @click.command(name="console", help="Login to a jail.")
+@click.pass_context
 @click.argument("jail")
-def cli(jail):
+@click.option("--log-level", "-d", default=None)
+def cli(ctx, jail, log_level):
     """
     Runs jexec to login into the specified jail.
     """
-    # Command is empty since this command is hardcoded later on.
-    ioc.IOCage(exit_on_error=True, jail=jail,
-               silent=True).exec("", console=True)
+    logger = ctx.parent.logger
+    logger.print_level = log_level
+
+    jail = iocage.lib.Jail.Jail(jail, logger=logger)
+    jail.update_jail_state()
+
+    if not jail.exists:
+        logger.error(f"The jail {jail.humanreadable_name} does not exist")
+        exit(1)
+    if not jail.running:
+        logger.error(f"The jail {jail.humanreadable_name} is not running")
+        exit(1)
+    else:
+        jail.exec_console()

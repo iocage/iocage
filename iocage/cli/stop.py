@@ -24,31 +24,37 @@
 """stop module for the cli."""
 import click
 
-import iocage.lib.ioc_common as ioc_common
-import iocage.lib.iocage as ioc
+import iocage.lib.Jails
+import iocage.lib.Logger
+
 
 __rootcmd__ = True
 
 
 @click.command(name="stop", help="Stops the specified jails or ALL.")
+@click.pass_context
 @click.option("--rc", default=False, is_flag=True,
               help="Will stop all jails with boot=on, in the specified"
                    " order with higher value for priority stopping first.")
+@click.option("--log-level", "-d", default=None)
+@click.option("--force", "-f", is_flag=True, default=False,
+              help="Skip checks and enforce jail shutdown")
 @click.argument("jails", nargs=-1)
-def cli(rc, jails):
+def cli(ctx, rc, log_level, force, jails):
     """
     Looks for the jail supplied and passes the uuid, path and configuration
     location to stop_jail.
     """
-    if not jails and not rc:
-        ioc_common.logit({
-            "level"  : "EXCEPTION",
-            "message": 'Usage: iocage stop [OPTIONS] JAILS...\n'
-                       '\nError: Missing argument "jails".'
-        }, exit_on_error=True)
+    logger = ctx.parent.logger
+    logger.print_level = log_level
+    ioc_jails = iocage.lib.Jails.Jails(logger=logger)
 
-    if rc:
-        ioc.IOCage(exit_on_error=True, rc=rc, silent=True).stop()
-    else:
-        for jail in jails:
-            ioc.IOCage(exit_on_error=True, jail=jail, rc=rc).stop()
+    for jail in ioc_jails.list(filters=jails):
+        logger.log(f"Stopping jail {jail.humanreadable_name}")
+        try:
+            jail.stop(force=force)
+        except:
+            exit(1)
+
+        logger.log("done")
+        exit(0)

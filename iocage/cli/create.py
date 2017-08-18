@@ -22,14 +22,13 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """create module for the cli."""
-import json
-import os
-import re
-
 import click
 
-import iocage.lib.ioc_common as ioc_common
-import iocage.lib.iocage as ioc
+import iocage.lib.Release
+import iocage.lib.Jail
+import iocage.lib.Logger
+import iocage.lib.Host
+import iocage.lib.helpers
 
 __rootcmd__ = True
 
@@ -42,10 +41,9 @@ def validate_count(ctx, param, value):
 
             return int(value)
         except ValueError:
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": f"{value} is not a valid integer."
-            }, exit_on_error=True)
+            logger = iocage.lib.Logger.Logger()
+            logger.error(f"{value} is not a valid integer.")
+            exit(1)
     else:
         return int(value)
 
@@ -64,98 +62,109 @@ def validate_count(ctx, param, value):
                    " each package in the newly created jail.")
 @click.option("--name", "-n", default=None,
               help="Provide a specific name instead of an UUID for this jail.")
-@click.option("--uuid", "-u", "_uuid", default=None,
-              help="Provide a specific UUID for this jail.")
 @click.option("--basejail", "-b", is_flag=True, default=False,
               help="Set the new jail type to a basejail. Basejails"
-                   " mount the specified RELEASE directories as nullfs"
-                   " mounts over the jail's directories.")
+                   " mount the specified RELEASE directories"
+                   " over the jail's directories.")
+@click.option("--basejail-type", type=click.Choice(['nullfs', 'zfs']),
+              help="The method of mounting release datasets into"
+                   " the basejail on start.")
 @click.option("--empty", "-e", is_flag=True, default=False,
               help="Create an empty jail used for unsupported or custom"
                    " jails.")
-@click.option("--short", "-s", is_flag=True, default=False,
-              help="Use a short UUID of 8 characters instead of the default"
-                   " 36.")
+@click.option("--no-fetch", is_flag=True, default=False,
+              help="Do not automatically fetch releases")
 @click.option("--force", "-f", is_flag=True, default=False,
               help="Skip the interactive question.")
+@click.option("--log-level", "-d", default=None)
 @click.argument("props", nargs=-1)
-def cli(release, template, count, props, pkglist, basejail, empty, short,
-        name, _uuid, force):
+def cli(release, template, count, props, pkglist, basejail, basejail_type,
+        empty, name, no_fetch, force, log_level):
+
+    zfs = iocage.lib.helpers.get_zfs()
+    logger = iocage.lib.Logger.Logger()
+    host = iocage.lib.Host.Host(logger=logger, zfs=zfs)
+
+    if log_level is not None:
+        logger.print_level = log_level
+
+    jail_data = {}
+
+    if release is None:
+        logger.spam(
+            "No release selected (-r, --release)."
+            f" Selecting host release '{host.release_version}' as default."
+        )
+        release = host.release_version
+
     if name:
-        # noinspection Annotator
-        valid = True if re.match("^[a-zA-Z0-9\._-]+$", name) else False
-        if not valid:
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": f"Invalid character in {name}, please remove it."
-            }, exit_on_error=True)
+        jail_data["name"] = name
 
-        # At this point we don't care
-        _uuid = name
+    release = iocage.lib.Release.Release(
+        name=release,
+        logger=logger,
+        host=host,
+        zfs=zfs
+    )
+    if not release.fetched:
+        name = release.name
+        if not release.available:
+            logger.error(
+                f"The release '{release.name}' does not exist"
+            )
+            exit(1)
 
-    if release and "=" in release:
-        ioc_common.logit({
-            "level"  : "EXCEPTION",
-            "message": "Please supply a valid RELEASE!"
-        }, exit_on_error=True)
-
-    # We don't really care it's not a RELEASE at this point.
-    release = template if template else release
-
-    if pkglist:
-        _pkgformat = """
-{
-    "pkgs": [
-    "foo",
-    "bar"
-    ]
-}"""
-
-        if not os.path.isfile(pkglist):
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": f"{pkglist} does not exist!\n"
-                           "Please supply a JSON file with the format:"
-                           f" {_pkgformat}"
-            }, exit_on_error=True)
-        else:
-            try:
-                # Just try to open the JSON with the right key.
-                with open(pkglist, "r") as p:
-                    json.load(p)["pkgs"]  # noqa
-            except json.JSONDecodeError:
-                ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": "Please supply a valid"
-                               f" JSON file with the format:{_pkgformat}"
-                }, exit_on_error=True)
-
-    if empty:
-        release = "EMPTY"
-
-    iocage = ioc.IOCage(exit_on_error=True, skip_jails=True)
-
-    try:
-        iocage.create(release, props, count, pkglist=pkglist,
-                      template=template, short=short, _uuid=_uuid,
-                      basejail=basejail, empty=empty)
-    except RuntimeError as err:
-        if template:
-            # We want to list the available templates first
-            ioc_common.logit({
-                "level"  : "ERROR",
-                "message": f"Template: {release} not found!"
-            })
-            templates = ioc.IOCage(exit_on_error=True).list("template")
-            for temp in templates:
-                ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": f"Created Templates:\n  {temp[1]}"
-                }, exit_on_error=True)
+        msg = (
+            f"The release '{release.name}' is available,"
+            "but not downloaded yet"
+        )
+        if no_fetch:
+            logger.error(msg)
             exit(1)
         else:
-            # Standard errors
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": err
-            }, exit_on_error=True)
+            logger.spam(msg)
+            logger.log("Automatically fetching release '{release.name}'")
+            release.fetch()
+
+    if basejail:
+        jail_data["basejail"] = True
+
+    if basejail_type is not None:
+        if not basejail:
+            logger.error(
+                "Cannot set --basejail-type without --basejail option")
+            exit(1)
+        jail_data["basejail_type"] = basejail_type
+
+    if props:
+        for prop in props:
+            try:
+                key, value = prop.split("=", maxsplit=1)
+                jail_data[key] = value
+            except (ValueError, KeyError):
+                logger.error(f"Invalid property {prop}")
+                exit(1)
+
+    errors = False
+    for i in range(count):
+
+        jail = iocage.lib.Jail.Jail(
+            jail_data,
+            logger=logger,
+            host=host,
+            zfs=zfs,
+            new=True
+        )
+
+        suffix = f" ({i}/{count})" if count > 1 else ""
+        try:
+            jail.create(release.name, auto_download=True)
+            msg = f"{jail.humanreadable_name} successfully created!{suffix}"
+            logger.log(msg)
+        except:
+            errors = True
+            msg = f"{jail.humanreadable_name} could not be created!{suffix}"
+            logger.warn(msg)
+            raise
+
+    exit(int(errors))

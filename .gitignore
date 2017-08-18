@@ -3,6 +3,8 @@
 *.pyo
 *.egg-info/
 *.egg
+*.swp
+._*
 .DS_Store
 .tox/
 .cache/
@@ -12,3 +14,5 @@ venv/
 build/
 venv-*/
 .python-version
+python3.6.core
+man/iocage.8.gz
