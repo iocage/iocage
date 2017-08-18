@@ -1,8 +1,10 @@
 class IocageException(Exception):
 
-    def __init__(self, message, errors=None, logger=None, append_warning=None):
+    def __init__(self, message, errors=None, logger=None, level="error", append_warning=False, warning=None):
         if logger is not None:
-            logger.error(message)
+            logger.__getattribute__(level)(message)
+            if append_warning is True:
+                logger.warn(warning)
         super().__init__(message, errors)
 
 # Jails
@@ -78,11 +80,23 @@ class JailConigZFSIsNotAllowed(JailConfigError):
 
 class InvalidJailConfigValue(JailConfigError):
 
-    def __init__(self, property_name, reason=None, *args, **kwargs):
-        msg = f"Invalid value for jail config property '{property_name}'"
+    def __init__(self, property_name, jail=None, reason=None, **kwargs):
+        msg = f"Invalid value for property '{property_name}'"
+        if jail is not None:
+            msg += f" of jail {jail.humanreadable_name}"
         if reason is not None:
             msg += f": {reason}"
-        super().__init__(msg, *args, **kwargs)
+        super().__init__(msg, **kwargs)
+
+
+class InvalidJailConfigAddress(InvalidJailConfigValue):
+
+    def __init__(self, value, **kwargs):
+        reason = f"expected \"<nic>|<address>\" but got \"{value}\""
+        super().__init__(
+            reason=reason,
+            **kwargs
+        )
 
 
 class JailConfigNotFound(Exception):

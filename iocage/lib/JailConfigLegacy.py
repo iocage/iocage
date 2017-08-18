@@ -1,10 +1,11 @@
 import ucl
+import os.path
 
 
 class JailConfigLegacy:
 
     def read(self):
-        self.clone(JailConfigLegacy.read_data(self))
+        self.clone(JailConfigLegacy.read_data(self), skip_on_error=True)
 
     def save(self):
         config_file_path = JailConfigLegacy.__get_config_path(self)
@@ -26,6 +27,9 @@ class JailConfigLegacy:
                 pass
 
             return data
+
+    def exists(self):
+        return os.path.isfile(JailConfigLegacy.__get_config_path(self))
 
     def __get_config_path(self):
         try:

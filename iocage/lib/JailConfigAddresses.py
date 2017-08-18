@@ -1,3 +1,5 @@
+import iocage.lib.errors
+
 class AddressSet(set):
 
     def __init__(self, jail_config=None, property_name="ip4_address"):
@@ -21,10 +23,12 @@ class AddressSet(set):
 
 class JailConfigAddresses(dict):
 
-    def __init__(self, value, jail_config=None, property_name="ip4_address"):
+    def __init__(self, value, jail_config=None, property_name="ip4_address", logger=None, skip_on_error=False):
         dict.__init__(self, {})
+        dict.__setattr__(self, 'logger', logger)
         dict.__setattr__(self, 'jail_config', jail_config)
         dict.__setattr__(self, 'property_name', property_name)
+        dict.__setattr__(self, 'skip_on_error', skip_on_error)
 
         if value != "none":
             self.read(value)
@@ -34,8 +38,24 @@ class JailConfigAddresses(dict):
         ip_addresses = config_line.split(" ")
         for ip_address_string in ip_addresses:
 
-            nic, address = ip_address_string.split("|", maxsplit=1)
-            self.add(nic, address)
+            print(ip_address_string)
+            try:
+                nic, address = ip_address_string.split("|", maxsplit=1)
+                self.add(nic, address)
+            except ValueError:
+
+                level = "warn" if (self.skip_on_error is True) else "error"
+
+                iocage.lib.errors.InvalidJailConfigAddress(
+                    jail=self.jail_config.jail,
+                    value=ip_address_string,
+                    property_name=self.property_name,
+                    logger=self.logger,
+                    level=level
+                )
+
+                if self.skip_on_error is False:
+                    exit(1)
 
     def add(self, nic, addresses=[], notify=True):
 

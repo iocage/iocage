@@ -3,6 +3,7 @@ import iocage.lib.Network
 import iocage.lib.Storage
 import iocage.lib.Releases
 import iocage.lib.Release
+import iocage.lib.RCConf
 import iocage.lib.helpers
 import iocage.lib.errors
 
@@ -41,6 +42,7 @@ class Jail:
 
         self.jail_state = None
         self._dataset_name = None
+        self._rc_conf = None
 
         if new is False:
             self.config.read()
@@ -48,6 +50,20 @@ class Jail:
     @property
     def zfs_pool_name(self):
         return self.host.datasets.root.name.split("/", maxsplit=1)[0]
+
+    @property
+    def _rc_conf_path(self):
+        return f"{self.path}/root/etc/rc.conf"
+
+    @property
+    def rc_conf(self):
+        if self._rc_conf is None:
+            self._rc_conf = iocage.lib.RCConf.RCConf(
+                path=self._rc_conf_path,
+                jail=self,
+                logger=self.logger
+            )
+        return self._rc_conf
 
     def start(self):
         self.require_jail_existing()
@@ -559,6 +575,12 @@ class Jail:
         return f"{self.host.datasets.logs.mountpoint}-console.log"
 
     def __getattr__(self, key):
+
+        try:
+            return object.__getattribute__(self, key)
+        except AttributeError:
+            pass
+
         try:
             method = object.__getattribute__(self, f"_get_{key}")
             return method()

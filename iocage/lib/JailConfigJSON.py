@@ -1,4 +1,5 @@
 import json
+import os.path
 import iocage.lib.helpers
 
 
@@ -19,11 +20,14 @@ class JailConfigJSON:
             self.logger.debug(f"File {config_file_path} written")
 
     def read(self):
-        return self.clone(JailConfigJSON.read_data(self))
+        return self.clone(JailConfigJSON.read_data(self), skip_on_error=True)
 
     def read_data(self):
         with open(JailConfigJSON.__get_config_json_path(self), "r") as conf:
             return json.load(conf)
+
+    def exists(self):
+        return os.path.isfile(JailConfigJSON.__get_config_json_path(self))
 
     def __get_config_json_path(self):
         try:

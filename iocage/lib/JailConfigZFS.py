@@ -8,15 +8,16 @@ class JailConfigZFS:
 
     def read(self):
 
-        found = False
+        data = {}
+
         for prop in self.jail.dataset.properties:
             if JailConfigZFS._is_iocage_property(self, prop):
-                found = True
                 name = JailConfigZFS._get_iocage_property_name(self, prop)
-                self.__setattr__(
-                    name, self.jail.dataset.properties[prop].value)
+                data[name] = self.jail.dataset.properties[prop].value
 
-        if not found:
+        self.clone(data, skip_on_error=True)
+
+        if not self.exists:
             raise iocage.lib.errors.JailConfigNotFound("ZFS")
 
         if self.data["basejail"] == "on":
@@ -26,6 +27,14 @@ class JailConfigZFS:
         else:
             self.data["basejail"] = "off"
             self.data["clonejail"] = "off"
+
+    def exists(self):
+
+        for prop in self.jail.dataset.properties:
+            if JailConfigZFS._is_iocage_property(self, prop):
+                return True
+
+        return False
 
     def save(self):
 

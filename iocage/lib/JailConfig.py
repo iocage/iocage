@@ -51,39 +51,37 @@ class JailConfig(dict, object):
 
         self.clone(data)
 
-    def clone(self, data):
+    def clone(self, data, skip_on_error=False):
         for key in data:
-            self.__setitem__(key, data[key])
+            self.__setitem__(key, data[key], skip_on_error=skip_on_error)
+
 
     def read(self):
 
-        try:
+        if iocage.lib.JailConfigJSON.JailConfigJSON.exists(self):
+
             iocage.lib.JailConfigJSON.JailConfigJSON.read(self)
             self["legacy"] = False
             self.logger.log("Configuration loaded from JSON", level="verbose")
             return
-        except:
-            pass
 
-        try:
+        elif iocage.lib.JailConfigLegacy.JailConfigLegacy.exists(self):
+
             iocage.lib.JailConfigLegacy.JailConfigLegacy.read(self)
             self["legacy"] = True
             self.logger.verbose(
                 "Configuration loaded from UCL config file (iocage-legacy)")
-            return
-        except:
-            pass
 
-        try:
+        elif iocage.lib.JailConfigZFS.JailConfigZFS.exists(self): 
+
             iocage.lib.JailConfigZFS.JailConfigZFS.read(self)
             self["legacy"] = True
             self.logger.verbose(
                 "Configuration loaded from ZFS properties (iocage-legacy)")
-            return
-        except:
-            pass
 
-        self.logger.debug("No configuration was found")
+        else:
+
+            self.logger.debug("No configuration was found")
 
     def update_special_property(self, name, new_property_handler=None):
 
@@ -102,10 +100,12 @@ class JailConfig(dict, object):
         else:
             iocage.lib.JailConfigLegacy.JailConfigLegacy.save(self)
 
+        self.jail.rc_conf.save()
+
     def save_json(self):
         iocage.lib.JailConfigJSON.JailConfigJSON.save(self)
 
-    def _set_name(self, name):
+    def _set_name(self, name, **kwargs):
 
         try:
             # We do not want to set the same name twice.
@@ -162,7 +162,7 @@ class JailConfig(dict, object):
 
         return self.data["type"]
 
-    def _set_type(self, value):
+    def _set_type(self, value, **kwargs):
 
         if value == "basejail":
             self["basejail"] = True
@@ -184,7 +184,7 @@ class JailConfig(dict, object):
     def _default_basejail(self):
         return False
 
-    def _set_basejail(self, value):
+    def _set_basejail(self, value, **kwargs):
         # ToDo: generalize boolean value inputs
         enabled = (value is True) or (value == "on") or (value == "yes")
         if self["legacy"]:
@@ -198,7 +198,7 @@ class JailConfig(dict, object):
     def _default_clonejail(self):
         return True
 
-    def _set_clonejail(self, value):
+    def _set_clonejail(self, value, **kwargs):
         self.data["clonejail"] = "on" if (
             value is True) or (value == "on") else "off"
 
@@ -208,11 +208,12 @@ class JailConfig(dict, object):
         except:
             return None
 
-    def _set_ip4_addr(self, value):
+    def _set_ip4_addr(self, value, **kwargs):
         ip4_addr = iocage.lib.JailConfigAddresses.JailConfigAddresses(
             value,
             jail_config=self,
-            property_name="ip4_addr"
+            property_name="ip4_addr",
+            logger=self.logger
         )
         self.special_properties["ip4_addr"] = ip4_addr
         self.update_special_property("ip4_addr")
@@ -223,19 +224,24 @@ class JailConfig(dict, object):
         except:
             return None
 
-    def _set_ip6_addr(self, value):
+    def _set_ip6_addr(self, value, **kwargs):
         ip6_addr = iocage.lib.JailConfigAddresses.JailConfigAddresses(
             value,
             jail_config=self,
-            property_name="ip6_addr"
+            property_name="ip6_addr",
+            logger=self.logger,
+            skip_on_error=self._skip_on_error(**kwargs)
         )
         self.special_properties["ip6_addr"] = ip6_addr
         self.update_special_property("ip6_addr")
 
+        rc_conf = self.jail.rc_conf
+        rc_conf["rtsold_enable"] = "accept_rtadv" in str(value)
+
     def _get_interfaces(self):
         return self.special_properties["interfaces"]
 
-    def _set_interfaces(self, value):
+    def _set_interfaces(self, value, **kwargs):
         interfaces = iocage.lib.JailConfigInterfaces.JailConfigInterfaces(
             value,
             jail_config=self
@@ -247,7 +253,7 @@ class JailConfig(dict, object):
         value = self.data['defaultrouter']
         return value if (value != "none" and value is not None) else None
 
-    def _set_defaultrouter(self, value):
+    def _set_defaultrouter(self, value, **kwargs):
         if value is None:
             value = 'none'
         self.data['defaultrouter'] = value
@@ -259,7 +265,7 @@ class JailConfig(dict, object):
         value = self.data['defaultrouter6']
         return value if (value != "none" and value is not None) else None
 
-    def _set_defaultrouter6(self, value):
+    def _set_defaultrouter6(self, value, **kwargs):
         if value is None:
             value = 'none'
         self.data['defaultrouter6'] = value
@@ -270,7 +276,7 @@ class JailConfig(dict, object):
     def _get_vnet(self):
         return self.data["vnet"] == "on"
 
-    def _set_vnet(self, value):
+    def _set_vnet(self, value, **kwargs):
         vnet_enabled = (value == "on") or (value is True)
         self.data["vnet"] = "on" if vnet_enabled else "off"
 
@@ -281,7 +287,7 @@ class JailConfig(dict, object):
             pass
         return []
 
-    def _set_jail_zfs_dataset(self, value):
+    def _set_jail_zfs_dataset(self, value, **kwargs):
         value = [value] if isinstance(value, str) else value
         self.data["jail_zfs_dataset"] = " ".join(value)
 
@@ -294,7 +300,7 @@ class JailConfig(dict, object):
                 )
         return enabled
 
-    def _set_jail_zfs(self, value):
+    def _set_jail_zfs(self, value, **kwargs):
         if (value is None) or (value == ""):
             del self.data["jail_zfs"]
             return
@@ -315,11 +321,11 @@ class JailConfig(dict, object):
     def _get_resolver(self):
         return self.__create_special_property_resolver()
 
-    def _set_resolver(self, value):
+    def _set_resolver(self, value, **kwargs):
 
         if isinstance(value, str):
             self.data["resolver"] = value
-            resolver = self.resolver
+            resolver = self["resolver"]
         else:
             resolver = iocage.lib.JailConfigResolver.JailConfigResolver(
                 jail_config=self)
@@ -345,7 +351,7 @@ class JailConfig(dict, object):
     def _get_login_flags(self):
         return JailConfigList(self.data["login_flags"].split())
 
-    def _set_login_flags(self, value):
+    def _set_login_flags(self, value, **kwargs):
         if value is None:
             try:
                 del self.data["login_flags"]
@@ -362,7 +368,7 @@ class JailConfig(dict, object):
                     logger=self.logger
                 )
 
-    def _set_tags(self, value):
+    def _set_tags(self, value, **kwargs):
         if isinstance(value, str):
             self.tags = value.split(",")
         elif isinstance(value, list):
@@ -518,6 +524,12 @@ class JailConfig(dict, object):
     def get_string(self, key):
         return self.__getitem__(key, string=True)
 
+    def _skip_on_error(self, **kwargs):
+        try:
+            return kwargs["skip_on_error"] is True
+        except AttributeError:
+            return False
+
     def __getitem__(self, key, string=False):
 
         # passthrough existing properties
@@ -550,7 +562,7 @@ class JailConfig(dict, object):
     def __delitem__(self, key):
         del self.data[key]
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key, value, **kwargs):
 
         # passthrough existing properties
         # try:
@@ -568,7 +580,7 @@ class JailConfig(dict, object):
             pass
 
         if setter_method is not None:
-            return setter_method(value)
+            return setter_method(value, **kwargs)
 
     def __str__(self):
         return iocage.lib.JailConfigJSON.JailConfigJSON.toJSON(self)

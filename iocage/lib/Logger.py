@@ -25,13 +25,13 @@ class Logger:
         "critical": {"color": "red", "bold": True},
         "error": {"color": "red"},
         "debug": {"color": "green"},
-        "warning": {"color": "yellow"}
+        "warn": {"color": "yellow"}
     }
 
     LOG_LEVELS = (
         "critical",
         "error",
-        "warning",
+        "warn",
         "info",
         "verbose",
         "debug",
@@ -101,7 +101,7 @@ class Logger:
              jail=None,
              indent=0):
 
-        self.log(message, level="warning", jail=jail, indent=indent)
+        self.log(message, level="warn", jail=jail, indent=indent)
 
     def debug(self,
               message,
