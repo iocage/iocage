@@ -33,7 +33,7 @@ import iocage.lib.iocage as ioc
 __rootcmd__ = True
 
 
-def child_test(zfs, iocroot, name, _type, force=False):
+def child_test(zfs, iocroot, name, _type, force=False, recursive=False):
     """Tests for dependent children"""
     path = None
     children = []
@@ -70,12 +70,12 @@ def child_test(zfs, iocroot, name, _type, force=False):
     _children.sort(key=sort)
 
     if len(_children) != 0:
-        if not force:
+        if not force and not recursive:
             ioc_common.logit({
                 "level"  : "WARNING",
                 "message": f"\n{name} has dependent jails"
                            " (who may also have dependents),"
-                           " use --force to destroy: "
+                           " use --recursive to destroy: "
             })
 
             ioc_common.logit({
@@ -92,11 +92,13 @@ def child_test(zfs, iocroot, name, _type, force=False):
               help="Destroy the jail without warnings or more user input.")
 @click.option("--release", "-r", default=False, is_flag=True,
               help="Destroy a specified RELEASE dataset.")
+@click.option("--recursive", "-R", default=False, is_flag=True,
+              help="Bypass the children prompt, best used with --force (-f).")
 @click.option("--download", "-d", default=False, is_flag=True,
               help="Destroy the download dataset of the specified RELEASE as"
                    " well.")
 @click.argument("jails", nargs=-1)
-def cli(force, release, download, jails):
+def cli(force, release, download, jails, recursive):
     """Destroys the jail's 2 datasets and the snapshot from the RELEASE."""
     # Want these here, otherwise they're reinstanced for each jail.
     zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
@@ -119,7 +121,8 @@ def cli(force, release, download, jails):
                 if not click.confirm("\nAre you sure?"):
                     continue  # no, continue to next jail
 
-            child_test(zfs, iocroot, jail, "jail", force=force)
+            child_test(zfs, iocroot, jail, "jail", force=force,
+                       recursive=recursive)
 
             ioc.IOCage(exit_on_error=True, jail=jail,
                        skip_jails=True).destroy_jail()
@@ -134,7 +137,8 @@ def cli(force, release, download, jails):
                 if not click.confirm("\nAre you sure?"):
                     continue
 
-            child_test(zfs, iocroot, release, "release", force=force)
+            child_test(zfs, iocroot, release, "release", force=force,
+                       recursive=recursive)
 
             ioc.IOCage(exit_on_error=True, jail=release,
                        skip_jails=True).destroy_release(download)
