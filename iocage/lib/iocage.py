@@ -1099,6 +1099,44 @@ class IOCage(object):
 
         return snap_list
 
+    def snapshot(self, name):
+        """Will create a snapshot for the given jail"""
+        date = datetime.datetime.utcnow().strftime("%F_%T")
+        uuid, path = self.__check_jail_existence__()
+
+        # If they don't supply a snapshot name, we will use the date.
+        if not name:
+            name = date
+
+        # Looks like foo/iocage/jails/df0ef69a-57b6-4480-b1f8-88f7b6febbdf@BAR
+        conf = ioc_json.IOCJson(path, silent=self.silent,
+                                exit_on_error=self.exit_on_error).json_load()
+
+        if conf["template"] == "yes":
+            target = f"{self.pool}/iocage/templates/{uuid}"
+        else:
+            target = f"{self.pool}/iocage/jails/{uuid}"
+
+        dataset = self.zfs.get_dataset(target)
+
+        try:
+            dataset.snapshot(f"{target}@{name}", recursive=True)
+        except libzfs.ZFSException as err:
+            if err.code == libzfs.Error.EXISTS:
+                ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": "Snapshot already exists!"
+                }, exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
+                    silent=self.silent)
+            else:
+                raise()
+
+        ioc_common.logit({
+            "level"  : "INFO",
+            "message": f"Snapshot: {target} created."
+        })
+
     def __soft_restart__(self):
         """
         Executes a soft reboot by keeping the jail network stack intact,
