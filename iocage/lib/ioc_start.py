@@ -215,19 +215,18 @@ class IOCStart(object):
             ip6_addr = self.conf["ip6_addr"]
             ip6_saddrsel = self.conf["ip6_saddrsel"]
             ip6 = self.conf["ip6"]
+            net = []
 
-            if ip4_addr == "none":
-                ip4_addr = ""
+            if ip4_addr != "none":
+                net.append(f"ip4.addr={ip4_addr}")
 
-            if ip6_addr == "none":
-                ip6_addr = ""
+            if ip6_addr != "none":
+                net.append(f"ip6.addr={ip6_addr}")
 
-            net = [f"ip4.addr={ip4_addr}",
-                   f"ip4.saddrsel={ip4_saddrsel}",
-                   f"ip4={ip4}",
-                   f"ip6.addr={ip6_addr}",
-                   f"ip6.saddrsel={ip6_saddrsel}",
-                   f"ip6={ip6}"]
+            net += [f"ip4.saddrsel={ip4_saddrsel}",
+                    f"ip4={ip4}",
+                    f"ip6.saddrsel={ip6_saddrsel}",
+                    f"ip6={ip6}"]
 
             vnet = False
         else:
