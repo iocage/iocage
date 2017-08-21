@@ -49,8 +49,8 @@ class IOCUpgrade(object):
         self.path = path
         self.status, self.jid = iocage.lib.ioc_list.IOCList.list_get_jid(
             self.uuid)
-        self._freebsd_version = f"{self.iocroot}/releases/" \
-                                f"{new_release}/root/bin/freebsd-version"
+        self._freebsd_version = f"{self.iocroot}/jails/" \
+                                f"{self.uuid}/root/bin/freebsd-version"
 
     def upgrade_jail(self):
         if "HBSD" in self.freebsd_version:
