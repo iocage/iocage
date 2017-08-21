@@ -92,7 +92,7 @@ Fetch a release:
 
 Create a jail:
 
-`iocage create tag=myjail ip4_addr="em0|192.168.1.10/24" -r 11.0-RELEASE`
+`iocage create -n myjail ip4_addr="em0|192.168.1.10/24" -r 11.0-RELEASE`
 
 *NOTE: em0 and 11.0-RELEASE are placeholders. Please replace them with your
 real interface (`ifconfig`) and RELEASE chosen during `iocage fetch`.*
@@ -100,8 +100,6 @@ real interface (`ifconfig`) and RELEASE chosen during `iocage fetch`.*
 Start the jail:
 
 `iocage start myjail`
-
-
 
 Congratulations, you have created your first jail with iocage!
 You can now use it like you would a real system.
