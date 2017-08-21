@@ -1133,7 +1133,6 @@ class IOCFetch(object):
                                           _conf, pkg_repos, create_props,
                                           repo_dir):
         """Attempts to start the jail and install the packages"""
-        iocage.lib.ioc_start.IOCStart(uuid, jaildir, _conf, silent=True)
         kmods = conf.get("kmods", {})
 
         for kmod in kmods:
