@@ -7,8 +7,9 @@ Create a Debian Squeeze Jail (GNU/kFreeBSD)
 This section shows the process to set up a Debian (GNU/kFreeBSD) jail.
 GNrUkFreeBSD is a Debian userland tailored for the FreeBSD kernel.
 
-The examples in this section use a jail with the custom tag **debjail**.
-Remember to replace **debjail** with your jail's UUID or NAME!
+The examples in this section use a jail with the custom name
+**debjail**. Remember to replace **debjail** with your jail's UUID or
+NAME!
 
 .. warning:: This is not recommended for production use. The intention
    is to show :command:`iocage` can do almost anything with jails.
