@@ -493,6 +493,19 @@ class IOCJson(object):
 
                 if value == "yes":
                     try:
+                        try:
+                            jail_zfs_dataset = f"{pool}/" \
+                                               f"{conf['jail_zfs_dataset']}"
+                            self.zfs_set_property(jail_zfs_dataset,
+                                                  "jailed", "off")
+                        except libzfs.ZFSException as err:
+                            # The dataset doesn't exist, that's OK
+                            if err.code == libzfs.Error.NOENT:
+                                pass
+                            else:
+                                # Danger, Will Robinson!
+                                raise
+
                         self.zfs.get_dataset(old_location).rename(new_location)
                         conf["type"] = "template"
 
