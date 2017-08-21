@@ -741,23 +741,23 @@ class IOCage(object):
             if plugins:
                 ioc_fetch.IOCFetch(
                     release, plugin=name,
-                    exit_on_error=self.exit_on_error).fetch_plugin_index(
-                    props, accept_license=accept)
+                    exit_on_error=self.exit_on_error,
+                    **kwargs).fetch_plugin_index(props, accept_license=accept)
                 return
 
             if count == 1:
                 ioc_fetch.IOCFetch(
-                    release, exit_on_error=self.exit_on_error).fetch_plugin(
-                    name, props, 0, accept)
+                    release, exit_on_error=self.exit_on_error,
+                    **kwargs).fetch_plugin(name, props, 0, accept)
             else:
                 for j in range(1, count + 1):
                     ioc_fetch.IOCFetch(
-                        release,
-                        exit_on_error=self.exit_on_error).fetch_plugin(
-                        name, props, j, accept)
+                        release, exit_on_error=self.exit_on_error,
+                        **kwargs).fetch_plugin(name, props, j, accept)
         else:
             ioc_fetch.IOCFetch(
-                release, exit_on_error=self.exit_on_error).fetch_release()
+                release, exit_on_error=self.exit_on_error,
+                **kwargs).fetch_release()
 
     def fstab(self, action, source, destination, fstype, options, dump, _pass,
               index=None, add_path=False, header=False):
