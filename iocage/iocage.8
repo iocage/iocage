@@ -1,4 +1,4 @@
-.Dd April 20, 2017
+.Dd August 21, 2017
 .Dt IOCAGE 8
 .Os
 .Sh NAME
@@ -56,6 +56,7 @@
 .\" == DESTROY ==
 .Nm
 .Cm destroy
+.Op Fl R | -recursive
 .Op Fl d | -download
 .Op Fl f | -force
 .Op Fl r | -release
@@ -167,9 +168,10 @@
 .\" == SNAPLIST ==
 .Nm
 .Cm snaplist
+.Ar UUID | NAME
 .Op Fl H | h | -header
 .Op Fl l | -long | Cm _long
-.Op Ar UUID | NAME
+.Op Fl s | -sort | Cm _sort Cm TYPE
 .\" == SNAPREMOVE ==
 .Nm
 .Cm snapremove
@@ -401,6 +403,11 @@ only works with a stopped jail.
 .Pp
 Options:
 .Bl -tag -width "[-d | --download]"
+.It Op Fl R | -recursive
+Skip the destroy children prompt.
+This is best used with the
+.Op Fl f | -force
+option.
 .It Op Fl d | -download
 Also destroy the specified RELEASE download.
 .It Op Fl f | -force
@@ -823,11 +830,15 @@ Used for scripting.
 Tabs are used as separators.
 .It Op Fl l | -long | Cm _long
 Show the full dataset path for the snapshot.
+.It Op Fl s | -sort | Cm _sort Cm TYPE
+Sort the returned list by the named TYPE.
 .El
 .Pp
 Example:
 .Pp
 .Dl # iocage snaplist examplejail1
+.Pp
+.Dl # iocage snaplist FOO -s name
 .Pp
 .\" == SNAPREMOVE ==
 .It Cm snapremove
@@ -1815,9 +1826,10 @@ Please report bugs, issues, and feature requests to
 .Nm
 was developed by
 .An -nosplit
-.An Peter Toth
+.An Peter Toth,
+.An Brandon Schneider,
 and
-.An Brandon Schneider .
+.An Stefan Gronke .
 .Pp
 This manual page was written by
 .An Warren Block,
