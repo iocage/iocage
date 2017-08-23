@@ -1274,10 +1274,18 @@ fingerprint: {fingerprint}
                     _callback=self.callback,
                     silent=self.silent)
 
-                command = ["sh", "/root/post_install.sh"]
+                command = ["sh", "-e", "/root/post_install.sh"]
                 msg, err = iocage.lib.ioc_exec.IOCExec(command, uuid, jaildir,
                                                        plugin=True,
                                                        skip=True).exec_jail()
+                if err:
+                    iocage.lib.ioc_common.logit({
+                        "level": "EXCEPTION",
+                        "message": "An error occured! Please read above"
+                    },
+                        exit_on_error=self.exit_on_error
+                    )
+
                 iocage.lib.ioc_common.logit({
                     "level"  : "INFO",
                     "message": msg
