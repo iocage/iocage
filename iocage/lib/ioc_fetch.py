@@ -1111,7 +1111,8 @@ class IOCFetch(object):
 
         # We do this test again as the user could supply a malformed IP to
         # fetch that bypasses the more naive check in cli/fetch
-        if _conf["ip4_addr"] == "none" and _conf["ip6_addr"] == "none":
+        if _conf["ip4_addr"] == "none" and _conf["ip6_addr"] == "none" and \
+           _conf["dhcp"] != "on":
             iocage.lib.ioc_common.logit({
                 "level"  : "ERROR",
                 "message": "\nAn IP address is needed to fetch a "
@@ -1223,6 +1224,8 @@ fingerprint: {fingerprint}
 
     def __fetch_plugin_post_install__(self, conf, _conf, jaildir, uuid):
         """Fetches the users artifact and runs the post install"""
+        dhcp = False
+
         try:
             ip4 = _conf["ip4_addr"].split("|")[1].rsplit(
                 "/")[0]
@@ -1241,6 +1244,9 @@ fingerprint: {fingerprint}
             # If they had an IP4 address and an IP6 one,
             # we'll assume they prefer IP6.
             ip = ip6
+        else:
+            dhcp = True
+            ip = ""
 
         os.environ["IOCAGE_PLUGIN_IP"] = ip
 
@@ -1292,6 +1298,15 @@ fingerprint: {fingerprint}
                 })
 
                 ui_json = f"{jaildir}/plugin/ui.json"
+
+                if dhcp:
+                    interface = _conf["interfaces"].split(",")[0].split(":")[0]
+                    ip4_cmd = ["jexec", f"ioc-{uuid}", "ifconfig", interface,
+                               "inet"]
+                    out = su.check_output(ip4_cmd).decode()
+                    ip = f"{out.splitlines()[2].split()[1]}"
+                    os.environ["IOCAGE_PLUGIN_IP"] = ip
+
                 try:
                     with open(ui_json, "r") as u:
                         admin_portal = json.load(u)["adminportal"]

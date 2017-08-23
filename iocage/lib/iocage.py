@@ -729,7 +729,7 @@ class IOCage(object):
         if plugins or plugin_file:
             ip = [x for x in props if x.startswith("ip4_addr") or
                   x.startswith("ip6_addr")]
-            if not ip:
+            if not ip and "dhcp=on" not in props:
                 ioc_common.logit({
                     "level"  : "EXCEPTION",
                     "message": "An IP address is needed to fetch a plugin!\n"
