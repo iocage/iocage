@@ -119,7 +119,8 @@ class IOCExec(object):
 
                 exec_out = p.communicate(b"\r")[0]
                 msg = exec_out if exec_out is not None else ""
+                error = True if p.returncode == 1 else False
 
-                return msg, False
+                return msg, error
             except su.CalledProcessError as err:
                 return err.output.decode("utf-8").rstrip(), True
