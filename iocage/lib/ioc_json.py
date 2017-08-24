@@ -654,43 +654,43 @@ class IOCJson(object):
 
         # Version 3 keys
         if not default:
-            try:
-                try:
-                    release = conf["release"]
-                    cloned_release = conf["cloned_release"]
-                except KeyError:
-                    err_name = self.location.rsplit("/", 1)[-1]
-                    iocage.lib.ioc_common.logit({
-                        "level"  : "EXCEPTION",
-                        "message": f"{err_name} has a corrupt configuration,"
-                                   "please destroy the jail."
-                    }, exit_on_error=self.exit_on_error,
-                        _callback=self.callback,
-                        silent=self.silent)
-            except KeyError:
-                try:
-                    freebsd_version = f"{iocroot}/releases/{conf['release']}" \
-                                      "/root/bin/freebsd-version"
-                except FileNotFoundError:
-                    freebsd_version = f"{iocroot}/templates/" \
-                                      f"{conf['host_hostuuid']}" \
-                                      "/root/bin/freebsd-version"
-                except KeyError:
-                    # At this point it should be a real misconfigured jail
-                    uuid = self.location.rsplit("/", 1)[-1]
-                    raise RuntimeError("Configuration is missing!"
-                                       f" Please destroy {uuid} and recreate"
-                                       " it.")
+            release = conf.get("release", None)
 
-                if conf["release"][:4].endswith("-"):
-                    # 9.3-RELEASE and under don't actually have this binary.
-                    release = conf["release"]
-                else:
-                    with open(freebsd_version, "r") as r:
-                        for line in r:
-                            if line.startswith("USERLAND_VERSION"):
-                                release = line.rstrip().partition("=")[2]
-                                release = release.strip('"')
+            if release is None:
+                err_name = self.location.rsplit("/", 1)[-1]
+                iocage.lib.ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": f"{err_name} has a corrupt configuration,"
+                               " please destroy the jail."
+                }, exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
+                    silent=self.silent)
+
+            cloned_release = conf.get("cloned_release", "LEGACY_JAIL")
+
+            try:
+                freebsd_version = f"{iocroot}/releases/{conf['release']}" \
+                                  "/root/bin/freebsd-version"
+            except FileNotFoundError:
+                freebsd_version = f"{iocroot}/templates/" \
+                                  f"{conf['host_hostuuid']}" \
+                                  "/root/bin/freebsd-version"
+            except KeyError:
+                # At this point it should be a real misconfigured jail
+                uuid = self.location.rsplit("/", 1)[-1]
+                raise RuntimeError("Configuration is missing!"
+                                   f" Please destroy {uuid} and recreate"
+                                   " it.")
+
+            if conf["release"][:4].endswith("-"):
+                # 9.3-RELEASE and under don't actually have this binary.
+                release = conf["release"]
+            else:
+                with open(freebsd_version, "r") as r:
+                    for line in r:
+                        if line.startswith("USERLAND_VERSION"):
+                            release = line.rstrip().partition("=")[2]
+                            release = release.strip('"')
 
                 cloned_release = conf["release"]
 

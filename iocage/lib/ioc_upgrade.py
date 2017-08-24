@@ -44,7 +44,9 @@ class IOCUpgrade(object):
         self.conf = conf
         self.uuid = conf["host_hostuuid"]
         self.host_release = os.uname()[2]
-        self.jail_release = conf["cloned_release"]
+        self.cloned_release = conf["cloned_release"]
+        self.jail_release = self.cloned_release if \
+            self.cloned_release != "LEGACY_JAIL" else self.host_release
         self.new_release = new_release
         self.path = path
         self.status, self.jid = iocage.lib.ioc_list.IOCList.list_get_jid(
