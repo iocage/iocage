@@ -22,6 +22,8 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """fetch module for the cli."""
+import os
+
 import click
 
 import iocage.lib.ioc_common as ioc_common
@@ -92,4 +94,14 @@ def validate_count(ctx, param, value):
               help="Accept the plugin's LICENSE agreement.")
 def cli(**kwargs):
     """CLI command that calls fetch_release()"""
+    release = kwargs.get("release", None)
+    host_release = os.uname()[2].rsplit("-", 1)[0]
+
+    if host_release < release:
+        ioc_common.logit({
+            "level"  : "EXCEPTION",
+            "message": f"\nHost: {host_release} is not greater than"
+                       f" target: {release}\nThis is unsupported."
+        })
+
     ioc.IOCage(exit_on_error=True).fetch(**kwargs)
