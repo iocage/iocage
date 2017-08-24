@@ -622,7 +622,7 @@ class IOCage(object):
         ioc_destroy.IOCDestroy(
             exit_on_error=self.exit_on_error).destroy_jail(path)
 
-    def df(self, long=False):
+    def df(self):
         """Returns a list containing the resource usage of all jails"""
         jail_list = []
 
