@@ -167,7 +167,7 @@ class IOCDestroy(object):
             if stop:
                 try:
                     self.__stop_jails__(datasets, path, root)
-                except (RuntimeError, FileNotFoundError):
+                except (RuntimeError, FileNotFoundError, SystemExit):
                     # If a bad or missing configuration for a jail, this will
                     # get in the way.
                     pass
@@ -198,7 +198,8 @@ class IOCDestroy(object):
         try:
             conf = iocage.lib.ioc_json.IOCJson(path).json_load()
             iocage.lib.ioc_stop.IOCStop(uuid, path, conf, silent=True)
-        except (FileNotFoundError, RuntimeError, libzfs.ZFSException):
+        except (FileNotFoundError, RuntimeError, libzfs.ZFSException,
+                SystemExit):
             # Broad exception as we don't care why this failed. iocage
             # may have been killed before configuration could be made,
             # it's meant to be nuked.
@@ -207,6 +208,6 @@ class IOCDestroy(object):
         try:
             self.__destroy_parse_datasets__(
                 f"{self.pool}/iocage/{dataset_type}/{uuid}")
-        except libzfs.ZFSException:
+        except (libzfs.ZFSException, SystemExit):
             # The dataset doesn't exist, we don't care :)
             pass
