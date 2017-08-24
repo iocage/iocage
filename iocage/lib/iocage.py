@@ -1130,7 +1130,7 @@ class IOCage(object):
                     _callback=self.callback,
                     silent=self.silent)
             else:
-                raise()
+                raise ()
 
         ioc_common.logit({
             "level"  : "INFO",
