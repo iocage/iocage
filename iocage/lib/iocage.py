@@ -1191,6 +1191,19 @@ class IOCage(object):
             conf = ioc_json.IOCJson(path, silent=self.silent,
                                     exit_on_error=self.exit_on_error
                                     ).json_load()
+            release = conf["release"]
+            host_release = os.uname()[2].rsplit("-", 1)[0]
+
+            if host_release < release:
+                ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": f"\nHost: {host_release} is not greater than"
+                               f" target: {release}\nThis is unsupported."
+                },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
+                    silent=self.silent)
+
             err, msg = self.__check_jail_type__(conf["type"], uuid)
             depends = conf["depends"].split()
 
