@@ -22,6 +22,8 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """upgrade module for the cli."""
+import os
+
 import click
 
 import iocage.lib.ioc_common as ioc_common
@@ -41,6 +43,15 @@ __rootcmd__ = True
 def cli(jail, release):
     """Runs upgrade with the command given inside the specified jail."""
     # TODO: Move to API
+    host_release = os.uname()[2].rsplit("-", 1)[0]
+
+    if host_release <= release:
+        ioc_common.logit({
+            "level"  : "EXCEPTION",
+            "message": f"\nHost: {host_release} is not greater than"
+                       f" target: {release}\nThis is unsupported."
+        })
+
     jails = ioc_list.IOCList("uuid").list_datasets()
     _jail = {uuid: path for (uuid, path) in jails.items() if
              uuid.startswith(jail)}
