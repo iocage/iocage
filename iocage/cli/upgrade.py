@@ -45,12 +45,13 @@ def cli(jail, release):
     # TODO: Move to API
     host_release = os.uname()[2].rsplit("-", 1)[0]
 
-    if host_release <= release:
-        ioc_common.logit({
-            "level"  : "EXCEPTION",
-            "message": f"\nHost: {host_release} is not greater than"
-                       f" target: {release}\nThis is unsupported."
-        })
+    if release is not None:
+        if host_release < release:
+            ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": f"\nHost: {host_release} is not greater than"
+                           f" target: {release}\nThis is unsupported."
+            })
 
     jails = ioc_list.IOCList("uuid").list_datasets()
     _jail = {uuid: path for (uuid, path) in jails.items() if
