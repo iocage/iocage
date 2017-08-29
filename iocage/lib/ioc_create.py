@@ -211,7 +211,6 @@ class IOCCreate(object):
             su.Popen(["zfs", "clone",
                       f"{self.pool}/iocage/jails/{self.release}/root@"
                       f"{jail_uuid}", jail], stdout=su.PIPE).communicate()
-            os.chmod(f"{self.iocroot}/jails/{jail_uuid}/root", 0o700)
 
             with open(clone_config, "r") as _clone_config:
                 config = json.load(_clone_config)
@@ -258,7 +257,6 @@ class IOCCreate(object):
                 su.Popen(["zfs", "clone", "-p",
                           f"{self.pool}/iocage/releases/{self.release}/root@"
                           f"{jail_uuid}", jail], stdout=su.PIPE).communicate()
-                os.chmod(f"{self.iocroot}/jails/{jail_uuid}/root", 0o700)
             else:
                 try:
                     iocage.lib.ioc_common.checkoutput(

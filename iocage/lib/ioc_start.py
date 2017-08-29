@@ -122,10 +122,6 @@ class IOCStart(object):
         dhcp = self.conf["dhcp"]
         prop_missing = False
 
-        # While this should have happened during creation, we set it again.
-        # It will avoid security issues down the line.
-        os.chmod(f"{self.path}/root", 0o700)
-
         if dhcp == "on":
             if bpf != "yes":
                 msg = f"{self.uuid} requires bpf=yes!"
