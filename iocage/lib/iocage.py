@@ -650,7 +650,8 @@ class IOCage(object):
 
         return jail_list
 
-    def exec(self, command, host_user="root", jail_user=None, console=False):
+    def exec(self, command, host_user="root", jail_user=None,
+             console=False, pkg=False):
         """Executes a command in the jail as the supplied users."""
         if host_user and jail_user:
             ioc_common.logit({
@@ -661,10 +662,32 @@ class IOCage(object):
                 silent=self.silent)
 
         uuid, path = self.__check_jail_existence__()
+
+        if pkg:
+            ip4_addr = self.get("ip4_addr")
+            ip6_addr = self.get("ip6_addr")
+            dhcp = self.get("dhcp")
+
+            if ip4_addr == "none" and ip6_addr == "none" and dhcp != "on":
+                ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": "The jail requires an IP address before you "
+                               "can use pkg. Set one and restart the jail."
+                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                    silent=self.silent)
+
+            status, jid = self.list("jid", uuid=uuid)
+
+            if not status:
+                self.start()
+                status, jid = self.list("jid", uuid=uuid)
+
+            command = ["pkg", "-j", jid] + list(command)
+
         msg, err = ioc_exec.IOCExec(
             command, uuid, path, host_user, jail_user,
             console=console, silent=self.silent,
-            exit_on_error=self.exit_on_error).exec_jail()
+            exit_on_error=self.exit_on_error, pkg=pkg).exec_jail()
 
         if not console:
             if err:

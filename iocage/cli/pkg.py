@@ -34,5 +34,4 @@ __rootcmd__ = True
 @click.argument("command", nargs=-1, type=click.UNPROCESSED)
 def cli(command, jail):
     """Runs pkg with the command given inside the specified jail."""
-    cmd = ("pkg",) + command
-    ioc.IOCage(exit_on_error=True, jail=jail).exec(cmd)
+    ioc.IOCage(exit_on_error=True, jail=jail).exec(command, pkg=True)

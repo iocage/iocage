@@ -34,14 +34,15 @@ class IOCExec(object):
     """Run jexec with a user inside the specified jail."""
 
     def __init__(self, command, uuid, path, host_user="root", jail_user=None,
-                 plugin=False, skip=False, console=False, silent=False,
-                 exit_on_error=False, callback=None):
+                 plugin=False, pkg=False, skip=False, console=False,
+                 silent=False, exit_on_error=False, callback=None):
         self.command = command
         self.uuid = uuid.replace(".", "_")
         self.path = path
         self.host_user = host_user
         self.jail_user = jail_user
         self.plugin = plugin
+        self.pkg = pkg
         self.skip = skip
         self.console = console
         self.silent = silent
@@ -108,18 +109,19 @@ class IOCExec(object):
             return None, False
         else:
             try:
-                cmd = ["setfib", exec_fib, "jexec", flag, user,
-                       f"ioc-{self.uuid}"] + list(self.command)
+                stdout = None if not self.silent else su.DEVNULL
 
-                if not self.silent:
-                    p = su.Popen(cmd, stderr=su.STDOUT, stdin=su.PIPE)
+                if not self.pkg:
+                    cmd = ["setfib", exec_fib, "jexec", flag, user,
+                           f"ioc-{self.uuid}"] + list(self.command)
                 else:
-                    p = su.Popen(cmd, stderr=su.STDOUT, stdin=su.PIPE,
-                                 stdout=su.PIPE)
+                    cmd = self.command
+
+                p = su.Popen(cmd, stdout=stdout)
 
                 exec_out = p.communicate(b"\r")[0]
                 msg = exec_out if exec_out is not None else ""
-                error = True if p.returncode == 1 else False
+                error = True if p.returncode != 0 else False
 
                 return msg, error
             except su.CalledProcessError as err:
