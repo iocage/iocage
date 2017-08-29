@@ -595,11 +595,15 @@ class IOCStart(object):
 
     def start_copy_localtime(self):
         host_time = self.get("host_time")
+        file = f"{self.path}/root/etc/localtime"
         if host_time != "yes":
             return
 
+        if os.path.isfile(file):
+            os.remove(file)
+
         try:
-            shutil.copy("/etc/localtime", f"{self.path}/root/etc/localtime")
+            shutil.copy("/etc/localtime", file, follow_symlinks=False)
         except FileNotFoundError:
             return
 
