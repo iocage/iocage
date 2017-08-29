@@ -26,7 +26,6 @@ import collections
 import distutils.dir_util
 import ftplib
 import hashlib
-import io
 import json
 import logging
 import os
