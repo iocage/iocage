@@ -97,11 +97,12 @@ def cli(**kwargs):
     release = kwargs.get("release", None)
     host_release = os.uname()[2].rsplit("-", 1)[0]
 
-    if host_release < release:
-        ioc_common.logit({
-            "level"  : "EXCEPTION",
-            "message": f"\nHost: {host_release} is not greater than"
-                       f" target: {release}\nThis is unsupported."
-        })
+    if release is not None:
+        if host_release < release:
+            ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": f"\nHost: {host_release} is not greater than"
+                           f" target: {release}\nThis is unsupported."
+            })
 
     ioc.IOCage(exit_on_error=True).fetch(**kwargs)
