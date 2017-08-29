@@ -846,69 +846,37 @@ class IOCFetch(object):
             f = "https://raw.githubusercontent.com/freebsd/freebsd" \
                 "/master/usr.sbin/freebsd-update/freebsd-update.sh"
 
-            tmp = None
-            try:
-                tmp = tempfile.NamedTemporaryFile(delete=False)
-                with urllib.request.urlopen(f) as fbsd_update:
-                    tmp.write(fbsd_update.read())
+            tmp = tempfile.NamedTemporaryFile(delete=False)
+            with urllib.request.urlopen(f) as fbsd_update:
+                tmp.write(fbsd_update.read())
+            tmp.close()
+            os.chmod(tmp.name, 0o755)
+
+            fetch_cmd = [tmp.name, "-b", new_root, "-d",
+                         f"{new_root}/var/db/freebsd-update/",
+                         "-f",
+                         f"{new_root}/etc/freebsd-update.conf",
+                         "--not-running-from-cron",
+                         "fetch"]
+
+            fetch = su.Popen(fetch_cmd)
+            fetch.communicate()
+
+            if not fetch.returncode:
+                # They may have missing files, we don't need that noise
+                # since it's not fatal
+                su.Popen([tmp.name, "-b", new_root, "-d",
+                          f"{new_root}/var/db/freebsd-update/",
+                          "-f",
+                          f"{new_root}/etc/freebsd-update.conf",
+                          "install"],
+                         stderr=su.DEVNULL).communicate()
+
+            if not tmp.closed:
                 tmp.close()
-                os.chmod(tmp.name, 0o755)
 
-                fetch_cmd = [tmp.name, "-b", new_root, "-d",
-                             f"{new_root}/var/db/freebsd-update/",
-                             "-f",
-                             f"{new_root}/etc/freebsd-update.conf",
-                             "--not-running-from-cron",
-                             "fetch"]
+            os.remove(tmp.name)
 
-                with su.Popen(fetch_cmd, stdout=su.PIPE,
-                              stderr=su.PIPE,
-                              bufsize=1,
-                              universal_newlines=True) as fetch, \
-                        io.StringIO() as buffer:
-                    for line in fetch.stdout:
-                        if not self.silent:
-                            # FIXME: Change logging's terminator to support
-                            # a different terminator and switch to that.
-                            # Maybe some day.
-                            print(line, end='')
-
-                        buffer.write(line)
-
-                    fetch_output = buffer.getvalue()
-
-                if not fetch.returncode:
-                    su.Popen([tmp.name, "-b", new_root, "-d",
-                              f"{new_root}/var/db/freebsd-update/",
-                              "-f",
-                              f"{new_root}/etc/freebsd-update.conf",
-                              "install"],
-                             stderr=su.PIPE).communicate()
-                else:
-                    if "HAS PASSED" in fetch_output:
-                        ast = "*" * 10
-                        iocage.lib.ioc_common.logit({
-                            "level"  : "WARNING",
-                            "message": f"\n{ast}\n{self.release} is past it's"
-                                       " EOL, consider using a newer"
-                                       f" RELEASE.\n{ast}"
-                        },
-                            _callback=self.callback,
-                            silent=self.silent)
-                    else:
-                        iocage.lib.ioc_common.logit({
-                            "level"  : "WARNING",
-                            "message": f"Error occured, {self.release} was not"
-                                       " updated to the latest patch level."
-                        },
-                            _callback=self.callback,
-                            silent=self.silent)
-            finally:
-                if tmp:
-                    if not tmp.closed:
-                        tmp.close()
-
-                    os.remove(tmp.name)
         try:
             if not cli:
                 # Why this sometimes doesn't exist, we may never know.
