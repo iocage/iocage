@@ -69,6 +69,7 @@ def cli(jail):
     status, jid = ioc_list.IOCList.list_get_jid(uuid)
     conf = ioc_json.IOCJson(path).json_load()
     started = False
+    release = conf["release"].rsplit("-", 1)[0]
 
     if conf["type"] == "jail":
         if not status:
@@ -99,7 +100,7 @@ def cli(jail):
         if started:
             ioc_stop.IOCStop(uuid, path, conf, silent=True)
     else:
-        ioc_fetch.IOCFetch(conf["release"]).fetch_update(True, uuid)
+        ioc_fetch.IOCFetch(release).fetch_update(True, uuid)
 
         if started:
             ioc_stop.IOCStop(uuid, path, conf, silent=True)
