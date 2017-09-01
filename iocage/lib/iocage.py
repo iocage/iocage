@@ -937,6 +937,31 @@ class IOCage(object):
                                 exit_on_error=self.exit_on_error
                                 ).list_datasets()
 
+    def rename(self, new_name):
+        uuid, _ = self.__check_jail_existence__()
+        path = f"{self.pool}/iocage/jails/{uuid}"
+        new_path = path.replace(self.jail, new_name)
+
+        _silent = self.silent
+        self.silent = True
+
+        self.stop()
+        self.set(f"host_hostuuid={new_name}", rename=True)
+
+        self.silent = _silent
+
+        try:
+            self.zfs.get_dataset(path).rename(new_path)
+        except libzfs.ZFSException:
+            raise
+
+        ioc_common.logit({
+            "level"  : "INFO",
+            "message": f"Jail: {self.jail} renamed to {new_name}"
+        },
+            _callback=self.callback,
+            silent=self.silent)
+
     def restart(self, soft=False):
         if self._all:
             if not soft:
@@ -1001,15 +1026,21 @@ class IOCage(object):
             _callback=self.callback,
             silent=self.silent)
 
-    def set(self, prop, plugin=False):
+    def set(self, prop, plugin=False, rename=False):
         """Sets a property for a jail or plugin"""
+        # The cli check prevents users changing unwanted properties. We do
+        # want to change a protected property with rename, so we disable that.
+        cli = False if rename else True
+
         try:
             key, value = prop.split("=", 1)
         except ValueError:
             ioc_common.logit({
                 "level"  : "EXCEPTION",
                 "message": f"{prop} is is missing a value!"
-            }, exit_on_error=self.exit_on_error, _callback=self.callback,
+            },
+                exit_on_error=self.exit_on_error,
+                _callback=self.callback,
                 silent=self.silent)
 
         if self.jail == "default":
@@ -1019,57 +1050,65 @@ class IOCage(object):
         else:
             default = False
 
-        if not default:
-            uuid, path = self.__check_jail_existence__()
-            iocjson = ioc_json.IOCJson(path, cli=True,
-                                       exit_on_error=self.exit_on_error)
-
-            if "template" in key:
-                if "templates/" in path and prop != "template=no":
-                    ioc_common.logit({
-                        "level"  : "EXCEPTION",
-                        "message": f"{uuid} is already a template!"
-                    }, exit_on_error=self.exit_on_error,
-                        _callback=self.callback,
-                        silent=self.silent)
-                elif "template" not in path and prop != "template=yes":
-                    ioc_common.logit({
-                        "level"  : "EXCEPTION",
-                        "message": f"{uuid} is already a jail!"
-                    }, exit_on_error=self.exit_on_error,
-                        _callback=self.callback,
-                        silent=self.silent)
-
-            if plugin:
-                _prop = prop.split(".")
-                ioc_json.IOCJson(path, cli=True,
-                                 exit_on_error=self.exit_on_error
-                                 ).json_plugin_set_value(_prop)
-            else:
-                try:
-                    # We use this to test if it's a valid property at all.
-                    _prop = prop.partition("=")[0]
-                    self.get(_prop)
-
-                    # The actual setting of the property.
-                    iocjson.json_set_value(prop)
-                except KeyError:
-                    _prop = prop.partition("=")[0]
-                    ioc_common.logit({
-                        "level"  : "EXCEPTION",
-                        "message": f"{_prop} is not a valid property!"
-                    }, exit_on_error=self.exit_on_error,
-                        _callback=self.callback,
-                        silent=self.silent)
-
-            if key == "ip6_addr":
-                rtsold_enable = "YES" if "accept_rtadv" in value else "NO"
-                ioc_common.set_rcconf(path, "rtsold_enable", rtsold_enable)
-
-        else:
+        if default:
             ioc_json.IOCJson(self.iocroot,
                              exit_on_error=self.exit_on_error).json_set_value(
                 prop, default=True)
+
+        uuid, path = self.__check_jail_existence__()
+        iocjson = ioc_json.IOCJson(path,
+                                   cli=cli,
+                                   exit_on_error=self.exit_on_error,
+                                   callback=self.callback,
+                                   silent=self.silent)
+
+        if "template" in key:
+            if "templates/" in path and prop != "template=no":
+                ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": f"{uuid} is already a template!"
+                },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
+                    silent=self.silent)
+            elif "template" not in path and prop != "template=yes":
+                ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": f"{uuid} is already a jail!"
+                },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
+                    silent=self.silent)
+
+        if plugin:
+            _prop = prop.split(".")
+            ioc_json.IOCJson(path,
+                             cli=cli,
+                             exit_on_error=self.exit_on_error,
+                             callback=self.callback,
+                             silent=self.silent
+                             ).json_plugin_set_value(_prop)
+        else:
+            try:
+                # We use this to test if it's a valid property at all.
+                _prop = prop.partition("=")[0]
+                self.get(_prop)
+
+                # The actual setting of the property.
+                iocjson.json_set_value(prop)
+            except KeyError:
+                _prop = prop.partition("=")[0]
+                ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": f"{_prop} is not a valid property!"
+                },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
+                    silent=self.silent)
+
+        if key == "ip6_addr":
+            rtsold_enable = "YES" if "accept_rtadv" in value else "NO"
+            ioc_common.set_rcconf(path, "rtsold_enable", rtsold_enable)
 
     def snap_list(self, long=True, _sort="created"):
         """Gathers a list of snapshots and returns it"""
