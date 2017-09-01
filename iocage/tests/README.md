@@ -18,7 +18,7 @@ $ pytest
 
 ## Functional tests
 
-Located in the ``tests/functional_tests``, they need a root acces and the name of a ZFS pool
+Located in the ``tests/functional_tests``, they need a root access and the name of a ZFS pool
 
 **/!\ The contents of the specified ZFS pool will be destroyed**
 
