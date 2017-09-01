@@ -1103,7 +1103,6 @@ class IOCage(object):
                     silent=self.silent)
 
             zfs_key, zfs_value = prop.split("=", 2)
-            print(zfs_key, zfs_value)
             iocjson.zfs_set_property(zfs_dataset, zfs_key, zfs_value)
             return
 
