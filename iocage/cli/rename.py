@@ -30,8 +30,8 @@ __rootcmd__ = True
 
 
 @click.command(name="rename", help="Rename a jail.")
-@click.argument("jail")
-@click.argument("new_name")
+@click.argument("jail", nargs=1)
+@click.argument("new_name", nargs=1)
 def cli(jail, new_name):
     """
     Checks if the jail is running, then attempts to rename the jail.

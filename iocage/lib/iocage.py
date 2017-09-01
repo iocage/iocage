@@ -1107,7 +1107,6 @@ class IOCage(object):
             iocjson.zfs_set_property(zfs_dataset, zfs_key, zfs_value)
             return
 
-
         if "template" in key:
             if "templates/" in path and prop != "template=no":
                 ioc_common.logit({
