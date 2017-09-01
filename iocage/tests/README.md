@@ -5,7 +5,7 @@ All the tests are written using the `pytest` unit testing framework. Code covera
 
 Before running tests, test dependencies can be installed by running:
 ```
-$ pip3.6 install pytest-cov pytest-pep8
+$ pip3.6 install pytest-cov pytest-pep8 pytest-mock
 ```
 
 ## Unit tests
