@@ -951,9 +951,33 @@ class IOCage(object):
         self.silent = _silent
 
         try:
+            # Can't rename when the child is in a non-global zone
+            data_dataset = self.zfs.get_dataset(f"{path}/data")
+            dependents = data_dataset.dependents
+
+            self.set("jailed=off", zfs=True, zfs_dataset=path)
+            for dep in dependents:
+                if dep.type != "FILESYSTEM":
+                    continue
+
+                d = dep.name
+                self.set("jailed=off", zfs=True, zfs_dataset=d)
+        except libzfs.ZFSException as err:
+            # The dataset doesn't exist, that's OK
+            if err.code == libzfs.Error.NOENT:
+                pass
+            else:
+                # Danger, Will Robinson!
+                raise
+
+        try:
             self.zfs.get_dataset(path).rename(new_path)
         except libzfs.ZFSException:
             raise
+
+        # Easier.
+        su.check_call(["zfs", "rename", "-r",
+                       f"{self.pool}/iocage@{uuid}", f"@{new_name}"])
 
         ioc_common.logit({
             "level"  : "INFO",
@@ -1026,7 +1050,8 @@ class IOCage(object):
             _callback=self.callback,
             silent=self.silent)
 
-    def set(self, prop, plugin=False, rename=False):
+    def set(self, prop, plugin=False, rename=False, zfs=False,
+            zfs_dataset=None):
         """Sets a property for a jail or plugin"""
         # The cli check prevents users changing unwanted properties. We do
         # want to change a protected property with rename, so we disable that.
@@ -1062,6 +1087,27 @@ class IOCage(object):
                                    callback=self.callback,
                                    silent=self.silent)
 
+        if plugin:
+            _prop = prop.split(".")
+            iocjson.json_plugin_set_value(_prop)
+            return
+
+        if zfs:
+            if zfs_dataset is None:
+                ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": "Setting a zfs property requires zfs_dataset."
+                },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
+                    silent=self.silent)
+
+            zfs_key, zfs_value = prop.split("=", 2)
+            print(zfs_key, zfs_value)
+            iocjson.zfs_set_property(zfs_dataset, zfs_key, zfs_value)
+            return
+
+
         if "template" in key:
             if "templates/" in path and prop != "template=no":
                 ioc_common.logit({
@@ -1080,31 +1126,22 @@ class IOCage(object):
                     _callback=self.callback,
                     silent=self.silent)
 
-        if plugin:
-            _prop = prop.split(".")
-            ioc_json.IOCJson(path,
-                             cli=cli,
-                             exit_on_error=self.exit_on_error,
-                             callback=self.callback,
-                             silent=self.silent
-                             ).json_plugin_set_value(_prop)
-        else:
-            try:
-                # We use this to test if it's a valid property at all.
-                _prop = prop.partition("=")[0]
-                self.get(_prop)
+        try:
+            # We use this to test if it's a valid property at all.
+            _prop = prop.partition("=")[0]
+            self.get(_prop)
 
-                # The actual setting of the property.
-                iocjson.json_set_value(prop)
-            except KeyError:
-                _prop = prop.partition("=")[0]
-                ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": f"{_prop} is not a valid property!"
-                },
-                    exit_on_error=self.exit_on_error,
-                    _callback=self.callback,
-                    silent=self.silent)
+            # The actual setting of the property.
+            iocjson.json_set_value(prop)
+        except KeyError:
+            _prop = prop.partition("=")[0]
+            ioc_common.logit({
+                "level"  : "EXCEPTION",
+                "message": f"{_prop} is not a valid property!"
+            },
+                exit_on_error=self.exit_on_error,
+                _callback=self.callback,
+                silent=self.silent)
 
         if key == "ip6_addr":
             rtsold_enable = "YES" if "accept_rtadv" in value else "NO"
