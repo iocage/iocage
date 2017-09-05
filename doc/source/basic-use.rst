@@ -261,3 +261,17 @@ Destroy a specific jail using the **destroy** subcommand:
 :samp:`# iocage destroy www02`
 
 .. warning:: This irreversibly destroys the jail!
+
+.. index:: Rename Jail
+.. _Rename Jail:
+
+Rename a Jail
+-------------
+
+:command:`iocage` allows jails to be renamed after creation and/or
+migration. The :command:`iocage rename` subcommand is used to alter an
+existing jail's UUID or NAME. Type the command, then the UUID or name of
+the jail to be altered, then the desired name. This example shows using
+the :command:`rename` subcommand:
+
+:samp:`# iocage rename jail1 TESTINGJAIL`
