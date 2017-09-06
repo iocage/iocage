@@ -181,36 +181,37 @@ class IOCImage(object):
         uuid = matches[0].rsplit("_")[0]
         date = matches[0].rsplit("_")[1].strip(".zip")
 
-        with zipfile.ZipFile(image_target, "r") as _import:
-            for z in _import.namelist():
-                # Split the children dataset out
-                z_dataset_type = z.split("_", 1)[-1]
-                z_dataset_type = z_dataset_type.partition("_")[2]
-                z_dataset_type = \
-                    f"{uuid}/{z_dataset_type.replace('_', '/')}".rstrip("/")
+        import_image = zipfile.ZipFile(image_target, "r")
+        for z in import_image.namelist():
+            # Split the children dataset out
+            z_dataset_type = z.split("_", 1)[-1]
+            z_dataset_type = z_dataset_type.partition("_")[2]
+            z_dataset_type = \
+                f"{uuid}/{z_dataset_type.replace('_', '/')}".rstrip("/")
 
-                cmd = ["zfs", "recv", "-F",
-                       f"{self.pool}/iocage/jails/{z_dataset_type}"]
+            cmd = ["zfs", "recv", "-F",
+                   f"{self.pool}/iocage/jails/{z_dataset_type}"]
 
-                msg = f"Importing dataset: {z_dataset_type}"
-                iocage.lib.ioc_common.logit({
-                    "level"  : "INFO",
-                    "message": msg
-                },
-                    self.callback,
-                    silent=self.silent
-                )
+            msg = f"Importing dataset: {z_dataset_type}"
+            iocage.lib.ioc_common.logit({
+                "level"  : "INFO",
+                "message": msg
+            },
+                self.callback,
+                silent=self.silent
+            )
 
-                dataset = _import.read(z)
-                recv = su.Popen(cmd, stdin=su.PIPE)
-                recv.stdin.write(dataset)
-                recv.communicate()
-                recv.stdin.close()
+            dataset = import_image.open(z)
+            recv = su.Popen(cmd, stdin=su.PIPE)
+
+            for line in dataset:
+                recv.stdin.write(line)
+
+            recv.communicate()
 
         # Cleanup our mess.
         try:
-            target = f"{self.pool}/iocage/jails/{uuid}@ioc-export-" \
-                     f"{date}"
+            target = f"{self.pool}/iocage/jails/{uuid}@ioc-export-{date}"
 
             iocage.lib.ioc_common.checkoutput(["zfs", "destroy", "-r", target],
                                               stderr=su.STDOUT)
