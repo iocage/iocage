@@ -1,4 +1,4 @@
-.Dd August 21, 2017
+.Dd September 5, 2017
 .Dt IOCAGE 8
 .Os
 .Sh NAME
@@ -148,6 +148,11 @@
 .Cm pkg
 .Ar UUID | NAME
 .Ar COMMAND
+.\"== RENAME ==
+.Nm
+.Cm rename
+.Ar UUID | NAME
+.Ar NEW_NAME
 .\" == RESTART ==
 .Nm
 .Cm restart
@@ -754,6 +759,15 @@ Run desired
 .Cm pkg
 commands in the specified jail.
 List the jail's UUID or NAME, then any desired commands.
+.Pp
+.\" == RENAME ==
+.It Cm rename
+Rename the specified jail.
+.Pp
+Examples:
+.Pp
+.Dl # iocage rename jail1 NEWNAME
+.Dl Jail: jail1 renamed to NEWNAME
 .Pp
 .\" == RESTART ==
 .It Cm restart
