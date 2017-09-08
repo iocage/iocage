@@ -26,10 +26,9 @@ import glob
 import os
 import subprocess as su
 
-import libzfs
-
 import iocage.lib.ioc_json
 import iocage.lib.ioc_stop
+import libzfs
 
 
 class IOCDestroy(object):
@@ -42,8 +41,7 @@ class IOCDestroy(object):
         self.pool = iocage.lib.ioc_json.IOCJson(
             exit_on_error=exit_on_error).json_get_value("pool")
         self.iocroot = iocage.lib.ioc_json.IOCJson(
-            self.pool, exit_on_error=exit_on_error).json_get_value(
-            "iocroot")
+            self.pool, exit_on_error=exit_on_error).json_get_value("iocroot")
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.ds = self.zfs.get_dataset
 
@@ -52,8 +50,10 @@ class IOCDestroy(object):
         for dataset in datasets.dependents:
             if "jails" not in dataset.name:
                 continue
+
             if dataset.type != libzfs.DatasetType.FILESYSTEM:
                 continue
+
             if dataset.properties["mountpoint"].value == 'legacy':
                 continue
 
@@ -81,6 +81,7 @@ class IOCDestroy(object):
         except libzfs.ZFSException as err:
             # This is either not mounted or doesn't exist anymore,
             # we don't care either way.
+
             if err.code != libzfs.Error.NOENT:
                 raise
             path = None
@@ -95,16 +96,21 @@ class IOCDestroy(object):
                     os.remove(file)
 
             # Dangling mounts are bad...mmkay?
-            su.Popen(["umount", "-afF", f"{umount_path}/fstab"],
-                     stderr=su.PIPE).communicate()
-            su.Popen(["umount", "-f", f"{umount_path}/root/dev/fd"],
-                     stderr=su.PIPE).communicate()
-            su.Popen(["umount", "-f", f"{umount_path}/root/dev"],
-                     stderr=su.PIPE).communicate()
-            su.Popen(["umount", "-f", f"{umount_path}/root/proc"],
-                     stderr=su.PIPE).communicate()
-            su.Popen(["umount", "-f", f"{umount_path}/root/compat/linux/proc"],
-                     stderr=su.PIPE).communicate()
+            su.Popen(
+                ["umount", "-afF", f"{umount_path}/fstab"],
+                stderr=su.PIPE).communicate()
+            su.Popen(
+                ["umount", "-f", f"{umount_path}/root/dev/fd"],
+                stderr=su.PIPE).communicate()
+            su.Popen(
+                ["umount", "-f", f"{umount_path}/root/dev"],
+                stderr=su.PIPE).communicate()
+            su.Popen(
+                ["umount", "-f", f"{umount_path}/root/proc"],
+                stderr=su.PIPE).communicate()
+            su.Popen(
+                ["umount", "-f", f"{umount_path}/root/compat/linux/proc"],
+                stderr=su.PIPE).communicate()
 
         if not snapshot and \
                 any(_type in dataset.name for _type
@@ -124,6 +130,7 @@ class IOCDestroy(object):
 
     def __destroy_dataset__(self, dataset):
         """Destroys the given datasets and snapshots."""
+
         if dataset.type == libzfs.DatasetType.FILESYSTEM:
             origin = dataset.properties["origin"].value
 
@@ -146,6 +153,7 @@ class IOCDestroy(object):
             datasets = self.ds(path)
         except libzfs.ZFSException:
             # Dataset can't be found, we don't care
+
             return
 
         single = True if len(list(datasets.dependents)) == 0 else False
@@ -179,6 +187,7 @@ class IOCDestroy(object):
                 except libzfs.ZFSException as err:
                     # This is either not mounted or doesn't exist anymore,
                     # we don't care either way.
+
                     if err.code == libzfs.Error.NOENT:
                         continue
                     else:
@@ -193,6 +202,7 @@ class IOCDestroy(object):
 
         if clean:
             self.__destroy_parse_datasets__(path)
+
             return
 
         try:
