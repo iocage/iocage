@@ -29,8 +29,6 @@ import os
 import subprocess as su
 import uuid
 
-import libzfs
-
 import iocage.lib.ioc_clean as ioc_clean
 import iocage.lib.ioc_common as ioc_common
 import iocage.lib.ioc_create as ioc_create
@@ -43,6 +41,7 @@ import iocage.lib.ioc_json as ioc_json
 import iocage.lib.ioc_list as ioc_list
 import iocage.lib.ioc_start as ioc_start
 import iocage.lib.ioc_stop as ioc_stop
+import libzfs
 
 
 class PoolAndDataset(object):
@@ -57,6 +56,7 @@ class PoolAndDataset(object):
         Return:
                 string: with the pool name.
         """
+
         return self.pool
 
     def get_datasets(self, option_type):
@@ -67,9 +67,11 @@ class PoolAndDataset(object):
                 generator: from libzfs.ZFSDataset.
         """
         __types = {
-            'all'     : '/iocage/jails', 'base': '/iocage/releases',
-            'template': '/iocage/templates', 'uuid': '/iocage/jails',
-            'root'    : '/iocage',
+            'all': '/iocage/jails',
+            'base': '/iocage/releases',
+            'template': '/iocage/templates',
+            'uuid': '/iocage/jails',
+            'root': '/iocage',
         }
 
         if option_type in __types.keys():
@@ -83,12 +85,18 @@ class PoolAndDataset(object):
         Return:
                 string: with the iocroot name.
         """
+
         return ioc_json.IOCJson(self.pool).json_get_value("iocroot")
 
 
 class IOCage(object):
-    def __init__(self, jail=None, rc=False, callback=None,
-                 silent=False, activate=False, skip_jails=False,
+    def __init__(self,
+                 jail=None,
+                 rc=False,
+                 callback=None,
+                 silent=False,
+                 activate=False,
+                 skip_jails=False,
                  exit_on_error=False):
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.exit_on_error = exit_on_error
@@ -148,15 +156,20 @@ class IOCage(object):
             jail_order[jail] = int(priority)
 
             # This removes having to grab all the JSON again later.
+
             if boot == 'on':
                 boot_order[jail] = int(priority)
 
             jail_order = collections.OrderedDict(
-                sorted(jail_order.items(), key=operator.itemgetter(1),
-                       reverse=_reverse))
+                sorted(
+                    jail_order.items(),
+                    key=operator.itemgetter(1),
+                    reverse=_reverse))
             boot_order = collections.OrderedDict(
-                sorted(boot_order.items(), key=operator.itemgetter(1),
-                       reverse=_reverse))
+                sorted(
+                    boot_order.items(),
+                    key=operator.itemgetter(1),
+                    reverse=_reverse))
 
         if self.rc:
             self.__rc__(boot_order, action)
@@ -203,6 +216,7 @@ class IOCage(object):
         Return:
                 tuple: The jails uuid, path
         """
+
         if os.path.isdir(f"{self.iocroot}/jails/{self.jail}"):
             path = f"{self.iocroot}/jails/{self.jail}"
 
@@ -218,8 +232,11 @@ class IOCage(object):
                 self.jails = self.list("uuid")
 
             # We got a partial, time to search.
-            _jail = {uuid: path for (uuid, path) in self.jails.items() if
-                     uuid.startswith(self.jail)}
+            _jail = {
+                uuid: path
+                for (uuid, path) in self.jails.items()
+                if uuid.startswith(self.jail)
+            }
 
             if len(_jail) == 1:
                 uuid, path = next(iter(_jail.items()))
@@ -231,18 +248,24 @@ class IOCage(object):
                 for u, p in sorted(_jail.items()):
                     msg += f"\n  {u} ({p})"
 
-                ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": msg
-                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": msg
+                    },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
                     silent=self.silent)
             else:
                 msg = f"{self.jail} not found!"
 
-                ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": msg
-                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": msg
+                    },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
                     silent=self.silent)
 
     @staticmethod
@@ -251,14 +274,15 @@ class IOCage(object):
         Return:
             tuple: True if error with a message, or False/None
         """
+
         if _type in ('jail', 'plugin'):
             return False, None
         elif _type == 'basejail':
             return (True, "Please run \"iocage migrate\" before trying to"
-                          f" start {uuid}")
+                    f" start {uuid}")
         elif _type == 'template':
             return (True, "Please convert back to a jail before trying to"
-                          f" start {uuid}")
+                    f" start {uuid}")
         else:
             return True, f"{_type} is not a supported jail type."
 
@@ -304,20 +328,27 @@ class IOCage(object):
                 if pool.status != "UNAVAIL":
                     match = True
                 else:
-                    ioc_common.logit({
-                        "level"  : "EXCEPTION",
-                        "message": f"ZFS pool '{zpool}' is UNAVAIL!\nPlease"
-                                   f" check zpool status {zpool} for more"
-                                   " information."
-                    }, exit_on_error=self.exit_on_error,
+                    ioc_common.logit(
+                        {
+                            "level":
+                            "EXCEPTION",
+                            "message":
+                            f"ZFS pool '{zpool}' is UNAVAIL!\nPlease"
+                            f" check zpool status {zpool} for more"
+                            " information."
+                        },
+                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
 
         if not match:
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": f"ZFS pool '{zpool}' not found!"
-            }, exit_on_error=self.exit_on_error, _callback=self.callback,
+            ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": f"ZFS pool '{zpool}' not found!"
+                },
+                exit_on_error=self.exit_on_error,
+                _callback=self.callback,
                 silent=self.silent)
 
         for pool in pools:
@@ -341,6 +372,7 @@ class IOCage(object):
 
         # We may be getting ';', '&&' and so forth. Adding the shell for
         # safety.
+
         if len(command) == 1:
             command = ["/bin/sh", "-c"] + command
 
@@ -348,103 +380,140 @@ class IOCage(object):
         devfs_stderr = self.__mount__(f"{path}/root/dev", "devfs")
 
         if devfs_stderr:
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": "Mounting devfs failed!"
-            }, exit_on_error=self.exit_on_error, _callback=self.callback,
+            ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": "Mounting devfs failed!"
+                },
+                exit_on_error=self.exit_on_error,
+                _callback=self.callback,
                 silent=self.silent)
 
         fstab_stderr = self.__mount__(f"{path}/fstab", "fstab")
 
         if fstab_stderr:
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": "Mounting fstab failed!"
-            }, exit_on_error=self.exit_on_error, _callback=self.callback,
+            ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": "Mounting fstab failed!"
+                },
+                exit_on_error=self.exit_on_error,
+                _callback=self.callback,
                 silent=self.silent)
 
         chroot = su.Popen(["chroot", f"{path}/root"] + command)
         chroot.communicate()
 
         udevfs_stderr = self.__umount__(f"{path}/root/dev", "devfs")
+
         if udevfs_stderr:
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": "Unmounting devfs failed!"
-            }, exit_on_error=self.exit_on_error, _callback=self.callback,
+            ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": "Unmounting devfs failed!"
+                },
+                exit_on_error=self.exit_on_error,
+                _callback=self.callback,
                 silent=self.silent)
 
         ufstab_stderr = self.__umount__(f"{path}/fstab", "fstab")
+
         if ufstab_stderr:
             if b"fstab reading failure\n" in ufstab_stderr:
                 # By default our fstab is empty and will throw this error.
                 pass
             else:
-                ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": "Unmounting fstab failed!"
-                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": "Unmounting fstab failed!"
+                    },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
                     silent=self.silent)
 
         if chroot.returncode:
-            ioc_common.logit({
-                "level"  : "WARNING",
-                "message": "Chroot had a non-zero exit code!"
-            },
+            ioc_common.logit(
+                {
+                    "level": "WARNING",
+                    "message": "Chroot had a non-zero exit code!"
+                },
                 _callback=self.callback,
                 silent=self.silent)
 
     def clean(self, d_type):
         """Destroys all of a specified dataset types."""
+
         if d_type == "jails":
-            ioc_clean.IOCClean(silent=self.silent,
-                               exit_on_error=self.exit_on_error).clean_jails()
-            ioc_common.logit({
-                "level"  : "INFO",
-                "message": "All iocage jail datasets have been destroyed."
-            },
+            ioc_clean.IOCClean(
+                silent=self.silent,
+                exit_on_error=self.exit_on_error).clean_jails()
+            ioc_common.logit(
+                {
+                    "level": "INFO",
+                    "message": "All iocage jail datasets have been destroyed."
+                },
                 _callback=self.callback,
                 silent=self.silent)
         elif d_type == "all":
-            ioc_clean.IOCClean(silent=self.silent,
-                               exit_on_error=self.exit_on_error).clean_all()
-            ioc_common.logit({
-                "level"  : "INFO",
-                "message": "All iocage datasets have been destroyed."
-            },
+            ioc_clean.IOCClean(
+                silent=self.silent,
+                exit_on_error=self.exit_on_error).clean_all()
+            ioc_common.logit(
+                {
+                    "level": "INFO",
+                    "message": "All iocage datasets have been destroyed."
+                },
                 _callback=self.callback,
                 silent=self.silent)
         elif d_type == "release":
             ioc_clean.IOCClean(
                 silent=self.silent,
                 exit_on_error=self.exit_on_error).clean_releases()
-            ioc_common.logit({
-                "level"  : "INFO",
-                "message": "All iocage RELEASE and jail datasets have been"
-                           " destroyed."
-            },
+            ioc_common.logit(
+                {
+                    "level":
+                    "INFO",
+                    "message":
+                    "All iocage RELEASE and jail datasets have been"
+                    " destroyed."
+                },
                 _callback=self.callback,
                 silent=self.silent)
         elif d_type == "template":
             ioc_clean.IOCClean(
                 silent=self.silent,
                 exit_on_error=self.exit_on_error).clean_templates()
-            ioc_common.logit({
-                "level"  : "INFO",
-                "message": "All iocage template datasets have been destroyed."
-            },
+            ioc_common.logit(
+                {
+                    "level": "INFO",
+                    "message":
+                    "All iocage template datasets have been destroyed."
+                },
                 _callback=self.callback,
                 silent=self.silent)
         else:
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": "Please specify a dataset type to clean!"
-            }, exit_on_error=self.exit_on_error, _callback=self.callback,
+            ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": "Please specify a dataset type to clean!"
+                },
+                exit_on_error=self.exit_on_error,
+                _callback=self.callback,
                 silent=self.silent)
 
-    def create(self, release, props, count=0, pkglist=None, template=False,
-               short=False, _uuid=None, basejail=False, empty=False,
-               clone=None, skip_batch=False):
+    def create(self,
+               release,
+               props,
+               count=0,
+               pkglist=None,
+               template=False,
+               short=False,
+               _uuid=None,
+               basejail=False,
+               empty=False,
+               clone=None,
+               skip_batch=False):
         """Creates the jail dataset"""
         count = 0 if count == 1 and not skip_batch else count
 
@@ -452,19 +521,29 @@ class IOCage(object):
             _uuid = _uuid[:8]
 
             if len(_uuid) != 8:
-                ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": "Need a minimum of 8 characters to use --short"
-                               " (-s) and --uuid (-u) together!"
-                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                ioc_common.logit(
+                    {
+                        "level":
+                        "EXCEPTION",
+                        "message":
+                        "Need a minimum of 8 characters to use --short"
+                        " (-s) and --uuid (-u) together!"
+                    },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
                     silent=self.silent)
 
         if not template and not release and not empty and not clone:
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": "Must supply either --template (-t) or"
-                           " --release (-r)!"
-            }, exit_on_error=self.exit_on_error, _callback=self.callback,
+            ioc_common.logit(
+                {
+                    "level":
+                    "EXCEPTION",
+                    "message":
+                    "Must supply either --template (-t) or"
+                    " --release (-r)!"
+                },
+                exit_on_error=self.exit_on_error,
+                _callback=self.callback,
                 silent=self.silent)
 
         if not os.path.isdir(
@@ -478,18 +557,26 @@ class IOCage(object):
                 hardened = False
 
             ioc_fetch.IOCFetch(
-                release, hardened=hardened, silent=self.silent,
+                release,
+                hardened=hardened,
+                silent=self.silent,
                 exit_on_error=self.exit_on_error).fetch_release()
 
         if clone:
             clone_uuid, _ = self.__check_jail_existence__()
             status, _ = self.list("jid", uuid=clone_uuid)
+
             if status:
-                ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": f"Jail: {self.jail} must not be running to be"
-                               " cloned!"
-                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                ioc_common.logit(
+                    {
+                        "level":
+                        "EXCEPTION",
+                        "message":
+                        f"Jail: {self.jail} must not be running to be"
+                        " cloned!"
+                    },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
                     silent=self.silent)
 
             release = clone_uuid
@@ -508,15 +595,31 @@ class IOCage(object):
                         # This can probably be smarter
                         count_uuid = f"{_uuid}_{j}"
 
-                    self.create(release, props, j, pkglist=pkglist,
-                                template=template, short=short,
-                                _uuid=count_uuid, basejail=basejail,
-                                empty=empty, clone=clone, skip_batch=True)
+                    self.create(
+                        release,
+                        props,
+                        j,
+                        pkglist=pkglist,
+                        template=template,
+                        short=short,
+                        _uuid=count_uuid,
+                        basejail=basejail,
+                        empty=empty,
+                        clone=clone,
+                        skip_batch=True)
             else:
                 ioc_create.IOCCreate(
-                    release, props, count, pkglist, silent=self.silent,
-                    template=template, short=short, basejail=basejail,
-                    empty=empty, uuid=_uuid, clone=clone,
+                    release,
+                    props,
+                    count,
+                    pkglist,
+                    silent=self.silent,
+                    template=template,
+                    short=short,
+                    basejail=basejail,
+                    empty=empty,
+                    uuid=_uuid,
+                    clone=clone,
                     exit_on_error=self.exit_on_error).create_jail()
         except RuntimeError:
             raise
@@ -527,29 +630,32 @@ class IOCage(object):
         """Destroy supplied RELEASE and the download dataset if asked"""
         path = f"{self.pool}/iocage/releases/{self.jail}"
 
-        ioc_common.logit({
-            "level"  : "INFO",
-            "message": f"Destroying RELEASE dataset: {self.jail}"
-        },
+        ioc_common.logit(
+            {
+                "level": "INFO",
+                "message": f"Destroying RELEASE dataset: {self.jail}"
+            },
             _callback=self.callback,
             silent=self.silent)
 
         ioc_destroy.IOCDestroy(
-            exit_on_error=self.exit_on_error
-        ).__destroy_parse_datasets__(path, stop=False)
+            exit_on_error=self.exit_on_error).__destroy_parse_datasets__(
+                path, stop=False)
 
         if download:
             path = f"{self.pool}/iocage/download/{self.jail}"
-            ioc_common.logit({
-                "level"  : "INFO",
-                "message": f"Destroying RELEASE download dataset: {self.jail}"
-            },
+            ioc_common.logit(
+                {
+                    "level": "INFO",
+                    "message":
+                    f"Destroying RELEASE download dataset: {self.jail}"
+                },
                 _callback=self.callback,
                 silent=self.silent)
 
             ioc_destroy.IOCDestroy(
-                exit_on_error=self.exit_on_error
-            ).__destroy_parse_datasets__(path, stop=False)
+                exit_on_error=self.exit_on_error).__destroy_parse_datasets__(
+                    path, stop=False)
 
     def destroy_jail(self):
         """
@@ -566,22 +672,26 @@ class IOCage(object):
                 path = f"{self.pool}/iocage/jails/{uuid}"
 
                 if uuid == self.jail:
-                    ioc_destroy.IOCDestroy(
-                        exit_on_error=self.exit_on_error
-                    ).__destroy_parse_datasets__(path, stop=False)
+                    ioc_destroy.IOCDestroy(exit_on_error=self.exit_on_error
+                                           ).__destroy_parse_datasets__(
+                                               path, stop=False)
 
-                    ioc_common.logit({
-                        "level"  : "INFO",
-                        "message": f"{uuid} destroyed"
-                    },
+                    ioc_common.logit(
+                        {
+                            "level": "INFO",
+                            "message": f"{uuid} destroyed"
+                        },
                         _callback=self.callback,
                         silent=self.silent)
+
                     return
                 else:
-                    ioc_common.logit({
-                        "level"  : "EXCEPTION",
-                        "message": err
-                    }, exit_on_error=self.exit_on_error,
+                    ioc_common.logit(
+                        {
+                            "level": "EXCEPTION",
+                            "message": err
+                        },
+                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
         except FileNotFoundError as err:
@@ -590,32 +700,37 @@ class IOCage(object):
             path = f"{self.pool}/iocage/jails/{uuid}"
 
             if uuid == self.jail:
-                ioc_destroy.IOCDestroy(
-                    exit_on_error=self.exit_on_error
-                ).__destroy_parse_datasets__(path)
+                ioc_destroy.IOCDestroy(exit_on_error=self.exit_on_error
+                                       ).__destroy_parse_datasets__(path)
+
                 return
             else:
-                ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": err
-                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": err
+                    },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
                     silent=self.silent)
 
         uuid, path = self.__check_jail_existence__()
         status, _ = self.list("jid", uuid=uuid)
 
         if status:
-            ioc_common.logit({
-                "level"  : "INFO",
-                "message": f"Stopping {uuid}"
-            },
+            ioc_common.logit(
+                {
+                    "level": "INFO",
+                    "message": f"Stopping {uuid}"
+                },
                 _callback=self.callback,
                 silent=self.silent)
 
-        ioc_common.logit({
-            "level"  : "INFO",
-            "message": f"Destroying {uuid}"
-        },
+        ioc_common.logit(
+            {
+                "level": "INFO",
+                "message": f"Destroying {uuid}"
+            },
             _callback=self.callback,
             silent=self.silent)
 
@@ -645,20 +760,31 @@ class IOCage(object):
             used = zconf["used"].value
             available = zconf["available"].value
 
-            jail_list.append([jail, compressratio, reservation, quota, used,
-                              available])
+            jail_list.append(
+                [jail, compressratio, reservation, quota, used, available])
 
         return jail_list
 
-    def exec(self, command, host_user="root", jail_user=None,
-             console=False, pkg=False):
+    def exec(self,
+             command,
+             host_user="root",
+             jail_user=None,
+             console=False,
+             pkg=False,
+             return_msg=False):
         """Executes a command in the jail as the supplied users."""
+
         if host_user and jail_user:
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": "Please only specify either host_user or"
-                           " jail_user, not both!"
-            }, exit_on_error=self.exit_on_error, _callback=self.callback,
+            ioc_common.logit(
+                {
+                    "level":
+                    "EXCEPTION",
+                    "message":
+                    "Please only specify either host_user or"
+                    " jail_user, not both!"
+                },
+                exit_on_error=self.exit_on_error,
+                _callback=self.callback,
                 silent=self.silent)
 
         uuid, path = self.__check_jail_existence__()
@@ -669,11 +795,16 @@ class IOCage(object):
             dhcp = self.get("dhcp")
 
             if ip4_addr == "none" and ip6_addr == "none" and dhcp != "on":
-                ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": "The jail requires an IP address before you "
-                               "can use pkg. Set one and restart the jail."
-                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                ioc_common.logit(
+                    {
+                        "level":
+                        "EXCEPTION",
+                        "message":
+                        "The jail requires an IP address before you "
+                        "can use pkg. Set one and restart the jail."
+                    },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
                     silent=self.silent)
 
             status, jid = self.list("jid", uuid=uuid)
@@ -685,24 +816,38 @@ class IOCage(object):
             command = ["pkg", "-j", jid] + list(command)
 
         msg, err = ioc_exec.IOCExec(
-            command, uuid, path, host_user, jail_user,
-            console=console, silent=self.silent,
-            exit_on_error=self.exit_on_error, pkg=pkg).exec_jail()
+            command,
+            uuid,
+            path,
+            host_user,
+            jail_user,
+            console=console,
+            silent=self.silent,
+            exit_on_error=self.exit_on_error,
+            return_msg=return_msg,
+            pkg=pkg).exec_jail()
 
         if not console:
             if err:
-                ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": err
-                }, exit_on_error=self.exit_on_error, _callback=self.callback,
-                    silent=self.silent)
-            else:
-                ioc_common.logit({
-                    "level"  : "INFO",
-                    "message": msg
-                },
+                ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": err
+                    },
+                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
+            else:
+                ioc_common.logit(
+                    {
+                        "level": "INFO",
+                        "message": msg
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
+
+        if return_msg:
+            return msg
 
     def export(self):
         """Will export a jail"""
@@ -710,16 +855,20 @@ class IOCage(object):
         status, _ = self.list("jid", uuid=uuid)
 
         if status:
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": f"{uuid} is runnning, stop the jail before"
-                           " exporting!"
-            }, exit_on_error=self.exit_on_error, _callback=self.callback,
+            ioc_common.logit(
+                {
+                    "level":
+                    "EXCEPTION",
+                    "message":
+                    f"{uuid} is runnning, stop the jail before"
+                    " exporting!"
+                },
+                exit_on_error=self.exit_on_error,
+                _callback=self.callback,
                 silent=self.silent)
 
-        ioc_image.IOCImage(
-            exit_on_error=self.exit_on_error
-        ).export_jail(uuid, path)
+        ioc_image.IOCImage(exit_on_error=self.exit_on_error).export_jail(
+            uuid, path)
 
     def fetch(self, **kwargs):
         """Fetches a release or plugin."""
@@ -750,22 +899,33 @@ class IOCage(object):
             kwargs["hardened"] = False
 
         if plugins or plugin_file:
-            ip = [x for x in props if x.startswith("ip4_addr") or
-                  x.startswith("ip6_addr")]
+            ip = [
+                x for x in props
+                if x.startswith("ip4_addr") or x.startswith("ip6_addr")
+            ]
+
             if not ip and "dhcp=on" not in props:
-                ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": "An IP address is needed to fetch a plugin!\n"
-                               "Please specify ip(4|6)"
-                               "_addr=\"[INTERFACE|]IPADDRESS\"!"
-                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                ioc_common.logit(
+                    {
+                        "level":
+                        "EXCEPTION",
+                        "message":
+                        "An IP address is needed to fetch a plugin!\n"
+                        "Please specify ip(4|6)"
+                        "_addr=\"[INTERFACE|]IPADDRESS\"!"
+                    },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
                     silent=self.silent)
 
             if plugins:
                 ioc_fetch.IOCFetch(
-                    release, plugin=name,
+                    release,
+                    plugin=name,
                     exit_on_error=self.exit_on_error,
-                    **kwargs).fetch_plugin_index(props, accept_license=accept)
+                    **kwargs).fetch_plugin_index(
+                        props, accept_license=accept)
+
                 return
 
             if count == 1:
@@ -782,8 +942,17 @@ class IOCage(object):
                 release, exit_on_error=self.exit_on_error,
                 **kwargs).fetch_release()
 
-    def fstab(self, action, source, destination, fstype, options, dump, _pass,
-              index=None, add_path=False, header=False):
+    def fstab(self,
+              action,
+              source,
+              destination,
+              fstype,
+              options,
+              dump,
+              _pass,
+              index=None,
+              add_path=False,
+              header=False):
         """Adds an fstab entry for a jail"""
         uuid, path = self.__check_jail_existence__()
 
@@ -792,11 +961,14 @@ class IOCage(object):
                 destination = f"{self.iocroot}/jails/{uuid}/root{destination}"
 
             if len(destination) > 88:
-                ioc_common.logit({
-                    "level"  : "WARNING",
-                    "message": "The destination's mountpoint exceeds 88 "
-                               "characters, this may cause failure!"
-                },
+                ioc_common.logit(
+                    {
+                        "level":
+                        "WARNING",
+                        "message":
+                        "The destination's mountpoint exceeds 88 "
+                        "characters, this may cause failure!"
+                    },
                     _callback=self.callback,
                     silent=self.silent)
         else:
@@ -811,18 +983,36 @@ class IOCage(object):
 
         if action == "list":
             fstab = ioc_fstab.IOCFstab(
-                uuid, action, source, destination, fstype, options, dump,
-                _pass, index=index, header=header, _fstab_list=_fstab_list,
+                uuid,
+                action,
+                source,
+                destination,
+                fstype,
+                options,
+                dump,
+                _pass,
+                index=index,
+                header=header,
+                _fstab_list=_fstab_list,
                 exit_on_error=self.exit_on_error).fstab_list()
 
             return fstab
         else:
-            ioc_fstab.IOCFstab(uuid, action, source, destination, fstype,
-                               options, dump, _pass, index=index,
-                               exit_on_error=self.exit_on_error)
+            ioc_fstab.IOCFstab(
+                uuid,
+                action,
+                source,
+                destination,
+                fstype,
+                options,
+                dump,
+                _pass,
+                index=index,
+                exit_on_error=self.exit_on_error)
 
     def get(self, prop, recursive=False, plugin=False, pool=False):
         """Get a jail property"""
+
         if pool:
             return self.pool
 
@@ -831,12 +1021,14 @@ class IOCage(object):
                 try:
                     return ioc_json.IOCJson(
                         exit_on_error=self.exit_on_error).json_get_value(
-                        prop, default=True)
+                            prop, default=True)
                 except KeyError:
-                    ioc_common.logit({
-                        "level"  : "EXCEPTION",
-                        "message": f"{prop} is not a valid property!"
-                    }, exit_on_error=self.exit_on_error,
+                    ioc_common.logit(
+                        {
+                            "level": "EXCEPTION",
+                            "message": f"{prop} is not a valid property!"
+                        },
+                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
 
@@ -855,7 +1047,7 @@ class IOCage(object):
                 props = ioc_json.IOCJson(
                     path,
                     exit_on_error=self.exit_on_error).json_plugin_get_value(
-                    _prop)
+                        _prop)
 
                 if isinstance(props, dict):
                     return json.dumps(props, indent=4)
@@ -863,20 +1055,22 @@ class IOCage(object):
                     return props[0].decode("utf-8")
             elif prop == "all":
                 props = ioc_json.IOCJson(
-                    path, exit_on_error=self.exit_on_error).json_get_value(
-                    prop)
+                    path,
+                    exit_on_error=self.exit_on_error).json_get_value(prop)
 
                 return props
             else:
                 try:
                     return ioc_json.IOCJson(
-                        path, exit_on_error=self.exit_on_error).json_get_value(
-                        prop)
+                        path,
+                        exit_on_error=self.exit_on_error).json_get_value(prop)
                 except KeyError:
-                    ioc_common.logit({
-                        "level"  : "EXCEPTION",
-                        "message": f"{prop} is not a valid property!"
-                    }, exit_on_error=self.exit_on_error,
+                    ioc_common.logit(
+                        {
+                            "level": "EXCEPTION",
+                            "message": f"{prop} is not a valid property!"
+                        },
+                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
         else:
@@ -892,30 +1086,28 @@ class IOCage(object):
                         else:
                             state = "down"
 
-                        jail_list.append({
-                            uuid: state
-                        })
+                        jail_list.append({uuid: state})
                     elif prop == "all":
                         props = ioc_json.IOCJson(
                             path,
                             exit_on_error=self.exit_on_error).json_get_value(
-                            prop)
+                                prop)
 
-                        jail_list.append({
-                            uuid: props
-                        })
+                        jail_list.append({uuid: props})
                     else:
                         jail_list.append({
-                            uuid: ioc_json.IOCJson(
-                                path,
-                                exit_on_error=self.exit_on_error
-                            ).json_get_value(prop)
+                            uuid:
+                            ioc_json.IOCJson(
+                                path, exit_on_error=self.exit_on_error)
+                            .json_get_value(prop)
                         })
                 except KeyError:
-                    ioc_common.logit({
-                        "level"  : "EXCEPTION",
-                        "message": f"{prop} is not a valid property!"
-                    }, exit_on_error=self.exit_on_error,
+                    ioc_common.logit(
+                        {
+                            "level": "EXCEPTION",
+                            "message": f"{prop} is not a valid property!"
+                        },
+                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
 
@@ -926,16 +1118,27 @@ class IOCage(object):
         ioc_image.IOCImage(
             exit_on_error=self.exit_on_error).import_jail(self.jail)
 
-    def list(self, lst_type, header=False, long=False, sort="name", uuid=None,
-             plugin=False, quick=False):
+    def list(self,
+             lst_type,
+             header=False,
+             long=False,
+             sort="name",
+             uuid=None,
+             plugin=False,
+             quick=False):
         """Returns a list of lst_type"""
+
         if lst_type == "jid":
             return ioc_list.IOCList().list_get_jid(uuid)
 
-        return ioc_list.IOCList(lst_type, header, long, sort, plugin=plugin,
-                                quick=quick,
-                                exit_on_error=self.exit_on_error
-                                ).list_datasets()
+        return ioc_list.IOCList(
+            lst_type,
+            header,
+            long,
+            sort,
+            plugin=plugin,
+            quick=quick,
+            exit_on_error=self.exit_on_error).list_datasets()
 
     def rename(self, new_name):
         uuid, _ = self.__check_jail_existence__()
@@ -956,6 +1159,7 @@ class IOCage(object):
             dependents = data_dataset.dependents
 
             self.set("jailed=off", zfs=True, zfs_dataset=path)
+
             for dep in dependents:
                 if dep.type != "FILESYSTEM":
                     continue
@@ -964,6 +1168,7 @@ class IOCage(object):
                 self.set("jailed=off", zfs=True, zfs_dataset=d)
         except libzfs.ZFSException as err:
             # The dataset doesn't exist, that's OK
+
             if err.code == libzfs.Error.NOENT:
                 pass
             else:
@@ -976,13 +1181,15 @@ class IOCage(object):
             raise
 
         # Easier.
-        su.check_call(["zfs", "rename", "-r",
-                       f"{self.pool}/iocage@{uuid}", f"@{new_name}"])
+        su.check_call([
+            "zfs", "rename", "-r", f"{self.pool}/iocage@{uuid}", f"@{new_name}"
+        ])
 
-        ioc_common.logit({
-            "level"  : "INFO",
-            "message": f"Jail: {self.jail} renamed to {new_name}"
-        },
+        ioc_common.logit(
+            {
+                "level": "INFO",
+                "message": f"Jail: {self.jail} renamed to {new_name}"
+            },
             _callback=self.callback,
             silent=self.silent)
 
@@ -1008,17 +1215,20 @@ class IOCage(object):
     def rollback(self, name):
         """Rolls back a jail and all datasets to the supplied snapshot"""
         uuid, path = self.__check_jail_existence__()
-        conf = ioc_json.IOCJson(path, silent=self.silent,
-                                exit_on_error=self.exit_on_error
-                                ).json_load()
+        conf = ioc_json.IOCJson(
+            path, silent=self.silent,
+            exit_on_error=self.exit_on_error).json_load()
         status, _ = self.list("jid", uuid=uuid)
 
         if status:
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": f"Please stop {uuid} before trying to"
-                           " rollback!"
-            }, exit_on_error=self.exit_on_error, _callback=self.callback,
+            ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": f"Please stop {uuid} before trying to"
+                    " rollback!"
+                },
+                exit_on_error=self.exit_on_error,
+                _callback=self.callback,
                 silent=self.silent)
 
         if conf["template"] == "yes":
@@ -1030,10 +1240,13 @@ class IOCage(object):
             datasets = self.zfs.get_dataset(target)
             self.zfs.get_snapshot(f"{datasets.name}@{name}")
         except libzfs.ZFSException as err:
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": err
-            }, exit_on_error=self.exit_on_error, _callback=self.callback,
+            ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": err
+                },
+                exit_on_error=self.exit_on_error,
+                _callback=self.callback,
                 silent=self.silent)
 
         for dataset in datasets.dependents:
@@ -1043,14 +1256,19 @@ class IOCage(object):
         # datasets is actually the parent.
         self.zfs.get_snapshot(f"{datasets.name}@{name}").rollback()
 
-        ioc_common.logit({
-            "level"  : "INFO",
-            "message": f"Rolled back to: {target}"
-        },
+        ioc_common.logit(
+            {
+                "level": "INFO",
+                "message": f"Rolled back to: {target}"
+            },
             _callback=self.callback,
             silent=self.silent)
 
-    def set(self, prop, plugin=False, rename=False, zfs=False,
+    def set(self,
+            prop,
+            plugin=False,
+            rename=False,
+            zfs=False,
             zfs_dataset=None):
         """Sets a property for a jail or plugin"""
         # The cli check prevents users changing unwanted properties. We do
@@ -1060,66 +1278,74 @@ class IOCage(object):
         try:
             key, value = prop.split("=", 1)
         except ValueError:
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": f"{prop} is is missing a value!"
-            },
+            ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": f"{prop} is is missing a value!"
+                },
                 exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
         if self.jail == "default":
-            ioc_json.IOCJson(exit_on_error=self.exit_on_error
-                             ).json_check_default_config()
+            ioc_json.IOCJson(
+                exit_on_error=self.exit_on_error).json_check_default_config()
             default = True
         else:
             default = False
 
         if default:
-            ioc_json.IOCJson(self.iocroot,
-                             exit_on_error=self.exit_on_error).json_set_value(
-                prop, default=True)
+            ioc_json.IOCJson(
+                self.iocroot, exit_on_error=self.exit_on_error).json_set_value(
+                    prop, default=True)
 
         uuid, path = self.__check_jail_existence__()
-        iocjson = ioc_json.IOCJson(path,
-                                   cli=cli,
-                                   exit_on_error=self.exit_on_error,
-                                   callback=self.callback,
-                                   silent=self.silent)
+        iocjson = ioc_json.IOCJson(
+            path,
+            cli=cli,
+            exit_on_error=self.exit_on_error,
+            callback=self.callback,
+            silent=self.silent)
 
         if plugin:
             _prop = prop.split(".")
             iocjson.json_plugin_set_value(_prop)
+
             return
 
         if zfs:
             if zfs_dataset is None:
-                ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": "Setting a zfs property requires zfs_dataset."
-                },
+                ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message":
+                        "Setting a zfs property requires zfs_dataset."
+                    },
                     exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
 
             zfs_key, zfs_value = prop.split("=", 2)
             iocjson.zfs_set_property(zfs_dataset, zfs_key, zfs_value)
+
             return
 
         if "template" in key:
             if "templates/" in path and prop != "template=no":
-                ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": f"{uuid} is already a template!"
-                },
+                ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": f"{uuid} is already a template!"
+                    },
                     exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
             elif "template" not in path and prop != "template=yes":
-                ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": f"{uuid} is already a jail!"
-                },
+                ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": f"{uuid} is already a jail!"
+                    },
                     exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
@@ -1133,10 +1359,11 @@ class IOCage(object):
             iocjson.json_set_value(prop)
         except KeyError:
             _prop = prop.partition("=")[0]
-            ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": f"{_prop} is not a valid property!"
-            },
+            ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": f"{_prop} is not a valid property!"
+                },
                 exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
@@ -1148,8 +1375,9 @@ class IOCage(object):
     def snap_list(self, long=True, _sort="created"):
         """Gathers a list of snapshots and returns it"""
         uuid, path = self.__check_jail_existence__()
-        conf = ioc_json.IOCJson(path, silent=self.silent,
-                                exit_on_error=self.exit_on_error).json_load()
+        conf = ioc_json.IOCJson(
+            path, silent=self.silent,
+            exit_on_error=self.exit_on_error).json_load()
         snap_list = []
         snap_list_temp = []
         snap_list_root = []
@@ -1171,6 +1399,7 @@ class IOCage(object):
                 root = True
             elif root_snap_name != uuid:
                 # basejail datasets.
+
                 continue
 
             creation = snap.properties["creation"].value
@@ -1184,6 +1413,7 @@ class IOCage(object):
         for parent in snap_list_temp:
             # We want the /root snapshots immediately after the parent ones
             name = parent[0]
+
             for root in snap_list_root:
                 _name = root[0]
 
@@ -1202,12 +1432,14 @@ class IOCage(object):
         uuid, path = self.__check_jail_existence__()
 
         # If they don't supply a snapshot name, we will use the date.
+
         if not name:
             name = date
 
         # Looks like foo/iocage/jails/df0ef69a-57b6-4480-b1f8-88f7b6febbdf@BAR
-        conf = ioc_json.IOCJson(path, silent=self.silent,
-                                exit_on_error=self.exit_on_error).json_load()
+        conf = ioc_json.IOCJson(
+            path, silent=self.silent,
+            exit_on_error=self.exit_on_error).json_load()
 
         if conf["template"] == "yes":
             target = f"{self.pool}/iocage/templates/{uuid}"
@@ -1220,17 +1452,19 @@ class IOCage(object):
             dataset.snapshot(f"{target}@{name}", recursive=True)
         except libzfs.ZFSException as err:
             if err.code == libzfs.Error.EXISTS:
-                ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": "Snapshot already exists!"
-                }, exit_on_error=self.exit_on_error,
+                ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": "Snapshot already exists!"
+                    },
+                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
             else:
                 raise ()
 
         ioc_common.logit({
-            "level"  : "INFO",
+            "level": "INFO",
             "message": f"Snapshot: {target} created."
         })
 
@@ -1241,8 +1475,9 @@ class IOCage(object):
         """
         uuid, path = self.__check_jail_existence__()
         status, jid = self.list("jid", uuid=uuid)
-        conf = ioc_json.IOCJson(path, silent=self.silent,
-                                exit_on_error=self.exit_on_error).json_load()
+        conf = ioc_json.IOCJson(
+            path, silent=self.silent,
+            exit_on_error=self.exit_on_error).json_load()
 
         # These need to be a list.
         exec_start = conf["exec_start"].split()
@@ -1250,53 +1485,60 @@ class IOCage(object):
         exec_fib = conf["exec_fib"]
 
         if status:
-            ioc_common.logit({
-                "level"  : "INFO",
-                "message": f"Soft restarting {uuid} ({self.jail})"
-            },
+            ioc_common.logit(
+                {
+                    "level": "INFO",
+                    "message": f"Soft restarting {uuid} ({self.jail})"
+                },
                 _callback=self.callback,
                 silent=self.silent)
 
-            stop_cmd = ["setfib", exec_fib, "jexec",
-                        f"ioc-{uuid.replace('.', '_')}"] + exec_stop
-            su.Popen(stop_cmd, stdout=su.PIPE,
-                     stderr=su.PIPE).communicate()
+            stop_cmd = [
+                "setfib", exec_fib, "jexec", f"ioc-{uuid.replace('.', '_')}"
+            ] + exec_stop
+            su.Popen(stop_cmd, stdout=su.PIPE, stderr=su.PIPE).communicate()
 
             su.Popen(["pkill", "-j", jid]).communicate()
-            start_cmd = ["setfib", exec_fib, "jexec",
-                         f"ioc-{uuid.replace('.', '_')}"] + exec_start
-            su.Popen(start_cmd, stdout=su.PIPE,
-                     stderr=su.PIPE).communicate()
-            ioc_json.IOCJson(path, silent=True,
-                             exit_on_error=self.exit_on_error).json_set_value(
+            start_cmd = [
+                "setfib", exec_fib, "jexec", f"ioc-{uuid.replace('.', '_')}"
+            ] + exec_start
+            su.Popen(start_cmd, stdout=su.PIPE, stderr=su.PIPE).communicate()
+            ioc_json.IOCJson(
+                path, silent=True, exit_on_error=self.exit_on_error
+            ).json_set_value(
                 f"last_started={datetime.datetime.utcnow().strftime('%F %T')}")
         else:
-            ioc_common.logit({
-                "level"  : "ERROR",
-                "message": f"{self.jail} is not running!"
-            },
+            ioc_common.logit(
+                {
+                    "level": "ERROR",
+                    "message": f"{self.jail} is not running!"
+                },
                 _callback=self.callback,
                 silent=self.silent)
 
     def start(self, jail=None):
         """Checks jails type and existence, then starts the jail"""
+
         if self.rc or self._all:
             if not jail:
                 self.__jail_order__("start")
         else:
             uuid, path = self.__check_jail_existence__()
-            conf = ioc_json.IOCJson(path, silent=self.silent,
-                                    exit_on_error=self.exit_on_error
-                                    ).json_load()
+            conf = ioc_json.IOCJson(
+                path, silent=self.silent,
+                exit_on_error=self.exit_on_error).json_load()
             release = conf["release"].rsplit("-", 1)[0]
             host_release = os.uname()[2].rsplit("-", 1)[0]
 
             if host_release < release:
-                ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": f"\nHost: {host_release} is not greater than"
-                               f" jail: {release}\nThis is unsupported."
-                },
+                ioc_common.logit(
+                    {
+                        "level":
+                        "EXCEPTION",
+                        "message":
+                        f"\nHost: {host_release} is not greater than"
+                        f" jail: {release}\nThis is unsupported."
+                    },
                     exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
@@ -1310,9 +1552,13 @@ class IOCage(object):
                         self.jail = depend
                         self.start()
 
-                ioc_start.IOCStart(uuid, path, conf, silent=self.silent,
-                                   callback=self.callback,
-                                   exit_on_error=self.exit_on_error)
+                ioc_start.IOCStart(
+                    uuid,
+                    path,
+                    conf,
+                    silent=self.silent,
+                    callback=self.callback,
+                    exit_on_error=self.exit_on_error)
 
                 return False, None
             else:
@@ -1324,14 +1570,20 @@ class IOCage(object):
 
     def stop(self, jail=None):
         """Stops the jail."""
+
         if self.rc or self._all:
             if not jail:
                 self.__jail_order__("stop")
         else:
             uuid, path = self.__check_jail_existence__()
-            conf = ioc_json.IOCJson(path, silent=self.silent,
-                                    stop=True,
-                                    exit_on_error=self.exit_on_error
-                                    ).json_load()
-            ioc_stop.IOCStop(uuid, path, conf, silent=self.silent,
-                             exit_on_error=self.exit_on_error)
+            conf = ioc_json.IOCJson(
+                path,
+                silent=self.silent,
+                stop=True,
+                exit_on_error=self.exit_on_error).json_load()
+            ioc_stop.IOCStop(
+                uuid,
+                path,
+                conf,
+                silent=self.silent,
+                exit_on_error=self.exit_on_error)

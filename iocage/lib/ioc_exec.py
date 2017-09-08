@@ -33,9 +33,20 @@ import iocage.lib.ioc_start
 class IOCExec(object):
     """Run jexec with a user inside the specified jail."""
 
-    def __init__(self, command, uuid, path, host_user="root", jail_user=None,
-                 plugin=False, pkg=False, skip=False, console=False,
-                 silent=False, exit_on_error=False, callback=None):
+    def __init__(self,
+                 command,
+                 uuid,
+                 path,
+                 host_user="root",
+                 jail_user=None,
+                 plugin=False,
+                 pkg=False,
+                 skip=False,
+                 console=False,
+                 silent=False,
+                 exit_on_error=False,
+                 return_msg=False,
+                 callback=None):
         self.command = command
         self.uuid = uuid.replace(".", "_")
         self.path = path
@@ -47,6 +58,7 @@ class IOCExec(object):
         self.console = console
         self.silent = silent
         self.exit_on_error = exit_on_error
+        self.return_msg = return_msg
         self.callback = callback
 
     def exec_jail(self):
@@ -60,60 +72,82 @@ class IOCExec(object):
         status, _ = iocage.lib.ioc_list.IOCList().list_get_jid(self.uuid)
         conf = iocage.lib.ioc_json.IOCJson(self.path).json_load()
         exec_fib = conf["exec_fib"]
+
         if not status:
             if not self.plugin and not self.skip:
-                iocage.lib.ioc_common.logit({
-                    "level"  : "INFO",
-                    "message": f"{self.uuid} is not running, starting jail"
-                },
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level": "INFO",
+                        "message": f"{self.uuid} is not running, starting jail"
+                    },
                     _callback=self.callback,
                     silent=self.silent)
 
             if conf["type"] in ("jail", "plugin"):
-                iocage.lib.ioc_start.IOCStart(self.uuid, self.path, conf,
-                                              silent=True)
+                iocage.lib.ioc_start.IOCStart(
+                    self.uuid, self.path, conf, silent=True)
             elif conf["type"] == "basejail":
-                iocage.lib.ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": "Please run \"iocage migrate\" before trying"
-                               f" to start {self.uuid}"
-                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level":
+                        "EXCEPTION",
+                        "message":
+                        "Please run \"iocage migrate\" before trying"
+                        f" to start {self.uuid}"
+                    },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
                     silent=self.silent)
             elif conf["type"] == "template":
-                iocage.lib.ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": "Please convert back to a jail before trying"
-                               f" to start {self.uuid}"
-                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level":
+                        "EXCEPTION",
+                        "message":
+                        "Please convert back to a jail before trying"
+                        f" to start {self.uuid}"
+                    },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
                     silent=self.silent)
             else:
-                iocage.lib.ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": f"{conf['type']} is not a supported jail"
-                               " type."
-                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level":
+                        "EXCEPTION",
+                        "message":
+                        f"{conf['type']} is not a supported jail"
+                        " type."
+                    },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
                     silent=self.silent)
 
-            iocage.lib.ioc_common.logit({
-                "level"  : "INFO",
-                "message": "\nCommand output:"
-            },
+            iocage.lib.ioc_common.logit(
+                {
+                    "level": "INFO",
+                    "message": "\nCommand output:"
+                },
                 _callback=self.callback,
                 silent=self.silent)
 
         if self.console:
             login_flags = conf["login_flags"].split()
-            su.Popen(["setfib", exec_fib, "jexec", f"ioc-{self.uuid}",
-                      "login"] + login_flags).communicate()
+            su.Popen([
+                "setfib", exec_fib, "jexec", f"ioc-{self.uuid}", "login"
+            ] + login_flags).communicate()
 
             return None, False
         else:
             try:
                 stdout = None if not self.silent else su.DEVNULL
+                stdout = su.PIPE if self.return_msg else stdout
 
                 if not self.pkg:
-                    cmd = ["setfib", exec_fib, "jexec", flag, user,
-                           f"ioc-{self.uuid}"] + list(self.command)
+                    cmd = [
+                        "setfib", exec_fib, "jexec", flag, user,
+                        f"ioc-{self.uuid}"
+                    ] + list(self.command)
                 else:
                     cmd = self.command
 
