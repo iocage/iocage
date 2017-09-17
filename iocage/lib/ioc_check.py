@@ -109,10 +109,10 @@ class IOCCheck(object):
             ("1-NOTICE", "*" * 80),
             ("2-WARNING", "fdescfs(5) is not mounted, performance"
                           " may suffer. Please run:"),
-            ("3-INFO", "mount -t fdescfs fdesc /dev/fd"),
+            ("3-INFO", "mount -t fdescfs null /dev/fd"),
             ("4-WARNING", "You can also permanently mount it in"
                           " /etc/fstab with the following entry:"),
-            ("5-INFO", "fdesc /dev/fd  fdescfs  rw  0  0"),
+            ("5-INFO", "fdescfs /dev/fd  fdescfs  rw  0  0"),
             ("6-NOTICE", f"{'*' * 80}\n")
         ])
 
