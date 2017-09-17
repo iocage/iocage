@@ -159,4 +159,4 @@ me:\
         net.link.bridge.pfil_member=0  # Packet filter on the member interface
 - Lots of jails or a big server? Mount `fdescfs`:
 
-        mount -t fdescfs fdesc /dev/fd
+        mount -t fdescfs null /dev/fd
