@@ -57,21 +57,25 @@ def callback(log, exit_on_error=False):
     elif log['level'] == 'NOTICE':
         lgr_stdout.notice(log['message'])
     elif log['level'] == 'EXCEPTION':
-        if not os.isatty(sys.stdout.fileno()) and not exit_on_error:
+        try:
+            if not os.isatty(sys.stdout.fileno()) and not exit_on_error:
+                raise RuntimeError(log['message'])
+            else:
+                lgr_stderr.error(log['message'])
+                raise SystemExit(1)
+        except AttributeError:
+            # They are lacking the fileno object
             raise RuntimeError(log['message'])
-        else:
-            lgr_stderr.error(log['message'])
-            raise SystemExit(1)
 
 
-def logit(content, exit_on_error=False, _callback=None,
-          silent=False):
+def logit(content, exit_on_error=False, _callback=None, silent=False):
     """Helper to check callable status of callback or call ours."""
     level = content["level"]
     msg = content["message"]
 
     if silent and level != "EXCEPTION":
         # They need to see these errors, too bad!
+
         return
 
     # This will log with our callback method if they didn't supply one.
@@ -85,10 +89,7 @@ def raise_sort_error(sort_list, exit_on_error):
     for s in sort_list:
         msg += f"  {s}\n"
 
-    logit({
-        "level"  : "EXCEPTION",
-        "message": msg.rstrip()
-    }, exit_on_error)
+    logit({"level": "EXCEPTION", "message": msg.rstrip()}, exit_on_error)
 
 
 def ioc_sort(caller, s_type, data=None, exit_on_error=False):
@@ -99,27 +100,29 @@ def ioc_sort(caller, s_type, data=None, exit_on_error=False):
         s_type = "name"
 
     sort_funcs = {
-        "jid"     : sort_jid,
-        "name"    : sort_name,
-        "boot"    : sort_boot,
-        "state"   : sort_state,
-        "type"    : sort_type,
-        "release" : sort_release,
-        "ip4"     : sort_ip,
-        "ip6"     : sort_ip6,
+        "jid": sort_jid,
+        "name": sort_name,
+        "boot": sort_boot,
+        "state": sort_state,
+        "type": sort_type,
+        "release": sort_release,
+        "ip4": sort_ip,
+        "ip6": sort_ip6,
         "template": sort_template,
-        "crt"     : sort_crt,
-        "res"     : sort_res,
-        "qta"     : sort_qta,
-        "use"     : sort_use,
-        "ava"     : sort_ava,
-        "created" : sort_crt,
-        "rsize"   : sort_res,
-        "used"    : sort_qta
+        "crt": sort_crt,
+        "res": sort_res,
+        "qta": sort_qta,
+        "use": sort_use,
+        "ava": sort_ava,
+        "created": sort_crt,
+        "rsize": sort_res,
+        "used": sort_qta
     }
 
-    list_full_sorts = ["jid", "name", "boot", "state", "type",
-                       "release", "ip4", "ip6", "template"]
+    list_full_sorts = [
+        "jid", "name", "boot", "state", "type", "release", "ip4", "ip6",
+        "template"
+    ]
     list_short_sorts = ["jid", "name", "state", "release", "ip4"]
     df_sorts = ["name", "crt", "res", "qta", "use", "ava"]
     snaplist_sorts = ["name", "created", "rsize", "used"]
@@ -134,6 +137,7 @@ def ioc_sort(caller, s_type, data=None, exit_on_error=False):
         raise_sort_error(snaplist_sorts, exit_on_error)
 
     # Most calls will use this
+
     if caller == "list_release" and s_type == "release":
         return sort_release(data, split=True)
 
@@ -142,31 +146,37 @@ def ioc_sort(caller, s_type, data=None, exit_on_error=False):
 
 def sort_crt(crt):
     """Sort df by CRT or snaplist by CREATED"""
+
     return crt[1]
 
 
 def sort_res(res):
     """Sort df by RES or snaplist by RSIZE"""
+
     return res[2]
 
 
 def sort_qta(qta):
     """Sort df by QTA or snaplist by USED"""
+
     return qta[3]
 
 
 def sort_use(use):
     """Sort df by USE"""
+
     return use[4]
 
 
 def sort_ava(ava):
     """Sort df by AVA"""
+
     return ava[5]
 
 
 def sort_ip6(ip):
     """Helper for sort_ip"""
+
     return sort_ip(ip, version="6")
 
 
@@ -175,6 +185,7 @@ def sort_ip(ip, version="4"):
     list_length = len(ip)
 
     # Length 10 is list -l, 5 is list
+
     if list_length == 10:
         try:
             ip = ip[7] if version == "4" else ip[8]
@@ -196,6 +207,7 @@ def sort_ip(ip, version="4"):
 
 def sort_type(jail_type):
     """Sort the list by jail type."""
+
     return jail_type[5]
 
 
@@ -204,6 +216,7 @@ def sort_state(state):
     list_length = len(state)
 
     # Length 10 is list -l, 5 is list
+
     if list_length == 10:
         _state = 0 if state[3] != "down" else 1
     elif list_length == 6:
@@ -212,23 +225,27 @@ def sort_state(state):
         _state = state
 
     # 0 is up, 1 is down, lame hack to get running jails on top.
+
     return _state
 
 
 def sort_boot(boot):
     """Sort the list by boot."""
     # Lame hack to get on above off.
+
     return 0 if boot[2] != "off" else 1
 
 
 def sort_jid(jid):
     """Sort the list by JID."""
     # Lame hack to have jails not runnig below running jails.
+
     return jid[0] if jid[0] != "-" else "a"
 
 
 def sort_name(name):
     """Sort list by the name."""
+
     if not isinstance(name, str):
         list_length = len(name)
         name = name[1] if list_length != 7 else name[0]
@@ -237,6 +254,7 @@ def sort_name(name):
 
     # We want to sort names that have been created with count > 1. But not
     # foo_bar
+
     if len(_sort) > 1 and _sort[1].isdigit():
         return _sort[0], int(_sort[1].rstrip("\n"))
     else:
@@ -317,16 +335,20 @@ def sort_release(releases, split=False):
 # Cyrille Pontvieux on StackOverflow
 def copytree(src, dst, symlinks=False, ignore=None):
     """Copies a tree and overwrites."""
+
     if not os.path.exists(dst):
         os.makedirs(dst)
         shutil.copystat(src, dst)
     lst = os.listdir(src)
+
     if ignore:
         excl = ignore(src, lst)
         lst = [x for x in lst if x not in excl]
+
     for item in lst:
         s = os.path.join(src, item)
         d = os.path.join(dst, item)
+
         if symlinks and os.path.islink(s):
             if os.path.lexists(d):
                 os.remove(d)
@@ -411,6 +433,7 @@ def open_atomic(filepath, *args, **kwargs):
 
 def get_nested_key(_dict, keys=None):
     """Gets a nested key from a dictionary."""
+
     if not keys:
         keys = []
 
@@ -440,6 +463,7 @@ def git_pull(repo, remote_name="origin", branch="master", exit_on_error=False):
     # @formatter:off
     # https://raw.githubusercontent.com/MichaelBoselowitz/pygit2-examples/master/examples.py
     # @formatter:on
+
     for remote in repo.remotes:
         if remote.name != remote_name:
             continue
@@ -449,6 +473,7 @@ def git_pull(repo, remote_name="origin", branch="master", exit_on_error=False):
             f"refs/remotes/origin/{branch}").target
         merge_result, _ = repo.merge_analysis(remote_master_id)
         # Up to date, do nothing
+
         if merge_result & pygit2.GIT_MERGE_ANALYSIS_UP_TO_DATE:
             return
         # We can just fastforward
@@ -465,15 +490,17 @@ def git_pull(repo, remote_name="origin", branch="master", exit_on_error=False):
 
             if repo.index.conflicts is not None:
                 for conflict in repo.index.conflicts:
-                    logit({
-                        "level"  : "EXCEPTION",
-                        "message": "Conflicts found in: {conflict[0].path}"
-                    }, exit_on_error=exit_on_error)
+                    logit(
+                        {
+                            "level": "EXCEPTION",
+                            "message": "Conflicts found in: {conflict[0].path}"
+                        },
+                        exit_on_error=exit_on_error)
 
             user = repo.default_signature
             tree = repo.index.write_tree()
-            repo.create_commit('HEAD', user, user, "merged by iocage",
-                               tree, [repo.head.target, remote_master_id])
+            repo.create_commit('HEAD', user, user, "merged by iocage", tree,
+                               [repo.head.target, remote_master_id])
             # We need to do this or git CLI will think we are still
             # merging.
             repo.state_cleanup()
@@ -492,6 +519,7 @@ def set_rcconf(jail_path, key, value):
         output = []
 
         lines = f.read().splitlines()
+
         for line in lines:
 
             try:
@@ -499,6 +527,7 @@ def set_rcconf(jail_path, key, value):
                 current_value = current_value.strip("\"")
             except ValueError:
                 output.append(line)
+
                 continue
 
             if current_key == key:
@@ -507,6 +536,7 @@ def set_rcconf(jail_path, key, value):
                 if current_value != value:
                     changed = True
                     output.append(f"{key}=\"{value}\"")
+
                     continue
 
             output.append(line)
