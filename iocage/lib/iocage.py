@@ -1527,8 +1527,8 @@ class IOCage(object):
             conf = ioc_json.IOCJson(
                 path, silent=self.silent,
                 exit_on_error=self.exit_on_error).json_load()
-            release = conf["release"].rsplit("-", 1)[0]
-            host_release = os.uname()[2].rsplit("-", 1)[0]
+            release = conf["release"].rsplit("-", 1)[0].rsplit("-", 1)[0]
+            host_release = os.uname()[2].rsplit("-", 1)[0].rsplit("-", 1)[0]
 
             if host_release < release:
                 ioc_common.logit(
