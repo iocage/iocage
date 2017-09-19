@@ -36,64 +36,75 @@ import iocage.lib.ioc_upgrade as ioc_upgrade
 __rootcmd__ = True
 
 
-@click.command(name="upgrade", help="Run freebsd-update to upgrade a specified"
-                                    " jail to the RELEASE given.")
+@click.command(
+    name="upgrade",
+    help="Run freebsd-update to upgrade a specified"
+    " jail to the RELEASE given.")
 @click.argument("jail", required=True)
 @click.option("--release", "-r", required=True, help="RELEASE to upgrade to")
 def cli(jail, release):
     """Runs upgrade with the command given inside the specified jail."""
     # TODO: Move to API
-    host_release = os.uname()[2].rsplit("-", 1)[0]
+    release = release.rsplit("-", 1)[0].rsplit("-", 1)[0]
+    host_release = os.uname()[2].rsplit("-", 1)[0].rsplit("-", 1)[0]
 
     if release is not None:
         if host_release < release:
             ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": f"\nHost: {host_release} is not greater than"
-                           f" target: {release}\nThis is unsupported."
+                "level":
+                "EXCEPTION",
+                "message":
+                f"\nHost: {host_release} is not greater than"
+                f" target: {release}\nThis is unsupported."
             })
 
     jails = ioc_list.IOCList("uuid").list_datasets()
-    _jail = {uuid: path for (uuid, path) in jails.items() if
-             uuid.startswith(jail)}
+    _jail = {
+        uuid: path
+        for (uuid, path) in jails.items() if uuid.startswith(jail)
+    }
 
     if len(_jail) == 1:
         uuid, path = next(iter(_jail.items()))
         root_path = f"{path}/root"
     elif len(_jail) > 1:
         ioc_common.logit({
-            "level"  : "ERROR",
+            "level": "ERROR",
             "message": f"Multiple jails found for {jail}:"
         })
+
         for u, p in sorted(_jail.items()):
-            ioc_common.logit({
-                "level"  : "ERROR",
-                "message": f"  {u} ({p})"
-            })
+            ioc_common.logit({"level": "ERROR", "message": f"  {u} ({p})"})
         exit(1)
     else:
-        ioc_common.logit({
-            "level"  : "EXCEPTION",
-            "message": f"{jail} not found!"
-        }, exit_on_error=True)
+        ioc_common.logit(
+            {
+                "level": "EXCEPTION",
+                "message": f"{jail} not found!"
+            },
+            exit_on_error=True)
 
     status, jid = ioc_list.IOCList.list_get_jid(uuid)
     conf = ioc_json.IOCJson(path).json_load()
     jail_release = conf["release"]
 
     if release in jail_release:
-        ioc_common.logit({
-            "level"  : "EXCEPTION",
-            "message": f"Jail: {uuid} is already at version {release}!"
-        }, exit_on_error=True)
+        ioc_common.logit(
+            {
+                "level": "EXCEPTION",
+                "message": f"Jail: {uuid} is already at version {release}!"
+            },
+            exit_on_error=True)
 
     started = False
 
     if conf["release"] == "EMPTY":
-        ioc_common.logit({
-            "level"  : "EXCEPTION",
-            "message": "Upgrading is not supported for empty jails."
-        }, exit_on_error=True)
+        ioc_common.logit(
+            {
+                "level": "EXCEPTION",
+                "message": "Upgrading is not supported for empty jails."
+            },
+            exit_on_error=True)
 
     if conf["type"] == "jail":
         if not status:
@@ -103,28 +114,40 @@ def cli(jail, release):
         new_release = ioc_upgrade.IOCUpgrade(conf, release,
                                              root_path).upgrade_jail()
     elif conf["type"] == "basejail":
-        ioc_common.logit({
-            "level"  : "EXCEPTION",
-            "message": "Please run \"iocage migrate\" before trying"
-                       f" to upgrade {uuid}"
-        }, exit_on_error=True)
+        ioc_common.logit(
+            {
+                "level":
+                "EXCEPTION",
+                "message":
+                "Please run \"iocage migrate\" before trying"
+                f" to upgrade {uuid}"
+            },
+            exit_on_error=True)
     elif conf["type"] == "template":
-        ioc_common.logit({
-            "level"  : "EXCEPTION",
-            "message": "Please convert back to a jail before trying"
-                       f" to upgrade {uuid}"
-        }, exit_on_error=True)
+        ioc_common.logit(
+            {
+                "level":
+                "EXCEPTION",
+                "message":
+                "Please convert back to a jail before trying"
+                f" to upgrade {uuid}"
+            },
+            exit_on_error=True)
     else:
-        ioc_common.logit({
-            "level"  : "EXCEPTION",
-            "message": f"{conf['type']} is not a supported jail type."
-        }, exit_on_error=True)
+        ioc_common.logit(
+            {
+                "level": "EXCEPTION",
+                "message": f"{conf['type']} is not a supported jail type."
+            },
+            exit_on_error=True)
 
     if started:
         ioc_stop.IOCStop(uuid, path, conf, silent=True)
 
         ioc_common.logit({
-            "level"  : "INFO",
-            "message": f"\n{uuid} successfully upgraded from"
-                       f" {jail_release} to {new_release}!"
+            "level":
+            "INFO",
+            "message":
+            f"\n{uuid} successfully upgraded from"
+            f" {jail_release} to {new_release}!"
         })
