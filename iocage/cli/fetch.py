@@ -140,10 +140,12 @@ def validate_count(ctx, param, value):
     help="Accept the plugin's LICENSE agreement.")
 def cli(**kwargs):
     """CLI command that calls fetch_release()"""
-    release = kwargs.get("release", None).rsplit("-", 1)[0].rsplit("-", 1)[0]
-    host_release = os.uname()[2].rsplit("-", 1)[0].rsplit("-", 1)[0]
+    release = kwargs.get("release", None)
 
     if release is not None:
+        release = release.rsplit("-", 1)[0].rsplit("-", 1)[0]
+        host_release = os.uname()[2].rsplit("-", 1)[0].rsplit("-", 1)[0]
+
         if host_release < release:
             ioc_common.logit({
                 "level":
