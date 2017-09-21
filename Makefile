@@ -3,8 +3,7 @@ SERVER=""
 
 install:
 	echo -e "import os\ntry:\n  if not os.listdir('/usr/src'): exit('/usr/src must be populated!')\nexcept FileNotFoundError:\n  exit('/usr/src must be populated!')" | python3.6
-        test -d .git && git pull || true
-
+	test -d .git && git pull || true
 	python3.6 -m ensurepip
 	pip3.6 install -U Cython
 	cd py-libzfs && python3.6 setup.py build && python3.6 setup.py install
