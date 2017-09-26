@@ -29,7 +29,6 @@ import shutil
 import subprocess as su
 
 import click
-
 import iocage.lib.ioc_common as ioc_common
 import iocage.lib.ioc_create as ioc_create
 import iocage.lib.ioc_json as ioc_json
@@ -38,12 +37,21 @@ import iocage.lib.ioc_list as ioc_list
 __rootcmd__ = True
 
 
-@click.command(name="migrate",
-               help="Migrate all jails to the new jail format.")
-@click.option("--force", "-f", is_flag=True, default=False,
-              help="Bypass the interactive question.")
-@click.option("--delete", "-d", is_flag=True, default=False,
-              help="Delete the old dataset after it has been migrated.")
+@click.command(
+    name="migrate",
+    help="Migrate all iocage_legacy develop basejails to new clonejails.")
+@click.option(
+    "--force",
+    "-f",
+    is_flag=True,
+    default=False,
+    help="Bypass the interactive question.")
+@click.option(
+    "--delete",
+    "-d",
+    is_flag=True,
+    default=False,
+    help="Delete the old dataset after it has been migrated.")
 def cli(force, delete):
     """Migrates all the iocage_legacy develop basejails to clone jails."""
     # TODO: Move to API
@@ -51,11 +59,13 @@ def cli(force, delete):
 
     if not force:
         ioc_common.logit({
-            "level"  : "WARNING",
-            "message": "\nThis will migrate ALL iocage-legacy develop"
-                       " basejails to clonejails, it can take a long"
-                       " time!\nPlease make sure you are not running"
-                       " this on iocage-legacy 1.7.6 basejails."
+            "level":
+            "WARNING",
+            "message":
+            "\nThis will migrate ALL iocage-legacy develop"
+            " basejails to clonejails, it can take a long"
+            " time!\nPlease make sure you are not running"
+            " this on iocage-legacy 1.7.6 basejails."
         })
 
         if not click.confirm("\nAre you sure?"):
@@ -72,19 +82,22 @@ def cli(force, delete):
             tag = conf["tag"]
         except KeyError:
             # These are actually NEW jails.
+
             continue
 
         release = conf["cloned_release"]
 
         if conf["type"] == "basejail":
             try:
-                ioc_common.checkoutput(["zfs", "rename", "-p", jail, jail_old],
-                                       stderr=su.STDOUT)
+                ioc_common.checkoutput(
+                    ["zfs", "rename", "-p", jail, jail_old], stderr=su.STDOUT)
             except su.CalledProcessError as err:
-                ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": f"{err.output.decode('utf-8').strip()}"
-                }, exit_on_error=True)
+                ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": f"{err.output.decode('utf-8').strip()}"
+                    },
+                    exit_on_error=True)
 
             try:
                 os.remove(f"{iocroot}/tags/{tag}")
@@ -101,32 +114,44 @@ def cli(force, delete):
                 # They already named this jail, making it like our new ones.
                 _name = tag
 
-            new_uuid = ioc_create.IOCCreate(release, "", 0, None, migrate=True,
-                                            config=conf, silent=True,
-                                            uuid=_name,
-                                            exit_on_error=True).create_jail()
-            new_prop = ioc_json.IOCJson(f"{iocroot}/jails/{new_uuid}",
-                                        silent=True).json_set_value
+            new_uuid = ioc_create.IOCCreate(
+                release,
+                "",
+                0,
+                None,
+                migrate=True,
+                config=conf,
+                silent=True,
+                uuid=_name,
+                exit_on_error=True).create_jail()
+            new_prop = ioc_json.IOCJson(
+                f"{iocroot}/jails/{new_uuid}", silent=True).json_set_value
             new_prop(f"host_hostname={new_uuid}")
             new_prop(f"host_hostuuid={new_uuid}")
             new_prop("type=jail")
             new_prop(f"jail_zfs_dataset={iocroot}/jails/{new_uuid}/data")
 
             ioc_common.logit({
-                "level"  : "INFO",
-                "message": f"Copying files for {new_uuid}, please wait..."
+                "level":
+                "INFO",
+                "message":
+                f"Copying files for {new_uuid}, please wait..."
             })
 
-            ioc_common.copytree(f"{iocroot}/jails_old/{uuid}/root",
-                                f"{iocroot}/jails/{new_uuid}/root",
-                                symlinks=True)
+            ioc_common.copytree(
+                f"{iocroot}/jails_old/{uuid}/root",
+                f"{iocroot}/jails/{new_uuid}/root",
+                symlinks=True)
 
             shutil.copy(f"{iocroot}/jails_old/{uuid}/fstab",
                         f"{iocroot}/jails/{new_uuid}/fstab")
-            for line in fileinput.input(f"{iocroot}/jails/{new_uuid}/root/etc/"
-                                        "rc.conf", inplace=1):
-                print(line.replace(f'hostname="{uuid}"',
-                                   f'hostname="{new_uuid}"').rstrip())
+
+            for line in fileinput.input(
+                    f"{iocroot}/jails/{new_uuid}/root/etc/"
+                    "rc.conf", inplace=1):
+                print(
+                    line.replace(f'hostname="{uuid}"',
+                                 f'hostname="{new_uuid}"').rstrip())
 
             if delete:
                 try:
@@ -138,13 +163,17 @@ def cli(force, delete):
                         f"{err.output.decode('utf-8').rstrip()}")
 
                 try:
-                    su.check_call(["zfs", "destroy", "-r", "-f",
-                                   f"{pool}/iocage/jails_old"])
+                    su.check_call([
+                        "zfs", "destroy", "-r", "-f",
+                        f"{pool}/iocage/jails_old"
+                    ])
                 except su.CalledProcessError:
                     # We just want the top level dataset gone, no big deal.
                     pass
 
             ioc_common.logit({
-                "level"  : "INFO",
-                "message": f"{uuid} ({tag}) migrated to {new_uuid}!\n"
+                "level":
+                "INFO",
+                "message":
+                f"{uuid} ({tag}) migrated to {new_uuid}!\n"
             })
