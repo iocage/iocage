@@ -37,6 +37,12 @@ import tarfile
 import tempfile
 import urllib.request
 
+import iocage.lib.ioc_common
+import iocage.lib.ioc_create
+import iocage.lib.ioc_destroy
+import iocage.lib.ioc_exec
+import iocage.lib.ioc_json
+import iocage.lib.ioc_start
 import libzfs
 import pygit2
 import requests
@@ -45,23 +51,28 @@ import requests.packages.urllib3.exceptions
 import texttable
 import tqdm
 
-import iocage.lib.ioc_common
-import iocage.lib.ioc_create
-import iocage.lib.ioc_destroy
-import iocage.lib.ioc_exec
-import iocage.lib.ioc_json
-import iocage.lib.ioc_start
-
 
 class IOCFetch(object):
     """Fetch a RELEASE for use as a jail base."""
 
-    def __init__(self, release, server="ftp.freebsd.org", user="anonymous",
-                 password="anonymous@", auth=None, root_dir=None, http=False,
-                 _file=False, verify=True, hardened=False, update=True,
-                 eol=True, files=("MANIFEST", "base.txz", "lib32.txz",
-                                  "doc.txz"), exit_on_error=False,
-                 silent=False, callback=None, plugin=None):
+    def __init__(self,
+                 release,
+                 server="ftp.freebsd.org",
+                 user="anonymous",
+                 password="anonymous@",
+                 auth=None,
+                 root_dir=None,
+                 http=False,
+                 _file=False,
+                 verify=True,
+                 hardened=False,
+                 update=True,
+                 eol=True,
+                 files=("MANIFEST", "base.txz", "lib32.txz", "doc.txz"),
+                 exit_on_error=False,
+                 silent=False,
+                 callback=None,
+                 plugin=None):
         self.pool = iocage.lib.ioc_json.IOCJson(
             exit_on_error=exit_on_error).json_get_value("pool")
         self.iocroot = iocage.lib.ioc_json.IOCJson(
@@ -114,6 +125,7 @@ class IOCFetch(object):
         req = requests.get(_eol)
         status = req.status_code == requests.codes.ok
         eol_releases = []
+
         if not status:
             req.raise_for_status()
 
@@ -123,6 +135,7 @@ class IOCFetch(object):
             try:
                 if "-RELEASE" in eol[1]:
                     eol = eol[1].strip('</td')
+
                     if eol not in eol_releases:
                         eol_releases.append(eol)
             except IndexError:
@@ -153,6 +166,7 @@ class IOCFetch(object):
         RELEASE. If they gave us a full RELEASE, we make sure that exists in
         the list at all.
         """
+
         if self.release.lower() == "exit":
             exit()
 
@@ -161,20 +175,27 @@ class IOCFetch(object):
             try:
                 releases.index(self.release)
             except ValueError as err:
-                iocage.lib.ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": err
-                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": err
+                    },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
                     silent=self.silent)
+
             return self.release
 
         try:
             self.release = releases[int(self.release)]
         except IndexError:
-            iocage.lib.ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": f"[{self.release}] is not in the list!"
-            }, exit_on_error=self.exit_on_error, _callback=self.callback,
+            iocage.lib.ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": f"[{self.release}] is not in the list!"
+                },
+                exit_on_error=self.exit_on_error,
+                _callback=self.callback,
                 silent=self.silent)
         except ValueError:
             # We want to use their host as RELEASE, but it may
@@ -185,19 +206,25 @@ class IOCFetch(object):
                 if "-STABLE" in self.release:
                     # Custom HardenedBSD server
                     self.hardened = True
+
                     return self.release
 
                 releases.index(self.release)
             except ValueError:
-                iocage.lib.ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": "Please select an item!"
-                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": "Please select an item!"
+                    },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
                     silent=self.silent)
+
         return self.release
 
     def fetch_release(self, _list=False):
         """Small wrapper to choose the right fetch."""
+
         if self.http:
             if self.eol and self.verify:
                 eol = self.__fetch_eol_check__()
@@ -207,27 +234,37 @@ class IOCFetch(object):
             self.fetch_http_release(eol, _list=_list)
         elif self._file:
             # Format for file directory should be: root-dir/RELEASE/*.txz
+
             if not self.root_dir:
-                iocage.lib.ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": "Please supply --root-dir or -d."
-                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": "Please supply --root-dir or -d."
+                    },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
                     silent=self.silent)
 
             if self.release is None:
-                iocage.lib.ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": "Please supply a RELEASE!"
-                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": "Please supply a RELEASE!"
+                    },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
                     silent=self.silent)
 
             try:
                 os.chdir(f"{self.root_dir}/{self.release}")
             except OSError as err:
-                iocage.lib.ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": err
-                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": err
+                    },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
                     silent=self.silent)
 
             dataset = f"{self.iocroot}/download/{self.release}"
@@ -235,9 +272,7 @@ class IOCFetch(object):
             if os.path.isdir(dataset):
                 pass
             else:
-                self.zpool.create(dataset, {
-                    "compression": "lz4"
-                })
+                self.zpool.create(dataset, {"compression": "lz4"})
 
                 self.zfs.get_dataset_by_path(dataset).mount()
 
@@ -258,24 +293,30 @@ class IOCFetch(object):
                                 f"\nPlease place it in {self.root_dir}/" \
                                 f"{self.release}"
 
-                    iocage.lib.ioc_common.logit({
-                        "level"  : "EXCEPTION",
-                        "message": error
-                    }, exit_on_error=self.exit_on_error,
+                    iocage.lib.ioc_common.logit(
+                        {
+                            "level": "EXCEPTION",
+                            "message": error
+                        },
+                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
 
-                iocage.lib.ioc_common.logit({
-                    "level"  : "INFO",
-                    "message": f"Copying: {f}... "
-                }, _callback=self.callback, silent=self.silent)
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level": "INFO",
+                        "message": f"Copying: {f}... "
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
                 shutil.copy(f, dataset)
 
                 if f != "MANIFEST":
-                    iocage.lib.ioc_common.logit({
-                        "level"  : "INFO",
-                        "message": f"Extracting: {f}... "
-                    },
+                    iocage.lib.ioc_common.logit(
+                        {
+                            "level": "INFO",
+                            "message": f"Extracting: {f}... "
+                        },
                         _callback=self.callback,
                         silent=self.silent)
                     self.fetch_extract(f)
@@ -296,6 +337,7 @@ class IOCFetch(object):
             - XX.X-RELEASE
             - XX.X_RELEASE
         """
+
         if self.hardened:
             if self.server == "ftp.freebsd.org":
                 self.server = "http://jenkins.hardenedbsd.org"
@@ -316,19 +358,22 @@ class IOCFetch(object):
 
         if self.hardened:
             if self.auth == "basic":
-                req = requests.get(f"{self.server}/{rdir}",
-                                   auth=(self.user, self.password),
-                                   verify=self.verify)
+                req = requests.get(
+                    f"{self.server}/{rdir}",
+                    auth=(self.user, self.password),
+                    verify=self.verify)
             elif self.auth == "digest":
-                req = requests.get(f"{self.server}/{rdir}",
-                                   auth=requests.auth.HTTPDigestAuth(
-                                       self.user, self.password),
-                                   verify=self.verify)
+                req = requests.get(
+                    f"{self.server}/{rdir}",
+                    auth=requests.auth.HTTPDigestAuth(self.user,
+                                                      self.password),
+                    verify=self.verify)
             else:
                 req = requests.get(f"{self.server}/{rdir}")
 
             releases = []
             status = req.status_code == requests.codes.ok
+
             if not status:
                 req.raise_for_status()
 
@@ -348,10 +393,11 @@ class IOCFetch(object):
                 releases = iocage.lib.ioc_common.sort_release(releases)
 
                 for r in releases:
-                    iocage.lib.ioc_common.logit({
-                        "level"  : "INFO",
-                        "message": f"[{releases.index(r)}] {r}"
-                    },
+                    iocage.lib.ioc_common.logit(
+                        {
+                            "level": "INFO",
+                            "message": f"[{releases.index(r)}] {r}"
+                        },
                         _callback=self.callback,
                         silent=self.silent)
                 host_release = self.__fetch_host_release__()
@@ -362,19 +408,22 @@ class IOCFetch(object):
                 self.release = self.__fetch_validate_release__(releases)
         else:
             if self.auth == "basic":
-                req = requests.get(f"{self.server}/{self.root_dir}",
-                                   auth=(self.user, self.password),
-                                   verify=self.verify)
+                req = requests.get(
+                    f"{self.server}/{self.root_dir}",
+                    auth=(self.user, self.password),
+                    verify=self.verify)
             elif self.auth == "digest":
-                req = requests.get(f"{self.server}/{self.root_dir}",
-                                   auth=requests.auth.HTTPDigestAuth(
-                                       self.user, self.password),
-                                   verify=self.verify)
+                req = requests.get(
+                    f"{self.server}/{self.root_dir}",
+                    auth=requests.auth.HTTPDigestAuth(self.user,
+                                                      self.password),
+                    verify=self.verify)
             else:
                 req = requests.get(f"{self.server}/{self.root_dir}")
 
             releases = []
             status = req.status_code == requests.codes.ok
+
             if not status:
                 req.raise_for_status()
 
@@ -382,26 +431,31 @@ class IOCFetch(object):
                 for rel in req.content.split():
                     rel = rel.decode()
                     rel = rel.strip("href=").strip("/").split(">")
+
                     if "-RELEASE" in rel[0]:
-                        rel = rel[0].strip('"').strip("/").strip(
-                            "/</a").strip('title="')
+                        rel = rel[0].strip('"').strip("/").strip("/</a").strip(
+                            'title="')
+
                         if rel not in releases:
                             releases.append(rel)
 
                 releases = iocage.lib.ioc_common.sort_release(releases)
+
                 for r in releases:
                     if r in eol:
-                        iocage.lib.ioc_common.logit({
-                            "level"  : "INFO",
-                            "message": f"[{releases.index(r)}] {r} (EOL)"
-                        },
+                        iocage.lib.ioc_common.logit(
+                            {
+                                "level": "INFO",
+                                "message": f"[{releases.index(r)}] {r} (EOL)"
+                            },
                             _callback=self.callback,
                             silent=self.silent)
                     else:
-                        iocage.lib.ioc_common.logit({
-                            "level"  : "INFO",
-                            "message": f"[{releases.index(r)}] {r}"
-                        },
+                        iocage.lib.ioc_common.logit(
+                            {
+                                "level": "INFO",
+                                "message": f"[{releases.index(r)}] {r}"
+                            },
                             _callback=self.callback,
                             silent=self.silent)
 
@@ -418,10 +472,11 @@ class IOCFetch(object):
         if self.hardened:
             self.root_dir = f"{rdir}/HardenedBSD-{self.release.upper()}-" \
                             f"{self.arch}-LATEST"
-        iocage.lib.ioc_common.logit({
-            "level"  : "INFO",
-            "message": f"Fetching: {self.release}\n"
-        },
+        iocage.lib.ioc_common.logit(
+            {
+                "level": "INFO",
+                "message": f"Fetching: {self.release}\n"
+            },
             _callback=self.callback,
             silent=self.silent)
         self.fetch_download(self.files)
@@ -453,17 +508,19 @@ class IOCFetch(object):
 
             for r in releases:
                 if r in eol:
-                    iocage.lib.ioc_common.logit({
-                        "level"  : "INFO",
-                        "message": f"[{releases.index(r)}] {r} (EOL)"
-                    },
+                    iocage.lib.ioc_common.logit(
+                        {
+                            "level": "INFO",
+                            "message": f"[{releases.index(r)}] {r} (EOL)"
+                        },
                         _callback=self.callback,
                         silent=self.silent)
                 else:
-                    iocage.lib.ioc_common.logit({
-                        "level"  : "INFO",
-                        "message": f"[{releases.index(r)}] {r}"
-                    },
+                    iocage.lib.ioc_common.logit(
+                        {
+                            "level": "INFO",
+                            "message": f"[{releases.index(r)}] {r}"
+                        },
                         _callback=self.callback,
                         silent=self.silent)
 
@@ -484,19 +541,23 @@ class IOCFetch(object):
         try:
             ftp.cwd(self.release)
         except ftplib.error_perm:
-            iocage.lib.ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": f"{self.release} was not found!"
-            }, exit_on_error=self.exit_on_error, _callback=self.callback,
+            iocage.lib.ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": f"{self.release} was not found!"
+                },
+                exit_on_error=self.exit_on_error,
+                _callback=self.callback,
                 silent=self.silent)
 
         ftp_list = self.files
         ftp.quit()
 
-        iocage.lib.ioc_common.logit({
-            "level"  : "INFO",
-            "message": f"Fetching: {self.release}\n"
-        },
+        iocage.lib.ioc_common.logit(
+            {
+                "level": "INFO",
+                "message": f"Fetching: {self.release}\n"
+            },
             _callback=self.callback,
             silent=self.silent)
         self.fetch_download(ftp_list, ftp=True)
@@ -522,19 +583,25 @@ class IOCFetch(object):
             try:
                 ftp.cwd(f"/pub/FreeBSD/releases/{self.arch}")
             except:
-                iocage.lib.ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": f"{self.arch} was not found!"
-                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": f"{self.arch} was not found!"
+                    },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
                     silent=self.silent)
         elif self.root_dir:
             try:
                 ftp.cwd(self.root_dir)
             except:
-                iocage.lib.ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": f"{self.root_dir} was not found!"
-                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": f"{self.root_dir} was not found!"
+                    },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
                     silent=self.silent)
 
         return ftp
@@ -555,16 +622,19 @@ class IOCFetch(object):
                     if ftp and self.server == "ftp.freebsd.org":
                         _ftp = self.__fetch_ftp_connect__()
                         _ftp.cwd(self.release)
-                        _ftp.retrbinary("RETR MANIFEST", open("MANIFEST",
-                                                              "wb").write)
+                        _ftp.retrbinary("RETR MANIFEST",
+                                        open("MANIFEST", "wb").write)
                         _ftp.quit()
                     elif not ftp and self.server == \
                             "https://download.freebsd.org":
-                        r = requests.get(f"{self.server}/{self.root_dir}/"
-                                         f"{self.release}/MANIFEST",
-                                         verify=self.verify, stream=True)
+                        r = requests.get(
+                            f"{self.server}/{self.root_dir}/"
+                            f"{self.release}/MANIFEST",
+                            verify=self.verify,
+                            stream=True)
 
                         status = r.status_code == requests.codes.ok
+
                         if not status:
                             r.raise_for_status()
 
@@ -601,45 +671,57 @@ class IOCFetch(object):
 
                             if hashes[f] != sha256.hexdigest():
                                 if not _missing:
-                                    iocage.lib.ioc_common.logit({
-                                        "level"  : "WARNING",
-                                        "message": f"{f} failed verification,"
-                                                   " will redownload!"
-                                    },
+                                    iocage.lib.ioc_common.logit(
+                                        {
+                                            "level":
+                                            "WARNING",
+                                            "message":
+                                            f"{f} failed verification,"
+                                            " will redownload!"
+                                        },
                                         _callback=self.callback,
                                         silent=self.silent)
                                     missing.append(f)
                                 else:
-                                    iocage.lib.ioc_common.logit({
-                                        "level"  : "EXCEPTION",
-                                        "message": "Too many failed"
-                                                   " verifications!"
-                                    }, exit_on_error=self.exit_on_error,
+                                    iocage.lib.ioc_common.logit(
+                                        {
+                                            "level":
+                                            "EXCEPTION",
+                                            "message":
+                                            "Too many failed"
+                                            " verifications!"
+                                        },
+                                        exit_on_error=self.exit_on_error,
                                         _callback=self.callback,
                                         silent=self.silent)
-                    except FileNotFoundError:
+                    except (FileNotFoundError, KeyError):
                         if not _missing:
-                            iocage.lib.ioc_common.logit({
-                                "level"  : "WARNING",
-                                "message":
+                            iocage.lib.ioc_common.logit(
+                                {
+                                    "level":
+                                    "WARNING",
+                                    "message":
                                     f"{f} missing, will try to redownload!"
-                            },
+                                },
                                 _callback=self.callback,
                                 silent=self.silent)
                             missing.append(f)
                         else:
-                            iocage.lib.ioc_common.logit({
-                                "level"  : "EXCEPTION",
-                                "message": "Too many failed verifications!"
-                            }, exit_on_error=self.exit_on_error,
+                            iocage.lib.ioc_common.logit(
+                                {
+                                    "level": "EXCEPTION",
+                                    "message": "Too many failed verifications!"
+                                },
+                                exit_on_error=self.exit_on_error,
                                 _callback=self.callback,
                                 silent=self.silent)
 
                 if not missing:
-                    iocage.lib.ioc_common.logit({
-                        "level"  : "INFO",
-                        "message": f"Extracting: {f}... "
-                    },
+                    iocage.lib.ioc_common.logit(
+                        {
+                            "level": "INFO",
+                            "message": f"Extracting: {f}... "
+                        },
                         _callback=self.callback,
                         silent=self.silent)
 
@@ -658,9 +740,7 @@ class IOCFetch(object):
         if not os.path.isdir(dataset):
             fresh = True
             dataset = f"{self.pool}/iocage/download/{self.release}"
-            self.zpool.create(dataset, {
-                "compression": "lz4"
-            })
+            self.zpool.create(dataset, {"compression": "lz4"})
 
             self.zfs.get_dataset(dataset).mount()
 
@@ -671,26 +751,32 @@ class IOCFetch(object):
                 for f in _list:
                     if self.hardened:
                         _file = f"{self.server}/{self.root_dir}/{f}"
+
                         if f == "lib32.txz":
                             continue
                     else:
                         _file = f"{self.server}/{self.root_dir}/" \
                                 f"{self.release}/{f}"
+
                     if self.auth == "basic":
-                        r = requests.get(_file,
-                                         auth=(self.user, self.password),
-                                         verify=self.verify, stream=True)
+                        r = requests.get(
+                            _file,
+                            auth=(self.user, self.password),
+                            verify=self.verify,
+                            stream=True)
                     elif self.auth == "digest":
-                        r = requests.get(_file,
-                                         auth=requests.auth.HTTPDigestAuth(
-                                             self.user, self.password),
-                                         verify=self.verify,
-                                         stream=True)
+                        r = requests.get(
+                            _file,
+                            auth=requests.auth.HTTPDigestAuth(
+                                self.user, self.password),
+                            verify=self.verify,
+                            stream=True)
                     else:
-                        r = requests.get(_file, verify=self.verify,
-                                         stream=True)
+                        r = requests.get(
+                            _file, verify=self.verify, stream=True)
 
                     status = r.status_code == requests.codes.ok
+
                     if not status:
                         r.raise_for_status()
 
@@ -698,9 +784,9 @@ class IOCFetch(object):
                         pbar = tqdm.tqdm(
                             total=int(r.headers.get('content-length')),
                             bar_format="{desc}{percentage:3.0f}%"
-                                       " {rate_fmt}"
-                                       " Elapsed: {elapsed}"
-                                       " Remaining: {remaining}",
+                            " {rate_fmt}"
+                            " Elapsed: {elapsed}"
+                            " Remaining: {remaining}",
                             unit="bit",
                             unit_scale=True)
                         pbar.set_description(f"Downloading: {f}")
@@ -714,8 +800,9 @@ class IOCFetch(object):
                     _ftp = self.__fetch_ftp_connect__()
                     _ftp.cwd(self.release)
 
-                    if bool(re.compile(
-                            r"MANIFEST|base.txz|lib32.txz|doc.txz").match(f)):
+                    if bool(
+                            re.compile(r"MANIFEST|base.txz|lib32.txz|doc.txz")
+                            .match(f)):
                         try:
                             _ftp.voidcmd('TYPE I')
                             try:
@@ -726,31 +813,35 @@ class IOCFetch(object):
                                 # file we want. The only truly important
                                 # ones are base.txz and MANIFEST for us,
                                 # the rest are not.
+
                                 if f != "base.txz" and f != "MANIFEST":
                                     self.files = tuple(x for x in _list
                                                        if x != f)
+
                                     continue
                                 else:
-                                    iocage.lib.ioc_common.logit({
-                                        "level"  : "EXCEPTION",
-                                        "message": f"{f} is required!"
-                                    }, exit_on_error=self.exit_on_error,
+                                    iocage.lib.ioc_common.logit(
+                                        {
+                                            "level": "EXCEPTION",
+                                            "message": f"{f} is required!"
+                                        },
+                                        exit_on_error=self.exit_on_error,
                                         _callback=self.callback,
                                         silent=self.silent)
 
                             with open(f, "wb") as txz:
-                                pbar = tqdm.tqdm(total=filesize,
-                                                 bar_format="{desc}{"
-                                                            "percentage:3.0f}%"
-                                                            " {rate_fmt}"
-                                                            " Elapsed: {"
-                                                            "elapsed}"
-                                                            " Remaining: {"
-                                                            "remaining}",
-                                                 unit="bit",
-                                                 unit_scale=True)
-                                pbar.set_description(
-                                    f"Downloading: {f}")
+                                pbar = tqdm.tqdm(
+                                    total=filesize,
+                                    bar_format="{desc}{"
+                                    "percentage:3.0f}%"
+                                    " {rate_fmt}"
+                                    " Elapsed: {"
+                                    "elapsed}"
+                                    " Remaining: {"
+                                    "remaining}",
+                                    unit="bit",
+                                    unit_scale=True)
+                                pbar.set_description(f"Downloading: {f}")
 
                                 def callback(chunk):
                                     txz.write(chunk)
@@ -773,13 +864,15 @@ class IOCFetch(object):
                 continue
 
             if ".." in m.name or not m.name.startswith("./"):
-                iocage.lib.ioc_common.logit({
-                    "level"  : "WARNING",
-                    "message":
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level": "WARNING",
+                        "message":
                         f"{m.name} is not a relative file, skipping "
-                },
+                    },
                     _callback=self.callback,
                     silent=self.silent)
+
                 continue
 
             _members.append(m)
@@ -794,10 +887,10 @@ class IOCFetch(object):
         dest = f"{self.iocroot}/releases/{self.release}/root"
 
         dataset = f"{self.pool}/iocage/releases/{self.release}/root"
+
         if not os.path.isdir(dest):
-            self.zpool.create(dataset, {
-                "compression": "lz4"
-            }, libzfs.DatasetType.FILESYSTEM, 0, True)
+            self.zpool.create(dataset, {"compression": "lz4"},
+                              libzfs.DatasetType.FILESYSTEM, 0, True)
 
             self.zfs.get_dataset(dataset).mount_recursive(True)
 
@@ -810,29 +903,39 @@ class IOCFetch(object):
 
     def fetch_update(self, cli=False, uuid=None):
         """This calls 'freebsd-update' to update the fetched RELEASE."""
+
         if cli:
-            cmd = ["mount", "-t", "devfs", "devfs",
-                   f"{self.iocroot}/jails/{uuid}/root/dev"]
+            cmd = [
+                "mount", "-t", "devfs", "devfs",
+                f"{self.iocroot}/jails/{uuid}/root/dev"
+            ]
             new_root = f"{self.iocroot}/jails/{uuid}/root"
 
-            iocage.lib.ioc_common.logit({
-                "level"  : "INFO",
-                "message":
+            iocage.lib.ioc_common.logit(
+                {
+                    "level":
+                    "INFO",
+                    "message":
                     f"\n* Updating {uuid} to the latest patch"
                     " level... "
-            },
+                },
                 _callback=self.callback,
                 silent=self.silent)
         else:
-            cmd = ["mount", "-t", "devfs", "devfs",
-                   f"{self.iocroot}/releases/{self.release}/root/dev"]
+            cmd = [
+                "mount", "-t", "devfs", "devfs",
+                f"{self.iocroot}/releases/{self.release}/root/dev"
+            ]
             new_root = f"{self.iocroot}/releases/{self.release}/root"
 
-            iocage.lib.ioc_common.logit({
-                "level"  : "INFO",
-                "message": f"\n* Updating {self.release} to the latest patch"
-                           " level... "
-            },
+            iocage.lib.ioc_common.logit(
+                {
+                    "level":
+                    "INFO",
+                    "message":
+                    f"\n* Updating {self.release} to the latest patch"
+                    " level... "
+                },
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -841,6 +944,7 @@ class IOCFetch(object):
 
         os.environ["UNAME_r"] = self.release
         os.environ["PAGER"] = "/bin/cat"
+
         if os.path.isfile(f"{new_root}/etc/freebsd-update.conf"):
             f = "https://raw.githubusercontent.com/freebsd/freebsd" \
                 "/master/usr.sbin/freebsd-update/freebsd-update.sh"
@@ -851,12 +955,12 @@ class IOCFetch(object):
             tmp.close()
             os.chmod(tmp.name, 0o755)
 
-            fetch_cmd = [tmp.name, "-b", new_root, "-d",
-                         f"{new_root}/var/db/freebsd-update/",
-                         "-f",
-                         f"{new_root}/etc/freebsd-update.conf",
-                         "--not-running-from-cron",
-                         "fetch"]
+            fetch_cmd = [
+                tmp.name, "-b", new_root, "-d",
+                f"{new_root}/var/db/freebsd-update/", "-f",
+                f"{new_root}/etc/freebsd-update.conf",
+                "--not-running-from-cron", "fetch"
+            ]
 
             fetch = su.Popen(fetch_cmd)
             fetch.communicate()
@@ -864,12 +968,13 @@ class IOCFetch(object):
             if not fetch.returncode:
                 # They may have missing files, we don't need that noise
                 # since it's not fatal
-                su.Popen([tmp.name, "-b", new_root, "-d",
-                          f"{new_root}/var/db/freebsd-update/",
-                          "-f",
-                          f"{new_root}/etc/freebsd-update.conf",
-                          "install"],
-                         stderr=su.DEVNULL).communicate()
+                su.Popen(
+                    [
+                        tmp.name, "-b", new_root, "-d",
+                        f"{new_root}/var/db/freebsd-update/", "-f",
+                        f"{new_root}/etc/freebsd-update.conf", "install"
+                    ],
+                    stderr=su.DEVNULL).communicate()
 
             if not tmp.closed:
                 tmp.close()
@@ -897,17 +1002,25 @@ class IOCFetch(object):
             with open(_json, "r") as j:
                 conf = json.load(j)
         except FileNotFoundError:
-            iocage.lib.ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": f"{_json} was not found!"
-            }, exit_on_error=self.exit_on_error, _callback=self.callback,
+            iocage.lib.ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": f"{_json} was not found!"
+                },
+                exit_on_error=self.exit_on_error,
+                _callback=self.callback,
                 silent=self.silent)
         except json.decoder.JSONDecodeError:
-            iocage.lib.ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": "Invalid JSON file supplied, please supply a "
-                           "correctly formatted JSON file."
-            }, exit_on_error=self.exit_on_error, _callback=self.callback,
+            iocage.lib.ioc_common.logit(
+                {
+                    "level":
+                    "EXCEPTION",
+                    "message":
+                    "Invalid JSON file supplied, please supply a "
+                    "correctly formatted JSON file."
+                },
+                exit_on_error=self.exit_on_error,
+                _callback=self.callback,
                 silent=self.silent)
 
         if self.hardened:
@@ -921,8 +1034,8 @@ class IOCFetch(object):
         location = f"{self.iocroot}/jails/{jail_name}"
 
         try:
-            jaildir, _conf, repo_dir = self.__fetch_plugin_create__(props,
-                                                                    jail_name)
+            jaildir, _conf, repo_dir = self.__fetch_plugin_create__(
+                props, jail_name)
             self.__fetch_plugin_install_packages__(jail_name, jaildir, conf,
                                                    _conf, pkg, props, repo_dir)
             self.__fetch_plugin_post_install__(conf, _conf, jaildir, jail_name)
@@ -932,38 +1045,43 @@ class IOCFetch(object):
 
     def __fetch_plugin_inform__(self, conf, num, plugins, accept_license):
         """Logs the pertinent information before fetching a plugin"""
+
         if num <= 1:
-            iocage.lib.ioc_common.logit({
-                "level"  : "INFO",
-                "message": f"Plugin: {conf['name']}"
-            },
+            iocage.lib.ioc_common.logit(
+                {
+                    "level": "INFO",
+                    "message": f"Plugin: {conf['name']}"
+                },
                 _callback=self.callback,
                 silent=self.silent)
-            iocage.lib.ioc_common.logit({
-                "level"  : "INFO",
-                "message": f"  Using RELEASE: {conf['release']}"
-            },
+            iocage.lib.ioc_common.logit(
+                {
+                    "level": "INFO",
+                    "message": f"  Using RELEASE: {conf['release']}"
+                },
                 _callback=self.callback,
                 silent=self.silent)
-            iocage.lib.ioc_common.logit({
-                "level"  : "INFO",
-                "message":
-                    f"  Post-install Artifact: {conf['artifact']}"
-            },
+            iocage.lib.ioc_common.logit(
+                {
+                    "level": "INFO",
+                    "message": f"  Post-install Artifact: {conf['artifact']}"
+                },
                 _callback=self.callback,
                 silent=self.silent)
-            iocage.lib.ioc_common.logit({
-                "level"  : "INFO",
-                "message": "  These pkgs will be installed:"
-            },
+            iocage.lib.ioc_common.logit(
+                {
+                    "level": "INFO",
+                    "message": "  These pkgs will be installed:"
+                },
                 _callback=self.callback,
                 silent=self.silent)
 
             for pkg in conf["pkgs"]:
-                iocage.lib.ioc_common.logit({
-                    "level"  : "INFO",
-                    "message": f"    - {pkg}"
-                },
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level": "INFO",
+                        "message": f"    - {pkg}"
+                    },
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -976,34 +1094,41 @@ class IOCFetch(object):
                     "license", False)
             except KeyError:
                 # quassel-core is one that does this.
-                name = plugins[conf["name"].strip("-").lower().split(
-                    "/", 1)[-1]]
+                name = plugins[conf["name"].strip("-").lower().split("/", 1)[
+                    -1]]
                 license = name.get("license", False)
 
             if license and not accept_license:
                 license_text = requests.get(license)
 
-                iocage.lib.ioc_common.logit({
-                    "level"  : "WARNING",
-                    "message": "  This plugin requires accepting a license "
-                               "to proceed:"
-                },
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level":
+                        "WARNING",
+                        "message":
+                        "  This plugin requires accepting a license "
+                        "to proceed:"
+                    },
                     _callback=self.callback,
                     silent=self.silent)
-                iocage.lib.ioc_common.logit({
-                    "level"  : "VERBOSE",
-                    "message": f"{license_text.text}"
-                },
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level": "VERBOSE",
+                        "message": f"{license_text.text}"
+                    },
                     _callback=self.callback,
                     silent=self.silent)
 
                 agree = input("Do you agree? (y/N) ")
 
                 if agree.lower() != "y":
-                    iocage.lib.ioc_common.logit({
-                        "level"  : "EXCEPTION",
-                        "message": "You must accept the license to continue!"
-                    }, exit_on_error=self.exit_on_error,
+                    iocage.lib.ioc_common.logit(
+                        {
+                            "level": "EXCEPTION",
+                            "message":
+                            "You must accept the license to continue!"
+                        },
+                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
 
@@ -1039,11 +1164,14 @@ class IOCFetch(object):
                             release = line.rstrip().partition("=")[2].strip(
                                 '"')
             except FileNotFoundError:
-                iocage.lib.ioc_common.logit({
-                    "level"  : "WARNING",
-                    "message": f"Release {self.release} missing, "
-                               f"will attempt to fetch it."
-                },
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level":
+                        "WARNING",
+                        "message":
+                        f"Release {self.release} missing, "
+                        f"will attempt to fetch it."
+                    },
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -1058,18 +1186,24 @@ class IOCFetch(object):
 
         # We set our properties that we need, and then iterate over the user
         # supplied properties replacing ours.
-        create_props = [f"cloned_release={self.release}",
-                        f"release={release}", "type=plugin", "boot=on"]
+        create_props = [
+            f"cloned_release={self.release}", f"release={release}",
+            "type=plugin", "boot=on"
+        ]
 
-        create_props = [f"{k}={v}" for k, v in
-                        (p.split("=") for p in props)] + create_props
+        create_props = [f"{k}={v}" for k, v in (p.split("=")
+                                                for p in props)] + create_props
 
         return create_props, pkg_repos
 
     def __fetch_plugin_create__(self, create_props, uuid):
         """Creates the plugin with the provided properties"""
         iocage.lib.ioc_create.IOCCreate(
-            self.release, create_props, 0, silent=True, uuid=uuid,
+            self.release,
+            create_props,
+            0,
+            silent=True,
+            uuid=uuid,
             exit_on_error=self.exit_on_error).create_jail()
         jaildir = f"{self.iocroot}/jails/{uuid}"
         repo_dir = f"{jaildir}/root/usr/local/etc/pkg/repos"
@@ -1078,40 +1212,46 @@ class IOCFetch(object):
 
         # We do this test again as the user could supply a malformed IP to
         # fetch that bypasses the more naive check in cli/fetch
+
         if _conf["ip4_addr"] == "none" and _conf["ip6_addr"] == "none" and \
            _conf["dhcp"] != "on":
-            iocage.lib.ioc_common.logit({
-                "level"  : "ERROR",
-                "message": "\nAn IP address is needed to fetch a "
-                           "plugin!\n"
-            },
+            iocage.lib.ioc_common.logit(
+                {
+                    "level": "ERROR",
+                    "message": "\nAn IP address is needed to fetch a "
+                    "plugin!\n"
+                },
                 _callback=self.callback,
                 silent=self.silent)
             iocage.lib.ioc_destroy.IOCDestroy().destroy_jail(path)
-            iocage.lib.ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": "Destroyed partial plugin."
-            }, exit_on_error=self.exit_on_error,
+            iocage.lib.ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": "Destroyed partial plugin."
+                },
+                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
         return jaildir, _conf, repo_dir
 
-    def __fetch_plugin_install_packages__(self, uuid, jaildir, conf,
-                                          _conf, pkg_repos, create_props,
-                                          repo_dir):
+    def __fetch_plugin_install_packages__(self, uuid, jaildir, conf, _conf,
+                                          pkg_repos, create_props, repo_dir):
         """Attempts to start the jail and install the packages"""
         kmods = conf.get("kmods", {})
 
         for kmod in kmods:
             try:
-                su.check_call(["kldload", "-n", kmod], stdout=su.PIPE,
-                              stderr=su.PIPE)
+                su.check_call(
+                    ["kldload", "-n", kmod], stdout=su.PIPE, stderr=su.PIPE)
             except su.CalledProcessError:
-                iocage.lib.ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": "Module not found!"
-                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": "Module not found!"
+                    },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
                     silent=self.silent)
 
         try:
@@ -1151,18 +1291,21 @@ FreeBSD: { enabled: no }
             try:
                 os.makedirs(f_dir, 0o755)
             except OSError:
-                iocage.lib.ioc_common.logit({
-                    "level"  : "ERROR",
-                    "message": f"Repo: {repo_name} already exists, skipping!"
-                },
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level": "ERROR",
+                        "message":
+                        f"Repo: {repo_name} already exists, skipping!"
+                    },
                     _callback=self.callback,
                     silent=self.silent)
 
             r_file = f"{repo_dir}/{repo_name}.conf"
 
             with open(r_file, "w") as r_conf:
-                r_conf.write(repo_conf.format(reponame=repo_name,
-                                              packagesite=conf["packagesite"]))
+                r_conf.write(
+                    repo_conf.format(
+                        reponame=repo_name, packagesite=conf["packagesite"]))
 
             f_file = f"{f_dir}/{repo_name}"
 
@@ -1172,20 +1315,28 @@ function: {function}
 fingerprint: {fingerprint}
 """
                 with open(f_file, "w") as f_conf:
-                    f_conf.write(finger_conf.format(function=r["function"],
-                                                    fingerprint=r[
-                                                        "fingerprint"]))
+                    f_conf.write(
+                        finger_conf.format(
+                            function=r["function"],
+                            fingerprint=r["fingerprint"]))
         err = iocage.lib.ioc_create.IOCCreate(
-            self.release, create_props, 0, pkglist=conf["pkgs"], silent=True,
+            self.release,
+            create_props,
+            0,
+            pkglist=conf["pkgs"],
+            silent=True,
             exit_on_error=self.exit_on_error).create_install_packages(
-            uuid, jaildir, _conf, repo=conf["packagesite"], site=repo_name)
+                uuid, jaildir, _conf, repo=conf["packagesite"], site=repo_name)
 
         if err:
-            iocage.lib.ioc_common.logit({
-                "level"  : "ERROR",
-                "message": "pkg error, refusing to fetch artifact and "
-                           "run post_install.sh!\n"
-            },
+            iocage.lib.ioc_common.logit(
+                {
+                    "level":
+                    "ERROR",
+                    "message":
+                    "pkg error, refusing to fetch artifact and "
+                    "run post_install.sh!\n"
+                },
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -1194,14 +1345,12 @@ fingerprint: {fingerprint}
         dhcp = False
 
         try:
-            ip4 = _conf["ip4_addr"].split("|")[1].rsplit(
-                "/")[0]
+            ip4 = _conf["ip4_addr"].split("|")[1].rsplit("/")[0]
         except IndexError:
             ip4 = "none"
 
         try:
-            ip6 = _conf["ip6_addr"].split("|")[1].rsplit(
-                "/")[0]
+            ip6 = _conf["ip6_addr"].split("|")[1].rsplit("/")[0]
         except IndexError:
             ip6 = "none"
 
@@ -1218,20 +1367,25 @@ fingerprint: {fingerprint}
         os.environ["IOCAGE_PLUGIN_IP"] = ip
 
         # We need to pipe from tar to the root of the jail.
+
         if conf["artifact"]:
-            iocage.lib.ioc_common.logit({
-                "level"  : "INFO",
-                "message": "Fetching artifact... "
-            },
+            iocage.lib.ioc_common.logit(
+                {
+                    "level": "INFO",
+                    "message": "Fetching artifact... "
+                },
                 _callback=self.callback,
                 silent=self.silent)
 
-            pygit2.clone_repository(conf["artifact"], f"{jaildir}/plugin",
-                                    checkout_branch='master')
+            pygit2.clone_repository(
+                conf["artifact"],
+                f"{jaildir}/plugin",
+                checkout_branch='master')
             try:
-                distutils.dir_util.copy_tree(f"{jaildir}/plugin/overlay/",
-                                             f"{jaildir}/root",
-                                             preserve_symlinks=True)
+                distutils.dir_util.copy_tree(
+                    f"{jaildir}/plugin/overlay/",
+                    f"{jaildir}/root",
+                    preserve_symlinks=True)
             except distutils.errors.DistutilsFileError:
                 # It just doesn't exist
                 pass
@@ -1240,36 +1394,36 @@ fingerprint: {fingerprint}
                 shutil.copy(f"{jaildir}/plugin/post_install.sh",
                             f"{jaildir}/root/root")
 
-                iocage.lib.ioc_common.logit({
-                    "level"  : "INFO",
-                    "message": "Running post_install.sh"
-                },
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level": "INFO",
+                        "message": "Running post_install.sh"
+                    },
                     _callback=self.callback,
                     silent=self.silent)
 
                 command = ["sh", "/root/post_install.sh"]
-                msg, err = iocage.lib.ioc_exec.IOCExec(command, uuid, jaildir,
-                                                       plugin=True,
-                                                       skip=True).exec_jail()
-                if err:
-                    iocage.lib.ioc_common.logit({
-                        "level": "EXCEPTION",
-                        "message": "An error occured! Please read above"
-                    },
-                        exit_on_error=self.exit_on_error
-                    )
+                msg, err = iocage.lib.ioc_exec.IOCExec(
+                    command, uuid, jaildir, plugin=True,
+                    skip=True).exec_jail()
 
-                iocage.lib.ioc_common.logit({
-                    "level"  : "INFO",
-                    "message": msg
-                })
+                if err:
+                    iocage.lib.ioc_common.logit(
+                        {
+                            "level": "EXCEPTION",
+                            "message": "An error occured! Please read above"
+                        },
+                        exit_on_error=self.exit_on_error)
+
+                iocage.lib.ioc_common.logit({"level": "INFO", "message": msg})
 
                 ui_json = f"{jaildir}/plugin/ui.json"
 
                 if dhcp:
                     interface = _conf["interfaces"].split(",")[0].split(":")[0]
-                    ip4_cmd = ["jexec", f"ioc-{uuid}", "ifconfig", interface,
-                               "inet"]
+                    ip4_cmd = [
+                        "jexec", f"ioc-{uuid}", "ifconfig", interface, "inet"
+                    ]
                     out = su.check_output(ip4_cmd).decode()
                     ip = f"{out.splitlines()[2].split()[1]}"
                     os.environ["IOCAGE_PLUGIN_IP"] = ip
@@ -1278,10 +1432,11 @@ fingerprint: {fingerprint}
                     with open(ui_json, "r") as u:
                         admin_portal = json.load(u)["adminportal"]
                         admin_portal = admin_portal.replace("%%IP%%", ip)
-                        iocage.lib.ioc_common.logit({
-                            "level"  : "INFO",
-                            "message": f"Admin Portal:\n{admin_portal}"
-                        },
+                        iocage.lib.ioc_common.logit(
+                            {
+                                "level": "INFO",
+                                "message": f"Admin Portal:\n{admin_portal}"
+                            },
                             _callback=self.callback,
                             silent=self.silent)
                 except FileNotFoundError:
@@ -1290,8 +1445,13 @@ fingerprint: {fingerprint}
             except FileNotFoundError:
                 pass
 
-    def fetch_plugin_index(self, props, _list=False, list_header=False,
-                           list_long=False, accept_license=False):
+    def fetch_plugin_index(self,
+                           props,
+                           _list=False,
+                           list_header=False,
+                           list_long=False,
+                           accept_license=False):
+
         if self.server == "ftp.freebsd.org":
             git_server = "https://github.com/freenas/iocage-ix-plugins.git"
         else:
@@ -1300,14 +1460,17 @@ fingerprint: {fingerprint}
         git_working_dir = f"{self.iocroot}/.plugin_index"
 
         # list --plugins won't often be root.
+
         if os.geteuid() == 0:
             try:
                 pygit2.clone_repository(git_server, git_working_dir)
             except pygit2.GitError as err:
-                iocage.lib.ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": err
-                }, exit_on_error=self.exit_on_error,
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": err
+                    },
+                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
             except ValueError:
@@ -1316,10 +1479,12 @@ fingerprint: {fingerprint}
                     iocage.lib.ioc_common.git_pull(
                         repo, exit_on_error=self.exit_on_error)
                 except (pygit2.GitError, AssertionError, RuntimeError) as err:
-                    iocage.lib.ioc_common.logit({
-                        "level"  : "EXCEPTION",
-                        "message": err
-                    }, exit_on_error=self.exit_on_error,
+                    iocage.lib.ioc_common.logit(
+                        {
+                            "level": "EXCEPTION",
+                            "message": err
+                        },
+                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
 
@@ -1327,12 +1492,14 @@ fingerprint: {fingerprint}
             plugins = json.load(plugins)
 
         _plugins = self.__fetch_sort_plugin__(plugins)
+
         if self.plugin is None and not _list:
             for p in _plugins:
-                iocage.lib.ioc_common.logit({
-                    "level"  : "INFO",
-                    "message": f"[{_plugins.index(p)}] {p}"
-                },
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level": "INFO",
+                        "message": f"[{_plugins.index(p)}] {p}"
+                    },
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -1385,6 +1552,7 @@ fingerprint: {fingerprint}
         the list at all.
         """
         _plugin = plugin  # Gets lost in the enumeration if no match is found.
+
         if plugin.lower() == "exit":
             exit()
 
@@ -1392,10 +1560,12 @@ fingerprint: {fingerprint}
             try:
                 plugin = plugins[int(plugin)]
             except IndexError:
-                iocage.lib.ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": f"Plugin: {_plugin} not in list!"
-                }, exit_on_error=self.exit_on_error,
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": f"Plugin: {_plugin} not in list!"
+                    },
+                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
             except ValueError:
@@ -1403,22 +1573,28 @@ fingerprint: {fingerprint}
         else:
             # Quick list validation
             try:
-                plugin = [i for i, p in enumerate(plugins) if
-                          plugin.capitalize() in p or plugin in p]
+                plugin = [
+                    i for i, p in enumerate(plugins)
+                    if plugin.capitalize() in p or plugin in p
+                ]
                 try:
                     plugin = plugins[int(plugin[0])]
                 except IndexError:
-                    iocage.lib.ioc_common.logit({
-                        "level"  : "EXCEPTION",
-                        "message": f"Plugin: {_plugin} not in list!"
-                    }, exit_on_error=self.exit_on_error,
+                    iocage.lib.ioc_common.logit(
+                        {
+                            "level": "EXCEPTION",
+                            "message": f"Plugin: {_plugin} not in list!"
+                        },
+                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
             except ValueError as err:
-                iocage.lib.ioc_common.logit({
-                    "level"  : "EXCEPTION",
-                    "message": err
-                }, exit_on_error=self.exit_on_error,
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": err
+                    },
+                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
 
