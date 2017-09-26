@@ -257,7 +257,7 @@ class IOCage(object):
                     _callback=self.callback,
                     silent=self.silent)
             else:
-                msg = f"{self.jail} not found!"
+                msg = f"jail '{self.jail}' not found!"
 
                 ioc_common.logit(
                     {
