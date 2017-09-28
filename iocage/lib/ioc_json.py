@@ -1284,9 +1284,15 @@ class IOCJson(object):
                             raise ()
 
                     for snap in jail.snapshots_recursive:
-                        new_dataset = snap.name.replace(uuid,
-                                                        tag).split("@")[0]
-                        snap.clone(new_dataset)
+                        snap_name = snap.name.rsplit("@", 1)[1]
+
+                        # We only want our snapshot for this, the rest will
+                        # follow
+
+                        if snap_name == tag:
+                            new_dataset = snap.name.replace(uuid,
+                                                            tag).split("@")[0]
+                            snap.clone(new_dataset)
 
                     # Datasets are not mounted upon creation
                     new_jail_parent_ds = f"{pool}/iocage/jails/{tag}"
@@ -1327,6 +1333,7 @@ class IOCJson(object):
                     # Cleanup old datasets, dependents is like
                     # children_recursive but in reverse, useful for root/*
                     # datasets
+
                     for old_ds in jail.dependents:
                         if old_ds.type == libzfs.DatasetType.FILESYSTEM:
                             old_ds.umount(force=True)
@@ -1335,6 +1342,15 @@ class IOCJson(object):
 
                     jail.umount(force=True)
                     jail.delete()
+
+                    # Cleanup our snapshot from the cloning process
+
+                    for snap in new_jail.snapshots_recursive:
+                        snap_name = snap.name.rsplit("@", 1)[1]
+
+                        if snap_name == tag:
+                            s = self.zfs.get_snapshot(snap.name)
+                            s.delete()
 
                 except libzfs.ZFSException:
                     # A template, already renamed to a TAG
