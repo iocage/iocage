@@ -31,9 +31,7 @@ To install subsequent updates: run `make install` as root.
 
 ### Ports:
 
-- Build the port as follows: `cd /usr/ports/sysutils/py3-iocage/ ; make install clean`
-
-*Note: `sysutils/py3-iocage` will conflict with other previous versions of iocage included into the ports tree. We suggest you first uninstall any other previous version of iocage prior to install this one.*
+- Build the port as follows: `cd /usr/ports/sysutils/iocage/ ; make install clean`
 
 ### Pkg:
 
@@ -46,7 +44,7 @@ This repository replaces `iocage_legacy`. To upgrade to the current version:
 1. Stop the jails (`service iocage stop; iocage stop ALL`)
 1. Back up your data
 1. Remove the old `iocage` package if it is installed (`pkg delete iocage`)
-1. Install `py3-iocage` using one of the methods above
+1. Install `iocage` using one of the methods above
 1. Migrate the jails. This can be done by running `iocage list` as root
 1. Start the jails (`service iocage onestart`)
 
