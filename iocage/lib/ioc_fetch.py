@@ -268,21 +268,21 @@ class IOCFetch(object):
                     silent=self.silent)
 
             dataset = f"{self.iocroot}/download/{self.release}"
+            pool_dataset = f"{self.pool}/iocage/download/{self.release}"
 
             if os.path.isdir(dataset):
                 pass
             else:
-                self.zpool.create(dataset, {"compression": "lz4"})
-
-                self.zfs.get_dataset_by_path(dataset).mount()
+                self.zpool.create(pool_dataset, {"compression": "lz4"})
+                self.zfs.get_dataset(pool_dataset).mount()
 
             for f in self.files:
                 if not os.path.isfile(f):
 
-                    dataset = self.zfs.get_dataset(f"{self.pool}{dataset}")
+                    _dataset = self.zfs.get_dataset(pool_dataset)
 
-                    dataset.unmount()
-                    dataset.delete(recursive=True)
+                    _dataset.umount()
+                    _dataset.delete()
 
                     if f == "MANIFEST":
                         error = f"{f} is a required file!" \
