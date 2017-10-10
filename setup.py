@@ -22,10 +22,11 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 import os
-
 import sys
-import fastentrypoints
+
 from setuptools import find_packages, setup
+
+import fastentrypoints
 
 if os.path.isdir("/usr/local/etc/init.d"):
     _data = [('/usr/local/etc/init.d', ['rc.d/iocage']),
@@ -37,31 +38,21 @@ else:
 if sys.version_info < (3, 6):
     exit("Only Python 3.6 and higher is supported.")
 
-setup(name='iocage',
-      version='0.9.9.2',
-      description='A jail manager that uses ZFS.',
-      author='iocage Contributors',
-      author_email='https://groups.google.com/forum/#!forum/iocage',
-      url='https://github.com/iocage/iocage',
-      packages=find_packages(),
-      include_package_data=True,
-      install_requires=[
-          'click==6.7',
-          'texttable==0.9.0',
-          'requests==2.17.3',
-          'tqdm==4.14.0',
-          'coloredlogs==7.0',
-          'verboselogs==1.6',
-          'pygit2==0.25.1',
-          'cffi==1.9.1',
-          'libzfs'
-      ],
-      setup_requires=['pytest-runner'],
-      entry_points={
-          'console_scripts': [
-              'iocage = iocage.main:cli'
-          ]
-      },
-      data_files=_data,
-      tests_require=['pytest', 'pytest-cov', 'pytest-pep8']
-      )
+setup(
+    name='iocage',
+    version='0.9.10a',
+    description='A jail manager that uses ZFS.',
+    author='iocage Contributors',
+    author_email='https://groups.google.com/forum/#!forum/iocage',
+    url='https://github.com/iocage/iocage',
+    packages=find_packages(),
+    include_package_data=True,
+    install_requires=[
+        'click==6.7', 'texttable==0.9.0', 'requests==2.17.3', 'tqdm==4.14.0',
+        'coloredlogs==7.0', 'verboselogs==1.6', 'pygit2==0.25.1',
+        'cffi==1.9.1', 'libzfs'
+    ],
+    setup_requires=['pytest-runner'],
+    entry_points={'console_scripts': ['iocage = iocage.main:cli']},
+    data_files=_data,
+    tests_require=['pytest', 'pytest-cov', 'pytest-pep8'])

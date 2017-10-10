@@ -30,10 +30,9 @@ import subprocess as su
 import sys
 
 import click
+import iocage.lib.ioc_check as ioc_check
 # This prevents it from getting in our way.
 from click import core
-
-import iocage.lib.ioc_check as ioc_check
 
 core._verify_python3_env = lambda: None
 user_locale = os.environ.get("LANG", "en_US.UTF-8")
@@ -48,8 +47,8 @@ signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 # @formatter:on
 
 try:
-    su.check_call(["sysctl", "vfs.zfs.version.spa"],
-                  stdout=su.PIPE, stderr=su.PIPE)
+    su.check_call(
+        ["sysctl", "vfs.zfs.version.spa"], stdout=su.PIPE, stderr=su.PIPE)
 except su.CalledProcessError:
     sys.exit("ZFS is required to use iocage.\n"
              "Try calling 'kldload zfs' as root.")
@@ -57,14 +56,14 @@ except su.CalledProcessError:
 
 def print_version(ctx, param, value):
     """Prints the version and then exits."""
+
     if not value or ctx.resilient_parsing:
         return
-    print("Version\t0.9.9.2 09/30/2017")
+    print("Version\t0.9.10 ALPHA")
     sys.exit()
 
 
-cmd_folder = os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                          'cli'))
+cmd_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), 'cli'))
 
 
 class IOCageCLI(click.MultiCommand):
@@ -85,8 +84,7 @@ class IOCageCLI(click.MultiCommand):
 
     def get_command(self, ctx, name):
         try:
-            mod = __import__(f"iocage.cli.{name}",
-                             None, None, ["cli"])
+            mod = __import__(f"iocage.cli.{name}", None, None, ["cli"])
             mod_name = mod.__name__.replace("iocage.cli.", "")
 
             try:
@@ -105,8 +103,12 @@ class IOCageCLI(click.MultiCommand):
 
 
 @click.command(cls=IOCageCLI)
-@click.option("--version", "-v", is_flag=True, callback=print_version,
-              help="Display iocage's version and exit.")
+@click.option(
+    "--version",
+    "-v",
+    is_flag=True,
+    callback=print_version,
+    help="Display iocage's version and exit.")
 def cli(version):
     """A jail manager."""
     skip_check = False
