@@ -25,7 +25,6 @@
 import os
 
 import click
-
 import iocage.lib.ioc_common as ioc_common
 import iocage.lib.iocage as ioc
 
@@ -141,12 +140,13 @@ def validate_count(ctx, param, value):
 def cli(**kwargs):
     """CLI command that calls fetch_release()"""
     release = kwargs.get("release", None)
+    _file = kwargs.get("_file", False)
 
     if release is not None:
         release = release.rsplit("-", 1)[0].rsplit("-", 1)[0]
         host_release = os.uname()[2].rsplit("-", 1)[0].rsplit("-", 1)[0]
 
-        if host_release < release:
+        if host_release < release and not _file:
             ioc_common.logit({
                 "level":
                 "EXCEPTION",
