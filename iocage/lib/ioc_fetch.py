@@ -390,6 +390,25 @@ class IOCFetch(object):
                         if rel not in releases:
                             releases.append(rel)
 
+                if len(releases) == 0:
+                    iocage.lib.ioc_common.logit(
+                        {
+                            "level":
+                            "EXCEPTION",
+                            "message":
+                            f"""\
+    No RELEASEs were found at {self.server}/{self.root_dir}!
+    Please ensure the server is correct and the root-dir is
+    pointing to a top-level directory with the format:
+        - XX.X-RELEASE
+        - XX.X-RELEASE
+        - XX.X_RELEASE
+    """
+                        },
+                        exit_on_error=self.exit_on_error,
+                        _callback=self.callback,
+                        silent=self.silent)
+
                 releases = iocage.lib.ioc_common.sort_release(releases)
 
                 for r in releases:
@@ -438,6 +457,25 @@ class IOCFetch(object):
 
                         if rel not in releases:
                             releases.append(rel)
+
+                if len(releases) == 0:
+                    iocage.lib.ioc_common.logit(
+                        {
+                            "level":
+                            "EXCEPTION",
+                            "message":
+                            f"""\
+    No RELEASEs were found at {self.server}/{self.root_dir}!
+    Please ensure the server is correct and the root-dir is
+    pointing to a top-level directory with the format:
+        - XX.X-RELEASE
+        - XX.X-RELEASE
+        - XX.X_RELEASE
+    """
+                        },
+                        exit_on_error=self.exit_on_error,
+                        _callback=self.callback,
+                        silent=self.silent)
 
                 releases = iocage.lib.ioc_common.sort_release(releases)
 
@@ -504,6 +542,26 @@ class IOCFetch(object):
 
         if not self.release:
             ftp_list = [rel for rel in ftp_list if "-RELEASE" in rel]
+
+            if len(ftp_list) == 0:
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level":
+                        "EXCEPTION",
+                        "message":
+                        f"""\
+No RELEASEs were found at {self.server}/{self.root_dir}!
+Please ensure the server is correct and the root-dir is
+pointing to a top-level directory with the format:
+    - XX.X-RELEASE
+    - XX.X-RELEASE
+    - XX.X_RELEASE
+"""
+                    },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
+                    silent=self.silent)
+
             releases = iocage.lib.ioc_common.sort_release(ftp_list)
 
             for r in releases:
