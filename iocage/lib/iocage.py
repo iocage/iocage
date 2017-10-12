@@ -1035,12 +1035,9 @@ class IOCage(object):
             uuid, path = self.__check_jail_existence__()
             status, jid = self.list("jid", uuid=uuid)
 
-            if prop == "state":
-                if status:
-                    state = "up"
-                else:
-                    state = "down"
+            state = "up" if status else "down"
 
+            if prop == "state":
                 return state
             elif plugin:
                 _prop = prop.split(".")
@@ -1054,11 +1051,19 @@ class IOCage(object):
                 else:
                     return props[0].decode("utf-8")
             elif prop == "all":
+                _props = {}
+
                 props = ioc_json.IOCJson(
                     path,
                     exit_on_error=self.exit_on_error).json_get_value(prop)
 
-                return props
+                # We want this sorted below, so we add it to the old dict
+                props["state"] = state
+
+                for key in sorted(props.keys()):
+                    _props[key] = props[key]
+
+                return _props
             else:
                 try:
                     return ioc_json.IOCJson(
@@ -1078,22 +1083,26 @@ class IOCage(object):
 
             for uuid, path in self.jails.items():
                 try:
+                    status, _ = self.list("jid", uuid=uuid)
+                    state = "up" if status else "down"
+
                     if prop == "state":
-                        status, _ = self.list("jid", uuid=uuid)
-
-                        if status:
-                            state = "up"
-                        else:
-                            state = "down"
-
                         jail_list.append({uuid: state})
                     elif prop == "all":
+                        _props = {}
                         props = ioc_json.IOCJson(
                             path,
                             exit_on_error=self.exit_on_error).json_get_value(
                                 prop)
 
-                        jail_list.append({uuid: props})
+                        # We want this sorted below, so we add it to the old
+                        # dict
+                        props["state"] = state
+
+                        for key in sorted(props.keys()):
+                            _props[key] = props[key]
+
+                        jail_list.append({uuid: _props})
                     else:
                         jail_list.append({
                             uuid:
