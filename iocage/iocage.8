@@ -332,6 +332,13 @@ Properties can be configured for the clone by listing them after the
 .Ar SOURCE
 is named.
 .Pp
+Options:
+.Bl -tag -width "[-c | --count]"
+.It Op Fl c | -count
+Designate the number of jails to create, all cloned from
+the desired jail.
+.El
+.Pp
 Example:
 .Pp
 .Dl # iocage clone 38114a58 --name cloneexample1
