@@ -1,0 +1,324 @@
+#compdef iocage
+
+## Written by Clément 'wxcafe' Hertling <clement.hertling@wxcafe.net>
+## on Oct-15-2017. Feel free to improve on this
+
+_iocage_list_jails() {
+  local -a jails
+  jails=($(iocage list -H | cut -f 2))
+  _describe 'jail' jails
+}
+
+_iocage_list_releases() {
+  local -a releases
+  releases=($(iocage list -H -b))
+  _describe 'release' releases
+}
+_iocage_list_templates() {
+  local -a templates
+  templates=($(iocage list -H -t | cut -f 2))
+  _describe 'template' templates
+}
+
+_iocage_list_potential_releases(){
+  local -a releases
+  releases=($(iocage list -R | grep '^\[' | cut -d ' ' -f 2))
+  _describe 'release' releases
+}
+
+_iocage_list_jails_or_releases() {
+  local -a releases jails
+  releases=($(iocage list -H -b))
+  jails=($(iocage list -H | cut -f 2))
+  _describe 'jail_or_release' jails -- releases
+}
+
+_iocage_list_zpools() {
+  zpool list -H | cut -f 1 | while read zpool; do
+    _wanted 'zpools' expl 'zpools' compadd $zpool
+  done
+}
+
+_iocage_complete_pkg() {
+  ((CURRENT=2))
+  _normal
+}
+
+_iocage() {
+  local context state cmds line
+  typeset -A opt_args
+
+  _arguments -C \
+    '(-v --version)'{-v,--version}'[display version information]' \
+    '--help[display iocage help text]' \
+    '1: :->cmds' \
+    '*:: :->args'
+
+  case $state in
+    cmds)
+      _values "iocage command" \
+        "activate[activate zpool]" \
+        "chroot[chroot into a jail]" \
+        "clean[destroy zfs datasets]" \
+        "clone[clone a jail]" \
+        "console[open a shell inside the jail]" \
+        "create[deploy a new jail]" \
+        "destroy[destroy the specified jail]" \
+        "df[show resource usage of all jails]" \
+        "exec[execute a command inside specified jail]" \
+        "export[exports the specified jail]" \
+        "fetch[downloads and/or updates releases]" \
+        "fstab[manipulates fstab of a specific jail]" \
+        "get[display the specified property]" \
+        "import[import a specific jail image]" \
+        "list[list the specified dataset type]" \
+        "migrate[migrate from iocage-legacy]" \
+        "pkg[run pkg commands in the specified jail]" \
+        "rename[rename the specified jail]" \
+        "restart[restart the specified jail]" \
+        "rollback[roll back jail to a snapshot]" \
+        "set[set specified properties in desired jail]" \
+        "snaplist[list snapshots of a jail]" \
+        "snapremove[delete snapshots of the specified jail]" \
+        "snapshot[create a zfs snapshot of the specified jail]" \
+        "start[start a jail]" \
+        "stop[stop a jail]" \
+        "update[updates jail to latest patch level]" \
+        "upgrade[updates jail from release to release]"
+      ;;
+    args)
+      case $line[1] in
+        activate)
+          _arguments \
+            :zpool:_iocage_list_zpools
+          ;;
+        chroot)
+          _arguments \
+            :jail:_iocage_list_jails
+          ;;
+        clean)
+          _arguments \
+            '(-a --all)'{-a,--all}'[destroy all iocage data]' \
+            '(-b -r --base)'{-b,-r,--base}'[destroy all fetched RELEASE jails]' \
+            '(-f --force)'{-f,--force}'[run without further interaction]' \
+            '(-j --jail)'{-j,--jail}'[destroy all created jails]' \
+            '(-t --template)'{-t,--template}'[destroy all templates]'
+          ;;
+        clone)
+          _arguments \
+            :jail:_iocage_list_jails \
+            '(-c --count)'{-c,--count}'[number of jails to create]':count
+          ;;
+        create)
+          _arguments \
+            '(-n --name)'{-n,--name}'[provide a name for the new jail]':name \
+            '(-b --basejail)'{-b,--basejail}'[create a new basejail]' \
+            '(-c --count)'{-c,--count}'[number of jails to create]':count \
+            '(-e --empty)'{-e,--empty}'[create an empty jail]' \
+            '(-f --force)'{-f,--force}'[skip prompts]' \
+            '(-p --pkglist)'{-p,--pkglist}'[JSON list of packages to install]':pkglist:_files \
+            '(-r --release)'{-r,--release}'[RELEASE to use for the new jail]:release:_iocage_list_releases' \
+            '(-s --short)'{-s,--short}'[use a short UUID (8 chars)]' \
+            '(-t --template)'{-t,--template}'[create jail from specified template]:template:_iocage_list_templates' \
+            '(-u --uuid)'{-u,--uuid}'[specify a UUID]':uuid
+          ;;
+        destroy)
+          _arguments \
+            :jail_or_release:_iocage_list_jails_or_releases \
+            '(-R --recursive)'{-r,--recursive}'[skip the destroy children prompt]' \
+            '(-d --download)'{-d,--download}'[also destroy specified RELEASE download]' \
+            '(-f --force)'{-f,--force}'[skip prompts]' \
+            '(-r --release)'{-r,--release}'[destroy a specified RELEASE dataset]'
+          ;;
+        df)
+          _arguments \
+            '(-H -h --header)'{-H,-h,--header}'[simple output for scripting]' \
+            '(-l --long)'{-l,--long}'[show the full UUID]' \
+            '(-s --sort)'{-s,--sort}'[sort the list by the named type]:sort:((
+                UUID\:"Jail UUID"
+                CRT\:"Compression ratio"
+                RES\:"Reserved space"
+                QTA\:"Disk quota"
+                USE\:"Used space"
+                AVA\:"Available space"
+                NAME\:"Jail name"))'
+          ;;
+        exec)
+          _arguments \
+            :jail:_iocage_list_jails \
+            '(-U --jail_user)'{-U,--jail_user}'[user in jail to run command as]':name \
+            '(-u --host_user)'{-u,--host_user}'[user on host to run command as]':name:_users
+          ;;
+        export)
+          _arguments \
+            :jail:_iocage_list_jails
+          ;;
+        fetch)
+          _arguments \
+            "--accept[accept the plugin's LICENCE agreement]" \
+            "--noaccept[don't accept the plugin's LICENCE agreement]" \
+            '--plugins[list all available plugins for creation]':properties \
+            '(-E --eol)'{-e,--eol}'[enable End Of Lofe checking]' \
+            '(-F --files)'{-f,--files}'[specify the files to fetch from the mirror]':files \
+            '(-NE --noeol)'{-NE,--noeol}'[disable EOL checking]' \
+            '(-NU --noupdate)'{-NU,--noupdate}'[disable updating to the latest patch level]' \
+            '(-NV --noverify)'{-NV,--noverify}'[disable SSL certificate verification]' \
+            '(-P --plugin-file)'{-P,--plugin-file}'[specify which plugin file to use]':file \
+            '(-U --update)'{-U,--update}'[update to the latest patch level]' \
+            '(-V --verify)'{-V,--verify}'[enable SSL certificate verification]' \
+            '(-a --auth)'{-a,--auth}'[specifies HTTP authentication method]:auth:(basic digest)' \
+            '(-c --count)'{-c,--count}'[number of jails to create]':count \
+            '(-d --root-dir)'{-d,--root-dir}'[specify the directory containing RELEASE files]:root_dir:_files -/' \
+            '(-f --file)'{-f,--file}'[use local file directory for the root directory]' \
+            '(-h --http)'{-h,--http}'[change -s | --server to use HTTP instead of FTP]' \
+            '(-p --password)'{-p,--password}'[add a password if required]':password \
+            '(-r --release)'{-r,--release}'[define the FreeBSD release to fetch]':release:_iocage_list_potential_releases \
+            '(-s --server)'{-s,--server}'[define which server to use]':server \
+            '(-u --user)'{-u,--user}'[define the user]':user:_users
+          ;;
+        fstab)
+          _arguments \
+            :jail:_iocage_list_jails \
+            '(-H -h --header)'{-H,-h,--header}'[simple output for scripting]' \
+            '(-a --add)'{-a,--add}'[adds an entry to the jails fstab and mounts it]' \
+            '(-r --remove)'{-r,--remove}'[removes an entry from the jails fstab and unmounts it]' \
+            '(-l --list)'{-l,--list}'[lists the jails fstab]' \
+            '(-e --edit)'{-e,--edit}'[open the fstab file in EDITOR]'
+          ;;
+        get)
+          _arguments \
+            - pool \
+              '(-p --pool)'{-p,--pool}'[get the currently activated zpool]' \
+            - jails \
+              1:property:'((
+                ip4_addr\:"IPv4 address"
+                ip6_addr\:"IPv6 address"
+                basejail
+                release\:"FreeBSD RELEASE jail is running"
+                comment\:"short comment"
+                notes\:"longer notes"
+                defaultrouter\:"IPv4 gateway"
+                defaultrouter6\:"IPv6 gateway"
+                dhcp
+                exec_jail_user\:"user to run commands with"
+                hostid\:"jail UUID"
+                owner\:"owner of the jail"
+                quota\:"disk quota"
+                all\:"get all properties"))' \
+              2:jail:_iocage_list_jails \
+              '(-P --plugin)'{-P,--plugin}'[get the specified key for a plugin jail]' \
+              '(-r --recursive)'{-r,--recursive}'[get the specified property for all jails]' \
+              '(-H -h --header)'{-H,-h,--header}'[simple output for scripting]' \
+          ;;
+        import)
+          _arguments \
+            :uuid:
+          ;;
+        list)
+          _arguments \
+            '--http[changes -R | --remote to use HTTP]' \
+              '(-H -h --header)'{-H,-h,--header}'[simple output for scripting]' \
+              '(-P --plugins)'{-P,--plugins}'[show available plugins]' \
+              '(-R --remote)'{-R,--remote}'[show available RELEASE options for remote]' \
+              '(-b -r --base --release)'{-b,-r,--base,--release}'[list all bases]' \
+              '(-l --long)'{-l,--long}'[show full UUID and ip4 address]' \
+              '(-q --quick)'{-q,--quick}'[list all jails with less fields]' \
+              '(-s --sort)'{-s,--sort}'[sorts the list by the given type]':sort:'((
+                JID\:"Jail Identifier"
+                UUID\:"Jail UUID"
+                STATE\:"Active state of the jail"
+                NAME\:"User assigned NAME"
+                RELEASE\:"FreeBSD RELEASE installed on the jail"
+                IP4\:"IPv4 address"
+                ))' \
+              '(-t --template)'{-t,--template}'[lists all templates]'
+            ;;
+          migrate)
+            _arguments \
+              '(-d --delete)'{-d,--delete}'[destroy the old dataset after migration]' \
+              '(-f --force)'{-f,--force}'[bypass warnings or user interaction]'
+            ;;
+          pkg)
+            _arguments \
+              1:jail:_iocage_list_jails \
+              :subcommands:_iocage_complete_pkg
+            ;;
+          rename)
+            _arguments \
+              1:jail:_iocage_list_jails \
+              2:name:
+            ;;
+          restart)
+            _arguments \
+              '(-s --soft)'{-s,--soft}'[restart jail, but keep network stack running]' \
+              :jail:_iocage_list_jails
+            ;;
+          rollback)
+            _arguments \
+              '(-f --force)'{-f,--force}'[bypass warnings or user interaction]' \
+              '(-n --name)'{-n,--name}'[snapshot name]':name::jail:_iocage_list_jails
+            ;;
+          set)
+            _arguments \
+              1:property:'((
+                ip4_addr=\:"IPv4 address"
+                ip6_addr=\:"IPv6 address"
+                basejail=
+                release=\:"FreeBSD RELEASE jail is running"
+                comment=\:"short comment"
+                notes=\:"longer notes"
+                defaultrouter=\:"IPv4 gateway"
+                defaultrouter6=\:"IPv6 gateway"
+                dhcp=
+                exec_jail_user=\:"user to run commands with"
+                owner=\:"owner of the jail"
+                quota=\:"disk quota"))' \
+              2:jail:_iocage_list_jails \
+              '(-P --plugin)'{-p,--plugin}'[set the specified key for a plugin jail]':plugin:
+            ;;
+          snaplist)
+            _arguments \
+              '(-H -h --header)'{-H,-h,--header}'[simple output for scripting]' \
+              '(-l --long)'{-l,--long}'[show full dataset path]' \
+              '(-s --sort)'{-s,--sort}'[sorts the list by the given type]':sort:'((
+                NAME\:"snapshot name"
+                CREATED\:"creation time"
+                RSIZE\:"referenced size"
+                USED\:"used space"
+                ))' \
+              :jail:_iocage_list_jails
+            ;;
+          snapremove)
+            _arguments \
+                '(-n --name)'{-n,--name}'[snapshot name]':name::jail:_iocage_list_jails
+            ;;
+          snapshot)
+            _arguments \
+                '(-n --name)'{-n,--name}'[snapshot name]' \
+                :jail:_iocage_list_jails
+            ;;
+          start)
+            _arguments \
+                '--rc[start all jails with boot=on in priority order (lower->higher)]' \
+                ::jail:_iocage_list_jails
+            ;;
+          stop)
+            _arguments \
+                '--rc[stop all jails with boot=on in priority order (higher->lower)]' \
+                ::jail:_iocage_list_jails
+            ;;
+          update)
+            _arguments \
+              :jail:_iocage_list_jails
+            ;;
+          upgrade)
+            _arguments \
+              '(-r --release)'{-r,--release}'[RELEASE to upgrade the jail to]':release:_iocage_list_releases:jail:_iocage_list_jails
+            ;;
+      esac
+    ;;
+  esac
+}
+
+_iocage "$@"
+# vim: ft=zsh sw=2 ts=2 et

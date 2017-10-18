@@ -332,6 +332,13 @@ Properties can be configured for the clone by listing them after the
 .Ar SOURCE
 is named.
 .Pp
+Options:
+.Bl -tag -width "[-c | --count]"
+.It Op Fl c | -count
+Designate the number of jails to create, all cloned from
+the desired jail.
+.El
+.Pp
 Example:
 .Pp
 .Dl # iocage clone 38114a58 --name cloneexample1
@@ -373,8 +380,6 @@ Specify a JSON file which manages the installation of each
 package in the newly created jail.
 .It Op Fl r | -release Ar TEXT
 Specify which RELEASE to use for the new jail.
-.It Op Fl f | -force
-Skip prompts, auto-confirming them with yes.
 .It Op Fl s | -short
 Use a short UUID of 8 characters instead of the default 36.
 .It Op Fl t | -template Ar TEXT
