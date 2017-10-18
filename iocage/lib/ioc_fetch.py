@@ -231,7 +231,10 @@ class IOCFetch(object):
             else:
                 eol = []
 
-            self.fetch_http_release(eol, _list=_list)
+            rel = self.fetch_http_release(eol, _list=_list)
+
+            if _list:
+                return rel
         elif self._file:
             # Format for file directory should be: root-dir/RELEASE/*.txz
 
@@ -326,7 +329,10 @@ class IOCFetch(object):
             else:
                 eol = []
 
-            self.fetch_ftp_release(eol, _list=_list)
+            rel = self.fetch_ftp_release(eol, _list=_list)
+
+            if _list:
+                return rel
 
     def fetch_http_release(self, eol, _list=False):
         """
@@ -477,6 +483,9 @@ class IOCFetch(object):
                         _callback=self.callback,
                         silent=self.silent)
 
+                if _list:
+                    return releases
+
                 releases = iocage.lib.ioc_common.sort_release(releases)
 
                 for r in releases:
@@ -496,9 +505,6 @@ class IOCFetch(object):
                             },
                             _callback=self.callback,
                             silent=self.silent)
-
-                if _list:
-                    return
 
                 host_release = self.__fetch_host_release__()
                 self.release = input("\nType the number of the desired"
@@ -562,6 +568,9 @@ pointing to a top-level directory with the format:
                     _callback=self.callback,
                     silent=self.silent)
 
+            if _list:
+                return ftp_list
+
             releases = iocage.lib.ioc_common.sort_release(ftp_list)
 
             for r in releases:
@@ -581,9 +590,6 @@ pointing to a top-level directory with the format:
                         },
                         _callback=self.callback,
                         silent=self.silent)
-
-            if _list:
-                return
 
             host_release = self.__fetch_host_release__()
             self.release = input("\nType the number of the desired"
