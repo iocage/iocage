@@ -64,6 +64,7 @@ def cli(dataset_type, header, _long, remote, http, plugins, _sort, quick):
 
         ioc_fetch.IOCFetch("", http=http, hardened=hardened).fetch_release(
             _list=True)
+        return
 
     if plugins and remote:
         _list = ioc_fetch.IOCFetch("").fetch_plugin_index("", _list=True,
