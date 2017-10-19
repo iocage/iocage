@@ -12,3 +12,5 @@ venv/
 build/
 venv-*/
 .python-version
+
+nvim\.core
