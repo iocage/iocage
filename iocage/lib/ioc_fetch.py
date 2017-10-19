@@ -1013,18 +1013,18 @@ pointing to a top-level directory with the format:
             if self.verify:
                 f = "https://raw.githubusercontent.com/freebsd/freebsd" \
                     "/master/usr.sbin/freebsd-update/freebsd-update.sh"
-            else:
-                f = "http://raw.githubusercontent.com/freebsd/freebsd" \
-                    "/master/usr.sbin/freebsd-update/freebsd-update.sh"
 
-            tmp = tempfile.NamedTemporaryFile(delete=False)
-            with urllib.request.urlopen(f) as fbsd_update:
-                tmp.write(fbsd_update.read())
-            tmp.close()
-            os.chmod(tmp.name, 0o755)
+                tmp = tempfile.NamedTemporaryFile(delete=False)
+                with urllib.request.urlopen(f) as fbsd_update:
+                    tmp.write(fbsd_update.read())
+                tmp.close()
+                os.chmod(tmp.name, 0o755)
+                fetch_name = tmp.name
+            else:
+                fetch_name = f"{new_root}/usr/sbin/freebsd-update"
 
             fetch_cmd = [
-                tmp.name, "-b", new_root, "-d",
+                fetch_name, "-b", new_root, "-d",
                 f"{new_root}/var/db/freebsd-update/", "-f",
                 f"{new_root}/etc/freebsd-update.conf",
                 "--not-running-from-cron", "fetch"
@@ -1038,16 +1038,19 @@ pointing to a top-level directory with the format:
                 # since it's not fatal
                 su.Popen(
                     [
-                        tmp.name, "-b", new_root, "-d",
+                        fetch_name, "-b", new_root, "-d",
                         f"{new_root}/var/db/freebsd-update/", "-f",
                         f"{new_root}/etc/freebsd-update.conf", "install"
                     ],
                     stderr=su.DEVNULL).communicate()
 
-            if not tmp.closed:
-                tmp.close()
+            if self.verify:
+                # tmp only exists if they verify SSL certs
 
-            os.remove(tmp.name)
+                if not tmp.closed:
+                    tmp.close()
+
+                os.remove(tmp.name)
 
         try:
             if not cli:
