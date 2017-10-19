@@ -1010,8 +1010,12 @@ pointing to a top-level directory with the format:
         os.environ["PAGER"] = "/bin/cat"
 
         if os.path.isfile(f"{new_root}/etc/freebsd-update.conf"):
-            f = "https://raw.githubusercontent.com/freebsd/freebsd" \
-                "/master/usr.sbin/freebsd-update/freebsd-update.sh"
+            if self.verify:
+                f = "https://raw.githubusercontent.com/freebsd/freebsd" \
+                    "/master/usr.sbin/freebsd-update/freebsd-update.sh"
+            else:
+                f = "http://raw.githubusercontent.com/freebsd/freebsd" \
+                    "/master/usr.sbin/freebsd-update/freebsd-update.sh"
 
             tmp = tempfile.NamedTemporaryFile(delete=False)
             with urllib.request.urlopen(f) as fbsd_update:
