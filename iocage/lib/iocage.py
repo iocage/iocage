@@ -1596,3 +1596,81 @@ class IOCage(object):
                 conf,
                 silent=self.silent,
                 exit_on_error=self.exit_on_error)
+
+    def update(self):
+        """Updates a jail to the latest patchset."""
+        uuid, path = self.__check_jail_existence__()
+        conf = ioc_json.IOCJson(
+            path,
+            silent=self.silent,
+            stop=True,
+            exit_on_error=self.exit_on_error).json_load()
+        freebsd_version = ioc_common.checkoutput(["freebsd-version"])
+        status, jid = self.list("jid", uuid=uuid)
+        started = False
+        _release = conf["release"].rsplit("-", 1)[0]
+        release = _release if "-RELEASE" in _release else conf["release"]
+        _silent = self.silent
+
+        if conf["type"] == "jail":
+            if not status:
+                self.silent = True
+                self.start()
+                status, jid = self.list("jid", uuid=uuid)
+                started = True
+                self.silent = _silent
+        elif conf["type"] == "basejail":
+            ioc_common.logit(
+                {
+                    "level":
+                    "EXCEPTION",
+                    "message":
+                    "Please run \"iocage migrate\" before trying"
+                    f" to update {uuid}"
+                },
+                exit_on_error=True)
+        elif conf["type"] == "template":
+            ioc_common.logit(
+                {
+                    "level":
+                    "EXCEPTION",
+                    "message":
+                    "Please convert back to a jail before trying"
+                    f" to update {uuid}"
+                },
+                exit_on_error=True)
+        else:
+            ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": f"{conf['type']} is not a supported jail type."
+                },
+                exit_on_error=True)
+
+        if "HBSD" in freebsd_version:
+            su.Popen(["hbsd-update", "-j", jid]).communicate()
+
+            if started:
+                self.silent = True
+                self.stop()
+                self.silent = _silent
+        else:
+            if conf["basejail"] != "yes":
+                ioc_fetch.IOCFetch(release).fetch_update(True, uuid)
+            else:
+                # Basejails only need their RELEASE updated
+                ioc_fetch.IOCFetch(release).fetch_update()
+
+            if started:
+                self.silent = True
+                self.stop()
+                self.silent = _silent
+
+            message = f"\n{uuid} has been updated successfully."
+            ioc_common.logit(
+                {
+                    "level": "INFO",
+                    "message": message
+                },
+                _callback=self.callback,
+                silent=self.silent)
