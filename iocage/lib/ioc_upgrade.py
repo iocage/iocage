@@ -132,15 +132,16 @@ class IOCUpgrade(object):
             stdout=su.PIPE)
 
         for i in install.stdout:
+            i = i.decode().rstrip()
             iocage.lib.ioc_common.logit(
                 {
                     "level": "INFO",
-                    "message": i.decode().rstrip()
+                    "message": i
                 },
                 _callback=self.callback,
                 silent=self.silent)
 
-            if i.decode().rstrip() == "No updates are available to install.":
+            if i == "No updates are available to install.":
                 return True
 
         return False
