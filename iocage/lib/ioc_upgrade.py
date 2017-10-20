@@ -22,6 +22,7 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """iocage upgrade module"""
+import fileinput
 import os
 import subprocess as su
 import tempfile
@@ -35,10 +36,10 @@ import iocage.lib.ioc_list
 class IOCUpgrade(object):
     """Will upgrade a jail to the specified RELEASE."""
 
-    def __init__(self, conf, new_release, path):
+    def __init__(self, conf, new_release, path, silent=False, callback=None):
         self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
-        self.iocroot = iocage.lib.ioc_json.IOCJson(self.pool).json_get_value(
-            "iocroot")
+        self.iocroot = iocage.lib.ioc_json.IOCJson(
+            self.pool).json_get_value("iocroot")
         self.freebsd_version = iocage.lib.ioc_common.checkoutput(
             ["freebsd-version"])
         self.conf = conf
@@ -53,15 +54,21 @@ class IOCUpgrade(object):
             self.uuid)
         self._freebsd_version = f"{self.iocroot}/jails/" \
                                 f"{self.uuid}/root/bin/freebsd-version"
+        self.silent = silent
+        self.callback = callback
 
     def upgrade_jail(self):
         if "HBSD" in self.freebsd_version:
             su.Popen(["hbsd-upgrade", "-j", self.jid]).communicate()
+
             return
 
         os.environ["PAGER"] = "/bin/cat"
+
         if not os.path.isfile(f"{self.path}/etc/freebsd-update.conf"):
             return
+
+        self.__upgrade_check_conf__()
 
         f = "https://raw.githubusercontent.com/freebsd/freebsd" \
             "/master/usr.sbin/freebsd-update/freebsd-update.sh"
@@ -74,16 +81,15 @@ class IOCUpgrade(object):
             tmp.close()
             os.chmod(tmp.name, 0o755)
 
-            fetch = su.Popen([tmp.name, "-b", self.path, "-d",
-                              f"{self.path}/var/db/freebsd-update/",
-                              "-f",
-                              f"{self.path}/etc/freebsd-update.conf",
-                              "--not-running-from-cron",
-                              "--currently-running "
-                              f"{self.jail_release}",
-                              "-r",
-                              self.new_release, "upgrade"],
-                             stdin=su.PIPE)
+            fetch = su.Popen(
+                [
+                    tmp.name, "-b", self.path, "-d",
+                    f"{self.path}/var/db/freebsd-update/", "-f",
+                    f"{self.path}/etc/freebsd-update.conf",
+                    "--not-running-from-cron", "--currently-running "
+                    f"{self.jail_release}", "-r", self.new_release, "upgrade"
+                ],
+                stdin=su.PIPE)
             fetch.communicate(b"y")
 
             if fetch.returncode:
@@ -99,28 +105,55 @@ class IOCUpgrade(object):
                 with open(self._freebsd_version, "r") as r:
                     for line in r:
                         if line.startswith("USERLAND_VERSION"):
-                            new_release = line.rstrip().partition(
-                                "=")[2].strip('"')
+                            new_release = line.rstrip().partition("=")[
+                                2].strip('"')
         finally:
             if tmp:
                 if not tmp.closed:
                     tmp.close()
                 os.remove(tmp.name)
 
-        iocage.lib.ioc_json.IOCJson(f"{self.path.replace('/root', '')}",
-                                    silent=True).json_set_value(
-            f"release={new_release}")
+        iocage.lib.ioc_json.IOCJson(
+            f"{self.path.replace('/root', '')}",
+            silent=True).json_set_value(f"release={new_release}")
 
         return new_release
 
     def __upgrade_install__(self, name):
         """Installs the upgrade and returns the exit code."""
-        install = su.Popen([name, "-b", self.path, "-d",
-                            f"{self.path}/var/db/freebsd-update/",
-                            "-f",
-                            f"{self.path}/etc/freebsd-update.conf",
-                            "-r",
-                            self.new_release, "install"], stderr=su.PIPE)
-        install.communicate()
+        install = su.Popen(
+            [
+                name, "-b", self.path, "-d",
+                f"{self.path}/var/db/freebsd-update/", "-f",
+                f"{self.path}/etc/freebsd-update.conf", "-r", self.new_release,
+                "install"
+            ],
+            stderr=su.PIPE,
+            stdout=su.PIPE)
 
-        return install.returncode
+        for i in install.stdout:
+            iocage.lib.ioc_common.logit(
+                {
+                    "level": "INFO",
+                    "message": i.decode().rstrip()
+                },
+                _callback=self.callback,
+                silent=self.silent)
+
+            if i.decode().rstrip() == "No updates are available to install.":
+                return True
+
+        return False
+
+    def __upgrade_check_conf__(self):
+        """
+        Replaces freebsd-update.conf's default Components configuration to not
+        update kernel
+        """
+        f = f"{self.path}/etc/freebsd-update.conf"
+        text = "Components src world kernel"
+        replace = "Components src world"
+
+        with fileinput.FileInput(f, inplace=True, backup=".bak") as _file:
+            for line in _file:
+                print(line.replace(text, replace), end='')
