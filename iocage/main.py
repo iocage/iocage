@@ -59,7 +59,7 @@ def print_version(ctx, param, value):
 
     if not value or ctx.resilient_parsing:
         return
-    print("Version\t0.9.10 ALPHA")
+    print("Version\t0.9.10 RC")
     sys.exit()
 
 
@@ -67,6 +67,7 @@ cmd_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), 'cli'))
 
 
 class IOCageCLI(click.MultiCommand):
+
     """
     Iterates in the 'cli' directory and will load any module's cli definition.
     """
