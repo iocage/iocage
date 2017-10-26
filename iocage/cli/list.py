@@ -24,7 +24,6 @@
 """list module for the cli."""
 import click
 import iocage.lib.ioc_common as ioc_common
-import iocage.lib.ioc_fetch as ioc_fetch
 import iocage.lib.iocage as ioc
 
 
@@ -99,13 +98,17 @@ def cli(dataset_type, header, _long, remote, http, plugins, _sort, quick):
         else:
             hardened = False
 
-        _list = ioc_fetch.IOCFetch(
-            "", http=http, hardened=hardened).fetch_release(_list=True)
+        _list = iocage.fetch(
+            list=True, remote=True, http=http, hardened=hardened)
         header = False
 
     if plugins and remote:
-        _list = ioc_fetch.IOCFetch("").fetch_plugin_index(
-            "", _list=True, list_header=header, list_long=_long)
+        _list = iocage.fetch(
+            list=True,
+            remote=True,
+            header=header,
+            _long=_long,
+            plugin_file=True)
     elif not remote:
         _list = iocage.list(
             dataset_type, header, _long, _sort, plugin=plugins, quick=quick)
