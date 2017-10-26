@@ -45,6 +45,7 @@ import libzfs
 
 
 class PoolAndDataset(object):
+
     def __init__(self):
         self.pool = ioc_json.IOCJson().json_get_value("pool")
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
@@ -90,6 +91,7 @@ class PoolAndDataset(object):
 
 
 class IOCage(object):
+
     def __init__(self,
                  jail=None,
                  rc=False,
@@ -234,7 +236,9 @@ class IOCage(object):
             # We got a partial, time to search.
             _jail = {
                 uuid: path
+
                 for (uuid, path) in self.jails.items()
+
                 if uuid.startswith(self.jail)
             }
 
@@ -771,6 +775,7 @@ class IOCage(object):
              jail_user=None,
              console=False,
              pkg=False,
+
              return_msg=False):
         """Executes a command in the jail as the supplied users."""
 
@@ -824,6 +829,7 @@ class IOCage(object):
             console=console,
             silent=self.silent,
             exit_on_error=self.exit_on_error,
+
             return_msg=return_msg,
             pkg=pkg).exec_jail()
 
@@ -879,28 +885,36 @@ class IOCage(object):
         plugin_file = kwargs.pop("plugin_file", False)
         count = kwargs.pop("count", 1)
         accept = kwargs.pop("accept", False)
+        _list = kwargs.pop("list", False)
+        remote = kwargs.pop("remote", False)
+        http = kwargs.get("http", False)
+        hardened = kwargs.get("hardened", False)
+        header = kwargs.pop("header", True)
+        _long = kwargs.pop("_long", False)
 
         freebsd_version = ioc_common.checkoutput(["freebsd-version"])
         arch = os.uname()[4]
 
-        if not kwargs["files"]:
-            if arch == "arm64":
-                kwargs["files"] = ("MANIFEST", "base.txz", "doc.txz")
-            else:
-                kwargs["files"] = ("MANIFEST", "base.txz", "lib32.txz",
-                                   "doc.txz")
+        if not _list:
+            if not kwargs["files"]:
+                if arch == "arm64":
+                    kwargs["files"] = ("MANIFEST", "base.txz", "doc.txz")
+                else:
+                    kwargs["files"] = ("MANIFEST", "base.txz", "lib32.txz",
+                                       "doc.txz")
 
-        if "HBSD" in freebsd_version:
-            if kwargs["server"] == "ftp.freebsd.org":
-                kwargs["hardened"] = True
+            if "HBSD" in freebsd_version:
+                if kwargs["server"] == "ftp.freebsd.org":
+                    kwargs["hardened"] = True
+                else:
+                    kwargs["hardened"] = False
             else:
                 kwargs["hardened"] = False
-        else:
-            kwargs["hardened"] = False
 
         if plugins or plugin_file:
             ip = [
                 x for x in props
+
                 if x.startswith("ip4_addr") or x.startswith("ip6_addr")
             ]
 
@@ -928,6 +942,12 @@ class IOCage(object):
 
                 return
 
+            if _list:
+                rel_list = ioc_fetch.IOCFetch("").fetch_plugin_index(
+                    "", _list=True, list_header=header, list_long=_long)
+
+                return rel_list
+
             if count == 1:
                 ioc_fetch.IOCFetch(
                     release, exit_on_error=self.exit_on_error,
@@ -938,6 +958,16 @@ class IOCage(object):
                         release, exit_on_error=self.exit_on_error,
                         **kwargs).fetch_plugin(name, props, j, accept)
         else:
+            if _list:
+                if remote:
+                    rel_list = ioc_fetch.IOCFetch(
+                        "", http=http, hardened=hardened).fetch_release(
+                            _list=True)
+                else:
+                    rel_list = self.list("base")
+
+                return rel_list
+
             ioc_fetch.IOCFetch(
                 release, exit_on_error=self.exit_on_error,
                 **kwargs).fetch_release()
