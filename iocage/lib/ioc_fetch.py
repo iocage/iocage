@@ -24,7 +24,6 @@
 """iocage fetch module."""
 import collections
 import distutils.dir_util
-import ftplib
 import hashlib
 import json
 import logging
@@ -57,12 +56,12 @@ class IOCFetch(object):
 
     def __init__(self,
                  release,
-                 server="ftp.freebsd.org",
+                 server="download.freebsd.org",
                  user="anonymous",
                  password="anonymous@",
                  auth=None,
                  root_dir=None,
-                 http=False,
+                 http=True,
                  _file=False,
                  verify=True,
                  hardened=False,
@@ -105,8 +104,6 @@ class IOCFetch(object):
         self.plugin = plugin
 
         if hardened:
-            self.http = True
-
             if release:
                 self.release = f"{self.release[:2]}-stable".upper()
             else:
@@ -323,16 +320,6 @@ class IOCFetch(object):
                         _callback=self.callback,
                         silent=self.silent)
                     self.fetch_extract(f)
-        else:
-            if self.eol and self.verify:
-                eol = self.__fetch_eol_check__()
-            else:
-                eol = []
-
-            rel = self.fetch_ftp_release(eol, _list=_list)
-
-            if _list:
-                return rel
 
     def fetch_http_release(self, eol, _list=False):
         """
@@ -345,12 +332,9 @@ class IOCFetch(object):
         """
 
         if self.hardened:
-            if self.server == "ftp.freebsd.org":
+            if self.server == "download.freebsd.org":
                 self.server = "http://jenkins.hardenedbsd.org"
                 rdir = "builds"
-
-        if self.server == "ftp.freebsd.org":
-            self.server = "https://download.freebsd.org"
 
         if self.root_dir is None:
             self.root_dir = f"ftp/releases/{self.arch}"
@@ -533,144 +517,7 @@ class IOCFetch(object):
         if not self.hardened:
             self.fetch_update()
 
-    def fetch_ftp_release(self, eol, _list=False):
-        """
-        Fetch a user specified RELEASE from FreeBSD's ftp server or a user
-        supplied one. The user can also specify the user, password and
-        root-directory containing the release tree that looks like so:
-            - XX.X-RELEASE
-            - XX.X-RELEASE
-            - XX.X_RELEASE
-        """
-
-        ftp = self.__fetch_ftp_connect__()
-        ftp_list = ftp.nlst()
-
-        if not self.release:
-            ftp_list = [rel for rel in ftp_list if "-RELEASE" in rel]
-
-            if len(ftp_list) == 0:
-                iocage.lib.ioc_common.logit(
-                    {
-                        "level":
-                        "EXCEPTION",
-                        "message":
-                        f"""\
-No RELEASEs were found at {self.server}/{self.root_dir}!
-Please ensure the server is correct and the root-dir is
-pointing to a top-level directory with the format:
-    - XX.X-RELEASE
-    - XX.X-RELEASE
-    - XX.X_RELEASE
-"""
-                    },
-                    exit_on_error=self.exit_on_error,
-                    _callback=self.callback,
-                    silent=self.silent)
-
-            if _list:
-                return ftp_list
-
-            releases = iocage.lib.ioc_common.sort_release(ftp_list)
-
-            for r in releases:
-                if r in eol:
-                    iocage.lib.ioc_common.logit(
-                        {
-                            "level": "INFO",
-                            "message": f"[{releases.index(r)}] {r} (EOL)"
-                        },
-                        _callback=self.callback,
-                        silent=self.silent)
-                else:
-                    iocage.lib.ioc_common.logit(
-                        {
-                            "level": "INFO",
-                            "message": f"[{releases.index(r)}] {r}"
-                        },
-                        _callback=self.callback,
-                        silent=self.silent)
-
-            host_release = self.__fetch_host_release__()
-            self.release = input("\nType the number of the desired"
-                                 " RELEASE\nPress [Enter] to fetch"
-                                 f" the default selection: ({host_release})"
-                                 "\nType EXIT to quit: ")
-
-            self.release = self.__fetch_validate_release__(releases)
-
-        # This has the benefit of giving us a list of files, but also as a
-        # easy sanity check for the existence of the RELEASE before we reuse
-        #  it below.
-        try:
-            ftp.cwd(self.release)
-        except ftplib.error_perm:
-            iocage.lib.ioc_common.logit(
-                {
-                    "level": "EXCEPTION",
-                    "message": f"{self.release} was not found!"
-                },
-                exit_on_error=self.exit_on_error,
-                _callback=self.callback,
-                silent=self.silent)
-
-        ftp_list = self.files
-        ftp.quit()
-
-        iocage.lib.ioc_common.logit(
-            {
-                "level": "INFO",
-                "message": f"Fetching: {self.release}\n"
-            },
-            _callback=self.callback,
-            silent=self.silent)
-        self.fetch_download(ftp_list, ftp=True)
-        missing = self.__fetch_check__(ftp_list, ftp=True)
-
-        if missing:
-            self.fetch_download(missing, ftp=True, missing=True)
-            self.__fetch_check__(missing, ftp=True, _missing=True)
-
-        if self.update:
-            self.fetch_update()
-
-    def __fetch_ftp_connect__(self):
-        """
-        Connects to the ftp server and returns the proper cwd for easy
-        reconnection.
-        """
-        ftp = ftplib.FTP(self.server)
-        ftp.connect()
-        ftp.login(user=self.user, passwd=self.password)
-
-        if self.server == "ftp.freebsd.org":
-            try:
-                ftp.cwd(f"/pub/FreeBSD/releases/{self.arch}")
-            except:
-                iocage.lib.ioc_common.logit(
-                    {
-                        "level": "EXCEPTION",
-                        "message": f"{self.arch} was not found!"
-                    },
-                    exit_on_error=self.exit_on_error,
-                    _callback=self.callback,
-                    silent=self.silent)
-        elif self.root_dir:
-            try:
-                ftp.cwd(self.root_dir)
-            except:
-                iocage.lib.ioc_common.logit(
-                    {
-                        "level": "EXCEPTION",
-                        "message": f"{self.root_dir} was not found!"
-                    },
-                    exit_on_error=self.exit_on_error,
-                    _callback=self.callback,
-                    silent=self.silent)
-
-        return ftp
-
-    def __fetch_check__(self, _list, ftp=False, _missing=False):
+    def __fetch_check__(self, _list, _missing=False):
         """
         Will check if every file we need exists, if they do we check the SHA256
         and make sure it matches the files they may already have.
@@ -683,14 +530,7 @@ pointing to a top-level directory with the format:
 
             for _, _, files in os.walk("."):
                 if "MANIFEST" not in files:
-                    if ftp and self.server == "ftp.freebsd.org":
-                        _ftp = self.__fetch_ftp_connect__()
-                        _ftp.cwd(self.release)
-                        _ftp.retrbinary("RETR MANIFEST",
-                                        open("MANIFEST", "wb").write)
-                        _ftp.quit()
-                    elif not ftp and self.server == \
-                            "https://download.freebsd.org":
+                    if self.server == "https://download.freebsd.org":
                         r = requests.get(
                             f"{self.server}/{self.root_dir}/"
                             f"{self.release}/MANIFEST",
@@ -796,7 +636,7 @@ pointing to a top-level directory with the format:
 
             return missing
 
-    def fetch_download(self, _list, ftp=False, missing=False):
+    def fetch_download(self, _list, missing=False):
         """Creates the download dataset and then downloads the RELEASE."""
         dataset = f"{self.iocroot}/download/{self.release}"
         fresh = False
@@ -811,113 +651,53 @@ pointing to a top-level directory with the format:
         if missing or fresh:
             os.chdir(f"{self.iocroot}/download/{self.release}")
 
-            if self.http:
-                for f in _list:
-                    if self.hardened:
-                        _file = f"{self.server}/{self.root_dir}/{f}"
+            for f in _list:
+                if self.hardened:
+                    _file = f"{self.server}/{self.root_dir}/{f}"
 
-                        if f == "lib32.txz":
-                            continue
-                    else:
-                        _file = f"{self.server}/{self.root_dir}/" \
-                                f"{self.release}/{f}"
+                    if f == "lib32.txz":
+                        continue
+                else:
+                    _file = f"{self.server}/{self.root_dir}/" \
+                            f"{self.release}/{f}"
 
-                    if self.auth == "basic":
-                        r = requests.get(
-                            _file,
-                            auth=(self.user, self.password),
-                            verify=self.verify,
-                            stream=True)
-                    elif self.auth == "digest":
-                        r = requests.get(
-                            _file,
-                            auth=requests.auth.HTTPDigestAuth(
-                                self.user, self.password),
-                            verify=self.verify,
-                            stream=True)
-                    else:
-                        r = requests.get(
-                            _file, verify=self.verify, stream=True)
+                if self.auth == "basic":
+                    r = requests.get(
+                        _file,
+                        auth=(self.user, self.password),
+                        verify=self.verify,
+                        stream=True)
+                elif self.auth == "digest":
+                    r = requests.get(
+                        _file,
+                        auth=requests.auth.HTTPDigestAuth(
+                            self.user, self.password),
+                        verify=self.verify,
+                        stream=True)
+                else:
+                    r = requests.get(
+                        _file, verify=self.verify, stream=True)
 
-                    status = r.status_code == requests.codes.ok
+                status = r.status_code == requests.codes.ok
 
-                    if not status:
-                        r.raise_for_status()
+                if not status:
+                    r.raise_for_status()
 
-                    with open(f, "wb") as txz:
-                        pbar = tqdm.tqdm(
-                            total=int(r.headers.get('content-length')),
-                            bar_format="{desc}{percentage:3.0f}%"
-                            " {rate_fmt}"
-                            " Elapsed: {elapsed}"
-                            " Remaining: {remaining}",
-                            unit="bit",
-                            unit_scale=True)
-                        pbar.set_description(f"Downloading: {f}")
+                with open(f, "wb") as txz:
+                    pbar = tqdm.tqdm(
+                        total=int(r.headers.get('content-length')),
+                        bar_format="{desc}{percentage:3.0f}%"
+                        " {rate_fmt}"
+                        " Elapsed: {elapsed}"
+                        " Remaining: {remaining}",
+                        unit="bit",
+                        unit_scale=True)
+                    pbar.set_description(f"Downloading: {f}")
 
-                        for chunk in r.iter_content(chunk_size=1024):
-                            txz.write(chunk)
-                            pbar.update(len(chunk))
-                        pbar.close()
-            elif ftp:
-                for f in _list:
-                    _ftp = self.__fetch_ftp_connect__()
-                    _ftp.cwd(self.release)
-
-                    if bool(
-                            re.compile(r"MANIFEST|base.txz|lib32.txz|doc.txz")
-                            .match(f)):
-                        try:
-                            _ftp.voidcmd('TYPE I')
-                            try:
-                                filesize = _ftp.size(f)
-                            except ftplib.error_perm:
-                                # Could be HardenedBSD on a custom FTP
-                                # server, or they just don't have every
-                                # file we want. The only truly important
-                                # ones are base.txz and MANIFEST for us,
-                                # the rest are not.
-
-                                if f != "base.txz" and f != "MANIFEST":
-                                    self.files = tuple(x for x in _list
-                                                       if x != f)
-
-                                    continue
-                                else:
-                                    iocage.lib.ioc_common.logit(
-                                        {
-                                            "level": "EXCEPTION",
-                                            "message": f"{f} is required!"
-                                        },
-                                        exit_on_error=self.exit_on_error,
-                                        _callback=self.callback,
-                                        silent=self.silent)
-
-                            with open(f, "wb") as txz:
-                                pbar = tqdm.tqdm(
-                                    total=filesize,
-                                    bar_format="{desc}{"
-                                    "percentage:3.0f}%"
-                                    " {rate_fmt}"
-                                    " Elapsed: {"
-                                    "elapsed}"
-                                    " Remaining: {"
-                                    "remaining}",
-                                    unit="bit",
-                                    unit_scale=True)
-                                pbar.set_description(f"Downloading: {f}")
-
-                                def callback(chunk):
-                                    txz.write(chunk)
-                                    pbar.update(len(chunk))
-
-                                _ftp.retrbinary(f"RETR {f}", callback)
-                                pbar.close()
-                                _ftp.quit()
-                        except:
-                            raise
-                    else:
-                        pass
+                    for chunk in r.iter_content(chunk_size=1024):
+                        txz.write(chunk)
+                        pbar.update(len(chunk))
+                    pbar.close()
 
     def __fetch_check_members__(self, members):
         """Checks if the members are relative, if not, log a warning."""
@@ -1523,7 +1303,7 @@ fingerprint: {fingerprint}
                            list_long=False,
                            accept_license=False):
 
-        if self.server == "ftp.freebsd.org":
+        if self.server == "download.freebsd.org":
             git_server = "https://github.com/freenas/iocage-ix-plugins.git"
         else:
             git_server = self.server

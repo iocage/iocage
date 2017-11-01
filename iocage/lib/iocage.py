@@ -904,7 +904,7 @@ class IOCage(object):
                                        "doc.txz")
 
             if "HBSD" in freebsd_version:
-                if kwargs["server"] == "ftp.freebsd.org":
+                if kwargs["server"] == "download.freebsd.org":
                     kwargs["hardened"] = True
                 else:
                     kwargs["hardened"] = False
