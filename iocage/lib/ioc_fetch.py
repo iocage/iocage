@@ -36,6 +36,10 @@ import tarfile
 import tempfile
 import urllib.request
 
+import requests
+import requests.auth
+import requests.packages.urllib3.exceptions
+
 import iocage.lib.ioc_common
 import iocage.lib.ioc_create
 import iocage.lib.ioc_destroy
@@ -44,14 +48,12 @@ import iocage.lib.ioc_json
 import iocage.lib.ioc_start
 import libzfs
 import pygit2
-import requests
-import requests.auth
-import requests.packages.urllib3.exceptions
 import texttable
 import tqdm
 
 
 class IOCFetch(object):
+
     """Fetch a RELEASE for use as a jail base."""
 
     def __init__(self,
@@ -286,11 +288,11 @@ class IOCFetch(object):
 
                     if f == "MANIFEST":
                         error = f"{f} is a required file!" \
-                                f"\nPlease place it in {self.root_dir}/" \
+                            f"\nPlease place it in {self.root_dir}/" \
                                 f"{self.release}"
                     else:
                         error = f"{f}.txz is a required file!" \
-                                f"\nPlease place it in {self.root_dir}/" \
+                            f"\nPlease place it in {self.root_dir}/" \
                                 f"{self.release}"
 
                     iocage.lib.ioc_common.logit(
@@ -499,7 +501,7 @@ class IOCFetch(object):
 
         if self.hardened:
             self.root_dir = f"{rdir}/HardenedBSD-{self.release.upper()}-" \
-                            f"{self.arch}-LATEST"
+                f"{self.arch}-LATEST"
         iocage.lib.ioc_common.logit(
             {
                 "level": "INFO",
@@ -631,7 +633,7 @@ class IOCFetch(object):
 
                     try:
                         self.fetch_extract(f)
-                    except:
+                    except Exception:
                         raise
 
             return missing
@@ -659,7 +661,7 @@ class IOCFetch(object):
                         continue
                 else:
                     _file = f"{self.server}/{self.root_dir}/" \
-                            f"{self.release}/{f}"
+                        f"{self.release}/{f}"
 
                 if self.auth == "basic":
                     r = requests.get(
@@ -988,7 +990,7 @@ class IOCFetch(object):
         self.release = conf["release"]
         pkg_repos = conf["fingerprints"]
         freebsd_version = f"{self.iocroot}/releases/{conf['release']}" \
-                          "/root/bin/freebsd-version"
+            "/root/bin/freebsd-version"
         json_props = conf.get("properties", {})
         props = list(props)
 
@@ -1129,7 +1131,7 @@ FreeBSD: { enabled: no }
             repo_name = repo
             repo = pkg_repos[repo]
             f_dir = f"{jaildir}/root/usr/local/etc/pkg/fingerprints/" \
-                    f"{repo_name}/trusted"
+                f"{repo_name}/trusted"
             repo_conf = """\
 {reponame}: {{
             url: "{packagesite}",
@@ -1426,6 +1428,7 @@ fingerprint: {fingerprint}
             try:
                 plugin = [
                     i for i, p in enumerate(plugins)
+
                     if plugin.capitalize() in p or plugin in p
                 ]
                 try:
@@ -1460,7 +1463,7 @@ fingerprint: {fingerprint}
 
         for plugin in plugins:
             _plugin = f"{plugins[plugin]['name']} -" \
-                      f" {plugins[plugin]['description']}" \
+                f" {plugins[plugin]['description']}" \
                       f" ({plugin})"
             p_dict[plugin] = _plugin
 
@@ -1482,7 +1485,7 @@ fingerprint: {fingerprint}
 
         for f in tar.getmembers():
             rel_path = f"{self.iocroot}/releases/{self.release}/root/" \
-                       f"{f.name}"
+                f"{f.name}"
             try:
                 # . and so forth won't like this.
                 os.remove(rel_path)

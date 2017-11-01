@@ -35,8 +35,10 @@ import iocage.lib.ioc_list
 
 
 class IOCStart(object):
+
     """
     Starts jails, the network stack for the jail and generates a resolv file
+
     for them. It also finds any scripts the user supplies for exec_*
     """
 
@@ -79,10 +81,11 @@ class IOCStart(object):
         userland_version = float(os.uname()[2].partition("-")[0])
 
         # If the jail is not running, let's do this thing.
+
         if status:
             msg = f"{self.uuid} is already running!"
             iocage.lib.ioc_common.logit({
-                "level"  : "EXCEPTION",
+                "level": "EXCEPTION",
                 "message": msg
             }, exit_on_error=self.exit_on_error, _callback=self.callback,
                 silent=self.silent)
@@ -133,7 +136,7 @@ class IOCStart(object):
 
             if prop_missing:
                 iocage.lib.ioc_common.logit({
-                    "level"  : "EXCEPTION",
+                    "level": "EXCEPTION",
                     "message": msg
                 }, exit_on_error=self.exit_on_error, _callback=self.callback,
                     silent=self.silent)
@@ -157,7 +160,7 @@ class IOCStart(object):
                 su.Popen(
                     ["mount", "-t", "linprocfs", "linproc", self.path +
                      "/root/compat/linux/proc"]).communicate()
-        except:
+        except Exception:
             pass
 
         if self.conf["jail_zfs"] == "on":
@@ -191,6 +194,7 @@ class IOCStart(object):
                         f"{err.output.decode('utf-8').rstrip()}")
 
         # FreeBSD 9.3 and under do not support this.
+
         if userland_version <= 9.3:
             tmpfs = ""
             fdescfs = ""
@@ -199,6 +203,7 @@ class IOCStart(object):
             fdescfs = f"mount.fdescfs={mount_fdescfs}"
 
         # FreeBSD 10.3 and under do not support this.
+
         if userland_version <= 10.3:
             _sysvmsg = ""
             _sysvsem = ""
@@ -238,7 +243,7 @@ class IOCStart(object):
 
         msg = f"* Starting {self.uuid}"
         iocage.lib.ioc_common.logit({
-            "level"  : "INFO",
+            "level": "INFO",
             "message": msg
         },
             _callback=self.callback,
@@ -246,7 +251,7 @@ class IOCStart(object):
 
         if devfs_ruleset != "5" and dhcp == "on":
             iocage.lib.ioc_common.logit({
-                "level"  : "WARNING",
+                "level": "WARNING",
                 "message": "  You are not using the iocage devfs_ruleset"
                            " of 5, DHCP may not work."
             },
@@ -300,26 +305,27 @@ class IOCStart(object):
             # This is actually fatal.
             msg = "  + Start FAILED"
             iocage.lib.ioc_common.logit({
-                "level"  : "ERROR",
+                "level": "ERROR",
                 "message": msg
             },
                 _callback=self.callback,
                 silent=self.silent)
 
             iocage.lib.ioc_common.logit({
-                "level"  : "EXCEPTION",
+                "level": "EXCEPTION",
                 "message": stderr_data.decode('utf-8')
             }, exit_on_error=self.exit_on_error, _callback=self.callback,
                 silent=self.silent)
         else:
             iocage.lib.ioc_common.logit({
-                "level"  : "INFO",
+                "level": "INFO",
                 "message": "  + Started OK"
             },
                 _callback=self.callback,
                 silent=self.silent)
 
         os_path = f"{self.path}/root/dev/log"
+
         if not os.path.isfile(os_path) and not os.path.islink(os_path):
             original_path = os.getcwd()
             os.chdir(f"{self.path}/root/dev")
@@ -330,14 +336,14 @@ class IOCStart(object):
 
         if not vnet_err and vnet:
             iocage.lib.ioc_common.logit({
-                "level"  : "INFO",
+                "level": "INFO",
                 "message": "  + Configuring VNET OK"
             },
                 _callback=self.callback,
                 silent=self.silent)
         elif vnet_err and vnet:
             iocage.lib.ioc_common.logit({
-                "level"  : "INFO",
+                "level": "INFO",
                 "message": "  + Configuring VNET FAILED"
             },
                 _callback=self.callback,
@@ -345,7 +351,7 @@ class IOCStart(object):
 
             for v_err in vnet_err:
                 iocage.lib.ioc_common.logit({
-                    "level"  : "WARNING",
+                    "level": "WARNING",
                     "message": f"  {v_err}"
                 },
                     _callback=self.callback,
@@ -377,6 +383,7 @@ class IOCStart(object):
                              "-o",
                              "value", "mountpoint",
                              f"{self.pool}/{jdataset}"]).strip()
+
                         if mountpoint != "none":
                             iocage.lib.ioc_common.checkoutput(
                                 ["setfib", self.exec_fib, "jexec",
@@ -385,7 +392,7 @@ class IOCStart(object):
                     except su.CalledProcessError as err:
                         msg = err.output.decode('utf-8').rstrip()
                         iocage.lib.ioc_common.logit({
-                            "level"  : "EXCEPTION",
+                            "level": "EXCEPTION",
                             "message": msg
                         }, exit_on_error=self.exit_on_error,
                             _callback=self.callback,
@@ -401,10 +408,11 @@ class IOCStart(object):
             services = su.check_call(["setfib", self.exec_fib, "jexec",
                                       f"ioc-{self.uuid}"] + exec_start,
                                      stdout=f, stderr=su.PIPE)
+
         if services:
             msg = "  + Starting services FAILED"
             iocage.lib.ioc_common.logit({
-                "level"  : "ERROR",
+                "level": "ERROR",
                 "message": msg
             },
                 _callback=self.callback,
@@ -412,7 +420,7 @@ class IOCStart(object):
         else:
             msg = "  + Starting services OK"
             iocage.lib.ioc_common.logit({
-                "level"  : "INFO",
+                "level": "INFO",
                 "message": msg
             },
                 _callback=self.callback,
@@ -469,6 +477,7 @@ class IOCStart(object):
                 dhcp = self.get("dhcp")
 
                 ifaces = []
+
                 for addrs, gw, ipv6 in net_configs:
                     if dhcp == "on":
                         # Spoofing IP address, it doesn't matter with DHCP
@@ -479,12 +488,14 @@ class IOCStart(object):
 
                     for addr in addrs.split(','):
                         iface, ip = addr.split("|")
+
                         if iface not in nics:
                             continue
 
                         if iface not in ifaces:
                             self.start_network_vnet_iface(nic, bridge,
                                                           membermtu, jid)
+
                             ifaces.append(iface)
 
                         self.start_network_vnet_addr(iface, ip, gw, ipv6)
@@ -558,6 +569,7 @@ class IOCStart(object):
         dhcp = self.get("dhcp")
 
         # Crude check to see if it's a IPv6 address
+
         if ipv6:
             ifconfig = [iface, "inet6", ip, "up"]
             route = ["add", "-6", "default", defaultgw]
@@ -578,6 +590,7 @@ class IOCStart(object):
                 if ipv6:
                     # Requires either rtsol or ISC dhclient, the user likely
                     #  knows which they want, DHCP is for IP4 in iocage.
+
                     return
 
                 iocage.lib.ioc_common.checkoutput(
@@ -592,6 +605,7 @@ class IOCStart(object):
     def start_copy_localtime(self):
         host_time = self.get("host_time")
         file = f"{self.path}/root/etc/localtime"
+
         if host_time != "yes":
             return
 
@@ -606,10 +620,12 @@ class IOCStart(object):
     def start_generate_resolv(self):
         resolver = self.get("resolver")
         #                                     compat
+
         if resolver != "/etc/resolv.conf" and resolver != "none" and \
-                        resolver != "/dev/null":
+                resolver != "/dev/null":
             with iocage.lib.ioc_common.open_atomic(
                     f"{self.path}/root/etc/resolv.conf", "w") as resolv_conf:
+
                 for line in resolver.split(";"):
                     resolv_conf.write(line + "\n")
         elif resolver == "none":
@@ -617,6 +633,7 @@ class IOCStart(object):
                         f"{self.path}/root/etc/resolv.conf")
         elif resolver == "/dev/null":
             # They don't want the resolv.conf to be touched.
+
             return
         else:
             shutil.copy(resolver, f"{self.path}/root/etc/resolv.conf")
@@ -626,11 +643,13 @@ class IOCStart(object):
         m.update(self.uuid.encode("utf-8"))
         m.update(nic.encode("utf-8"))
         prefix = self.get("mac_prefix")
+
         return f"{prefix}{m.hexdigest()[0:12-len(prefix)]}"
 
     def __generate_mac_address_pair(self, nic):
         mac_a = self.__generate_mac_bytes(nic)
         mac_b = hex(int(mac_a, 16) + 1)[2:].zfill(12)
+
         return mac_a, mac_b
 
     def __start_generate_vnet_mac__(self, nic):
@@ -701,7 +720,7 @@ add path 'bpf*' unhide
     def find_bridge_mtu(self, bridge):
         try:
             dhcp = self.get("dhcp")
-        except:
+        except Exception:
             # To spoof unit test.
             dhcp = "off"
 
@@ -728,6 +747,7 @@ add path 'bpf*' unhide
         memberif = [x for x in
                     iocage.lib.ioc_common.checkoutput(
                         ["ifconfig", bridge]).splitlines()
+
                     if x.strip().startswith("member")]
 
         if not memberif:
@@ -735,4 +755,5 @@ add path 'bpf*' unhide
 
         membermtu = iocage.lib.ioc_common.checkoutput(
             ["ifconfig", memberif[0].split()[1]]).split()
+
         return membermtu[5]
