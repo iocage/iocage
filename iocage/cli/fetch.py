@@ -58,16 +58,15 @@ def validate_count(ctx, param, value):
 @click.option(
     "--http",
     "-h",
-    default=False,
-    help="Have --server define a HTTP server instead.",
+    default=True,
+    help="No-op flag for backwards compat",
     is_flag=True)
 @click.option(
     "--file",
     "-f",
     "_file",
     default=False,
-    help="Use a local file directory for root-dir instead of FTP or"
-    " HTTP.",
+    help="Use a local file directory for root-dir instead of HTTP",
     is_flag=True)
 @click.option(
     "--files",
@@ -77,8 +76,8 @@ def validate_count(ctx, param, value):
 @click.option(
     "--server",
     "-s",
-    default="ftp.freebsd.org",
-    help="FTP server to login to.")
+    default="download.freebsd.org",
+    help="Server to fetch from.")
 @click.option("--user", "-u", default="anonymous", help="The user to use.")
 @click.option(
     "--password", "-p", default="anonymous@", help="The password to use.")
