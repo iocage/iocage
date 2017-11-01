@@ -918,6 +918,12 @@ class IOCage(object):
                 if x.startswith("ip4_addr") or x.startswith("ip6_addr")
             ]
 
+            if _list:
+                rel_list = ioc_fetch.IOCFetch("").fetch_plugin_index(
+                    "", _list=True, list_header=header, list_long=_long)
+
+                return rel_list
+
             if not ip and "dhcp=on" not in props:
                 ioc_common.logit(
                     {
@@ -941,12 +947,6 @@ class IOCage(object):
                         props, accept_license=accept)
 
                 return
-
-            if _list:
-                rel_list = ioc_fetch.IOCFetch("").fetch_plugin_index(
-                    "", _list=True, list_header=header, list_long=_long)
-
-                return rel_list
 
             if count == 1:
                 ioc_fetch.IOCFetch(
