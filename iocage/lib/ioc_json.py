@@ -49,6 +49,7 @@ def _get_pool_and_iocroot():
 
 
 class IOCJson(object):
+
     """
     Migrates old iocage configurations(UCL and ZFS Props) to the new JSON
 
@@ -167,7 +168,7 @@ class IOCJson(object):
     def zfs_get_property(self, identifier, key):
         try:
             return self._zfs_get_properties(identifier)[key].value
-        except:
+        except Exception:
             return "-"
 
     def zfs_set_property(self, identifier, key, value):
@@ -451,7 +452,7 @@ class IOCJson(object):
                     return mount
                 else:
                     raise RuntimeError(f"Please set a mountpoint on {loc}")
-            except:
+            except Exception:
                 raise RuntimeError(f"{self.location} not found!")
         elif prop == "all":
             conf = self.json_load()
@@ -481,6 +482,7 @@ class IOCJson(object):
                 stdout=su.PIPE).communicate()[0].decode("utf-8").split()
             jail_params = [
                 p.replace("security.jail.param.", "").replace(":", "")
+
                 for p in sysctls_list if re.match(jail_param_regex, p)
             ]
             single_period = [
@@ -538,7 +540,7 @@ class IOCJson(object):
                     try:
                         try:
                             jail_zfs_dataset = f"{pool}/" \
-                                               f"{conf['jail_zfs_dataset']}"
+                                f"{conf['jail_zfs_dataset']}"
                             self.zfs_set_property(jail_zfs_dataset, "jailed",
                                                   "off")
                         except libzfs.ZFSException as err:
@@ -743,10 +745,10 @@ class IOCJson(object):
 
             try:
                 freebsd_version = f"{iocroot}/releases/{release}/root/bin/" \
-                                  "freebsd-version"
+                    "freebsd-version"
             except FileNotFoundError:
                 freebsd_version = f"{iocroot}/templates/" \
-                                  f"{conf['host_hostuuid']}" \
+                    f"{conf['host_hostuuid']}" \
                                   "/root/bin/freebsd-version"
             except KeyError:
                 # At this point it should be a real misconfigured jail
@@ -994,7 +996,7 @@ class IOCJson(object):
                 if value != "none" and not \
                         value.upper().endswith(("M", "G", "T")):
                     err = f"{value} should have a suffix ending in" \
-                          " M, G, or T."
+                        " M, G, or T."
                     iocage.lib.ioc_common.logit(
                         {
                             "level": "EXCEPTION",
