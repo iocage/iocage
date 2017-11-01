@@ -32,9 +32,8 @@
 .\"== CLONE ==
 .Nm
 .Cm clone
-.Ar UUID | NAME
-.Ar PROPERTIES
-.Op Fl c | -count
+.Ar UUID | NAME Op Ar PROPERTIES
+.Op Fl c | -count Ar TEXT
 .\" == CONSOLE ==
 .Nm
 .Cm console
@@ -46,12 +45,12 @@
 .Op Fl c | -count Ar TEXT
 .Op Fl e | -empty
 .Op Fl f | -force
-.Op Fl n | -name
+.Op Fl n | -name Ar TEXT
 .Op Fl p | -pkglist Ar TEXT
 .Op Fl r | -release Ar TEXT
 .Op Fl s | -short
 .Op Fl t | -template Ar TEXT
-.Op Fl u | -uuid | Cm _uuid Ar TEXT
+.Op Fl u | -uuid | Ar TEXT
 .Op Ar PROPERTIES
 .\" == DESTROY ==
 .Nm
@@ -65,8 +64,8 @@
 .Nm
 .Cm df
 .Op Fl H | h | -header
-.Op Fl l | -long | Cm _long
-.Op Fl s | -sort | Cm _sort Ar TEXT
+.Op Fl l | -long
+.Op Fl s | -sort Ar TEXT
 .\" == EXEC ==
 .Nm
 .Cm exec
@@ -95,9 +94,9 @@
 .Op Fl a | -auth
 .Op Fl c | -count
 .Op Fl d | -root-dir
-.Op Fl f | -file | Cm _file
+.Op Fl f | -file
 .Op Fl h | -http
-.Op Fl n | -name
+.Op Fl n | -name TEXT
 .Op Fl p | -password
 .Op Fl r | -release
 .Op Fl s | -server
@@ -119,8 +118,8 @@
 .Ar UUID | NAME
 .Op Fl H | h | -header
 .Op Fl P | -plugin
-.Op Fl a | -all | Cm _all
-.Op Fl p | -pool | Cm _pool
+.Op Fl a | -all
+.Op Fl p | -pool
 .Op Fl r | -recursive
 .\" == IMPORT ==
 .Nm
@@ -134,9 +133,9 @@
 .Op Fl P | -plugins
 .Op Fl R | -remote
 .Op Fl b | r | -base | -release | Cm dataset_type
-.Op Fl l | -long | Cm _long
+.Op Fl l | -long
 .Op Fl q | -quick
-.Op Fl s | -sort | Cm _sort
+.Op Fl s | -sort
 .Op Fl t | -template | Cm dataset_type
 .\" == MIGRATE ==
 .Nm
@@ -175,8 +174,8 @@
 .Cm snaplist
 .Ar UUID | NAME
 .Op Fl H | h | -header
-.Op Fl l | -long | Cm _long
-.Op Fl s | -sort | Cm _sort Cm TYPE
+.Op Fl l | -long
+.Op Fl s | -sort Cm TYPE
 .\" == SNAPREMOVE ==
 .Nm
 .Cm snapremove
@@ -329,21 +328,23 @@ is the desired action.
 .It Cm clone
 Clone a jail.
 Properties can be configured for the clone by listing them after the
-.Ar SOURCE
-is named.
+.Ar UUID | NAME .
 .Pp
 Options:
-.Bl -tag -width "[-c | --count]"
-.It Op Fl c | -count
+.Bl -tag -width "[-c | --count TEXT]"
+.It Op Fl c | -count Ar TEXT
 Designate the number of jails to create, all cloned from
 the desired jail.
 .El
 .Pp
-Example:
+Examples:
 .Pp
 .Dl # iocage clone 38114a58 --name cloneexample1
 .Pp
 Clone jail 38114a58 and add the name cloneexample1 to the new jail.
+.Pp
+.Dl # iocage clone exampjail -c 3
+Creates three jail clones of exampjail.
 .Pp
 .\" == CONSOLE ==
 .It Cm console
@@ -373,7 +374,7 @@ the desired
 Create an empty jail for unsupported or custom jails.
 .It Op Fl f | -force
 Skip prompts, auto-confirming them with yes.
-.It Op Fl n | -name
+.It Op Fl n | -name Ar TEXT
 Provide a NAME instead of a UUID for the new jail.
 .It Op Fl p | -pkglist Ar TEXT
 Specify a JSON file which manages the installation of each
@@ -464,9 +465,9 @@ Options:
 .Bl -tag -width "[-H | -h | --header]"
 .It Op Fl H | h | -header
 Use when scripting, using tabs for separators.
-.It Op Fl l | -long | Cm _long
+.It Op Fl l | -long
 Shows the full UUID.
-.It Op Fl s | -sort | Cm _sort Ar TEXT
+.It Op Fl s | -sort Ar TEXT
 Sorts the list by the named type.
 .El
 .Pp
@@ -546,7 +547,7 @@ List all available plugins for creation.
 .It Op Fl E | -eol
 Enable End Of Life (EOL) checking upstream.
 .It Op Fl F | -files Ar TEXT
-Specify the files to fetch from the mirror.
+Uses a local file directory for the root directory instead of HTTP.
 .It Op Fl NE | -noeol
 Disable EOL checking upstream.
 .It Op Fl NU | -noupdate
@@ -568,12 +569,14 @@ number of plugin type jails.
 .It Op Fl d | -root-dir Ar TEXT
 Specify the root directory containing all RELEASE files.
 .It Op Fl f | -file
-Use a local file directory for the root directory instead of FTP or
-HTTP.
+Use a local file directory for the root directory instead of HTTP.
 .It Op Fl h | -http
-Change
+No-op flag for backwords compatibility.
+Previous versions of
+.Nm
+used this to adjust
 .Op Fl s | -server
-to define an HTTP server instead of the default FTP.
+to define an HTTP server.
 .It Op Fl p | -password Ar TEXT
 Add a password, if required.
 .It Op Fl r |-release Ar TEXT
@@ -581,7 +584,7 @@ Define the
 .Fx
 release to fetch.
 .It Op Fl s | -server Ar TEXT
-Define which FTP server to log into.
+Define the server from which to fetch the RELEASE.
 .It Op Fl u | -user Ar TEXT
 Define the user.
 .El
@@ -650,10 +653,10 @@ Used in scripting.
 Use tabs for separators.
 .It Op Fl P | -plugin
 Get the specified key for a plugin jail.
-.It Op Fl a | -all | Cm _all
+.It Op Fl a | -all
 Get all properties for the specified jail.
 If accessing a nested key, use "." as a separator.
-.It Op Fl p | -pool | Cm _pool
+.It Op Fl p | -pool
 Get the currently activated zpool.
 .It Op Fl r | -recursive
 Get the specified property for all jails.
@@ -706,11 +709,12 @@ Shows available plugins.
 Shows available RELEASE options for remote.
 .It Op Fl b | r | -base | -release | Cm dataset_type
 List all bases.
-.It Op Fl l | -long | Cm _long
-Shows the full UUID and ip4 address.
+.It Op Fl l | -long
+Shows JID, NAME, BOOT, STATE, TYPE, RELEASE, IP4, IP6, and
+TEMPLATE information.
 .It Op Fl q | -quick
 Lists all jails with less processing and fields.
-.It Op Fl s | -sort | Cm _sort Ar TEXT
+.It Op Fl s | -sort Ar TEXT
 Sorts the list by the given type.
 .It Op Fl t | -template | Cm dataset_type
 Lists all templates.
@@ -801,7 +805,7 @@ Options:
 .Bl -tag -width "[-f | --force]"
 .It Op Fl f | -force
 Run the command, skipping any warnings or further user interaction.
-.It Fl n | -name
+.It Fl n | -name Ar TEXT
 [Required] Used to specify the snapshot name.
 .El
 .Pp
@@ -847,9 +851,9 @@ Options:
 .It Op Fl H | h | -header
 Used for scripting.
 Tabs are used as separators.
-.It Op Fl l | -long | Cm _long
+.It Op Fl l | -long
 Show the full dataset path for the snapshot.
-.It Op Fl s | -sort | Cm _sort Cm TYPE
+.It Op Fl s | -sort Cm TYPE
 Sort the returned list by the named TYPE.
 .El
 .Pp
@@ -1484,7 +1488,7 @@ file system.
 This permission is effective only together with allow.mount and if
 enforce_statfs is set to a value lower than 2.
 Please consider restricting the devfs ruleset with the
- devfs_ruleset option.
+devfs_ruleset option.
 .Pp
 Default: 0
 .Pp
