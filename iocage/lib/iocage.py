@@ -24,7 +24,6 @@
 import collections
 import datetime
 import json
-import math
 import operator
 import os
 import subprocess as su
@@ -1568,10 +1567,12 @@ class IOCage(object):
             conf = ioc_json.IOCJson(
                 path, silent=self.silent,
                 exit_on_error=self.exit_on_error).json_load()
-            release = conf["release"].rsplit("-", 1)[0].rsplit("-", 1)[0]
-            host_release = os.uname()[2].rsplit("-", 1)[0].rsplit("-", 1)[0]
+            release = float(conf["release"].rsplit("-", 1)[0].rsplit("-",
+                                                                     1)[0])
+            host_release = float(os.uname()[2].rsplit("-", 1)[0].rsplit("-",
+                                                                        1)[0])
 
-            if not math.isclose(host_release, release):
+            if host_release < release:
                 ioc_common.logit(
                     {
                         "level":
@@ -1708,10 +1709,10 @@ class IOCage(object):
                 silent=self.silent)
 
     def upgrade(self, release):
-        host_release = os.uname()[2].rsplit("-", 1)[0].rsplit("-", 1)[0]
+        host_release = float(os.uname()[2].rsplit("-", 1)[0].rsplit("-", 1)[0])
 
         if release is not None:
-            if math.isclose(host_release, release):
+            if host_release < float(release):
                 ioc_common.logit({
                     "level":
                     "EXCEPTION",
