@@ -41,6 +41,7 @@ import iocage.lib.ioc_json as ioc_json
 import iocage.lib.ioc_list as ioc_list
 import iocage.lib.ioc_start as ioc_start
 import iocage.lib.ioc_stop as ioc_stop
+import iocage.lib.ioc_upgrade as ioc_upgrade
 import libzfs
 
 
@@ -1704,3 +1705,89 @@ class IOCage(object):
                 },
                 _callback=self.callback,
                 silent=self.silent)
+
+    def upgrade(self, release):
+        host_release = os.uname()[2].rsplit("-", 1)[0].rsplit("-", 1)[0]
+
+        if release is not None:
+            if host_release < release:
+                ioc_common.logit({
+                    "level":
+                    "EXCEPTION",
+                    "message":
+                    f"\nHost: {host_release} is not greater than"
+                    f" target: {release}\nThis is unsupported."
+                })
+
+        uuid, path = self.__check_jail_existence__()
+        root_path = f"{path}/root"
+        status, jid = self.list("jid", uuid=uuid)
+        conf = ioc_json.IOCJson(path).json_load()
+        jail_release = conf["release"]
+
+        if release in jail_release:
+            ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": f"Jail: {uuid} is already at version {release}!"
+                },
+                exit_on_error=True)
+
+        started = False
+
+        if conf["release"] == "EMPTY":
+            ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": "Upgrading is not supported for empty jails."
+                },
+                exit_on_error=True)
+
+        if conf["type"] == "jail":
+            if not status:
+                ioc_start.IOCStart(uuid, path, conf, silent=True)
+                started = True
+
+            new_release = ioc_upgrade.IOCUpgrade(conf, release,
+                                                 root_path).upgrade_jail()
+        elif conf["type"] == "basejail":
+            ioc_common.logit(
+                {
+                    "level":
+                    "EXCEPTION",
+                    "message":
+                    "Please run \"iocage migrate\" before trying"
+                    f" to upgrade {uuid}"
+                },
+                exit_on_error=True)
+        elif conf["type"] == "template":
+            ioc_common.logit(
+                {
+                    "level":
+                    "EXCEPTION",
+                    "message":
+                    "Please convert back to a jail before trying"
+                    f" to upgrade {uuid}"
+                },
+                exit_on_error=True)
+        else:
+            ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": f"{conf['type']} is not a supported jail type."
+                },
+                exit_on_error=True)
+
+        if started:
+            _silent = self.silent
+            self.silent = True
+            self.stop()
+            self.silent = _silent
+
+        ioc_common.logit({
+            "level":
+            "INFO",
+            "message":
+            f"\n{uuid} successfully upgraded from"
+            f" {jail_release} to {new_release}!"
+        })
