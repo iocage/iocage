@@ -24,6 +24,7 @@
 import collections
 import datetime
 import json
+import math
 import operator
 import os
 import subprocess as su
@@ -1570,7 +1571,7 @@ class IOCage(object):
             release = conf["release"].rsplit("-", 1)[0].rsplit("-", 1)[0]
             host_release = os.uname()[2].rsplit("-", 1)[0].rsplit("-", 1)[0]
 
-            if host_release < release:
+            if not math.isclose(host_release, release):
                 ioc_common.logit(
                     {
                         "level":
@@ -1710,7 +1711,7 @@ class IOCage(object):
         host_release = os.uname()[2].rsplit("-", 1)[0].rsplit("-", 1)[0]
 
         if release is not None:
-            if host_release < release:
+            if math.isclose(host_release, release):
                 ioc_common.logit({
                     "level":
                     "EXCEPTION",
