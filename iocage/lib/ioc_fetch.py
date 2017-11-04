@@ -34,6 +34,7 @@ import subprocess as su
 import sys
 import tarfile
 import tempfile
+import time
 import urllib.request
 
 import requests
@@ -49,7 +50,6 @@ import iocage.lib.ioc_start
 import libzfs
 import pygit2
 import texttable
-import tqdm
 
 
 class IOCFetch(object):
@@ -686,20 +686,46 @@ class IOCFetch(object):
                     r.raise_for_status()
 
                 with open(f, "wb") as txz:
-                    pbar = tqdm.tqdm(
-                        total=int(r.headers.get('content-length')),
-                        bar_format="{desc}{percentage:3.0f}%"
-                        " {rate_fmt}"
-                        " Elapsed: {elapsed}"
-                        " Remaining: {remaining}",
-                        unit="bit",
-                        unit_scale=True)
-                    pbar.set_description(f"Downloading: {f}")
+                    file_size = int(r.headers['Content-Length'])
+                    chunk_size = 1024
+                    total = file_size / chunk_size
+                    start = time.clock()
+                    dl_progress = 0
 
-                    for chunk in r.iter_content(chunk_size=1024):
+                    for i, chunk in enumerate(
+                            r.iter_content(chunk_size=chunk_size), 1):
+                        dl_progress += len(chunk)
                         txz.write(chunk)
-                        pbar.update(len(chunk))
-                    pbar.close()
+                        self.update_progress(total, i, f"Downloading : {f}",
+                                             start, dl_progress)
+
+    @staticmethod
+    def update_progress(total, progress, display_text, start, chunk):
+        """
+        Displays or updates a console progress bar.
+
+        Original source: https://stackoverflow.com/a/15860757/1391441
+        """
+        barLength, status = 20, ""
+        progress = float(progress) / float(total)
+        clock = time.clock()
+
+        if clock > start:
+            current_time = chunk // (clock - start)
+            current_time = round(current_time / 1000000, 2)
+        else:
+            current_time = 0
+
+        if progress >= 1.:
+            progress, status = 1, "\r\n"
+
+        block = int(round(barLength * progress))
+        text = "\r{} [{}] {:.0f}% {} {}Mbit/s".format(display_text,
+                                                      "#" * block + "-" *
+                                                      (barLength - block),
+                                                      round(progress * 100, 0),
+                                                      status, current_time)
+        print(text, end="")
 
     def __fetch_check_members__(self, members):
         """Checks if the members are relative, if not, log a warning."""
