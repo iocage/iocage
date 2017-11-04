@@ -22,7 +22,6 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """fetch module for the cli."""
-import math
 import os
 
 import click
@@ -143,10 +142,10 @@ def cli(**kwargs):
     _file = kwargs.get("_file", False)
 
     if release is not None:
-        release = release.rsplit("-", 1)[0].rsplit("-", 1)[0]
-        host_release = os.uname()[2].rsplit("-", 1)[0].rsplit("-", 1)[0]
+        release = float(release.rsplit("-", 1)[0].rsplit("-", 1)[0])
+        host_release = float(os.uname()[2].rsplit("-", 1)[0].rsplit("-", 1)[0])
 
-        if not math.isclose(host_release, release) and not _file:
+        if host_release < release and not _file:
             ioc_common.logit({
                 "level":
                 "EXCEPTION",
