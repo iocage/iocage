@@ -1452,7 +1452,9 @@ class IOCage(object):
 
         for parent in snap_list_temp:
             # We want the /root snapshots immediately after the parent ones
-            name = parent[0]
+            name, snap_name = parent[0].split("@")
+            long_name = f"{name}/root@{snap_name}"
+            name = name if not long else long_name
 
             for root in snap_list_root:
                 _name = root[0]
