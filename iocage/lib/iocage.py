@@ -899,10 +899,11 @@ class IOCage(object):
         if not _list:
             if not kwargs["files"]:
                 if arch == "arm64":
-                    kwargs["files"] = ("MANIFEST", "base.txz", "doc.txz")
+                    kwargs["files"] = ("MANIFEST", "base.txz", "doc.txz",
+                                       "src.txz")
                 else:
                     kwargs["files"] = ("MANIFEST", "base.txz", "lib32.txz",
-                                       "doc.txz")
+                                       "doc.txz", "src.txz")
 
             if "HBSD" in freebsd_version:
                 if kwargs["server"] == "download.freebsd.org":
@@ -1505,10 +1506,11 @@ class IOCage(object):
             else:
                 raise ()
 
-        ioc_common.logit({
-            "level": "INFO",
-            "message": f"Snapshot: {target} created."
-        })
+        if not self.silent:
+            ioc_common.logit({
+                "level": "INFO",
+                "message": f"Snapshot: {target} created."
+            })
 
     def __soft_restart__(self):
         """
@@ -1714,15 +1716,17 @@ class IOCage(object):
 
     def upgrade(self, release):
         host_release = float(os.uname()[2].rsplit("-", 1)[0].rsplit("-", 1)[0])
+        _release = release.rsplit("-", 1)[0].rsplit("-", 1)[0]
+        _release = float(_release)
 
         if release is not None:
-            if host_release < float(release):
+            if host_release < _release:
                 ioc_common.logit({
                     "level":
                     "EXCEPTION",
                     "message":
                     f"\nHost: {host_release} is not greater than"
-                    f" target: {release}\nThis is unsupported."
+                    f" target: {_release}\nThis is unsupported."
                 })
 
         uuid, path = self.__check_jail_existence__()
@@ -1740,6 +1744,7 @@ class IOCage(object):
                 exit_on_error=True)
 
         started = False
+        basejail = False
 
         if conf["release"] == "EMPTY":
             ioc_common.logit(
@@ -1754,8 +1759,13 @@ class IOCage(object):
                 ioc_start.IOCStart(uuid, path, conf, silent=True)
                 started = True
 
-            new_release = ioc_upgrade.IOCUpgrade(conf, release,
-                                                 root_path).upgrade_jail()
+            if conf["basejail"] == "yes":
+                new_release = ioc_upgrade.IOCUpgrade(
+                    conf, release, root_path).upgrade_basejail()
+                basejail = True
+            else:
+                new_release = ioc_upgrade.IOCUpgrade(conf, release,
+                                                     root_path).upgrade_jail()
         elif conf["type"] == "basejail":
             ioc_common.logit(
                 {
@@ -1790,10 +1800,18 @@ class IOCage(object):
             self.stop()
             self.silent = _silent
 
+        if basejail:
+            _date = datetime.datetime.utcnow().strftime("%F")
+            msg = f"""\
+\n{uuid} successfully upgraded from {jail_release} to {new_release}!
+Please reboot the jail and inspect.
+Remove the snapshot: ioc_upgrade_{_date} if everything is OK
+"""
+        else:
+            msg = f"\n{uuid} successfully upgraded from" \
+                  f" {jail_release} to {new_release}!"
+
         ioc_common.logit({
-            "level":
-            "INFO",
-            "message":
-            f"\n{uuid} successfully upgraded from"
-            f" {jail_release} to {new_release}!"
+            "level": "INFO",
+            "message": msg
         })

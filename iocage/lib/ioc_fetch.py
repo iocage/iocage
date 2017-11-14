@@ -69,7 +69,8 @@ class IOCFetch(object):
                  hardened=False,
                  update=True,
                  eol=True,
-                 files=("MANIFEST", "base.txz", "lib32.txz", "doc.txz"),
+                 files=("MANIFEST", "base.txz", "lib32.txz", "doc.txz",
+                        "src.txz"),
                  exit_on_error=False,
                  silent=False,
                  callback=None,
@@ -516,7 +517,7 @@ class IOCFetch(object):
             self.fetch_download(missing, missing=True)
             self.__fetch_check__(missing, _missing=True)
 
-        if not self.hardened:
+        if not self.hardened and self.update:
             self.fetch_update()
 
     def __fetch_check__(self, _list, _missing=False):
@@ -735,7 +736,7 @@ class IOCFetch(object):
             if m.name == ".":
                 continue
 
-            if ".." in m.name or not m.name.startswith("./"):
+            if ".." in m.name:
                 iocage.lib.ioc_common.logit(
                     {
                         "level": "WARNING",
