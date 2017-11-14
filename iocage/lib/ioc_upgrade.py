@@ -24,9 +24,11 @@
 """iocage upgrade module"""
 import fileinput
 import os
+import pathlib
 import subprocess as su
 import tempfile
 import urllib.request
+import datetime
 
 import iocage.lib.ioc_common
 import iocage.lib.ioc_json
@@ -36,7 +38,13 @@ import iocage.lib.ioc_list
 class IOCUpgrade(object):
     """Will upgrade a jail to the specified RELEASE."""
 
-    def __init__(self, conf, new_release, path, silent=False, callback=None):
+    def __init__(self,
+                 conf,
+                 new_release,
+                 path,
+                 silent=False,
+                 callback=None,
+                 exit_on_error=False):
         self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage.lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")
@@ -55,8 +63,10 @@ class IOCUpgrade(object):
             self.uuid)
         self._freebsd_version = f"{self.iocroot}/jails/" \
                                 f"{self.uuid}/root/bin/freebsd-version"
+        self.date = datetime.datetime.utcnow().strftime("%F")
         self.silent = silent
         self.callback = callback
+        self.exit_on_error = exit_on_error
 
     def upgrade_jail(self):
         if "HBSD" in self.freebsd_version:
@@ -120,6 +130,100 @@ class IOCUpgrade(object):
 
         return new_release
 
+    def upgrade_basejail(self):
+        if "HBSD" in self.freebsd_version:
+            # TODO: Not supported yet
+            msg = "Upgrading basejails on HardenedBSD is not supported yet."
+            iocage.lib.ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": msg
+                },
+                exit_on_error=self.exit_on_error,
+                _callback=self.callback,
+                silent=self.silent)
+
+        os.environ["PAGER"] = "/bin/cat"
+        release_p = pathlib.Path(f"{self.iocroot}/releases/{self.new_release}")
+        self._freebsd_version = f"{self.iocroot}/releases/"\
+            f"{self.new_release}/root/bin/freebsd-version"
+
+        if not release_p.exists():
+            msg = f"{self.new_release} is missing, please fetch it!"
+            iocage.lib.ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": msg
+                },
+                exit_on_error=self.exit_on_error,
+                _callback=self.callback,
+                silent=self.silent)
+
+        self.__snapshot_jail__()
+        p = pathlib.Path(
+            f"{self.iocroot}/releases/{self.new_release}/root/usr/src")
+        p_files = []
+
+        if p.exists():
+            for f in p.iterdir():
+                # We want to make sure files actually exist as well
+                p_files.append(f)
+
+        if not p_files:
+            msg = f"{self.new_release} is missing 'src.txz', please refetch!"
+            iocage.lib.ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": msg
+                },
+                exit_on_error=self.exit_on_error,
+                _callback=self.callback,
+                silent=self.silent)
+
+        self.__upgrade_replace_basejail_paths__()
+        etcupdate = su.Popen([
+            "etcupdate", "-D", self.path, "-F", "-s",
+            f"{self.iocroot}/releases/{self.new_release}/root/usr/src"
+        ])
+        etcupdate.communicate()
+
+        if etcupdate.returncode != 0:
+            # These are now the result of a failed merge, nuking and putting
+            # the backup back
+            msg = "etcupdate failed! Rolling back snapshot."
+            self.__rollback_jail__()
+            iocage.lib.ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": msg
+                },
+                exit_on_error=self.exit_on_error,
+                _callback=self.callback,
+                silent=self.silent)
+
+        if self.new_release[:4].endswith("-"):
+            # 9.3-RELEASE and under don't actually have this binary
+            new_release = self.new_release
+        else:
+            with open(self._freebsd_version, "r") as r:
+                for line in r:
+                    if line.startswith("USERLAND_VERSION"):
+                        new_release = line.rstrip().partition("=")[2].strip(
+                            '"')
+
+        iocage.lib.ioc_json.IOCJson(
+            f"{self.path.replace('/root', '')}",
+            silent=True).json_set_value(f"release={new_release}")
+
+        mq = pathlib.Path(f"{self.path}/var/spool/mqueue")
+
+        if not mq.exists():
+            mq.mkdir(exist_ok=True, parents=True)
+
+        su.check_call(["chroot", self.path] + ["newaliases"])
+
+        return new_release
+
     def __upgrade_install__(self, name):
         """Installs the upgrade and returns the exit code."""
         install = su.Popen(
@@ -156,6 +260,28 @@ class IOCUpgrade(object):
         text = "Components src world kernel"
         replace = "Components src world"
 
-        with fileinput.FileInput(f, inplace=True, backup=".bak") as _file:
+        self.__upgrade_replace_text__(f, text, replace)
+
+    def __upgrade_replace_basejail_paths__(self):
+        f = f"{self.iocroot}/jails/{self.uuid}/fstab"
+        self.__upgrade_replace_text__(f, self.jail_release, self.new_release)
+
+    @staticmethod
+    def __upgrade_replace_text__(path, text, replace):
+        with fileinput.FileInput(path, inplace=True, backup=".bak") as _file:
             for line in _file:
                 print(line.replace(text, replace), end='')
+
+    def __snapshot_jail__(self):
+        import iocage.lib.iocage as ioc  # Avoids dep issues
+        name = f"ioc_upgrade_{self.date}"
+        ioc.IOCage(jail=self.uuid, exit_on_error=self.exit_on_error,
+                   skip_jails=True, silent=True).snapshot(name)
+
+    def __rollback_jail__(self):
+        import iocage.lib.iocage as ioc  # Avoids dep issues
+        name = f"ioc_upgrade_{self.date}"
+        iocage = ioc.IOCage(jail=self.uuid, exit_on_error=self.exit_on_error,
+                            skip_jails=True, silent=True)
+        iocage.stop()
+        iocage.rollback(name)
