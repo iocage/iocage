@@ -28,14 +28,14 @@ import re
 import subprocess as su
 import uuid as _uuid
 
+import iocage.lib.ioc_common
+import iocage.lib.ioc_json
 import libzfs
 import texttable
 
-import iocage.lib.ioc_common
-import iocage.lib.ioc_json
-
 
 class IOCList(object):
+
     """
     List jails that are a specified type.
 
@@ -114,7 +114,7 @@ class IOCList(object):
             except FileNotFoundError:
                 uuid = mountpoint.rsplit("/", 1)[-1]
                 iocage.lib.ioc_common.logit({
-                    "level"  : "EXCEPTION",
+                    "level": "EXCEPTION",
                     "message": f"{uuid} is missing its configuration file."
                                "\nPlease run just 'list' instead to create"
                                " it."
@@ -127,6 +127,7 @@ class IOCList(object):
             jail_list.append([uuid, ip4])
 
         # return the list
+
         if not self.header:
             flat_jail = [j for j in jail_list]
 
@@ -220,7 +221,7 @@ class IOCList(object):
                                 interface, "inet"]
                 out = su.check_output(full_ip4_cmd)
                 full_ip4 = f"{interface}|" \
-                           f"{out.splitlines()[2].split()[1].decode()}"
+                    f"{out.splitlines()[2].split()[1].decode()}"
             elif conf["dhcp"] == "on" and not status:
                 short_ip4 = "DHCP"
                 full_ip4 = "DHCP (not running)"
@@ -229,15 +230,27 @@ class IOCList(object):
                 full_ip4 = "DHCP (running -- address requires root)"
 
             # Append the JID and the NAME to the table
+
             if self.full:
                 if self.plugin:
                     if jail_type != "plugin":
                         # We only want plugin type jails to be apart of the
                         # list
+
                         continue
 
+                try:
+                    with open(f"{mountpoint}/plugin/ui.json", "r") as u:
+                        ip = full_ip4.split("|", 1)[1]
+                        admin_portal = json.load(u)["adminportal"]
+                        admin_portal = admin_portal.replace("%%IP%%", ip)
+                except FileNotFoundError:
+                    # They just didn't set a admin portal.
+                    admin_portal = "-"
+
                 jail_list.append([jid, uuid, boot, state, jail_type,
-                                  full_release, full_ip4, ip6, template])
+                                  full_release, full_ip4, ip6, template,
+                                  admin_portal])
             else:
                 jail_list.append([jid, uuid, state, short_release, short_ip4])
 
@@ -248,6 +261,7 @@ class IOCList(object):
         jail_list.sort(key=sort)
 
         # return the list...
+
         if not self.header:
             flat_jail = [j for j in jail_list]
 
@@ -257,10 +271,20 @@ class IOCList(object):
         table = texttable.Texttable(max_width=0)
 
         if self.full:
-            # We get an infinite float otherwise.
-            table.set_cols_dtype(["t", "t", "t", "t", "t", "t", "t", "t", "t"])
-            jail_list.insert(0, ["JID", "NAME", "BOOT", "STATE", "TYPE",
-                                 "RELEASE", "IP4", "IP6", "TEMPLATE"])
+            if self.plugin:
+                table.set_cols_dtype(["t", "t", "t", "t", "t", "t", "t", "t",
+                                      "t", "t"])
+
+                jail_list.insert(0, ["JID", "NAME", "BOOT", "STATE", "TYPE",
+                                     "RELEASE", "IP4", "IP6", "TEMPLATE",
+                                     "PORTAL"])
+            else:
+                # We get an infinite float otherwise.
+                table.set_cols_dtype(["t", "t", "t", "t", "t", "t", "t", "t",
+                                      "t"])
+
+                jail_list.insert(0, ["JID", "NAME", "BOOT", "STATE", "TYPE",
+                                     "RELEASE", "IP4", "IP6", "TEMPLATE"])
         else:
             # We get an infinite float otherwise.
             table.set_cols_dtype(["t", "t", "t", "t", "t"])
@@ -296,6 +320,7 @@ class IOCList(object):
             jid = iocage.lib.ioc_common.checkoutput(
                 ["jls", "-j", f"ioc-{uuid.replace('.', '_')}"],
                 stderr=su.PIPE).split()[5]
+
             return True, jid
         except su.CalledProcessError:
             return False, "-"
