@@ -910,7 +910,7 @@ class IOCFetch(object):
         self.release = conf['release']
         self.__fetch_plugin_inform__(conf, num, plugins, accept_license)
         props, pkg = self.__fetch_plugin_props__(conf, props, num)
-        jail_name = conf["name"]
+        jail_name = conf["name"].lower()
         location = f"{self.iocroot}/jails/{jail_name}"
 
         try:
