@@ -922,7 +922,8 @@ class IOCage(object):
 
             if _list:
                 rel_list = ioc_fetch.IOCFetch("").fetch_plugin_index(
-                    "", _list=True, list_header=header, list_long=_long)
+                    "", _list=True, list_header=header, list_long=_long,
+                    icon=True)
 
                 return rel_list
 

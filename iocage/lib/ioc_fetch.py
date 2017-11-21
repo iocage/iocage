@@ -1330,7 +1330,8 @@ fingerprint: {fingerprint}
                            _list=False,
                            list_header=False,
                            list_long=False,
-                           accept_license=False):
+                           accept_license=False,
+                           icon=False):
 
         if self.server == "download.freebsd.org":
             git_server = "https://github.com/freenas/iocage-ix-plugins.git"
@@ -1391,11 +1392,15 @@ fingerprint: {fingerprint}
                 name = p[0]
                 desc, pkg = re.sub(r'[()]', '', p[1]).rsplit(" ", 1)
                 license = plugins[pkg].get("license", "")
+                icon_path = plugins[pkg].get("icon", None)
 
                 p = [name, desc, pkg]
 
                 if not list_header:
                     p += [license]
+
+                if icon:
+                    p += [icon_path]
 
                 plugin_list.append(p)
 
