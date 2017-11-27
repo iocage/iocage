@@ -231,13 +231,12 @@ class IOCList(object):
 
             # Append the JID and the NAME to the table
 
-            if self.full:
-                if self.plugin:
-                    if jail_type != "plugin":
-                        # We only want plugin type jails to be apart of the
-                        # list
+            if self.full and self.plugin:
+                if jail_type != "plugin":
+                    # We only want plugin type jails to be apart of the
+                    # list
 
-                        continue
+                    continue
 
                 try:
                     with open(f"{mountpoint}/plugin/ui.json", "r") as u:
@@ -251,6 +250,10 @@ class IOCList(object):
                 jail_list.append([jid, uuid, boot, state, jail_type,
                                   full_release, full_ip4, ip6, template,
                                   admin_portal])
+            elif self.full:
+                jail_list.append([jid, uuid, boot, state, jail_type,
+                                  full_release, full_ip4, ip6, template
+                                  ])
             else:
                 jail_list.append([jid, uuid, state, short_release, short_ip4])
 
