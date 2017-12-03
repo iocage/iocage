@@ -21,7 +21,7 @@ To install using binary packages, simply run: `pkg install py36-iocage`
 
 ### GitHub:
 
-`/usr/src` is ***required*** to build from GitHub
+The FreeBSD source tree ***must*** be located at `$SRC_BASE` (`/usr/src` by default) to build from git.
 
 - `pkg install python36 git-lite libgit2`
 - `git clone --recursive https://github.com/iocage/iocage`
