@@ -1,16 +1,16 @@
 ZPOOL=""
 SERVER=""
+SRC_BASE?="/usr/src"
 
 install:
-	echo -e "import os\ntry:\n  if not os.listdir('/usr/src'): exit('/usr/src must be populated!')\nexcept FileNotFoundError:\n  exit('/usr/src must be populated!')" | python3.6
+	echo -e "import os\ntry:\n  if not os.listdir('$(SRC_BASE)'): exit('$(SRC_BASE) must be populated!')\nexcept FileNotFoundError:\n  exit('$(SRC_BASE) must be populated!')" | python3.6
 	test -d .git && git pull || true
+	test -d .git && git submodule init py-libzfs && git submodule update py-libzfs || true
 	python3.6 -m ensurepip
-	pip3.6 install -U Cython
-	cd py-libzfs && python3.6 setup.py build && python3.6 setup.py install
-	pkg install -q -y libgit2
-	pip3.6 install -U .
+	export FREEBSD_SRC=$(SRC_BASE) && cd py-libzfs && python3.6 setup.py build && python3.6 setup.py install
+	pip-3.6 install -U .
 uninstall:
-	pip3.6 uninstall -y iocage
+	pip-3.6 uninstall -y iocage
 test:
 	pytest --zpool $(ZPOOL) --server $(SERVER)
 help:
