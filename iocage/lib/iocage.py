@@ -103,6 +103,7 @@ class IOCage(object):
                  exit_on_error=False):
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.exit_on_error = exit_on_error
+        self.rc = rc
 
         if not activate:
             self.pool = PoolAndDataset().get_pool()
@@ -116,7 +117,9 @@ class IOCage(object):
                 except libzfs.ZFSException as err:
                     if err.code == libzfs.Error.NOENT and rc:
                         # No jails exist for RC, that's OK
-                        exit()
+                        self.jails = []
+
+                        return
 
                     else:
                         # Really going to raise this.
@@ -124,7 +127,6 @@ class IOCage(object):
 
         self.skip_jails = skip_jails
         self.jail = jail
-        self.rc = rc
         self._all = True if self.jail and 'ALL' in self.jail else False
         self.callback = ioc_common.callback if not callback else callback
         self.silent = silent
