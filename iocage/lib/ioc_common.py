@@ -25,6 +25,7 @@
 import collections
 import contextlib
 import ipaddress
+import logging
 import os
 import shutil
 import stat
@@ -34,38 +35,37 @@ import tempfile as tmp
 
 import pygit2
 
-import iocage.lib.ioc_logger
 
-
-def callback(log, exit_on_error=False):
+def callback(_log, exit_on_error=False):
     """Helper to call the appropriate logging level"""
-    lgr_stdout = iocage.lib.ioc_logger.IOCLogger().cli_log_stdout()
-    lgr_stderr = iocage.lib.ioc_logger.IOCLogger().cli_log_stderr()
+    log = logging.getLogger("iocage")
+    level = _log["level"]
+    message = _log["message"]
 
-    if log['level'] == 'CRITICAL':
-        lgr_stderr.critical(log['message'])
-    elif log['level'] == 'ERROR':
-        lgr_stderr.error(log['message'])
-    elif log['level'] == 'WARNING':
-        lgr_stderr.warning(log['message'])
-    elif log['level'] == 'INFO':
-        lgr_stdout.info(log['message'])
-    elif log['level'] == 'DEBUG':
-        lgr_stdout.debug(log['message'])
-    elif log['level'] == 'VERBOSE':
-        lgr_stdout.verbose(log['message'])
-    elif log['level'] == 'NOTICE':
-        lgr_stdout.notice(log['message'])
-    elif log['level'] == 'EXCEPTION':
+    if level == 'CRITICAL':
+        log.critical(message)
+    elif level == 'ERROR':
+        log.error(message)
+    elif level == 'WARNING':
+        log.warning(message)
+    elif level == 'INFO':
+        log.info(message)
+    elif level == 'DEBUG':
+        log.debug(message)
+    elif level == 'VERBOSE':
+        log.log(15, message)
+    elif level == 'NOTICE':
+        log.log(25, message)
+    elif level == 'EXCEPTION':
         try:
             if not os.isatty(sys.stdout.fileno()) and not exit_on_error:
-                raise RuntimeError(log['message'])
+                raise RuntimeError(message)
             else:
-                lgr_stderr.error(log['message'])
+                log.error(message)
                 raise SystemExit(1)
         except AttributeError:
             # They are lacking the fileno object
-            raise RuntimeError(log['message'])
+            raise RuntimeError(message)
 
 
 def logit(content, exit_on_error=False, _callback=None, silent=False):
