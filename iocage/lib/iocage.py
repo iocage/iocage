@@ -111,7 +111,16 @@ class IOCage(object):
             if not skip_jails:
                 # When they need to destroy a jail with a missing or bad
                 # configuration, this gets in our way otherwise.
-                self.jails = self.list("uuid")
+                try:
+                    self.jails = self.list("uuid")
+                except libzfs.ZFSException as err:
+                    if err.code == libzfs.Error.NOENT and rc:
+                        # No jails exist for RC, that's OK
+                        exit()
+
+                    else:
+                        # Really going to raise this.
+                        raise
 
         self.skip_jails = skip_jails
         self.jail = jail
@@ -1810,7 +1819,7 @@ Remove the snapshot: ioc_upgrade_{_date} if everything is OK
 """
         else:
             msg = f"\n{uuid} successfully upgraded from" \
-                  f" {jail_release} to {new_release}!"
+                f" {jail_release} to {new_release}!"
 
         ioc_common.logit({
             "level": "INFO",

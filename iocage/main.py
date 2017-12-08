@@ -195,7 +195,7 @@ def cli(version):
     """A jail manager."""
     IOCLogger()
     skip_check = False
-    skip_check_cmds = ["--help", "activate", "-v", "--version"]
+    skip_check_cmds = ["--help", "activate", "-v", "--version", "--rc"]
 
     try:
         if "iocage" in sys.argv[0] and len(sys.argv) == 1:
