@@ -23,7 +23,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """fstab module for the cli."""
 import click
-
 import iocage.lib.ioc_common as ioc_common
 import iocage.lib.iocage as ioc
 
@@ -42,29 +41,33 @@ __rootcmd__ = True
 @click.option("--edit", "-e", "action",
               help="Opens up the fstab file in your environments EDITOR.",
               flag_value="edit")
+@click.option("--replace", "-R",
+              help="Replace an entry by index number", nargs=1)
 @click.option("--list", "-l", "action",
               help="Lists the jails fstab.", flag_value="list")
 @click.option("--header", "-h", "-H", is_flag=True, default=True,
               help="For scripting, use tabs for separators.")
-def cli(action, fstab_string, jail, header):
+def cli(action, fstab_string, jail, header, replace):
     """
     Looks for the jail supplied and passes the uuid, path and configuration
     location to manipulate the fstab.
     """
-    index = None
+    index = None if not replace else replace
     _index = False
     add_path = False
     fstab_string = list(fstab_string)
+    action = action if not replace else "replace"
 
     if not fstab_string and action != "edit" and action != "list":
         ioc_common.logit({
-            "level"  : "EXCEPTION",
+            "level": "EXCEPTION",
             "message": "Please supply a fstab entry or jail!"
         }, exit_on_error=True)
 
     # The user will expect to supply a string, the API would prefer these
     # separate. If the user supplies a quoted string, we will split it,
     # otherwise the format is acceptable to be imported directly.
+
     if len(fstab_string) == 1:
         try:
             source, destination, fstype, options, dump, _pass = fstab_string[
@@ -80,7 +83,7 @@ def cli(action, fstab_string, jail, header):
                                                                     "", ""
             except TypeError:
                 ioc_common.logit({
-                    "level"  : "EXCEPTION",
+                    "level": "EXCEPTION",
                     "message": "Please specify either a valid fstab "
                                "entry or an index number."
                 }, exit_on_error=True)
@@ -105,7 +108,7 @@ def cli(action, fstab_string, jail, header):
                     fstab_string
             except ValueError:
                 ioc_common.logit({
-                    "level"  : "EXCEPTION",
+                    "level": "EXCEPTION",
                     "message": "Please specify a valid fstab entry!\n\n"
                                "Example:\n  /the/source /dest FSTYPE "
                                "FSOPTIONS FSDUMP FSPASS"
@@ -125,12 +128,12 @@ def cli(action, fstab_string, jail, header):
     if action == "list":
         if header:
             ioc_common.logit({
-                "level"  : "INFO",
+                "level": "INFO",
                 "message": fstab
             })
         else:
             for f in fstab:
                 ioc_common.logit({
-                    "level"  : "INFO",
+                    "level": "INFO",
                     "message": f"{f[0]}\t{f[1]}"
                 })
