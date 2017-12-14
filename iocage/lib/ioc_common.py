@@ -33,8 +33,6 @@ import subprocess as su
 import sys
 import tempfile as tmp
 
-import pygit2
-
 
 def callback(_log, exit_on_error=False):
     """Helper to call the appropriate logging level"""
@@ -455,57 +453,6 @@ def checkoutput(*args, **kwargs):
         raise
 
     return out
-
-
-def git_pull(repo, remote_name="origin", branch="master", exit_on_error=False):
-    """Method that will replicate a git pull."""
-    # Adapted from:
-    # @formatter:off
-    # https://raw.githubusercontent.com/MichaelBoselowitz/pygit2-examples/master/examples.py
-    # @formatter:on
-
-    for remote in repo.remotes:
-        if remote.name != remote_name:
-            continue
-
-        remote.fetch()
-        remote_master_id = repo.lookup_reference(
-            f"refs/remotes/origin/{branch}").target
-        merge_result, _ = repo.merge_analysis(remote_master_id)
-        # Up to date, do nothing
-
-        if merge_result & pygit2.GIT_MERGE_ANALYSIS_UP_TO_DATE:
-            return
-        # We can just fastforward
-        elif merge_result & pygit2.GIT_MERGE_ANALYSIS_FASTFORWARD:
-            repo.checkout_tree(repo.get(remote_master_id))
-            try:
-                master_ref = repo.lookup_reference(f'refs/heads/{branch}')
-                master_ref.set_target(remote_master_id)
-            except KeyError:
-                repo.create_branch(branch, repo.get(remote_master_id))
-            repo.head.set_target(remote_master_id)
-        elif merge_result & pygit2.GIT_MERGE_ANALYSIS_NORMAL:
-            repo.merge(remote_master_id)
-
-            if repo.index.conflicts is not None:
-                for conflict in repo.index.conflicts:
-                    logit(
-                        {
-                            "level": "EXCEPTION",
-                            "message": "Conflicts found in: {conflict[0].path}"
-                        },
-                        exit_on_error=exit_on_error)
-
-            user = repo.default_signature
-            tree = repo.index.write_tree()
-            repo.create_commit('HEAD', user, user, "merged by iocage", tree,
-                               [repo.head.target, remote_master_id])
-            # We need to do this or git CLI will think we are still
-            # merging.
-            repo.state_cleanup()
-        else:
-            raise AssertionError("Unknown merge analysis result")
 
 
 def set_rcconf(jail_path, key, value):

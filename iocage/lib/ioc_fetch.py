@@ -40,6 +40,7 @@ import urllib.request
 import requests
 import requests.auth
 import requests.packages.urllib3.exceptions
+from dulwich import porcelain
 
 import iocage.lib.ioc_common
 import iocage.lib.ioc_create
@@ -48,7 +49,6 @@ import iocage.lib.ioc_exec
 import iocage.lib.ioc_json
 import iocage.lib.ioc_start
 import libzfs
-import pygit2
 import texttable
 
 
@@ -1257,10 +1257,10 @@ fingerprint: {fingerprint}
                 _callback=self.callback,
                 silent=self.silent)
 
-            pygit2.clone_repository(
-                conf["artifact"],
-                f"{jaildir}/plugin",
-                checkout_branch='master')
+            with open("/dev/null", "wb") as devnull:
+                porcelain.clone(conf["artifact"], f"{jaildir}/plugin",
+                                outstream=devnull, errstream=devnull)
+
             try:
                 distutils.dir_util.copy_tree(
                     f"{jaildir}/plugin/overlay/",
@@ -1344,22 +1344,15 @@ fingerprint: {fingerprint}
 
         if os.geteuid() == 0:
             try:
-                pygit2.clone_repository(git_server, git_working_dir)
-            except pygit2.GitError as err:
-                iocage.lib.ioc_common.logit(
-                    {
-                        "level": "EXCEPTION",
-                        "message": err
-                    },
-                    exit_on_error=self.exit_on_error,
-                    _callback=self.callback,
-                    silent=self.silent)
-            except ValueError:
+                with open("/dev/null", "wb") as devnull:
+                    porcelain.clone(git_server, git_working_dir,
+                                    outstream=devnull, errstream=devnull)
+            except FileExistsError:
                 try:
-                    repo = pygit2.Repository(git_working_dir)
-                    iocage.lib.ioc_common.git_pull(
-                        repo, exit_on_error=self.exit_on_error)
-                except (pygit2.GitError, AssertionError, RuntimeError) as err:
+                    with open("/dev/null", "wb") as devnull:
+                        porcelain.pull(git_working_dir, git_server,
+                                       outstream=devnull, errstream=devnull)
+                except Exception as err:
                     iocage.lib.ioc_common.logit(
                         {
                             "level": "EXCEPTION",
