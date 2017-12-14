@@ -102,6 +102,9 @@ user must supply the new RELEASE for the jail's upgrade. For example:
 
 Tells jail *examplejail* to upgrade its RELEASE to *11.0-RELEASE*.
 
+.. note:: It is recommended to keep the iocage host and jails RELEASE
+   synchronized.
+
 Upgrades are handled differently for basejails and the other types of
 jails, as a basejail is treated differently in iocage.
 
