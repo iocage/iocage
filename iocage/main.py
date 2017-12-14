@@ -23,6 +23,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """The main CLI for ioc."""
 import locale
+import logging
+import logging.config
+import logging.handlers
 import os
 import re
 import signal
@@ -30,6 +33,7 @@ import subprocess as su
 import sys
 
 import click
+import coloredlogs
 import iocage.lib.ioc_check as ioc_check
 # This prevents it from getting in our way.
 from click import core
@@ -61,6 +65,83 @@ def print_version(ctx, param, value):
         return
     print("Version\t0.9.10 RC")
     sys.exit()
+
+
+class InfoHandler(logging.Handler):
+
+    def emit(self, record):
+        log = self.format(record)
+
+        if record.levelno < 30:
+            print(log, file=sys.stdout)
+        else:
+            print(log, file=sys.stderr)
+
+
+class IOCLogger(object):
+
+    def __init__(self):
+        self.log_file = os.environ.get("IOCAGE_LOGFILE", "/var/log/iocage.log")
+        self.colorize = os.environ.get("IOCAGE_COLOR", "FALSE")
+        logger = logging.getLogger("iocage")
+
+        logger.setLevel(logging.DEBUG)
+        logging.addLevelName(5, "SPAM")
+        logging.addLevelName(15, "VERBOSE")
+        logging.addLevelName(25, "NOTICE")
+
+        default_logging = {
+            'version': 1,
+            'disable_existing_loggers': False,
+            'formatters': {
+                'log': {
+                    'format': '%(asctime)s (%(levelname)s) %(message)s',
+                    'datefmt': '%Y/%m/%d %H:%M:%S',
+                },
+            },
+            'handlers': {
+                'file': {
+                    'level': 'DEBUG',
+                    'class': 'logging.handlers.RotatingFileHandler',
+                    'filename': f'{self.log_file}',
+                    'mode': 'a',
+                    'maxBytes': 10485760,
+                    'backupCount': 5,
+                    'encoding': 'utf-8',
+                    'formatter': 'log',
+                },
+            },
+            'loggers': {
+                '': {
+                    'handlers': ['file'],
+                    'level': 'DEBUG',
+                    'propagate': True
+                },
+            },
+        }
+
+        if self.colorize == "TRUE":
+            cli_colors = {
+                'info': {'color': 'white'},
+                'notice': {'color': 'magenta'},
+                'verbose': {'color': 'blue'},
+                'spam': {'color': 'green'},
+                'critical': {'color': 'red', 'bold': True},
+                'error': {'color': 'red'},
+                'debug': {'color': 'green'},
+                'warning': {'color': 'yellow'}
+            }
+        else:
+            cli_colors = {}
+
+        if os.geteuid() == 0:
+            logging.config.dictConfig(default_logging)
+
+        handler = InfoHandler()
+        handler.setFormatter(coloredlogs.ColoredFormatter(
+            fmt="%(message)s",
+            level_styles=cli_colors))
+        logger.addHandler(handler)
 
 
 cmd_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), 'cli'))
@@ -112,8 +193,9 @@ class IOCageCLI(click.MultiCommand):
     help="Display iocage's version and exit.")
 def cli(version):
     """A jail manager."""
+    IOCLogger()
     skip_check = False
-    skip_check_cmds = ["--help", "activate", "-v", "--version"]
+    skip_check_cmds = ["--help", "activate", "-v", "--version", "--rc"]
 
     try:
         if "iocage" in sys.argv[0] and len(sys.argv) == 1:

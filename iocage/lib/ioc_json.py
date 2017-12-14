@@ -645,7 +645,7 @@ class IOCJson(object):
                         ip = True if key == "ip4.addr" or key == "ip6.addr" \
                             else False
 
-                        if ip and value == "none":
+                        if ip and value.lower() == "none":
                             return
 
                         iocage.lib.ioc_common.checkoutput(

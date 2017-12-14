@@ -28,14 +28,14 @@ import shutil
 import subprocess as su
 import tempfile
 
-import texttable
-
 import iocage.lib.ioc_common
 import iocage.lib.ioc_json
 import iocage.lib.ioc_list
+import texttable
 
 
 class IOCFstab(object):
+
     """Will add or remove an entry, and mount or umount the filesystem."""
 
     def __init__(self, uuid, action, source, destination, fstype, fsoptions,
@@ -53,9 +53,9 @@ class IOCFstab(object):
         self.fsoptions = fsoptions
         self.fsdump = fsdump
         self.fspass = fspass
-        self.index = index
+        self.index = int(index) if index is not None else None
         self.mount = f"{self.src}\t{self.dest}\t{self.fstype}\t" \
-                     f"{self.fsoptions}\t{self.fsdump}\t{self.fspass}"
+            f"{self.fsoptions}\t{self.fsdump}\t{self.fspass}"
         self._fstab_list = _fstab_list
         self.header = header
         self.silent = silent
@@ -69,6 +69,7 @@ class IOCFstab(object):
         Checks which action the user is asking for and calls the
         appropriate methods.
         """
+
         if self.action == "add":
             self.__fstab_add__()
             self.__fstab_mount__()
@@ -77,6 +78,9 @@ class IOCFstab(object):
             self.__fstab_umount__(dest)
         elif self.action == "edit":
             self.__fstab_edit__()
+        elif self.action == "replace":
+            self.__fstab_edit__(_string=True)
+            self.__fstab_mount__()
         else:
             raise RuntimeError("Type of operation not specified!")
 
@@ -87,6 +91,7 @@ class IOCFstab(object):
                     f"{self.iocroot}/jails/{self.uuid}/fstab",
                     "w") as _fstab:
                 # open_atomic will empty the file, we need these still.
+
                 for line in fstab.readlines():
                     _fstab.write(line)
 
@@ -94,7 +99,7 @@ class IOCFstab(object):
                 _fstab.write(f"{self.mount} # Added by iocage on {date}\n")
 
         iocage.lib.ioc_common.logit({
-            "level"  : "INFO",
+            "level": "INFO",
             "message": f"Successfully added mount to {self.uuid}'s fstab"
         },
             _callback=self.callback,
@@ -113,36 +118,40 @@ class IOCFstab(object):
             with iocage.lib.ioc_common.open_atomic(
                     f"{self.iocroot}/jails/{self.uuid}/fstab",
                     "w") as _fstab:
+
                 for line in fstab.readlines():
                     if line.rsplit("#")[0].rstrip() == self.mount or index \
                             == self.index and not removed:
                         removed = True
                         dest = line.split()[1]
+
                         continue
 
                     _fstab.write(line)
                     index += 1
+
         if removed:
             iocage.lib.ioc_common.logit({
-                "level"  : "INFO",
+                "level": "INFO",
                 "message": f"Successfully removed mount from {self.uuid}"
                            "'s fstab"
             },
                 _callback=self.callback,
                 silent=self.silent)
+
             return dest  # Needed for umounting, otherwise we lack context.
 
         iocage.lib.ioc_common.logit({
-            "level"  : "INFO",
+            "level": "INFO",
             "message": "No matching fstab entry."
         },
             _callback=self.callback,
             silent=self.silent)
-        exit()
 
     def __fstab_mount__(self):
         """Mounts the users mount if the jail is running."""
         status, _ = iocage.lib.ioc_list.IOCList().list_get_jid(self.uuid)
+
         if not status:
             return
 
@@ -162,6 +171,7 @@ class IOCFstab(object):
         :param dest: The destination to umount.
         """
         status, _ = iocage.lib.ioc_list.IOCList().list_get_jid(self.uuid)
+
         if not status:
             return
 
@@ -171,14 +181,50 @@ class IOCFstab(object):
         if stderr_data:
             raise RuntimeError(f"{stderr_data.decode('utf-8')}")
 
-    def __fstab_edit__(self):
+    def __fstab_edit__(self, _string=False):
         """
         Opens up the users EDITOR, or vi and replaces the jail's fstab
         with the new content.
+
+        If _string is True, then we replace the given index with the new mount
         """
+        jail_fstab = f"{self.iocroot}/jails/{self.uuid}/fstab"
+
+        if _string:
+            matched = False
+
+            with open(jail_fstab, "r") as fstab:
+                with iocage.lib.ioc_common.open_atomic(
+                        jail_fstab, "w") as _fstab:
+
+                    for i, line in enumerate(fstab.readlines()):
+                        if i == self.index:
+                            date = datetime.datetime.utcnow().strftime("%F %T")
+                            _fstab.write(
+                                f"{self.mount} # Added by iocage on {date}\n")
+                            matched = True
+
+                            iocage.lib.ioc_common.logit({
+                                "level": "INFO",
+                                "message": f"Index {self.index} replaced."
+                            },
+                                _callback=self.callback,
+                                silent=self.silent)
+                        else:
+                            _fstab.write(line)
+
+            if not matched:
+                iocage.lib.ioc_common.logit({
+                    "level": "EXCEPTION",
+                    "message": f"Index {self.index} not found."
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+
+            return
+
         editor = os.environ.get("EDITOR", "/usr/bin/vi")
         err_editor = editor.split("/")[-1]
-        jail_fstab = f"{self.iocroot}/jails/{self.uuid}/fstab"
         tmp_fstab = tempfile.NamedTemporaryFile(suffix=".iocage")
 
         shutil.copy2(jail_fstab, tmp_fstab.name)
@@ -193,6 +239,7 @@ class IOCFstab(object):
 
     def fstab_list(self):
         """Returns list of lists, or a table"""
+
         if not self.header:
             flat_fstab = [f for f in self._fstab_list]
 

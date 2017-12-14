@@ -34,11 +34,13 @@ import subprocess as su
 import sys
 import tarfile
 import tempfile
+import time
 import urllib.request
 
 import requests
 import requests.auth
 import requests.packages.urllib3.exceptions
+from dulwich import porcelain
 
 import iocage.lib.ioc_common
 import iocage.lib.ioc_create
@@ -47,9 +49,7 @@ import iocage.lib.ioc_exec
 import iocage.lib.ioc_json
 import iocage.lib.ioc_start
 import libzfs
-import pygit2
 import texttable
-import tqdm
 
 
 class IOCFetch(object):
@@ -69,7 +69,8 @@ class IOCFetch(object):
                  hardened=False,
                  update=True,
                  eol=True,
-                 files=("MANIFEST", "base.txz", "lib32.txz", "doc.txz"),
+                 files=("MANIFEST", "base.txz", "lib32.txz", "doc.txz",
+                        "src.txz"),
                  exit_on_error=False,
                  silent=False,
                  callback=None,
@@ -516,7 +517,7 @@ class IOCFetch(object):
             self.fetch_download(missing, missing=True)
             self.__fetch_check__(missing, _missing=True)
 
-        if not self.hardened:
+        if not self.hardened and self.update:
             self.fetch_update()
 
     def __fetch_check__(self, _list, _missing=False):
@@ -686,20 +687,46 @@ class IOCFetch(object):
                     r.raise_for_status()
 
                 with open(f, "wb") as txz:
-                    pbar = tqdm.tqdm(
-                        total=int(r.headers.get('content-length')),
-                        bar_format="{desc}{percentage:3.0f}%"
-                        " {rate_fmt}"
-                        " Elapsed: {elapsed}"
-                        " Remaining: {remaining}",
-                        unit="bit",
-                        unit_scale=True)
-                    pbar.set_description(f"Downloading: {f}")
+                    file_size = int(r.headers['Content-Length'])
+                    chunk_size = 1024
+                    total = file_size / chunk_size
+                    start = time.clock()
+                    dl_progress = 0
 
-                    for chunk in r.iter_content(chunk_size=1024):
+                    for i, chunk in enumerate(
+                            r.iter_content(chunk_size=chunk_size), 1):
+                        dl_progress += len(chunk)
                         txz.write(chunk)
-                        pbar.update(len(chunk))
-                    pbar.close()
+                        self.update_progress(total, i, f"Downloading : {f}",
+                                             start, dl_progress)
+
+    @staticmethod
+    def update_progress(total, progress, display_text, start, chunk):
+        """
+        Displays or updates a console progress bar.
+
+        Original source: https://stackoverflow.com/a/15860757/1391441
+        """
+        barLength, status = 20, ""
+        progress = float(progress) / float(total)
+        clock = time.clock()
+
+        if clock > start:
+            current_time = chunk // (clock - start)
+            current_time = round(current_time / 1000000, 2)
+        else:
+            current_time = 0
+
+        if progress >= 1.:
+            progress, status = 1, "\r\n"
+
+        block = int(round(barLength * progress))
+        text = "\r{} [{}] {:.0f}% {} {}Mbit/s".format(display_text,
+                                                      "#" * block + "-" *
+                                                      (barLength - block),
+                                                      round(progress * 100, 0),
+                                                      status, current_time)
+        print(text, end="")
 
     def __fetch_check_members__(self, members):
         """Checks if the members are relative, if not, log a warning."""
@@ -709,7 +736,7 @@ class IOCFetch(object):
             if m.name == ".":
                 continue
 
-            if ".." in m.name or not m.name.startswith("./"):
+            if ".." in m.name:
                 iocage.lib.ioc_common.logit(
                     {
                         "level": "WARNING",
@@ -883,7 +910,7 @@ class IOCFetch(object):
         self.release = conf['release']
         self.__fetch_plugin_inform__(conf, num, plugins, accept_license)
         props, pkg = self.__fetch_plugin_props__(conf, props, num)
-        jail_name = conf["name"]
+        jail_name = conf["name"].lower()
         location = f"{self.iocroot}/jails/{jail_name}"
 
         try:
@@ -1230,10 +1257,10 @@ fingerprint: {fingerprint}
                 _callback=self.callback,
                 silent=self.silent)
 
-            pygit2.clone_repository(
-                conf["artifact"],
-                f"{jaildir}/plugin",
-                checkout_branch='master')
+            with open("/dev/null", "wb") as devnull:
+                porcelain.clone(conf["artifact"], f"{jaildir}/plugin",
+                                outstream=devnull, errstream=devnull)
+
             try:
                 distutils.dir_util.copy_tree(
                     f"{jaildir}/plugin/overlay/",
@@ -1303,7 +1330,8 @@ fingerprint: {fingerprint}
                            _list=False,
                            list_header=False,
                            list_long=False,
-                           accept_license=False):
+                           accept_license=False,
+                           icon=False):
 
         if self.server == "download.freebsd.org":
             git_server = "https://github.com/freenas/iocage-ix-plugins.git"
@@ -1316,22 +1344,15 @@ fingerprint: {fingerprint}
 
         if os.geteuid() == 0:
             try:
-                pygit2.clone_repository(git_server, git_working_dir)
-            except pygit2.GitError as err:
-                iocage.lib.ioc_common.logit(
-                    {
-                        "level": "EXCEPTION",
-                        "message": err
-                    },
-                    exit_on_error=self.exit_on_error,
-                    _callback=self.callback,
-                    silent=self.silent)
-            except ValueError:
+                with open("/dev/null", "wb") as devnull:
+                    porcelain.clone(git_server, git_working_dir,
+                                    outstream=devnull, errstream=devnull)
+            except FileExistsError:
                 try:
-                    repo = pygit2.Repository(git_working_dir)
-                    iocage.lib.ioc_common.git_pull(
-                        repo, exit_on_error=self.exit_on_error)
-                except (pygit2.GitError, AssertionError, RuntimeError) as err:
+                    with open("/dev/null", "wb") as devnull:
+                        porcelain.pull(git_working_dir, git_server,
+                                       outstream=devnull, errstream=devnull)
+                except Exception as err:
                     iocage.lib.ioc_common.logit(
                         {
                             "level": "EXCEPTION",
@@ -1364,11 +1385,15 @@ fingerprint: {fingerprint}
                 name = p[0]
                 desc, pkg = re.sub(r'[()]', '', p[1]).rsplit(" ", 1)
                 license = plugins[pkg].get("license", "")
+                icon_path = plugins[pkg].get("icon", None)
 
                 p = [name, desc, pkg]
 
                 if not list_header:
                     p += [license]
+
+                if icon:
+                    p += [icon_path]
 
                 plugin_list.append(p)
 
