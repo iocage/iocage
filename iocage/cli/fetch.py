@@ -142,7 +142,16 @@ def cli(**kwargs):
     _file = kwargs.get("_file", False)
 
     if release is not None:
-        release = float(release.rsplit("-", 1)[0].rsplit("-", 1)[0])
+        try:
+            release = float(release.rsplit("-", 1)[0].rsplit("-", 1)[0])
+        except ValueError:
+            ioc_common.logit({
+                "level":
+                "EXCEPTION",
+                "message":
+                "Please supply a valid entry."
+            })
+
         host_release = float(os.uname()[2].rsplit("-", 1)[0].rsplit("-", 1)[0])
 
         if host_release < release and not _file:

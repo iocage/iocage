@@ -503,6 +503,8 @@ class IOCFetch(object):
         if self.hardened:
             self.root_dir = f"{rdir}/HardenedBSD-{self.release.upper()}-" \
                 f"{self.arch}-LATEST"
+
+        self.__fetch_exists__()
         iocage.lib.ioc_common.logit(
             {
                 "level": "INFO",
@@ -519,6 +521,37 @@ class IOCFetch(object):
 
         if not self.hardened and self.update:
             self.fetch_update()
+
+    def __fetch_exists__(self):
+        """
+        Checks if the RELEASE exists on the remote
+        """
+        release = f"{self.server}/{self.root_dir}/{self.release}"
+
+        if self.auth == "basic":
+            r = requests.get(
+                release,
+                auth=(self.user, self.password),
+                verify=self.verify)
+        elif self.auth == "digest":
+            r = requests.get(
+                release,
+                auth=requests.auth.HTTPDigestAuth(
+                    self.user, self.password),
+                verify=self.verify)
+        else:
+            r = requests.get(
+                release, verify=self.verify)
+
+        if r.status_code == 404:
+            iocage.lib.ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": f"{self.release} was not found!"
+                },
+                exit_on_error=self.exit_on_error,
+                _callback=self.callback,
+                silent=self.silent)
 
     def __fetch_check__(self, _list, _missing=False):
         """
