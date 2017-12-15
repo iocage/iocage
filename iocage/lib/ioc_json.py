@@ -29,6 +29,7 @@ import json
 import logging
 import os
 import re
+import shutil
 import subprocess as su
 import sys
 
@@ -194,8 +195,28 @@ class IOCJson(object):
         pool, iocroot = _get_pool_and_iocroot()
         version = self.json_get_version()
         jail_type, jail_uuid = self.location.rsplit("/", 2)[-2:]
-        jail_dataset = self.zfs.get_dataset(
-            f"{pool}/iocage/{jail_type}/{jail_uuid}")
+        try:
+            jail_dataset = self.zfs.get_dataset(
+                f"{pool}/iocage/{jail_type}/{jail_uuid}")
+        except libzfs.ZFSException as err:
+            if err.code == libzfs.Error.NOENT:
+                if os.path.isfile(self.location + "/config"):
+                    iocage.lib.ioc_common.logit(
+                        {
+                            "level": "EXCEPTION",
+                            "message": "iocage_legacy develop had a broken"
+                            " hack88 implementation.\nPlease manually rename"
+                            f" {jail_uuid} or destroy it with zfs."
+                        },
+                        exit_on_error=self.exit_on_error,
+                        _callback=self.callback,
+                        silent=self.silent)
+
+                jail_dataset = self.zfs.get_dataset_by_path(self.location)
+                full_uuid = jail_dataset.name.rsplit("/")[-1]
+            else:
+                raise()
+
         skip = False
 
         if jail_dataset.mountpoint is None:
@@ -242,15 +263,13 @@ class IOCJson(object):
                             uuid = d
                         elif len(d) == 8:
                             # Hack88 migration to a perm short UUID.
-                            full_uuid = self.zfs_get_property(
-                                self.location,
-                                'org.freebsd.iocage:host_hostuuid')
-                            jail_hostname = self.zfs_get_property(
-                                self.location,
-                                'org.freebsd.iocage:host_hostname')
                             short_uuid = full_uuid[:8]
                             full_dataset = f"{pool}/iocage/jails/{full_uuid}"
                             short_dataset = f"{pool}/iocage/jails/{short_uuid}"
+
+                            jail_hostname = self.zfs_get_property(
+                                full_dataset,
+                                'org.freebsd.iocage:host_hostname')
 
                             self.json_convert_from_zfs(full_uuid)
                             with open(self.location + "/config.json",
@@ -324,8 +343,26 @@ class IOCJson(object):
 
                     self.json_convert_from_zfs(uuid, skip=skip)
 
-                    with open(self.location + "/config.json", "r") as conf:
-                        conf = json.load(conf)
+                    messages = collections.OrderedDict(
+                        [("1-NOTICE", "*" * 80),
+                         ("2-WARNING",
+                          f"Jail: {full_uuid} was renamed to {uuid}"),
+                         ("3-NOTICE",
+                          f"{'*' * 80}\n"),
+                         ("4-EXCEPTION",
+                          "Please issue your command again.")])
+
+                    for level, msg in messages.items():
+                        level = level.partition("-")[2]
+
+                        iocage.lib.ioc_common.logit(
+                            {
+                                "level": level,
+                                "message": msg
+                            },
+                            exit_on_error=self.exit_on_error,
+                            _callback=self.callback,
+                            silent=self.silent)
                 except su.CalledProcessError:
                     # At this point it should be a real misconfigured jail
                     raise RuntimeError("Configuration is missing!"
@@ -715,6 +752,7 @@ class IOCJson(object):
         new keys with their default values if missing.
         """
         _, iocroot = _get_pool_and_iocroot()
+        renamed = False
 
         if os.geteuid() != 0:
             iocage.lib.ioc_common.logit(
@@ -859,6 +897,8 @@ class IOCJson(object):
                     # They want to stop the jail, not attempt to migrate before
 
                     return conf
+
+                renamed = True
         except KeyError:
             # New jail creation
             pass
@@ -880,7 +920,8 @@ class IOCJson(object):
 
         if not default:
             try:
-                self.json_write(conf)
+                if not renamed:
+                    self.json_write(conf)
             except FileNotFoundError:
                 # Dataset was renamed.
                 self.location = f"{iocroot}/jails/{tag}"
@@ -904,6 +945,32 @@ class IOCJson(object):
                         exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
+
+        # The above doesn't get triggered with legacy short UUIDs
+
+        if renamed:
+            self.location = f"{iocroot}/jails/{tag}"
+
+            self.json_write(conf)
+
+            messages = collections.OrderedDict(
+                [("1-NOTICE", "*" * 80),
+                 ("2-WARNING", f"Jail: {uuid} was renamed to {tag}"),
+                 ("3-NOTICE",
+                  f"{'*' * 80}\n"), ("4-EXCEPTION",
+                                     "Please issue your command again.")])
+
+            for level, msg in messages.items():
+                level = level.partition("-")[2]
+
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level": level,
+                        "message": msg
+                    },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
+                    silent=self.silent)
 
         return conf
 
@@ -1387,6 +1454,13 @@ class IOCJson(object):
 
                     jail.umount(force=True)
                     jail.delete()
+
+                    try:
+                        shutil.rmtree(f"{iocroot}/jails/{uuid}")
+                    except Exception:
+                        # Sometimes it becomes a directory when legacy short
+                        # UUIDs are involved
+                        pass
 
                     # Cleanup our snapshot from the cloning process
 
