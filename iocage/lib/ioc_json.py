@@ -842,6 +842,8 @@ class IOCJson(object):
             except FileNotFoundError:
                 # Dataset was renamed.
                 self.location = f"{iocroot}/jails/{tag}"
+                conf["jail_zfs_dataset"] = f"iocage/jails/{tag}/data"
+
                 self.json_write(conf)
                 messages = collections.OrderedDict(
                     [("1-NOTICE", "*" * 80),
