@@ -191,13 +191,23 @@ class IOCageCLI(click.MultiCommand):
     is_flag=True,
     callback=print_version,
     help="Display iocage's version and exit.")
-def cli(version):
+@click.option(
+    "--force",
+    "-f",
+    is_flag=True,
+    help="Allow iocage to rename datasets.")
+def cli(version, force):
     """A jail manager."""
     IOCLogger()
     skip_check = False
     skip_check_cmds = ["--help", "activate", "-v", "--version", "--rc"]
 
     try:
+        if force:
+            os.environ["IOCAGE_FORCE"] = "TRUE"
+        else:
+            os.environ["IOCAGE_FORCE"] = "FALSE"
+
         if "iocage" in sys.argv[0] and len(sys.argv) == 1:
             skip_check = True
 
@@ -206,6 +216,7 @@ def cli(version):
                 skip_check = True
             elif "clean" in arg:
                 skip_check = True
+                os.environ["IOCAGE_FORCE"] = "TRUE"
                 ioc_check.IOCCheck(silent=True)
 
         if not skip_check:

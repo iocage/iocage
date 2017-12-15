@@ -70,6 +70,16 @@ class IOCJson(object):
         self.exit_on_error = exit_on_error
         self.silent = silent
         self.callback = callback
+
+        try:
+            force_env = os.environ["IOCAGE_FORCE"]
+        except KeyError:
+            # FreeNAS or an API user, due to the sheer web of calls to this
+            # module we are assuming they are OK with any renaming opertaions
+
+            force_env = "TRUE"
+
+        self.force = True if force_env == "TRUE" else False
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
 
     def json_convert_from_ucl(self):
@@ -205,6 +215,19 @@ class IOCJson(object):
             with open(self.location + "/config.json", "r") as conf:
                 conf = json.load(conf)
         except FileNotFoundError:
+            if not self.force:
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level":
+                        "EXCEPTION",
+                        "message":
+                        "A renaming operation is required to continue.\n"
+                        f"Please run iocage -f {sys.argv[-1]} as root."
+                    },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
+                    silent=self.silent)
+
             if os.path.isfile(self.location + "/config"):
                 self.json_convert_from_ucl()
 
@@ -810,8 +833,27 @@ class IOCJson(object):
                 state = False
 
             if tag != uuid:
+                if not self.force:
+                    iocage.lib.ioc_common.logit(
+                        {
+                            "level":
+                            "EXCEPTION",
+                            "message":
+                            "A renaming operation is required to continue.\n"
+                            f"Please run iocage -f {sys.argv[-1]} as root."
+                        },
+                        exit_on_error=self.exit_on_error,
+                        _callback=self.callback,
+                        silent=self.silent)
+
                 conf, rtrn = self.json_migrate_uuid_to_tag(
                     uuid, tag, state, conf)
+
+                conf["jail_zfs_dataset"] = f"iocage/jails/{tag}/data"
+
+                for line in fileinput.input(
+                        f"{iocroot}/jails/{tag}/fstab", inplace=1):
+                    print(line.replace(f'{uuid}', f'{tag}').rstrip())
 
                 if rtrn:
                     # They want to stop the jail, not attempt to migrate before
@@ -842,7 +884,6 @@ class IOCJson(object):
             except FileNotFoundError:
                 # Dataset was renamed.
                 self.location = f"{iocroot}/jails/{tag}"
-                conf["jail_zfs_dataset"] = f"iocage/jails/{tag}/data"
 
                 self.json_write(conf)
                 messages = collections.OrderedDict(
