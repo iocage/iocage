@@ -107,6 +107,7 @@
 .Ar JAIL
 .Ar FSTAB_STRING
 .Op Fl H | h | -header
+.Op Fl R | -replace
 .Op Fl a | -add | Cm action
 .Op Fl e | -edit | Cm action
 .Op Fl l | -list
@@ -621,6 +622,8 @@ Options:
 .It Op Fl H | h | -header
 For scripting.
 Use tabs for separators.
+.It Op Fl R | -replace
+Replace an entry by index number.
 .It Op Fl a | -add | Cm action
 Adds an entry to the specific jail's
 .Pa fstab
