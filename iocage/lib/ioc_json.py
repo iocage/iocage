@@ -195,6 +195,9 @@ class IOCJson(object):
         pool, iocroot = _get_pool_and_iocroot()
         version = self.json_get_version()
         jail_type, jail_uuid = self.location.rsplit("/", 2)[-2:]
+        full_uuid = jail_uuid  # Saves jail_uuid for legacy ZFS migration
+        legacy_short = False
+
         try:
             jail_dataset = self.zfs.get_dataset(
                 f"{pool}/iocage/{jail_type}/{jail_uuid}")
@@ -214,6 +217,7 @@ class IOCJson(object):
 
                 jail_dataset = self.zfs.get_dataset_by_path(self.location)
                 full_uuid = jail_dataset.name.rsplit("/")[-1]
+                legacy_short = True
             else:
                 raise()
 
@@ -236,6 +240,27 @@ class IOCJson(object):
             with open(self.location + "/config.json", "r") as conf:
                 conf = json.load(conf)
         except FileNotFoundError:
+            try:
+                # If this is a legacy jail, it will be missing this file but
+                # not this key.
+                jail_dataset.properties["org.freebsd.iocage:host_hostuuid"]
+            except KeyError:
+                if os.path.isfile(f"{self.location}/config"):
+                    # iocage legacy develop jail, not missing configuration
+                    pass
+                else:
+                    iocage.lib.ioc_common.logit(
+                        {
+                            "level":
+                            "EXCEPTION",
+                            "message":
+                            f"{jail_uuid} is missing it's configuration,"
+                            " please destroy this jail and recreate it."
+                        },
+                        exit_on_error=self.exit_on_error,
+                        _callback=self.callback,
+                        silent=self.silent)
+
             if not self.force:
                 iocage.lib.ioc_common.logit(
                     {
@@ -342,27 +367,30 @@ class IOCJson(object):
                             skip = True
 
                     self.json_convert_from_zfs(uuid, skip=skip)
+                    with open(self.location + "/config.json", "r") as conf:
+                        conf = json.load(conf)
 
-                    messages = collections.OrderedDict(
-                        [("1-NOTICE", "*" * 80),
-                         ("2-WARNING",
-                          f"Jail: {full_uuid} was renamed to {uuid}"),
-                         ("3-NOTICE",
-                          f"{'*' * 80}\n"),
-                         ("4-EXCEPTION",
-                          "Please issue your command again.")])
+                    if legacy_short:
+                        messages = collections.OrderedDict(
+                            [("1-NOTICE", "*" * 80),
+                             ("2-WARNING",
+                              f"Jail: {full_uuid} was renamed to {uuid}"),
+                             ("3-NOTICE",
+                              f"{'*' * 80}\n"),
+                             ("4-EXCEPTION",
+                              "Please issue your command again.")])
 
-                    for level, msg in messages.items():
-                        level = level.partition("-")[2]
+                        for level, msg in messages.items():
+                            level = level.partition("-")[2]
 
-                        iocage.lib.ioc_common.logit(
-                            {
-                                "level": level,
-                                "message": msg
-                            },
-                            exit_on_error=self.exit_on_error,
-                            _callback=self.callback,
-                            silent=self.silent)
+                            iocage.lib.ioc_common.logit(
+                                {
+                                    "level": level,
+                                    "message": msg
+                                },
+                                exit_on_error=self.exit_on_error,
+                                _callback=self.callback,
+                                silent=self.silent)
                 except su.CalledProcessError:
                     # At this point it should be a real misconfigured jail
                     raise RuntimeError("Configuration is missing!"
@@ -884,21 +912,26 @@ class IOCJson(object):
                         _callback=self.callback,
                         silent=self.silent)
 
-                conf, rtrn = self.json_migrate_uuid_to_tag(
+                conf, rtrn, date = self.json_migrate_uuid_to_tag(
                     uuid, tag, state, conf)
 
                 conf["jail_zfs_dataset"] = f"iocage/jails/{tag}/data"
 
-                for line in fileinput.input(
-                        f"{iocroot}/jails/{tag}/fstab", inplace=1):
-                    print(line.replace(f'{uuid}', f'{tag}').rstrip())
+                if not date:
+                    # The jail's tag was not a date, so it was renamed. Fix
+                    # fstab
+
+                    for line in fileinput.input(
+                            f"{iocroot}/jails/{tag}/fstab", inplace=1):
+                        print(line.replace(f'{uuid}', f'{tag}').rstrip())
+
+                    renamed = True
 
                 if rtrn:
                     # They want to stop the jail, not attempt to migrate before
 
                     return conf
 
-                renamed = True
         except KeyError:
             # New jail creation
             pass
@@ -1338,7 +1371,7 @@ class IOCJson(object):
                         # This will allow the user to actually stop
                         # the running jails before migration.
 
-                        return (conf, True)
+                        return (conf, True, False)
 
                     if state:
                         iocage.lib.ioc_common.logit(
@@ -1481,7 +1514,7 @@ class IOCJson(object):
             # They may have set their own, we don't want to trample it.
             conf["host_hostname"] = tag
 
-        return (conf, False)
+        return (conf, False, True)
 
     def json_check_default_config(self):
         """This sets up the default configuration for jails."""
