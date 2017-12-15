@@ -27,7 +27,6 @@ import os
 import re
 
 import click
-
 import iocage.lib.ioc_common as ioc_common
 import iocage.lib.iocage as ioc
 
@@ -36,6 +35,7 @@ __rootcmd__ = True
 
 def validate_count(ctx, param, value):
     """Takes a string, removes the commas and returns an int."""
+
     if isinstance(value, str):
         try:
             value = value.replace(",", "")
@@ -43,7 +43,7 @@ def validate_count(ctx, param, value):
             return int(value)
         except ValueError:
             ioc_common.logit({
-                "level"  : "EXCEPTION",
+                "level": "EXCEPTION",
                 "message": f"{value} is not a valid integer."
             }, exit_on_error=True)
     else:
@@ -81,12 +81,14 @@ def validate_count(ctx, param, value):
 @click.argument("props", nargs=-1)
 def cli(release, template, count, props, pkglist, basejail, empty, short,
         name, _uuid, force):
+
     if name:
         # noinspection Annotator
         valid = True if re.match("^[a-zA-Z0-9\._-]+$", name) else False
+
         if not valid:
             ioc_common.logit({
-                "level"  : "EXCEPTION",
+                "level": "EXCEPTION",
                 "message": f"Invalid character in {name}, please remove it."
             }, exit_on_error=True)
 
@@ -95,7 +97,7 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
 
     if release and "=" in release:
         ioc_common.logit({
-            "level"  : "EXCEPTION",
+            "level": "EXCEPTION",
             "message": "Please supply a valid RELEASE!"
         }, exit_on_error=True)
 
@@ -113,7 +115,7 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
 
         if not os.path.isfile(pkglist):
             ioc_common.logit({
-                "level"  : "EXCEPTION",
+                "level": "EXCEPTION",
                 "message": f"{pkglist} does not exist!\n"
                            "Please supply a JSON file with the format:"
                            f" {_pkgformat}"
@@ -125,7 +127,7 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
                     json.load(p)["pkgs"]  # noqa
             except json.JSONDecodeError:
                 ioc_common.logit({
-                    "level"  : "EXCEPTION",
+                    "level": "EXCEPTION",
                     "message": "Please supply a valid"
                                f" JSON file with the format:{_pkgformat}"
                 }, exit_on_error=True)
@@ -140,22 +142,23 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
                       template=template, short=short, _uuid=_uuid,
                       basejail=basejail, empty=empty)
     except RuntimeError as err:
-        if template:
+        if template and "Dataset" in str(err):
             # We want to list the available templates first
             ioc_common.logit({
-                "level"  : "ERROR",
+                "level": "ERROR",
                 "message": f"Template: {release} not found!"
             })
             templates = ioc.IOCage(exit_on_error=True).list("template")
+
             for temp in templates:
                 ioc_common.logit({
-                    "level"  : "EXCEPTION",
+                    "level": "EXCEPTION",
                     "message": f"Created Templates:\n  {temp[1]}"
                 }, exit_on_error=True)
             exit(1)
         else:
             # Standard errors
             ioc_common.logit({
-                "level"  : "EXCEPTION",
+                "level": "EXCEPTION",
                 "message": err
             }, exit_on_error=True)
