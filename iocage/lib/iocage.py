@@ -291,7 +291,7 @@ class IOCage(object):
             tuple: True if error with a message, or False/None
         """
 
-        if _type in ('jail', 'plugin'):
+        if _type in ('jail', 'plugin', 'clonejail'):
             return False, None
         elif _type == 'basejail':
             return (True, "Please run \"iocage migrate\" before trying to"
