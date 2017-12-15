@@ -83,7 +83,7 @@ class IOCExec(object):
                     _callback=self.callback,
                     silent=self.silent)
 
-            if conf["type"] in ("jail", "plugin"):
+            if conf["type"] in ("jail", "plugin", "clonejail"):
                 iocage.lib.ioc_start.IOCStart(
                     self.uuid, self.path, conf, silent=True)
             elif conf["type"] == "basejail":
