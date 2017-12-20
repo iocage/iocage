@@ -1665,7 +1665,7 @@ class IOCage(object):
         release = _release if "-RELEASE" in _release else conf["release"]
         _silent = self.silent
 
-        if conf["type"] == "jail":
+        if conf["type"] == "jail" or conf["type"] == "clonejail":
             if not status:
                 self.silent = True
                 self.start()
