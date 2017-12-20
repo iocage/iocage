@@ -733,8 +733,7 @@ class IOCFetch(object):
                         self.update_progress(total, i, f"Downloading : {f}",
                                              start, dl_progress)
 
-    @staticmethod
-    def update_progress(total, progress, display_text, start, chunk):
+    def update_progress(self, total, progress, display_text, start, chunk):
         """
         Displays or updates a console progress bar.
 
@@ -754,6 +753,10 @@ class IOCFetch(object):
             progress, status = 1, "\r\n"
 
         block = int(round(barLength * progress))
+
+        if self.silent:
+            return
+
         text = "\r{} [{}] {:.0f}% {} {}Mbit/s".format(display_text,
                                                       "#" * block + "-" *
                                                       (barLength - block),

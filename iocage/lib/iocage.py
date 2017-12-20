@@ -965,12 +965,14 @@ class IOCage(object):
             if count == 1:
                 ioc_fetch.IOCFetch(
                     release, exit_on_error=self.exit_on_error,
-                    **kwargs).fetch_plugin(name, props, 0, accept)
+                    silent=self.silent, **kwargs
+                ).fetch_plugin(name, props, 0, accept)
             else:
                 for j in range(1, count + 1):
                     ioc_fetch.IOCFetch(
                         release, exit_on_error=self.exit_on_error,
-                        **kwargs).fetch_plugin(name, props, j, accept)
+                        silent=self.silent, **kwargs
+                    ).fetch_plugin(name, props, j, accept)
         else:
             if _list:
                 if remote:
@@ -984,7 +986,7 @@ class IOCage(object):
 
             ioc_fetch.IOCFetch(
                 release, exit_on_error=self.exit_on_error,
-                **kwargs).fetch_release()
+                silent=self.silent, **kwargs).fetch_release()
 
     def fstab(self,
               action,
