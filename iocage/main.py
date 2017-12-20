@@ -200,6 +200,7 @@ def cli(version, force):
     """A jail manager."""
     IOCLogger()
     skip_check = False
+    os.environ["IOCAGE_SKIP"] = "FALSE"
     skip_check_cmds = ["--help", "activate", "-v", "--version", "--rc"]
 
     try:
@@ -213,10 +214,12 @@ def cli(version, force):
 
         for arg in sys.argv[1:]:
             if arg in skip_check_cmds:
+                os.environ["IOCAGE_SKIP"] = "TRUE"
                 skip_check = True
             elif "clean" in arg:
                 skip_check = True
                 os.environ["IOCAGE_FORCE"] = "TRUE"
+                os.environ["IOCAGE_SKIP"] = "TRUE"
                 ioc_check.IOCCheck(silent=True)
 
         if not skip_check:

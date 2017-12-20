@@ -513,6 +513,19 @@ class IOCJson(object):
                                                "activate with iocage activate "
                                                "POOL")
 
+                    if os.environ["IOCAGE_SKIP"] == "TRUE":
+                        iocage.lib.ioc_common.logit(
+                            {
+                                "level":
+                                "EXCEPTION",
+                                "message":
+                                "IOCAGE_SKIP is TRUE or an RC operation, not"
+                                " activating a pool.\nPlease manually issue"
+                                " iocage activate POOL"
+                            },
+                            _callback=self.callback,
+                            silent=self.silent)
+
                     iocage.lib.ioc_common.logit(
                         {
                             "level":
