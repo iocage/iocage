@@ -878,16 +878,15 @@ class IOCFetch(object):
             fetch = su.Popen(fetch_cmd)
             fetch.communicate()
 
-            if not fetch.returncode:
-                # They may have missing files, we don't need that noise
-                # since it's not fatal
-                su.Popen(
-                    [
-                        fetch_name, "-b", new_root, "-d",
-                        f"{new_root}/var/db/freebsd-update/", "-f",
-                        f"{new_root}/etc/freebsd-update.conf", "install"
-                    ],
-                    stderr=su.DEVNULL).communicate()
+            # They may have missing files, we don't need that noise
+            # since it's not fatal
+            su.Popen(
+                [
+                    fetch_name, "-b", new_root, "-d",
+                    f"{new_root}/var/db/freebsd-update/", "-f",
+                    f"{new_root}/etc/freebsd-update.conf", "install"
+                ],
+                stderr=su.DEVNULL).communicate()
 
             if self.verify:
                 # tmp only exists if they verify SSL certs
