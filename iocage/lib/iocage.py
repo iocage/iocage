@@ -1523,7 +1523,7 @@ class IOCage(object):
         if not self.silent:
             ioc_common.logit({
                 "level": "INFO",
-                "message": f"Snapshot: {target} created."
+                "message": f"Snapshot: {target}@{name} created."
             })
 
     def __soft_restart__(self):
