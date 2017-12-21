@@ -23,23 +23,38 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """set module for the cli."""
 import click
-
+import iocage.lib.ioc_common as ioc_common
 import iocage.lib.iocage as ioc
 
 __rootcmd__ = True
 
 
-@click.command(context_settings=dict(
-    max_content_width=400, ), name="set", help="Sets the specified property.")
+@click.command(
+    context_settings=dict(
+        max_content_width=400, ),
+    name="set",
+    help="Sets the specified property.")
 @click.argument("props", nargs=-1)
 @click.argument("jail", nargs=1)
-@click.option("--plugin", "-P",
-              help="Set the specified key for a plugin jail, if accessing a"
-                   " nested key use . as a separator."
-                   "\n\b Example: iocage set -P foo.bar.baz=VALUE PLUGIN",
-              is_flag=True)
-def cli(props, jail, plugin):
+@click.option(
+    "--plugin",
+    "-P",
+    help="Set the specified key for a plugin jail, if accessing a"
+    " nested key use . as a separator."
+    "\n\b Example: iocage set -P foo.bar.baz=VALUE PLUGIN",
+    is_flag=True)
+def cli(jail, props, plugin):
     """Get a list of jails and print the property."""
+
+    if not props:
+        # Click doesn't correctly assign the two variables for some reason
+        ioc_common.logit(
+            {
+                "level": "EXCEPTION",
+                "message": "You must specify a jail!"
+            },
+            exit_on_error=True)
+
     for prop in props:
-        ioc.IOCage(exit_on_error=True, jail=jail, skip_jails=True).set(prop,
-                                                                       plugin)
+        ioc.IOCage(
+            exit_on_error=True, jail=jail, skip_jails=True).set(prop, plugin)
