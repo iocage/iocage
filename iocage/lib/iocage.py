@@ -105,6 +105,10 @@ class IOCage(object):
         self.exit_on_error = exit_on_error
         self.rc = rc
 
+        # FreeNAS won't be entering through the CLI, so we set sane defaults
+        os.environ.get("IOCAGE_SKIP", "FALSE")
+        os.environ.get("IOCAGE_FORCE", "TRUE")
+
         if not activate:
             self.pool = PoolAndDataset().get_pool()
             self.iocroot = PoolAndDataset().get_iocroot()
