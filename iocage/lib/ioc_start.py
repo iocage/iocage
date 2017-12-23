@@ -362,7 +362,7 @@ class IOCStart(object):
                 jdataset = jdataset.strip()
                 children = iocage.lib.ioc_common.checkoutput(
                     ["zfs", "list", "-H", "-r", "-o",
-                     "name", "-S", "name",
+                     "name", "-s", "name",
                      f"{self.pool}/{jdataset}"])
 
                 try:
