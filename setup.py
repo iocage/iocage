@@ -44,7 +44,7 @@ if sys.version_info < (3, 6):
 
 setup(
     name='iocage',
-    version='0.9.10rc',
+    version='0.9.10',
     description='A jail manager that uses ZFS.',
     author='iocage Contributors',
     author_email='https://groups.google.com/forum/#!forum/iocage',
