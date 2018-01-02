@@ -29,8 +29,6 @@ import subprocess as su
 import sys
 import uuid
 
-import libzfs
-
 import iocage.lib.ioc_common
 import iocage.lib.ioc_destroy
 import iocage.lib.ioc_exec
@@ -39,9 +37,11 @@ import iocage.lib.ioc_json
 import iocage.lib.ioc_list
 import iocage.lib.ioc_start
 import iocage.lib.ioc_stop
+import libzfs
 
 
 class IOCCreate(object):
+
     """Create a jail from a clone."""
 
     def __init__(self, release, props, num, pkglist=None, plugin=False,
@@ -71,6 +71,7 @@ class IOCCreate(object):
 
     def create_jail(self):
         """Helper to catch SIGINT"""
+
         if self.uuid:
             jail_uuid = self.uuid
         else:
@@ -141,13 +142,14 @@ class IOCCreate(object):
                 # Unintuitevly a missing template will throw a
                 # UnboundLocalError as the missing file will kick the
                 # migration routine for zfs props. We don't need that :)
+
                 if self.template:
                     raise RuntimeError(f"Template: {self.release} not found!")
                 elif self.clone:
                     if os.path.isdir(f"{self.iocroot}/templates/"
                                      f"{self.release}"):
                         iocage.lib.ioc_common.logit({
-                            "level"  : "EXCEPTION",
+                            "level": "EXCEPTION",
                             "message": "You cannot clone a template, "
                                        "use create -t instead."
                         }, exit_on_error=self.exit_on_error,
@@ -156,14 +158,14 @@ class IOCCreate(object):
                     else:
                         # Yep, self.release is actually the source jail.
                         iocage.lib.ioc_common.logit({
-                            "level"  : "EXCEPTION",
+                            "level": "EXCEPTION",
                             "message": f"Jail: {self.release} not found!"
                         }, exit_on_error=self.exit_on_error,
                             _callback=self.callback,
                             silent=self.silent)
                 else:
                     iocage.lib.ioc_common.logit({
-                        "level"  : "EXCEPTION",
+                        "level": "EXCEPTION",
                         "message": f"RELEASE: {self.release} not found!"
                     }, exit_on_error=self.exit_on_error,
                         _callback=self.callback,
@@ -224,14 +226,19 @@ class IOCCreate(object):
                 "cloned_release")
 
             # Clones are expected to be as identical as possible.
+
             for k, v in config.items():
                 v = v.replace(clone_uuid, jail_uuid)
+
+                if "_mac" in k:
+                    # They want a unique mac on start
+                    config[k] = "none"
 
                 config[k] = v
         else:
             if not self.empty:
                 dataset = f"{self.pool}/iocage/releases/{self.release}/" \
-                          f"root@{jail_uuid}"
+                    f"root@{jail_uuid}"
                 try:
                     su.check_call(["zfs", "snapshot",
                                    f"{self.pool}/iocage/releases/"
@@ -241,7 +248,7 @@ class IOCCreate(object):
                     try:
                         snapshot = self.zfs.get_snapshot(dataset)
                         iocage.lib.ioc_common.logit({
-                            "level"  : "EXCEPTION",
+                            "level": "EXCEPTION",
                             "message": f"Snapshot: {snapshot.name} exists!\n"
                                        "Please manually run zfs destroy"
                                        f" {snapshot.name} if you wish to "
@@ -268,6 +275,7 @@ class IOCCreate(object):
         iocjson = iocage.lib.ioc_json.IOCJson(location, silent=True)
 
         # This test is to avoid the same warnings during install_packages.
+
         if not self.plugin:
             for prop in self.props:
                 key, _, value = prop.partition("=")
@@ -277,7 +285,7 @@ class IOCCreate(object):
                     ).__destroy_parse_datasets__(
                         f"{self.pool}/iocage/jails/{jail_uuid}")
                     iocage.lib.ioc_common.logit({
-                        "level"  : "EXCEPTION",
+                        "level": "EXCEPTION",
                         "message": "You cannot name a jail default, "
                                    "that is a reserved name."
                     }, exit_on_error=self.exit_on_error,
@@ -318,6 +326,7 @@ class IOCCreate(object):
             iocjson.json_write(config)
 
         # Just "touch" the fstab file, since it won't exist.
+
         if not self.clone:
             open(f"{location}/fstab", "wb").close()
         else:
@@ -325,6 +334,7 @@ class IOCCreate(object):
                 with iocage.lib.ioc_common.open_atomic(
                         clone_fstab, "w") as _fstab:
                     # open_atomic will empty the file, we need these still.
+
                     for line in _clone_fstab.readlines():
                         _fstab.write(line.replace(clone_uuid, jail_uuid))
 
@@ -376,7 +386,7 @@ class IOCCreate(object):
                 msg = f"{jail_uuid} successfully created!"
 
             iocage.lib.ioc_common.logit({
-                "level"  : "INFO",
+                "level": "INFO",
                 "message": msg
             },
                 _callback=self.callback,
@@ -386,7 +396,7 @@ class IOCCreate(object):
             if config["ip4_addr"] == "none" and config["ip6_addr"] == "none" \
                     and config["dhcp"] != "on":
                 iocage.lib.ioc_common.logit({
-                    "level"  : "WARNING",
+                    "level": "WARNING",
                     "message": "You need an IP address for the jail to"
                                " install packages!\n"
                 },
@@ -403,6 +413,7 @@ class IOCCreate(object):
             # We have to set readonly back, since we're done with our tasks
             iocjson.zfs_set_property(f"{self.pool}/iocage/templates/"
                                      f"{jail_uuid}", "readonly", "on")
+
         return jail_uuid
 
     def create_config(self, jail_uuid, release):
@@ -443,7 +454,7 @@ class IOCCreate(object):
         dnssec_connect_cmd = ["drill", "-D", f"{repo}"]
 
         iocage.lib.ioc_common.logit({
-            "level"  : "INFO",
+            "level": "INFO",
             "message": f"Testing SRV response to {site}"
         },
             _callback=self.callback,
@@ -457,7 +468,7 @@ class IOCCreate(object):
                                f"Command run: {' '.join(srv_connect_cmd)}")
 
         iocage.lib.ioc_common.logit({
-            "level"  : "INFO",
+            "level": "INFO",
             "message": f"Testing DNSSEC response to {site}"
         },
             _callback=self.callback,
@@ -475,7 +486,7 @@ class IOCCreate(object):
                 self.pkglist = json.load(j)["pkgs"]
 
         iocage.lib.ioc_common.logit({
-            "level"  : "INFO",
+            "level": "INFO",
             "message": "\nInstalling pkg... "
         },
             _callback=self.callback,
@@ -493,7 +504,7 @@ class IOCCreate(object):
 
         if pkgupgrade_err:
             iocage.lib.ioc_common.logit({
-                "level"  : "ERROR",
+                "level": "ERROR",
                 "message": f"{pkg_upgrade}"
             },
                 _callback=self.callback,
@@ -501,14 +512,15 @@ class IOCCreate(object):
             err = True
 
         iocage.lib.ioc_common.logit({
-            "level"  : "INFO",
+            "level": "INFO",
             "message": "Installing supplied packages:"
         },
             _callback=self.callback,
             silent=self.silent)
+
         for pkg in self.pkglist:
             iocage.lib.ioc_common.logit({
-                "level"  : "INFO",
+                "level": "INFO",
                 "message": f"  - {pkg}... "
             },
                 _callback=self.callback,
@@ -521,7 +533,7 @@ class IOCCreate(object):
 
             if pkg_err:
                 iocage.lib.ioc_common.logit({
-                    "level"  : "ERROR",
+                    "level": "ERROR",
                     "message": f"{pkg_err.decode()}"
                 },
                     _callback=self.callback,
