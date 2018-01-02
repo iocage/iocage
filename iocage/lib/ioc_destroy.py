@@ -32,6 +32,7 @@ import libzfs
 
 
 class IOCDestroy(object):
+
     """
     Destroy a jail's datasets and then if they have a RELEASE snapshot,
     destroy that as well.
@@ -117,9 +118,12 @@ class IOCDestroy(object):
                     in ("jails", "templates", "releases")):
             # The jails parent won't show in the list.
             j_parent = self.ds(f"{dataset.name.replace('/root','')}")
+            origin = j_parent.properties["origin"].value.rsplit("@", 1)[0]
+            j_origin_snaps = self.ds(origin).snapshots_recursive
             j_dependents = j_parent.dependents
 
             for j_dependent in j_dependents:
+
                 if j_dependent.type == libzfs.DatasetType.FILESYSTEM:
                     j_dependent.umount(force=True)
 
@@ -127,6 +131,12 @@ class IOCDestroy(object):
 
             j_parent.umount(force=True)
             j_parent.delete()
+
+            for snap in j_origin_snaps:
+                p, n = snap.name.split("@")
+
+                if n == uuid:
+                    snap.delete()
 
     def __destroy_dataset__(self, dataset):
         """Destroys the given datasets and snapshots."""
