@@ -28,16 +28,16 @@ from setuptools import find_packages, setup
 
 import fastentrypoints
 
-if os.path.isdir("/usr/local/etc/init.d"):
-    _data = [('/usr/local/etc/init.d', ['rc.d/iocage']),
-             ('/usr/local/man/man8', ['iocage/iocage.8.gz'])]
+if os.path.isdir("/".join([sys.prefix, "etc/init.d"])):
+    _data = [('etc/init.d', ['rc.d/iocage']),
+             ('man/man8', ['iocage/iocage.8.gz'])]
 else:
-    _data = [('/usr/local/etc/rc.d', ['rc.d/iocage']),
-             ('/usr/local/man/man8', ['iocage/iocage.8.gz'])]
+    _data = [('etc/rc.d', ['rc.d/iocage']),
+             ('man/man8', ['iocage/iocage.8.gz'])]
 
-if os.path.isdir("/usr/local/share/zsh/site-functions/"):
+if os.path.isdir("/".join([sys.prefix, "share/zsh/site-functions/"])):
     _data.append(
-        ('/usr/local/share/zsh/site-functions', ['zsh-completion/_iocage']))
+        ('share/zsh/site-functions', ['zsh-completion/_iocage']))
 
 if sys.version_info < (3, 6):
     exit("Only Python 3.6 and higher is supported.")
