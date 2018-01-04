@@ -1454,7 +1454,9 @@ class IOCage(object):
             root = False
 
             if root_snap_name == "root":
-                snap_name += "/root"
+                if not long:
+                    snap_name += "/root"
+
                 root = True
             elif root_snap_name != uuid:
                 # basejail datasets.
@@ -1471,14 +1473,19 @@ class IOCage(object):
 
         for parent in snap_list_temp:
             # We want the /root snapshots immediately after the parent ones
-            name, snap_name = parent[0].split("@")
-            long_name = f"{name}/root@{snap_name}"
-            name = name if not long else long_name
+            name = parent[0]
+
+            if long:
+                name, snap_name = parent[0].split("@")
+                name = f"{name}/root@{snap_name}"
 
             for root in snap_list_root:
                 _name = root[0]
 
-                if f"{name}/root" == _name:
+                # Long has this already, the short comparison will fail.
+                root_comparison = name if long else f"{name}/root"
+
+                if root_comparison == _name:
                     snap_list.append(parent)
                     snap_list.append(root)
 
