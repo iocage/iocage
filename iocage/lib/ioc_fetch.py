@@ -167,7 +167,7 @@ class IOCFetch(object):
         the list at all.
         """
 
-        if self.release.lower() == "exit":
+        if self.release.lower() == "exit" or self.release.lower() == "q":
             exit()
 
         if len(self.release) > 2:
@@ -175,33 +175,50 @@ class IOCFetch(object):
             try:
                 releases.index(self.release)
             except ValueError as err:
-                iocage.lib.ioc_common.logit(
-                    {
-                        "level": "EXCEPTION",
-                        "message": err
-                    },
-                    exit_on_error=self.exit_on_error,
-                    _callback=self.callback,
-                    silent=self.silent)
+                # Time to print the list again
+
+                for r in releases:
+                    iocage.lib.ioc_common.logit(
+                        {
+                            "level": "INFO",
+                            "message": f"[{releases.index(r)}] {r}"
+                        },
+                        _callback=self.callback,
+                        silent=self.silent)
+                host_release = self.__fetch_host_release__()
+                self.release = input("\nType the number of the desired"
+                                     " RELEASE\nPress [Enter] to fetch "
+                                     f"the default selection: ({host_release})"
+                                     "\nType EXIT to quit: ")
+                self.release = self.__fetch_validate_release__(releases)
 
             return self.release
 
         try:
             self.release = releases[int(self.release)]
         except IndexError:
-            iocage.lib.ioc_common.logit(
-                {
-                    "level": "EXCEPTION",
-                    "message": f"[{self.release}] is not in the list!"
-                },
-                exit_on_error=self.exit_on_error,
-                _callback=self.callback,
-                silent=self.silent)
+            # Time to print the list again
+
+            for r in releases:
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level": "INFO",
+                        "message": f"[{releases.index(r)}] {r}"
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
+            host_release = self.__fetch_host_release__()
+            self.release = input("\nType the number of the desired"
+                                 " RELEASE\nPress [Enter] to fetch "
+                                 f"the default selection: ({host_release})"
+                                 "\nType EXIT to quit: ")
+            self.release = self.__fetch_validate_release__(releases)
         except ValueError:
             # We want to use their host as RELEASE, but it may
             # not be on the mirrors anymore.
             try:
-                self.release = self.__fetch_host_release__()
+                if self.release == "":
+                    self.release = self.__fetch_host_release__()
 
                 if "-STABLE" in self.release:
                     # Custom HardenedBSD server
@@ -211,14 +228,22 @@ class IOCFetch(object):
 
                 releases.index(self.release)
             except ValueError:
-                iocage.lib.ioc_common.logit(
-                    {
-                        "level": "EXCEPTION",
-                        "message": "Please select an item!"
-                    },
-                    exit_on_error=self.exit_on_error,
-                    _callback=self.callback,
-                    silent=self.silent)
+                # Time to print the list again
+
+                for r in releases:
+                    iocage.lib.ioc_common.logit(
+                        {
+                            "level": "INFO",
+                            "message": f"[{releases.index(r)}] {r}"
+                        },
+                        _callback=self.callback,
+                        silent=self.silent)
+                host_release = self.__fetch_host_release__()
+                self.release = input("\nType the number of the desired"
+                                     " RELEASE\nPress [Enter] to fetch "
+                                     f"the default selection: ({host_release})"
+                                     "\nType EXIT to quit: ")
+                self.release = self.__fetch_validate_release__(releases)
 
         return self.release
 
