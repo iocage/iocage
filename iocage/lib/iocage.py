@@ -1346,6 +1346,10 @@ class IOCage(object):
                 _callback=self.callback,
                 silent=self.silent)
 
+        if key == "ip4_addr" or key == "ip6_addr":
+            # We don't want spaces here
+            value = value.replace(" ", "")
+
         if self.jail == "default":
             ioc_json.IOCJson(
                 exit_on_error=self.exit_on_error).json_check_default_config()
