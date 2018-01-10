@@ -742,11 +742,26 @@ class IOCJson(object):
                             "ip6.addr":
 
                         return
+
                     try:
                         ip = True if key == "ip4.addr" or key == "ip6.addr" \
                             else False
 
                         if ip and value.lower() == "none":
+                            return
+
+                        if key == "vnet":
+                            # We can't switch vnet dynamically
+                            iocage.lib.ioc_common.logit(
+                                {
+                                    "level":
+                                    "INFO",
+                                    "message":
+                                    "vnet changes require a jail restart"
+                                },
+                                _callback=self.callback,
+                                silent=self.silent)
+
                             return
 
                         iocage.lib.ioc_common.checkoutput(
