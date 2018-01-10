@@ -903,7 +903,7 @@ class IOCage(object):
         accept = kwargs.pop("accept", False)
         _list = kwargs.pop("list", False)
         remote = kwargs.pop("remote", False)
-        http = kwargs.get("http", False)
+        http = kwargs.get("http", True)
         hardened = kwargs.get("hardened", False)
         header = kwargs.pop("header", True)
         _long = kwargs.pop("_long", False)
