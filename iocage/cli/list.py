@@ -68,7 +68,7 @@ import iocage.lib.iocage as ioc
 @click.option("--plugins", "-P", is_flag=True, help="Show available plugins.")
 @click.option(
     "--http",
-    default=False,
+    default=True,
     help="Have --remote use HTTP instead.",
     is_flag=True)
 @click.option(
@@ -119,6 +119,12 @@ def cli(dataset_type, header, _long, remote, http, plugins, _sort, quick):
                 ioc_common.logit({"level": "INFO", "message": item})
         else:
             for item in _list:
-                ioc_common.logit({"level": "INFO", "message": "\t".join(item)})
+                if remote and not plugins:
+                    ioc_common.logit({"level": "INFO", "message": item})
+                else:
+                    ioc_common.logit({
+                        "level": "INFO",
+                        "message": "\t".join(item)
+                    })
     else:
         ioc_common.logit({"level": "INFO", "message": _list})

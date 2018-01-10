@@ -1465,9 +1465,12 @@ fingerprint: {fingerprint}
                 else:
                     table = texttable.Texttable(max_width=80)
 
-                # We get an infinite float otherwise.
-                table.set_cols_dtype(["t", "t", "t"])
-                plugin_list.insert(0, ["NAME", "DESCRIPTION", "PKG"])
+                list_header = ["NAME", "DESCRIPTION", "PKG"]
+
+                if icon:
+                    list_header += ["ICON"]
+
+                plugin_list.insert(0, list_header)
 
                 table.add_rows(plugin_list)
 
