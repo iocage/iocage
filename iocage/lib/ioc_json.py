@@ -505,14 +505,6 @@ class IOCJson(object):
                         raise RuntimeError("Run as root to automatically "
                                            "activate the first zpool!")
 
-                    if zpool == "freenas-boot":
-                        try:
-                            zpool = zpools[1]
-                        except IndexError:
-                            raise RuntimeError("Please specify a pool to "
-                                               "activate with iocage activate "
-                                               "POOL")
-
                     if os.environ["IOCAGE_SKIP"] == "TRUE":
                         iocage.lib.ioc_common.logit(
                             {
@@ -525,6 +517,14 @@ class IOCJson(object):
                             },
                             _callback=self.callback,
                             silent=self.silent)
+
+                    if zpool == "freenas-boot":
+                        try:
+                            zpool = zpools[1]
+                        except IndexError:
+                            raise RuntimeError("Please specify a pool to "
+                                               "activate with iocage activate "
+                                               "POOL")
 
                     iocage.lib.ioc_common.logit(
                         {
