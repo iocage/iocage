@@ -31,6 +31,7 @@ import iocage.lib.ioc_start
 
 
 class IOCExec(object):
+
     """Run jexec with a user inside the specified jail."""
 
     def __init__(self,
@@ -45,6 +46,7 @@ class IOCExec(object):
                  console=False,
                  silent=False,
                  exit_on_error=False,
+
                  return_msg=False,
                  callback=None):
         self.command = command

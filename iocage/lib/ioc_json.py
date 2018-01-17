@@ -1267,6 +1267,8 @@ class IOCJson(object):
                         uuid,
                         _path,
                         plugin=True,
+
+                        return_msg=True,
                         exit_on_error=self.exit_on_error,
                         silent=True).exec_jail()
             else:
