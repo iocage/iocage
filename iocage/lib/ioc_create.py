@@ -493,7 +493,7 @@ class IOCCreate(object):
             silent=self.silent)
         # To avoid a user being prompted about pkg.
         su.Popen(["pkg-static", "-j", jid, "install", "-q", "-y",
-                  "pkg"], stderr=su.PIPE).communicate()
+                  "pkg"], stdout=su.DEVNULL, stderr=su.DEVNULL).communicate()
 
         # We will have mismatched ABI errors from earlier, this is to be safe.
         os.environ["ASSUME_ALWAYS_YES"] = "yes"
@@ -526,6 +526,7 @@ class IOCCreate(object):
                 _callback=self.callback,
                 silent=self.silent)
             cmd = ("pkg", "install", "-q", "-y", pkg)
+
             pkg_install, pkg_err = iocage.lib.ioc_exec.IOCExec(
                 cmd, jail_uuid, location, plugin=self.plugin,
                 exit_on_error=self.exit_on_error,

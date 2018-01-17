@@ -1179,6 +1179,7 @@ class IOCFetch(object):
                                           pkg_repos, create_props, repo_dir):
         """Attempts to start the jail and install the packages"""
         kmods = conf.get("kmods", {})
+        secure = True if "https://" in conf["packagesite"] else False
 
         for kmod in kmods:
             try:
@@ -1191,6 +1192,39 @@ class IOCFetch(object):
                         "message": "Module not found!"
                     },
                     exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
+                    silent=self.silent)
+
+        if secure:
+            # Certificate verification
+            iocage.lib.ioc_common.logit(
+                {
+                    "level":
+                    "INFO",
+                    "message":
+                    "Secure packagesite detected,"
+                    " installing ca_root_nss package."
+                },
+                _callback=self.callback,
+                silent=self.silent)
+
+            err = iocage.lib.ioc_create.IOCCreate(
+                self.release,
+                create_props,
+                0,
+                pkglist=["ca_root_nss"],
+                silent=True,
+                exit_on_error=self.exit_on_error).create_install_packages(
+                    uuid, jaildir, _conf)
+
+            if err:
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level":
+                        "EXCEPTION",
+                        "message":
+                        "pkg error, please try non-secure packagesite."
+                    },
                     _callback=self.callback,
                     silent=self.silent)
 
