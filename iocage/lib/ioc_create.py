@@ -176,6 +176,8 @@ class IOCCreate(object):
             else:
                 clone_config = f"{self.iocroot}/jails/{jail_uuid}/config.json"
                 clone_fstab = f"{self.iocroot}/jails/{jail_uuid}/fstab"
+                clone_etc_hosts = \
+                    f"{self.iocroot}/jails/{jail_uuid}/root/etc/hosts"
 
         jail = f"{self.pool}/iocage/jails/{jail_uuid}/root"
 
@@ -325,10 +327,39 @@ class IOCCreate(object):
 
             iocjson.json_write(config)
 
-        # Just "touch" the fstab file, since it won't exist.
+        # Just "touch" the fstab file, since it won't exist and write
+        # /etc/hosts
+        etc_hosts_ip_addr = config["ip4_addr"].split("|", 1)[-1]
+
+        try:
+            jail_uuid_short = jail_uuid.rsplit(".")[-2]
+            jail_hostname = \
+                f"{jail_uuid}\t{jail_uuid_short}"
+        except IndexError:
+            # They supplied just a normal tag
+            jail_uuid_short = jail_uuid
+            jail_hostname = jail_uuid
+
+        final_line = f"{etc_hosts_ip_addr}\t{jail_hostname}\n"
 
         if not self.clone:
             open(f"{location}/fstab", "wb").close()
+
+            with open(f"{location}/root/etc/hosts", "r") as _etc_hosts:
+                with iocage.lib.ioc_common.open_atomic(
+                        f"{location}/root/etc/hosts", "w") as etc_hosts:
+                    # open_atomic will empty the file, we need these still.
+
+                    for line in _etc_hosts.readlines():
+                        if line.startswith("127.0.0.1"):
+                            line = f"{line.rstrip()} {jail_uuid_short}\n"
+
+                        etc_hosts.write(line)
+                    else:
+                        # We want their IP to have the hostname at the end
+
+                        if config["ip4_addr"] != "none":
+                            etc_hosts.write(final_line)
         else:
             with open(clone_fstab, "r") as _clone_fstab:
                 with iocage.lib.ioc_common.open_atomic(
@@ -337,6 +368,14 @@ class IOCCreate(object):
 
                     for line in _clone_fstab.readlines():
                         _fstab.write(line.replace(clone_uuid, jail_uuid))
+
+            with open(clone_etc_hosts, "r") as _clone_etc_hosts:
+                with iocage.lib.ioc_common.open_atomic(
+                        clone_etc_hosts, "w") as etc_hosts:
+                    # open_atomic will empty the file, we need these still.
+
+                    for line in _clone_etc_hosts.readlines():
+                        etc_hosts.write(line.replace(clone_uuid, jail_uuid))
 
         if not self.empty:
             self.create_rc(location, config["host_hostname"])
