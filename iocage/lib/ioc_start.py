@@ -487,21 +487,14 @@ class IOCStart(object):
                         continue
 
                     for addr in addrs.split(','):
-                        try:
-                            iface, ip = addr.split("|")
-                        except ValueError:
-                            # vnet0 is now for legacy compat as we don't rename
-                            # the interface inside the jail.
-
-                            iface, ip = "vnet0", addr
+                        iface, ip = addr.split("|")
 
                         if iface not in nics:
                             continue
 
                         if iface not in ifaces:
-                            iface = self.start_network_vnet_iface(nic, bridge,
-                                                                  membermtu,
-                                                                  jid)
+                            self.start_network_vnet_iface(nic, bridge,
+                                                          membermtu, jid)
 
                             ifaces.append(iface)
 
@@ -547,11 +540,12 @@ class IOCStart(object):
                                               stderr=su.STDOUT)
             iocage.lib.ioc_common.checkoutput(
                 ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
-                 "ifconfig", epair_b, "mtu", mtu], stderr=su.STDOUT)
+                 "ifconfig", epair_b, "name", nic, "mtu", mtu],
+                stderr=su.STDOUT)
             iocage.lib.ioc_common.checkoutput(
                 ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
 
-                 "ifconfig", epair_b, "link", mac_b], stderr=su.STDOUT)
+                 "ifconfig", nic, "link", mac_b], stderr=su.STDOUT)
             iocage.lib.ioc_common.checkoutput(
                 ["ifconfig", bridge, "addm", f"{nic}:{jid}", "up"],
                 stderr=su.STDOUT)
@@ -561,7 +555,7 @@ class IOCStart(object):
         except su.CalledProcessError as err:
             return f"{err.output.decode('utf-8')}".rstrip()
         else:
-            return epair_b
+            return
 
     def start_network_vnet_addr(self, iface, ip, defaultgw, ipv6=False):
         """
