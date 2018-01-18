@@ -119,7 +119,12 @@ class IOCDestroy(object):
             # The jails parent won't show in the list.
             j_parent = self.ds(f"{dataset.name.replace('/root','')}")
             origin = j_parent.properties["origin"].value.rsplit("@", 1)[0]
-            j_origin_snaps = self.ds(origin).snapshots_recursive
+
+            if origin != "":
+                j_origin_snaps = self.ds(origin).snapshots_recursive
+            else:
+                j_origin_snaps = []
+
             j_dependents = j_parent.dependents
 
             for j_dependent in j_dependents:
