@@ -39,6 +39,7 @@ import iocage.lib.ioc_exec
 import iocage.lib.ioc_list
 import iocage.lib.ioc_stop
 import libzfs
+import netifaces
 
 
 def _get_pool_and_iocroot():
@@ -719,7 +720,7 @@ class IOCJson(object):
                 conf = json.load(default_json)
 
         if not default:
-            self.json_check_prop(key, value, conf)
+            value = self.json_check_prop(key, value, conf)
             self.json_write(conf)
             iocage.lib.ioc_common.logit(
                 {
@@ -1184,10 +1185,22 @@ class IOCJson(object):
 
             for k in props[key]:
                 if k in value:
-                    return
+                    return value
 
             if props[key][0] == "string":
-                return
+                if key == "ip4_addr":
+                    try:
+                        interface, ip = value.split("|")
+
+                        if interface == "DEFAULT":
+                            gws = netifaces.gateways()
+                            def_iface = gws["default"][netifaces.AF_INET][1]
+
+                            value = f"{def_iface}|{ip}"
+                    except ValueError:
+                        pass
+
+                return value
             else:
                 err = f"{value} is not a valid value for {key}.\n"
 
