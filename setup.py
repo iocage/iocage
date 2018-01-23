@@ -36,8 +36,7 @@ else:
              ('man/man8', ['iocage/iocage.8.gz'])]
 
 if os.path.isdir("/".join([sys.prefix, "share/zsh/site-functions/"])):
-    _data.append(
-        ('share/zsh/site-functions', ['zsh-completion/_iocage']))
+    _data.append(('share/zsh/site-functions', ['zsh-completion/_iocage']))
 
 if sys.version_info < (3, 6):
     exit("Only Python 3.6 and higher is supported.")
@@ -53,7 +52,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'click==6.7', 'texttable==0.9.0', 'requests==2.17.3',
-        'coloredlogs==7.0', 'dulwich', 'libzfs'
+        'coloredlogs==7.0', 'dulwich==0.18.6', 'netifaces==0.10.6', 'libzfs'
     ],
     setup_requires=['pytest-runner'],
     entry_points={'console_scripts': ['iocage = iocage.main:cli']},
