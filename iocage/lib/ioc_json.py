@@ -1449,8 +1449,11 @@ class IOCJson(object):
                         if err.code == libzfs.Error.EXISTS:
                             iocage.lib.ioc_common.logit(
                                 {
-                                    "level": "EXCEPTION",
-                                    "message": "Snapshot already exists!"
+                                    "level": 
+                                    "EXCEPTION",
+                                    "message":
+                                    f"Snapshot {jail_parent_ds}@{tag} already\
+                                    exists!",
                                 },
                                 exit_on_error=self.exit_on_error,
                                 _callback=self.callback,
