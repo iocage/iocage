@@ -172,7 +172,7 @@ class IOCList(object):
             try:
                 short_ip4 = full_ip4.split("|")[1].split("/")[0]
             except IndexError:
-                short_ip4 = "-"
+                short_ip4 = full_ip4 if full_ip4 != "none" else "-"
 
             boot = conf["boot"]
             jail_type = conf["type"]
