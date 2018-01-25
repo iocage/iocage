@@ -511,7 +511,12 @@ class IOCStart(object):
                         continue
 
                     for addr in addrs.split(','):
-                        iface, ip = addr.split("|")
+                        try:
+                            iface, ip = addr.split("|")
+                        except ValueError:
+                            # They didn't supply an interface, assuming default
+
+                            iface, ip = "vnet0", addr
 
                         if iface not in nics:
                             continue
