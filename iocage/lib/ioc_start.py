@@ -519,9 +519,10 @@ class IOCStart(object):
         epair_a = su.Popen(epair_a_cmd, stdout=su.PIPE).communicate()[0]
         epair_a = epair_a.strip()
         epair_b = re.sub(b"a$", b"b", epair_a)
+        jail_nic = nic.replace("vnet", "epair")  # Inside jails they are epairN
 
         try:
-            # Host side
+            # Host
             iocage.lib.ioc_common.checkoutput(["ifconfig", epair_a, "name",
                                                f"{nic}:{jid}", "mtu", mtu],
                                               stderr=su.STDOUT)
@@ -534,18 +535,20 @@ class IOCStart(object):
                  f" {self.uuid}"],
                 stderr=su.STDOUT)
 
-            # Jail side
+            # Jail
             iocage.lib.ioc_common.checkoutput(["ifconfig", epair_b, "vnet",
                                                f"ioc-{self.uuid}"],
                                               stderr=su.STDOUT)
             iocage.lib.ioc_common.checkoutput(
                 ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
-                 "ifconfig", epair_b, "name", nic, "mtu", mtu],
+                 "ifconfig", epair_b, "name", jail_nic, "mtu", mtu],
                 stderr=su.STDOUT)
             iocage.lib.ioc_common.checkoutput(
                 ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
 
-                 "ifconfig", nic, "link", mac_b], stderr=su.STDOUT)
+                 "ifconfig", jail_nic, "link", mac_b], stderr=su.STDOUT)
+
+            # Host
             iocage.lib.ioc_common.checkoutput(
                 ["ifconfig", bridge, "addm", f"{nic}:{jid}", "up"],
                 stderr=su.STDOUT)
@@ -567,6 +570,8 @@ class IOCStart(object):
         :return: If an error occurs it returns the error. Otherwise, it's None
         """
         dhcp = self.get("dhcp")
+
+        iface = iface.replace("vnet", "epair")  # Inside jails they are epairN
 
         # Crude check to see if it's a IPv6 address
 
@@ -701,6 +706,7 @@ add path 'bpf*' unhide
         _rc = open(f"{self.path}/root/etc/rc.conf").readlines()
 
         for nic in nics:
+            nic = nic.replace("vnet", "epair")  # Inside jails they are epairN
             replaced = False
 
             for no, line in enumerate(_rc):
