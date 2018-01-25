@@ -720,7 +720,7 @@ class IOCJson(object):
                 conf = json.load(default_json)
 
         if not default:
-            value = self.json_check_prop(key, value, conf)
+            value, conf = self.json_check_prop(key, value, conf)
             self.json_write(conf)
             iocage.lib.ioc_common.logit(
                 {
@@ -1185,7 +1185,7 @@ class IOCJson(object):
 
             for k in props[key]:
                 if k in value:
-                    return value
+                    return value, conf
 
             if props[key][0] == "string":
                 if key == "ip4_addr":
@@ -1197,10 +1197,11 @@ class IOCJson(object):
                             def_iface = gws["default"][netifaces.AF_INET][1]
 
                             value = f"{def_iface}|{ip}"
+                            conf[key] = value
                     except ValueError:
                         pass
 
-                return value
+                return value, conf
             else:
                 err = f"{value} is not a valid value for {key}.\n"
 
