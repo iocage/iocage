@@ -341,6 +341,30 @@ class IOCStart(object):
             },
                 _callback=self.callback,
                 silent=self.silent)
+
+            if dhcp == "on":
+                try:
+                    interface = self.conf["interfaces"].split(",")[0].split(
+                        ":")[0]
+
+                    # Jails default is epairN
+                    interface = interface.replace("vnet", "epair")
+
+                    cmd = ["jexec", f"ioc-{self.uuid}", "ifconfig", "-f",
+                           "inet:cidr",
+                           interface, "inet"]
+                    out = su.check_output(cmd)
+
+                    addr = f"{out.splitlines()[2].split()[1].decode()}"
+                except su.CalledProcessError:
+                    addr = "ERROR, check jail logs"
+
+                iocage.lib.ioc_common.logit({
+                    "level": "INFO",
+                    "message": f"  + DHCP Address: {addr}"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
         elif vnet_err and vnet:
             iocage.lib.ioc_common.logit({
                 "level": "INFO",
