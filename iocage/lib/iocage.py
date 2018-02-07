@@ -39,6 +39,7 @@ import iocage.lib.ioc_fstab as ioc_fstab
 import iocage.lib.ioc_image as ioc_image
 import iocage.lib.ioc_json as ioc_json
 import iocage.lib.ioc_list as ioc_list
+import iocage.lib.ioc_plugin as ioc_plugin
 import iocage.lib.ioc_start as ioc_start
 import iocage.lib.ioc_stop as ioc_stop
 import iocage.lib.ioc_upgrade as ioc_upgrade
@@ -295,7 +296,7 @@ class IOCage(object):
             tuple: True if error with a message, or False/None
         """
 
-        if _type in ('jail', 'plugin', 'clonejail'):
+        if _type in ("jail", "plugin", "clonejail", "pluginv2"):
             return False, None
         elif _type == 'basejail':
             return (True, "Please run \"iocage migrate\" before trying to"
@@ -791,8 +792,7 @@ class IOCage(object):
              jail_user=None,
              console=False,
              pkg=False,
-
-             return_msg=False):
+             msg_return=False):
         """Executes a command in the jail as the supplied users."""
 
         if host_user and jail_user:
@@ -845,8 +845,7 @@ class IOCage(object):
             console=console,
             silent=self.silent,
             exit_on_error=self.exit_on_error,
-
-            return_msg=return_msg,
+            msg_return=msg_return,
             pkg=pkg).exec_jail()
 
         if not console:
@@ -868,7 +867,7 @@ class IOCage(object):
                     _callback=self.callback,
                     silent=self.silent)
 
-        if return_msg:
+        if msg_return:
             return msg
 
     def export(self):
@@ -936,7 +935,7 @@ class IOCage(object):
             ]
 
             if _list:
-                rel_list = ioc_fetch.IOCFetch("").fetch_plugin_index(
+                rel_list = ioc_plugin.IOCPlugin().fetch_plugin_index(
                     "", _list=True, list_header=header, list_long=_long,
                     icon=True)
 
@@ -957,8 +956,8 @@ class IOCage(object):
                     silent=self.silent)
 
             if plugins:
-                ioc_fetch.IOCFetch(
-                    release,
+                ioc_plugin.IOCPlugin(
+                    release=release,
                     plugin=name,
                     exit_on_error=self.exit_on_error,
                     **kwargs).fetch_plugin_index(
@@ -967,14 +966,14 @@ class IOCage(object):
                 return
 
             if count == 1:
-                ioc_fetch.IOCFetch(
-                    release, exit_on_error=self.exit_on_error,
+                ioc_plugin.IOCPlugin(
+                    release=release, exit_on_error=self.exit_on_error,
                     silent=self.silent, **kwargs
                 ).fetch_plugin(name, props, 0, accept)
             else:
                 for j in range(1, count + 1):
-                    ioc_fetch.IOCFetch(
-                        release, exit_on_error=self.exit_on_error,
+                    ioc_plugin.IOCPlugin(
+                        release=release, exit_on_error=self.exit_on_error,
                         silent=self.silent, **kwargs
                     ).fetch_plugin(name, props, j, accept)
         else:
@@ -1679,8 +1678,11 @@ class IOCage(object):
         _release = conf["release"].rsplit("-", 1)[0]
         release = _release if "-RELEASE" in _release else conf["release"]
         _silent = self.silent
+        jail_type = conf["type"]
+        updateable = True if jail_type in (
+            "jail", "clonejail", "pluginv2") else False
 
-        if conf["type"] == "jail" or conf["type"] == "clonejail":
+        if updateable:
             if not status:
                 self.silent = True
                 self.start()
@@ -1723,7 +1725,13 @@ class IOCage(object):
                 self.stop()
                 self.silent = _silent
         else:
-            if conf["basejail"] != "yes":
+            if jail_type == "pluginv2" or jail_type == "plugin":
+                # TODO: Warn about erasing all pkgs
+                ioc_plugin.IOCPlugin(
+                    plugin=uuid,
+                    exit_on_error=self.exit_on_error
+                ).update()
+            elif conf["basejail"] != "yes":
                 ioc_fetch.IOCFetch(release).fetch_update(True, uuid)
             else:
                 # Basejails only need their RELEASE updated
@@ -1744,11 +1752,12 @@ class IOCage(object):
                 silent=self.silent)
 
     def upgrade(self, release):
-        host_release = float(os.uname()[2].rsplit("-", 1)[0].rsplit("-", 1)[0])
-        _release = release.rsplit("-", 1)[0].rsplit("-", 1)[0]
-        _release = float(_release)
-
         if release is not None:
+            host_release = float(os.uname()[2].rsplit("-", 1)[0].rsplit(
+                "-", 1)[0])
+            _release = release.rsplit("-", 1)[0].rsplit("-", 1)[0]
+            _release = float(_release)
+
             if host_release < _release:
                 ioc_common.logit({
                     "level":
@@ -1762,18 +1771,30 @@ class IOCage(object):
         root_path = f"{path}/root"
         status, jid = self.list("jid", uuid=uuid)
         conf = ioc_json.IOCJson(path).json_load()
+
+        if release is None and conf["type"] != "pluginv2":
+            ioc_common.logit({
+                "level": "EXCEPTION",
+                "message": "Target RELEASE is required to upgrade."
+            },
+                _callback=self.callback,
+                exit_on_error=self.exit_on_error)
+
         jail_release = conf["release"]
 
-        if release in jail_release:
-            ioc_common.logit(
-                {
-                    "level": "EXCEPTION",
-                    "message": f"Jail: {uuid} is already at version {release}!"
-                },
-                exit_on_error=True)
+        if conf["type"] != "pluginv2":
+            if release in jail_release:
+                ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message":
+                        f"Jail: {uuid} is already at version {release}!"
+                    },
+                    exit_on_error=True)
 
         started = False
         basejail = False
+        plugin = False
 
         if conf["release"] == "EMPTY":
             ioc_common.logit(
@@ -1815,6 +1836,13 @@ class IOCage(object):
                     f" to upgrade {uuid}"
                 },
                 exit_on_error=True)
+        elif conf["type"] == "pluginv2":
+            if not status:
+                ioc_start.IOCStart(uuid, path, conf, silent=True)
+                started = True
+
+            new_release = ioc_plugin.IOCPlugin(plugin=uuid).upgrade()
+            plugin = True
         else:
             ioc_common.logit(
                 {
@@ -1836,6 +1864,8 @@ class IOCage(object):
 Please reboot the jail and inspect.
 Remove the snapshot: ioc_upgrade_{_date} if everything is OK
 """
+        elif plugin:
+            msg = f"\n{uuid} successfully upgraded!"
         else:
             msg = f"\n{uuid} successfully upgraded from" \
                 f" {jail_release} to {new_release}!"

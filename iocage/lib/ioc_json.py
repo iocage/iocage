@@ -1231,7 +1231,7 @@ class IOCJson(object):
                 if key not in conf.keys():
                     msg = f"{key} is not a valid property!"
                 else:
-                    return
+                    return value, conf
 
             iocage.lib.ioc_common.logit(
                 {
@@ -1248,8 +1248,16 @@ class IOCJson(object):
                     settings:
                 settings = json.load(settings)
         except FileNotFoundError:
-            raise RuntimeError(
-                f"No settings.json exists in {self.location}/plugin!")
+            msg = f"No settings.json exists in {self.location}/plugin!"
+
+            iocage.lib.ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": msg
+                },
+                exit_on_error=self.exit_on_error,
+                _callback=self.callback,
+                silent=self.silent)
 
         return settings
 
@@ -1281,14 +1289,22 @@ class IOCJson(object):
                         uuid,
                         _path,
                         plugin=True,
-
-                        return_msg=True,
+                        msg_return=True,
                         exit_on_error=self.exit_on_error,
                         silent=True).exec_jail()
             else:
                 return settings
         except KeyError:
-            raise RuntimeError(f"Key: \"{prop_error}\" does not exist!")
+            msg = f"Key: \"{prop_error}\" does not exist!"
+
+            iocage.lib.ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": msg
+                },
+                exit_on_error=self.exit_on_error,
+                _callback=self.callback,
+                silent=self.silent)
 
     def json_plugin_set_value(self, prop):
         pool, iocroot = _get_pool_and_iocroot()

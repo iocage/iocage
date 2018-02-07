@@ -233,7 +233,7 @@ class IOCList(object):
             # Append the JID and the NAME to the table
 
             if self.full and self.plugin:
-                if jail_type != "plugin":
+                if jail_type != "plugin" and jail_type != "pluginv2":
                     # We only want plugin type jails to be apart of the
                     # list
 

@@ -1,6 +1,6 @@
 click==6.7
-texttable==0.9.0
-requests==2.17.3
-coloredlogs==7.0
+texttable==0.9.1
+requests==2.18.1
+coloredlogs==7.3
 dulwich==0.18.6
 netifaces==0.10.6

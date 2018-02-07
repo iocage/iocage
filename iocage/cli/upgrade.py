@@ -33,7 +33,7 @@ __rootcmd__ = True
     help="Run freebsd-update to upgrade a specified"
     " jail to the RELEASE given.")
 @click.argument("jail", required=True)
-@click.option("--release", "-r", required=True, help="RELEASE to upgrade to")
+@click.option("--release", "-r", required=False, help="RELEASE to upgrade to")
 def cli(jail, release):
     """Runs upgrade with the command given inside the specified jail."""
     ioc.IOCage(jail=jail, skip_jails=True).upgrade(release)
