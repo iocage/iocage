@@ -22,13 +22,13 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """iocage upgrade module"""
+import datetime
 import fileinput
 import os
 import pathlib
 import subprocess as su
 import tempfile
 import urllib.request
-import datetime
 
 import iocage.lib.ioc_common
 import iocage.lib.ioc_json
@@ -36,6 +36,7 @@ import iocage.lib.ioc_list
 
 
 class IOCUpgrade(object):
+
     """Will upgrade a jail to the specified RELEASE."""
 
     def __init__(self,
@@ -62,7 +63,7 @@ class IOCUpgrade(object):
         self.status, self.jid = iocage.lib.ioc_list.IOCList.list_get_jid(
             self.uuid)
         self._freebsd_version = f"{self.iocroot}/jails/" \
-                                f"{self.uuid}/root/bin/freebsd-version"
+            f"{self.uuid}/root/bin/freebsd-version"
         self.date = datetime.datetime.utcnow().strftime("%F")
         self.silent = silent
         self.callback = callback
@@ -130,7 +131,7 @@ class IOCUpgrade(object):
 
         return new_release
 
-    def upgrade_basejail(self):
+    def upgrade_basejail(self, snapshot=True):
         if "HBSD" in self.freebsd_version:
             # TODO: Not supported yet
             msg = "Upgrading basejails on HardenedBSD is not supported yet."
@@ -159,7 +160,9 @@ class IOCUpgrade(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-        self.__snapshot_jail__()
+        if snapshot:
+            self.__snapshot_jail__()
+
         p = pathlib.Path(
             f"{self.iocroot}/releases/{self.new_release}/root/usr/src")
         p_files = []
@@ -181,10 +184,46 @@ class IOCUpgrade(object):
                 silent=self.silent)
 
         self.__upgrade_replace_basejail_paths__()
-        etcupdate = su.Popen([
-            "etcupdate", "-D", self.path, "-F", "-s",
-            f"{self.iocroot}/releases/{self.new_release}/root/usr/src"
+        ioc_up_dir = pathlib.Path(f"{self.path}/iocage_upgrade")
+
+        if not ioc_up_dir.exists():
+            ioc_up_dir.mkdir(exist_ok=True, parents=True)
+
+        mount = su.Popen([
+            "mount_nullfs", "-o", "ro",
+            f"{self.iocroot}/releases/{self.new_release}/root/usr/src",
+            f"{self.path}/iocage_upgrade"
         ])
+        mount.communicate()
+
+        if mount.returncode != 0:
+            msg = "Mounting src into jail failed! Rolling back snapshot."
+            self.__rollback_jail__()
+
+            iocage.lib.ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": msg
+                },
+                exit_on_error=self.exit_on_error,
+                _callback=self.callback,
+                silent=self.silent)
+
+        # etcupdate = su.Popen([
+            # "etcupdate", "-D", self.path, "-F", "-s",
+            # f"{self.iocroot}/releases/{self.new_release}/root/usr/src"
+        # ])
+        # print(
+            # f"etcupdate -D {self.path} -F -s"
+            # f" {self.iocroot}/releases/{self.new_release}/root/usr/src")
+        # etcupdate.communicate()
+        stdout = None if not self.silent else su.DEVNULL
+        stderr = None if self.silent else su.DEVNULL
+
+        etcupdate = su.Popen([
+            "chroot", self.path, "/usr/sbin/etcupdate", "-F", "-s",
+            "/iocage_upgrade"
+        ], stdout=stdout, stderr=stderr)
         etcupdate.communicate()
 
         if etcupdate.returncode != 0:
@@ -192,6 +231,11 @@ class IOCUpgrade(object):
             # the backup back
             msg = "etcupdate failed! Rolling back snapshot."
             self.__rollback_jail__()
+
+            su.Popen([
+                "umount", "-f", f"{self.path}/iocage_upgrade"
+            ]).communicate()
+
             iocage.lib.ioc_common.logit(
                 {
                     "level": "EXCEPTION",
@@ -220,7 +264,11 @@ class IOCUpgrade(object):
         if not mq.exists():
             mq.mkdir(exist_ok=True, parents=True)
 
-        su.check_call(["chroot", self.path] + ["newaliases"])
+        su.check_call(["chroot", self.path] + ["newaliases"], stdout=stdout,
+                      stderr=stderr)
+        su.Popen([
+            "umount", "-f", f"{self.path}/iocage_upgrade"
+        ]).communicate()
 
         return new_release
 
@@ -271,6 +319,8 @@ class IOCUpgrade(object):
         with fileinput.FileInput(path, inplace=True, backup=".bak") as _file:
             for line in _file:
                 print(line.replace(text, replace), end='')
+
+        os.remove(f"{path}.bak")
 
     def __snapshot_jail__(self):
         import iocage.lib.iocage as ioc  # Avoids dep issues

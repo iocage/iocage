@@ -51,8 +51,8 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        'click==6.7', 'texttable==0.9.0', 'requests==2.17.3',
-        'coloredlogs==7.0', 'dulwich==0.18.6', 'netifaces==0.10.6', 'libzfs'
+        'click==6.7', 'texttable==0.9.1', 'requests==2.18.1',
+        'coloredlogs==7.3', 'dulwich==0.18.6', 'netifaces==0.10.6', 'libzfs'
     ],
     setup_requires=['pytest-runner'],
     entry_points={'console_scripts': ['iocage = iocage.main:cli']},

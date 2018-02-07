@@ -380,7 +380,7 @@ class IOCCreate(object):
         if not self.empty:
             self.create_rc(location, config["host_hostname"])
 
-        if self.basejail:
+        if self.basejail or self.plugin:
             basedirs = ["bin", "boot", "lib", "libexec", "rescue", "sbin",
                         "usr/bin", "usr/include", "usr/lib",
                         "usr/libexec", "usr/sbin", "usr/share",
@@ -566,18 +566,17 @@ class IOCCreate(object):
                 silent=self.silent)
             cmd = ("pkg", "install", "-q", "-y", pkg)
 
-            pkg_install, pkg_err = iocage.lib.ioc_exec.IOCExec(
+            pkg_stdout, pkg_stderr, pkg_err = iocage.lib.ioc_exec.IOCExec(
                 cmd, jail_uuid, location, plugin=self.plugin,
                 exit_on_error=self.exit_on_error,
-                silent=self.silent).exec_jail()
+                silent=self.silent, msg_err_return=True).exec_jail()
 
             if pkg_err:
                 iocage.lib.ioc_common.logit({
                     "level": "ERROR",
-                    "message": f"{pkg_err.decode()}"
+                    "message": f"{pkg_stderr.decode()}"
                 },
-                    _callback=self.callback,
-                    silent=self.silent)
+                    _callback=self.callback)
                 err = True
 
         os.remove(f"{location}/root/etc/resolv.conf")

@@ -45,9 +45,9 @@ class IOCExec(object):
                  skip=False,
                  console=False,
                  silent=False,
+                 msg_return=False,
+                 msg_err_return=False,
                  exit_on_error=False,
-
-                 return_msg=False,
                  callback=None):
         self.command = command
         self.uuid = uuid.replace(".", "_")
@@ -60,7 +60,8 @@ class IOCExec(object):
         self.console = console
         self.silent = silent
         self.exit_on_error = exit_on_error
-        self.return_msg = return_msg
+        self.msg_return = msg_return
+        self.msg_err_return = msg_err_return
         self.callback = callback
 
     def exec_jail(self):
@@ -85,7 +86,7 @@ class IOCExec(object):
                     _callback=self.callback,
                     silent=self.silent)
 
-            if conf["type"] in ("jail", "plugin", "clonejail"):
+            if conf["type"] in ("jail", "plugin", "pluginv2", "clonejail"):
                 iocage.lib.ioc_start.IOCStart(
                     self.uuid, self.path, conf, silent=True)
             elif conf["type"] == "basejail":
@@ -143,7 +144,8 @@ class IOCExec(object):
         else:
             try:
                 stdout = None if not self.silent else su.DEVNULL
-                stdout = su.PIPE if self.return_msg else stdout
+                stdout = su.PIPE if self.msg_return else stdout
+                stderr = su.PIPE if self.msg_err_return else None
 
                 if not self.pkg:
                     cmd = [
@@ -153,11 +155,17 @@ class IOCExec(object):
                 else:
                     cmd = self.command
 
-                p = su.Popen(cmd, stdout=stdout)
+                p = su.Popen(cmd, stdout=stdout, stderr=stderr)
 
-                exec_out = p.communicate(b"\r")[0]
-                msg = exec_out if exec_out is not None else ""
+                exec_out = p.communicate(b"\r")
+                exec_stdout = exec_out[0]
+                exec_stderr = exec_out[1]
+                msg = exec_stdout if exec_stdout is not None else ""
+                msg_err = exec_stderr if exec_stderr is not None else ""
                 error = True if p.returncode != 0 else False
+
+                if self.msg_err_return:
+                    return msg, msg_err, error
 
                 return msg, error
             except su.CalledProcessError as err:
