@@ -25,13 +25,13 @@
 import collections
 import os
 
-import libzfs
-
 import iocage.lib.ioc_common
 import iocage.lib.ioc_json
+import libzfs
 
 
 class IOCCheck(object):
+
     """Checks if the required iocage datasets are present"""
 
     def __init__(self, silent=False, callback=None):
@@ -55,12 +55,14 @@ class IOCCheck(object):
         zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         zpools = zfs.pools
         iocage_datasets = []
+
         for p in zpools:
             try:
                 z = zfs.get_dataset(f"{p.name}/iocage")
                 iocage_datasets.append(z)
             except libzfs.ZFSException:
                 # Doesn't exist, that's fine
+
                 continue
 
         pool = zfs.get(self.pool)
@@ -73,12 +75,13 @@ class IOCCheck(object):
                 zfs.get_dataset(zfs_dataset_name)
             except libzfs.ZFSException:
                 # Doesn't exist
+
                 if os.geteuid() != 0:
                     raise RuntimeError("Run as root to create missing"
                                        " datasets!")
 
                 iocage.lib.ioc_common.logit({
-                    "level"  : "INFO",
+                    "level": "INFO",
                     "message": f"Creating {self.pool}/{dataset}"
                 },
                     _callback=self.callback,
@@ -101,8 +104,10 @@ class IOCCheck(object):
         Checks if /dev/fd is mounted, and if not, give the user a
         warning.
         """
+
         if os.path.ismount("/dev/fd"):
             # all good!
+
             return
 
         messages = collections.OrderedDict([
@@ -120,7 +125,7 @@ class IOCCheck(object):
             level = level.partition("-")[2]
 
             iocage.lib.ioc_common.logit({
-                "level"  : level,
+                "level": level,
                 "message": msg
             },
                 _callback=self.callback,
