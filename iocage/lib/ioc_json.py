@@ -367,6 +367,17 @@ class IOCJson(object):
                             self.location = f"{iocroot}/jails/{short_uuid}"
                             skip = True
 
+                    if uuid is None:
+                        iocage.lib.ioc_common.logit(
+                            {
+                                "level": "EXCEPTION",
+                                "message": "Configuration could not be loaded,"
+                                " is the jail dataset mounted?"
+                            },
+                            exit_on_error=self.exit_on_error,
+                            _callback=self.callback,
+                            silent=self.silent)
+
                     self.json_convert_from_zfs(uuid, skip=skip)
                     with open(self.location + "/config.json", "r") as conf:
                         conf = json.load(conf)
