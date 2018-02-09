@@ -66,8 +66,17 @@ class IOCCheck(object):
                 continue
 
         pool = zfs.get(self.pool)
-        has_duplicates = len(list(filter(lambda x: x.mountpoint == "/iocage",
-                                         iocage_datasets))) > 0
+        altroot = pool.properties["altroot"].value
+        dataset_mounts = []
+
+        for ds in iocage_datasets:
+            mount = ds.mountpoint
+
+            mountpoint = mount if altroot != "-" else f"{altroot}{mount}"
+            dataset_mounts.append(mountpoint)
+
+        has_duplicates = True if len(dataset_mounts) != len(
+            set(dataset_mounts)) else False
 
         for dataset in datasets:
             zfs_dataset_name = f"{self.pool}/{dataset}"
