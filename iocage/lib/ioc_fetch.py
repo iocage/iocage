@@ -696,7 +696,15 @@ class IOCFetch(object):
         if not os.path.isdir(dataset):
             fresh = True
             dataset = f"{self.pool}/iocage/download/{self.release}"
-            self.zpool.create(dataset, {"compression": "lz4"})
+
+            try:
+                # It may actually still exist, just unmounted.
+                self.zpool.create(dataset, {"compression": "lz4"})
+            except libzfs.ZFSException as err:
+                if err.code == libzfs.Error.EXISTS:
+                    pass
+                else:
+                    raise
 
             self.zfs.get_dataset(dataset).mount()
 
