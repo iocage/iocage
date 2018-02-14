@@ -26,7 +26,8 @@ The rest of this section shows more depth of the **Shared IP** and
 
 .. warning:: In the examples in this section, **em0** is used as the
    network adapter. **em0** is a placeholder and must be replaced with
-   the user's specific network adapter.
+   the user's specific network adapter. In order to find the network
+   adapter on the system run :samp:`ifconfig`.
 
 .. index:: Shared IP
 .. _Shared IP:

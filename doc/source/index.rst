@@ -33,6 +33,7 @@ Documentation:
    :maxdepth: 2
 
    basic-use
+   plugins
    networking
    jailtypes
    best-practices
