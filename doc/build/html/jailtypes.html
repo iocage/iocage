@@ -1,23 +1,21 @@
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
-    <title>Jail Types &#8212; iocage 0.9.9.2 ALPHA documentation</title>
-    
+    <title>Jail Types &#8212; iocage 1.0 ALPHA documentation</title>
     <link rel="stylesheet" href="_static/agogo.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '0.9.9.2 ALPHA',
+        VERSION:     '1.0 ALPHA',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
       };
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
@@ -25,15 +23,14 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="top" title="iocage 0.9.9.2 ALPHA documentation" href="index.html" />
     <link rel="next" title="Best Practices" href="best-practices.html" />
     <link rel="prev" title="Networking" href="networking.html" /> 
   </head>
-  <body role="document">
+  <body>
     <div class="header-wrapper" role="banner">
       <div class="header">
         <div class="headertitle"><a
-          href="index.html">iocage 0.9.9.2 ALPHA documentation</a></div>
+          href="index.html">iocage 1.0 ALPHA documentation</a></div>
         <div class="rel" role="navigation" aria-label="related navigation">
           <a href="networking.html" title="Networking"
              accesskey="P">previous</a> |
@@ -91,7 +88,7 @@ jails is required.</p>
 <p>Template jails are customized jails used to quickly create further
 custom jails.</p>
 <p>For example, after creating a jail, the user customizes
-that jail&#8217;s networking properties. Once satisfied, the user then changes
+that jail’s networking properties. Once satisfied, the user then changes
 the jail into a template with:</p>
 <p><code class="samp docutils literal"><span class="pre">#</span> <span class="pre">iocage</span> <span class="pre">set</span> <span class="pre">template=yes</span> <span class="pre">examplejail</span></code></p>
 <p>After this operation the jail is found in the <em>templates</em> list:</p>
