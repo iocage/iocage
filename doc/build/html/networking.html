@@ -122,8 +122,8 @@ options         RCTL   # same as above
 </div>
 <p><strong>/etc/rc.conf</strong></p>
 <p>On the host node, add this bridge configuration to <code class="file docutils literal"><span class="pre">/etc/rc.conf</span></code>:</p>
-<div class="highlight-none"><div class="highlight"><pre><span></span># set up two bridge interfaces for iocage
-cloned_interfaces=&quot;bridge0 bridge1&quot;
+<div class="highlight-none"><div class="highlight"><pre><span></span># set up bridge interface for iocage
+cloned_interfaces=&quot;bridge0&quot;
 
 # plumb interface em0 into bridge0
 ifconfig_bridge0=&quot;addm em0 up&quot;
