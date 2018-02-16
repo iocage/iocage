@@ -108,8 +108,8 @@ On the host node, add this bridge configuration to :file:`/etc/rc.conf`:
 
 .. code-block:: none
 
-   # set up two bridge interfaces for iocage
-   cloned_interfaces="bridge0 bridge1"
+   # set up bridge interface for iocage
+   cloned_interfaces="bridge0"
 
    # plumb interface em0 into bridge0
    ifconfig_bridge0="addm em0 up"
