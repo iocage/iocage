@@ -1,23 +1,21 @@
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
-    <title>Basic Usage &#8212; iocage 0.9.9.2 ALPHA documentation</title>
-    
+    <title>Basic Usage &#8212; iocage 1.0 ALPHA documentation</title>
     <link rel="stylesheet" href="_static/agogo.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '0.9.9.2 ALPHA',
+        VERSION:     '1.0 ALPHA',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
       };
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
@@ -25,15 +23,14 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="top" title="iocage 0.9.9.2 ALPHA documentation" href="index.html" />
     <link rel="next" title="Networking" href="networking.html" />
     <link rel="prev" title="iocage - A FreeBSD Jail Manager" href="index.html" /> 
   </head>
-  <body role="document">
+  <body>
     <div class="header-wrapper" role="banner">
       <div class="header">
         <div class="headertitle"><a
-          href="index.html">iocage 0.9.9.2 ALPHA documentation</a></div>
+          href="index.html">iocage 1.0 ALPHA documentation</a></div>
         <div class="rel" role="navigation" aria-label="related navigation">
           <a href="index.html" title="iocage - A FreeBSD Jail Manager"
              accesskey="P">previous</a> |
@@ -55,19 +52,19 @@
             
   <div class="section" id="basic-usage">
 <span id="index-0"></span><span id="id1"></span><h1>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline">¶</a></h1>
-<p>This section is about basic iocage usage and is meant as a &#8220;how-to&#8221;
+<p>This section is about basic iocage usage and is meant as a “how-to”
 reference for new users.</p>
 <div class="admonition tip">
 <p class="first admonition-title">Tip</p>
 <p class="last">Remember, command line help is always available by typing
 <strong class="command">iocage --help</strong> or <strong class="command">iocage [subcommand] --help</strong>.</p>
 </div>
-<p>iocage has a basic &#8220;flow&#8221; when first used. As a new user interacts with
+<p>iocage has a basic “flow” when first used. As a new user interacts with
 iocage for the first time, this flow guides them through initializing
 iocage, then interacting with newly created jails.</p>
 <div class="admonition tip">
 <p class="first admonition-title">Tip</p>
-<p class="last">iocage has an experimental &#8220;color&#8221; mode enabled by setting the
+<p class="last">iocage has an experimental “color” mode enabled by setting the
 environment variable <strong class="command">IOCAGE_COLOR</strong> to <strong>TRUE</strong>.</p>
 </div>
 <div class="section" id="activate-iocage">
@@ -115,7 +112,7 @@ users to fine-tune the functionality of the command.</p>
 two types of jails: <strong>normal</strong> and <strong>base</strong>. More details about these
 jail types can be found in the <a class="reference internal" href="jailtypes.html#jail-types"><span class="std std-ref">Jail Types</span></a> section of this
 documentation.</p>
-<p>Depending on the user&#8217;s requirements, the <strong class="command">create</strong> subcommand
+<p>Depending on the user’s requirements, the <strong class="command">create</strong> subcommand
 can be adjusted to create either jail type. By default,
 <strong class="command">iocage create</strong> creates a <strong>normal</strong> jail, but invoking the
 <strong>-b</strong> option changes the creation to the basejail type.</p>
@@ -149,7 +146,7 @@ typing <strong class="command">man iocage</strong>.</p>
 <p>Jails can be started, stopped, or restarted at any time. By default, new
 jails are in a <em>down</em> (stopped) state. To see the status of all jails,
 use <strong class="command">iocage list</strong> and read the <strong>STATE</strong> column.</p>
-<p>Use each jail&#8217;s UUID or custom NAME to start, stop, or restart it.
+<p>Use each jail’s UUID or custom NAME to start, stop, or restart it.
 Partial entries are acceptable, as long as the given characters are
 enough to identify the desired jail. Alternately, use <strong>ALL</strong> to apply
 the command to all created jails.</p>
@@ -210,7 +207,7 @@ page PROPERTIES section.</p>
 </div>
 <div class="section" id="get-all-properties">
 <h3>Get all properties:<a class="headerlink" href="#get-all-properties" title="Permalink to this headline">¶</a></h3>
-<p>Display the full list of a jail&#8217;s properties:</p>
+<p>Display the full list of a jail’s properties:</p>
 <p><code class="samp docutils literal"><span class="pre">#</span> <span class="pre">iocage</span> <span class="pre">get</span> <span class="pre">all</span> <span class="pre">26e8e027</span> <span class="pre">|</span> <span class="pre">more</span></code></p>
 </div>
 </div>
@@ -227,7 +224,7 @@ page PROPERTIES section.</p>
 <span id="rename-jail"></span><span id="index-13"></span><h2>Rename a Jail<a class="headerlink" href="#rename-a-jail" title="Permalink to this headline">¶</a></h2>
 <p><strong class="command">iocage</strong> allows jails to be renamed after creation and/or
 migration. The <strong class="command">iocage rename</strong> subcommand is used to alter an
-existing jail&#8217;s UUID or NAME. Type the command, then the UUID or name of
+existing jail’s UUID or NAME. Type the command, then the UUID or name of
 the jail to be altered, then the desired name. This example shows using
 the <strong class="command">rename</strong> subcommand:</p>
 <p><code class="samp docutils literal"><span class="pre">#</span> <span class="pre">iocage</span> <span class="pre">rename</span> <span class="pre">jail1</span> <span class="pre">TESTINGJAIL</span></code></p>

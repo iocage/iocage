@@ -1,4 +1,4 @@
-.Dd September 5, 2017
+.Dd February 15, 2018
 .Dt IOCAGE 8
 .Os
 .Sh NAME
@@ -488,7 +488,15 @@ UUID/NAME wrapper for
 After invoking
 .Cm exec ,
 specify the jail, any commands to run inside that jail, and any
-arguments for those commands.
+arguments for those commands. 
+.Xr jexec
+also runs commands similar to 
+.Nm .
+When using
+.Xr jexec
+use the JID instead of the jail name.
+For more info see the manual page for 
+.Xr jexec .
 .Pp
 Options:
 .Bl -tag -width "[-u | --host_user NAME]"
@@ -565,8 +573,8 @@ Enable verifying the SSL cert for HTTP fetching.
 Specifies the authentication method for HTTP fetching.
 Current values are basic and digest.
 .It Op Fl c | -count Ar TEXT
-Used when fetching a plugin. This option creates the designated
-number of plugin type jails.
+Used when fetching a plugin.
+This option creates the designated number of plugin type jails.
 .It Op Fl d | -root-dir Ar TEXT
 Specify the root directory containing all RELEASE files.
 .It Op Fl f | -file
@@ -1561,7 +1569,8 @@ jail functionality added to them.
 .Pp
 Default: 0
 .Pp
-Source: .Xr jail 8
+Source:
+.Xr jail 8
 .It host_hostuuid=UUID
 .Pp
 Default: UUID
@@ -1791,7 +1800,7 @@ Import package on another host:
 iocage import UUID
 .Ed
 .Sh HINTS
-By defaut,
+By default,
 .Nm
 doesn't have colors enabled.
 Set the environment variable IOCAGE_COLOR=TRUE to enable this
