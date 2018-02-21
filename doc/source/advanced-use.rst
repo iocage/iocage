@@ -56,17 +56,13 @@ becomes the source and the source jail is demoted to a clone.
 Updating Jails
 --------------
 
-.. warning:: Updating a basejail is currently not implemented in iocage.
-   Refer to iocage
-   `GitHub issue #50 <https://github.com/iocage/iocage/issues/50>`_ for
-   more information.
-
 Updates are handled with the freebsd-update(8) utility. Jails can be
-updated while they are stopped or running. While updating can seem
-routine, it is always recommended to use ZFS snapshot functionality to
-create a backup of the jail before updating.
+updated while they are stopped or running.
 
-Create a backup snapshot of the jail:
+.. note:: The command :command:`iocage update [UUID | NAME]`
+   automatically creates a backup snapshot of the jail given.
+
+To create a backup snapshot manually, run:
 
 :command:`iocage snapshot -n [snapshotname] [UUID | NAME]`
 
@@ -105,53 +101,12 @@ Tells jail *examplejail* to upgrade its RELEASE to *11.0-RELEASE*.
 .. note:: It is recommended to keep the iocage host and jails RELEASE
    synchronized.
 
-Upgrades are handled differently for basejails and the other types of
-jails, as a basejail is treated differently in iocage.
-
-.. index:: Upgrade Standard Jail
-.. _Upgrade Standard Jail:
-
-Upgrade a Standard Jail
-+++++++++++++++++++++++
-
-To upgrade a Standard (non-basejail) jail to the host's RELEASE, run:
+To upgrade a jail to the host's RELEASE, run:
 
 :command:`iocage upgrade -r [11.1-RELEASE] [UUID | NAME]`
 
-This upgrades the jail to the same RELEASE as the host.
-
-.. index:: Upgrade Basejail (Legacy)
-.. _Upgrade Basejail:
-
-Upgrade basejail (Legacy ONLY)
-++++++++++++++++++++++++++++++
-
-.. warning:: This section only applies to **legacy** versions of iocage.
-   Basejail upgrade functionality is not yet re-implemented in the
-   current version.
-
-Ugrading a basejail has a few steps. Always start by verifying the jail
-type, as this process only works with basejails. Running:
-
-:command:`iocage get type [UUID|TAG]`
-
-needs to return **basejail**, for the desired jail.
-
-Upgrading can be forced while the jail is online by executing:
-
-:command:`iocage upgrade [UUID|TAG]`
-
-This forcibly re-clones the basejail filesystems while the jail is
-running (no downtime) and update the jail's :file:`/etc` with the
-changes from the new RELEASE.
-
-To upgrade the jail while it is stopped, run:
-
-:command:`iocage set release=[11.0-RELEASE] [UUID|TAG]`
-
-This causes the jail to re-clone its filesystems from the *11.0-RELEASE*
-on next jail start. This does not update the jail's :file:`/etc` files
-with changes from the next RELEASE.
+This upgrades the jail to the same RELEASE as the host. This method also
+applies to basejails.
 
 .. index:: Auto-Boot
 .. _AutoBoot:
