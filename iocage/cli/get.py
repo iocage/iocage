@@ -42,18 +42,21 @@ import iocage.lib.iocage as ioc
                    " nested key use . as a separator."
                    "\n\b Example: iocage get -P foo.bar.baz PLUGIN",
               is_flag=True)
-@click.option("--all", "-a", "_all", help="Get all properties for the "
-                                          "specified jail.", is_flag=True)
+@click.option("--all", "-a", "_type", help="Get all properties for the "
+                                          "specified jail.", flag_value="all")
 @click.option("--pool", "-p", "_pool", help="Get the currently activated "
                                             "zpool.", is_flag=True)
-def cli(prop, _all, _pool, jail, recursive, header, plugin):
+@click.option("--state", "-s", "_type", help="Get the jails state",
+              flag_value="state")
+@click.option("--jid", "-j", "_type", help="Get the jails jid", flag_value="jid")
+def cli(prop, _type, _pool, jail, recursive, header, plugin):
     """Get a list of jails and print the property."""
     table = texttable.Texttable(max_width=0)
 
-    if _all:
+    if _type:
         # Confusing I know.
         jail = prop
-        prop = "all"
+        prop = _type
     elif _pool:
         pool = ioc.IOCage(exit_on_error=True, skip_jails=True).get("",
                                                                    pool=True)
@@ -69,7 +72,7 @@ def cli(prop, _all, _pool, jail, recursive, header, plugin):
                 "message": "You must specify a jail!"
             }, exit_on_error=True)
 
-    if _all and recursive:
+    if _type == "all" and recursive:
         # TODO: Port this back
         ioc_common.logit({
             "level"  : "EXCEPTION",
@@ -78,12 +81,20 @@ def cli(prop, _all, _pool, jail, recursive, header, plugin):
         }, exit_on_error=True)
 
     if not recursive:
-        if prop == "state":
+        if prop == "state" or _type == "state":
             state = ioc.IOCage(exit_on_error=True, jail=jail).get(prop)
 
             ioc_common.logit({
                 "level"  : "INFO",
                 "message": state
+            }, exit_on_error=True)
+        elif prop == "jid" or _type == "jid":
+            jid = ioc.IOCage(exit_on_error=True, jail=jail).list("jid",
+                                                                 uuid=jail)[1]
+
+            ioc_common.logit({
+                "level"  : "INFO",
+                "message": jid
             }, exit_on_error=True)
         elif plugin:
             _plugin = ioc.IOCage(exit_on_error=True, jail=jail,
