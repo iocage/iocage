@@ -48,7 +48,8 @@ import iocage.lib.iocage as ioc
                                             "zpool.", is_flag=True)
 @click.option("--state", "-s", "_type", help="Get the jails state",
               flag_value="state")
-@click.option("--jid", "-j", "_type", help="Get the jails jid", flag_value="jid")
+@click.option("--jid", "-j", "_type", help="Get the jails jid",
+              flag_value="jid")
 def cli(prop, _type, _pool, jail, recursive, header, plugin):
     """Get a list of jails and print the property."""
     table = texttable.Texttable(max_width=0)
