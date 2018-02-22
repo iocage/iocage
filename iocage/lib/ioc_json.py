@@ -651,64 +651,64 @@ class IOCJson(object):
 
                 if value == "yes":
                     try:
-                        try:
-                            jail_zfs_dataset = f"{pool}/" \
-                                f"{conf['jail_zfs_dataset']}"
-                            self.zfs_set_property(jail_zfs_dataset, "jailed",
-                                                  "off")
-                        except libzfs.ZFSException as err:
-                            # The dataset doesn't exist, that's OK
+                        jail_zfs_dataset = f"{pool}/" \
+                            f"{conf['jail_zfs_dataset']}"
+                        self.zfs_set_property(jail_zfs_dataset, "jailed",
+                                                "off")
+                    except libzfs.ZFSException as err:
+                        # The dataset doesn't exist, that's OK
 
-                            if err.code == libzfs.Error.NOENT:
-                                pass
-                            else:
-                                # Danger, Will Robinson!
-                                raise
+                        if err.code == libzfs.Error.NOENT:
+                            pass
+                        else:
+                            iocage.lib.ioc_common.logit(
+                                {
+                                    "level": "EXCEPTION",
+                                    "message": err
+                                },
+                                _callback=self.callback)
 
+                    try:
                         self.zfs.get_dataset(old_location).rename(new_location)
-                        conf["type"] = "template"
-
-                        self.location = new_location.lstrip(pool).replace(
-                            "/iocage", iocroot)
-
+                    except libzfs.ZFSException as err:
+                        # cannot rename
                         iocage.lib.ioc_common.logit(
                             {
-                                "level": "INFO",
-                                "message": f"{uuid} converted to a template."
+                                "level": "EXCEPTION",
+                                "message": f"Cannot rename zfs dataset: {err}"
                             },
-                            _callback=self.callback,
-                            silent=self.silent)
+                            _callback=self.callback)
 
-                        # Writing these now since the dataset will be readonly
-                        self.json_check_prop(key, value, conf)
-                        self.json_write(conf)
+                    conf["type"] = "template"
 
-                        iocage.lib.ioc_common.logit(
-                            {
-                                "level":
-                                "INFO",
-                                "message":
-                                f"Property: {key} has been updated to {value}"
-                            },
-                            _callback=self.callback,
-                            silent=self.silent)
+                    self.location = new_location.lstrip(pool).replace(
+                        "/iocage", iocroot)
 
-                        self.zfs_set_property(new_location, "readonly", "on")
+                    iocage.lib.ioc_common.logit(
+                        {
+                            "level": "INFO",
+                            "message": f"{uuid} converted to a template."
+                        },
+                        _callback=self.callback,
+                        silent=self.silent)
 
-                        return
-                    except libzfs.ZFSException:
-                        iocage.lib.ioc_common.logit(
-                            {
-                                "level":
-                                "EXCEPTION",
-                                "message":
-                                "A template by that name already"
-                                " exists!"
-                            },
-                            exit_on_error=self.exit_on_error,
-                            _callback=self.callback,
-                            silent=self.silent)
+                    # Writing these now since the dataset will be readonly
+                    self.json_check_prop(key, value, conf)
+                    self.json_write(conf)
 
+                    iocage.lib.ioc_common.logit(
+                        {
+                            "level":
+                            "INFO",
+                            "message":
+                            f"Property: {key} has been updated to {value}"
+                        },
+                        _callback=self.callback,
+                        silent=self.silent)
+
+                    self.zfs_set_property(new_location, "readonly", "on")
+
+                    return
                 elif value == "no":
                     if not _import:
                         self.zfs.get_dataset(new_location).rename(old_location)
