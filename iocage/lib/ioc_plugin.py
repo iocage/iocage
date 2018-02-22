@@ -181,7 +181,7 @@ class IOCPlugin(object):
             except KeyError:
                 # quassel-core is one that does this.
                 license = plugins.get(
-                    conf["name"].strip("-").lower().split("/",1)[-1],
+                    conf["name"].strip("-").lower().split("/", 1)[-1],
                     conf
                 ).get("license", False)
 
