@@ -32,7 +32,9 @@ Documentation:
 .. toctree::
    :maxdepth: 2
 
+   install
    basic-use
+   plugins
    networking
    jailtypes
    best-practices
