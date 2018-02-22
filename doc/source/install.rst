@@ -1,5 +1,75 @@
-Migrating from ezjail to iocage
-===============================
+.. index:: Install iocage
+.. _Install iocage:
+
+Install iocage
+==============
+
+iocage is a jail and container manager merging some of the best features
+and technologies from the FreeBSD operating system. It is geared for
+ease of use with simple command syntax. Visit the
+`iocage github <https://github.com/iocage/iocage>`_ for more information.
+
+Using binary packages
++++++++++++++++++++++
+
+To install using binary packages on a FreeBSD system, run:
+
+:samp:`sudo pkg install py36-iocage`
+
+Using github
+++++++++++++
+
+If installing from github, the FreeBSD source tree **must** be located
+at :samp:`$SRC_BASE` ( :samp:`/usr/src` by default).
+
+To install from github, run these commands:
+
+:samp:`pkg install python36 git-lite libgit2 cython3 py36-pip`
+
+:samp:`git clone --recursive https://github.com/iocage/iocage`
+
+:samp:`make install` as root.
+
+.. tip:: To install subsequent updates run: :samp:`make install` as
+   root.
+
+Using pkg(8)
+++++++++++++
+
+It is possible to install pre-build packages using pkg(8) if using
+FreeBSD 10 or above.
+
+To install using pkg(8), run:
+
+:samp:`sudo pkg install py36-iocage`
+
+Building Ports
+++++++++++++++
+
+iocage is in the FreeBSD ports tree as sysutils/py-iocage.
+
+Build the ports:
+:samp:`cd /usr/ports/sysutils/iocage/ ; make install clean`
+
+Upgrading from :samp:`iocage_legacy`
+++++++++++++++++++++++++++++++++++++
+
+This repository replaces :samp:`iocage_legacy` .
+To upgrade to the current version:
+
+1. Stop the jails ( :samp:`Service iocage stop; iocage stop ALL`)
+#. Back up your data.
+#. Remove the old :samp:`iocage` package if it is installed
+   ( :samp:`pkg delete iocage`)
+#. Install :samp:`iocage` using one of the methods above.
+#. Migrate the jails by running :samp:`iocage list` as root.
+#. Start the jails ( :samp:`service iocage onestart`).
+
+.. index:: Ezjail Migration
+.. _Ezjail Migration:
+
+Migrating from Ezjail to Iocage
++++++++++++++++++++++++++++++++
 
 **Assumptions**:
 
