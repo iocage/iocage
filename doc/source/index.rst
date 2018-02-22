@@ -34,6 +34,7 @@ Documentation:
 
    install
    basic-use
+   plugins
    networking
    jailtypes
    best-practices
