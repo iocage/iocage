@@ -32,6 +32,7 @@ Documentation:
 .. toctree::
    :maxdepth: 2
 
+   install
    basic-use
    networking
    jailtypes
