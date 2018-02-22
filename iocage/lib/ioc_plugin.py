@@ -545,8 +545,11 @@ fingerprint: {fingerprint}
 
                 if dhcp:
                     interface = _conf["interfaces"].split(",")[0].split(":")[0]
-                    # Jails use epairN by default inside
-                    interface = interface.replace("vnet", "epair")
+
+                    if interface == "vnet0":
+                        # Jails use epairNb by default inside
+                        interface = f"{interface.replace('vnet', 'epair')}b"
+
                     ip4_cmd = [
                         "jexec", f"ioc-{uuid}", "ifconfig", interface, "inet"
                     ]
