@@ -37,9 +37,8 @@ Check which plugins are installed on the system with
 To get started, open a command line and type
 :command:`iocage fetch --plugins ip4_addr="IF|IP"`. This initial
 :command:`fetch` also supports *dhcp* in the same manner as
-:command:`iocage create`. The ip4_addr needs to conatin the host IP,
-but with the last digits changed. The IP listed for the plugin needs to
-be an IP that is not in use. Use the *- -name* flag to easily fetch a
+:command:`iocage create`. The IP listed for the plugin needs to
+be a valid IP not already in use. Use the *- -name* flag to easily fetch a
 specific plugin:
 
 :samp:`$ iocage fetch --plugins --name plexmediaserver ip4_address="igb0|192.168.0.91"`
