@@ -28,6 +28,7 @@ import os
 import re
 import shutil
 import subprocess as su
+import netifaces
 
 import iocage.lib.ioc_common
 import iocage.lib.ioc_json
@@ -347,8 +348,9 @@ class IOCStart(object):
                     interface = self.conf["interfaces"].split(",")[0].split(
                         ":")[0]
 
-                    # Jails default is epairN
-                    interface = interface.replace("vnet", "epair")
+                    if interface == "vnet0":
+                        # Jails default is epairNb
+                        interface = f"{interface.replace('vnet', 'epair')}b"
 
                     cmd = ["jexec", f"ioc-{self.uuid}", "ifconfig", "-f",
                            "inet:cidr",
@@ -542,13 +544,17 @@ class IOCStart(object):
         :param jid: The jails ID
         :return: If an error occurs it returns the error. Otherwise, it's None
         """
-
         mac_a, mac_b = self.__start_generate_vnet_mac__(nic)
         epair_a_cmd = ["ifconfig", "epair", "create"]
         epair_a = su.Popen(epair_a_cmd, stdout=su.PIPE).communicate()[0]
         epair_a = epair_a.strip()
         epair_b = re.sub(b"a$", b"b", epair_a)
-        jail_nic = nic.replace("vnet", "epair")  # Inside jails they are epairN
+
+        if nic == "vnet0":
+            # Inside jails they are epairN
+            jail_nic = f"{nic.replace('vnet', 'epair')}b"
+        else:
+            jail_nic = nic
 
         try:
             # Host
@@ -568,16 +574,30 @@ class IOCStart(object):
             iocage.lib.ioc_common.checkoutput(["ifconfig", epair_b, "vnet",
                                                f"ioc-{self.uuid}"],
                                               stderr=su.STDOUT)
-            iocage.lib.ioc_common.checkoutput(
-                ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
-                 "ifconfig", epair_b, "name", jail_nic, "mtu", mtu],
-                stderr=su.STDOUT)
-            iocage.lib.ioc_common.checkoutput(
-                ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
 
+            if epair_b.decode() != jail_nic:
+                # This occurs on default vnet0 ip4_addr's
+                iocage.lib.ioc_common.checkoutput(
+                    ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
+                     "ifconfig", epair_b, "name", jail_nic, "mtu", mtu],
+                    stderr=su.STDOUT)
+
+            iocage.lib.ioc_common.checkoutput(
+                ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
                  "ifconfig", jail_nic, "link", mac_b], stderr=su.STDOUT)
 
             # Host
+            gws = netifaces.gateways()
+            def_iface = gws["default"][netifaces.AF_INET][1]
+
+            try:
+                # Host interface also needs to be on the bridge
+                iocage.lib.ioc_common.checkoutput(
+                    ["ifconfig", bridge, "addm", def_iface], stderr=su.STDOUT)
+            except su.CalledProcessError:
+                # Already exists
+                pass
+
             iocage.lib.ioc_common.checkoutput(
                 ["ifconfig", bridge, "addm", f"{nic}:{jid}", "up"],
                 stderr=su.STDOUT)
@@ -600,7 +620,10 @@ class IOCStart(object):
         """
         dhcp = self.get("dhcp")
 
-        iface = iface.replace("vnet", "epair")  # Inside jails they are epairN
+        if iface == "vnet0":
+            # Inside jails they are epairNb
+
+            iface = f"{iface.replace('vnet', 'epair')}b"
 
         # Crude check to see if it's a IPv6 address
 
@@ -735,7 +758,9 @@ add path 'bpf*' unhide
         _rc = open(f"{self.path}/root/etc/rc.conf").readlines()
 
         for nic in nics:
-            nic = nic.replace("vnet", "epair")  # Inside jails they are epairN
+            if nic == "vnet0":
+                # Inside jails they are epairNb
+                nic = f"{nic.replace('vnet', 'epair')}b"
             replaced = False
 
             for no, line in enumerate(_rc):
