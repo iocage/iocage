@@ -1,4 +1,4 @@
-.Dd February 15, 2018
+.Dd February 23, 2018
 .Dt IOCAGE 8
 .Os
 .Sh NAME
@@ -122,6 +122,8 @@
 .Op Fl a | -all
 .Op Fl p | -pool
 .Op Fl r | -recursive
+.Op Fl s | Cm state
+.Op Fl j | Cm JID
 .\" == IMPORT ==
 .Nm
 .Cm import
@@ -671,6 +673,10 @@ If accessing a nested key, use "." as a separator.
 Get the currently activated zpool.
 .It Op Fl r | -recursive
 Get the specified property for all jails.
+.It Op Fl s | Cm state
+Return the state of the jail.
+.It Op Fl j | Cm JID
+Return the JID.
 .El
 .Pp
 Examples:
@@ -689,6 +695,10 @@ through
 .Pp
 Displays a table with each jail's UUID or NAME and the
 status of the requested property.
+.Pp
+.Dl # iocage get -s examplejail_1
+.Pp
+Return whether the state of the jail is up or down.
 .Pp
 .\" == IMPORT ==
 .It Cm import
