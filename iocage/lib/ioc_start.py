@@ -124,6 +124,7 @@ class IOCStart(object):
         sysvshm = self.conf["sysvshm"]
         bpf = self.conf["bpf"]
         dhcp = self.conf["dhcp"]
+        vnet_interfaces = self.conf["vnet_interfaces"]
         prop_missing = False
 
         if dhcp == "on":
@@ -237,6 +238,13 @@ class IOCStart(object):
             vnet = False
         else:
             net = ["vnet"]
+
+            if vnet_interfaces != "none":
+                for vnet_int in vnet_interfaces.split():
+                    net += [f"vnet.interface={vnet_int}"]
+            else:
+                vnet_interfaces = ""
+
             vnet = True
 
         if bpf == "yes":
@@ -259,7 +267,7 @@ class IOCStart(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-        start = su.Popen([x for x in ["jail", "-c"] + net +
+        start_cmd = [x for x in ["jail", "-c"] + net +
                           [f"name=ioc-{self.uuid}",
                            f"host.domainname={host_domainname}",
                            f"host.hostname={host_hostname}",
@@ -297,8 +305,9 @@ class IOCStart(object):
                            "allow.dying",
                            f"exec.consolelog={self.iocroot}/log/ioc-"
                            f"{self.uuid}-console.log",
-                           "persist"] if x != ''], stdout=su.PIPE,
-                         stderr=su.PIPE)
+                           "persist"] if x != '']
+
+        start = su.Popen(start_cmd, stderr=su.PIPE, stdout=su.PIPE)
 
         stdout_data, stderr_data = start.communicate()
 

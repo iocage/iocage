@@ -93,6 +93,7 @@ class IOCStop(object):
             },
                 _callback=self.callback,
                 silent=self.silent)
+
             return
 
         msg = f"* Stopping {self.uuid}"
@@ -140,6 +141,7 @@ class IOCStop(object):
             services = su.check_call(["setfib", exec_fib, "jexec",
                                       f"ioc-{self.uuid}"] + exec_stop,
                                      stdout=f, stderr=su.PIPE)
+
         if services:
             msg = "  + Stopping services FAILED"
             iocage.lib.ioc_common.logit({
@@ -175,6 +177,7 @@ class IOCStop(object):
                         mountpoint = iocage.lib.ioc_common.checkoutput(
                             ["zfs", "get", "-H", "-o", "value", "mountpoint",
                              f"{self.pool}/{jdataset}"]).strip()
+
                         if mountpoint == "none":
                             pass
                         else:
@@ -191,7 +194,9 @@ class IOCStop(object):
                         "{}".format(
                             err.output.decode("utf-8").rstrip()))
 
-        if vnet == "on":
+        # They haven't set an IP address, this interface won't exist
+
+        if vnet == "on" and ip4_addr != "none" or ip6_addr != "none":
             vnet_err = []
 
             for nic in self.nics.split(","):
@@ -230,6 +235,7 @@ class IOCStop(object):
             if ip4_addr != "none":
                 for ip4 in ip4_addr.split(","):
                     # Don't try to remove an alias if there's no interface.
+
                     if "|" not in ip4:
                         continue
                     try:
@@ -255,6 +261,7 @@ class IOCStop(object):
             if ip6_addr != "none":
                 for ip6 in ip6_addr.split(","):
                     # Don't try to remove an alias if there's no interface.
+
                     if "|" not in ip6:
                         continue
                     try:
