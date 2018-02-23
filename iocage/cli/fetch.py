@@ -82,6 +82,7 @@ def parse_latest():
 
     return latest
 
+
 @click.command(
     context_settings=dict(max_content_width=400, ),
     name="fetch",
