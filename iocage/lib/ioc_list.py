@@ -216,7 +216,11 @@ class IOCList(object):
 
             if conf["dhcp"] == "on" and status and os.geteuid() == 0:
                 interface = conf["interfaces"].split(",")[0].split(":")[0]
-                interface = interface.replace("vnet", "epair")
+
+                if interface == "vnet0":
+                    # Inside jails they are epairNb
+                    interface = f"{interface.replace('vnet', 'epair')}b"
+
                 short_ip4 = "DHCP"
                 full_ip4_cmd = ["jexec", f"ioc-{uuid}", "ifconfig",
                                 interface, "inet"]

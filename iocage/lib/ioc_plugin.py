@@ -174,13 +174,16 @@ class IOCPlugin(object):
             try:
                 license = plugins[pkg.split("/", 1)[-1]].get("license", False)
             except UnboundLocalError:
-                license = plugins[conf["name"].lower().split("/", 1)[-1]].get(
-                    "license", False)
+                license = plugins.get(
+                    conf["name"].lower().split("/", 1)[-1],
+                    conf
+                ).get("license", False)
             except KeyError:
                 # quassel-core is one that does this.
-                name = plugins[conf["name"].strip("-").lower().split("/", 1)[
-                    -1]]
-                license = name.get("license", False)
+                license = plugins.get(
+                    conf["name"].strip("-").lower().split("/", 1)[-1],
+                    conf
+                ).get("license", False)
 
             if license and not accept_license:
                 license_text = requests.get(license)
@@ -542,8 +545,11 @@ fingerprint: {fingerprint}
 
                 if dhcp:
                     interface = _conf["interfaces"].split(",")[0].split(":")[0]
-                    # Jails use epairN by default inside
-                    interface = interface.replace("vnet", "epair")
+
+                    if interface == "vnet0":
+                        # Jails use epairNb by default inside
+                        interface = f"{interface.replace('vnet', 'epair')}b"
+
                     ip4_cmd = [
                         "jexec", f"ioc-{uuid}", "ifconfig", interface, "inet"
                     ]
