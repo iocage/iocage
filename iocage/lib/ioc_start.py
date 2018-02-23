@@ -307,7 +307,14 @@ class IOCStart(object):
                            f"{self.uuid}-console.log",
                            "persist"] if x != '']
 
-        start = su.Popen(start_cmd, stderr=su.PIPE, stdout=su.PIPE)
+        start_env = {
+            **os.environ,
+            "IOCAGE_HOSTNAME": f"{host_hostname}",
+            "IOCAGE_NAME": f"ioc-{self.uuid}",
+        }
+
+        start = su.Popen(start_cmd, stderr=su.PIPE, stdout=su.PIPE,
+                         env=start_env)
 
         stdout_data, stderr_data = start.communicate()
 
