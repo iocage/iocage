@@ -810,7 +810,7 @@ class IOCJson(object):
     @staticmethod
     def json_get_version():
         """Sets the iocage configuration version."""
-        version = "9"
+        version = "10"
 
         return version
 
@@ -988,6 +988,15 @@ class IOCJson(object):
         conf["dhcp"] = dhcp
         conf["bpf"] = bpf
 
+        # Version 10 keys
+        try:
+            vnet_interfaces = conf["vnet_interfaces"]
+        except KeyError:
+            vnet_interfaces = "none"
+
+        # Set all keys, even if it's the same value.
+        conf["vnet_interfaces"] = vnet_interfaces
+
         # Set all keys, even if it's the same value.
         conf["CONFIG_VERSION"] = self.json_get_version()
 
@@ -1109,6 +1118,7 @@ class IOCJson(object):
             "allow_mount_zfs": ("0", "1"),
             "allow_quotas": ("0", "1"),
             "allow_socket_af": ("0", "1"),
+            "vnet_interfaces": ("string", ),
             # RCTL limits
             "cpuset": ("off", "on"),
             "rlimits": ("off", "on"),
