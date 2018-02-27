@@ -17,6 +17,42 @@ iocage, then interacting with newly created jails.
 .. tip:: iocage has an experimental "color" mode enabled by setting the
    environment variable :command:`IOCAGE_COLOR` to **TRUE**.
 
+.. index:: Setting environment variables
+.. _Setting environment variables:
+
+Setting Environment Variables
+-----------------------------
+
+iocage currently has four environment variables:
+
+.. table:: **iocage Environment Variables**
+   :class: longtable
+
+   +------------------+-----------------+----------------------------------------------------+
+   | Name             | Accepted Values | Description                                        |
+   +------------------+-----------------+----------------------------------------------------+
+   | IOCAGE_LOGFILE   | FILE            | File location to have iocage log into.             |
+   +------------------+-----------------+----------------------------------------------------+
+   | IOCAGE_COLOR     | TRUE|FALSE      | Turns on a colored CLI output.                     |
+   +------------------+-----------------+----------------------------------------------------+
+   | IOCAGE_FORCE     | TRUE|FALSE      | Required for any automatic migrations              |
+   +------------------+-----------------+----------------------------------------------------+
+   | IOCAGE_PLUGIN_IP | IP_ADDR         | This environment variable is set in a plugin jail. |
+   |                  |                 | Use it to quickly query it with another            |
+   |                  |                 | program/script                                     |
+   +------------------+-----------------+----------------------------------------------------+
+
+The process for setting these variables depends on the shell being used.
+The defualt FreeBSD shell :command:`csh/tcsh` and the :command:`bash/sh`
+shell are different from one another and require a slightly different
+process for setting environment variables. For example:
+
+In the FreeBSD shell :command:`csh/tcsh` , :samp:`setenv IOCAGE_COLOR TRUE`
+sets the environment variable IOCAGE_COLOR to true.
+
+In the :command:`bash/sh` shell, :samp:`export IOCAGE_COLOR=TRUE` sets
+the environment variable IOCAGE_COLOR to true.
+
 .. index:: Activate iocage
 .. _Activate iocage:
 
