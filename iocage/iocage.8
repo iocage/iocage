@@ -1,4 +1,4 @@
-.Dd February 23, 2018
+.Dd February 27, 2018
 .Dt IOCAGE 8
 .Os
 .Sh NAME
@@ -1771,6 +1771,14 @@ Default: off
 .Pp
 Source:
 .Xr cpuset 1
+.It vnet.interface
+A network interface to give to a vnet-enabled jail after it is created.
+The interface will automatically be released when the jail is removed.
+.Pp
+Defualt: none
+.Pp
+Source:
+.Xr jail(8)
 .El
 .Sh EXAMPLES
 Set up
