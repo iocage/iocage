@@ -27,8 +27,6 @@ import os
 import click
 import iocage.lib.ioc_common as ioc_common
 import iocage.lib.iocage as ioc
-import logging
-import requests
 
 __rootcmd__ = True
 
@@ -50,37 +48,6 @@ def validate_count(ctx, param, value):
                 exit_on_error=True)
     else:
         return int(value)
-
-
-def parse_latest():
-    """
-    Takes the release param latest|LATEST and figures out the correct
-    RELEASE
-    """
-    logging.getLogger("requests").setLevel(logging.WARNING)
-    sup = "https://www.freebsd.org/security/index.html#sup"
-    req = requests.get(sup)
-    status = req.status_code == requests.codes.ok
-    sup_releases = []
-
-    if not status:
-        req.raise_for_status()
-
-    for rel in req.content.decode("iso-8859-1").split():
-        rel = rel.strip("href=").strip("/").split(">")
-        # We want a dynamic supported
-        try:
-            if "releng/" in rel[1]:
-                rel = rel[1].strip('</td').strip("releng/")
-
-                if rel not in sup_releases:
-                    sup_releases.append(rel)
-        except IndexError:
-            pass
-
-    latest = f"{sorted(sup_releases)[-1]}-RELEASE"
-
-    return latest
 
 
 @click.command(
@@ -176,7 +143,7 @@ def cli(**kwargs):
 
     if release is not None:
         if release.lower() == "latest":
-            release = parse_latest()
+            release = ioc_common.parse_latest_release()
             kwargs["release"] = release
 
         try:
