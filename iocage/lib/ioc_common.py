@@ -32,6 +32,7 @@ import stat
 import subprocess as su
 import sys
 import tempfile as tmp
+import requests
 
 
 def callback(_log, exit_on_error=False):
@@ -496,3 +497,32 @@ def set_rcconf(jail_path, key, value):
             f.seek(0)
             f.write("\n".join(output) + "\n")
             f.truncate()
+
+def parse_latest_release():
+    """
+    Returns the latest RELEASE from upstreams supported list
+    """
+    logging.getLogger("requests").setLevel(logging.WARNING)
+    sup = "https://www.freebsd.org/security/index.html#sup"
+    req = requests.get(sup)
+    status = req.status_code == requests.codes.ok
+    sup_releases = []
+
+    if not status:
+        req.raise_for_status()
+
+    for rel in req.content.decode("iso-8859-1").split():
+        rel = rel.strip("href=").strip("/").split(">")
+        # We want a dynamic supported
+        try:
+            if "releng/" in rel[1]:
+                rel = rel[1].strip('</td').strip("releng/")
+
+                if rel not in sup_releases:
+                    sup_releases.append(rel)
+        except IndexError:
+            pass
+
+    latest = f"{sorted(sup_releases)[-1]}-RELEASE"
+
+    return latest

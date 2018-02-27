@@ -100,6 +100,8 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
             "level": "EXCEPTION",
             "message": "Please supply a valid RELEASE!"
         }, exit_on_error=True)
+    elif release.lower() == "latest":
+        release = ioc_common.parse_latest_release()
 
     # We don't really care it's not a RELEASE at this point.
     release = template if template else release
