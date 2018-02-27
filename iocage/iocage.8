@@ -98,7 +98,7 @@
 .Op Fl h | -http
 .Op Fl n | -name TEXT
 .Op Fl p | -password
-.Op Fl r | -release
+.Op Fl r | -release | Cm latest | Cm LATEST
 .Op Fl s | -server
 .Op Fl u | -user
 .\" == FSTAB ==
@@ -590,10 +590,12 @@ used this to adjust
 to define an HTTP server.
 .It Op Fl p | -password Ar TEXT
 Add a password, if required.
-.It Op Fl r |-release Ar TEXT
+.It Op Fl r | -release Ar TEXT
 Define the
 .Fx
 release to fetch.
+.It Op Fl r Cm latest | Cm LATEST
+Fetches the latest release.
 .It Op Fl s | -server Ar TEXT
 Define the server from which to fetch the RELEASE.
 .It Op Fl u | -user Ar TEXT
@@ -622,6 +624,10 @@ Newly created jails or basejails are automatically updated.
 .Pp
 This disables the end of life check, then fetches the FreeBSD 11.0
 release and updates with the latest patches.
+.Pp
+.Dl # iocage fetch -r LATEST
+.Pp
+This fetches the latest release available.
 .\" == FSTAB ==
 .It Cm fstab
 Manipulates the fstab settings of a specific jail.
