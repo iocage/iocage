@@ -498,6 +498,7 @@ def set_rcconf(jail_path, key, value):
             f.write("\n".join(output) + "\n")
             f.truncate()
 
+
 def parse_latest_release():
     """
     Returns the latest RELEASE from upstreams supported list
