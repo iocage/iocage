@@ -97,9 +97,14 @@ applied to it.
 :command:`iocage fetch` also has a number of options and properties for
 users to fine-tune the functionality of the command.
 
+To fetch the latest RELEASE,
+
+:samp:`iocage fetch -r LATEST`
+
 If a specific RELEASE is required, use the **-r** option:
 
 :command:`iocage fetch -r [11.0-RELEASE]`
+
 
 If a specific download mirror is required, use the **-s** option:
 
