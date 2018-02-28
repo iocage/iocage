@@ -48,6 +48,7 @@
 .Op Fl n | -name Ar TEXT
 .Op Fl p | -pkglist Ar TEXT
 .Op Fl r | -release Ar TEXT
+.Op Fl r | -release Cm latest | Cm LATEST
 .Op Fl s | -short
 .Op Fl t | -template Ar TEXT
 .Op Fl u | -uuid | Ar TEXT
@@ -384,6 +385,8 @@ Specify a JSON file which manages the installation of each
 package in the newly created jail.
 .It Op Fl r | -release Ar TEXT
 Specify which RELEASE to use for the new jail.
+.It Op Fl r | -release Cm latest | Cm LATEST
+Creat a new jail with the latest release available.
 .It Op Fl s | -short
 Use a short UUID of 8 characters instead of the default 36.
 .It Op Fl t | -template Ar TEXT
