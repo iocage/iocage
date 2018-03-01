@@ -129,7 +129,7 @@ documentation.
 Depending on the user's requirements, the :command:`create` subcommand
 can be adjusted to create either jail type. By default,
 :command:`iocage create` creates a **normal** jail, but invoking the
-**-b** option changes the creation to the basejail type. Iocage is able
+**-b** option changes the creation to the basejail type. iocage is able
 to create a jail with the latest release by adding *LATEST* to
 the create command.
 
