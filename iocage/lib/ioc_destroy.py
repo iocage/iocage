@@ -60,7 +60,9 @@ class IOCDestroy(object):
 
             # This is just to setup a replacement.
             path = path.replace("templates", "jails")
-            uuid = dataset.name.partition(f"{path}/")[2].rsplit("/", 1)[0]
+            uuid = dataset.name.partition(
+                f"{path}")[1].rsplit("/", 1)[1]
+
             # We want the real path now.
             _path = dataset.properties["mountpoint"].value.replace("/root", "")
             # It gives us a string that says "none", not terribly
