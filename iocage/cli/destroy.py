@@ -25,10 +25,9 @@
 import os
 
 import click
-import libzfs
-
 import iocage.lib.ioc_common as ioc_common
 import iocage.lib.iocage as ioc
+import libzfs
 
 __rootcmd__ = True
 
@@ -45,12 +44,13 @@ def child_test(zfs, iocroot, name, _type, force=False, recursive=False):
         if os.path.isdir(p):
             path = p
             children = zfs.get_dataset_by_path(path).snapshots_recursive
+
             break
 
     if path is None:
         if not force:
             ioc_common.logit({
-                "level"  : "WARNING",
+                "level": "WARNING",
                 "message": "Partial UUID/NAME supplied, cannot check for "
                            "dependant jails."
             })
@@ -72,14 +72,14 @@ def child_test(zfs, iocroot, name, _type, force=False, recursive=False):
     if len(_children) != 0:
         if not force and not recursive:
             ioc_common.logit({
-                "level"  : "WARNING",
+                "level": "WARNING",
                 "message": f"\n{name} has dependent jails"
                            " (who may also have dependents),"
                            " use --recursive to destroy: "
             })
 
             ioc_common.logit({
-                "level"  : "WARNING",
+                "level": "WARNING",
                 "message": "".join(_children)
             })
             exit(1)
@@ -106,7 +106,7 @@ def cli(force, release, download, jails, recursive):
 
     if download and not release:
         ioc_common.logit({
-            "level"  : "EXCEPTION",
+            "level": "EXCEPTION",
             "message": "--release (-r) must be specified as well!"
         }, exit_on_error=True)
 
@@ -114,7 +114,7 @@ def cli(force, release, download, jails, recursive):
         for jail in jails:
             if not force:
                 ioc_common.logit({
-                    "level"  : "WARNING",
+                    "level": "WARNING",
                     "message": f"\nThis will destroy jail {jail}"
                 })
 
@@ -130,7 +130,7 @@ def cli(force, release, download, jails, recursive):
         for release in jails:
             if not force:
                 ioc_common.logit({
-                    "level"  : "WARNING",
+                    "level": "WARNING",
                     "message": f"\nThis will destroy RELEASE: {release}"
                 })
 
@@ -144,11 +144,11 @@ def cli(force, release, download, jails, recursive):
                        skip_jails=True).destroy_release(download)
     elif not jails and release:
         ioc_common.logit({
-            "level"  : "EXCEPTION",
+            "level": "EXCEPTION",
             "message": "Please specify one or more RELEASEs!"
         }, exit_on_error=True)
     else:
         ioc_common.logit({
-            "level"  : "EXCEPTION",
+            "level": "EXCEPTION",
             "message": "Please specify one or more jails!"
         }, exit_on_error=True)
