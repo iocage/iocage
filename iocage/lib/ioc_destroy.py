@@ -23,6 +23,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """iocage destroy module."""
 import glob
+import json
 import os
 import subprocess as su
 
@@ -47,7 +48,19 @@ class IOCDestroy(object):
         self.ds = self.zfs.get_dataset
 
     @staticmethod
-    def __stop_jails__(datasets, path=None, root=False):
+    def __stop_jails__(datasets, path=None, root=False, clean=False):
+        if clean:
+            jids, _ = su.Popen(["jls", "-n", "name", "jid",
+                                "--libxo=json"], stdout=su.PIPE).communicate()
+            jids = json.loads(jids)["jail-information"]["jail"]
+
+            for j in jids:
+                name = j["name"]
+                jid = j["jid"]
+
+                if "ioc-" in name:
+                    su.Popen(["jail", "-r", jid]).communicate()
+
         for dataset in datasets.dependents:
             if "jails" not in dataset.name:
                 continue
@@ -80,7 +93,12 @@ class IOCDestroy(object):
 
         try:
             path = dataset.properties["mountpoint"].value
-            umount_path = path.rstrip('/root')
+
+            if path.endswith("/root"):
+                umount_path = path.rsplit("/root", 1)[0]
+            else:
+                umount_path = path
+
         except libzfs.ZFSException as err:
             # This is either not mounted or doesn't exist anymore,
             # we don't care either way.
@@ -191,7 +209,7 @@ class IOCDestroy(object):
 
             if stop:
                 try:
-                    self.__stop_jails__(datasets, path, root)
+                    self.__stop_jails__(datasets, path, root, clean=clean)
                 except (RuntimeError, FileNotFoundError, SystemExit):
                     # If a bad or missing configuration for a jail, this will
                     # get in the way.
@@ -218,7 +236,7 @@ class IOCDestroy(object):
         dataset_type, uuid = path.rsplit("/")[-2:]
 
         if clean:
-            self.__destroy_parse_datasets__(path)
+            self.__destroy_parse_datasets__(path, clean=clean)
 
             return
 
