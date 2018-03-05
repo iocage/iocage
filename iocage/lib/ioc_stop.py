@@ -83,12 +83,13 @@ class IOCStop(object):
         ip4_addr = self.conf["ip4_addr"]
         ip6_addr = self.conf["ip6_addr"]
         vnet = self.conf["vnet"]
+        dhcp = self.conf["dhcp"]
         exec_fib = self.conf["exec_fib"]
 
         if not self.status:
             msg = f"{self.uuid} is not running!"
             iocage.lib.ioc_common.logit({
-                "level"  : "ERROR",
+                "level": "ERROR",
                 "message": msg
             },
                 _callback=self.callback,
@@ -98,7 +99,7 @@ class IOCStop(object):
 
         msg = f"* Stopping {self.uuid}"
         iocage.lib.ioc_common.logit({
-            "level"  : "INFO",
+            "level": "INFO",
             "message": msg
         },
             _callback=self.callback,
@@ -109,7 +110,7 @@ class IOCStop(object):
         if prestop and prestop_err:
             msg = f"  + Running prestop WARNING\n{prestop_err}"
             iocage.lib.ioc_common.logit({
-                "level"  : "WARNING",
+                "level": "WARNING",
                 "message": msg
             },
                 _callback=self.callback,
@@ -117,7 +118,7 @@ class IOCStop(object):
         elif prestop:
             msg = "  + Running prestop OK"
             iocage.lib.ioc_common.logit({
-                "level"  : "INFO",
+                "level": "INFO",
                 "message": msg
             },
                 _callback=self.callback,
@@ -130,7 +131,7 @@ class IOCStop(object):
                 msg = f"  + Running prestop FAILED"
 
             iocage.lib.ioc_common.logit({
-                "level"  : "ERROR",
+                "level": "ERROR",
                 "message": msg
             },
                 _callback=self.callback,
@@ -145,7 +146,7 @@ class IOCStop(object):
         if services:
             msg = "  + Stopping services FAILED"
             iocage.lib.ioc_common.logit({
-                "level"  : "ERROR",
+                "level": "ERROR",
                 "message": msg
             },
                 _callback=self.callback,
@@ -153,7 +154,7 @@ class IOCStop(object):
         else:
             msg = "  + Stopping services OK"
             iocage.lib.ioc_common.logit({
-                "level"  : "INFO",
+                "level": "INFO",
                 "message": msg
             },
                 _callback=self.callback,
@@ -195,8 +196,10 @@ class IOCStop(object):
                             err.output.decode("utf-8").rstrip()))
 
         # They haven't set an IP address, this interface won't exist
+        destroy_nic = True if dhcp == "on" or ip4_addr != "none" or \
+            ip6_addr != "none" else False
 
-        if vnet == "on" and ip4_addr != "none" or ip6_addr != "none":
+        if vnet == "on" and destroy_nic:
             vnet_err = []
 
             for nic in self.nics.split(","):
@@ -210,14 +213,14 @@ class IOCStop(object):
 
             if not vnet_err:
                 iocage.lib.ioc_common.logit({
-                    "level"  : "INFO",
+                    "level": "INFO",
                     "message": "  + Tearing down VNET OK"
                 },
                     _callback=self.callback,
                     silent=self.silent)
             elif vnet_err:
                 iocage.lib.ioc_common.logit({
-                    "level"  : "INFO",
+                    "level": "INFO",
                     "message": "  + Tearing down VNET FAILED"
                 },
                     _callback=self.callback,
@@ -225,7 +228,7 @@ class IOCStop(object):
 
                 for v_err in vnet_err:
                     iocage.lib.ioc_common.logit({
-                        "level"  : "WARNING",
+                        "level": "WARNING",
                         "message": f"  {v_err}"
                     },
                         _callback=self.callback,
@@ -288,7 +291,7 @@ class IOCStop(object):
         if stop:
             msg = "  + Removing jail process FAILED"
             iocage.lib.ioc_common.logit({
-                "level"  : "ERROR",
+                "level": "ERROR",
                 "message": msg
             },
                 _callback=self.callback,
@@ -296,7 +299,7 @@ class IOCStop(object):
         else:
             msg = "  + Removing jail process OK"
             iocage.lib.ioc_common.logit({
-                "level"  : "INFO",
+                "level": "INFO",
                 "message": msg
             },
                 _callback=self.callback,
@@ -307,7 +310,7 @@ class IOCStop(object):
         if poststop and poststop_err:
             msg = f"  + Running poststop WARNING\n{poststop_err}"
             iocage.lib.ioc_common.logit({
-                "level"  : "WARNING",
+                "level": "WARNING",
                 "message": msg
             },
                 _callback=self.callback,
@@ -315,7 +318,7 @@ class IOCStop(object):
         elif poststop:
             msg = "  + Running poststop OK"
             iocage.lib.ioc_common.logit({
-                "level"  : "INFO",
+                "level": "INFO",
                 "message": msg
             },
                 _callback=self.callback,
@@ -328,7 +331,7 @@ class IOCStop(object):
                 msg = f"  + Running poststop FAILED"
 
             iocage.lib.ioc_common.logit({
-                "level"  : "ERROR",
+                "level": "ERROR",
                 "message": msg
             },
                 _callback=self.callback,
