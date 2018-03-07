@@ -650,7 +650,7 @@ class IOCFetch(object):
                                         exit_on_error=self.exit_on_error,
                                         _callback=self.callback,
                                         silent=self.silent)
-                    except (FileNotFoundError, KeyError):
+                    except (FileNotFoundError, KeyError) as err:
                         if not _missing:
                             iocage.lib.ioc_common.logit(
                                 {
