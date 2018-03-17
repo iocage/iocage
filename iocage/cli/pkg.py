@@ -29,7 +29,10 @@ import iocage.lib.iocage as ioc
 __rootcmd__ = True
 
 
-@click.command(name="pkg", help="Use pkg inside a specified jail.")
+@click.command(
+    name="pkg",
+    context_settings=dict(ignore_unknown_options=True),
+    help="Use pkg inside a specified jail.")
 @click.argument("jail", required=True, nargs=1)
 @click.argument("command", nargs=-1, type=click.UNPROCESSED)
 def cli(command, jail):
