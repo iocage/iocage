@@ -434,12 +434,17 @@ class IOCStart(object):
                         # Jails default is epairNb
                         interface = f"{interface.replace('vnet', 'epair')}b"
 
-                    cmd = ["jexec", f"ioc-{self.uuid}", "ifconfig", "-f",
-                           "inet:cidr",
+                    cmd = ["jexec", f"ioc-{self.uuid}", "ifconfig",
                            interface, "inet"]
                     out = su.check_output(cmd)
 
-                    addr = f"{out.splitlines()[2].split()[1].decode()}"
+                    hexmask = out.splitlines()[2].split()[3].decode()
+                    maskcidr = sum([bin(int(hexmask, 16)).count("1")])
+                    ip4_addr = out.splitlines()[2].split()[1].decode()
+
+                    addr = f"{ip4_addr}/{maskcidr}"
+                except su.CalledProcessError:
+                    addr = "ERROR, check jail logs"
 
                     if "0.0.0.0" in addr:
                         failed_dhcp = True
