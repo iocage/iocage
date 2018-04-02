@@ -517,7 +517,8 @@ class IOCJson(object):
                         raise RuntimeError("Run as root to automatically "
                                            "activate the first zpool!")
 
-                    if os.environ["IOCAGE_SKIP"] == "TRUE":
+                    iocage_skip = os.environ.get("IOCAGE_SKIP", "FALSE")
+                    if iocage_skip == "TRUE":
                         iocage.lib.ioc_common.logit(
                             {
                                 "level":
