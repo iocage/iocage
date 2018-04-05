@@ -532,6 +532,7 @@ class IOCage(object):
                short=False,
                _uuid=None,
                basejail=False,
+               thickjail=False,
                empty=False,
                clone=None,
                skip_batch=False):
@@ -625,6 +626,7 @@ class IOCage(object):
                         short=short,
                         _uuid=count_uuid,
                         basejail=basejail,
+                        thickjail=thickjail,
                         empty=empty,
                         clone=clone,
                         skip_batch=True)
@@ -638,6 +640,7 @@ class IOCage(object):
                     template=template,
                     short=short,
                     basejail=basejail,
+                    thickjail=thickjail,
                     empty=empty,
                     uuid=_uuid,
                     clone=clone,
