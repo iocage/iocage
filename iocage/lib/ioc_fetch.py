@@ -745,48 +745,50 @@ class IOCFetch(object):
 
                 with open(f, "wb") as txz:
                     file_size = int(r.headers['Content-Length'])
-                    chunk_size = 1024
+                    chunk_size = 1024 * 1024
                     total = file_size / chunk_size
-                    start = time.clock()
+                    start = time.time()
                     dl_progress = 0
 
                     for i, chunk in enumerate(
                             r.iter_content(chunk_size=chunk_size), 1):
-                        dl_progress += len(chunk)
-                        txz.write(chunk)
-                        self.update_progress(total, i, f"Downloading : {f}",
-                                             start, dl_progress)
+                            if chunk:
+                                elapsed = time.time() - start
+                                dl_progress += len(chunk)
+                                txz.write(chunk)
+                                self.update_progress(
+                                    total, i, f"Downloading : {f}",
+                                    elapsed, chunk_size)
+                                start = time.time()
 
-    def update_progress(self, total, progress, display_text, start, chunk):
+    def update_progress(self, total, progress, display_text, elapsed,
+                        chunk_size):
         """
         Displays or updates a console progress bar.
-
         Original source: https://stackoverflow.com/a/15860757/1391441
         """
         barLength, status = 20, ""
         progress = float(progress) / float(total)
-        clock = time.clock()
 
-        if clock > start:
-            current_time = chunk // (clock - start)
-            current_time = round(current_time / 1000000, 2)
-        else:
-            current_time = 0
+        current_time = chunk_size / elapsed
+        current_time = round(current_time / 1000000, 1)
 
         if progress >= 1.:
             progress, status = 1, "\r\n"
 
         block = int(round(barLength * progress))
+        progress = round(progress * 100, 0)
 
         if self.silent:
             return
 
-        text = "\r{} [{}] {:.0f}% {} {}Mbit/s".format(display_text,
-                                                      "#" * block + "-" *
-                                                      (barLength - block),
-                                                      round(progress * 100, 0),
-                                                      status, current_time)
-        print(text, end="")
+        text = "\r{} [{}] {:.0f}% {} {}MB/s".format(
+            display_text,
+            "#" * block + "-" * (barLength - block),
+            progress, status, current_time)
+
+        erase = '\x1b[2K'
+        print(erase, text, end="\r")
 
     def __fetch_check_members__(self, members):
         """Checks if the members are relative, if not, log a warning."""
