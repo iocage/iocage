@@ -269,13 +269,24 @@ class IOCCreate(object):
                               f"{self.pool}/iocage/releases/{self.release}/root@"
                               f"{jail_uuid}", jail], stdout=su.PIPE).communicate()
                 else:
-                    su.Popen(["zfs", "create", "-p", jail], stdout=su.PIPE).communicate()
-                    zfs_send = su.Popen(["zfs", "send",
-                              f"{self.pool}/iocage/releases/{self.release}/root@"
-                              f"{jail_uuid}"], stdout=su.PIPE)
-                    su.check_output(["zfs", "receive", "-F", jail], stdin=zfs_send.stdout)
-                    zfs_send.wait()
-                                        
+                    try:
+                        su.Popen(["zfs", "create", "-p", jail], stdout=su.PIPE).communicate()
+                        zfs_send = su.Popen(["zfs", "send",
+                                  f"{self.pool}/iocage/releases/{self.release}/root@"
+                                  f"{jail_uuid}"], stdout=su.PIPE)
+                        su.check_call(["zfs", "receive", "-F", jail], stdin=zfs_send.stdout)
+                    except su.CalledProcessError:
+                        su.Popen(["zfs", "destroy", "-rf", 
+                                  f"{self.pool}/iocage/jails/{jail_uuid}"], stdout=su.PIPE).communicate()
+                        su.Popen(["zfs", "destroy", "-r", 
+                                  f"{self.pool}/iocage/releases/{self.release}/root@"
+                                  f"{jail_uuid}"], stdout=su.PIPE).communicate()
+                        iocage.lib.ioc_common.logit({
+                            "level": "EXCEPTION",
+                            "message": "Can't copy release!"
+                        }, exit_on_error=self.exit_on_error,
+                            _callback=self.callback,
+                            silent=self.silent)               
             else:
                 try:
                     iocage.lib.ioc_common.checkoutput(
