@@ -653,7 +653,6 @@ fingerprint: {fingerprint}
                 if icon:
                     p += [icon_path]
 
-
                 if official and _official == "False":
                     continue
 
