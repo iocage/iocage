@@ -141,6 +141,12 @@ def cli(**kwargs):
     release = kwargs.get("release", None)
     _file = kwargs.get("_file", False)
 
+    if kwargs['plugin_file'] and kwargs['name'] is None:
+            ioc_common.logit({
+                "level": "EXCEPTION",
+                "message": "Please supply a --name for plugin-file."
+            })
+
     if release is not None:
         if release.lower() == "latest":
             release = ioc_common.parse_latest_release()
