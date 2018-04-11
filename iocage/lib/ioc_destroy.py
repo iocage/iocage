@@ -73,7 +73,7 @@ class IOCDestroy(object):
 
             # This is just to setup a replacement.
             path = path.replace("templates", "jails")
-            
+
             try:
                 uuid = dataset.name.partition(
                     f"{path}")[1].rsplit("/", 1)[1]
