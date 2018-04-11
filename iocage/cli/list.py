@@ -29,61 +29,24 @@ import iocage.lib.iocage as ioc
 
 @click.command(
     name="list",
-    help="List a specified dataset type, by default"
-    " lists all jails.")
-@click.option(
-    "--release",
-    "--base",
-    "-r",
-    "-b",
-    "dataset_type",
-    flag_value="base",
-    help="List all bases.")
-@click.option(
-    "--template",
-    "-t",
-    "dataset_type",
-    flag_value="template",
-    help="List all templates.")
-@click.option(
-    "--header",
-    "-h",
-    "-H",
-    is_flag=True,
-    default=True,
-    help="For scripting, use tabs for separators.")
-@click.option(
-    "--long",
-    "-l",
-    "_long",
-    is_flag=True,
-    default=False,
-    help="Show the full uuid and ip4 address.")
-@click.option(
-    "--remote",
-    "-R",
-    is_flag=True,
-    help="Show remote's available "
-    "RELEASEs.")
+    help="List a specified dataset type, by default lists all jails.")
+@click.option("--release", "--base", "-r", "-b", "dataset_type",
+              flag_value="base", help="List all bases.")
+@click.option("--template", "-t", "dataset_type", flag_value="template",
+              help="List all templates.")
+@click.option("--header", "-h", "-H", is_flag=True, default=True,
+              help="For scripting, use tabs for separators.")
+@click.option("--long", "-l", "_long", is_flag=True, default=False,
+              help="Show the full uuid and ip4 address.")
+@click.option("--remote", "-R", is_flag=True,
+              help="Show remote's available RELEASEs.")
 @click.option("--plugins", "-P", is_flag=True, help="Show available plugins.")
-@click.option(
-    "--http",
-    default=True,
-    help="Have --remote use HTTP instead.",
-    is_flag=True)
-@click.option(
-    "--sort",
-    "-s",
-    "_sort",
-    default="name",
-    nargs=1,
-    help="Sorts the list by the given type")
-@click.option(
-    "--quick",
-    "-q",
-    is_flag=True,
-    default=False,
-    help="Lists all jails with less processing and fields.")
+@click.option("--http", default=True, help="Have --remote use HTTP instead.",
+              is_flag=True)
+@click.option("--sort", "-s", "_sort", default="name", nargs=1,
+              help="Sorts the list by the given type")
+@click.option("--quick", "-q", is_flag=True, default=False,
+              help="Lists all jails with less processing and fields.")
 def cli(dataset_type, header, _long, remote, http, plugins, _sort, quick):
     """This passes the arg and calls the jail_datasets function."""
     freebsd_version = ioc_common.checkoutput(["freebsd-version"])

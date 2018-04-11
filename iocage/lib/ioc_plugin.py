@@ -141,6 +141,13 @@ class IOCPlugin(object):
             iocage.lib.ioc_common.logit(
                 {
                     "level": "INFO",
+                    "message": f"  Official Plugin: {conf['official']}"
+                },
+                _callback=self.callback,
+                silent=self.silent)
+            iocage.lib.ioc_common.logit(
+                {
+                    "level": "INFO",
                     "message": f"  Using RELEASE: {conf['release']}"
                 },
                 _callback=self.callback,
@@ -634,9 +641,10 @@ fingerprint: {fingerprint}
                 name = p[0]
                 desc, pkg = re.sub(r'[()]', '', p[1]).rsplit(" ", 1)
                 license = plugins[pkg].get("license", "")
+                official = str(plugins[pkg].get("official", False))
                 icon_path = plugins[pkg].get("icon", None)
 
-                p = [name, desc, pkg]
+                p = [name, desc, pkg, official]
 
                 if not list_header:
                     p += [license]
@@ -654,7 +662,7 @@ fingerprint: {fingerprint}
                 else:
                     table = texttable.Texttable(max_width=80)
 
-                list_header = ["NAME", "DESCRIPTION", "PKG"]
+                list_header = ["NAME", "DESCRIPTION", "PKG", "OFFICIAL"]
 
                 if icon:
                     list_header += ["ICON"]
