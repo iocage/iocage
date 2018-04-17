@@ -906,6 +906,7 @@ class IOCage(object):
         hardened = kwargs.get("hardened", False)
         header = kwargs.pop("header", True)
         _long = kwargs.pop("_long", False)
+        official = kwargs.pop("official", False)
 
         freebsd_version = ioc_common.checkoutput(["freebsd-version"])
         arch = os.uname()[4]
@@ -937,7 +938,7 @@ class IOCage(object):
             if _list:
                 rel_list = ioc_plugin.IOCPlugin().fetch_plugin_index(
                     "", _list=True, list_header=header, list_long=_long,
-                    icon=True)
+                    icon=True, official=official)
 
                 return rel_list
 
@@ -961,7 +962,7 @@ class IOCage(object):
                     plugin=name,
                     exit_on_error=self.exit_on_error,
                     **kwargs).fetch_plugin_index(
-                        props, accept_license=accept)
+                        props, accept_license=accept, official=official)
 
                 return
 

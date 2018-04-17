@@ -141,6 +141,13 @@ class IOCPlugin(object):
             iocage.lib.ioc_common.logit(
                 {
                     "level": "INFO",
+                    "message": f"  Official Plugin: {conf['official']}"
+                },
+                _callback=self.callback,
+                silent=self.silent)
+            iocage.lib.ioc_common.logit(
+                {
+                    "level": "INFO",
                     "message": f"  Using RELEASE: {conf['release']}"
                 },
                 _callback=self.callback,
@@ -580,7 +587,8 @@ fingerprint: {fingerprint}
                            list_header=False,
                            list_long=False,
                            accept_license=False,
-                           icon=False):
+                           icon=False,
+                           official=False):
 
         if self.server == "download.freebsd.org":
             git_server = "https://github.com/freenas/iocage-ix-plugins.git"
@@ -614,7 +622,7 @@ fingerprint: {fingerprint}
         with open(f"{self.iocroot}/.plugin_index/INDEX", "r") as plugins:
             plugins = json.load(plugins)
 
-        _plugins = self.__fetch_sort_plugin__(plugins)
+        _plugins = self.__fetch_sort_plugin__(plugins, official=official)
 
         if self.plugin is None and not _list:
             for p in _plugins:
@@ -634,15 +642,19 @@ fingerprint: {fingerprint}
                 name = p[0]
                 desc, pkg = re.sub(r'[()]', '', p[1]).rsplit(" ", 1)
                 license = plugins[pkg].get("license", "")
+                _official = str(plugins[pkg].get("official", False))
                 icon_path = plugins[pkg].get("icon", None)
 
                 p = [name, desc, pkg]
 
                 if not list_header:
-                    p += [license]
+                    p += [license, _official]
 
                 if icon:
                     p += [icon_path]
+
+                if official and _official == "False":
+                    continue
 
                 plugin_list.append(p)
 
@@ -731,7 +743,7 @@ fingerprint: {fingerprint}
 
         return plugin.rsplit("(", 1)[1].replace(")", "")
 
-    def __fetch_sort_plugin__(self, plugins):
+    def __fetch_sort_plugin__(self, plugins, official=False):
         """
         Sort the list by plugin.
         """
@@ -739,6 +751,11 @@ fingerprint: {fingerprint}
         plugin_list = []
 
         for plugin in plugins:
+            _official = str(plugins[plugin].get("official", False))
+
+            if official and _official == "False":
+                continue
+
             _plugin = f"{plugins[plugin]['name']} -" \
                 f" {plugins[plugin]['description']}" \
                       f" ({plugin})"

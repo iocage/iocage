@@ -471,6 +471,7 @@ class IOCCreate(object):
         jail_props["cloned_release"] = self.release
         jail_props["jail_zfs_dataset"] = f"iocage/jails/{jail_uuid}/data"
         jail_props["depends"] = "none"
+        jail_props["vnet_interfaces"] = "none"
 
         return jail_props
 
@@ -489,7 +490,7 @@ class IOCCreate(object):
             status, jid = iocage.lib.ioc_list.IOCList().list_get_jid(jail_uuid)
 
         # Connectivity test courtesy David Cottlehuber off Google Group
-        srv_connect_cmd = ["drill", f"_http._tcp.{repo}", "SRV"]
+        srv_connect_cmd = ["drill", "-t", f"{repo} SRV"]
         dnssec_connect_cmd = ["drill", "-D", f"{repo}"]
 
         iocage.lib.ioc_common.logit({
@@ -503,8 +504,12 @@ class IOCCreate(object):
             silent=True).exec_jail()
 
         if srv_err:
-            raise RuntimeError(f"{srv_connection}\n"
-                               f"Command run: {' '.join(srv_connect_cmd)}")
+            iocage.lib.ioc_common.logit({
+                "level": "EXCEPTION",
+                "message": "{repo} could not be reached, please check your DNS"
+            },
+                _callback=self.callback,
+                silent=self.silent)
 
         iocage.lib.ioc_common.logit({
             "level": "INFO",
@@ -517,8 +522,13 @@ class IOCCreate(object):
             exit_on_error=self.exit_on_error, silent=True).exec_jail()
 
         if dnssec_err:
-            raise RuntimeError(f"{dnssec_connection}\n"
-                               f"Command run: {' '.join(dnssec_connect_cmd)}")
+            # Not fatal, they may not be using DNSSEC
+            iocage.lib.ioc_common.logit({
+                "level": "ERROR",
+                "message": "{repo} could not be reached via DNSSEC, check DNS"
+            },
+                _callback=self.callback,
+                silent=self.silent)
 
         if isinstance(self.pkglist, str):
             with open(self.pkglist, "r") as j:
