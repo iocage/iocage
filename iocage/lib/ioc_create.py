@@ -46,7 +46,7 @@ class IOCCreate(object):
 
     def __init__(self, release, props, num, pkglist=None, plugin=False,
                  migrate=False, config=None, silent=False, template=False,
-                 short=False, basejail=False, thickjail=False, empty=False, 
+                 short=False, basejail=False, thickjail=False, empty=False,
                  uuid=None, clone=False, exit_on_error=False, callback=None):
         self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage.lib.ioc_json.IOCJson(self.pool).json_get_value(
@@ -272,28 +272,29 @@ class IOCCreate(object):
                               jail], stdout=su.PIPE).communicate()
                 else:
                     try:
-                        su.Popen(["zfs", "create", "-p", jail], 
+                        su.Popen(["zfs", "create", "-p", jail],
                                   stdout=su.PIPE).communicate()
                         zfs_send = su.Popen(["zfs", "send",
-                                  f"{self.pool}/iocage/releases/"
-                                  f"{self.release}/root@"
-                                  f"{jail_uuid}"], stdout=su.PIPE)
+                                             f"{self.pool}/iocage/releases/"
+                                             f"{self.release}/root@"
+                                             f"{jail_uuid}"], stdout=su.PIPE)
                         su.check_call(["zfs", "receive", "-F", jail],
-                                  stdin=zfs_send.stdout)
+                                      stdin=zfs_send.stdout)
                     except su.CalledProcessError:
-                        su.Popen(["zfs", "destroy", "-rf", 
-                                  f"{self.pool}/iocage/jails/{jail_uuid}"], stdout=su.PIPE).communicate()
-                        su.Popen(["zfs", "destroy", "-r", 
+                        su.Popen(["zfs", "destroy", "-rf",
+                                  f"{self.pool}/iocage/jails/{jail_uuid}"],
+                                  stdout=su.PIPE).communicate()
+                        su.Popen(["zfs", "destroy", "-r",
                                   f"{self.pool}/iocage/releases/"
                                   f"{self.release}/root@"
-                                  f"{jail_uuid}"], 
+                                  f"{jail_uuid}"],
                                   stdout=su.PIPE).communicate()
                         iocage.lib.ioc_common.logit({
                             "level": "EXCEPTION",
                             "message": "Can't copy release!"
                         }, exit_on_error=self.exit_on_error,
                             _callback=self.callback,
-                            silent=self.silent)               
+                            silent=self.silent)  
             else:
                 try:
                     iocage.lib.ioc_common.checkoutput(
