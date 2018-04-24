@@ -294,7 +294,7 @@ class IOCCreate(object):
                             "message": "Can't copy release!"
                         }, exit_on_error=self.exit_on_error,
                             _callback=self.callback,
-                            silent=self.silent)  
+                            silent=self.silent)
             else:
                 try:
                     iocage.lib.ioc_common.checkoutput(
