@@ -82,8 +82,8 @@ def validate_count(ctx, param, value):
 @click.option("--force", "-f", is_flag=True, default=False,
               help="Skip the interactive question.")
 @click.argument("props", nargs=-1)
-def cli(release, template, count, props, pkglist, basejail, thickjail, empty, short,
-        name, _uuid, force):
+def cli(release, template, count, props, pkglist, basejail, thickjail, empty,
+        short, name, _uuid, force):
 
     if name:
         # noinspection Annotator
