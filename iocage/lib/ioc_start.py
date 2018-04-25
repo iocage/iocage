@@ -28,7 +28,6 @@ import os
 import re
 import shutil
 import subprocess as su
-import netifaces
 
 import iocage.lib.ioc_common
 import iocage.lib.ioc_json
