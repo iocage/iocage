@@ -371,7 +371,15 @@ class IOCCreate(object):
 
         final_line = f"{etc_hosts_ip_addr}\t{jail_hostname}\n"
 
-        if not self.clone:
+        if self.empty:
+            open(f"{location}/fstab", "wb").close()
+
+            config["release"] = "EMPTY"
+            config["cloned_release"] = "EMPTY"
+
+            iocjson.json_write(config)
+
+        elif not self.clone:
             open(f"{location}/fstab", "wb").close()
 
             with open(f"{location}/root/etc/hosts", "r") as _etc_hosts:
@@ -438,12 +446,6 @@ class IOCCreate(object):
                                               destination, "nullfs", "ro", "0",
                                               "0", silent=True)
                 config["basejail"] = "yes"
-
-            iocjson.json_write(config)
-
-        if self.empty:
-            config["release"] = "EMPTY"
-            config["cloned_release"] = "EMPTY"
 
             iocjson.json_write(config)
 
