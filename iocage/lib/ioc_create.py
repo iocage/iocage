@@ -46,8 +46,8 @@ class IOCCreate(object):
 
     def __init__(self, release, props, num, pkglist=None, plugin=False,
                  migrate=False, config=None, silent=False, template=False,
-                 short=False, basejail=False, empty=False, uuid=None,
-                 clone=False, exit_on_error=False, callback=None):
+                 short=False, basejail=False, thickjail=False, empty=False,
+                 uuid=None, clone=False, exit_on_error=False, callback=None):
         self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage.lib.ioc_json.IOCJson(self.pool).json_get_value(
             "iocroot")
@@ -61,6 +61,7 @@ class IOCCreate(object):
         self.template = template
         self.short = short
         self.basejail = basejail
+        self.thickjail = thickjail
         self.empty = empty
         self.uuid = uuid
         self.clone = clone
@@ -263,9 +264,37 @@ class IOCCreate(object):
                         raise RuntimeError(
                             f"RELEASE: {self.release} not found!")
 
-                su.Popen(["zfs", "clone", "-p",
-                          f"{self.pool}/iocage/releases/{self.release}/root@"
-                          f"{jail_uuid}", jail], stdout=su.PIPE).communicate()
+                if not self.thickjail:
+                    su.Popen(["zfs", "clone", "-p",
+                              f"{self.pool}/iocage/releases/"
+                              f"{self.release}/root@"
+                              f"{jail_uuid}",
+                              jail], stdout=su.PIPE).communicate()
+                else:
+                    try:
+                        su.Popen(["zfs", "create", "-p", jail],
+                                  stdout=su.PIPE).communicate()
+                        zfs_send = su.Popen(["zfs", "send",
+                                             f"{self.pool}/iocage/releases/"
+                                             f"{self.release}/root@"
+                                             f"{jail_uuid}"], stdout=su.PIPE)
+                        su.check_call(["zfs", "receive", "-F", jail],
+                                      stdin=zfs_send.stdout)
+                    except su.CalledProcessError:
+                        su.Popen(["zfs", "destroy", "-rf",
+                                  f"{self.pool}/iocage/jails/{jail_uuid}"],
+                                  stdout=su.PIPE).communicate()
+                        su.Popen(["zfs", "destroy", "-r",
+                                  f"{self.pool}/iocage/releases/"
+                                  f"{self.release}/root@"
+                                  f"{jail_uuid}"],
+                                  stdout=su.PIPE).communicate()
+                        iocage.lib.ioc_common.logit({
+                            "level": "EXCEPTION",
+                            "message": "Can't copy release!"
+                        }, exit_on_error=self.exit_on_error,
+                            _callback=self.callback,
+                            silent=self.silent)
             else:
                 try:
                     iocage.lib.ioc_common.checkoutput(
@@ -342,7 +371,15 @@ class IOCCreate(object):
 
         final_line = f"{etc_hosts_ip_addr}\t{jail_hostname}\n"
 
-        if not self.clone:
+        if self.empty:
+            open(f"{location}/fstab", "wb").close()
+
+            config["release"] = "EMPTY"
+            config["cloned_release"] = "EMPTY"
+
+            iocjson.json_write(config)
+
+        elif not self.clone:
             open(f"{location}/fstab", "wb").close()
 
             with open(f"{location}/root/etc/hosts", "r") as _etc_hosts:
@@ -409,12 +446,6 @@ class IOCCreate(object):
                                               destination, "nullfs", "ro", "0",
                                               "0", silent=True)
                 config["basejail"] = "yes"
-
-            iocjson.json_write(config)
-
-        if self.empty:
-            config["release"] = "EMPTY"
-            config["cloned_release"] = "EMPTY"
 
             iocjson.json_write(config)
 
