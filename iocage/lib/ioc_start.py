@@ -95,11 +95,11 @@ class IOCStart(object):
                 hostid = _file.read().strip()
             if self.conf["hostid"] != hostid:
                 iocage.lib.ioc_common.logit({
-                    "level": "EXCEPTION",
+                    "level": "ERROR",
                     "message": f"Hostid is not matiching for {self.uuid} and"
                                " 'hostid_strict_check' is on!"
-                }, exit_on_error=self.exit_on_error, _callback=self.callback,
-                    silent=self.silent)
+                }, _callback=self.callback, silent=self.silent)
+            return
 
         mount_procfs = self.conf["mount_procfs"]
         host_domainname = self.conf["host_domainname"]
