@@ -90,7 +90,7 @@ class IOCStart(object):
             }, exit_on_error=self.exit_on_error, _callback=self.callback,
                 silent=self.silent)
 
-        if self.conf["hosid_strict_check"] == "on":
+        if self.conf["hostid_strict_check"] == "on":
             with open("/etc/hostid", "r") as _file:
                 hostid = _file.read().strip()
             if self.conf["hosid"] != hostid:
