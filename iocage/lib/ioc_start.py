@@ -90,6 +90,18 @@ class IOCStart(object):
             }, exit_on_error=self.exit_on_error, _callback=self.callback,
                 silent=self.silent)
 
+        if self.conf["hostid_strict_check"] == "on":
+            with open("/etc/hostid", "r") as _file:
+                hostid = _file.read().strip()
+            if self.conf["hostid"] != hostid:
+                iocage.lib.ioc_common.logit({
+                    "level": "ERROR",
+                    "message": f"{self.uuid} hostid is not matiching and"
+                               " 'hostid_strict_check' is on!"
+                               " - Not starting jail"
+                }, _callback=self.callback, silent=self.silent)
+            return
+
         mount_procfs = self.conf["mount_procfs"]
         host_domainname = self.conf["host_domainname"]
         host_hostname = self.conf["host_hostname"]
