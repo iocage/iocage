@@ -94,7 +94,8 @@ class IOCStart(object):
             with open("/etc/hostid", "r") as _file:
                 hostid = _file.read().strip()
             if self.conf["hostid"] != hostid:
-                msg = f"Hostid is not matiching for {self.uuid} an 'hosid_strict_check' is on!"
+                msg = f"Hostid is not matiching for {self.uuid} and"
+                       " 'hostid_strict_check' is on!"
                 iocage.lib.ioc_common.logit({
                     "level": "EXCEPTION",
                     "message": msg
