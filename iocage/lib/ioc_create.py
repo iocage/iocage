@@ -498,6 +498,7 @@ class IOCCreate(object):
         # values.
         jail_props["host_hostname"] = jail_uuid
         jail_props["host_hostuuid"] = jail_uuid
+        jail_props["hostid_strict_check"] = "off"
         jail_props["release"] = release
         jail_props["cloned_release"] = self.release
         jail_props["jail_zfs_dataset"] = f"iocage/jails/{jail_uuid}/data"
