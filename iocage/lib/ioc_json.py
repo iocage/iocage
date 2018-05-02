@@ -811,7 +811,7 @@ class IOCJson(object):
     @staticmethod
     def json_get_version():
         """Sets the iocage configuration version."""
-        version = "10"
+        version = "11"
 
         return version
 
@@ -1001,6 +1001,15 @@ class IOCJson(object):
         # Set all keys, even if it's the same value.
         conf["CONFIG_VERSION"] = self.json_get_version()
 
+        # Version 11 keys
+        try:
+           hostid_stict_check = conf["hostid_stict_check"]
+        except KeyError:
+            hostid_stict_check = "off"
+
+        # Set all keys, even if it's the same value.
+        conf["hostid_stict_check"] = hostid_stict_check
+        
         if not default:
             try:
                 if not renamed:
@@ -1151,6 +1160,7 @@ class IOCJson(object):
             "owner": ("string", ),
             "priority": str(tuple(range(1, 100))),
             "hostid": ("string", ),
+            "hostid_strict_check": ("no", "yes"),
             "jail_zfs": ("off", "on"),
             "jail_zfs_dataset": ("string", ),
             "jail_zfs_mountpoint": ("string", ),
@@ -1699,6 +1709,7 @@ class IOCJson(object):
                 "last_started": "none",
                 "template": "no",
                 "hostid": hostid,
+                "hostid_strict_check": "off",
                 "jail_zfs": "off",
                 "jail_zfs_mountpoint": "none",
                 "mount_procfs": "0",

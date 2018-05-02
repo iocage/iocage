@@ -90,6 +90,17 @@ class IOCStart(object):
             }, exit_on_error=self.exit_on_error, _callback=self.callback,
                 silent=self.silent)
 
+        if self.conf["hosid_strict_check"] == "on"
+            with open("/etc/hostid", "r") as _file:
+                hostid = _file.read().strip()
+            if self.conf["hosid"] != hostid
+                msg = f"Hostid is not matiching for {self.uuid} an 'hosid_strict_check' is on!"
+                iocage.lib.ioc_common.logit({
+                    "level": "EXCEPTION",
+                    "message": msg
+                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                    silent=self.silent)
+
         mount_procfs = self.conf["mount_procfs"]
         host_domainname = self.conf["host_domainname"]
         host_hostname = self.conf["host_hostname"]
