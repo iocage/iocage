@@ -1003,13 +1003,13 @@ class IOCJson(object):
 
         # Version 11 keys
         try:
-           hostid_strict_check = conf["hostid_strict_check"]
+            hostid_strict_check = conf["hostid_strict_check"]
         except KeyError:
             hostid_strict_check = "off"
 
         # Set all keys, even if it's the same value.
         conf["hostid_strict_check"] = hostid_strict_check
-        
+
         if not default:
             try:
                 if not renamed:
