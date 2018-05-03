@@ -141,7 +141,8 @@ class IOCPlugin(object):
             iocage.lib.ioc_common.logit(
                 {
                     "level": "INFO",
-                    "message": f"  Official Plugin: {conf['official']}"
+                    "message":
+                    f"  Official Plugin: {conf.get('official', False)}"
                 },
                 _callback=self.callback,
                 silent=self.silent)
@@ -1145,7 +1146,7 @@ fingerprint: {fingerprint}
             iocage.lib.ioc_common.logit(
                 {
                     "level": "EXCEPTION",
-                    "message": "An error occured! Please read above"
+                    "message": "An error occurred! Please read above"
                 },
                 exit_on_error=self.exit_on_error)
 

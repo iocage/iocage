@@ -70,6 +70,9 @@ def validate_count(ctx, param, value):
               help="Set the new jail type to a basejail. Basejails"
                    " mount the specified RELEASE directories as nullfs"
                    " mounts over the jail's directories.")
+@click.option("--thickjail", "-T", is_flag=True, default=False,
+              help="Set the new jail type to a thickjail. Thickjails"
+                   " are copied (not cloned) from specified RELEASE.")
 @click.option("--empty", "-e", is_flag=True, default=False,
               help="Create an empty jail used for unsupported or custom"
                    " jails.")
@@ -79,8 +82,8 @@ def validate_count(ctx, param, value):
 @click.option("--force", "-f", is_flag=True, default=False,
               help="Skip the interactive question.")
 @click.argument("props", nargs=-1)
-def cli(release, template, count, props, pkglist, basejail, empty, short,
-        name, _uuid, force):
+def cli(release, template, count, props, pkglist, basejail, thickjail, empty,
+        short, name, _uuid, force):
 
     if name:
         # noinspection Annotator
@@ -142,7 +145,7 @@ def cli(release, template, count, props, pkglist, basejail, empty, short,
     try:
         iocage.create(release, props, count, pkglist=pkglist,
                       template=template, short=short, _uuid=_uuid,
-                      basejail=basejail, empty=empty)
+                      basejail=basejail, thickjail=thickjail, empty=empty)
     except RuntimeError as err:
         if template and "Dataset" in str(err):
             # We want to list the available templates first

@@ -28,7 +28,6 @@ import os
 import re
 import shutil
 import subprocess as su
-import netifaces
 
 import iocage.lib.ioc_common
 import iocage.lib.ioc_json
@@ -90,6 +89,18 @@ class IOCStart(object):
                 "message": msg
             }, exit_on_error=self.exit_on_error, _callback=self.callback,
                 silent=self.silent)
+
+        if self.conf["hostid_strict_check"] == "on":
+            with open("/etc/hostid", "r") as _file:
+                hostid = _file.read().strip()
+            if self.conf["hostid"] != hostid:
+                iocage.lib.ioc_common.logit({
+                    "level": "ERROR",
+                    "message": f"{self.uuid} hostid is not matiching and"
+                               " 'hostid_strict_check' is on!"
+                               " - Not starting jail"
+                }, _callback=self.callback, silent=self.silent)
+            return
 
         mount_procfs = self.conf["mount_procfs"]
         host_domainname = self.conf["host_domainname"]
@@ -601,18 +612,6 @@ class IOCStart(object):
             iocage.lib.ioc_common.checkoutput(
                 ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
                  "ifconfig", jail_nic, "link", mac_b], stderr=su.STDOUT)
-
-            # Host
-            gws = netifaces.gateways()
-            def_iface = gws["default"][netifaces.AF_INET][1]
-
-            try:
-                # Host interface also needs to be on the bridge
-                iocage.lib.ioc_common.checkoutput(
-                    ["ifconfig", bridge, "addm", def_iface], stderr=su.STDOUT)
-            except su.CalledProcessError:
-                # Already exists
-                pass
 
             iocage.lib.ioc_common.checkoutput(
                 ["ifconfig", bridge, "addm", f"{nic}:{jid}", "up"],
