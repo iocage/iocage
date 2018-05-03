@@ -1,4 +1,4 @@
-.Dd February 27, 2018
+.Dd April 17, 2018
 .Dt IOCAGE 8
 .Os
 .Sh NAME
@@ -83,7 +83,8 @@
 .Cm fetch
 .Op Fl -accept
 .Op Fl -noaccept
-.Op Fl -plugins Ar PROPERTIES
+.Op Fl -plugins Ar OPTIONS
+.Op Fl -plugins Fl -official Ar OPTIONS
 .Op Fl E | -eol
 .Op Fl F | -files
 .Op Fl NE | -noeol
@@ -141,6 +142,7 @@
 .Op Fl q | -quick
 .Op Fl s | -sort
 .Op Fl t | -template | Cm dataset_type
+.Op Fl PRO
 .\" == MIGRATE ==
 .Nm
 .Cm migrate
@@ -551,13 +553,15 @@ required release property or selecting the appropriate RELEASE from
 the menu list.
 .Pp
 Options:
-.Bl -tag -width "[-P | --plugin-file text]"
+.Bl -tag -width "[-plugins -official OPTIONS]"
 .It Op Fl -accept
 Accept the plugin's LICENSE agreement.
 .It Op Fl -noaccept
 Do not accept the plugin's LICENSE agreement.
-.It Op Fl -plugins Ar PROPERTIES
-List all available plugins for creation.
+.It Op Fl -plugins Ar OPTIONS
+Fetch and create a plugin.
+.It Op Fl -plugins Fl -official Ar OPTIONS
+Fetch and create an official FreeNAS plugin.
 .It Op Fl E | -eol
 Enable End Of Life (EOL) checking upstream.
 .It Op Fl F | -files Ar TEXT
@@ -734,7 +738,9 @@ to use HTTP.
 Used in scripting.
 Use tabs for separators.
 .It Op Fl P | -plugins
-Shows available plugins.
+Shows plugins installed on the system.
+.It Op Fl PRO
+Lists official plugins available for download.
 .It Op Fl R | -remote
 Shows available RELEASE options for remote.
 .It Op Fl b | r | -base | -release | Cm dataset_type
