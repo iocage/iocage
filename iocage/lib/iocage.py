@@ -392,11 +392,11 @@ class IOCage(object):
                 "level": "INFO",
                 "message":
                 (
-                    "iocage is deprecated. "
+                    "iocage chroot is deprecated. "
                     "If you need to execute a {} inside the jail use: {}"
                 ).format(*[
-                  ["shell", "iocage console"],
-                  ["command", "iocage exec"]
+                    ["shell", "iocage console"],
+                    ["command", "iocage exec"]
                 ][int(len(command) != 0)])
             },
             exit_on_error=self.exit_on_error,
