@@ -386,15 +386,15 @@ class IOCage(object):
             self.__remove_activate_comment(pool)
 
     def chroot(self, command):
-        """Depracated: Chroots into a jail and runs a command, or the shell."""
+        """Deprecated: Chroots into a jail and runs a command, or the shell."""
         ioc_common.logit(
             {
                 "level": "INFO",
                 "message": 
-                ("iocage chroot is depracated. If you need execute shell inside"
-                 " jail use: iocage console" if len(command) == 0 else 
-                 "iocage chroot is depracated. If you need execute command"
-                 " inside jail use: iocage execute")
+                ("iocage chroot is deprecated. If you need to execute a shell"
+                 " inside the jail use: iocage console" if len(command) == 0 else 
+                 "iocage chroot is deprecated. If you need to execute a command"
+                 " inside the jail use: iocage exec")
             },
             exit_on_error=self.exit_on_error,
             _callback=self.callback,
