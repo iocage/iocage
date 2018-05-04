@@ -393,8 +393,7 @@ class IOCage(object):
                 "message":
                 ("iocage chroot is deprecated. If you need to execute a shell"
                  " inside the jail use: iocage console" if len(command) == 0
-                 else
-                 "iocage chroot is deprecated. If you need to execute a"
+                 else " iocage chroot is deprecated. If you need to execute a"
                  " command inside the jail use: iocage exec")
             },
             exit_on_error=self.exit_on_error,
