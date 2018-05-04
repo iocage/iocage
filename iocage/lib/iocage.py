@@ -423,9 +423,11 @@ class IOCage(object):
                 silent=self.silent)
 
         if len(command) == 0:
-                chroot = su.Popen(["jexec", f"ioc-{uuid.replace('.', '_')}", "/bin/sh"])
+                chroot = su.Popen(["jexec", f"ioc-{uuid.replace('.', '_')}",
+                                   "/bin/sh"])
         else:
-                chroot = su.Popen(["jexec", f"ioc-{uuid.replace('.', '_')}"] + command)
+                chroot = su.Popen(["jexec", f"ioc-{uuid.replace('.', '_')}"]
+                                  + command)
         chroot.communicate()
 
         udevfs_stderr = self.__umount__(f"{path}/root/dev", "devfs")
