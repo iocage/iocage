@@ -386,82 +386,20 @@ class IOCage(object):
             self.__remove_activate_comment(pool)
 
     def chroot(self, command):
-        """Chroots into a jail and runs a command, or the shell."""
-        # We may be getting ';', '&&' and so forth. Adding the shell for
-        # safety.
-        command = list(command)
-
-        # We may be getting ';', '&&' and so forth. Adding the shell for
-        # safety.
-
-        if len(command) == 1:
-            command = ["/bin/sh", "-c"] + command
-
-        uuid, path = self.__check_jail_existence__()
-        devfs_stderr = self.__mount__(f"{path}/root/dev", "devfs")
-
-        if devfs_stderr:
-            ioc_common.logit(
-                {
-                    "level": "EXCEPTION",
-                    "message": "Mounting devfs failed!"
-                },
-                exit_on_error=self.exit_on_error,
-                _callback=self.callback,
-                silent=self.silent)
-
-        fstab_stderr = self.__mount__(f"{path}/fstab", "fstab")
-
-        if fstab_stderr:
-            ioc_common.logit(
-                {
-                    "level": "EXCEPTION",
-                    "message": "Mounting fstab failed!"
-                },
-                exit_on_error=self.exit_on_error,
-                _callback=self.callback,
-                silent=self.silent)
-
-        chroot = su.Popen(["chroot", f"{path}/root"] + command)
-        chroot.communicate()
-
-        udevfs_stderr = self.__umount__(f"{path}/root/dev", "devfs")
-
-        if udevfs_stderr:
-            ioc_common.logit(
-                {
-                    "level": "EXCEPTION",
-                    "message": "Unmounting devfs failed!"
-                },
-                exit_on_error=self.exit_on_error,
-                _callback=self.callback,
-                silent=self.silent)
-
-        ufstab_stderr = self.__umount__(f"{path}/fstab", "fstab")
-
-        if ufstab_stderr:
-            if b"fstab reading failure\n" in ufstab_stderr:
-                # By default our fstab is empty and will throw this error.
-                pass
-            else:
-                ioc_common.logit(
-                    {
-                        "level": "EXCEPTION",
-                        "message": "Unmounting fstab failed!"
-                    },
-                    exit_on_error=self.exit_on_error,
-                    _callback=self.callback,
-                    silent=self.silent)
-
-        if chroot.returncode:
-            ioc_common.logit(
-                {
-                    "level": "WARNING",
-                    "message": "Chroot had a non-zero exit code!"
-                },
-                _callback=self.callback,
-                silent=self.silent)
-
+        """Depracated: Chroots into a jail and runs a command, or the shell."""
+        ioc_common.logit(
+            {
+                "level": "INFO",
+                "message": 
+                ("iocage chroot is depracated. If you need execute shell inside"
+                 " jail use: iocage console" if len(command) == 0 else 
+                 "iocage chroot is depracated. If you need execute command"
+                 " inside jail use: iocage execute")
+            },
+            exit_on_error=self.exit_on_error,
+            _callback=self.callback,
+            silent=self.silent)
+                
     def clean(self, d_type):
         """Destroys all of a specified dataset types."""
 
