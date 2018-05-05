@@ -1609,7 +1609,8 @@ class IOCJson(object):
 
         return (conf, False, True)
 
-    def json_check_default_config(self):
+    @property
+    def defaults(self):
         """This sets up the default configuration for jails."""
         _, iocroot = _get_pool_and_iocroot()
         default_json_location = f"{iocroot}/defaults.json"

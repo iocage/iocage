@@ -1296,7 +1296,7 @@ class IOCage(object):
 
         if self.jail == "default":
             ioc_json.IOCJson(
-                exit_on_error=self.exit_on_error).json_check_default_config()
+                exit_on_error=self.exit_on_error).defaults
             default = True
         else:
             default = False
