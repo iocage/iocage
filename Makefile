@@ -8,9 +8,9 @@ install:
 	test -d .git && git submodule init py-libzfs && git submodule update py-libzfs || true
 	python3.6 -m ensurepip
 	export FREEBSD_SRC=$(SRC_BASE) && cd py-libzfs && python3.6 setup.py build && python3.6 setup.py install
-	pip-3.6 install -U .
+	python3.6 -m pip install -U .
 uninstall:
-	pip-3.6 uninstall -y iocage
+	python3.6 -m pip uninstall -y iocage
 test:
 	pytest --zpool $(ZPOOL) --server $(SERVER)
 help:
