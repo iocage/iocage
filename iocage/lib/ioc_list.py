@@ -121,7 +121,7 @@ class IOCList(object):
                 }, exit_on_error=self.exit_on_error, _callback=self.callback,
                     silent=self.silent)
 
-            uuid = conf["host_hostuuid"]
+            uuid = conf.get("host_hostuuid", jail.name.split("/").pop())
             ip4 = conf["ip4_addr"]
 
             jail_list.append([uuid, ip4])
@@ -153,7 +153,7 @@ class IOCList(object):
             mountpoint = jail.properties["mountpoint"].value
             conf = iocage.lib.ioc_json.IOCJson(mountpoint).json_load()
 
-            uuid = conf["host_hostuuid"]
+            uuid = conf.get("host_hostuuid", jail.name.split("/").pop())
 
             if not self.full:
                 # We only want to show the first 8 characters of a UUID,
