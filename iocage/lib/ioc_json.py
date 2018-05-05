@@ -50,7 +50,7 @@ def _get_pool_and_iocroot():
     return pool, iocroot
 
 
-class IOCJson(object):
+class IOCJson(dict):
 
     """
     Migrates old iocage configurations(UCL and ZFS Props) to the new JSON
@@ -81,6 +81,7 @@ class IOCJson(object):
 
             force_env = "TRUE"
 
+        self.loaded = False
         self.force = True if force_env == "TRUE" else False
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
 
@@ -417,7 +418,20 @@ class IOCJson(object):
         except KeyError:
             conf = self.json_check_config(conf)
 
-        return conf
+        self.clear()
+        dict.__init__(self, conf)
+        self.loaded = True
+        return self
+
+    def __getitem__(self, key):
+        if self.loaded is False:
+            self.json_load()
+        return dict.__getitem__(self, key)
+
+    def __setitem__(self, key):
+        if self.loaded is False:
+            self.json_load()
+        return dict.__setitem__(self, key)
 
     def json_write(self, data, _file="/config.json"):
         """Write a JSON file at the location given with supplied data."""
