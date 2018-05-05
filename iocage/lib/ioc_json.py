@@ -602,9 +602,11 @@ class IOCJson(dict):
         """Set a property for the specified jail."""
         key, _, value = prop.partition("=")
 
+        pool, iocroot = _get_pool_and_iocroot()
+
         if not default:
             conf = self.json_load()
-            uuid = conf["host_hostuuid"]
+            uuid = conf.get("host_hostuuid", iocroot.split("/").pop())
             status, jid = iocage.lib.ioc_list.IOCList().list_get_jid(uuid)
             conf[key] = value
             sysctls_cmd = ["sysctl", "-d", "security.jail.param"]
@@ -622,7 +624,6 @@ class IOCJson(dict):
             ]
 
             if key == "template":
-                pool, iocroot = _get_pool_and_iocroot()
                 old_location = f"{pool}/iocage/jails/{uuid}"
                 new_location = f"{pool}/iocage/templates/{uuid}"
 
@@ -745,7 +746,6 @@ class IOCJson(dict):
                             silent=self.silent)
                         self.lgr.disabled = True
         else:
-            _, iocroot = _get_pool_and_iocroot()
             with open(f"{iocroot}/defaults.json", "r") as default_json:
                 conf = json.load(default_json)
 
@@ -1361,7 +1361,7 @@ class IOCJson(dict):
         settings = self.json_plugin_load()
         serviceset = settings["serviceset"]
         servicerestart = settings["servicerestart"].split()
-        keys, _, value = ".".join(prop).partition("=")
+        keys, _, value = prop.partition("=")
         prop = keys.split(".")
         restart = False
         readonly = False

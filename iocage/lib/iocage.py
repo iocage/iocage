@@ -1315,8 +1315,7 @@ class IOCage(object):
             silent=self.silent)
 
         if plugin:
-            _prop = prop.split(".")
-            iocjson.json_plugin_set_value(_prop)
+            iocjson.json_plugin_set_value(prop)
 
             return
 

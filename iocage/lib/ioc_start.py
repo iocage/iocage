@@ -104,7 +104,7 @@ class IOCStart(object):
 
         mount_procfs = self.conf["mount_procfs"]
         host_domainname = self.conf["host_domainname"]
-        host_hostname = self.conf["host_hostname"]
+        host_hostname = self.conf.get("host_hostname", self.uuid)
         securelevel = self.conf["securelevel"]
         devfs_ruleset = self.conf["devfs_ruleset"]
         enforce_statfs = self.conf["enforce_statfs"]
