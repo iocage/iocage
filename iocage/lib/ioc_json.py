@@ -41,6 +41,8 @@ import iocage.lib.ioc_stop
 import libzfs
 import netifaces
 
+CURRENT_VERSION = "11"
+
 
 def _get_pool_and_iocroot():
     """For internal setting of pool and iocroot."""
@@ -195,7 +197,7 @@ class IOCJson(dict):
     def json_load(self):
         """Load the JSON at the location given. Returns a JSON object."""
         pool, iocroot = _get_pool_and_iocroot()
-        version = self.json_version
+        version = CURRENT_VERSION
         jail_type, jail_uuid = self.location.rsplit("/", 2)[-2:]
         full_uuid = jail_uuid  # Saves jail_uuid for legacy ZFS migration
         legacy_short = False
@@ -827,11 +829,6 @@ class IOCJson(dict):
                     _callback=self.callback,
                     silent=self.silent)
 
-    @property
-    def json_version(self):
-        """Return the iocage configuration version."""
-        return "11"
-
     def json_check_config(self, conf, default=False):
         """
         Takes JSON as input and checks to see what is missing and adds the
@@ -1016,7 +1013,7 @@ class IOCJson(dict):
         conf["vnet_interfaces"] = vnet_interfaces
 
         # Set all keys, even if it's the same value.
-        conf["CONFIG_VERSION"] = self.json_version
+        conf["CONFIG_VERSION"] = CURRENT_VERSION
 
         # Version 11 keys
         try:
@@ -1660,7 +1657,7 @@ class IOCDefaults(dict):
                 )
         except FileNotFoundError:
             default_props = {
-                "CONFIG_VERSION": self.json_version,
+                "CONFIG_VERSION": CURRENT_VERSION,
                 "interfaces": "vnet0:bridge0",
                 "host_domainname": "none",
                 "exec_fib": "0",
