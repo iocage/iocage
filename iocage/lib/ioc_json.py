@@ -426,7 +426,12 @@ class IOCJson(dict):
     def __getitem__(self, key):
         if self.loaded is False:
             self.json_load()
-        return dict.__getitem__(self, key)
+        try:
+            return dict.__getitem__(self, key)
+        except KeyError:
+            pass
+
+        return self.defaults[key]
 
     def __setitem__(self, key):
         if self.loaded is False:
