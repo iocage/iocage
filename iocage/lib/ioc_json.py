@@ -1615,16 +1615,30 @@ class IOCJson(object):
         if "_defaults" in self.__dir__():
             return self._defaults
 
-        _, iocroot = _get_pool_and_iocroot()
-        default_json_location = f"{iocroot}/defaults.json"
+        default_props = IOCDefaults()
+
+        # They may have had new keys added to their default
+        # configuration, or it never existed.
+        self.json_write(default_props, default_props.location)
+        self._defaults = default_props
+        return default_props
+
+
+class IOCDefaults(dict):
+
+    def __init__(self):
+
         with open("/etc/hostid", "r") as _file:
             hostid = _file.read().strip()
 
         try:
-            with open(default_json_location, "r") as default_json:
+            with open(self.location, "r") as default_json:
                 default_props = json.load(default_json)
-                default_props = self.json_check_config(
-                    default_props, default=True)
+                default_props = IOCJson.json_check_config(
+                    self,
+                    default_props,
+                    default=True
+                )
         except FileNotFoundError:
             default_props = {
                 "CONFIG_VERSION": self.json_version,
@@ -1734,10 +1748,13 @@ class IOCJson(object):
                 "dedup": "off",
                 "reservation": "none"
             }
-        finally:
-            # They may have had new keys added to their default
-            # configuration, or it never existed.
-            self.json_write(default_props, default_json_location)
-            self._defaults = default_props
 
-        return default_props
+        dict.__init__(self, default_props)
+
+    @property
+    def location(self):
+        if "_location" in self.__dir__():
+            return self._location
+        _, iocroot = _get_pool_and_iocroot()
+        self._location = f"{iocroot}/defaults.json"
+        return self._location
