@@ -1612,6 +1612,9 @@ class IOCJson(object):
     @property
     def defaults(self):
         """This sets up the default configuration for jails."""
+        if "_defaults" in self.__dir__():
+            return self._defaults
+
         _, iocroot = _get_pool_and_iocroot()
         default_json_location = f"{iocroot}/defaults.json"
         with open("/etc/hostid", "r") as _file:
@@ -1735,5 +1738,6 @@ class IOCJson(object):
             # They may have had new keys added to their default
             # configuration, or it never existed.
             self.json_write(default_props, default_json_location)
+            self._defaults = default_props
 
         return default_props
