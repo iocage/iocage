@@ -440,10 +440,11 @@ class IOCJson(dict):
             self.json_load()
         return dict.__setitem__(self, key)
 
-    def json_write(self, data, _file="/config.json"):
+    def json_write(self, data, _file=None):
         """Write a JSON file at the location given with supplied data."""
-        with iocage.lib.ioc_common.open_atomic(self.location + _file,
-                                               'w') as out:
+        if _file is None:
+            _file = self.location + "/config.json"
+        with iocage.lib.ioc_common.open_atomic(_file, 'w') as out:
             json.dump(data, out, sort_keys=True, indent=4, ensure_ascii=False)
 
     def _upgrade_pool(self, pool):
@@ -460,14 +461,10 @@ class IOCJson(dict):
         zpools = list(map(lambda x: x.name, list(self.zfs.pools)))
 
         if default:
-            _, iocroot = _get_pool_and_iocroot()
-            with open(f"{iocroot}/defaults.json", "r") as default_json:
-                conf = json.load(default_json)
-
             if prop == "all":
-                return conf
+                return self.defaults
 
-            return conf[prop]
+            return self.defaults[prop]
 
         if prop == "pool":
             match = 0
@@ -807,7 +804,7 @@ class IOCJson(dict):
         else:
             if key in conf:
                 conf[key] = value
-                self.json_write(conf, "/defaults.json")
+                self.json_write(conf, self.defaults.location)
 
                 iocage.lib.ioc_common.logit(
                     {
