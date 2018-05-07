@@ -221,7 +221,7 @@ class IOCUpgrade(object):
         stderr = None if self.silent else su.DEVNULL
 
         etcupdate = su.Popen([
-            "jexec", f"ioc-{uuid.replace('.', '_')}", "/usr/sbin/etcupdate", "-F", "-s",
+            "jexec", f"ioc-{self.uuid.replace('.', '_')}", "/usr/sbin/etcupdate", "-F", "-s",
             "/iocage_upgrade"
         ], stdout=stdout, stderr=stderr)
         etcupdate.communicate()
@@ -264,7 +264,7 @@ class IOCUpgrade(object):
         if not mq.exists():
             mq.mkdir(exist_ok=True, parents=True)
 
-        su.check_call(["jexec", f"ioc-{uuid.replace('.', '_')}", "newaliases"],
+        su.check_call(["jexec", f"ioc-{self.uuid.replace('.', '_')}", "newaliases"],
                       stdout=stdout, stderr=stderr)
         su.Popen([
             "umount", "-f", f"{self.path}/iocage_upgrade"
