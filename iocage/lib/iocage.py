@@ -1146,7 +1146,7 @@ class IOCage(object):
     def rename(self, new_name):
         uuid, _ = self.__check_jail_existence__()
         path = f"{self.pool}/iocage/jails/{uuid}"
-        new_path = path.replace(self.jail, new_name)
+        new_path = path.replace(uuid, new_name)
 
         _silent = self.silent
         self.silent = True
