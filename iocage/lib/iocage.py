@@ -1196,6 +1196,17 @@ class IOCage(object):
             _callback=self.callback,
             silent=self.silent)
 
+        # Adjust mountpoints in fstab
+        old_mountpoint = f"{self.iocroot}/jails/{uuid}"
+        new_mountpoint = f"{self.iocroot}/jails/{new_name}"
+        jail_fstab = f"{new_mountpoint}/fstab"
+
+        with open(jail_fstab, "r") as fstab:
+            with ioc_common.open_atomic(jail_fstab, "w") as _fstab:
+                for line in fstab.readlines():
+                    _fstab.write(line.replace(old_mountpoint, new_mountpoint))
+
+
     def restart(self, soft=False):
         if self._all:
             if not soft:
