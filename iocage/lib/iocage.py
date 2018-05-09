@@ -1206,7 +1206,6 @@ class IOCage(object):
                 for line in fstab.readlines():
                     _fstab.write(line.replace(old_mountpoint, new_mountpoint))
 
-
     def restart(self, soft=False):
         if self._all:
             if not soft:
