@@ -1,4 +1,4 @@
-.Dd April 17, 2018
+.Dd May 10, 2018
 .Dt IOCAGE 8
 .Os
 .Sh NAME
@@ -1015,6 +1015,15 @@ property or where more information can be located.
 Toggle starting the jail with Berkely Packet Filter devices enabled.
 .Pp
 Default: off
+.Pp
+Source: local
+.It Pf depends= Dq none | foo bar
+Require another jail to start before starting this jail.
+Space delimited.
+The option nests, resulting in dependent jails waiting in turn for
+their dependents, if specified, to start.
+.Pp
+Default: "none"
 .Pp
 Source: local
 .It Pf dhcp= Op on | off

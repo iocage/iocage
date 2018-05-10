@@ -132,6 +132,18 @@ Boot order can be specified by setting the priority value:
 
 *Lower* values are higher in the boot priority.
 
+.. index:: Depends Property
+.. _Depends Property:
+
+Depends Property
+++++++++++++++++
+
+Use the :literal:`depends` property to require other jails to start
+before this one. It is space delimited. Jails listed as dependents
+also wait to start if those jails have listed :literal:`depends`.
+
+Example: :command:`iocage set depends=“foo bar” baz`
+
 .. index:: Snapshot Management
 .. _Snapshot Management:
 
