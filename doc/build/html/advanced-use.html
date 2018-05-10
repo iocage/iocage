@@ -133,9 +133,16 @@ applies to basejails.</p>
 <p><strong class="command">iocage set priority=[20] [UUID|NAME]</strong></p>
 <p><em>Lower</em> values are higher in the boot priority.</p>
 </div>
+<div class="section" id="depends-property">
+<span id="index-8"></span><span id="id8"></span><h3>Depends Property<a class="headerlink" href="#depends-property" title="Permalink to this headline">¶</a></h3>
+<p>Use the <code class="docutils literal"><span class="pre">depends</span></code> property to require other jails to start
+before this one. It is space delimited. Jails listed as dependents
+also wait to start if those jails have listed <code class="docutils literal"><span class="pre">depends</span></code>.</p>
+<p>Example: <strong class="command">iocage set depends=“foo bar” baz</strong></p>
+</div>
 </div>
 <div class="section" id="snapshot-management">
-<span id="index-8"></span><span id="id8"></span><h2>Snapshot Management<a class="headerlink" href="#snapshot-management" title="Permalink to this headline">¶</a></h2>
+<span id="index-9"></span><span id="id9"></span><h2>Snapshot Management<a class="headerlink" href="#snapshot-management" title="Permalink to this headline">¶</a></h2>
 <p>iocage supports transparent ZFS snapshot management out of the box.
 Snapshots are point-in-time copies of data, a safety point to which a
 jail can be reverted at any time. Initially, snapshots take up almost no
@@ -147,7 +154,7 @@ space, as only changing data is recorded.</p>
 <p>This creates a snapshot based on the current time.</p>
 </div>
 <div class="section" id="resource-limits-legacy-only">
-<span id="resource-limits"></span><span id="index-9"></span><h2>Resource Limits (Legacy ONLY)<a class="headerlink" href="#resource-limits-legacy-only" title="Permalink to this headline">¶</a></h2>
+<span id="resource-limits"></span><span id="index-10"></span><h2>Resource Limits (Legacy ONLY)<a class="headerlink" href="#resource-limits-legacy-only" title="Permalink to this headline">¶</a></h2>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p class="last">This functionality is only available for legacy versions of
@@ -158,39 +165,39 @@ This applies to all subsections of <em>Resource Limits</em>.</p>
 outlined procedure here is meant to provide a starting point for the
 user.</p>
 <div class="section" id="limit-cores-or-threads">
-<span id="index-10"></span><span id="id9"></span><h3>Limit Cores or Threads<a class="headerlink" href="#limit-cores-or-threads" title="Permalink to this headline">¶</a></h3>
+<span id="index-11"></span><span id="id10"></span><h3>Limit Cores or Threads<a class="headerlink" href="#limit-cores-or-threads" title="Permalink to this headline">¶</a></h3>
 <p>Limit a jail to a single thread or core #1:</p>
 <p><strong class="command">iocage set cpuset=1 [UUID|TAG]</strong>
 <strong class="command">iocage start [UUID|TAG]</strong></p>
 </div>
 <div class="section" id="list-applied-limits">
-<span id="list-applied-rules"></span><span id="index-11"></span><h3>List Applied Limits<a class="headerlink" href="#list-applied-limits" title="Permalink to this headline">¶</a></h3>
+<span id="list-applied-rules"></span><span id="index-12"></span><h3>List Applied Limits<a class="headerlink" href="#list-applied-limits" title="Permalink to this headline">¶</a></h3>
 <p>List applied limits:</p>
 <p><strong class="command">iocage limits [UUID|TAG]</strong></p>
 </div>
 <div class="section" id="limit-dram-use">
-<span id="limit-dram-usage"></span><span id="index-12"></span><h3>Limit DRAM use<a class="headerlink" href="#limit-dram-use" title="Permalink to this headline">¶</a></h3>
+<span id="limit-dram-usage"></span><span id="index-13"></span><h3>Limit DRAM use<a class="headerlink" href="#limit-dram-use" title="Permalink to this headline">¶</a></h3>
 <p>This example limits a jail to using 4 Gb DRAM memory (limiting RSS
 memory use can be done on-the-fly):</p>
 <p><code class="samp docutils literal"><span class="pre">#</span> <span class="pre">iocage</span> <span class="pre">set</span> <span class="pre">memoryuse=4G:deny</span> <span class="pre">examplejail</span></code></p>
 </div>
 <div class="section" id="turn-on-resource-limits">
-<span id="index-13"></span><span id="id10"></span><h3>Turn on Resource Limits<a class="headerlink" href="#turn-on-resource-limits" title="Permalink to this headline">¶</a></h3>
+<span id="index-14"></span><span id="id11"></span><h3>Turn on Resource Limits<a class="headerlink" href="#turn-on-resource-limits" title="Permalink to this headline">¶</a></h3>
 <p>Turn on resource limiting for a jail with:</p>
 <p><strong class="command">iocage set rlimits=on [UUID|TAG]</strong></p>
 </div>
 <div class="section" id="apply-limits">
-<span id="index-14"></span><span id="id11"></span><h3>Apply limits<a class="headerlink" href="#apply-limits" title="Permalink to this headline">¶</a></h3>
+<span id="index-15"></span><span id="id12"></span><h3>Apply limits<a class="headerlink" href="#apply-limits" title="Permalink to this headline">¶</a></h3>
 <p>Apply limits to a running jail with:</p>
 <p><strong class="command">iocage cap [UUID | TAG]</strong></p>
 </div>
 <div class="section" id="check-limits">
-<span id="index-15"></span><span id="id12"></span><h3>Check Limits<a class="headerlink" href="#check-limits" title="Permalink to this headline">¶</a></h3>
+<span id="index-16"></span><span id="id13"></span><h3>Check Limits<a class="headerlink" href="#check-limits" title="Permalink to this headline">¶</a></h3>
 <p>Check the currently active limits on a jail with:</p>
 <p><strong class="command">iocage limits [UUID | TAG]</strong></p>
 </div>
 <div class="section" id="limit-cpu-usage-by">
-<span id="limit-cpu-usage-by-percentage"></span><span id="index-16"></span><h3>Limit CPU Usage by %<a class="headerlink" href="#limit-cpu-usage-by" title="Permalink to this headline">¶</a></h3>
+<span id="limit-cpu-usage-by-percentage"></span><span id="index-17"></span><h3>Limit CPU Usage by %<a class="headerlink" href="#limit-cpu-usage-by" title="Permalink to this headline">¶</a></h3>
 <p>In this example, <strong class="command">iocage</strong> limits <em>testjail</em> CPU execution to
 20%, then applies the limitation to the active jail:</p>
 <p><code class="samp docutils literal"><span class="pre">#</span> <span class="pre">iocage</span> <span class="pre">set</span> <span class="pre">pcpu=20:deny</span> <span class="pre">testjail</span></code>
@@ -200,7 +207,7 @@ memory use can be done on-the-fly):</p>
 </div>
 </div>
 <div class="section" id="automatic-package-installation">
-<span id="index-17"></span><span id="id13"></span><h2>Automatic Package Installation<a class="headerlink" href="#automatic-package-installation" title="Permalink to this headline">¶</a></h2>
+<span id="index-18"></span><span id="id14"></span><h2>Automatic Package Installation<a class="headerlink" href="#automatic-package-installation" title="Permalink to this headline">¶</a></h2>
 <p>Packages can be installed automatically at creation time!</p>
 <p>Use the [-p | –pkglist] option at creation time, which needs to point
 to a JSON file containing one package name per line.</p>
