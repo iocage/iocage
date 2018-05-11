@@ -1144,7 +1144,7 @@ class IOCage(object):
             exit_on_error=self.exit_on_error).list_datasets()
 
     def rename(self, new_name):
-        uuid, _ = self.__check_jail_existence__()
+        uuid, old_mountpoint = self.__check_jail_existence__()
         path = f"{self.pool}/iocage/jails/{uuid}"
         new_path = path.replace(uuid, new_name)
 
@@ -1179,7 +1179,7 @@ class IOCage(object):
                 raise
 
         try:
-            self.zfs.get_dataset(path).rename(new_path)
+            self.zfs.get_dataset(path).rename(new_path, False, True)
         except libzfs.ZFSException:
             raise
 
@@ -1197,14 +1197,17 @@ class IOCage(object):
             silent=self.silent)
 
         # Adjust mountpoints in fstab
-        old_mountpoint = f"{self.iocroot}/jails/{uuid}"
-        new_mountpoint = f"{self.iocroot}/jails/{new_name}"
+        new_mountpoint = old_mountpoint.replace(uuid, new_name)
         jail_fstab = f"{new_mountpoint}/fstab"
 
-        with open(jail_fstab, "r") as fstab:
-            with ioc_common.open_atomic(jail_fstab, "w") as _fstab:
-                for line in fstab.readlines():
-                    _fstab.write(line.replace(old_mountpoint, new_mountpoint))
+        try:
+            with open(jail_fstab, "r") as fstab:
+                with ioc_common.open_atomic(jail_fstab, "w") as _fstab:
+                    for line in fstab.readlines():
+                        _fstab.write(line.replace(old_mountpoint,
+                                                  new_mountpoint))
+        except OSError:
+            pass
 
     def restart(self, soft=False):
         if self._all:
