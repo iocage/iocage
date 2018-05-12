@@ -180,7 +180,7 @@ class IOCStop(object):
                         except su.CalledProcessError as err:
                             mountpoint = iocage.lib.ioc_common.checkoutput(
                                 ["zfs", "get", "-H", "-o", "value",
-                                 "mountpoint",f"{self.pool}/{jdataset}"]
+                                 "mountpoint", f"{self.pool}/{jdataset}"]
                             ).strip()
 
                             if mountpoint == "none":
