@@ -1602,7 +1602,7 @@ class IOCage(object):
                     self.callback({"level": "ERROR", "message": msg})
                     exit(1)
 
-    def stop(self, force, jail=None):
+    def stop(self, jail=None):
         """Stops the jail."""
 
         if self.rc or self._all:
@@ -1619,7 +1619,6 @@ class IOCage(object):
                 uuid,
                 path,
                 conf,
-                force,
                 silent=self.silent,
                 exit_on_error=self.exit_on_error)
 

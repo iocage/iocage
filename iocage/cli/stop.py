@@ -34,10 +34,8 @@ __rootcmd__ = True
 @click.option("--rc", default=False, is_flag=True,
               help="Will stop all jails with boot=on, in the specified"
                    " order with higher value for priority stopping first.")
-@click.option("-f", "--force", default=False, is_flag=True,
-              help="Force stop")
 @click.argument("jails", nargs=-1)
-def cli(rc, force, jails):
+def cli(rc, jails):
     """
     Looks for the jail supplied and passes the uuid, path and configuration
     location to stop_jail.
@@ -50,7 +48,7 @@ def cli(rc, force, jails):
         }, exit_on_error=True)
 
     if rc:
-        ioc.IOCage(exit_on_error=True, rc=rc, silent=True).stop(force)
+        ioc.IOCage(exit_on_error=True, rc=rc, silent=True).stop()
     else:
         for jail in jails:
-            ioc.IOCage(exit_on_error=True, jail=jail, rc=rc).stop(force)
+            ioc.IOCage(exit_on_error=True, jail=jail, rc=rc).stop()
