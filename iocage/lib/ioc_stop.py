@@ -34,8 +34,8 @@ import iocage.lib.ioc_list
 class IOCStop(object):
     """Stops a jail and unmounts the jails mountpoints."""
 
-    def __init__(self, uuid, path, conf, force, exit_on_error=False,
-                 silent=False, callback=None):
+    def __init__(self, uuid, path, conf, force, exit_on_error=False, silent=False,
+                 callback=None):
         self.pool = iocage.lib.ioc_json.IOCJson(
             " ", exit_on_error=exit_on_error).json_get_value("pool")
         self.iocroot = iocage.lib.ioc_json.IOCJson(
@@ -174,14 +174,12 @@ class IOCStop(object):
 
                         try:
                             iocage.lib.ioc_common.checkoutput(
-                                ["setfib", exec_fib, "jexec",
-                                 f"ioc-{self.uuid}", "zfs", "umount",
-                                 child], stderr=su.STDOUT)
+                                ["setfib", exec_fib, "jexec", f"ioc-{self.uuid}",
+                                 "zfs", "umount", child], stderr=su.STDOUT)
                         except su.CalledProcessError as err:
                             mountpoint = iocage.lib.ioc_common.checkoutput(
-                                ["zfs", "get", "-H", "-o", "value",
-                                 "mountpoint", f"{self.pool}/{jdataset}"]
-                            ).strip()
+                                ["zfs", "get", "-H", "-o", "value", "mountpoint",
+                                 f"{self.pool}/{jdataset}"]).strip()
 
                             if mountpoint == "none":
                                 pass
