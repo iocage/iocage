@@ -36,11 +36,21 @@ __rootcmd__ = True
                    " order with higher value for priority stopping first.")
 @click.option("-f", "--force", default=False, is_flag=True,
 <<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
               help="Skip all pre-stop actions like stop services and"
                    " gently shutdown, and kill the jail process.")
 =======
               help="Force stop")
 >>>>>>> c74694a... Added forced stop
+=======
+        help="Skip all pre-stop actions like stop services and"
+        " gently shutdown, and kill the jail process.")
+>>>>>>> 6420fc8... Changed force argument to keyword argument
+=======
+              help="Skip all pre-stop actions like stop services and"
+                   " gently shutdown, and kill the jail process.")
+>>>>>>> 84c02e4... Fixed Travis error
 @click.argument("jails", nargs=-1)
 def cli(rc, force, jails):
     """
@@ -56,6 +66,7 @@ def cli(rc, force, jails):
 
     if rc:
 <<<<<<< HEAD
+<<<<<<< HEAD
         ioc.IOCage(exit_on_error=True, rc=rc, silent=True).stop(force=force)
     else:
         for jail in jails:
@@ -66,3 +77,9 @@ def cli(rc, force, jails):
         for jail in jails:
             ioc.IOCage(exit_on_error=True, jail=jail, rc=rc).stop(force)
 >>>>>>> c74694a... Added forced stop
+=======
+        ioc.IOCage(exit_on_error=True, rc=rc, silent=True).stop(force=force)
+    else:
+        for jail in jails:
+            ioc.IOCage(exit_on_error=True, jail=jail, rc=rc).stop(force=force)
+>>>>>>> 6420fc8... Changed force argument to keyword argument
