@@ -34,23 +34,8 @@ import iocage.lib.ioc_list
 class IOCStop(object):
     """Stops a jail and unmounts the jails mountpoints."""
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
     def __init__(self, uuid, path, conf, exit_on_error=False,
                  silent=False, callback=None, force=False):
-=======
-    def __init__(self, uuid, path, conf, force, exit_on_error=False, silent=False,
-                 callback=None):
->>>>>>> c74694a... Added forced stop
-=======
-    def __init__(self, uuid, path, conf, force, exit_on_error=False,
-                 silent=False, callback=None):
->>>>>>> 4aa7d27... Fixed Travis error
-=======
-    def __init__(self, uuid, path, conf, exit_on_error=False,
-                 silent=False, callback=None, force=False):
->>>>>>> 6420fc8... Changed force argument to keyword argument
         self.pool = iocage.lib.ioc_json.IOCJson(
             " ", exit_on_error=exit_on_error).json_get_value("pool")
         self.iocroot = iocage.lib.ioc_json.IOCJson(
@@ -189,8 +174,6 @@ class IOCStop(object):
 
                         try:
                             iocage.lib.ioc_common.checkoutput(
-<<<<<<< HEAD
-<<<<<<< HEAD
                                 ["setfib", exec_fib, "jexec",
                                  f"ioc-{self.uuid}", "zfs", "umount",
                                  child], stderr=su.STDOUT)
@@ -199,24 +182,6 @@ class IOCStop(object):
                                 ["zfs", "get", "-H", "-o", "value",
                                  "mountpoint", f"{self.pool}/{jdataset}"]
                             ).strip()
-=======
-                                ["setfib", exec_fib, "jexec", f"ioc-{self.uuid}",
-                                 "zfs", "umount", child], stderr=su.STDOUT)
-                        except su.CalledProcessError as err:
-                            mountpoint = iocage.lib.ioc_common.checkoutput(
-                                ["zfs", "get", "-H", "-o", "value", "mountpoint",
-                                 f"{self.pool}/{jdataset}"]).strip()
->>>>>>> c74694a... Added forced stop
-=======
-                                ["setfib", exec_fib, "jexec",
-                                 f"ioc-{self.uuid}", "zfs", "umount",
-                                 child], stderr=su.STDOUT)
-                        except su.CalledProcessError as err:
-                            mountpoint = iocage.lib.ioc_common.checkoutput(
-                                ["zfs", "get", "-H", "-o", "value",
-                                 "mountpoint", f"{self.pool}/{jdataset}"]
-                            ).strip()
->>>>>>> 4aa7d27... Fixed Travis error
 
                             if mountpoint == "none":
                                 pass
@@ -323,14 +288,7 @@ class IOCStop(object):
                                 raise RuntimeError(
                                     "{}".format(
                                         err.output.decode("utf-8").strip()))
-<<<<<<< HEAD
-=======
 
-<<<<<<< HEAD
->>>>>>> c74694a... Added forced stop
-
-=======
->>>>>>> 4aa7d27... Fixed Travis error
         stop = su.check_call(["jail", "-r", f"ioc-{self.uuid}"],
                              stderr=su.PIPE)
 
