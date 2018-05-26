@@ -825,7 +825,7 @@ class IOCage(object):
                     "level":
                     "EXCEPTION",
                     "message":
-                    f"{uuid} is runnning, stop the jail before"
+                    f"{uuid} is running, stop the jail before"
                     " exporting!"
                 },
                 exit_on_error=self.exit_on_error,
@@ -1145,30 +1145,55 @@ class IOCage(object):
 
     def rename(self, new_name):
         uuid, old_mountpoint = self.__check_jail_existence__()
-        path = f"{self.pool}/iocage/jails/{uuid}"
-        new_path = path.replace(uuid, new_name)
+
+        _template = False
+        _folders = ["jails", "templates"]
+
+        if old_mountpoint.startswith(f"{self.iocroot}/templates/"):
+            _template = True
+            _folders = _folders[::-1]
+
+        new_mountpoint = f"{self.iocroot}/{_folders[0]}/{new_name}"
+
+        if (os.path.isdir(new_mountpoint) or
+            os.path.isdir(f"{self.iocroot}/{_folders[1]}/{new_name}")):
+
+            ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": f"Jail: {new_name} already exists!"
+                },
+                exit_on_error=self.exit_on_error,
+                _callback=self.callback,
+                silent=self.silent)
+
+        path = f"{self.pool}/iocage/{_folders[0]}/{uuid}"
+        new_path = f"{self.pool}/iocage/{_folders[0]}/{new_name}"
 
         _silent = self.silent
         self.silent = True
 
         self.stop()
-        self.set(f"host_hostuuid={new_name}", rename=True)
 
         self.silent = _silent
 
         try:
             # Can't rename when the child is in a non-global zone
-            data_dataset = self.zfs.get_dataset(f"{path}/data")
-            dependents = data_dataset.dependents
+            for str_dataset in self.get("jail_zfs_dataset").split():
+                str_dataset = f"{self.pool}/{str_dataset.strip()}"
 
-            self.set("jailed=off", zfs=True, zfs_dataset=path)
+                data_dataset = self.zfs.get_dataset(str_dataset)
+                dependents = data_dataset.dependents
 
-            for dep in dependents:
-                if dep.type != "FILESYSTEM":
-                    continue
+                self.set("jailed=off", zfs=True, zfs_dataset=data_dataset.name)
 
-                d = dep.name
-                self.set("jailed=off", zfs=True, zfs_dataset=d)
+                for dep in dependents:
+                    if dep.type != libzfs.DatasetType.FILESYSTEM:
+                        continue
+
+                    d = dep.name
+                    self.set("jailed=off", zfs=True, zfs_dataset=d)
+
         except libzfs.ZFSException as err:
             # The dataset doesn't exist, that's OK
 
@@ -1191,23 +1216,45 @@ class IOCage(object):
         ioc_common.logit(
             {
                 "level": "INFO",
-                "message": f"Jail: {self.jail} renamed to {new_name}"
+                "message": f"Jail: {uuid} renamed to {new_name}"
             },
             _callback=self.callback,
             silent=self.silent)
 
+        self.jail = new_name
+
+        # Templates are readonly
+        if _template:
+            self.set("readonly=off", zfs=True, zfs_dataset=new_path)
+
+        self.silent = True
+        self.set(f"host_hostuuid={new_name}", rename=True)
+
+        if self.get("host_hostname") == uuid:
+            self.set(f"host_hostname={new_name}")
+
+        zfs_dataset = self.get("jail_zfs_dataset")
+        if f"iocage/jails/{uuid}" in zfs_dataset:
+            zfs_dataset = zfs_dataset.replace(f"iocage/jails/{uuid}",
+                                              f"iocage/jails/{new_name}")
+            self.set(f"jail_zfs_dataset={zfs_dataset}")
+
+        self.silent = _silent
+
         # Adjust mountpoints in fstab
-        new_mountpoint = old_mountpoint.replace(uuid, new_name)
         jail_fstab = f"{new_mountpoint}/fstab"
 
         try:
             with open(jail_fstab, "r") as fstab:
                 with ioc_common.open_atomic(jail_fstab, "w") as _fstab:
                     for line in fstab.readlines():
-                        _fstab.write(line.replace(old_mountpoint,
-                                                  new_mountpoint))
+                        _fstab.write(line.replace(f"{self.iocroot}/jails/{uuid}/",
+                                                  f"{self.iocroot}/jails/{new_name}/"))
         except OSError:
             pass
+
+        if _template:
+            self.set("readonly=on", zfs=True, zfs_dataset=new_path)
 
     def restart(self, soft=False):
         if self._all:
