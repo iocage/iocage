@@ -35,8 +35,8 @@ __rootcmd__ = True
               help="Will stop all jails with boot=on, in the specified"
                    " order with higher value for priority stopping first.")
 @click.option("-f", "--force", default=False, is_flag=True,
-              help="Skip all pre-stop actions like stop services and"
-                   " gently shutdown, and kill the jail process.")
+              help="Skips all pre-stop actions like stop services."
+                   "Gently shuts down and kills the jail process.")
 @click.argument("jails", nargs=-1)
 def cli(rc, force, jails):
     """
