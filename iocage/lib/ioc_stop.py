@@ -176,11 +176,13 @@ class IOCStop(object):
 
                         try:
                             iocage.lib.ioc_common.checkoutput(
-                                ["setfib", exec_fib, "jexec", f"ioc-{self.uuid}",
+                                ["setfib", exec_fib, "jexec",
+                                 f"ioc-{self.uuid}",
                                  "zfs", "umount", child], stderr=su.STDOUT)
                         except su.CalledProcessError as err:
                             mountpoint = iocage.lib.ioc_common.checkoutput(
-                                ["zfs", "get", "-H", "-o", "value", "mountpoint",
+                                ["zfs", "get", "-H", "-o",
+                                 "value", "mountpoint",
                                  f"{self.pool}/{jdataset}"]).strip()
 
                             if mountpoint == "none":
