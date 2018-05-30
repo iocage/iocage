@@ -203,7 +203,7 @@ class IOCStop(object):
 
                 except su.CalledProcessError as err:
                     if "dataset does not exist" in err.output.decode("utf-8"):
-                        # There's nothing to do if dataset doesn't exit
+                        # There's nothing to do if dataset doesn't exist
                         pass
                     else:
                         raise RuntimeError(
