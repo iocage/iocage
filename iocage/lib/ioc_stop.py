@@ -165,39 +165,53 @@ class IOCStop(object):
             if self.conf["jail_zfs"] == "on":
                 for jdataset in self.conf["jail_zfs_dataset"].split():
                     jdataset = jdataset.strip()
-                    children = iocage.lib.ioc_common.checkoutput(
-                        ["zfs", "list", "-H", "-r", "-o", "name", "-S", "name",
-                         f"{self.pool}/{jdataset}"])
 
-                    for child in children.split():
-                        child = child.strip()
+                    try:
+                        children = iocage.lib.ioc_common.checkoutput(
+                            ["zfs", "list", "-H", "-r", "-o", "name",
+                             "-S", "name",
+                             f"{self.pool}/{jdataset}"])
+
+                        for child in children.split():
+                            child = child.strip()
+
+                            try:
+                                iocage.lib.ioc_common.checkoutput(
+                                    ["setfib", exec_fib, "jexec",
+                                     f"ioc-{self.uuid}", "zfs", "umount",
+                                     child], stderr=su.STDOUT)
+                            except su.CalledProcessError as err:
+                                mountpoint = iocage.lib.ioc_common.checkoutput(
+                                    ["zfs", "get", "-H", "-o", "value",
+                                     "mountpoint", f"{self.pool}/{jdataset}"]
+                                ).strip()
+
+                                if mountpoint == "none":
+                                    pass
+                                else:
+                                    raise RuntimeError(
+                                        "{}".format(
+                                            err.output.decode("utf-8").rstrip()
+                                        ))
 
                         try:
                             iocage.lib.ioc_common.checkoutput(
-                                ["setfib", exec_fib, "jexec",
-                                 f"ioc-{self.uuid}", "zfs", "umount",
-                                 child], stderr=su.STDOUT)
+                                ["zfs", "unjail", f"ioc-{self.uuid}",
+                                 f"{self.pool}/{jdataset}"], stderr=su.STDOUT)
                         except su.CalledProcessError as err:
-                            mountpoint = iocage.lib.ioc_common.checkoutput(
-                                ["zfs", "get", "-H", "-o", "value",
-                                 "mountpoint", f"{self.pool}/{jdataset}"]
-                            ).strip()
+                            raise RuntimeError(
+                                "{}".format(
+                                    err.output.decode("utf-8").rstrip()))
 
-                            if mountpoint == "none":
-                                pass
-                            else:
-                                raise RuntimeError(
-                                    "{}".format(
-                                        err.output.decode("utf-8").rstrip()))
-
-                    try:
-                        iocage.lib.ioc_common.checkoutput(
-                            ["zfs", "unjail", f"ioc-{self.uuid}",
-                             f"{self.pool}/{jdataset}"], stderr=su.STDOUT)
                     except su.CalledProcessError as err:
-                        raise RuntimeError(
-                            "{}".format(
-                                err.output.decode("utf-8").rstrip()))
+                        if "dataset does not exist" in \
+                                err.output.decode("utf-8"):
+                            # There's nothing to do if dataset doesn't exist
+                            pass
+                        else:
+                            raise RuntimeError(
+                                "{}".format(
+                                    err.output.decode("utf-8").rstrip()))
 
             # They haven't set an IP address, this interface won't exist
             destroy_nic = True if dhcp == "on" or ip4_addr != "none" or \
