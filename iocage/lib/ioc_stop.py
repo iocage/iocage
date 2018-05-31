@@ -170,7 +170,7 @@ class IOCStop(object):
                         children = iocage.lib.ioc_common.checkoutput(
                             ["zfs", "list", "-H", "-r", "-o", "name",
                              "-S", "name",
-                             f"{self.pool}/{jdataset}"])
+                             f"{self.pool}/{jdataset}"], stderr=su.STDOUT)
 
                         for child in children.split():
                             child = child.strip()
