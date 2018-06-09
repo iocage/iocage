@@ -726,6 +726,19 @@ class IOCJson(object):
                             _callback=self.callback,
                             silent=self.silent)
                         self.lgr.disabled = True
+
+            if key[:8] == "jail_zfs":
+                if status:
+                    iocage.lib.ioc_common.logit(
+                        {
+                            "level": "EXCEPTION",
+                            "message":
+                            f"{uuid} is running.\nPlease stop it first!"
+                        },
+                        exit_on_error=self.exit_on_error,
+                        _callback=self.callback,
+                        silent=self.silent)
+
         else:
             _, iocroot = _get_pool_and_iocroot()
             with open(f"{iocroot}/defaults.json", "r") as default_json:
