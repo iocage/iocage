@@ -81,7 +81,7 @@ class IOCCheck(object):
         for dataset in datasets:
             zfs_dataset_name = f"{self.pool}/{dataset}"
             try:
-                zfs.get_dataset(zfs_dataset_name)
+                ds = zfs.get_dataset(zfs_dataset_name)
             except libzfs.ZFSException:
                 # Doesn't exist
 
@@ -106,7 +106,17 @@ class IOCCheck(object):
                     dataset_options["mountpoint"] = f"/{self.pool}/iocage"
 
                 pool.create(zfs_dataset_name, dataset_options)
-                zfs.get_dataset(zfs_dataset_name).mount()
+                ds = zfs.get_dataset(zfs_dataset_name)
+                ds.mount()
+
+            prop = ds.properties.get("exec")
+            if prop.value != "on":
+                iocage.lib.ioc_common.logit({
+                    "level": "EXCEPTION",
+                    "message": f"Dataset \"{dataset}\" has "
+                               f"exec={prop.value} (should be on)"
+                },
+                    _callback=self.callback)
 
     def __check_fd_mount__(self):
         """
