@@ -170,7 +170,7 @@ class IOCageCLI(click.MultiCommand):
             mod_name = mod.__name__.replace("iocage.cli.", "")
 
             try:
-                if mod.__rootcmd__ and "--help" not in sys.argv[1:]:
+                if mod.__rootcmd__ and "help" not in sys.argv[1:]:
                     if len(sys.argv) != 1:
                         if os.geteuid() != 0:
                             sys.exit("You need to have root privileges to"
@@ -211,6 +211,12 @@ def cli(version, force):
 
         if "iocage" in sys.argv[0] and len(sys.argv) == 1:
             skip_check = True
+        elif "help" in sys.argv and len(sys.argv) == 3:
+            cmd = sys.argv[sys.argv.index("help") - 1]
+            mod = __import__(f"iocage.cli.{cmd}", None, None, ["cli"])
+            with click.Context(mod.cli) as ctx:
+                print(mod.cli.get_help(ctx))
+                exit(0)
 
         for arg in sys.argv[1:]:
             if arg in skip_check_cmds:
