@@ -308,21 +308,33 @@ class IOCCreate(object):
         # This test is to avoid the same warnings during install_packages.
 
         if not self.plugin:
+            if jail_uuid == "default":
+                iocage.lib.ioc_destroy.IOCDestroy(
+                ).__destroy_parse_datasets__(
+                    f"{self.pool}/iocage/jails/{jail_uuid}")
+                iocage.lib.ioc_common.logit({
+                    "level": "EXCEPTION",
+                    "message": "You cannot name a jail default, "
+                               "that is a reserved name."
+                }, exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
+                    silent=self.silent)
+            elif jail_uuid == "help":
+                iocage.lib.ioc_destroy.IOCDestroy(
+                ).__destroy_parse_datasets__(
+                    f"{self.pool}/iocage/jails/{jail_uuid}")
+                iocage.lib.ioc_common.logit({
+                    "level": "EXCEPTION",
+                    "message": "You cannot name a jail help, "
+                               "that is a reserved name."
+                }, exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
+                    silent=self.silent)
+
             for prop in self.props:
                 key, _, value = prop.partition("=")
 
-                if jail_uuid == "default":
-                    iocage.lib.ioc_destroy.IOCDestroy(
-                    ).__destroy_parse_datasets__(
-                        f"{self.pool}/iocage/jails/{jail_uuid}")
-                    iocage.lib.ioc_common.logit({
-                        "level": "EXCEPTION",
-                        "message": "You cannot name a jail default, "
-                                   "that is a reserved name."
-                    }, exit_on_error=self.exit_on_error,
-                        _callback=self.callback,
-                        silent=self.silent)
-                elif key == "boot" and value == "on" and not self.empty:
+                if key == "boot" and value == "on" and not self.empty:
                     start = True
                 elif key == "template" and value == "yes":
                     iocjson.json_write(config)  # Set counts on this.
