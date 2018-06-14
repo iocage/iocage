@@ -505,7 +505,7 @@ class IOCStart(object):
             err = self.start_network_interface_vnet(nic, net_configs, jid)
 
             if err:
-                errors.append(err)
+                errors.extend(err)
 
         if len(errors) != 0:
             return errors
@@ -518,6 +518,8 @@ class IOCStart(object):
         :param net_configs: Tuple of IP address and router pairs
         :param jid: The jails ID
         """
+        errors = []
+
         nic_defs = nic_defs.split(",")
         nics = list(map(lambda x: x.split(":")[0], nic_defs))
 
@@ -551,15 +553,22 @@ class IOCStart(object):
                             continue
 
                         if iface not in ifaces:
-                            self.start_network_vnet_iface(nic, bridge,
-                                                          membermtu, jid)
+                            err = self.start_network_vnet_iface(nic, bridge,
+                                                                membermtu, jid)
+                            if err:
+                                errors.append(err)
 
                             ifaces.append(iface)
 
-                        self.start_network_vnet_addr(iface, ip, gw, ipv6)
+                        err = self.start_network_vnet_addr(iface, ip, gw, ipv6)
+                        if err:
+                            errors.append(err)
 
             except su.CalledProcessError as err:
-                return err.output.decode("utf-8").rstrip()
+                errors.append(err.output.decode("utf-8").rstrip())
+
+        if len(errors) != 0:
+            return errors
 
     def start_network_vnet_iface(self, nic, bridge, mtu, jid):
         """
