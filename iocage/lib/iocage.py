@@ -1156,7 +1156,7 @@ class IOCage(object):
         new_mountpoint = f"{self.iocroot}/{_folders[0]}/{new_name}"
 
         if (os.path.isdir(new_mountpoint) or
-            os.path.isdir(f"{self.iocroot}/{_folders[1]}/{new_name}")):
+                os.path.isdir(f"{self.iocroot}/{_folders[1]}/{new_name}")):
 
             ioc_common.logit(
                 {
