@@ -1248,8 +1248,9 @@ class IOCage(object):
             with open(jail_fstab, "r") as fstab:
                 with ioc_common.open_atomic(jail_fstab, "w") as _fstab:
                     for line in fstab.readlines():
-                        _fstab.write(line.replace(f"{self.iocroot}/jails/{uuid}/",
-                                                  f"{self.iocroot}/jails/{new_name}/"))
+                        _fstab.write(line.replace(
+                            f"{self.iocroot}/jails/{uuid}/",
+                            f"{self.iocroot}/jails/{new_name}/"))
         except OSError:
             pass
 
