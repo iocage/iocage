@@ -122,7 +122,7 @@ class IOCList(object):
                     silent=self.silent)
 
             uuid = conf["host_hostuuid"]
-            ip4 = conf["ip4_addr"]
+            ip4 = conf["ip4_addr"] if conf["dhcp"] != "on" else "DHCP"
 
             jail_list.append([uuid, ip4])
 
@@ -153,7 +153,8 @@ class IOCList(object):
             mountpoint = jail.properties["mountpoint"].value
             conf = iocage.lib.ioc_json.IOCJson(mountpoint).json_load()
 
-            uuid = conf["host_hostuuid"]
+            uuid_full = conf["host_hostuuid"]
+            uuid = uuid_full
 
             if not self.full:
                 # We only want to show the first 8 characters of a UUID,
@@ -191,7 +192,7 @@ class IOCList(object):
             if ip6 == "none":
                 ip6 = "-"
 
-            status, jid = self.list_get_jid(uuid)
+            status, jid = self.list_get_jid(uuid_full)
 
             if status:
                 state = "up"
@@ -222,7 +223,7 @@ class IOCList(object):
                     interface = f"{interface.replace('vnet', 'epair')}b"
 
                 short_ip4 = "DHCP"
-                full_ip4_cmd = ["jexec", f"ioc-{uuid}", "ifconfig",
+                full_ip4_cmd = ["jexec", f"ioc-{uuid_full}", "ifconfig",
                                 interface, "inet"]
                 out = su.check_output(full_ip4_cmd)
                 full_ip4 = f"{interface}|" \
