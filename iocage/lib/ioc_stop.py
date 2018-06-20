@@ -141,9 +141,12 @@ class IOCStop(object):
 
             exec_stop = self.conf["exec_stop"].split()
             with open(f"{self.iocroot}/log/{self.uuid}-console.log", "a") as f:
-                services = su.check_call(["setfib", exec_fib, "jexec",
-                                          f"ioc-{self.uuid}"] + exec_stop,
-                                         stdout=f, stderr=su.PIPE)
+                try:
+                    services = su.check_call(["setfib", exec_fib, "jexec",
+                                              f"ioc-{self.uuid}"] + exec_stop,
+                                             stdout=f, stderr=su.PIPE)
+                except su.CalledProcessError as err:
+                    services = err.returncode
 
             if services:
                 msg = "  + Stopping services FAILED"
@@ -302,9 +305,11 @@ class IOCStop(object):
                                 raise RuntimeError(
                                     "{}".format(
                                         err.output.decode("utf-8").strip()))
-
-        stop = su.check_call(["jail", "-r", f"ioc-{self.uuid}"],
-                             stderr=su.PIPE)
+        try:
+            stop = su.check_call(["jail", "-r", f"ioc-{self.uuid}"],
+                                 stderr=su.PIPE)
+        except su.CalledProcessError as err:
+            stop = err.returncode
 
         if stop:
             msg = "  + Removing jail process FAILED"
