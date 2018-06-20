@@ -550,7 +550,8 @@ class IOCCreate(object):
         if srv_err:
             iocage.lib.ioc_common.logit({
                 "level": "EXCEPTION",
-                "message": "{repo} could not be reached, please check your DNS"
+                "message":
+                    f"{repo} could not be reached, please check your DNS"
             },
                 _callback=self.callback,
                 silent=self.silent)
