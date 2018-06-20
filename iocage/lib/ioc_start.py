@@ -166,10 +166,7 @@ class IOCStart(object):
 
             if mount_linprocfs == "1":
                 if not os.path.isdir(f"{self.path}/root/compat/linux/proc"):
-                    original_path = os.getcwd()
-                    os.chdir(f"{self.path}/root")
-                    os.makedirs("compat/linux/proc", 0o755)
-                    os.chdir(original_path)
+                    os.makedirs(f"{self.path}/root/compat/linux/proc", 0o755)
                 su.Popen(
                     ["mount", "-t", "linprocfs", "linproc", self.path +
                      "/root/compat/linux/proc"]).communicate()
@@ -355,10 +352,7 @@ class IOCStart(object):
         os_path = f"{self.path}/root/dev/log"
 
         if not os.path.isfile(os_path) and not os.path.islink(os_path):
-            original_path = os.getcwd()
-            os.chdir(f"{self.path}/root/dev")
-            os.symlink("../var/run/log", "log")
-            os.chdir(original_path)
+            os.symlink("../var/run/log", os_path)
 
         vnet_err = self.start_network(vnet)
 
