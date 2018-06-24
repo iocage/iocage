@@ -1399,7 +1399,9 @@ class IOCage(object):
             return
 
         if "template" in key:
-            if "templates/" in path and prop != "template=no":
+            if prop == "template=yes" and path.startswith(
+                    f"{self.iocroot}/templates/"):
+
                 ioc_common.logit(
                     {
                         "level": "EXCEPTION",
@@ -1408,7 +1410,10 @@ class IOCage(object):
                     exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
-            elif "template" not in path and prop != "template=yes":
+
+            elif prop == "template=no" and path.startswith(
+                    f"{self.iocroot}/jails/"):
+
                 ioc_common.logit(
                     {
                         "level": "EXCEPTION",
