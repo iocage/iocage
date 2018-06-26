@@ -1223,7 +1223,6 @@ fingerprint: {fingerprint}
             release, exit_on_error=self.exit_on_error,
             silent=self.silent).fetch_release()
 
-
     def __clone_repo(self, repo_url, destination):
         """
         This is to replicate the functionality of cloning a repo, without
