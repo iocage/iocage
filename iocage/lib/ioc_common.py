@@ -380,7 +380,8 @@ def sort_release(releases, split=False):
             try:
                 _version = float(_release[0])
                 _patch = int(_patch)
-                return (_version, _patch, _release[1]) + get_name_sortkey(releases[1])
+                return (_version, _patch, _release[1]) \
+                    + get_name_sortkey(releases[1])
             except ValueError:
                 return (999, _release[0]) + get_name_sortkey(releases[1])
 
