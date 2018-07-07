@@ -33,6 +33,7 @@ import subprocess as su
 import sys
 import tempfile as tmp
 import requests
+import datetime as dt
 
 
 def callback(_log, exit_on_error=False):
@@ -113,7 +114,7 @@ def ioc_sort(caller, s_type, data=None, exit_on_error=False):
         "qta": sort_qta,
         "use": sort_use,
         "ava": sort_ava,
-        "created": sort_crt,
+        "created": sort_created,
         "rsize": sort_res,
         "used": sort_qta
     }
@@ -143,34 +144,82 @@ def ioc_sort(caller, s_type, data=None, exit_on_error=False):
     return sort_funcs.get(s_type)
 
 
-def sort_crt(crt):
-    """Sort df by CRT or snaplist by CREATED"""
+def get_natural_sortkey(text):
+    # attempt to convert str to int to facilitate simplified natural sorting
+    # integers will be ranked before alphanumerical values
+    try:
+        return 10, int(text)
+    except ValueError:
+        return 20, text
 
-    return crt[1]
+
+def get_name_sortkey(name):
+    # We want to properly sort names that have been created with count > 1
+    _sort = name.strip().rsplit('_', 1)
+
+    if len(_sort) > 1:
+        # snaplist may have a /root suffix
+        _numb = _sort[1].rsplit("/", 1)
+        _path = _numb[1] if len(_numb) > 1 else ""
+        return (_sort[0],) + get_natural_sortkey(_numb[0]) + (_path,)
+    else:
+        return name, 0
+
+
+def get_size_sortkey(size):
+    # assume the size is in powers of 10 (KB) as opposed to powers of 2 (KiB)
+    powers = {
+        "B": 0,
+        "K": 3,
+        "M": 6,
+        "G": 9,
+        "T": 12,
+        "P": 15
+    }
+    try:
+        return float(size[:-1]) * (10 ** powers[size[-1]])
+    except ValueError:
+        return 0
+
+
+def sort_created(crt):
+    """Sort snaplist by CREATED"""
+
+    try:
+        _timestmp = dt.datetime.strptime(crt[1], '%a %b %d %H:%M %Y')
+    except ValueError:
+        _timestmp = crt[1]
+    return (_timestmp,) + get_name_sortkey(crt[0])
+
+
+def sort_crt(crt):
+    """Sort df by CRT"""
+
+    return (crt[1],) + get_name_sortkey(crt[0])
 
 
 def sort_res(res):
     """Sort df by RES or snaplist by RSIZE"""
 
-    return res[2]
+    return (get_size_sortkey(res[2]),) + get_name_sortkey(res[0])
 
 
 def sort_qta(qta):
     """Sort df by QTA or snaplist by USED"""
 
-    return qta[3]
+    return (get_size_sortkey(qta[3]),) + get_name_sortkey(qta[0])
 
 
 def sort_use(use):
     """Sort df by USE"""
 
-    return use[4]
+    return (get_size_sortkey(use[4]),) + get_name_sortkey(use[0])
 
 
 def sort_ava(ava):
     """Sort df by AVA"""
 
-    return ava[5]
+    return (get_size_sortkey(ava[5]),) + get_name_sortkey(ava[0])
 
 
 def sort_ip6(ip):
@@ -183,21 +232,37 @@ def sort_ip(ip, version="4"):
     """Sort the list by IP address."""
     list_length = len(ip)
 
-    # Length 10 is list -l, 5 is list
+    # Length 9 is list -l, 10 is list -P
+    # Length 5 is list
 
-    if list_length == 10:
+    if list_length == 9 or list_length == 10:
         try:
-            ip = ip[7] if version == "4" else ip[8]
-            _ip = str(ipaddress.ip_address(ip.rsplit("|")[1]))
+            _ip = ip[6] if version == "4" else ip[7]
+            _ip = str(ipaddress.ip_address(_ip.rsplit("|")[1].split("/")[0]))
+            if version == "4":
+                _ip = tuple(int(c) for c in _ip.split("."))
+            else:
+                _ip = (0,) + tuple(c for c in _ip.split(":"))
+
         except (ValueError, IndexError):
-            # Lame hack to have "-" last.
-            _ip = "Z"
-    elif list_length == 6:
+            # Lame hack to have "-" or invalid/undetermined IPs last.
+            _ip = 300, _ip
+
+        # Tack on the NAME as secondary sort criterion
+        _ip = _ip + get_name_sortkey(ip[1])
+
+    elif list_length == 5:
         try:
-            _ip = str(ipaddress.ip_address(ip[5]))
+            _ip = str(ipaddress.ip_address(ip[4]))
+            _ip = tuple(int(c) for c in _ip.split("."))
+
         except ValueError:
-            # Lame hack to have "-" last.
-            _ip = "Z"
+            # Lame hack to have "-" or invalid/undetermined IPs last.
+            _ip = 300, ip[4]
+
+        # Tack on the NAME as as secondary sort criterion
+        _ip = _ip + get_name_sortkey(ip[1])
+
     else:
         _ip = ip
 
@@ -205,41 +270,42 @@ def sort_ip(ip, version="4"):
 
 
 def sort_type(jail_type):
-    """Sort the list by jail type."""
+    """Sort the list by jail type, then by name."""
 
-    return jail_type[5]
+    return (jail_type[4],) + get_name_sortkey(jail_type[1])
 
 
 def sort_state(state):
-    """Sort the list by state."""
+    """Sort the list by state, then by name."""
     list_length = len(state)
 
-    # Length 10 is list -l, 5 is list
+    # Length 9 is list -l, 10 is list -P
+    # Length 5 is list
 
-    if list_length == 10:
+    if list_length == 9 or list_length == 10:
         _state = 0 if state[3] != "down" else 1
-    elif list_length == 6:
+    elif list_length == 5:
         _state = 0 if state[2] != "down" else 1
     else:
         _state = state
 
     # 0 is up, 1 is down, lame hack to get running jails on top.
-
-    return _state
+    # jails will be sorted by name within within state
+    return (_state,) + get_name_sortkey(state[1])
 
 
 def sort_boot(boot):
-    """Sort the list by boot."""
+    """Sort the list by boot, then by name."""
     # Lame hack to get on above off.
-
-    return 0 if boot[2] != "off" else 1
+    # 0 is on, 1 is off
+    _boot = 0 if boot[2] != "off" else 1
+    return (_boot,) + get_name_sortkey(boot[1])
 
 
 def sort_jid(jid):
     """Sort the list by JID."""
-    # Lame hack to have jails not runnig below running jails.
 
-    return jid[0] if jid[0] != "-" else "a"
+    return get_natural_sortkey(jid[0]) + get_name_sortkey(jid[1])
 
 
 def sort_name(name):
@@ -247,17 +313,15 @@ def sort_name(name):
 
     if not isinstance(name, str):
         list_length = len(name)
-        name = name[1] if list_length != 7 else name[0]
+        # Length 9 is list -l, 10 is list -P, 5 is list (normal)
+        # Length 4 is snaplist or list -PR
+        # Length 6 is df
+        if list_length == 4 or list_length == 6:
+            name = name[0]
+        else:
+            name = name[1]
 
-    _sort = name.strip().rsplit('_', 1)
-
-    # We want to sort names that have been created with count > 1. But not
-    # foo_bar
-
-    if len(_sort) > 1 and _sort[1].isdigit():
-        return _sort[0], int(_sort[1].rstrip("\n"))
-    else:
-        return name, 0
+    return get_name_sortkey(name)
 
 
 def sort_template(template):
@@ -265,9 +329,9 @@ def sort_template(template):
     # Ugly hack to have templates listed first, this assumes they will not
     # name their template with this string, it would be *remarkable* if they
     # did.
-    _template = template[9] if template[9] != "-" else "z" * 999999
+    _template = template[8] if template[8] != "-" else "z" * 999999
 
-    return sort_name(_template)
+    return sort_name(_template) + get_name_sortkey(template[1])
 
 
 def sort_release(releases, split=False):
@@ -280,11 +344,22 @@ def sort_release(releases, split=False):
     list_sort = False
 
     try:
+        # Length 9 (standard) or 10 (plugins) is list -l,
+        # Length 5 is list
+
         length = len(releases)
 
-        if length == 10:
-            # We don't want the -p* stuff.
-            releases = releases[6].rsplit("-", 1)[0]
+        if length == 9 or length == 10:
+            # Attempt to split off the -p* stuff.
+            try:
+                _release, _patch = releases[5].rsplit("-p", 1)
+            except ValueError:
+                _release = releases[5]
+                _patch = 0
+            list_sort = True
+        elif length == 5:
+            _release = releases[3]
+            _patch = 0
             list_sort = True
     except TypeError:
         # This is list -r
@@ -301,10 +376,14 @@ def sort_release(releases, split=False):
             r_dict[rel] = r_type
     else:
         if list_sort:
-            if len(releases.split(".")[0]) < 2:
-                releases = f"0{releases}"
+            _release = _release.split("-", 1)
+            try:
+                _version = float(_release[0])
+                _patch = int(_patch)
+                return (_version, _patch, _release[1]) + get_name_sortkey(releases[1])
+            except ValueError:
+                return (999, _release[0]) + get_name_sortkey(releases[1])
 
-            return releases
         else:
             for release in releases:
                 try:
