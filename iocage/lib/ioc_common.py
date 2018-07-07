@@ -290,7 +290,7 @@ def sort_state(state):
         _state = state
 
     # 0 is up, 1 is down, lame hack to get running jails on top.
-    # jails will be sorted by name within within state
+    # jails will be sorted by name within state
     return (_state,) + get_name_sortkey(state[1])
 
 
