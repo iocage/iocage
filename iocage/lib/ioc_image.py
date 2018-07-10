@@ -149,6 +149,7 @@ class IOCImage(object):
 
         # Cleanup our mess.
         try:
+            target = f"{self.pool}/iocage/jails/{uuid}@ioc-export-{self.date}"
             iocage.lib.ioc_common.checkoutput(
                 ["zfs", "destroy", "-r", target], stderr=su.STDOUT)
 

@@ -44,6 +44,9 @@ import iocage.lib.ioc_json
 import iocage.lib.ioc_upgrade
 import libzfs
 import texttable
+import dulwich.client
+from dulwich.repo import Repo
+from dulwich import index
 
 
 class IOCPlugin(object):
@@ -509,9 +512,7 @@ fingerprint: {fingerprint}
                 _callback=self.callback,
                 silent=self.silent)
 
-            with open("/dev/null", "wb") as devnull:
-                porcelain.clone(conf["artifact"], f"{jaildir}/plugin",
-                                outstream=devnull, errstream=devnull)
+            self.__clone_repo(conf['artifact'], f'{jaildir}/plugin')
 
             try:
                 distutils.dir_util.copy_tree(
@@ -878,9 +879,7 @@ fingerprint: {fingerprint}
         path = f"{self.iocroot}/jails/{self.plugin}"
 
         shutil.rmtree(f"{path}/plugin", ignore_errors=True)
-        with open("/dev/null", "wb") as devnull:
-            porcelain.clone(plugin_conf["artifact"], f"{path}/plugin",
-                            outstream=devnull, errstream=devnull)
+        self.__clone_repo(plugin_conf['artifact'], f'{path}/plugin')
 
         try:
             distutils.dir_util.copy_tree(
@@ -1223,3 +1222,19 @@ fingerprint: {fingerprint}
         iocage.lib.ioc_fetch.IOCFetch(
             release, exit_on_error=self.exit_on_error,
             silent=self.silent).fetch_release()
+
+    def __clone_repo(self, repo_url, destination):
+        """
+        This is to replicate the functionality of cloning a repo, without
+        using the porcelain interface.
+        """
+        local = Repo.init(destination, mkdir=True)
+        client, path = dulwich.client.get_transport_and_path(repo_url)
+        remote_refs = client.fetch(repo_url, local)
+        local[b'HEAD'] = remote_refs[b'refs/heads/master']
+
+        index_file = local.index_path()
+        tree = local[b'HEAD'].tree
+
+        index.build_index_from_tree(local.path, index_file, local.object_store,
+                                    tree)
