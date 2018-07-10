@@ -197,8 +197,8 @@ class IOCFetch(object):
                 iocage.lib.ioc_common.logit(
                     {
                         "level": "EXCEPTION",
-                        "message": f"\nHost: {host_release} is not greater than"
-                        f" target: {self.release}\nThis is unsupported."
+                        "message": f"\nHost: {host_release} is not greater"
+                        f" than target: {self.release}\nThis is unsupported."
                     },
                     _callback=self.callback,
                     silent=self.silent)
