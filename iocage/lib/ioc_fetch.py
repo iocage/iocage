@@ -186,7 +186,22 @@ class IOCFetch(object):
             return self.release
 
         try:
-            self.release = releases[int(self.release)]
+            _release = releases[int(self.release)]
+            host_release = self.__fetch_host_release__()
+            self.release = _release  # fetch_host_release will set this to host
+
+            h_float = float(host_release.rsplit("-", 1)[0])
+            r_float = float(self.release.rsplit("-", 1)[0])
+
+            if h_float < r_float:
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": f"\nHost: {host_release} is not greater"
+                        f" than target: {self.release}\nThis is unsupported."
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
         except IndexError:
             # Time to print the list again
 
