@@ -96,7 +96,7 @@ class IOCStart(object):
             if self.conf["hostid"] != hostid:
                 iocage.lib.ioc_common.logit({
                     "level": "ERROR",
-                    "message": f"{self.uuid} hostid is not matiching and"
+                    "message": f"{self.uuid} hostid is not matching and"
                                " 'hostid_strict_check' is on!"
                                " - Not starting jail"
                 }, _callback=self.callback, silent=self.silent)
