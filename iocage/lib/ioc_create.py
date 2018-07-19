@@ -25,6 +25,7 @@
 import json
 import os
 import pathlib
+import re
 import subprocess as su
 import sys
 import uuid
@@ -533,8 +534,14 @@ class IOCCreate(object):
                                           silent=True)
             status, jid = iocage.lib.ioc_list.IOCList().list_get_jid(jail_uuid)
 
+        if repo:
+            r = re.match('(https?(://)?)?([^/]+)', repo)
+            if r and len(r.groups()) >= 3:
+                repo = r.group(3)
+
         # Connectivity test courtesy David Cottlehuber off Google Group
-        srv_connect_cmd = ["drill", "-t", f"{repo} SRV"]
+        # XXX Why are we using drill? Why can't we use python's dns.resolver here? XXX
+        srv_connect_cmd = ["drill", "-t", f"_http._tcp.{repo} SRV"]
         dnssec_connect_cmd = ["drill", "-D", f"{repo}"]
 
         iocage.lib.ioc_common.logit({
@@ -548,8 +555,9 @@ class IOCCreate(object):
             silent=True).exec_jail()
 
         if srv_err:
+            # This shouldn't be fatal since SRV records are not required
             iocage.lib.ioc_common.logit({
-                "level": "EXCEPTION",
+                "level": "INFO",
                 "message":
                     f"{repo} could not be reached, please check your DNS"
             },
