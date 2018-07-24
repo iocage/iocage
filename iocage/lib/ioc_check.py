@@ -98,6 +98,8 @@ class IOCCheck(object):
 
                 dataset_options = {
                     "compression": "lz4",
+                    "aclmode": "passthrough",
+                    "aclinherit": "passthrough"
                 }
 
                 if dataset == "iocage" and not has_duplicates:
