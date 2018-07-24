@@ -617,14 +617,19 @@ class IOCStart(object):
                 ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
                  "ifconfig", jail_nic, "link", mac_b], stderr=su.STDOUT)
 
-            # Host
-            gws = netifaces.gateways()
-            def_iface = gws["default"][netifaces.AF_INET][1]
-
             try:
+                # Host
+                gws = netifaces.gateways()
+                def_iface = gws["default"][netifaces.AF_INET][1]
                 # Host interface also needs to be on the bridge
                 iocage.lib.ioc_common.checkoutput(
                     ["ifconfig", bridge, "addm", def_iface], stderr=su.STDOUT)
+            except KeyError:
+                iocage.lib.ioc_common.logit({
+                    "level": "EXCEPTION",
+                    "message": "No default gateway interface found",
+                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                    silent=self.silent)
             except su.CalledProcessError:
                 # Already exists
                 pass
