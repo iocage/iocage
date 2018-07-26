@@ -56,8 +56,8 @@ class IOCPlugin(object):
     includes creation, updating and upgrading.
     """
 
-    def __init__(self, release=None, plugin=None, exit_on_error=False,
-                 callback=None, silent=False, **kwargs):
+    def __init__(self, release=None, plugin=None, branch=None,
+                 exit_on_error=False, callback=None, silent=False, **kwargs):
         self.pool = iocage.lib.ioc_json.IOCJson(
             exit_on_error=exit_on_error).json_get_value("pool")
         self.iocroot = iocage.lib.ioc_json.IOCJson(
@@ -69,12 +69,21 @@ class IOCPlugin(object):
         self.server = kwargs.pop("server", "download.freebsd.org")
         self.hardened = kwargs.pop("hardened", False)
         self.date = datetime.datetime.utcnow().strftime("%F")
+        self.branch = branch
         self.silent = silent
         self.exit_on_error = exit_on_error
         self.callback = callback
 
+        if self.branch is None and not self.hardened:
+            host_rel = os.uname()[2].rsplit("-", 1)[0].rsplit("-", 1)[0]
+            self.branch = f'{host_rel}-RELEASE'
+        elif self.branch is None and self.hardened:
+            # Backwards compat
+            self.branch = 'master'
+
     def fetch_plugin(self, _json, props, num, accept_license):
         """Helper to fetch plugins"""
+
         _json = f"{self.iocroot}/.plugin_index/{_json}.json" if not \
             _json.endswith(".json") else _json
 
@@ -153,6 +162,13 @@ class IOCPlugin(object):
                 {
                     "level": "INFO",
                     "message": f"  Using RELEASE: {conf['release']}"
+                },
+                _callback=self.callback,
+                silent=self.silent)
+            iocage.lib.ioc_common.logit(
+                {
+                    "level": "INFO",
+                    "message": f"  Using Branch: {self.branch}"
                 },
                 _callback=self.callback,
                 silent=self.silent)
@@ -603,23 +619,16 @@ fingerprint: {fingerprint}
 
         if os.geteuid() == 0:
             try:
-                with open("/dev/null", "wb") as devnull:
-                    porcelain.clone(git_server, git_working_dir,
-                                    outstream=devnull, errstream=devnull)
-            except FileExistsError:
-                try:
-                    with open("/dev/null", "wb") as devnull:
-                        porcelain.pull(git_working_dir, git_server,
-                                       outstream=devnull, errstream=devnull)
-                except Exception as err:
-                    iocage.lib.ioc_common.logit(
-                        {
-                            "level": "EXCEPTION",
-                            "message": err
-                        },
-                        exit_on_error=self.exit_on_error,
-                        _callback=self.callback,
-                        silent=self.silent)
+                self.__clone_repo(git_server, git_working_dir)
+            except Exception as err:
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": err
+                    },
+                    exit_on_error=self.exit_on_error,
+                    _callback=self.callback,
+                    silent=self.silent)
 
         with open(f"{self.iocroot}/.plugin_index/INDEX", "r") as plugins:
             plugins = json.load(plugins)
@@ -1228,13 +1237,38 @@ fingerprint: {fingerprint}
         This is to replicate the functionality of cloning a repo, without
         using the porcelain interface.
         """
-        local = Repo.init(destination, mkdir=True)
+        try:
+            local = Repo.init(destination, mkdir=True)
+        except FileExistsError:
+            local = Repo(destination)
+
         client, path = dulwich.client.get_transport_and_path(repo_url)
         remote_refs = client.fetch(repo_url, local)
-        local[b'HEAD'] = remote_refs[b'refs/heads/master']
+        ref = f'refs/heads/{self.branch}'
+
+        try:
+            local[ref.encode()] = remote_refs[ref.encode()]
+        except KeyError:
+            ref = 'refs/heads/master'
+            msgs = [
+                    f'Branch {self.branch} does not exist at {repo_url}!',
+                    'Using "master" branch for plugin, this may not work '
+                    'with your RELEASE'
+                    ]
+
+            for msg in msgs:
+                iocage.lib.ioc_common.logit(
+                    {
+                        'level': 'INFO',
+                        'message': msg
+                    },
+                    _callback=self.callback,
+                    exit_on_error=self.exit_on_error)
+
+            local[ref.encode()] = remote_refs[ref.encode()]
 
         index_file = local.index_path()
-        tree = local[b'HEAD'].tree
+        tree = local[ref.encode()].tree
 
         index.build_index_from_tree(local.path, index_file, local.object_store,
                                     tree)
