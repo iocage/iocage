@@ -96,6 +96,8 @@ def validate_count(ctx, param, value):
               help="Accept the plugin's LICENSE agreement.")
 @click.option("--official", "-O", is_flag=True, default=False,
               help="Lists only official plugins.")
+@click.option("--branch", default=None,
+              help="Select a different plugin branch (for development)")
 def cli(**kwargs):
     """CLI command that calls fetch_release()"""
     release = kwargs.get("release", None)

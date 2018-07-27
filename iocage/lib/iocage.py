@@ -851,6 +851,7 @@ class IOCage(object):
         header = kwargs.pop("header", True)
         _long = kwargs.pop("_long", False)
         official = kwargs.pop("official", False)
+        branch = kwargs.pop("branch", None)
 
         freebsd_version = ioc_common.checkoutput(["freebsd-version"])
         arch = os.uname()[4]
@@ -880,8 +881,9 @@ class IOCage(object):
             ]
 
             if _list:
-                rel_list = ioc_plugin.IOCPlugin().fetch_plugin_index(
-                    "", _list=True, list_header=header, list_long=_long,
+                rel_list = ioc_plugin.IOCPlugin(
+                    branch=branch).fetch_plugin_index(
+                        "", _list=True, list_header=header, list_long=_long,
                     icon=True, official=official)
 
                 return rel_list
@@ -904,6 +906,7 @@ class IOCage(object):
                 ioc_plugin.IOCPlugin(
                     release=release,
                     plugin=name,
+                    branch=branch,
                     exit_on_error=self.exit_on_error,
                     **kwargs).fetch_plugin_index(
                         props, accept_license=accept, official=official)
@@ -912,13 +915,15 @@ class IOCage(object):
 
             if count == 1:
                 ioc_plugin.IOCPlugin(
-                    release=release, exit_on_error=self.exit_on_error,
+                    release=release, branch=branch,
+                    exit_on_error=self.exit_on_error,
                     silent=self.silent, **kwargs
                 ).fetch_plugin(name, props, 0, accept)
             else:
                 for j in range(1, count + 1):
                     ioc_plugin.IOCPlugin(
-                        release=release, exit_on_error=self.exit_on_error,
+                        release=release, branch=branch,
+                        exit_on_error=self.exit_on_error,
                         silent=self.silent, **kwargs
                     ).fetch_plugin(name, props, j, accept)
         else:
