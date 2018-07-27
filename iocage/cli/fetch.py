@@ -22,8 +22,6 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """fetch module for the cli."""
-import os
-
 import click
 import iocage.lib.ioc_common as ioc_common
 import iocage.lib.iocage as ioc
@@ -115,24 +113,14 @@ def cli(**kwargs):
             kwargs["release"] = release
 
         try:
-            release = float(release.rsplit("-", 1)[0].rsplit("-", 1)[0])
+            float(release.rsplit("-", 1)[0].rsplit("-", 1)[0])
         except ValueError:
             ioc_common.logit({
-                "level":
-                "EXCEPTION",
-                "message":
-                "Please supply a valid entry."
+                "level": "EXCEPTION",
+                "message": "Please supply a valid entry."
             })
 
-        host_release = float(os.uname()[2].rsplit("-", 1)[0].rsplit("-", 1)[0])
-
-        if host_release < release and not _file:
-            ioc_common.logit({
-                "level":
-                "EXCEPTION",
-                "message":
-                f"\nHost: {host_release} is not greater than"
-                f" target: {release}\nThis is unsupported."
-            })
+        if not _file:
+            ioc_common.check_release_newer(release)
 
     ioc.IOCage(exit_on_error=True).fetch(**kwargs)
