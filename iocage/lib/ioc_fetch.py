@@ -25,7 +25,6 @@
 import hashlib
 import logging
 import os
-import re
 import shutil
 import subprocess as su
 import tarfile
