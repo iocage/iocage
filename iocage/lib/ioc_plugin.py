@@ -249,12 +249,17 @@ class IOCPlugin(object):
                 props.append(_p)
 
             if not os.path.isdir(f"{self.iocroot}/releases/{self.release}"):
+                iocage.lib.ioc_common.check_release_newer(
+                    self.release, self.callback, self.silent)
                 self.__fetch_release__(self.release)
 
         if conf["release"][:4].endswith("-"):
             # 9.3-RELEASE and under don't actually have this binary.
             release = conf["release"]
         else:
+            iocage.lib.ioc_common.check_release_newer(
+                self.release, self.callback, self.silent)
+
             try:
                 with open(freebsd_version, "r") as r:
                     for line in r:
@@ -1026,9 +1031,13 @@ fingerprint: {fingerprint}
         plugin_conf = self.__load_plugin_json()
         self.__check_manifest__(plugin_conf)
         plugin_release = plugin_conf["release"]
+        iocage.lib.ioc_common.check_release_newer(
+            plugin_release, self.callback, self.silent)
         release_p = pathlib.Path(f"{self.iocroot}/releases/{plugin_release}")
 
         if not release_p.exists():
+            iocage.lib.ioc_common.check_release_newer(
+                plugin_release, self.callback, self.silent)
             iocage.lib.ioc_common.logit(
                 {
                     "level": "WARNING",
@@ -1193,18 +1202,9 @@ fingerprint: {fingerprint}
         manifest_rel = int(plugin_conf["release"].split(".", 1)[0])
         manifest_major_minor = float(
             plugin_conf["release"].rsplit("-", 1)[0].rsplit("-", 1)[0])
-        host_release = float(os.uname()[2].rsplit("-", 1)[0].rsplit("-", 1)[0])
 
-        if host_release < manifest_major_minor:
-            iocage.lib.ioc_common.logit({
-                "level":
-                "EXCEPTION",
-                "message":
-                f"\nHost: {host_release} is not greater than"
-                f" target: {plugin_conf['release']}\nThis is unsupported."
-            },
-                _callback=self.callback,
-                exit_on_error=self.exit_on_error)
+        iocage.lib.ioc_common.check_release_newer(
+            manifest_major_minor, self.callback, self.silent)
 
         if jail_rel < manifest_rel:
             self.__remove_snapshot__(name="update")
