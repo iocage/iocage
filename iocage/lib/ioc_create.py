@@ -540,7 +540,7 @@ class IOCCreate(object):
                 repo = r.group(3)
 
         # Connectivity test courtesy David Cottlehuber off Google Group
-        # XXX Why are we using drill? Why can't we use python's dns.resolver here? XXX
+        # TODO: Use python's dns.resolver here?
         srv_connect_cmd = ["drill", "-t", f"_http._tcp.{repo} SRV"]
         dnssec_connect_cmd = ["drill", "-D", f"{repo}"]
 

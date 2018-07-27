@@ -1251,10 +1251,10 @@ fingerprint: {fingerprint}
         except KeyError:
             ref = 'refs/heads/master'
             msgs = [
-                    f'Branch {self.branch} does not exist at {repo_url}!',
-                    'Using "master" branch for plugin, this may not work '
-                    'with your RELEASE'
-                    ]
+                f'Branch {self.branch} does not exist at {repo_url}!',
+                'Using "master" branch for plugin, this may not work '
+                'with your RELEASE'
+            ]
 
             for msg in msgs:
                 iocage.lib.ioc_common.logit(
