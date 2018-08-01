@@ -42,8 +42,7 @@ def validate_count(ctx, param, value):
                 {
                     "level": "EXCEPTION",
                     "message": f"({value} is not a valid integer."
-                },
-                exit_on_error=True)
+                })
     else:
         return int(value)
 
@@ -123,4 +122,4 @@ def cli(**kwargs):
         if not _file:
             ioc_common.check_release_newer(release)
 
-    ioc.IOCage(exit_on_error=True).fetch(**kwargs)
+    ioc.IOCage().fetch(**kwargs)

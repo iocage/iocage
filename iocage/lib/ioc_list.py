@@ -44,7 +44,7 @@ class IOCList(object):
     """
 
     def __init__(self, lst_type="all", hdr=True, full=False, _sort=None,
-                 exit_on_error=False, silent=False, callback=None,
+                 silent=False, callback=None,
                  plugin=False, quick=False):
         self.list_type = lst_type
         self.header = hdr
@@ -52,7 +52,6 @@ class IOCList(object):
         self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.sort = _sort
-        self.exit_on_error = exit_on_error
         self.silent = silent
         self.callback = callback
         self.plugin = plugin
@@ -118,7 +117,7 @@ class IOCList(object):
                     "message": f"{uuid} is missing its configuration file."
                                "\nPlease run just 'list' instead to create"
                                " it."
-                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                }, _callback=self.callback,
                     silent=self.silent)
 
             uuid = conf["host_hostuuid"]
@@ -266,8 +265,7 @@ class IOCList(object):
 
         list_type = "list_full" if self.full else "list_short"
         sort = iocage.lib.ioc_common.ioc_sort(list_type,
-                                              self.sort, data=jail_list,
-                                              exit_on_error=self.exit_on_error)
+                                              self.sort, data=jail_list)
         jail_list.sort(key=sort)
 
         # return the list...
@@ -307,8 +305,7 @@ class IOCList(object):
     def list_bases(self, datasets):
         """Lists all bases."""
         base_list = iocage.lib.ioc_common.ioc_sort(
-            "list_release", "release", data=datasets,
-            exit_on_error=self.exit_on_error)
+            "list_release", "release", data=datasets)
         table = texttable.Texttable(max_width=0)
 
         if not self.header:

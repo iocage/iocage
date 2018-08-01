@@ -71,11 +71,11 @@ def cli(force, dataset_type):
         ioc_common.logit({
             "level"  : "EXCEPTION",
             "message": "Please specify a dataset type to clean!"
-        }, exit_on_error=True)
+        })
 
     if not force:
         ioc_common.logit(msg)
         if not click.confirm("\nAre you sure?"):
             exit()
 
-    ioc.IOCage(exit_on_error=True, skip_jails=True).clean(dataset_type)
+    ioc.IOCage(skip_jails=True).clean(dataset_type)

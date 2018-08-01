@@ -48,7 +48,7 @@ class IOCCreate(object):
     def __init__(self, release, props, num, pkglist=None, plugin=False,
                  migrate=False, config=None, silent=False, template=False,
                  short=False, basejail=False, thickjail=False, empty=False,
-                 uuid=None, clone=False, exit_on_error=False, callback=None):
+                 uuid=None, clone=False, callback=None):
         self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage.lib.ioc_json.IOCJson(self.pool).json_get_value(
             "iocroot")
@@ -67,7 +67,7 @@ class IOCCreate(object):
         self.uuid = uuid
         self.clone = clone
         self.silent = silent
-        self.exit_on_error = exit_on_error
+
         self.callback = callback
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
 
@@ -154,7 +154,7 @@ class IOCCreate(object):
                             "level": "EXCEPTION",
                             "message": "You cannot clone a template, "
                                        "use create -t instead."
-                        }, exit_on_error=self.exit_on_error,
+                        },
                             _callback=self.callback,
                             silent=self.silent)
                     else:
@@ -162,14 +162,14 @@ class IOCCreate(object):
                         iocage.lib.ioc_common.logit({
                             "level": "EXCEPTION",
                             "message": f"Jail: {self.release} not found!"
-                        }, exit_on_error=self.exit_on_error,
+                        },
                             _callback=self.callback,
                             silent=self.silent)
                 else:
                     iocage.lib.ioc_common.logit({
                         "level": "EXCEPTION",
                         "message": f"RELEASE: {self.release} not found!"
-                    }, exit_on_error=self.exit_on_error,
+                    },
                         _callback=self.callback,
                         silent=self.silent)
 
@@ -257,7 +257,7 @@ class IOCCreate(object):
                                        "Please manually run zfs destroy"
                                        f" {snapshot.name} if you wish to "
                                        "destroy it."
-                        }, exit_on_error=self.exit_on_error,
+                        },
                             _callback=self.callback,
                             silent=self.silent)
 
@@ -293,7 +293,7 @@ class IOCCreate(object):
                         iocage.lib.ioc_common.logit({
                             "level": "EXCEPTION",
                             "message": "Can't copy release!"
-                        }, exit_on_error=self.exit_on_error,
+                        },
                             _callback=self.callback,
                             silent=self.silent)
             else:
@@ -317,7 +317,7 @@ class IOCCreate(object):
                     "level": "EXCEPTION",
                     "message": "You cannot name a jail default, "
                                "that is a reserved name."
-                }, exit_on_error=self.exit_on_error,
+                },
                     _callback=self.callback,
                     silent=self.silent)
             elif jail_uuid == "help":
@@ -328,7 +328,7 @@ class IOCCreate(object):
                     "level": "EXCEPTION",
                     "message": "You cannot name a jail help, "
                                "that is a reserved name."
-                }, exit_on_error=self.exit_on_error,
+                },
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -572,7 +572,7 @@ class IOCCreate(object):
             silent=self.silent)
         dnssec_connection, dnssec_err = iocage.lib.ioc_exec.IOCExec(
             dnssec_connect_cmd, jail_uuid, location, plugin=self.plugin,
-            exit_on_error=self.exit_on_error, silent=True).exec_jail()
+            silent=True).exec_jail()
 
         if dnssec_err:
             # Not fatal, they may not be using DNSSEC
@@ -601,8 +601,7 @@ class IOCCreate(object):
         os.environ["ASSUME_ALWAYS_YES"] = "yes"
         cmd = ("pkg-static", "upgrade", "-f", "-q", "-y")
         pkg_upgrade, pkgupgrade_err = iocage.lib.ioc_exec.IOCExec(
-            cmd, jail_uuid, location, plugin=self.plugin,
-            exit_on_error=self.exit_on_error).exec_jail()
+            cmd, jail_uuid, location, plugin=self.plugin).exec_jail()
 
         if pkgupgrade_err:
             iocage.lib.ioc_common.logit({
@@ -631,7 +630,6 @@ class IOCCreate(object):
 
             pkg_stdout, pkg_stderr, pkg_err = iocage.lib.ioc_exec.IOCExec(
                 cmd, jail_uuid, location, plugin=self.plugin,
-                exit_on_error=self.exit_on_error,
                 silent=self.silent, msg_err_return=True).exec_jail()
 
             if pkg_err:

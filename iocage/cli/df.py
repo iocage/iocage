@@ -54,9 +54,9 @@ import texttable
 def cli(header, _long, _sort):
     """Allows a user to show resource usage of all jails."""
     table = texttable.Texttable(max_width=0)
-    jail_list = ioc.IOCage(exit_on_error=True).df()
+    jail_list = ioc.IOCage().df()
 
-    sort = ioc_common.ioc_sort("df", _sort, exit_on_error=True)
+    sort = ioc_common.ioc_sort("df", _sort)
     jail_list.sort(key=sort)
 
     if header:

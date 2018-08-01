@@ -37,4 +37,4 @@ def cli(jail, command):
     if jail.startswith("-"):
         raise RuntimeError("Please specify a jail first!")
 
-    ioc.IOCage(exit_on_error=True, jail=jail, skip_jails=True).chroot(command)
+    ioc.IOCage(jail=jail, skip_jails=True).chroot(command)

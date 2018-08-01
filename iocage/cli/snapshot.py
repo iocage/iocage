@@ -36,4 +36,4 @@ __rootcmd__ = True
                                    " after @", required=False)
 def cli(jail, name):
     """Snapshot a jail."""
-    ioc.IOCage(jail=jail, exit_on_error=True, skip_jails=True).snapshot(name)
+    ioc.IOCage(jail=jail, skip_jails=True).snapshot(name)

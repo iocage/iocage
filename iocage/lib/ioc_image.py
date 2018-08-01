@@ -36,12 +36,11 @@ import iocage.lib.ioc_json
 class IOCImage(object):
     """export() and import()"""
 
-    def __init__(self, exit_on_error=False, callback=None, silent=False):
+    def __init__(self, callback=None, silent=False):
         self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage.lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")
         self.date = datetime.datetime.utcnow().strftime("%F")
-        self.exit_on_error = exit_on_error
         self.callback = callback
         self.silent = silent
 
@@ -67,7 +66,6 @@ class IOCImage(object):
                     "level": "EXCEPTION",
                     "message": msg
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -107,7 +105,6 @@ class IOCImage(object):
                         "level": "EXCEPTION",
                         "message": err
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -163,7 +160,6 @@ class IOCImage(object):
                     "level": "EXCEPTION",
                     "message": msg
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -193,7 +189,6 @@ class IOCImage(object):
                     "level": "EXCEPTION",
                     "message": msg
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
         elif len(matches) < 1:
@@ -202,7 +197,6 @@ class IOCImage(object):
                     "level": "EXCEPTION",
                     "message": f"{jail} not found!"
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -254,7 +248,6 @@ class IOCImage(object):
                     "level": "EXCEPTION",
                     "message": msg
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 

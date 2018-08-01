@@ -47,7 +47,6 @@ class IOCExec(object):
                  silent=False,
                  msg_return=False,
                  msg_err_return=False,
-                 exit_on_error=False,
                  callback=None):
         self.command = command
         self.uuid = uuid.replace(".", "_")
@@ -59,7 +58,6 @@ class IOCExec(object):
         self.skip = skip
         self.console = console
         self.silent = silent
-        self.exit_on_error = exit_on_error
         self.msg_return = msg_return
         self.msg_err_return = msg_err_return
         self.callback = callback
@@ -98,7 +96,6 @@ class IOCExec(object):
                         "Please run \"iocage migrate\" before trying"
                         f" to start {self.uuid}"
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
             elif conf["type"] == "template":
@@ -110,7 +107,6 @@ class IOCExec(object):
                         "Please convert back to a jail before trying"
                         f" to start {self.uuid}"
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
             else:
@@ -122,7 +118,6 @@ class IOCExec(object):
                         f"{conf['type']} is not a supported jail"
                         " type."
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
 

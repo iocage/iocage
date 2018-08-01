@@ -37,7 +37,7 @@ import datetime as dt
 import re
 
 
-def callback(_log, exit_on_error=False):
+def callback(_log):
     """Helper to call the appropriate logging level"""
     log = logging.getLogger("iocage")
     level = _log["level"]
@@ -59,7 +59,7 @@ def callback(_log, exit_on_error=False):
         log.log(25, message)
     elif level == 'EXCEPTION':
         try:
-            if not os.isatty(sys.stdout.fileno()) and not exit_on_error:
+            if not os.isatty(sys.stdout.fileno()):
                 raise RuntimeError(message)
             else:
                 log.error(message)
@@ -69,7 +69,7 @@ def callback(_log, exit_on_error=False):
             raise RuntimeError(message)
 
 
-def logit(content, exit_on_error=False, _callback=None, silent=False):
+def logit(content, _callback=None, silent=False):
     """Helper to check callable status of callback or call ours."""
     level = content["level"]
     msg = content["message"]
@@ -81,19 +81,19 @@ def logit(content, exit_on_error=False, _callback=None, silent=False):
 
     # This will log with our callback method if they didn't supply one.
     _callback = _callback if callable(_callback) else callback
-    _callback({"level": level, "message": msg}, exit_on_error)
+    _callback({"level": level, "message": msg})
 
 
-def raise_sort_error(sort_list, exit_on_error):
+def raise_sort_error(sort_list):
     msg = "Invalid sort type specified, use one of:\n"
 
     for s in sort_list:
         msg += f"  {s}\n"
 
-    logit({"level": "EXCEPTION", "message": msg.rstrip()}, exit_on_error)
+    logit({"level": "EXCEPTION", "message": msg.rstrip()})
 
 
-def ioc_sort(caller, s_type, data=None, exit_on_error=False):
+def ioc_sort(caller, s_type, data=None):
     try:
         s_type = s_type.lower()
     except AttributeError:
@@ -129,13 +129,13 @@ def ioc_sort(caller, s_type, data=None, exit_on_error=False):
     snaplist_sorts = ["name", "created", "rsize", "used"]
 
     if caller == "list_full" and s_type not in list_full_sorts:
-        raise_sort_error(list_full_sorts, exit_on_error)
+        raise_sort_error(list_full_sorts)
     elif caller == "list_short" and s_type not in list_short_sorts:
-        raise_sort_error(list_short_sorts, exit_on_error)
+        raise_sort_error(list_short_sorts)
     elif caller == "df" and s_type not in df_sorts:
-        raise_sort_error(df_sorts, exit_on_error)
+        raise_sort_error(df_sorts)
     elif caller == "snaplist" and s_type not in snaplist_sorts:
-        raise_sort_error(snaplist_sorts, exit_on_error)
+        raise_sort_error(snaplist_sorts)
 
     # Most calls will use this
 
