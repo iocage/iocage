@@ -34,6 +34,7 @@ import sys
 import tempfile as tmp
 import requests
 import datetime as dt
+import re
 
 
 def callback(_log, exit_on_error=False):
@@ -607,3 +608,42 @@ def parse_latest_release():
     latest = f"{sorted(sup_releases)[-1]}-RELEASE"
 
     return latest
+
+
+def get_host_release():
+    """Helper to return the hosts sanitized RELEASE"""
+    rel = os.uname()[2]
+    release = rel.rsplit("-", 1)[0]
+
+    if "-STABLE" in rel:
+        # FreeNAS
+        release = f"{release}-RELEASE"
+    elif "-HBSD" in rel:
+        # HardenedBSD
+        release = re.sub(r"\W\w.", "-", release)
+        release = re.sub(r"([A-Z])\w+", "STABLE", release)
+    elif "-RELEASE" not in rel:
+        release = "Not a RELEASE"
+
+    return release
+
+
+def check_release_newer(release, callback=None, silent=False):
+    """Checks if the host RELEASE is greater than the target release"""
+    host_release = get_host_release()
+
+    if host_release == "Not a RELEASE":
+        return
+
+    h_float = float(host_release.rsplit("-", 1)[0])
+    r_float = float(release.rsplit("-", 1)[0])
+
+    if h_float < r_float:
+        logit(
+            {
+                "level": "EXCEPTION",
+                "message": f"\nHost: {host_release} is not greater"
+                f" than target: {release}\nThis is unsupported."
+            },
+            _callback=callback,
+            silent=silent)

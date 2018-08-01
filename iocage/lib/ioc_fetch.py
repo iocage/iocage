@@ -134,23 +134,6 @@ class IOCFetch(object):
 
         return eol_releases
 
-    def __fetch_host_release__(self):
-        """Helper to return the hosts sanitized RELEASE"""
-        rel = os.uname()[2]
-        self.release = rel.rsplit("-", 1)[0]
-
-        if "-STABLE" in rel:
-            # FreeNAS
-            self.release = f"{self.release}-RELEASE"
-        elif "-HBSD" in rel:
-            # HardenedBSD
-            self.release = re.sub(r"\W\w.", "-", self.release)
-            self.release = re.sub(r"([A-Z])\w+", "STABLE", self.release)
-        elif "-RELEASE" not in rel:
-            self.release = "Not a RELEASE"
-
-        return self.release
-
     def __fetch_validate_release__(self, releases):
         """
         Checks if the user supplied an index number and returns the
@@ -176,7 +159,7 @@ class IOCFetch(object):
                         },
                         _callback=self.callback,
                         silent=self.silent)
-                host_release = self.__fetch_host_release__()
+                host_release = iocage.lib.ioc_common.get_host_release()
                 self.release = input("\nType the number of the desired"
                                      " RELEASE\nPress [Enter] to fetch "
                                      f"the default selection: ({host_release})"
@@ -186,22 +169,9 @@ class IOCFetch(object):
             return self.release
 
         try:
-            _release = releases[int(self.release)]
-            host_release = self.__fetch_host_release__()
-            self.release = _release  # fetch_host_release will set this to host
-
-            h_float = float(host_release.rsplit("-", 1)[0])
-            r_float = float(self.release.rsplit("-", 1)[0])
-
-            if h_float < r_float:
-                iocage.lib.ioc_common.logit(
-                    {
-                        "level": "EXCEPTION",
-                        "message": f"\nHost: {host_release} is not greater"
-                        f" than target: {self.release}\nThis is unsupported."
-                    },
-                    _callback=self.callback,
-                    silent=self.silent)
+            self.release = releases[int(self.release)]
+            iocage.lib.ioc_common.check_release_newer(
+                self.release, self.callback, self.silent)
         except IndexError:
             # Time to print the list again
 
@@ -213,7 +183,7 @@ class IOCFetch(object):
                     },
                     _callback=self.callback,
                     silent=self.silent)
-            host_release = self.__fetch_host_release__()
+            host_release = iocage.lib.ioc_common.get_host_release()
             self.release = input("\nType the number of the desired"
                                  " RELEASE\nPress [Enter] to fetch "
                                  f"the default selection: ({host_release})"
@@ -224,7 +194,7 @@ class IOCFetch(object):
             # not be on the mirrors anymore.
             try:
                 if self.release == "":
-                    self.release = self.__fetch_host_release__()
+                    self.release = iocage.lib.ioc_common.get_host_release()
 
                 if "-STABLE" in self.release:
                     # Custom HardenedBSD server
@@ -244,7 +214,7 @@ class IOCFetch(object):
                         },
                         _callback=self.callback,
                         silent=self.silent)
-                host_release = self.__fetch_host_release__()
+                host_release = iocage.lib.ioc_common.get_host_release()
                 self.release = input("\nType the number of the desired"
                                      " RELEASE\nPress [Enter] to fetch "
                                      f"the default selection: ({host_release})"
@@ -443,7 +413,7 @@ class IOCFetch(object):
                         },
                         _callback=self.callback,
                         silent=self.silent)
-                host_release = self.__fetch_host_release__()
+                host_release = iocage.lib.ioc_common.get_host_release()
                 self.release = input("\nType the number of the desired"
                                      " RELEASE\nPress [Enter] to fetch "
                                      f"the default selection: ({host_release})"
@@ -524,7 +494,7 @@ class IOCFetch(object):
                             _callback=self.callback,
                             silent=self.silent)
 
-                host_release = self.__fetch_host_release__()
+                host_release = iocage.lib.ioc_common.get_host_release()
                 self.release = input("\nType the number of the desired"
                                      " RELEASE\nPress [Enter] to fetch "
                                      f"the default selection: ({host_release})"
