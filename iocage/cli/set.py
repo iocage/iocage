@@ -52,9 +52,8 @@ def cli(jail, props, plugin):
             {
                 "level": "EXCEPTION",
                 "message": "You must specify a jail!"
-            },
-            exit_on_error=True)
+            })
 
     for prop in props:
         ioc.IOCage(
-            exit_on_error=True, jail=jail, skip_jails=True).set(prop, plugin)
+            jail=jail, skip_jails=True).set(prop, plugin)

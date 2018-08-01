@@ -45,7 +45,7 @@ class IOCUpgrade(object):
                  path,
                  silent=False,
                  callback=None,
-                 exit_on_error=False):
+                 ):
         self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage.lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")
@@ -67,7 +67,6 @@ class IOCUpgrade(object):
         self.date = datetime.datetime.utcnow().strftime("%F")
         self.silent = silent
         self.callback = callback
-        self.exit_on_error = exit_on_error
 
     def upgrade_jail(self):
         if "HBSD" in self.freebsd_version:
@@ -140,7 +139,6 @@ class IOCUpgrade(object):
                     "level": "EXCEPTION",
                     "message": msg
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -156,7 +154,6 @@ class IOCUpgrade(object):
                     "level": "EXCEPTION",
                     "message": msg
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -179,7 +176,6 @@ class IOCUpgrade(object):
                     "level": "EXCEPTION",
                     "message": msg
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -205,7 +201,6 @@ class IOCUpgrade(object):
                     "level": "EXCEPTION",
                     "message": msg
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -241,7 +236,6 @@ class IOCUpgrade(object):
                     "level": "EXCEPTION",
                     "message": msg
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -326,13 +320,11 @@ class IOCUpgrade(object):
     def __snapshot_jail__(self):
         import iocage.lib.iocage as ioc  # Avoids dep issues
         name = f"ioc_upgrade_{self.date}"
-        ioc.IOCage(jail=self.uuid, exit_on_error=self.exit_on_error,
-                   skip_jails=True, silent=True).snapshot(name)
+        ioc.IOCage(jail=self.uuid, skip_jails=True, silent=True).snapshot(name)
 
     def __rollback_jail__(self):
         import iocage.lib.iocage as ioc  # Avoids dep issues
         name = f"ioc_upgrade_{self.date}"
-        iocage = ioc.IOCage(jail=self.uuid, exit_on_error=self.exit_on_error,
-                            skip_jails=True, silent=True)
+        iocage = ioc.IOCage(jail=self.uuid, skip_jails=True, silent=True)
         iocage.stop()
         iocage.rollback(name)

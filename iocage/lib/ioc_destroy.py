@@ -39,11 +39,10 @@ class IOCDestroy(object):
     destroy that as well.
     """
 
-    def __init__(self, exit_on_error=False):
-        self.pool = iocage.lib.ioc_json.IOCJson(
-            exit_on_error=exit_on_error).json_get_value("pool")
+    def __init__(self):
+        self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage.lib.ioc_json.IOCJson(
-            self.pool, exit_on_error=exit_on_error).json_get_value("iocroot")
+            self.pool).json_get_value("iocroot")
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.ds = self.zfs.get_dataset
 

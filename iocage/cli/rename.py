@@ -36,4 +36,4 @@ def cli(jail, new_name):
     """
     Checks if the jail is running, then attempts to rename the jail.
     """
-    ioc.IOCage(exit_on_error=True, jail=jail).rename(new_name)
+    ioc.IOCage(jail=jail).rename(new_name)

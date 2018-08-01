@@ -60,7 +60,7 @@ def cli(jail, name):
         ioc_common.logit({
             "level"  : "EXCEPTION",
             "message": f"{jail} not found!"
-        }, exit_on_error=True)
+        })
 
     # Looks like foo/iocage/jails/df0ef69a-57b6-4480-b1f8-88f7b6febbdf@BAR
     conf = ioc_json.IOCJson(path).json_load()
@@ -80,5 +80,5 @@ def cli(jail, name):
         ioc_common.logit({
             "level"  : "EXCEPTION",
             "message": f"{err}"
-        }, exit_on_error=True)
+        })
         exit(1)
