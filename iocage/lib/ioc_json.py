@@ -77,7 +77,7 @@ class IOCJson(object):
             force_env = os.environ["IOCAGE_FORCE"]
         except KeyError:
             # FreeNAS or an API user, due to the sheer web of calls to this
-            # module we are assuming they are OK with any renaming opertaions
+            # module we are assuming they are OK with any renaming operations
 
             force_env = "TRUE"
 
@@ -155,7 +155,7 @@ class IOCJson(object):
             try:
                 self.zfs_set_property(f"{dataset}/root/data", "jailed", "off")
                 self.zfs.get_dataset(f"{dataset}/root/data").rename(
-                    f"{dataset}/data")
+                    f"{dataset}/data", False, True)
                 self.zfs_set_property(f"{dataset}/data", jail_zfs_prop,
                                       f"iocage/jails/{uuid}/data")
                 self.zfs_set_property(f"{dataset}/data", "jailed", "on")
@@ -359,7 +359,7 @@ class IOCJson(object):
                                                   f"{short_uuid}/data")
 
                             self.zfs.get_dataset(full_dataset).rename(
-                                short_dataset)
+                                short_dataset, False, True)
                             self.zfs_set_property(f"{short_dataset}/data",
                                                   "jailed", "on")
 
@@ -670,7 +670,8 @@ class IOCJson(object):
                                 _callback=self.callback)
 
                     try:
-                        self.zfs.get_dataset(old_location).rename(new_location)
+                        self.zfs.get_dataset(old_location).rename(
+                            new_location, False, True)
                     except libzfs.ZFSException as err:
                         # cannot rename
                         iocage.lib.ioc_common.logit(
@@ -712,7 +713,8 @@ class IOCJson(object):
                     return
                 elif value == "no":
                     if not _import:
-                        self.zfs.get_dataset(new_location).rename(old_location)
+                        self.zfs.get_dataset(new_location).rename(
+                            old_location, False, True)
                         conf["type"] = "jail"
                         self.location = old_location.lstrip(pool).replace(
                             "/iocage", iocroot)
