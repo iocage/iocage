@@ -1677,22 +1677,24 @@ class IOCJson(object):
         """This sets up the default configuration for jails."""
         _, iocroot = _get_pool_and_iocroot()
         default_json_location = f"{iocroot}/defaults.json"
-
+        dynamic_default_props = self.default_properties
         try:
             with open(default_json_location, "r") as default_json:
-                default_props = json.load(default_json)
-                default_props = self.json_check_config(
-                    default_props,
+                user_default_props = self.json_check_config(
+                    json.load(default_json),
                     default=True
                 )
+                # override hardcoded defaults
+                for key, value in user_default_props.items():
+                    dynamic_default_props[key] = value
         except FileNotFoundError:
-            default_props = self.default_properties
+            pass
         finally:
             # They may have had new keys added to their default
             # configuration, or it never existed.
-            self.json_write(default_props, default_json_location)
+            self.json_write(dynamic_default_props, default_json_location)
 
-        return default_props
+        return dynamic_default_props
 
     @property
     def hostid(self):
