@@ -912,12 +912,7 @@ class IOCJson(object):
                 # 9.3-RELEASE and under don't actually have this binary.
                 release = conf["release"]
             else:
-                with open(freebsd_version, "r") as r:
-                    for line in r:
-                        if line.startswith("USERLAND_VERSION"):
-                            release = line.rstrip().partition("=")[2]
-                            release = release.strip('"')
-
+                release = self.host_release
                 cloned_release = conf["release"]
 
             # Set all Version 3 keys
@@ -1814,4 +1809,13 @@ class IOCJson(object):
             "dedup": "off",
             "reservation": "none"
         }
+
+    @property
+    def host_release(self):
+        with open(freebsd_version, "r") as r:
+            for line in r:
+                if line.startswith("USERLAND_VERSION") is False:
+                    continue
+                return line.rstrip().partition("=")[2].strip("\"")
+        raise Exception("Could not determine host release.")
 
