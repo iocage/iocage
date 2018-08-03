@@ -60,6 +60,7 @@ class IOCJson(object):
     """
 
     _hostid = None
+    CONFIG_VERSION = "14"
 
     def __init__(
         self,
@@ -197,7 +198,7 @@ class IOCJson(object):
     def json_load(self):
         """Load the JSON at the location given. Returns a JSON object."""
         pool, iocroot = _get_pool_and_iocroot()
-        version = self.json_get_version()
+        version = self.CONFIG_VERSION
         jail_type, jail_uuid = self.location.rsplit("/", 2)[-2:]
         full_uuid = jail_uuid  # Saves jail_uuid for legacy ZFS migration
         legacy_short = False
@@ -831,11 +832,6 @@ class IOCJson(object):
                     _callback=self.callback,
                     silent=self.silent)
 
-    @staticmethod
-    def json_get_version():
-        """Sets the iocage configuration version."""
-        return "14"
-
     def json_check_config(self, conf, default=False):
         """
         Takes JSON as input and checks to see what is missing and adds the
@@ -1012,7 +1008,7 @@ class IOCJson(object):
         conf["vnet_interfaces"] = vnet_interfaces
 
         # Set all keys, even if it's the same value.
-        conf["CONFIG_VERSION"] = self.json_get_version()
+        conf["CONFIG_VERSION"] = self.CONFIG_VERSION
 
         # Version 11 keys
         try:
@@ -1697,7 +1693,7 @@ class IOCJson(object):
     def default_properties(self):
         """Return the hardcoded defaults."""
         return {
-            "CONFIG_VERSION": self.json_get_version(),
+            "CONFIG_VERSION": self.CONFIG_VERSION,
             "interfaces": "vnet0:bridge0",
             "host_domainname": "none",
             "exec_fib": "0",
