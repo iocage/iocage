@@ -61,12 +61,14 @@ class IOCJson(object):
 
     _hostid = None
 
-    def __init__(self,
-                 location="",
-                 silent=False,
-                 cli=False,
-                 stop=False,
-                 callback=None):
+    def __init__(
+        self,
+        location="",
+        silent=False,
+        cli=False,
+        stop=False,
+        callback=None
+    ):
         self.location = location
         self.lgr = logging.getLogger('ioc_json')
         self.cli = cli
