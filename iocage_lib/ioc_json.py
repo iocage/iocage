@@ -401,15 +401,10 @@ class IOCJson(object):
                                        f" Please destroy {uuid} and recreate"
                                        " it.")
 
-        try:
-            conf_version = conf["CONFIG_VERSION"]
-
-            if version != conf_version:
-                conf = self.json_check_config(conf)
-        except KeyError:
-            conf = self.json_check_config(conf)
-
-        return conf
+        conf_key = "CONFIG_VERSION"
+        if (conf_key in conf.keys()) and (conf[conf_key] == conf_version):
+            return conf
+        return self.json_check_config(conf)
 
     def json_write(self, data, _file="/config.json"):
         """Write a JSON file at the location given with supplied data."""
