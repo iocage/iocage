@@ -1685,7 +1685,9 @@ class IOCJson(object):
             with open(default_json_location, "r") as default_json:
                 default_props = json.load(default_json)
                 default_props = self.json_check_config(
-                    default_props, default=True)
+                    default_props,
+                    default=True
+                )
         except FileNotFoundError:
             default_props = {
                 "CONFIG_VERSION": self.json_get_version(),
