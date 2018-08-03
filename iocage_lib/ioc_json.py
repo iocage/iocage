@@ -416,8 +416,8 @@ class IOCJson(object):
 
     def json_write(self, data, _file="/config.json"):
         """Write a JSON file at the location given with supplied data."""
-        with iocage_lib.ioc_common.open_atomic(self.location + _file,
-                                               'w') as out:
+        filepath = self.location + _file
+        with iocage_lib.ioc_common.open_atomic(filepath, 'w') as out:
             json.dump(data, out, sort_keys=True, indent=4, ensure_ascii=False)
 
     def _upgrade_pool(self, pool):
