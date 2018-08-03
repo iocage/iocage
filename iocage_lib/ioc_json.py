@@ -239,8 +239,7 @@ class IOCJson(object):
                     silent=self.silent)
 
         try:
-            with open(self.location + "/config.json", "r") as conf:
-                conf = json.load(conf)
+            conf = self.json_read(self.location + "/config.json")
         except FileNotFoundError:
             try:
                 # If this is a legacy jail, it will be missing this file but
@@ -276,9 +275,7 @@ class IOCJson(object):
 
             if os.path.isfile(self.location + "/config"):
                 self.json_convert_from_ucl()
-
-                with open(self.location + "/config.json", "r") as conf:
-                    conf = json.load(conf)
+                conf = self.json_read(self.location + "/config.json")
             else:
                 try:
                     dataset = self.location.split("/")
@@ -297,9 +294,9 @@ class IOCJson(object):
                                 'org.freebsd.iocage:host_hostname')
 
                             self.json_convert_from_zfs(full_uuid)
-                            with open(self.location + "/config.json",
-                                      "r") as conf:
-                                conf = json.load(conf)
+                            conf = self.json_read(
+                                self.location + "/config.json"
+                            )
 
                             iocage_lib.ioc_common.logit(
                                 {
@@ -375,8 +372,7 @@ class IOCJson(object):
                             silent=self.silent)
 
                     self.json_convert_from_zfs(uuid, skip=skip)
-                    with open(self.location + "/config.json", "r") as conf:
-                        conf = json.load(conf)
+                    conf = self.json_read(self.location + "/config.json")
 
                     if legacy_short:
                         messages = collections.OrderedDict(
@@ -420,6 +416,11 @@ class IOCJson(object):
         with iocage_lib.ioc_common.open_atomic(filepath, 'w') as out:
             json.dump(data, out, sort_keys=True, indent=4, ensure_ascii=False)
 
+    def json_read(self, _file="/config.json"):
+        filepath = self.location + _file
+        with open(default_json_location, "r") as f:
+            return json.load(f)
+
     def _upgrade_pool(self, pool):
         if os.geteuid() != 0:
             raise RuntimeError("Run as root to migrate old pool"
@@ -435,8 +436,7 @@ class IOCJson(object):
 
         if default:
             _, iocroot = _get_pool_and_iocroot()
-            with open(f"{iocroot}/defaults.json", "r") as default_json:
-                conf = json.load(default_json)
+            conf = self.json_read(f"{iocroot}/defaults.json")
 
             if prop == "all":
                 return conf
@@ -753,8 +753,7 @@ class IOCJson(object):
                         silent=self.silent)
         else:
             _, iocroot = _get_pool_and_iocroot()
-            with open(f"{iocroot}/defaults.json", "r") as default_json:
-                conf = json.load(default_json)
+            conf = self.json_read(f"{iocroot}/defaults.json")
 
         if not default:
             value, conf = self.json_check_prop(key, value, conf)
@@ -1346,9 +1345,7 @@ class IOCJson(object):
 
     def json_plugin_load(self):
         try:
-            with open(f"{self.location}/plugin/settings.json", "r") as \
-                    settings:
-                settings = json.load(settings)
+            return self.json_read(f"{self.location}/plugin/settings.json")
         except FileNotFoundError:
             msg = f"No settings.json exists in {self.location}/plugin!"
 
@@ -1359,8 +1356,6 @@ class IOCJson(object):
                 },
                 _callback=self.callback,
                 silent=self.silent)
-
-        return settings
 
     def json_plugin_get_value(self, prop):
         pool, iocroot = _get_pool_and_iocroot()
@@ -1679,18 +1674,17 @@ class IOCJson(object):
         default_json_location = f"{iocroot}/defaults.json"
         dynamic_default_props = self.default_properties
         try:
-            with open(default_json_location, "r") as default_json:
-                user_default_props = self.json_check_config(
-                    json.load(default_json),
-                    default=True
-                )
-                # override hardcoded defaults
-                for key, value in user_default_props.items():
-                    if key not in dynamic_default_props:
-                        continue
-                    if value != dynamic_default_props[key]:
-                        updated = True
-                    dynamic_default_props[key] = value
+            user_default_props = return self.json_check_config(
+                self.json_read(default_json_location),
+                default=True
+            )
+            # override hardcoded defaults
+            for key, value in user_default_props.items():
+                if key not in dynamic_default_props:
+                    continue
+                if value != dynamic_default_props[key]:
+                    updated = True
+                dynamic_default_props[key] = value
         except FileNotFoundError:
             updated = True
         finally:
