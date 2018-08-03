@@ -33,6 +33,7 @@ import netifaces
 import iocage.lib.ioc_common
 import iocage.lib.ioc_json
 import iocage.lib.ioc_list
+import iocage.lib.ioc_stop
 
 
 class IOCStart(object):
@@ -43,12 +44,11 @@ class IOCStart(object):
     for them. It also finds any scripts the user supplies for exec_*
     """
 
-    def __init__(self, uuid, path, conf, exit_on_error=False, silent=False,
+    def __init__(self, uuid, path, conf, silent=False,
                  callback=None):
         self.uuid = uuid.replace(".", "_")
         self.path = path
         self.conf = conf
-        self.exit_on_error = exit_on_error
         self.callback = callback
         self.silent = silent
 
@@ -88,7 +88,7 @@ class IOCStart(object):
             iocage.lib.ioc_common.logit({
                 "level": "EXCEPTION",
                 "message": msg
-            }, exit_on_error=self.exit_on_error, _callback=self.callback,
+            }, _callback=self.callback,
                 silent=self.silent)
 
         if self.conf["hostid_strict_check"] == "on":
@@ -152,7 +152,7 @@ class IOCStart(object):
                 iocage.lib.ioc_common.logit({
                     "level": "EXCEPTION",
                     "message": msg
-                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                }, _callback=self.callback,
                     silent=self.silent)
 
             self.__check_dhcp__()
@@ -340,7 +340,7 @@ class IOCStart(object):
             iocage.lib.ioc_common.logit({
                 "level": "EXCEPTION",
                 "message": stderr_data.decode('utf-8')
-            }, exit_on_error=self.exit_on_error, _callback=self.callback,
+            }, _callback=self.callback,
                 silent=self.silent)
         else:
             iocage.lib.ioc_common.logit({
@@ -366,6 +366,8 @@ class IOCStart(object):
                 silent=self.silent)
 
             if dhcp == "on":
+                failed_dhcp = False
+
                 try:
                     interface = self.conf["interfaces"].split(",")[0].split(
                         ":")[0]
@@ -380,8 +382,24 @@ class IOCStart(object):
                     out = su.check_output(cmd)
 
                     addr = f"{out.splitlines()[2].split()[1].decode()}"
+
+                    if "0.0.0.0" in addr:
+                        failed_dhcp = True
                 except su.CalledProcessError:
-                    addr = "ERROR, check jail logs"
+                    failed_dhcp = True
+
+                if failed_dhcp:
+                    iocage.lib.ioc_stop.IOCStop(self.uuid, self.path,
+                                                self.conf, force=True,
+                                                silent=True)
+
+                    iocage.lib.ioc_common.logit({
+                        "level": "EXCEPTION",
+                        "message": "  + Acquiring DHCP address: FAILED,"
+                        f" address received: {addr}\n"
+                        f"\nStopped {self.uuid} due to DHCP failure"
+                    },
+                        _callback=self.callback)
 
                 iocage.lib.ioc_common.logit({
                     "level": "INFO",
@@ -391,7 +409,7 @@ class IOCStart(object):
                     silent=self.silent)
         elif vnet_err and vnet:
             iocage.lib.ioc_common.logit({
-                "level": "INFO",
+                "level": "ERROR",
                 "message": "  + Configuring VNET FAILED"
             },
                 _callback=self.callback,
@@ -399,11 +417,21 @@ class IOCStart(object):
 
             for v_err in vnet_err:
                 iocage.lib.ioc_common.logit({
-                    "level": "WARNING",
+                    "level": "ERROR",
                     "message": f"  {v_err}"
                 },
                     _callback=self.callback,
                     silent=self.silent)
+
+            iocage.lib.ioc_stop.IOCStop(self.uuid, self.path,
+                                        self.conf, force=True,
+                                        silent=True)
+
+            iocage.lib.ioc_common.logit({
+                "level": "EXCEPTION",
+                "message": f"\nStopped {self.uuid} due to VNET failure"
+            },
+                _callback=self.callback)
 
         if self.conf["jail_zfs"] == "on":
             for jdataset in self.conf["jail_zfs_dataset"].split():
@@ -442,7 +470,7 @@ class IOCStart(object):
                         iocage.lib.ioc_common.logit({
                             "level": "EXCEPTION",
                             "message": msg
-                        }, exit_on_error=self.exit_on_error,
+                        },
                             _callback=self.callback,
                             silent=self.silent)
 

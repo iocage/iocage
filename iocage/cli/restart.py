@@ -38,4 +38,4 @@ def cli(jail, soft):
     Looks for the jail supplied and passes the uuid, path and configuration
     location to stop_jail and start_jail.
     """
-    ioc.IOCage(exit_on_error=True, jail=jail).restart(soft)
+    ioc.IOCage(jail=jail).restart(soft)

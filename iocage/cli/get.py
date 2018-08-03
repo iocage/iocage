@@ -59,8 +59,7 @@ def cli(prop, _type, _pool, jail, recursive, header, plugin):
         jail = prop
         prop = _type
     elif _pool:
-        pool = ioc.IOCage(exit_on_error=True, skip_jails=True).get("",
-                                                                   pool=True)
+        pool = ioc.IOCage(skip_jails=True).get("", pool=True)
         ioc_common.logit({
             "level"  : "INFO",
             "message": pool
@@ -71,7 +70,7 @@ def cli(prop, _type, _pool, jail, recursive, header, plugin):
             ioc_common.logit({
                 "level"  : "EXCEPTION",
                 "message": "You must specify a jail!"
-            }, exit_on_error=True)
+            })
 
     if _type == "all" and recursive:
         # TODO: Port this back
@@ -79,51 +78,48 @@ def cli(prop, _type, _pool, jail, recursive, header, plugin):
             "level"  : "EXCEPTION",
             "message": "You cannot use --all (-a) and --recursive (-r) "
                        "together. "
-        }, exit_on_error=True)
+        })
 
     if not recursive:
         if prop == "state" or _type == "state":
-            state = ioc.IOCage(exit_on_error=True, jail=jail).get(prop)
+            state = ioc.IOCage(jail=jail).get(prop)
 
             ioc_common.logit({
                 "level"  : "INFO",
                 "message": state
-            }, exit_on_error=True)
+            })
         elif prop == "jid" or _type == "jid":
-            jid = ioc.IOCage(exit_on_error=True, jail=jail).list("jid",
-                                                                 uuid=jail)[1]
+            jid = ioc.IOCage(jail=jail).list("jid", uuid=jail)[1]
 
             ioc_common.logit({
                 "level"  : "INFO",
                 "message": jid
-            }, exit_on_error=True)
+            })
         elif plugin:
-            _plugin = ioc.IOCage(exit_on_error=True, jail=jail,
-                                 skip_jails=True).get(prop, plugin=True)
+            _plugin = ioc.IOCage(jail=jail, skip_jails=True).get(prop,
+                                                                 plugin=True)
 
             ioc_common.logit({
                 "level"  : "INFO",
                 "message": _plugin
-            }, exit_on_error=True)
+            })
         elif prop == "all":
-            props = ioc.IOCage(exit_on_error=True, jail=jail,
-                               skip_jails=True).get(prop)
+            props = ioc.IOCage(jail=jail, skip_jails=True).get(prop)
 
             for p, v in props.items():
                 ioc_common.logit({
                     "level"  : "INFO",
                     "message": f"{p}:{v}"
-                }, exit_on_error=True)
+                })
         else:
-            p = ioc.IOCage(exit_on_error=True, jail=jail, skip_jails=True).get(
-                prop)
+            p = ioc.IOCage(jail=jail, skip_jails=True).get(prop)
 
             ioc_common.logit({
                 "level"  : "INFO",
                 "message": p
             })
     else:
-        jails = ioc.IOCage(exit_on_error=True).get(prop, recursive=True)
+        jails = ioc.IOCage().get(prop, recursive=True)
         table.header(["NAME", f"PROP - {prop}"])
 
         for jail_dict in jails:

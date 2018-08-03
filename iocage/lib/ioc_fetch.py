@@ -64,13 +64,11 @@ class IOCFetch(object):
                  eol=True,
                  files=("MANIFEST", "base.txz", "lib32.txz", "doc.txz",
                         "src.txz"),
-                 exit_on_error=False,
                  silent=False,
                  callback=None):
-        self.pool = iocage.lib.ioc_json.IOCJson(
-            exit_on_error=exit_on_error).json_get_value("pool")
+        self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage.lib.ioc_json.IOCJson(
-            self.pool, exit_on_error=exit_on_error).json_get_value("iocroot")
+            self.pool).json_get_value("iocroot")
         self.server = server
         self.user = user
         self.password = password
@@ -90,7 +88,6 @@ class IOCFetch(object):
         self.files = files
         self.update = update
         self.eol = eol
-        self.exit_on_error = exit_on_error
         self.silent = silent
         self.callback = callback
 
@@ -245,7 +242,6 @@ class IOCFetch(object):
                         "level": "EXCEPTION",
                         "message": "Please supply --root-dir or -d."
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -255,7 +251,6 @@ class IOCFetch(object):
                         "level": "EXCEPTION",
                         "message": "Please supply a RELEASE!"
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -267,7 +262,6 @@ class IOCFetch(object):
                         "level": "EXCEPTION",
                         "message": err
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -302,7 +296,6 @@ class IOCFetch(object):
                             "level": "EXCEPTION",
                             "message": error
                         },
-                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
 
@@ -399,7 +392,6 @@ class IOCFetch(object):
         - XX.X_RELEASE
     """
                         },
-                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
 
@@ -467,7 +459,6 @@ class IOCFetch(object):
         - XX.X_RELEASE
     """
                         },
-                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
 
@@ -550,7 +541,6 @@ class IOCFetch(object):
                     "level": "EXCEPTION",
                     "message": f"{self.release} was not found!"
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -632,7 +622,6 @@ class IOCFetch(object):
                                             "Too many failed"
                                             " verifications!"
                                         },
-                                        exit_on_error=self.exit_on_error,
                                         _callback=self.callback,
                                         silent=self.silent)
                     except (FileNotFoundError, KeyError) as err:
@@ -653,7 +642,6 @@ class IOCFetch(object):
                                     "level": "EXCEPTION",
                                     "message": "Too many failed verifications!"
                                 },
-                                exit_on_error=self.exit_on_error,
                                 _callback=self.callback,
                                 silent=self.silent)
 

@@ -31,10 +31,9 @@ import iocage.lib.ioc_json
 class IOCClean(object):
     """Cleans datasets and snapshots of a given type."""
 
-    def __init__(self, callback=None, silent=False, exit_on_error=False):
-        self.pool = iocage.lib.ioc_json.IOCJson(
-            exit_on_error=exit_on_error).json_get_value("pool")
-        self.exit_on_error = exit_on_error
+    def __init__(self, callback=None, silent=False):
+        self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
+
         self.callback = callback
         self.silent = silent
 
@@ -47,8 +46,7 @@ class IOCClean(object):
             _callback=self.callback,
             silent=self.silent)
 
-        iocage.lib.ioc_destroy.IOCDestroy(
-            exit_on_error=self.exit_on_error).destroy_jail(
+        iocage.lib.ioc_destroy.IOCDestroy().destroy_jail(
             f"{self.pool}/iocage/jails",
             clean=True)
 
@@ -61,9 +59,7 @@ class IOCClean(object):
             _callback=self.callback,
             silent=self.silent)
 
-        iocage.lib.ioc_destroy.IOCDestroy(
-            exit_on_error=self.exit_on_error
-        ).destroy_jail(
+        iocage.lib.ioc_destroy.IOCDestroy().destroy_jail(
             f"{self.pool}/iocage/download",
             clean=True)
 
@@ -74,9 +70,7 @@ class IOCClean(object):
             _callback=self.callback,
             silent=self.silent)
 
-        iocage.lib.ioc_destroy.IOCDestroy(
-            exit_on_error=self.exit_on_error
-        ).destroy_jail(
+        iocage.lib.ioc_destroy.IOCDestroy().destroy_jail(
             f"{self.pool}/iocage/releases",
             clean=True)
 
@@ -94,9 +88,7 @@ class IOCClean(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-            iocage.lib.ioc_destroy.IOCDestroy(
-                exit_on_error=self.exit_on_error
-            ).__destroy_parse_datasets__(
+            iocage.lib.ioc_destroy.IOCDestroy().__destroy_parse_datasets__(
                 f"{self.pool}/{dataset}", clean=True)
 
     def clean_templates(self):
@@ -108,8 +100,6 @@ class IOCClean(object):
             _callback=self.callback,
             silent=self.silent)
 
-        iocage.lib.ioc_destroy.IOCDestroy(
-            exit_on_error=self.exit_on_error
-        ).__destroy_parse_datasets__(
+        iocage.lib.ioc_destroy.IOCDestroy().__destroy_parse_datasets__(
             f"{self.pool}/iocage/templates",
             clean=True)

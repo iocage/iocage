@@ -41,7 +41,7 @@ def validate_count(ctx, param, value):
             ioc_common.logit({
                 "level"  : "EXCEPTION",
                 "message": f"({value} is not a valid  integer."
-            }, exit_on_error=True)
+            })
     else:
         return int(value)
 
@@ -58,13 +58,11 @@ def cli(source, props, count, name, _uuid):
     # At this point we don't care
     _uuid = name if name else _uuid
 
-    err, msg = ioc.IOCage(exit_on_error=True, jail=source).create(source,
-                                                                  props, count,
-                                                                  _uuid=_uuid,
-                                                                  clone=True)
+    err, msg = ioc.IOCage(jail=source).create(source, props, count,
+                                              _uuid=_uuid, clone=True)
 
     if err:
         ioc_common.logit({
             "level"  : "EXCEPTION",
             "message": msg
-        }, exit_on_error=True)
+        })

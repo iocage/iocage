@@ -101,9 +101,8 @@ class IOCage(object):
                  silent=False,
                  activate=False,
                  skip_jails=False,
-                 exit_on_error=False):
+                 ):
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
-        self.exit_on_error = exit_on_error
         self.rc = rc
 
         # FreeNAS won't be entering through the CLI, so we set sane defaults
@@ -168,8 +167,7 @@ class IOCage(object):
         for jail in self.jails:
             self.jail = jail
             uuid, path = self.__check_jail_existence__()
-            conf = ioc_json.IOCJson(
-                path, exit_on_error=self.exit_on_error).json_load()
+            conf = ioc_json.IOCJson(path).json_load()
             boot = conf['boot']
             priority = conf['priority']
             jail_order[jail] = int(priority)
@@ -274,7 +272,6 @@ class IOCage(object):
                         "level": "EXCEPTION",
                         "message": msg
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
             else:
@@ -285,7 +282,6 @@ class IOCage(object):
                         "level": "EXCEPTION",
                         "message": msg
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -358,7 +354,6 @@ class IOCage(object):
                             f" check zpool status {zpool} for more"
                             " information."
                         },
-                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
 
@@ -368,7 +363,6 @@ class IOCage(object):
                     "level": "EXCEPTION",
                     "message": f"ZFS pool '{zpool}' not found!"
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -399,7 +393,6 @@ class IOCage(object):
                     ["command", "iocage exec"]
                 ][int(len(command) != 0)])
             },
-            exit_on_error=self.exit_on_error,
             _callback=self.callback,
             silent=self.silent)
 
@@ -407,9 +400,7 @@ class IOCage(object):
         """Destroys all of a specified dataset types."""
 
         if d_type == "jails":
-            ioc_clean.IOCClean(
-                silent=self.silent,
-                exit_on_error=self.exit_on_error).clean_jails()
+            ioc_clean.IOCClean(silent=self.silent).clean_jails()
             ioc_common.logit(
                 {
                     "level": "INFO",
@@ -418,9 +409,7 @@ class IOCage(object):
                 _callback=self.callback,
                 silent=self.silent)
         elif d_type == "all":
-            ioc_clean.IOCClean(
-                silent=self.silent,
-                exit_on_error=self.exit_on_error).clean_all()
+            ioc_clean.IOCClean(silent=self.silent).clean_all()
             ioc_common.logit(
                 {
                     "level": "INFO",
@@ -429,9 +418,7 @@ class IOCage(object):
                 _callback=self.callback,
                 silent=self.silent)
         elif d_type == "release":
-            ioc_clean.IOCClean(
-                silent=self.silent,
-                exit_on_error=self.exit_on_error).clean_releases()
+            ioc_clean.IOCClean(silent=self.silent).clean_releases()
             ioc_common.logit(
                 {
                     "level":
@@ -443,9 +430,7 @@ class IOCage(object):
                 _callback=self.callback,
                 silent=self.silent)
         elif d_type == "template":
-            ioc_clean.IOCClean(
-                silent=self.silent,
-                exit_on_error=self.exit_on_error).clean_templates()
+            ioc_clean.IOCClean(silent=self.silent).clean_templates()
             ioc_common.logit(
                 {
                     "level": "INFO",
@@ -460,7 +445,6 @@ class IOCage(object):
                     "level": "EXCEPTION",
                     "message": "Please specify a dataset type to clean!"
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -492,7 +476,6 @@ class IOCage(object):
                         "Need a minimum of 8 characters to use --short"
                         " (-s) and --uuid (-u) together!"
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -505,7 +488,6 @@ class IOCage(object):
                     "Must supply either --template (-t) or"
                     " --release (-r)!"
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -522,8 +504,8 @@ class IOCage(object):
             ioc_fetch.IOCFetch(
                 release,
                 hardened=hardened,
-                silent=self.silent,
-                exit_on_error=self.exit_on_error).fetch_release()
+                silent=self.silent
+            ).fetch_release()
 
         if clone:
             clone_uuid, _ = self.__check_jail_existence__()
@@ -538,7 +520,6 @@ class IOCage(object):
                         f"Jail: {self.jail} must not be running to be"
                         " cloned!"
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -585,7 +566,7 @@ class IOCage(object):
                     empty=empty,
                     uuid=_uuid,
                     clone=clone,
-                    exit_on_error=self.exit_on_error).create_jail()
+                ).create_jail()
         except RuntimeError:
             raise
 
@@ -603,9 +584,7 @@ class IOCage(object):
             _callback=self.callback,
             silent=self.silent)
 
-        ioc_destroy.IOCDestroy(
-            exit_on_error=self.exit_on_error).__destroy_parse_datasets__(
-                path, stop=False)
+        ioc_destroy.IOCDestroy().__destroy_parse_datasets__(path, stop=False)
 
         if download:
             path = f"{self.pool}/iocage/download/{self.jail}"
@@ -618,9 +597,8 @@ class IOCage(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-            ioc_destroy.IOCDestroy(
-                exit_on_error=self.exit_on_error).__destroy_parse_datasets__(
-                    path, stop=False)
+            ioc_destroy.IOCDestroy().__destroy_parse_datasets__(path,
+                                                                stop=False)
 
     def destroy_jail(self):
         """
@@ -637,9 +615,8 @@ class IOCage(object):
                 path = f"{self.pool}/iocage/jails/{uuid}"
 
                 if uuid == self.jail:
-                    ioc_destroy.IOCDestroy(exit_on_error=self.exit_on_error
-                                           ).__destroy_parse_datasets__(
-                                               path, stop=False)
+                    ioc_destroy.IOCDestroy().__destroy_parse_datasets__(
+                        path, stop=False)
 
                     ioc_common.logit(
                         {
@@ -656,7 +633,6 @@ class IOCage(object):
                             "level": "EXCEPTION",
                             "message": err
                         },
-                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
         except FileNotFoundError as err:
@@ -665,8 +641,7 @@ class IOCage(object):
             path = f"{self.pool}/iocage/jails/{uuid}"
 
             if uuid == self.jail:
-                ioc_destroy.IOCDestroy(exit_on_error=self.exit_on_error
-                                       ).__destroy_parse_datasets__(path)
+                ioc_destroy.IOCDestroy().__destroy_parse_datasets__(path)
 
                 return
             else:
@@ -675,7 +650,6 @@ class IOCage(object):
                         "level": "EXCEPTION",
                         "message": err
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -699,16 +673,14 @@ class IOCage(object):
             _callback=self.callback,
             silent=self.silent)
 
-        ioc_destroy.IOCDestroy(
-            exit_on_error=self.exit_on_error).destroy_jail(path)
+        ioc_destroy.IOCDestroy().destroy_jail(path)
 
     def df(self):
         """Returns a list containing the resource usage of all jails"""
         jail_list = []
 
         for jail, path in self.jails.items():
-            conf = ioc_json.IOCJson(
-                path, exit_on_error=self.exit_on_error).json_load()
+            conf = ioc_json.IOCJson(path).json_load()
             mountpoint = f"{self.pool}/iocage/jails/{jail}"
 
             template = conf["type"]
@@ -748,7 +720,6 @@ class IOCage(object):
                     "Please only specify either host_user or"
                     " jail_user, not both!"
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -768,7 +739,6 @@ class IOCage(object):
                         "The jail requires an IP address before you "
                         "can use pkg. Set one and restart the jail."
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -788,7 +758,6 @@ class IOCage(object):
             jail_user,
             console=console,
             silent=self.silent,
-            exit_on_error=self.exit_on_error,
             msg_return=msg_return,
             pkg=pkg).exec_jail()
 
@@ -799,7 +768,6 @@ class IOCage(object):
                         "level": "EXCEPTION",
                         "message": err
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
             else:
@@ -828,12 +796,10 @@ class IOCage(object):
                     f"{uuid} is running, stop the jail before"
                     " exporting!"
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
-        ioc_image.IOCImage(exit_on_error=self.exit_on_error).export_jail(
-            uuid, path)
+        ioc_image.IOCImage().export_jail(uuid, path)
 
     def fetch(self, **kwargs):
         """Fetches a release or plugin."""
@@ -898,7 +864,6 @@ class IOCage(object):
                         "Please specify ip(4|6)"
                         "_addr=\"[INTERFACE|]IPADDRESS\"!"
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -907,7 +872,6 @@ class IOCage(object):
                     release=release,
                     plugin=name,
                     branch=branch,
-                    exit_on_error=self.exit_on_error,
                     **kwargs).fetch_plugin_index(
                         props, accept_license=accept, official=official)
 
@@ -916,14 +880,12 @@ class IOCage(object):
             if count == 1:
                 ioc_plugin.IOCPlugin(
                     release=release, branch=branch,
-                    exit_on_error=self.exit_on_error,
                     silent=self.silent, **kwargs
                 ).fetch_plugin(name, props, 0, accept)
             else:
                 for j in range(1, count + 1):
                     ioc_plugin.IOCPlugin(
                         release=release, branch=branch,
-                        exit_on_error=self.exit_on_error,
                         silent=self.silent, **kwargs
                     ).fetch_plugin(name, props, j, accept)
         else:
@@ -938,7 +900,7 @@ class IOCage(object):
                 return rel_list
 
             ioc_fetch.IOCFetch(
-                release, exit_on_error=self.exit_on_error,
+                release,
                 silent=self.silent, **kwargs).fetch_release()
 
     def fstab(self,
@@ -992,8 +954,8 @@ class IOCage(object):
                 _pass,
                 index=index,
                 header=header,
-                _fstab_list=_fstab_list,
-                exit_on_error=self.exit_on_error).fstab_list()
+                _fstab_list=_fstab_list
+            ).fstab_list()
 
             return fstab
         else:
@@ -1006,8 +968,8 @@ class IOCage(object):
                 options,
                 dump,
                 _pass,
-                index=index,
-                exit_on_error=self.exit_on_error)
+                index=index
+            )
 
     def get(self, prop, recursive=False, plugin=False, pool=False):
         """Get a jail property"""
@@ -1018,16 +980,14 @@ class IOCage(object):
         if not recursive:
             if self.jail == "default":
                 try:
-                    return ioc_json.IOCJson(
-                        exit_on_error=self.exit_on_error).json_get_value(
-                            prop, default=True)
+                    return ioc_json.IOCJson().json_get_value(prop,
+                                                             default=True)
                 except KeyError:
                     ioc_common.logit(
                         {
                             "level": "EXCEPTION",
                             "message": f"{prop} is not a valid property!"
                         },
-                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
 
@@ -1040,10 +1000,8 @@ class IOCage(object):
                 return state
             elif plugin:
                 _prop = prop.split(".")
-                props = ioc_json.IOCJson(
-                    path,
-                    exit_on_error=self.exit_on_error).json_plugin_get_value(
-                        _prop)
+                props = ioc_json.IOCJson(path).json_plugin_get_value(
+                    _prop)
 
                 if isinstance(props, dict):
                     return json.dumps(props, indent=4)
@@ -1052,9 +1010,7 @@ class IOCage(object):
             elif prop == "all":
                 _props = {}
 
-                props = ioc_json.IOCJson(
-                    path,
-                    exit_on_error=self.exit_on_error).json_get_value(prop)
+                props = ioc_json.IOCJson(path).json_get_value(prop)
 
                 # We want this sorted below, so we add it to the old dict
                 props["state"] = state
@@ -1065,16 +1021,13 @@ class IOCage(object):
                 return _props
             else:
                 try:
-                    return ioc_json.IOCJson(
-                        path,
-                        exit_on_error=self.exit_on_error).json_get_value(prop)
+                    return ioc_json.IOCJson(path).json_get_value(prop)
                 except KeyError:
                     ioc_common.logit(
                         {
                             "level": "EXCEPTION",
                             "message": f"{prop} is not a valid property!"
                         },
-                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
         else:
@@ -1089,10 +1042,7 @@ class IOCage(object):
                         jail_list.append({uuid: state})
                     elif prop == "all":
                         _props = {}
-                        props = ioc_json.IOCJson(
-                            path,
-                            exit_on_error=self.exit_on_error).json_get_value(
-                                prop)
+                        props = ioc_json.IOCJson(path).json_get_value(prop)
 
                         # We want this sorted below, so we add it to the old
                         # dict
@@ -1105,9 +1055,7 @@ class IOCage(object):
                     else:
                         jail_list.append({
                             uuid:
-                            ioc_json.IOCJson(
-                                path, exit_on_error=self.exit_on_error)
-                            .json_get_value(prop)
+                            ioc_json.IOCJson(path).json_get_value(prop)
                         })
                 except KeyError:
                     ioc_common.logit(
@@ -1115,7 +1063,6 @@ class IOCage(object):
                             "level": "EXCEPTION",
                             "message": f"{prop} is not a valid property!"
                         },
-                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
 
@@ -1123,8 +1070,7 @@ class IOCage(object):
 
     def import_(self):
         """Imports a jail"""
-        ioc_image.IOCImage(
-            exit_on_error=self.exit_on_error).import_jail(self.jail)
+        ioc_image.IOCImage().import_jail(self.jail)
 
     def list(self,
              lst_type,
@@ -1145,8 +1091,8 @@ class IOCage(object):
             long,
             sort,
             plugin=plugin,
-            quick=quick,
-            exit_on_error=self.exit_on_error).list_datasets()
+            quick=quick
+        ).list_datasets()
 
     def rename(self, new_name):
         uuid, old_mountpoint = self.__check_jail_existence__()
@@ -1168,7 +1114,6 @@ class IOCage(object):
                     "level": "EXCEPTION",
                     "message": f"Jail: {new_name} already exists!"
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -1284,9 +1229,7 @@ class IOCage(object):
     def rollback(self, name):
         """Rolls back a jail and all datasets to the supplied snapshot"""
         uuid, path = self.__check_jail_existence__()
-        conf = ioc_json.IOCJson(
-            path, silent=self.silent,
-            exit_on_error=self.exit_on_error).json_load()
+        conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
         status, _ = self.list("jid", uuid=uuid)
 
         if status:
@@ -1296,7 +1239,6 @@ class IOCage(object):
                     "message": f"Please stop {uuid} before trying to"
                     " rollback!"
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -1314,7 +1256,6 @@ class IOCage(object):
                     "level": "EXCEPTION",
                     "message": err
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -1352,7 +1293,6 @@ class IOCage(object):
                     "level": "EXCEPTION",
                     "message": f"{prop} is is missing a value!"
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -1361,22 +1301,18 @@ class IOCage(object):
             value = value.replace(" ", "")
 
         if self.jail == "default":
-            ioc_json.IOCJson(
-                exit_on_error=self.exit_on_error).json_check_default_config()
+            ioc_json.IOCJson().json_check_default_config()
             default = True
         else:
             default = False
 
         if default:
-            ioc_json.IOCJson(
-                self.iocroot, exit_on_error=self.exit_on_error).json_set_value(
-                    prop, default=True)
+            ioc_json.IOCJson(self.iocroot).json_set_value(prop, default=True)
 
         uuid, path = self.__check_jail_existence__()
         iocjson = ioc_json.IOCJson(
             path,
             cli=cli,
-            exit_on_error=self.exit_on_error,
             callback=self.callback,
             silent=self.silent)
 
@@ -1394,7 +1330,6 @@ class IOCage(object):
                         "message":
                         "Setting a zfs property requires zfs_dataset."
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -1412,7 +1347,6 @@ class IOCage(object):
                         "level": "EXCEPTION",
                         "message": f"{uuid} is already a template!"
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -1424,7 +1358,6 @@ class IOCage(object):
                         "level": "EXCEPTION",
                         "message": f"{uuid} is already a jail!"
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -1442,7 +1375,6 @@ class IOCage(object):
                     "level": "EXCEPTION",
                     "message": f"{_prop} is not a valid property!"
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -1453,9 +1385,7 @@ class IOCage(object):
     def snap_list(self, long=True, _sort="created"):
         """Gathers a list of snapshots and returns it"""
         uuid, path = self.__check_jail_existence__()
-        conf = ioc_json.IOCJson(
-            path, silent=self.silent,
-            exit_on_error=self.exit_on_error).json_load()
+        conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
         snap_list = []
         snap_list_temp = []
         snap_list_root = []
@@ -1524,9 +1454,7 @@ class IOCage(object):
             name = date
 
         # Looks like foo/iocage/jails/df0ef69a-57b6-4480-b1f8-88f7b6febbdf@BAR
-        conf = ioc_json.IOCJson(
-            path, silent=self.silent,
-            exit_on_error=self.exit_on_error).json_load()
+        conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
 
         if conf["template"] == "yes":
             target = f"{self.pool}/iocage/templates/{uuid}"
@@ -1544,7 +1472,6 @@ class IOCage(object):
                         "level": "EXCEPTION",
                         "message": "Snapshot already exists!"
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
             else:
@@ -1563,9 +1490,7 @@ class IOCage(object):
         """
         uuid, path = self.__check_jail_existence__()
         status, jid = self.list("jid", uuid=uuid)
-        conf = ioc_json.IOCJson(
-            path, silent=self.silent,
-            exit_on_error=self.exit_on_error).json_load()
+        conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
 
         # These need to be a list.
         exec_start = conf["exec_start"].split()
@@ -1591,9 +1516,7 @@ class IOCage(object):
                 "setfib", exec_fib, "jexec", f"ioc-{uuid.replace('.', '_')}"
             ] + exec_start
             su.Popen(start_cmd, stdout=su.PIPE, stderr=su.PIPE).communicate()
-            ioc_json.IOCJson(
-                path, silent=True, exit_on_error=self.exit_on_error
-            ).json_set_value(
+            ioc_json.IOCJson(path, silent=True).json_set_value(
                 f"last_started={datetime.datetime.utcnow().strftime('%F %T')}")
         else:
             ioc_common.logit(
@@ -1612,9 +1535,7 @@ class IOCage(object):
                 self.__jail_order__("start")
         else:
             uuid, path = self.__check_jail_existence__()
-            conf = ioc_json.IOCJson(
-                path, silent=self.silent,
-                exit_on_error=self.exit_on_error).json_load()
+            conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
             host_release = float(os.uname()[2].rsplit("-", 1)[0].rsplit("-",
                                                                         1)[0])
             release = conf["release"]
@@ -1631,7 +1552,6 @@ class IOCage(object):
                             f"\nHost: {host_release} is not greater than"
                             f" jail: {release}\nThis is unsupported."
                         },
-                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
 
@@ -1649,8 +1569,8 @@ class IOCage(object):
                     path,
                     conf,
                     silent=self.silent,
-                    callback=self.callback,
-                    exit_on_error=self.exit_on_error)
+                    callback=self.callback
+                )
 
                 return False, None
             else:
@@ -1668,27 +1588,20 @@ class IOCage(object):
                 self.__jail_order__("stop")
         else:
             uuid, path = self.__check_jail_existence__()
-            conf = ioc_json.IOCJson(
-                path,
-                silent=self.silent,
-                stop=True,
-                exit_on_error=self.exit_on_error).json_load()
+            conf = ioc_json.IOCJson(path, silent=self.silent, stop=True
+                                    ).json_load()
             ioc_stop.IOCStop(
                 uuid,
                 path,
                 conf,
                 silent=self.silent,
-                exit_on_error=self.exit_on_error,
                 force=force)
 
     def update(self):
         """Updates a jail to the latest patchset."""
         uuid, path = self.__check_jail_existence__()
-        conf = ioc_json.IOCJson(
-            path,
-            silent=self.silent,
-            stop=True,
-            exit_on_error=self.exit_on_error).json_load()
+        conf = ioc_json.IOCJson(path, silent=self.silent, stop=True
+                                ).json_load()
         freebsd_version = ioc_common.checkoutput(["freebsd-version"])
         status, jid = self.list("jid", uuid=uuid)
         started = False
@@ -1714,8 +1627,7 @@ class IOCage(object):
                     "message":
                     "Please run \"iocage migrate\" before trying"
                     f" to update {uuid}"
-                },
-                exit_on_error=True)
+                })
         elif conf["type"] == "template":
             ioc_common.logit(
                 {
@@ -1724,15 +1636,13 @@ class IOCage(object):
                     "message":
                     "Please convert back to a jail before trying"
                     f" to update {uuid}"
-                },
-                exit_on_error=True)
+                })
         else:
             ioc_common.logit(
                 {
                     "level": "EXCEPTION",
                     "message": f"{conf['type']} is not a supported jail type."
-                },
-                exit_on_error=True)
+                })
 
         if "HBSD" in freebsd_version:
             su.Popen(["hbsd-update", "-j", jid]).communicate()
@@ -1744,10 +1654,7 @@ class IOCage(object):
         else:
             if jail_type == "pluginv2" or jail_type == "plugin":
                 # TODO: Warn about erasing all pkgs
-                ioc_plugin.IOCPlugin(
-                    plugin=uuid,
-                    exit_on_error=self.exit_on_error
-                ).update()
+                ioc_plugin.IOCPlugin(plugin=uuid).update()
             elif conf["basejail"] != "yes":
                 ioc_fetch.IOCFetch(release).fetch_update(True, uuid)
             else:
@@ -1794,8 +1701,7 @@ class IOCage(object):
                 "level": "EXCEPTION",
                 "message": "Target RELEASE is required to upgrade."
             },
-                _callback=self.callback,
-                exit_on_error=self.exit_on_error)
+                _callback=self.callback)
 
         jail_release = conf["release"]
 
@@ -1806,8 +1712,7 @@ class IOCage(object):
                         "level": "EXCEPTION",
                         "message":
                         f"Jail: {uuid} is already at version {release}!"
-                    },
-                    exit_on_error=True)
+                    })
 
         started = False
         basejail = False
@@ -1818,8 +1723,7 @@ class IOCage(object):
                 {
                     "level": "EXCEPTION",
                     "message": "Upgrading is not supported for empty jails."
-                },
-                exit_on_error=True)
+                })
 
         if conf["type"] == "jail":
             if not status:
@@ -1841,8 +1745,7 @@ class IOCage(object):
                     "message":
                     "Please run \"iocage migrate\" before trying"
                     f" to upgrade {uuid}"
-                },
-                exit_on_error=True)
+                })
         elif conf["type"] == "template":
             ioc_common.logit(
                 {
@@ -1851,8 +1754,7 @@ class IOCage(object):
                     "message":
                     "Please convert back to a jail before trying"
                     f" to upgrade {uuid}"
-                },
-                exit_on_error=True)
+                })
         elif conf["type"] == "pluginv2":
             if not status:
                 ioc_start.IOCStart(uuid, path, conf, silent=True)
@@ -1865,8 +1767,7 @@ class IOCage(object):
                 {
                     "level": "EXCEPTION",
                     "message": f"{conf['type']} is not a supported jail type."
-                },
-                exit_on_error=True)
+                })
 
         if started:
             _silent = self.silent

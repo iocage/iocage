@@ -48,4 +48,4 @@ def cli(jail, name, force):
         if not click.confirm("\nAre you sure?"):
             exit()
 
-    ioc.IOCage(exit_on_error=True, jail=jail).rollback(name)
+    ioc.IOCage(jail=jail).rollback(name)

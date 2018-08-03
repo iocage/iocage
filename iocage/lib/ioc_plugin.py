@@ -57,11 +57,10 @@ class IOCPlugin(object):
     """
 
     def __init__(self, release=None, plugin=None, branch=None,
-                 exit_on_error=False, callback=None, silent=False, **kwargs):
-        self.pool = iocage.lib.ioc_json.IOCJson(
-            exit_on_error=exit_on_error).json_get_value("pool")
+                 callback=None, silent=False, **kwargs):
+        self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage.lib.ioc_json.IOCJson(
-            self.pool, exit_on_error=exit_on_error).json_get_value("iocroot")
+            self.pool).json_get_value("iocroot")
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.release = release
         self.plugin = plugin
@@ -71,7 +70,6 @@ class IOCPlugin(object):
         self.date = datetime.datetime.utcnow().strftime("%F")
         self.branch = branch
         self.silent = silent
-        self.exit_on_error = exit_on_error
         self.callback = callback
 
         if self.branch is None and not self.hardened:
@@ -103,7 +101,6 @@ class IOCPlugin(object):
                     "level": "EXCEPTION",
                     "message": f"{_json} was not found!"
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
         except json.decoder.JSONDecodeError:
@@ -115,7 +112,6 @@ class IOCPlugin(object):
                     "Invalid JSON file supplied, please supply a "
                     "correctly formatted JSON file."
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -242,7 +238,6 @@ class IOCPlugin(object):
                             "message":
                             "You must accept the license to continue!"
                         },
-                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
 
@@ -323,8 +318,7 @@ class IOCPlugin(object):
             0,
             silent=True,
             basejail=True,
-            uuid=uuid,
-            exit_on_error=self.exit_on_error).create_jail()
+            uuid=uuid).create_jail()
         jaildir = f"{self.iocroot}/jails/{uuid}"
         repo_dir = f"{jaildir}/root/usr/local/etc/pkg/repos"
         path = f"{self.pool}/iocage/jails/{uuid}"
@@ -349,7 +343,6 @@ class IOCPlugin(object):
                     "level": "EXCEPTION",
                     "message": "Destroyed partial plugin."
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -371,7 +364,6 @@ class IOCPlugin(object):
                         "level": "EXCEPTION",
                         "message": "Module not found!"
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -393,8 +385,7 @@ class IOCPlugin(object):
                 create_props,
                 0,
                 pkglist=["ca_root_nss"],
-                silent=True,
-                exit_on_error=self.exit_on_error).create_install_packages(
+                silent=True).create_install_packages(
                     uuid, jaildir, _conf)
 
             if err:
@@ -480,18 +471,15 @@ fingerprint: {fingerprint}
             0,
             pkglist=conf["pkgs"],
             silent=True,
-            plugin=True,
-            exit_on_error=self.exit_on_error).create_install_packages(
+            plugin=True).create_install_packages(
                 uuid, jaildir, _conf, repo=conf["packagesite"], site=repo_name)
 
         if err:
             iocage.lib.ioc_common.logit(
                 {
-                    "level":
-                    "EXCEPTION",
-                    "message":
-                    "pkg error, refusing to fetch artifact and "
-                    "run post_install.sh!\n"
+                    "level": "EXCEPTION",
+                    "message": f"\npkg error:\n  - {err}\n"
+                    "\nRefusing to fetch artifact and run post_install.sh!"
                 },
                 _callback=self.callback,
                 silent=self.silent)
@@ -528,7 +516,7 @@ fingerprint: {fingerprint}
             iocage.lib.ioc_common.logit(
                 {
                     "level": "INFO",
-                    "message": "Fetching artifact... "
+                    "message": "\nFetching artifact... "
                 },
                 _callback=self.callback,
                 silent=self.silent)
@@ -551,7 +539,7 @@ fingerprint: {fingerprint}
                 iocage.lib.ioc_common.logit(
                     {
                         "level": "INFO",
-                        "message": "Running post_install.sh"
+                        "message": "\nRunning post_install.sh"
                     },
                     _callback=self.callback,
                     silent=self.silent)
@@ -566,8 +554,7 @@ fingerprint: {fingerprint}
                         {
                             "level": "EXCEPTION",
                             "message": "An error occured! Please read above"
-                        },
-                        exit_on_error=self.exit_on_error)
+                        })
 
                 iocage.lib.ioc_common.logit({"level": "INFO", "message": msg})
 
@@ -631,7 +618,6 @@ fingerprint: {fingerprint}
                         "level": "EXCEPTION",
                         "message": err
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -723,7 +709,6 @@ fingerprint: {fingerprint}
                         "level": "EXCEPTION",
                         "message": f"Plugin: {_plugin} not in list!"
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
             except ValueError:
@@ -744,7 +729,6 @@ fingerprint: {fingerprint}
                             "level": "EXCEPTION",
                             "message": f"Plugin: {_plugin} not in list!"
                         },
-                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
             except ValueError as err:
@@ -753,7 +737,6 @@ fingerprint: {fingerprint}
                         "level": "EXCEPTION",
                         "message": err
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -792,7 +775,6 @@ fingerprint: {fingerprint}
                 "level": "INFO",
                 "message": f"Snapshotting {self.plugin}... "
             },
-            exit_on_error=self.exit_on_error,
             _callback=self.callback,
             silent=self.silent)
 
@@ -803,7 +785,6 @@ fingerprint: {fingerprint}
                 "level": "INFO",
                 "message": "Updating plugin INDEX... "
             },
-            exit_on_error=self.exit_on_error,
             _callback=self.callback,
             silent=self.silent)
         self.__update_pull_plugin_index__()
@@ -816,7 +797,6 @@ fingerprint: {fingerprint}
                 "level": "INFO",
                 "message": "Removing old pkgs... "
             },
-            exit_on_error=self.exit_on_error,
             _callback=self.callback,
             silent=self.silent)
         self.__update_pkg_remove__()
@@ -826,7 +806,6 @@ fingerprint: {fingerprint}
                 "level": "INFO",
                 "message": "Installing new pkgs... "
             },
-            exit_on_error=self.exit_on_error,
             _callback=self.callback,
             silent=self.silent)
         self.__update_pkg_install__(plugin_conf)
@@ -837,7 +816,6 @@ fingerprint: {fingerprint}
                     "level": "INFO",
                     "message": "Updating plugin artifact... "
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
             self.__update_pull_plugin_artifact__(plugin_conf)
@@ -851,7 +829,6 @@ fingerprint: {fingerprint}
                         "level": "INFO",
                         "message": "Running post_upgrade.sh... "
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -884,7 +861,6 @@ fingerprint: {fingerprint}
                     "level": "EXCEPTION",
                     "message": err
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -910,7 +886,6 @@ fingerprint: {fingerprint}
             command=["pkg", "delete", "-a", "-f", "-y"],
             uuid=self.plugin,
             path=f"{self.iocroot}/jails/{self.plugin}",
-            exit_on_error=self.exit_on_error,
             silent=True,
             msg_err_return=True).exec_jail()
 
@@ -939,9 +914,7 @@ fingerprint: {fingerprint}
         """Installs all pkgs listed in the plugins configuration"""
         path = f"{self.iocroot}/jails/{self.plugin}"
         conf = iocage.lib.ioc_json.IOCJson(
-            location=path,
-            exit_on_error=self.exit_on_error
-        ).json_load()
+            location=path).json_load()
 
         secure = True if "https://" in plugin_conf["packagesite"] else False
         pkg_repos = plugin_conf["fingerprints"]
@@ -962,9 +935,7 @@ fingerprint: {fingerprint}
                 "",
                 0,
                 pkglist=["ca_root_nss"],
-                silent=True,
-                exit_on_error=self.exit_on_error
-            ).create_install_packages(
+                silent=True).create_install_packages(
                 self.plugin,
                 path,
                 conf)
@@ -990,9 +961,7 @@ fingerprint: {fingerprint}
                 0,
                 pkglist=plugin_conf["pkgs"],
                 silent=True,
-                plugin=True,
-                exit_on_error=self.exit_on_error
-            ).create_install_packages(
+                plugin=True).create_install_packages(
                 self.plugin,
                 path,
                 conf,
@@ -1012,16 +981,13 @@ fingerprint: {fingerprint}
 
     def upgrade(self):
         jail_conf = iocage.lib.ioc_json.IOCJson(
-            location=f"{self.iocroot}/jails/{self.plugin}",
-            exit_on_error=self.exit_on_error
-        ).json_load()
+            location=f"{self.iocroot}/jails/{self.plugin}").json_load()
 
         iocage.lib.ioc_common.logit(
             {
                 "level": "INFO",
                 "message": f"Snapshotting {self.plugin}... "
             },
-            exit_on_error=self.exit_on_error,
             _callback=self.callback,
             silent=self.silent)
 
@@ -1032,7 +998,6 @@ fingerprint: {fingerprint}
                 "level": "INFO",
                 "message": "Updating plugin INDEX... "
             },
-            exit_on_error=self.exit_on_error,
             _callback=self.callback,
             silent=self.silent)
         self.__update_pull_plugin_index__()
@@ -1052,7 +1017,6 @@ fingerprint: {fingerprint}
                     "level": "WARNING",
                     "message": "New plugin RELEASE missing, fetching now... "
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
             self.__fetch_release__(plugin_release)
@@ -1084,7 +1048,6 @@ fingerprint: {fingerprint}
 
         ioc.IOCage(
             jail=self.plugin,
-            exit_on_error=self.exit_on_error,
             skip_jails=True,
             silent=True
         ).snapshot(name)
@@ -1097,7 +1060,6 @@ fingerprint: {fingerprint}
 
         iocage = ioc.IOCage(
             jail=self.plugin,
-            exit_on_error=self.exit_on_error,
             skip_jails=True,
             silent=True)
 
@@ -1117,7 +1079,6 @@ fingerprint: {fingerprint}
                     "level": "EXCEPTION",
                     "message": f"{_json} was not found!"
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
         except json.decoder.JSONDecodeError:
@@ -1129,7 +1090,6 @@ fingerprint: {fingerprint}
                     "Invalid JSON file supplied, please supply a "
                     "correctly formatted JSON file."
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -1164,8 +1124,7 @@ fingerprint: {fingerprint}
                 {
                     "level": "EXCEPTION",
                     "message": "An error occurred! Please read above"
-                },
-                exit_on_error=self.exit_on_error)
+                })
 
     def __remove_snapshot__(self, name):
         """Removes all matching plugin snapshots"""
@@ -1185,7 +1144,6 @@ fingerprint: {fingerprint}
             command=["/bin/sh", "/etc/rc.shutdown"],
             uuid=self.plugin,
             path=f"{self.iocroot}/jails/{self.plugin}",
-            exit_on_error=self.exit_on_error,
             silent=True,
             msg_err_return=True
         ).exec_jail()
@@ -1195,7 +1153,6 @@ fingerprint: {fingerprint}
             command=["/bin/sh", "/etc/rc"],
             uuid=self.plugin,
             path=f"{self.iocroot}/jails/{self.plugin}",
-            exit_on_error=self.exit_on_error,
             silent=True,
             msg_err_return=True
         ).exec_jail()
@@ -1203,9 +1160,7 @@ fingerprint: {fingerprint}
     def __check_manifest__(self, plugin_conf):
         """If the Major ABI changed, they cannot update anymore."""
         jail_conf = iocage.lib.ioc_json.IOCJson(
-            location=f"{self.iocroot}/jails/{self.plugin}",
-            exit_on_error=self.exit_on_error
-        ).json_load()
+            location=f"{self.iocroot}/jails/{self.plugin}").json_load()
 
         jail_rel = int(jail_conf["release"].split(".", 1)[0])
         manifest_rel = int(plugin_conf["release"].split(".", 1)[0])
@@ -1223,14 +1178,12 @@ fingerprint: {fingerprint}
                     "message": "Major ABI change detected, please run"
                     " 'upgrade' instead."
                 },
-                _callback=self.callback,
-                exit_on_error=self.exit_on_error)
+                _callback=self.callback)
 
     def __fetch_release__(self, release):
         """Will call fetch to get the new RELEASE the plugin will rely on"""
         iocage.lib.ioc_fetch.IOCFetch(
-            release, exit_on_error=self.exit_on_error,
-            silent=self.silent).fetch_release()
+            release, silent=self.silent).fetch_release()
 
     def __clone_repo(self, repo_url, destination):
         """
@@ -1251,10 +1204,10 @@ fingerprint: {fingerprint}
         except KeyError:
             ref = 'refs/heads/master'
             msgs = [
-                    f'Branch {self.branch} does not exist at {repo_url}!',
-                    'Using "master" branch for plugin, this may not work '
-                    'with your RELEASE'
-                    ]
+                f'\nBranch {self.branch} does not exist at {repo_url}!',
+                'Using "master" branch for plugin, this may not work '
+                'with your RELEASE'
+            ]
 
             for msg in msgs:
                 iocage.lib.ioc_common.logit(
@@ -1262,8 +1215,7 @@ fingerprint: {fingerprint}
                         'level': 'INFO',
                         'message': msg
                     },
-                    _callback=self.callback,
-                    exit_on_error=self.exit_on_error)
+                    _callback=self.callback)
 
             local[ref.encode()] = remote_refs[ref.encode()]
 

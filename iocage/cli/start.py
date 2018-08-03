@@ -45,10 +45,10 @@ def cli(rc, jails):
             "level"  : "EXCEPTION",
             "message": 'Usage: iocage start [OPTIONS] JAILS...\n'
                        '\nError: Missing argument "jails".'
-        }, exit_on_error=True)
+        })
 
     if rc:
-        ioc.IOCage(exit_on_error=True, rc=rc, silent=True).start()
+        ioc.IOCage(rc=rc, silent=True).start()
     else:
         for jail in jails:
-            ioc.IOCage(exit_on_error=True, jail=jail, rc=rc).start()
+            ioc.IOCage(jail=jail, rc=rc).start()

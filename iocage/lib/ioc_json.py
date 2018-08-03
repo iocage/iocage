@@ -63,13 +63,11 @@ class IOCJson(object):
                  silent=False,
                  cli=False,
                  stop=False,
-                 exit_on_error=False,
                  callback=None):
         self.location = location
         self.lgr = logging.getLogger('ioc_json')
         self.cli = cli
         self.stop = stop
-        self.exit_on_error = exit_on_error
         self.silent = silent
         self.callback = callback
 
@@ -212,7 +210,6 @@ class IOCJson(object):
                             " hack88 implementation.\nPlease manually rename"
                             f" {jail_uuid} or destroy it with zfs."
                         },
-                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
 
@@ -233,7 +230,6 @@ class IOCJson(object):
                         "level": "EXCEPTION",
                         "message": err
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -258,7 +254,6 @@ class IOCJson(object):
                             f"{jail_uuid} is missing it's configuration,"
                             " please destroy this jail and recreate it."
                         },
-                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
 
@@ -271,7 +266,6 @@ class IOCJson(object):
                         "A renaming operation is required to continue.\n"
                         f"Please run iocage -f {sys.argv[-1]} as root."
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -316,8 +310,7 @@ class IOCJson(object):
                                 silent=self.silent)
 
                             status, _ = iocage.lib.ioc_list.IOCList(
-                                exit_on_error=self.exit_on_error).list_get_jid(
-                                    full_uuid)
+                            ).list_get_jid(full_uuid)
 
                             if status:
                                 iocage.lib.ioc_common.logit(
@@ -333,7 +326,6 @@ class IOCJson(object):
                                     full_uuid,
                                     self.location,
                                     conf,
-                                    exit_on_error=self.exit_on_error,
                                     silent=True)
 
                             jail_zfs_prop = \
@@ -374,7 +366,6 @@ class IOCJson(object):
                                 "message": "Configuration could not be loaded,"
                                 " is the jail dataset mounted?"
                             },
-                            exit_on_error=self.exit_on_error,
                             _callback=self.callback,
                             silent=self.silent)
 
@@ -400,7 +391,6 @@ class IOCJson(object):
                                     "level": level,
                                     "message": msg
                                 },
-                                exit_on_error=self.exit_on_error,
                                 _callback=self.callback,
                                 silent=self.silent)
                 except su.CalledProcessError:
@@ -509,7 +499,6 @@ class IOCJson(object):
                                 "No zpools found! Please create one "
                                 "before using iocage."
                             },
-                            exit_on_error=self.exit_on_error,
                             _callback=self.callback,
                             silent=self.silent)
 
@@ -615,12 +604,10 @@ class IOCJson(object):
                             "message":
                             f"{uuid} is running.\nPlease stop it first!"
                         },
-                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
 
-                jails = iocage.lib.ioc_list.IOCList(
-                    "uuid", exit_on_error=self.exit_on_error).list_datasets()
+                jails = iocage.lib.ioc_list.IOCList("uuid").list_datasets()
 
                 for j in jails:
                     _uuid = jails[j]
@@ -646,7 +633,6 @@ class IOCJson(object):
                                     f"{uuid} is running.\n"
                                     "Please stop it first!"
                                 },
-                                exit_on_error=self.exit_on_error,
                                 _callback=self.callback,
                                 silent=self.silent)
 
@@ -735,7 +721,6 @@ class IOCJson(object):
                             "message":
                             f"{uuid} is running.\nPlease stop it first!"
                         },
-                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
             elif key == "dhcp":
@@ -746,7 +731,6 @@ class IOCJson(object):
                             "message":
                             f"{uuid} is running.\nPlease stop it first!"
                         },
-                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
         else:
@@ -827,7 +811,6 @@ class IOCJson(object):
                         "message":
                         f"{key} is not a valid property for default!"
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -855,7 +838,6 @@ class IOCJson(object):
                     "You need to be root to convert the"
                     " configurations to the new format!"
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -889,7 +871,6 @@ class IOCJson(object):
                         f"{err_name} has a corrupt configuration,"
                         " please destroy the jail."
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -972,7 +953,6 @@ class IOCJson(object):
                             "A renaming operation is required to continue.\n"
                             f"Please run iocage -f {sys.argv[-1]} as root."
                         },
-                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
 
@@ -1057,7 +1037,6 @@ class IOCJson(object):
                             "level": level,
                             "message": msg
                         },
-                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
 
@@ -1083,7 +1062,6 @@ class IOCJson(object):
                         "level": level,
                         "message": msg
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -1229,7 +1207,6 @@ class IOCJson(object):
                             "level": "EXCEPTION",
                             "message": err
                         },
-                        exit_on_error=self.exit_on_error,
                         _callback=self.callback,
                         silent=self.silent)
 
@@ -1276,7 +1253,6 @@ class IOCJson(object):
                         "level": "EXCEPTION",
                         "message": msg
                     },
-                    exit_on_error=self.exit_on_error,
                     _callback=self.callback,
                     silent=self.silent)
         else:
@@ -1293,7 +1269,6 @@ class IOCJson(object):
                     "level": "EXCEPTION",
                     "message": msg
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -1310,7 +1285,6 @@ class IOCJson(object):
                     "level": "EXCEPTION",
                     "message": msg
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -1345,7 +1319,6 @@ class IOCJson(object):
                         _path,
                         plugin=True,
                         msg_return=True,
-                        exit_on_error=self.exit_on_error,
                         silent=True).exec_jail()
             else:
                 return settings
@@ -1357,7 +1330,6 @@ class IOCJson(object):
                     "level": "EXCEPTION",
                     "message": msg
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -1418,8 +1390,7 @@ class IOCJson(object):
                     _callback=self.callback,
                     silent=self.silent)
             iocage.lib.ioc_exec.IOCExec(
-                prop_cmd, uuid, _path,
-                exit_on_error=self.exit_on_error).exec_jail()
+                prop_cmd, uuid, _path).exec_jail()
 
             if restart:
                 iocage.lib.ioc_common.logit(
@@ -1439,8 +1410,7 @@ class IOCJson(object):
                 iocage.lib.ioc_exec.IOCExec(
                     servicerestart,
                     uuid,
-                    _path,
-                    exit_on_error=self.exit_on_error).exec_jail()
+                    _path).exec_jail()
 
             iocage.lib.ioc_common.logit(
                 {
@@ -1455,7 +1425,6 @@ class IOCJson(object):
                     "level": "EXCEPTION",
                     "message": f"Key: \"{key}\" does not exist!"
                 },
-                exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
 
@@ -1499,7 +1468,6 @@ class IOCJson(object):
                                 " before iocage will"
                                 " continue migration"
                             },
-                            exit_on_error=self.exit_on_error,
                             _callback=self.callback,
                             silent=self.silent)
 
@@ -1540,7 +1508,6 @@ class IOCJson(object):
                                     "level": "EXCEPTION",
                                     "message": err_msg
                                 },
-                                exit_on_error=self.exit_on_error,
                                 _callback=self.callback,
                                 silent=self.silent)
                         else:

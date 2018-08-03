@@ -48,7 +48,7 @@ class IOCCreate(object):
     def __init__(self, release, props, num, pkglist=None, plugin=False,
                  migrate=False, config=None, silent=False, template=False,
                  short=False, basejail=False, thickjail=False, empty=False,
-                 uuid=None, clone=False, exit_on_error=False, callback=None):
+                 uuid=None, clone=False, callback=None):
         self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage.lib.ioc_json.IOCJson(self.pool).json_get_value(
             "iocroot")
@@ -67,7 +67,7 @@ class IOCCreate(object):
         self.uuid = uuid
         self.clone = clone
         self.silent = silent
-        self.exit_on_error = exit_on_error
+
         self.callback = callback
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
 
@@ -154,7 +154,7 @@ class IOCCreate(object):
                             "level": "EXCEPTION",
                             "message": "You cannot clone a template, "
                                        "use create -t instead."
-                        }, exit_on_error=self.exit_on_error,
+                        },
                             _callback=self.callback,
                             silent=self.silent)
                     else:
@@ -162,14 +162,14 @@ class IOCCreate(object):
                         iocage.lib.ioc_common.logit({
                             "level": "EXCEPTION",
                             "message": f"Jail: {self.release} not found!"
-                        }, exit_on_error=self.exit_on_error,
+                        },
                             _callback=self.callback,
                             silent=self.silent)
                 else:
                     iocage.lib.ioc_common.logit({
                         "level": "EXCEPTION",
                         "message": f"RELEASE: {self.release} not found!"
-                    }, exit_on_error=self.exit_on_error,
+                    },
                         _callback=self.callback,
                         silent=self.silent)
 
@@ -257,7 +257,7 @@ class IOCCreate(object):
                                        "Please manually run zfs destroy"
                                        f" {snapshot.name} if you wish to "
                                        "destroy it."
-                        }, exit_on_error=self.exit_on_error,
+                        },
                             _callback=self.callback,
                             silent=self.silent)
 
@@ -293,7 +293,7 @@ class IOCCreate(object):
                         iocage.lib.ioc_common.logit({
                             "level": "EXCEPTION",
                             "message": "Can't copy release!"
-                        }, exit_on_error=self.exit_on_error,
+                        },
                             _callback=self.callback,
                             silent=self.silent)
             else:
@@ -317,7 +317,7 @@ class IOCCreate(object):
                     "level": "EXCEPTION",
                     "message": "You cannot name a jail default, "
                                "that is a reserved name."
-                }, exit_on_error=self.exit_on_error,
+                },
                     _callback=self.callback,
                     silent=self.silent)
             elif jail_uuid == "help":
@@ -328,7 +328,7 @@ class IOCCreate(object):
                     "level": "EXCEPTION",
                     "message": "You cannot name a jail help, "
                                "that is a reserved name."
-                }, exit_on_error=self.exit_on_error,
+                },
                     _callback=self.callback,
                     silent=self.silent)
 
@@ -527,7 +527,6 @@ class IOCCreate(object):
         property is required for pkg to have network access.
         """
         status, jid = iocage.lib.ioc_list.IOCList().list_get_jid(jail_uuid)
-        err = False
 
         if not status:
             iocage.lib.ioc_start.IOCStart(jail_uuid, location, config,
@@ -543,45 +542,69 @@ class IOCCreate(object):
         # XXX Why are we using drill? Why can't we use python's dns.resolver here? XXX
         srv_connect_cmd = ["drill", "-t", f"_http._tcp.{repo} SRV"]
         dnssec_connect_cmd = ["drill", "-D", f"{repo}"]
+        dns_connect_cmd = ["drill", f"{repo}"]
 
         iocage.lib.ioc_common.logit({
             "level": "INFO",
-            "message": f"Testing SRV response to {site}"
+            "message": f"\nTesting SRV response to {site}"
         },
             _callback=self.callback,
-            silent=self.silent)
-        srv_connection, srv_err = iocage.lib.ioc_exec.IOCExec(
+            silent=False)
+
+        # msg_err_return is set to silence stderr, we tell them user that
+        # error before
+        _, _, srv_err = iocage.lib.ioc_exec.IOCExec(
             srv_connect_cmd, jail_uuid, location, plugin=self.plugin,
-            silent=True).exec_jail()
+            silent=True, msg_err_return=True).exec_jail()
 
         if srv_err:
             # This shouldn't be fatal since SRV records are not required
             iocage.lib.ioc_common.logit({
-                "level": "INFO",
+                "level": "WARNING",
                 "message":
-                    f"{repo} could not be reached, please check your DNS"
+                    f"{repo}'s SRV record could not be verified.\n"
             },
                 _callback=self.callback,
-                silent=self.silent)
+                silent=False)
 
         iocage.lib.ioc_common.logit({
             "level": "INFO",
             "message": f"Testing DNSSEC response to {site}"
         },
             _callback=self.callback,
-            silent=self.silent)
-        dnssec_connection, dnssec_err = iocage.lib.ioc_exec.IOCExec(
+            silent=False)
+        _, _, dnssec_err = iocage.lib.ioc_exec.IOCExec(
             dnssec_connect_cmd, jail_uuid, location, plugin=self.plugin,
-            exit_on_error=self.exit_on_error, silent=True).exec_jail()
+            silent=True, msg_err_return=True).exec_jail()
 
         if dnssec_err:
             # Not fatal, they may not be using DNSSEC
             iocage.lib.ioc_common.logit({
-                "level": "ERROR",
-                "message": "{repo} could not be reached via DNSSEC, check DNS"
+                "level": "WARNING",
+                "message": f"{repo} could not be reached via DNSSEC.\n"
             },
                 _callback=self.callback,
-                silent=self.silent)
+                silent=False)
+
+            iocage.lib.ioc_common.logit({
+                "level": "INFO",
+                "message": f"Testing DNS response to {site}"
+            },
+                _callback=self.callback,
+                silent=False)
+
+            _, _, dns_err = iocage.lib.ioc_exec.IOCExec(
+                dns_connect_cmd, jail_uuid, location, plugin=self.plugin,
+                silent=True, msg_err_return=True).exec_jail()
+
+            if dns_err:
+                iocage.lib.ioc_common.logit({
+                    "level": "EXCEPTION",
+                    "message": f"{repo} could not be reached via DNS, check"
+                    " your network"
+                },
+                    _callback=self.callback,
+                    silent=False)
 
         if isinstance(self.pkglist, str):
             with open(self.pkglist, "r") as j:
@@ -600,25 +623,30 @@ class IOCCreate(object):
         # We will have mismatched ABI errors from earlier, this is to be safe.
         os.environ["ASSUME_ALWAYS_YES"] = "yes"
         cmd = ("pkg-static", "upgrade", "-f", "-q", "-y")
-        pkg_upgrade, pkgupgrade_err = iocage.lib.ioc_exec.IOCExec(
+        pkg_upgrade, pkgup_stderr, pkgup_err = iocage.lib.ioc_exec.IOCExec(
             cmd, jail_uuid, location, plugin=self.plugin,
-            exit_on_error=self.exit_on_error).exec_jail()
+            msg_err_return=True).exec_jail()
 
-        if pkgupgrade_err:
+        if pkgup_err:
+            iocage.lib.ioc_stop.IOCStop(jail_uuid, location, config,
+                                        force=True, silent=True)
             iocage.lib.ioc_common.logit({
-                "level": "ERROR",
-                "message": f"{pkg_upgrade}"
+                "level": "EXCEPTION",
+                "message": pkgup_stderr.decode().rstrip()
             },
-                _callback=self.callback,
-                silent=self.silent)
-            err = True
+                _callback=self.callback)
+
+        supply_msg = ("\nInstalling supplied packages:", self.silent)
+
+        if self.plugin:
+            supply_msg = ("\nInstalling plugin packages:", False)
 
         iocage.lib.ioc_common.logit({
             "level": "INFO",
-            "message": "Installing supplied packages:"
+            "message": supply_msg[0]
         },
             _callback=self.callback,
-            silent=self.silent)
+            silent=supply_msg[1])
 
         for pkg in self.pkglist:
             iocage.lib.ioc_common.logit({
@@ -626,21 +654,19 @@ class IOCCreate(object):
                 "message": f"  - {pkg}... "
             },
                 _callback=self.callback,
-                silent=self.silent)
+                silent=supply_msg[1])
             cmd = ("pkg", "install", "-q", "-y", pkg)
 
             pkg_stdout, pkg_stderr, pkg_err = iocage.lib.ioc_exec.IOCExec(
                 cmd, jail_uuid, location, plugin=self.plugin,
-                exit_on_error=self.exit_on_error,
                 silent=self.silent, msg_err_return=True).exec_jail()
 
-            if pkg_err:
+            if pkg_err and not self.plugin:
                 iocage.lib.ioc_common.logit({
                     "level": "ERROR",
-                    "message": f"{pkg_stderr.decode()}"
+                    "message": pkg_stderr.decode().rstrip()
                 },
                     _callback=self.callback)
-                err = True
 
         os.remove(f"{location}/root/etc/resolv.conf")
 
@@ -648,8 +674,8 @@ class IOCCreate(object):
             iocage.lib.ioc_stop.IOCStop(jail_uuid, location, config,
                                         silent=True)
 
-        if self.plugin and err:
-            return err
+        if self.plugin and pkg_err:
+            return pkg_stderr.decode().rstrip()
 
     @staticmethod
     def create_rc(location, host_hostname):
