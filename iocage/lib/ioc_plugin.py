@@ -477,11 +477,9 @@ fingerprint: {fingerprint}
         if err:
             iocage.lib.ioc_common.logit(
                 {
-                    "level":
-                    "EXCEPTION",
-                    "message":
-                    "pkg error, refusing to fetch artifact and "
-                    "run post_install.sh!\n"
+                    "level": "EXCEPTION",
+                    "message": f"\npkg error:\n  - {err}\n"
+                    "\nRefusing to fetch artifact and run post_install.sh!"
                 },
                 _callback=self.callback,
                 silent=self.silent)
@@ -518,7 +516,7 @@ fingerprint: {fingerprint}
             iocage.lib.ioc_common.logit(
                 {
                     "level": "INFO",
-                    "message": "Fetching artifact... "
+                    "message": "\nFetching artifact... "
                 },
                 _callback=self.callback,
                 silent=self.silent)
@@ -541,7 +539,7 @@ fingerprint: {fingerprint}
                 iocage.lib.ioc_common.logit(
                     {
                         "level": "INFO",
-                        "message": "Running post_install.sh"
+                        "message": "\nRunning post_install.sh"
                     },
                     _callback=self.callback,
                     silent=self.silent)
@@ -1206,7 +1204,7 @@ fingerprint: {fingerprint}
         except KeyError:
             ref = 'refs/heads/master'
             msgs = [
-                f'Branch {self.branch} does not exist at {repo_url}!',
+                f'\nBranch {self.branch} does not exist at {repo_url}!',
                 'Using "master" branch for plugin, this may not work '
                 'with your RELEASE'
             ]
