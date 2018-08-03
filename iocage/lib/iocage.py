@@ -1289,6 +1289,7 @@ class IOCage(object):
                 exit_on_error=self.exit_on_error,
                 _callback=self.callback,
                 silent=self.silent)
+            raise
 
         if key == "ip4_addr" or key == "ip6_addr":
             # We don't want spaces here
@@ -1315,7 +1316,7 @@ class IOCage(object):
             silent=self.silent)
 
         if plugin:
-            iocjson.json_plugin_set_value(prop)
+            iocjson.json_plugin_set_value(key, value)
 
             return
 

@@ -1349,7 +1349,7 @@ class IOCJson(dict):
                 _callback=self.callback,
                 silent=self.silent)
 
-    def json_plugin_set_value(self, prop):
+    def json_plugin_set_value(self, key, value):
         pool, iocroot = _get_pool_and_iocroot()
         conf = self.json_load()
         uuid = conf["host_hostuuid"]
@@ -1361,12 +1361,11 @@ class IOCJson(dict):
         settings = self.json_plugin_load()
         serviceset = settings["serviceset"]
         servicerestart = settings["servicerestart"].split()
-        keys, _, value = prop.partition("=")
-        prop = keys.split(".")
+        keys = key.split(".")
         restart = False
         readonly = False
 
-        if "options" in prop:
+        if "options" in keys:
             prop = keys.split(".")[1:]
 
         prop_cmd = f"{serviceset},{','.join(prop)},{value}".split(",")
