@@ -1225,12 +1225,7 @@ class IOCJson(object):
 
         if key in zfs_props.keys():
             pool, _ = _get_pool_and_iocroot()
-
-            if conf["template"] == "yes":
-                _type = "templates"
-            else:
-                _type = "jails"
-
+            _type = "templates" if conf["template"] == "yes" else "jails"
             uuid = conf["host_hostuuid"]
 
             if key == "quota":
