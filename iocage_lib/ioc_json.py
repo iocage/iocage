@@ -1686,13 +1686,16 @@ class IOCJson(object):
                 )
                 # override hardcoded defaults
                 for key, value in user_default_props.items():
+                    if key not in dynamic_default_props:
+                        continue
+                    if value != dynamic_default_props[key]:
+                        updated = True
                     dynamic_default_props[key] = value
         except FileNotFoundError:
-            pass
+            updated = True
         finally:
-            # They may have had new keys added to their default
-            # configuration, or it never existed.
-            self.json_write(dynamic_default_props, default_json_location)
+            if updated is True:
+                self.json_write(dynamic_default_props, default_json_location)
 
         return dynamic_default_props
 
