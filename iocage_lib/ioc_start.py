@@ -64,19 +64,23 @@ class IOCStart(object):
 
         try:
             self.pool = iocage_lib.ioc_json.IOCJson(" ").json_get_value("pool")
-            self.iocroot = iocage_lib.ioc_json.IOCJson(
-                self.pool).json_get_value("iocroot")
-            self.get = iocage_lib.ioc_json.IOCJson(self.path,
-                                                   silent=True).json_get_value
-            self.set = iocage_lib.ioc_json.IOCJson(self.path,
-                                                   silent=True).json_set_value
-
+            ioc_json_pool = iocage_lib.ioc_json.IOCJson(self.pool)
+            self.iocroot = ioc_json_pool.json_get_value("iocroot")
+            self.ioc_json = iocage_lib.ioc_json.IOCJson(self.path, silent=True)
+            self.get = ioc_json_pool.json_get_value
+            self.set = ioc_json_pool.json_set_value
             self.exec_fib = self.conf["exec_fib"]
             self.__start_jail__()
         except TypeError:
             # Bridge MTU unit tests will not have these
             # TODO: Something less terrible
             pass
+
+    def get(self, *args, **kwargs):
+        return self.ioc_json.json_get_value(*args, **kwargs)
+
+    def set(self, *args, **kwargs):
+        return self.ioc_json.json_set_value(*args, **kwargs)
 
     def __start_jail__(self):
         """
