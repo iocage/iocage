@@ -426,26 +426,53 @@ class IOCJson(object):
 
     def json_get_value(self, prop, default=False):
         """Returns a string with the specified prop's value."""
-        old = False
+        if default is True:
+            return self._json_get_default_value(prop)
+        elif prop == "pool":
+            return _json_get_user_pool()
+        elif prop == "all":
+            return self.json_load()
+        else:
+            return self._json_get_user_value(prop)
+
+    def _json_get_default_value(self, prop):
+        _, iocroot = _get_pool_and_iocroot()
+        conf = self.json_read(f"{iocroot}/defaults.json")
+        if prop == "all":
+            return conf
+        return conf[prop]
+
+    def _json_get_user_pool(self):
         zpools = list(map(lambda x: x.name, list(self.zfs.pools)))
+        old = False
+        match = 0
+        for pool in zpools:
+            prop_ioc_active = self.zfs_get_property(
+                pool, "org.freebsd.ioc:active")
+            prop_comment = self.zfs_get_property(pool, "comment")
 
-        if default:
-            _, iocroot = _get_pool_and_iocroot()
-            conf = self.json_read(f"{iocroot}/defaults.json")
+            if prop_ioc_active == "yes":
+                _dataset = pool
+                match += 1
+            elif prop_comment == "iocage":
+                _dataset = pool
+                match += 1
+                old = True
 
-            if prop == "all":
-                return conf
+        if match == 1:
+            if old:
+                self._upgrade_pool(_dataset)
 
-            return conf[prop]
+            return _dataset
 
-        if prop == "pool":
-            match = 0
-
-            for pool in zpools:
-
-                prop_ioc_active = self.zfs_get_property(
-                    pool, "org.freebsd.ioc:active")
-                prop_comment = self.zfs_get_property(pool, "comment")
+        elif match >= 2:
+            iocage.lib.ioc_common.logit(
+                {
+                    "level": "ERROR",
+                    "message": "Pools:"
+                },
+                _callback=self.callback,
+                silent=self.silent)
 
                 if prop_ioc_active == "yes":
                     _dataset = pool
@@ -465,43 +492,35 @@ class IOCJson(object):
                 iocage_lib.ioc_common.logit(
                     {
                         "level": "ERROR",
-                        "message": "Pools:"
+                        "message": f"  {zpool}"
                     },
                     _callback=self.callback,
                     silent=self.silent)
-
-                for zpool in zpools:
+            raise RuntimeError(f"You have {match} pools marked active"
+                               " for iocage usage.\n Run \"iocage"
+                               f" activate ZPOOL\" on the preferred"
+                               " pool.\n")
+        else:
+            if len(sys.argv) >= 2 and "activate" in sys.argv[1:]:
+                pass
+            else:
+                # We use the first zpool the user has, they are free to
+                # change it.
+                try:
+                    zpool = zpools[0]
+                except IndexError:
                     iocage_lib.ioc_common.logit(
                         {
-                            "level": "ERROR",
-                            "message": f"  {zpool}"
+                            "level":
+                            "EXCEPTION",
+                            "message":
+                            "No zpools found! Please create one "
+                            "before using iocage."
                         },
                         _callback=self.callback,
                         silent=self.silent)
-                raise RuntimeError(f"You have {match} pools marked active"
-                                   " for iocage usage.\n Run \"iocage"
-                                   f" activate ZPOOL\" on the preferred"
-                                   " pool.\n")
-            else:
-                if len(sys.argv) >= 2 and "activate" in sys.argv[1:]:
-                    pass
-                else:
-                    # We use the first zpool the user has, they are free to
-                    # change it.
-                    try:
-                        zpool = zpools[0]
-                    except IndexError:
-                        iocage_lib.ioc_common.logit(
-                            {
-                                'level': 'EXCEPTION',
-                                'message': 'No zpools found! Please create one'
-                                ' before using iocage.'
-                            },
-                            _callback=self.callback,
-                            silent=self.silent,
-                            exception=ioc_exceptions.PoolNotActivated)
 
-                    if os.geteuid() != 0:
+                if os.geteuid() != 0:
                         iocage_lib.ioc_common.logit(
                             {
                                 'level': 'EXCEPTION',
@@ -512,9 +531,9 @@ class IOCJson(object):
                             silent=self.silent,
                             exception=ioc_exceptions.PoolNotActivated)
 
-                    iocage_skip = os.environ.get("IOCAGE_SKIP", "FALSE")
-                    if iocage_skip == "TRUE":
-                        iocage_lib.ioc_common.logit(
+                iocage_skip = os.environ.get("IOCAGE_SKIP", "FALSE")
+                if iocage_skip == "TRUE":
+                    iocage_lib.ioc_common.logit(
                             {
                                 'level': 'EXCEPTION',
                                 'message': 'IOCAGE_SKIP is TRUE or an RC'
@@ -542,43 +561,58 @@ class IOCJson(object):
                     iocage_lib.ioc_common.logit(
                         {
                             "level":
-                            "INFO",
+                            "EXCEPTION",
                             "message":
-                            f"Setting up zpool [{zpool}] for"
-                            " iocage usage\n If you wish to change"
-                            " please use \"iocage activate\""
+                            "IOCAGE_SKIP is TRUE or an RC operation, not"
+                            " activating a pool.\nPlease manually issue"
+                            " iocage activate POOL"
                         },
                         _callback=self.callback,
                         silent=self.silent)
 
-                    self.zfs_set_property(zpool, "org.freebsd.ioc:active",
-                                          "yes")
+                if zpool == "freenas-boot":
+                    try:
+                        zpool = zpools[1]
+                    except IndexError:
+                        raise RuntimeError("Please specify a pool to "
+                                           "activate with iocage activate "
+                                           "POOL")
 
-                    return zpool
+                iocage.lib.ioc_common.logit(
+                    {
+                        "level":
+                        "INFO",
+                        "message":
+                        f"Setting up zpool [{zpool}] for"
+                        " iocage usage\n If you wish to change"
+                        " please use \"iocage activate\""
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
 
-        elif prop == "iocroot":
-            # Location in this case is actually the zpool.
-            try:
-                loc = f"{self.location}/iocage"
-                mount = self.zfs_get_property(loc, "mountpoint")
+                self.zfs_set_property(zpool, "org.freebsd.ioc:active",
+                                      "yes")
 
-                if mount != "none":
-                    return mount
-                else:
-                    raise RuntimeError(f"Please set a mountpoint on {loc}")
-            except Exception:
-                raise RuntimeError(f"{self.location} not found!")
-        elif prop == "all":
-            conf = self.json_load()
+                return zpool
 
-            return conf
-        else:
-            conf = self.json_load()
-
-            if prop == "last_started" and conf[prop] == "none":
-                return "never"
+    def _json_get_user_iocroot(self, prop):
+        # Location in this case is actually the zpool.
+        try:
+            loc = f"{self.location}/iocage"
+            mount = self.zfs_get_property(loc, "mountpoint")
+            if mount != "none":
+                return mount
             else:
-                return conf[prop]
+                raise RuntimeError(f"Please set a mountpoint on {loc}")
+        except Exception:
+            raise RuntimeError(f"{self.location} not found!")
+
+    def _json_get_user_value(self, prop):
+        conf = self.json_load()
+        if prop == "last_started" and conf[prop] == "none":
+            return "never"
+        else:
+            return conf[prop]
 
     def json_set_value(self, prop, _import=False, default=False):
         """Set a property for the specified jail."""
