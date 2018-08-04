@@ -1653,28 +1653,7 @@ class IOCJson(object):
 
     def json_check_default_config(self):
         """This sets up the default configuration for jails."""
-        _, iocroot = _get_pool_and_iocroot()
-        default_json_location = f"{iocroot}/defaults.json"
-        dynamic_default_props = self.default_properties
-        try:
-            user_default_props = return self.json_check_config(
-                self.json_read(default_json_location),
-                default=True
-            )
-            # override hardcoded defaults
-            for key, value in user_default_props.items():
-                if key not in dynamic_default_props:
-                    continue
-                if value != dynamic_default_props[key]:
-                    updated = True
-                dynamic_default_props[key] = value
-        except FileNotFoundError:
-            updated = True
-        finally:
-            if updated is True:
-                self.json_write(dynamic_default_props, default_json_location)
-
-        return dynamic_default_props
+        return self.default_properties
 
     @property
     def hostid(self):
@@ -1682,9 +1661,50 @@ class IOCJson(object):
             with open("/etc/hostid", "r") as f:
                 self._hostid = f.read().strip()
         return self._hostid
-    
+
+    @property
+    def defaults_config_file(self):
+        _, iocroot = _get_pool_and_iocroot()
+        return f"{iocroot}/defaults.json"
+
+    @property
+    def user_default_properties(self):
+        try:
+            return self.json_check_config(
+                self.json_read(self.defaults_config_file),
+                default=True
+            )
+        except FileNotFoundError:
+            return None
+
     @property
     def default_properties(self):
+        merged_default_props = self.global_default_properties
+        user_default_props = self.user_default_properties
+        if user_default_props is None:
+            updated = True
+            user_default_props = []
+        else:
+            updated = False
+
+        # override hardcoded defaults
+        for key, value in user_default_props.items():
+            if key not in merged_default_props:
+                continue
+            if value != merged_default_props[key]:
+                updated = True
+            merged_default_props[key] = value
+
+        if updated is True:
+            self.json_write(
+                merged_default_props,
+                self.defaults_config_file
+            )
+
+        return merged_default_props
+
+    @property
+    def global_default_properties(self):
         """Return the hardcoded defaults."""
         return {
             "CONFIG_VERSION": self.CONFIG_VERSION,
