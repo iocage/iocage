@@ -52,8 +52,7 @@ class IOCCreate(object):
                  short=False, basejail=False, thickjail=False, empty=False,
                  uuid=None, clone=False, callback=None):
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
-        self.iocroot = iocage_lib.ioc_json.IOCJson(self.pool).json_get_value(
-            "iocroot")
+        self.ioc_json_pool = iocage_lib.ioc_json.IOCJson(self.pool)
         self.release = release
         self.props = props
         self.num = num
@@ -83,8 +82,7 @@ class IOCCreate(object):
         if self.short:
             jail_uuid = jail_uuid[:8]
 
-        location = f"{self.iocroot}/jails/{jail_uuid}"
-
+        location = f"{self.iocroot.mountpoint}/jails/{jail_uuid}"
         try:
             return self._create_jail(jail_uuid, location)
         except KeyboardInterrupt:
@@ -97,6 +95,10 @@ class IOCCreate(object):
                 _callback=self.callback,
                 silent=self.silent)
 
+    @property
+    def iocroot(self):
+        return self.ioc_json_pool.root_dataset
+
     def _create_jail(self, jail_uuid, location):
         """
         Create a snapshot of the user specified RELEASE dataset and clone a
@@ -105,14 +107,17 @@ class IOCCreate(object):
         """
         start = False
         is_template = False
+        iocroot = self.iocroot.mountpoint
 
         if iocage_lib.ioc_common.match_to_dir(self.iocroot, jail_uuid):
             if not self.plugin:
                 raise RuntimeError(f"Jail: {jail_uuid} already exists!")
 
             for i in itertools.count(start=2, step=1):
-                if iocage_lib.ioc_common.match_to_dir(self.iocroot,
-                                                      f'{jail_uuid}_{i}'):
+                if iocage_lib.ioc_common.match_to_dir(
+                    self.iocroot,
+                    f'{jail_uuid}_{i}'
+                ):
                     continue
 
                 # They now have a uniquely named plugin
@@ -134,14 +139,12 @@ class IOCCreate(object):
                 elif self.clone:
                     _type = "jails"
                     clone_path = f"{self.iocroot}/{_type}/{self.release}"
-                    clone_config = iocage_lib.ioc_json.IOCJson(
-                        clone_path).json_get_value
+                    clone_config = iocage_lib.ioc_json.IOCJson(clone_path)
                     cloned_release = clone_config("cloned_release")
                     clone_uuid = clone_config("host_hostuuid")
                 else:
                     _type = "releases"
-                    rel_path = f"{self.iocroot}/{_type}/{self.release}"
-
+                    rel_path = f"{iocroot}/{_type}/{self.release}"
                     freebsd_version = f"{rel_path}/root/bin/freebsd-version"
 
                     if not self.empty:
@@ -166,7 +169,7 @@ class IOCCreate(object):
                 if self.template:
                     raise RuntimeError(f"Template: {self.release} not found!")
                 elif self.clone:
-                    if os.path.isdir(f"{self.iocroot}/templates/"
+                    if os.path.isdir(f"{iocroot}/templates/"
                                      f"{self.release}"):
                         iocage_lib.ioc_common.logit({
                             "level": "EXCEPTION",
@@ -194,58 +197,72 @@ class IOCCreate(object):
             if not self.clone:
                 config = self.create_config(jail_uuid, cloned_release)
             else:
-                clone_config = f"{self.iocroot}/jails/{jail_uuid}/config.json"
-                clone_fstab = f"{self.iocroot}/jails/{jail_uuid}/fstab"
+                clone_config = f"{iocroot}/jails/{jail_uuid}/config.json"
+                clone_fstab = f"{iocroot}/jails/{jail_uuid}/fstab"
                 clone_etc_hosts = \
-                    f"{self.iocroot}/jails/{jail_uuid}/root/etc/hosts"
+                    f"{iocroot}/jails/{jail_uuid}/root/etc/hosts"
 
-        jail = f"{self.pool}/iocage/jails/{jail_uuid}/root"
+        jail = f"{self.iocroot.name}/jails/{jail_uuid}/root"
 
         if self.template:
             try:
-                su.check_call(["zfs", "snapshot",
-                               f"{self.pool}/iocage/templates/{self.release}/"
-                               f"root@{jail_uuid}"], stderr=su.PIPE)
-            except su.CalledProcessError:
+                _ds_name = f"{self.iocroot.name}/templates/{self.release}/root"
+                _ds = self.zfs.get_dataset(_ds_name)
+            except libzfs.ZFSException:
                 raise RuntimeError(f"Template: {self.release} not found!")
 
-            su.Popen(["zfs", "clone", "-p",
-                      f"{self.pool}/iocage/templates/{self.release}/root@"
-                      f"{jail_uuid}", jail], stdout=su.PIPE).communicate()
+            try:
+                _ds.snapshot(f"{_ds_name}@{jail_uuid}")
+            except libzfs.ZFSException:
+                raise RuntimeError(f"Snapshot creation failed")
+
+            try:
+                _ds.clone(jail)
+                self.zfs.get_dataset(jail).mount()
+            except libzfs.ZFSException:
+                raise RuntimeError("Dataset cloning failed")
 
             # self.release is actually the templates name
             config["release"] = iocage_lib.ioc_json.IOCJson(
-                f"{self.iocroot}/templates/{self.release}").json_get_value(
-                "release")
+                f"{self.iocroot.mountpoint}/templates/{self.release}"
+            ).json_get_value("release")
             config["cloned_release"] = iocage_lib.ioc_json.IOCJson(
-                f"{self.iocroot}/templates/{self.release}").json_get_value(
-                "cloned_release")
+                f"{self.iocroot.mountpoint}/templates/{self.release}"
+            ).json_get_value("cloned_release")
         elif self.clone:
+            release_dataset_name = f"{self.iocroot.name}/jails/{self.release}"
             try:
-                su.check_call(["zfs", "snapshot", "-r",
-                               f"{self.pool}/iocage/jails/{self.release}"
-                               f"@{jail_uuid}"], stderr=su.PIPE)
-            except su.CalledProcessError:
-                raise RuntimeError(f"Jail: {jail_uuid} not found!")
+                release_dataset = self.zfs.get_dataset(release_dataset_name)
+                release_dataset.snapshot(
+                    f"{release_dataset_name}@{jail_uuid}",
+                    recursive=True
+                )
+            except libzfs.ZFSException:
+                raise RuntimeError(f"Jail: snapshot for {jail_uuid} failed!")
 
-            su.Popen(["zfs", "clone",
-                      f"{self.pool}/iocage/jails/{self.release}@"
-                      f"{jail_uuid}", jail.replace("/root", "")],
-                     stdout=su.PIPE).communicate()
-            su.Popen(["zfs", "clone",
-                      f"{self.pool}/iocage/jails/{self.release}/root@"
-                      f"{jail_uuid}", jail], stdout=su.PIPE).communicate()
+            try:
+                jail_main_dataset_name = jail.replace("/root", "")
+                self.zfs.get_snapshot(
+                    f"{release_dataset_name}@{jail_uuid}"
+                ).clone(jail_main_dataset_name)
+                self.zfs.get_dataset(jail_main_dataset_name).mount()
+
+                self.zfs.get_snapshot(
+                    f"{release_dataset_name}/root@{jail_uuid}"
+                ).clone(jail)
+            except libzfs.ZFSException:
+                raise RuntimeError(f"Jail: release cloning failed!")
 
             with open(clone_config, "r") as _clone_config:
                 config = json.load(_clone_config)
 
             # self.release is actually the clones name
             config["release"] = iocage_lib.ioc_json.IOCJson(
-                f"{self.iocroot}/jails/{self.release}").json_get_value(
-                "release")
+                f"{self.iocroot.mountpoint}/jails/{self.release}"
+            ).json_get_value("release")
             config["cloned_release"] = iocage_lib.ioc_json.IOCJson(
-                f"{self.iocroot}/jails/{self.release}").json_get_value(
-                "cloned_release")
+                f"{self.iocroot.mountpoint}/jails/{self.release}"
+            ).json_get_value("cloned_release")
 
             # Clones are expected to be as identical as possible.
 
@@ -259,14 +276,13 @@ class IOCCreate(object):
                 config[k] = v
         else:
             if not self.empty:
-                dataset = f"{self.pool}/iocage/releases/{self.release}/" \
-                    f"root@{jail_uuid}"
+                dataset = self.zfs.get_dataset(
+                    f"{self.iocroot.name}/releases/{self.release}/root"
+                )
+                snapshot_name = f"{dataset.name}@{jail_uuid}"
                 try:
-                    su.check_call(["zfs", "snapshot",
-                                   f"{self.pool}/iocage/releases/"
-                                   f"{self.release}/"
-                                   f"root@{jail_uuid}"], stderr=su.PIPE)
-                except su.CalledProcessError:
+                    dataset.snapshot(snapshot_name)
+                except libzfs.ZFSException:
                     try:
                         snapshot = self.zfs.get_snapshot(dataset)
                         iocage_lib.ioc_common.logit({
@@ -284,27 +300,35 @@ class IOCCreate(object):
                             f"RELEASE: {self.release} not found!")
 
                 if not self.thickjail:
-                    su.Popen(["zfs", "clone", "-p",
-                              f"{self.pool}/iocage/releases/"
-                              f"{self.release}/root@"
-                              f"{jail_uuid}",
-                              jail], stdout=su.PIPE).communicate()
+                    _name = f"{self.iocroot.name}/releases/{self.release}/root"
+                    snapshot = self.zfs.get_snapshot(f"{_name}@{jail_uuid}")
+
+                    # create jail dataset
+                    _jail_dataset_name = jail.rsplit("/", maxsplit=1)[0]
+                    self.ioc_json_pool.pool.create(_jail_dataset_name, {})
+                    self.zfs.get_dataset(_jail_dataset_name).mount()
+
+                    # clone jail root dataset
+                    snapshot.clone(jail)
+                    self.zfs.get_dataset(jail).mount()
                 else:
                     try:
-                        su.Popen(["zfs", "create", "-p", jail],
-                                  stdout=su.PIPE).communicate()
+                        su.Popen(
+                            ["zfs", "create", "-p", jail],
+                            stdout=su.PIPE
+                        ).communicate()
                         zfs_send = su.Popen(["zfs", "send",
-                                             f"{self.pool}/iocage/releases/"
+                                             f"{self.iocroot.name}/releases/"
                                              f"{self.release}/root@"
                                              f"{jail_uuid}"], stdout=su.PIPE)
                         su.check_call(["zfs", "receive", "-F", jail],
                                       stdin=zfs_send.stdout)
                     except su.CalledProcessError:
                         su.Popen(["zfs", "destroy", "-rf",
-                                  f"{self.pool}/iocage/jails/{jail_uuid}"],
+                                  f"{self.iocroot.name}/jails/{jail_uuid}"],
                                   stdout=su.PIPE).communicate()
                         su.Popen(["zfs", "destroy", "-r",
-                                  f"{self.pool}/iocage/releases/"
+                                  f"{self.iocroot.name}/releases/"
                                   f"{self.release}/root@"
                                   f"{jail_uuid}"],
                                   stdout=su.PIPE).communicate()
@@ -326,17 +350,20 @@ class IOCCreate(object):
 
         # This test is to avoid the same warnings during install_packages.
 
-        if jail_uuid == "default" or jail_uuid == "help":
-            iocage_lib.ioc_destroy.IOCDestroy(
-            ).__destroy_parse_datasets__(
-                f"{self.pool}/iocage/jails/{jail_uuid}")
-            iocage_lib.ioc_common.logit({
-                "level": "EXCEPTION",
-                "message": f"You cannot name a jail {jail_uuid}, "
-                           "that is a reserved name."
-            },
-                _callback=self.callback,
-                silent=self.silent)
+        if not self.plugin:
+            if jail_uuid == "default" or jail_uuid == "help":
+                iocage_lib.ioc_destroy.IOCDestroy().__destroy_parse_datasets__(
+                    f"{self.pool}/iocage/jails/{jail_uuid}"
+                )
+                iocage_lib.ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": f"You cannot name a jail {jail_uuid}, "
+                                   "that is a reserved name."
+                    },
+                    _callback=self.callback,
+                    silent=self.silent
+                )
 
         for prop in self.props:
             key, _, value = prop.partition("=")
@@ -349,8 +376,11 @@ class IOCCreate(object):
 
                 iocjson.json_set_value("type=template")
                 iocjson.json_set_value("template=yes")
-                iocjson.zfs_set_property(f"{self.pool}/iocage/templates/"
-                                         f"{jail_uuid}", "readonly", "off")
+                iocjson.zfs_set_property(
+                    identifier=f"{self.pool}/iocage/templates/{jail_uuid}",
+                    key="readonly",
+                    value="off"
+                )
 
                 # If you supply pkglist and templates without setting the
                 # config's type, you will end up with a type of jail
@@ -359,19 +389,19 @@ class IOCCreate(object):
                 start = False
                 is_template = True
 
-            try:
-                value, config = iocjson.json_check_prop(key, value, config)
+                try:
+                    iocjson.json_check_prop(key, value, config)
+                    config[key] = value
+                except RuntimeError as err:
+                    iocjson.json_write(config)  # Destroy counts on this.
+                    iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(location)
 
-                config[key] = value
-            except RuntimeError as err:
-                iocjson.json_write(config)  # Destroy counts on this.
-                iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(location)
-
-                raise RuntimeError(f"***\n{err}\n***\n")
-            except SystemExit:
-                iocjson.json_write(config)  # Destroy counts on this.
-                iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(location)
-                exit(1)
+                    raise RuntimeError(f"***\n{err}\n***\n")
+                except SystemExit:
+                    # Destroy counts on this.
+                    iocjson.json_write(config, location=location)
+                    iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(location)
+                    exit(1)
 
         if not self.plugin:
             iocjson.json_write(config)
@@ -505,7 +535,7 @@ class IOCCreate(object):
 
         if is_template:
             # We have to set readonly back, since we're done with our tasks
-            iocjson.zfs_set_property(f"{self.pool}/iocage/templates/"
+            iocjson.zfs_set_property(f"{self.iocroot.name}/templates/"
                                      f"{jail_uuid}", "readonly", "on")
 
         return jail_uuid

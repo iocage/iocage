@@ -69,7 +69,7 @@ class IOCStart(object):
             self.ioc_json = iocage_lib.ioc_json.IOCJson(self.path, silent=True)
             self.get = ioc_json_pool.json_get_value
             self.set = ioc_json_pool.json_set_value
-            self.exec_fib = self.conf["exec_fib"]
+            self.exec_fib = self._get_conf_value("exec_fib")
             self.__start_jail__()
         except TypeError:
             # Bridge MTU unit tests will not have these
@@ -81,6 +81,11 @@ class IOCStart(object):
 
     def set(self, *args, **kwargs):
         return self.ioc_json.json_set_value(*args, **kwargs)
+
+    def _get_conf_value(self, key):
+        if key in self.conf:
+            return self.conf[key]
+        return self.ioc_json.default_properties[key]
 
     def __start_jail__(self):
         """
@@ -120,42 +125,42 @@ class IOCStart(object):
                 }, _callback=self.callback, silent=self.silent)
                 return
 
-        mount_procfs = self.conf["mount_procfs"]
-        host_domainname = self.conf["host_domainname"]
+        mount_procfs = self._get_conf_value("mount_procfs")
+        host_domainname = self._get_conf_value("host_domainname")
         host_hostname = self.conf.get("host_hostname", self.uuid)
-        securelevel = self.conf["securelevel"]
-        devfs_ruleset = self.conf["devfs_ruleset"]
-        enforce_statfs = self.conf["enforce_statfs"]
-        children_max = self.conf["children_max"]
-        allow_set_hostname = self.conf["allow_set_hostname"]
-        allow_sysvipc = self.conf["allow_sysvipc"]
-        allow_raw_sockets = self.conf["allow_raw_sockets"]
-        allow_chflags = self.conf["allow_chflags"]
-        allow_mlock = self.conf["allow_mlock"]
-        allow_mount = self.conf["allow_mount"]
-        allow_mount_devfs = self.conf["allow_mount_devfs"]
-        allow_mount_nullfs = self.conf["allow_mount_nullfs"]
-        allow_mount_procfs = self.conf["allow_mount_procfs"]
-        allow_mount_tmpfs = self.conf["allow_mount_tmpfs"]
-        allow_mount_zfs = self.conf["allow_mount_zfs"]
-        allow_quotas = self.conf["allow_quotas"]
-        allow_socket_af = self.conf["allow_socket_af"]
-        allow_tun = self.conf["allow_tun"]
-        exec_prestart = self.conf["exec_prestart"]
-        exec_poststart = self.conf["exec_poststart"]
-        exec_prestop = self.conf["exec_prestop"]
-        exec_stop = self.conf["exec_stop"]
-        exec_clean = self.conf["exec_clean"]
-        exec_timeout = self.conf["exec_timeout"]
-        stop_timeout = self.conf["stop_timeout"]
-        mount_devfs = self.conf["mount_devfs"]
-        mount_fdescfs = self.conf["mount_fdescfs"]
-        sysvmsg = self.conf["sysvmsg"]
-        sysvsem = self.conf["sysvsem"]
-        sysvshm = self.conf["sysvshm"]
-        bpf = self.conf["bpf"]
-        dhcp = self.conf["dhcp"]
-        vnet_interfaces = self.conf["vnet_interfaces"]
+        securelevel = self._get_conf_value("securelevel")
+        devfs_ruleset = self._get_conf_value("devfs_ruleset")
+        enforce_statfs = self._get_conf_value("enforce_statfs")
+        children_max = self._get_conf_value("children_max")
+        allow_set_hostname = self._get_conf_value("allow_set_hostname")
+        allow_sysvipc = self._get_conf_value("allow_sysvipc")
+        allow_raw_sockets = self._get_conf_value("allow_raw_sockets")
+        allow_chflags = self._get_conf_value("allow_chflags")
+        allow_mlock = self._get_conf_value("allow_mlock")
+        allow_mount = self._get_conf_value("allow_mount")
+        allow_mount_devfs = self._get_conf_value("allow_mount_devfs")
+        allow_mount_nullfs = self._get_conf_value("allow_mount_nullfs")
+        allow_mount_procfs = self._get_conf_value("allow_mount_procfs")
+        allow_mount_tmpfs = self._get_conf_value("allow_mount_tmpfs")
+        allow_mount_zfs = self._get_conf_value("allow_mount_zfs")
+        allow_quotas = self._get_conf_value("allow_quotas")
+        allow_socket_af = self._get_conf_value("allow_socket_af")
+        exec_prestart = self._get_conf_value("exec_prestart")
+        exec_poststart = self._get_conf_value("exec_poststart")
+        exec_prestop = self._get_conf_value("exec_prestop")
+        exec_stop = self._get_conf_value("exec_stop")
+        exec_clean = self._get_conf_value("exec_clean")
+        exec_timeout = self._get_conf_value("exec_timeout")
+        stop_timeout = self._get_conf_value("stop_timeout")
+        mount_devfs = self._get_conf_value("mount_devfs")
+        mount_fdescfs = self._get_conf_value("mount_fdescfs")
+        sysvmsg = self._get_conf_value("sysvmsg")
+        sysvsem = self._get_conf_value("sysvsem")
+        sysvshm = self._get_conf_value("sysvshm")
+        bpf = self._get_conf_value("bpf")
+        dhcp = self._get_conf_value("dhcp")
+        vnet_interfaces = self._get_conf_value("vnet_interfaces")
+
         prop_missing = False
 
         if dhcp == "on":
@@ -182,7 +187,7 @@ class IOCStart(object):
                       "/root/proc"]).communicate()
 
         try:
-            mount_linprocfs = self.conf["mount_linprocfs"]
+            mount_linprocfs = self._get_conf_value("mount_linprocfs")
 
             if mount_linprocfs == "1":
                 if not os.path.isdir(f"{self.path}/root/compat/linux/proc"):
@@ -251,12 +256,12 @@ class IOCStart(object):
             _allow_mlock = f"allow.mlock={allow_mlock}"
 
         if self.conf["vnet"] == "off":
-            ip4_addr = self.conf["ip4_addr"]
-            ip4_saddrsel = self.conf["ip4_saddrsel"]
-            ip4 = self.conf["ip4"]
-            ip6_addr = self.conf["ip6_addr"]
-            ip6_saddrsel = self.conf["ip6_saddrsel"]
-            ip6 = self.conf["ip6"]
+            ip4_addr = self._get_conf_value("ip4_addr")
+            ip4_saddrsel = self._get_conf_value("ip4_saddrsel")
+            ip4 = self._get_conf_value("ip4")
+            ip6_addr = self._get_conf_value("ip6_addr")
+            ip6_saddrsel = self._get_conf_value("ip6_saddrsel")
+            ip6 = self._get_conf_value("ip6")
             net = []
 
             if ip4_addr != "none":
@@ -453,8 +458,8 @@ class IOCStart(object):
                 failed_dhcp = False
 
                 try:
-                    interface = self.conf["interfaces"].split(",")[0].split(
-                        ":")[0]
+                    _interfaces = self._get_conf_value("interfaces")
+                    interface = _interfaces.split(",")[0].split(":")[0]
 
                     if interface == "vnet0":
                         # Jails default is epairNb
@@ -572,7 +577,7 @@ class IOCStart(object):
         self.start_generate_resolv()
         self.start_copy_localtime()
         # This needs to be a list.
-        exec_start = self.conf["exec_start"].split()
+        exec_start = self._get_conf_value("exec_start").split()
 
         with open("{}/log/{}-console.log".format(self.iocroot,
                                                  self.uuid), "a") as f:
@@ -683,8 +688,12 @@ class IOCStart(object):
                             continue
 
                         if iface not in ifaces:
-                            err = self.start_network_vnet_iface(nic, bridge,
-                                                                membermtu, jid)
+                            err = self.start_network_vnet_iface(
+                                nic,
+                                bridge,
+                                membermtu,
+                                jid
+                            )
                             if err:
                                 errors.append(err)
 
@@ -824,15 +833,24 @@ class IOCStart(object):
             ifconfig = [iface, ip, "up"]
             route = ["add", "default", defaultgw]
 
+        if defaultgw == "none":
+            route = None
+
         try:
             if dhcp == "off" and ip != 'accept_rtadv':
                 # Jail side
                 iocage_lib.ioc_common.checkoutput(
                     ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
                      "ifconfig"] + ifconfig, stderr=su.STDOUT)
-                iocage_lib.ioc_common.checkoutput(
-                    ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
-                     "route"] + route, stderr=su.STDOUT)
+                if route is not None:
+                    iocage_lib.ioc_common.checkoutput(
+                        [
+                            "setfib", self.exec_fib,
+                            "jexec", f"ioc-{self.uuid}",
+                            "route"
+                        ] + route,
+                        stderr=su.STDOUT
+                    )
             else:
                 if ipv6:
                     if ip == 'accept_rtadv':
@@ -868,7 +886,7 @@ class IOCStart(object):
 
     def start_generate_resolv(self):
         resolver = self.get("resolver")
-        #                                     compat
+        # compat
 
         if resolver != "/etc/resolv.conf" and resolver != "none" and \
                 resolver != "/dev/null":

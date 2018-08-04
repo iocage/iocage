@@ -49,7 +49,7 @@ class IOCList(object):
         self.list_type = lst_type
         self.header = hdr
         self.full = full
-        self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
+        self.ioc_json = iocage_lib.ioc_json.IOCJson()
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.sort = _sort
         self.silent = silent
@@ -61,12 +61,17 @@ class IOCList(object):
         """Lists the datasets of given type."""
 
         if self.list_type == "all" or self.list_type == "uuid":
-            ds = self.zfs.get_dataset(f"{self.pool}/iocage/jails").children
+            ds = self.zfs.get_dataset(
+                f"{self.ioc_json.root_dataset.name}/jails"
+            ).children
         elif self.list_type == "base":
-            ds = self.zfs.get_dataset(f"{self.pool}/iocage/releases").children
+            ds = self.zfs.get_dataset(
+                f"{self.ioc_json.root_dataset.name}/releases"
+            ).children
         elif self.list_type == "template":
             ds = self.zfs.get_dataset(
-                f"{self.pool}/iocage/templates").children
+                f"{self.ioc_json.root_dataset.name}/templates"
+            ).children
 
         if self.list_type == "all":
             if self.quick:
@@ -83,7 +88,7 @@ class IOCList(object):
                 jails[uuid] = jail.properties["mountpoint"].value
 
             template_datasets = self.zfs.get_dataset(
-                f"{self.pool}/iocage/templates")
+                f"{self.ioc_json.root_dataset.name}/templates")
             template_datasets = template_datasets.children
 
             for template in template_datasets:
@@ -126,10 +131,8 @@ class IOCList(object):
             jail_list.append([uuid, ip4])
 
         # return the list
-
         if not self.header:
-            flat_jail = [j for j in jail_list]
-
+            flat_jail = list(jail_list)
             return flat_jail
 
         # Prints the table
@@ -150,9 +153,9 @@ class IOCList(object):
 
         for jail in jails:
             mountpoint = jail.properties["mountpoint"].value
-            conf = iocage_lib.ioc_json.IOCJson(mountpoint).json_load()
+            conf = iocage_lib.ioc_json.IOCJson(mountpoint)
 
-            uuid_full = conf["host_hostuuid"]
+            uuid_full = mountpoint.split("/").pop()
             uuid = uuid_full
 
             if not self.full:

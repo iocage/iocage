@@ -36,7 +36,8 @@ class IOCCheck(object):
 
     def __init__(self, silent=False, callback=None):
         self.pool = iocage_lib.ioc_json.IOCJson(silent=silent).json_get_value(
-            "pool")
+            "pool"
+        )
         self.callback = callback
         self.silent = silent
 
@@ -56,7 +57,7 @@ class IOCCheck(object):
         pool = zfs.get(self.pool)
 
         for dataset in datasets:
-            zfs_dataset_name = f"{self.pool}/{dataset}"
+            zfs_dataset_name = f"{self.pool.name}/{dataset}"
             try:
                 ds = zfs.get_dataset(zfs_dataset_name)
             except libzfs.ZFSException:
@@ -68,7 +69,7 @@ class IOCCheck(object):
 
                 iocage_lib.ioc_common.logit({
                     "level": "INFO",
-                    "message": f"Creating {self.pool}/{dataset}"
+                    "message": f"Creating {self.pool.name}/{dataset}"
                 },
                     _callback=self.callback,
                     silent=self.silent)
