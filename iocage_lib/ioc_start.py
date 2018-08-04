@@ -46,8 +46,15 @@ class IOCStart(object):
     for them. It also finds any scripts the user supplies for exec_*
     """
 
-    def __init__(self, uuid, path, conf, silent=False,
-                 callback=None, is_depend=False):
+    def __init__(
+        self,
+        uuid,
+        path,
+        conf,
+        silent=False,
+        callback=None,
+        is_depend=False
+    ):
         self.uuid = uuid.replace(".", "_")
         self.path = path
         self.conf = conf
