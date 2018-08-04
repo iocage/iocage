@@ -198,7 +198,6 @@ class IOCJson(object):
     def json_load(self):
         """Load the JSON at the location given. Returns a JSON object."""
         pool, iocroot = _get_pool_and_iocroot()
-        version = self.CONFIG_VERSION
         jail_type, jail_uuid = self.location.rsplit("/", 2)[-2:]
         full_uuid = jail_uuid  # Saves jail_uuid for legacy ZFS migration
         legacy_short = False
