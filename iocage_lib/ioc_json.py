@@ -247,7 +247,7 @@ class IOCJson(dict):
                     silent=self.silent)
 
         try:
-            conf = self.json_read(self.location + "/config.json")
+            conf = self.json_read("/config.json")
         except FileNotFoundError:
             try:
                 # If this is a legacy jail, it will be missing this file but
@@ -1144,7 +1144,7 @@ class IOCJson(dict):
         # The above doesn't get triggered with legacy short UUIDs
 
         if renamed:
-            self.location = f"{iocroot}/jails/{tag}"
+            self.location = f"{self.iocroot}/jails/{tag}"
 
             self.json_write(conf)
 
@@ -1789,7 +1789,8 @@ class IOCJson(dict):
         if updated is True:
             self.json_write(
                 merged_default_props,
-                self.defaults_config_file
+                "/defaults.json",
+                location=self.root_dataset.mountpoint
             )
 
         return merged_default_props
