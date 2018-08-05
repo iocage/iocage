@@ -1027,8 +1027,7 @@ class IOCage(PoolAndDataset):
         if not recursive:
             if self.jail == "default":
                 try:
-                    return ioc_json.IOCJson().json_get_value(prop,
-                                                             default=True)
+                    return ioc_json.IOCJson().json_get_default_value(prop)
                 except KeyError:
                     ioc_common.logit(
                         {
@@ -1350,12 +1349,9 @@ class IOCage(PoolAndDataset):
 
         if self.jail == "default":
             ioc_json.IOCJson().json_check_default_config()
-            default = True
-        else:
-            default = False
-
-        if default:
-            ioc_json.IOCJson(self.iocroot).json_set_value(prop, default=True)
+            key, _, value = prop.partition("=")
+            ioc_json.IOCJson(self.iocroot).json_set_default_value(key, value)
+            return
 
         uuid, path = self.__check_jail_existence__()
         iocjson = ioc_json.IOCJson(

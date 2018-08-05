@@ -455,11 +455,9 @@ class IOCJson(dict):
         self.zfs_set_property(pool, "org.freebsd.ioc:active", "yes")
         self.zfs_set_property(pool, "comment", "-")
 
-    def json_get_value(self, prop, default=False):
+    def json_get_value(self, prop):
         """Returns a string with the specified prop's value."""
-        if default is True:
-            return self._json_get_default_value(prop)
-        elif prop == "pool":
+        if prop == "pool":
             return self.pool
         elif prop == "iocroot":
             return self.iocroot.mountpoint
@@ -468,7 +466,7 @@ class IOCJson(dict):
         else:
             return self._json_get_user_value(prop)
 
-    def _json_get_default_value(self, prop):
+    def json_get_default_value(self, prop):
         if prop == "all":
             return self
         return self[prop]
@@ -631,17 +629,9 @@ class IOCJson(dict):
         else:
             return self[prop]
 
-    def json_set_value(self, prop, _import=False, default=False):
+    def json_set_value(self, prop, _import=False):
         """Set a property for the specified jail."""
         key, _, value = prop.partition("=")
-
-        if default is True:
-            self._json_set_default_value(key, value)
-        else:
-            self._json_set_jail_value(key, value, _import=_import)
-
-    def _json_set_jail_value(self, key, value, _import):
-
         uuid = self["host_hostuuid"]
         status, jid = iocage_lib.ioc_list.IOCList().list_get_jid(uuid)
         self[key] = value
@@ -866,7 +856,7 @@ class IOCJson(dict):
                     raise RuntimeError(
                         f"{err.output.decode('utf-8').rstrip()}")
 
-    def _json_set_default_value(self, key, value):
+    def json_set_default_value(self, key, value):
 
         if key not in self.global_default_properties.keys():
             iocage_lib.ioc_common.logit(
