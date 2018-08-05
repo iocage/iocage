@@ -1348,7 +1348,6 @@ class IOCage(PoolAndDataset):
             value = value.replace(" ", "")
 
         if self.jail == "default":
-            ioc_json.IOCJson().json_check_default_config()
             key, _, value = prop.partition("=")
             ioc_json.IOCJson(self.iocroot).json_set_default_value(key, value)
             return

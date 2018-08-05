@@ -1731,10 +1731,6 @@ class IOCJson(dict):
 
         return (conf, False, True)
 
-    def json_check_default_config(self):
-        """This sets up the default configuration for jails."""
-        return self.default_properties
-
     @property
     def hostid(self):
         if self._hostid is None:
