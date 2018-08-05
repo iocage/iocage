@@ -39,9 +39,9 @@ class IOCDestroy(object):
     """
 
     def __init__(self):
-        self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
+        self.pool = iocage_lib.ioc_json.IOCJson().pool
         self.iocroot = iocage_lib.ioc_json.IOCJson(
-            self.pool).json_get_value("iocroot")
+            self.pool).iocroot.mountpoint
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.ds = self.zfs.get_dataset
 

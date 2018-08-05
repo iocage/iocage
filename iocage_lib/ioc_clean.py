@@ -32,7 +32,7 @@ class IOCClean(object):
     """Cleans datasets and snapshots of a given type."""
 
     def __init__(self, callback=None, silent=False):
-        self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
+        self.pool = iocage_lib.ioc_json.IOCJson().pool
 
         self.callback = callback
         self.silent = silent

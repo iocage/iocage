@@ -54,12 +54,19 @@ class IOCPlugin(object):
     includes creation, updating and upgrading.
     """
 
-    def __init__(self, release=None, plugin=None, branch=None,
-                 keep_jail_on_failure=False, callback=None, silent=False,
-                 **kwargs):
-        self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
+    def __init__(
+        self,
+        release=None,
+        plugin=None,
+        branch=None,
+        keep_jail_on_failure=False,
+        callback=None,
+        silent=False,
+        **kwargs
+    ):
+        self.pool = iocage_lib.ioc_json.IOCJson().pool
         self.iocroot = iocage_lib.ioc_json.IOCJson(
-            self.pool).json_get_value("iocroot")
+            self.pool).iocroot.mountpoint
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.release = release
         self.plugin = plugin

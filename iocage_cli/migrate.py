@@ -72,8 +72,8 @@ def cli(force, delete):
             exit()
 
     for uuid, path in jails.items():
-        pool = ioc_json.IOCJson().json_get_value("pool")
-        iocroot = ioc_json.IOCJson(pool).json_get_value("iocroot")
+        pool = ioc_json.IOCJson().pool
+        iocroot = ioc_json.IOCJson(pool).iocroot.mountpoint
         jail = f"{pool}/iocage/jails/{uuid}"
         jail_old = f"{pool}/iocage/jails_old/{uuid}"
         conf = ioc_json.IOCJson(path).json_load()

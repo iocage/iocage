@@ -46,9 +46,9 @@ class IOCUpgrade(object):
                  silent=False,
                  callback=None,
                  ):
-        self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
+        self.pool = iocage_lib.ioc_json.IOCJson().pool
         self.iocroot = iocage_lib.ioc_json.IOCJson(
-            self.pool).json_get_value("iocroot")
+            self.pool).iocroot.mountpoint
         self.freebsd_version = iocage_lib.ioc_common.checkoutput(
             ["freebsd-version"])
         self.conf = conf

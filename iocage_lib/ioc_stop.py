@@ -37,9 +37,9 @@ class IOCStop(object):
 
     def __init__(self, uuid, path, conf,
                  silent=False, callback=None, force=False):
-        self.pool = iocage_lib.ioc_json.IOCJson(" ").json_get_value("pool")
+        self.pool = iocage_lib.ioc_json.IOCJson(" ").pool
         self.iocroot = iocage_lib.ioc_json.IOCJson(
-            self.pool).json_get_value("iocroot")
+            self.pool).iocroot.mountpoint
         self.uuid = uuid.replace(".", "_")
         self.path = path
         self.conf = conf

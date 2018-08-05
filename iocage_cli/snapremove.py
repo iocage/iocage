@@ -39,7 +39,7 @@ def cli(jail, name):
     """Removes a snapshot from a user supplied jail."""
     # TODO: Move to API
     jails = ioc_list.IOCList("uuid").list_datasets()
-    pool = ioc_json.IOCJson().json_get_value("pool")
+    pool = ioc_json.IOCJson().pool
     _jail = {uuid: path for (uuid, path) in jails.items() if
              uuid.startswith(jail)}
 

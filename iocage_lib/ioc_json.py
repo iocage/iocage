@@ -458,11 +458,12 @@ class IOCJson(dict):
     def json_get_value(self, prop):
         """Returns a string with the specified prop's value."""
         if prop == "pool":
-            return self.pool
+            raise DeprecationWarning("Access ioc_root.pool directly")
         elif prop == "iocroot":
+            raise DeprecationWarning("Access ioc_root.iocroot directly")
             return self.iocroot.mountpoint
         elif prop == "all":
-            raise Exception("Access the IOCJson instance directly")
+            raise DeprecationWarning("Access the IOCJson instance directly")
         else:
             return self._json_get_user_value(prop)
 

@@ -51,7 +51,7 @@ class IOCCreate(object):
                  migrate=False, config=None, silent=False, template=False,
                  short=False, basejail=False, thickjail=False, empty=False,
                  uuid=None, clone=False, callback=None):
-        self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
+        self.pool = iocage_lib.ioc_json.IOCJson().pool
         self.ioc_json_pool = iocage_lib.ioc_json.IOCJson(self.pool)
         self.release = release
         self.props = props

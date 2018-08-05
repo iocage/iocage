@@ -37,9 +37,9 @@ class IOCImage(object):
     """export() and import()"""
 
     def __init__(self, callback=None, silent=False):
-        self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
+        self.pool = iocage_lib.ioc_json.IOCJson().pool
         self.iocroot = iocage_lib.ioc_json.IOCJson(
-            self.pool).json_get_value("iocroot")
+            self.pool).iocroot.mountpoint
         self.date = datetime.datetime.utcnow().strftime("%F")
         self.callback = callback
         self.silent = silent

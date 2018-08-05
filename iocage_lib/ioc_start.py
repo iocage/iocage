@@ -63,9 +63,9 @@ class IOCStart(object):
         self.is_depend = is_depend
 
         try:
-            self.pool = iocage_lib.ioc_json.IOCJson(" ").json_get_value("pool")
+            self.pool = iocage_lib.ioc_json.IOCJson(" ").pool
             ioc_json_pool = iocage_lib.ioc_json.IOCJson(self.pool)
-            self.iocroot = ioc_json_pool.json_get_value("iocroot")
+            self.iocroot = ioc_json_pool.iocroot.mountpoint
             self.ioc_json = iocage_lib.ioc_json.IOCJson(self.path, silent=True)
             self.get = ioc_json_pool.json_get_value
             self.set = ioc_json_pool.json_set_value
