@@ -507,7 +507,7 @@ class IOCJson(dict):
             return pool
 
         elif match >= 2:
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "ERROR",
                     "message": "Pools:"
@@ -515,21 +515,7 @@ class IOCJson(dict):
                 _callback=self.callback,
                 silent=self.silent)
 
-                if prop_ioc_active == "yes":
-                    _dataset = pool
-                    match += 1
-                elif prop_comment == "iocage":
-                    _dataset = pool
-                    match += 1
-                    old = True
-
-            if match == 1:
-                if old:
-                    self._upgrade_pool(_dataset)
-
-                return _dataset
-
-            elif match >= 2:
+            for zpool in zpools:
                 iocage_lib.ioc_common.logit(
                     {
                         "level": "ERROR",
@@ -619,7 +605,7 @@ class IOCJson(dict):
                                            "activate with iocage activate "
                                            "POOL")
 
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level":
                         "INFO",
@@ -649,255 +635,269 @@ class IOCJson(dict):
         """Set a property for the specified jail."""
         key, _, value = prop.partition("=")
 
-        if not default:
-            uuid = self["host_hostuuid"]
-            status, jid = iocage_lib.ioc_list.IOCList().list_get_jid(uuid)
-            self[key] = value
-            sysctls_cmd = ["sysctl", "-d", "security.jail.param"]
-            jail_param_regex = re.compile("security.jail.param.")
-            sysctls_list = su.Popen(
-                sysctls_cmd,
-                stdout=su.PIPE).communicate()[0].decode("utf-8").split()
-            jail_params = [
-                p.replace("security.jail.param.", "").replace(":", "")
+        if default is True:
+            self._json_set_default_value(key, value)
+        else:
+            self._json_set_jail_value(key, value, _import=_import)
 
-                for p in sysctls_list if re.match(jail_param_regex, p)
-            ]
-            single_period = [
-                "allow_raw_sockets", "allow_socket_af", "allow_set_hostname"
-            ]
+    def _json_set_jail_value(self, key, value, _import):
 
-            if key == "template":
-                old_location = f"{self.root_dataset.name}/jails/{uuid}"
-                new_location = f"{self.root_dataset.name}/templates/{uuid}"
+        uuid = self["host_hostuuid"]
+        status, jid = iocage_lib.ioc_list.IOCList().list_get_jid(uuid)
+        self[key] = value
+        sysctls_cmd = ["sysctl", "-d", "security.jail.param"]
+        jail_param_regex = re.compile("security.jail.param.")
+        sysctls_list = su.Popen(
+            sysctls_cmd,
+            stdout=su.PIPE).communicate()[0].decode("utf-8").split()
+        jail_params = [
+            p.replace("security.jail.param.", "").replace(":", "")
 
-                if status:
-                    iocage_lib.ioc_common.logit(
-                        {
-                            "level": "EXCEPTION",
-                            "message":
-                            f"{uuid} is running.\nPlease stop it first!"
-                        },
-                        _callback=self.callback,
-                        silent=self.silent)
+            for p in sysctls_list if re.match(jail_param_regex, p)
+        ]
+        single_period = [
+            "allow_raw_sockets", "allow_socket_af", "allow_set_hostname"
+        ]
 
-                jails = iocage_lib.ioc_list.IOCList("uuid").list_datasets()
+        if key == "template":
+            old_location = f"{self.root_dataset.name}/jails/{uuid}"
+            new_location = f"{self.root_dataset.name}/templates/{uuid}"
 
-                for j in jails:
-                    _uuid = jails[j]
-                    _path = f"{jails[j]}/root"
-                    t_old_path = f"{old_location}/root@{_uuid}"
-                    t_path = f"{new_location}/root@{_uuid}"
+            if status:
+                iocage_lib.ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message":
+                        f"{uuid} is running.\nPlease stop it first!"
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
 
-                    if _uuid == uuid:
-                        continue
+            jails = iocage_lib.ioc_list.IOCList("uuid").list_datasets()
 
-                    origin = self.zfs_get_property(_path, 'origin')
+            for j in jails:
+                _uuid = jails[j]
+                _path = f"{jails[j]}/root"
+                t_old_path = f"{old_location}/root@{_uuid}"
+                t_path = f"{new_location}/root@{_uuid}"
 
-                    if origin == t_old_path or origin == t_path:
-                        _status, _ = iocage_lib.ioc_list.IOCList(
-                        ).list_get_jid(_uuid)
+                if _uuid == uuid:
+                    continue
 
-                        if _status:
-                            iocage_lib.ioc_common.logit(
-                                {
-                                    "level":
-                                    "EXCEPTION",
-                                    "message":
-                                    f"{uuid} is running.\n"
-                                    "Please stop it first!"
-                                },
-                                _callback=self.callback,
-                                silent=self.silent)
+                origin = self.zfs_get_property(_path, 'origin')
 
-                if value == "yes":
-                    try:
-                        jail_zfs_dataset = (
-                            f"{self.pool.name}/"
-                            f"{self['jail_zfs_dataset']}"
-                        )
-                        self.zfs_set_property(
-                            jail_zfs_dataset,
-                            "jailed",
-                            "off"
-                        )
-                    except libzfs.ZFSException as err:
-                        # The dataset doesn't exist, that's OK
+                if origin == t_old_path or origin == t_path:
+                    _status, _ = iocage_lib.ioc_list.IOCList(
+                    ).list_get_jid(_uuid)
 
-                        if err.code == libzfs.Error.NOENT:
-                            pass
-                        else:
-                            iocage_lib.ioc_common.logit(
-                                {
-                                    "level": "EXCEPTION",
-                                    "message": err
-                                },
-                                _callback=self.callback)
-
-                    try:
-                        self.zfs.get_dataset(old_location).rename(
-                            new_location, False, True)
-                    except libzfs.ZFSException as err:
-                        # cannot rename
+                    if _status:
                         iocage_lib.ioc_common.logit(
                             {
-                                "level": "EXCEPTION",
-                                "message": f"Cannot rename zfs dataset: {err}"
-                            },
-                            _callback=self.callback)
-
-                    conf["type"] = "template"
-
-                    self.location = new_location.lstrip(pool).replace(
-                        "/iocage",
-                        self.iocroot.mountpoint
-                    )
-
-                    iocage_lib.ioc_common.logit(
-                        {
-                            "level": "INFO",
-                            "message": f"{uuid} converted to a template."
-                        },
-                        _callback=self.callback,
-                        silent=self.silent)
-
-                    # Writing these now since the dataset will be readonly
-                    self.json_check_prop(key, value, conf)
-                    self.json_write(conf)
-
-                    iocage_lib.ioc_common.logit(
-                        {
-                            "level":
-                            "INFO",
-                            "message":
-                            f"Property: {key} has been updated to {value}"
-                        },
-                        _callback=self.callback,
-                        silent=self.silent)
-
-                    self.zfs_set_property(new_location, "readonly", "on")
-
-                    return
-                elif value == "no":
-                    if not _import:
-                        self.zfs.get_dataset(new_location).rename(
-                            old_location, False, True)
-                        conf["type"] = "jail"
-                        self.location = old_location.lstrip(pool).replace(
-                            "/iocage",
-                            self.iocroot.mountpoint
-                        )
-                        self.zfs_set_property(old_location, "readonly", "off")
-
-                        iocage_lib.ioc_common.logit(
-                            {
-                                "level": "INFO",
-                                "message": f"{uuid} converted to a jail."
+                                "level":
+                                "EXCEPTION",
+                                "message":
+                                f"{uuid} is running.\n"
+                                "Please stop it first!"
                             },
                             _callback=self.callback,
                             silent=self.silent)
-                        self.lgr.disabled = True
 
-            if key[:8] == "jail_zfs":
-                if status:
+            if value == "yes":
+                try:
+                    jail_zfs_dataset = (
+                        f"{self.pool.name}/"
+                        f"{self['jail_zfs_dataset']}"
+                    )
+                    self.zfs_set_property(
+                        jail_zfs_dataset,
+                        "jailed",
+                        "off"
+                    )
+                except libzfs.ZFSException as err:
+                    # The dataset doesn't exist, that's OK
+
+                    if err.code == libzfs.Error.NOENT:
+                        pass
+                    else:
+                        iocage_lib.ioc_common.logit(
+                            {
+                                "level": "EXCEPTION",
+                                "message": err
+                            },
+                            _callback=self.callback)
+
+                try:
+                    self.zfs.get_dataset(old_location).rename(
+                        new_location, False, True)
+                except libzfs.ZFSException as err:
+                    # cannot rename
                     iocage_lib.ioc_common.logit(
                         {
                             "level": "EXCEPTION",
-                            "message":
-                            f"{uuid} is running.\nPlease stop it first!"
+                            "message": f"Cannot rename zfs dataset: {err}"
                         },
-                        _callback=self.callback,
-                        silent=self.silent)
-            elif key == "dhcp":
-                if status:
-                    iocage_lib.ioc_common.logit(
-                        {
-                            "level": "EXCEPTION",
-                            "message":
-                            f"{uuid} is running.\nPlease stop it first!"
-                        },
-                        _callback=self.callback,
-                        silent=self.silent)
-        else:
-            conf = self.json_read(f"{self.iocroot.mountpoint}/defaults.json")
+                        _callback=self.callback)
 
-        if not default:
-            value, conf = self.json_check_prop(key, value, self)
-            self.json_write(conf)
-            iocage_lib.ioc_common.logit(
-                {
-                    "level": "INFO",
-                    "message": f"Property: {key} has been updated to {value}"
-                },
-                _callback=self.callback,
-                silent=self.silent)
+                self["type"] = "template"
 
-            # We can attempt to set a property in realtime to jail.
+                self.location = new_location.lstrip(
+                    self.pool.mountpoint
+                ).replace(
+                    "/iocage",
+                    self.iocroot.mountpoint
+                )
 
-            if status:
-                if key in single_period:
-                    key = key.replace("_", ".", 1)
-                else:
-                    key = key.replace("_", ".")
+                iocage_lib.ioc_common.logit(
+                    {
+                        "level": "INFO",
+                        "message": f"{uuid} converted to a template."
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
 
-                if key in jail_params:
-                    if conf["vnet"] == "on" and key == "ip4.addr" or key == \
-                            "ip6.addr":
-
-                        return
-
-                    try:
-                        ip = True if key == "ip4.addr" or key == "ip6.addr" \
-                            else False
-
-                        if ip and value.lower() == "none":
-                            return
-
-                        if key == "vnet":
-                            # We can't switch vnet dynamically
-                            iocage_lib.ioc_common.logit(
-                                {
-                                    "level":
-                                    "INFO",
-                                    "message":
-                                    "vnet changes require a jail restart"
-                                },
-                                _callback=self.callback,
-                                silent=self.silent)
-
-                            return
-
-                        iocage_lib.ioc_common.checkoutput(
-                            ["jail", "-m", f"jid={jid}", f"{key}={value}"],
-                            stderr=su.STDOUT)
-                    except su.CalledProcessError as err:
-                        raise RuntimeError(
-                            f"{err.output.decode('utf-8').rstrip()}")
-        else:
-            if key in conf:
-                conf[key] = value
-                self.json_write(conf, "/defaults.json")
+                # Writing these now since the dataset will be readonly
+                self.json_check_prop(key, value, self)
+                self.json_write(self)
 
                 iocage_lib.ioc_common.logit(
                     {
                         "level":
                         "INFO",
                         "message":
-                        f"Default Property: {key} has been updated to {value}"
-                    },
-                    _callback=self.callback,
-                    silent=self.silent)
-            else:
-                iocage_lib.ioc_common.logit(
-                    {
-                        "level": "EXCEPTION",
-                        "message":
-                        f"{key} is not a valid property for default!"
+                        f"Property: {key} has been updated to {value}"
                     },
                     _callback=self.callback,
                     silent=self.silent)
 
-    def json_check_config(self, conf, default=False):
+                self.zfs_set_property(new_location, "readonly", "on")
+
+                return
+            elif value == "no":
+                if not _import:
+                    self.zfs.get_dataset(new_location).rename(
+                        old_location, False, True)
+                    self["type"] = "jail"
+                    self.location = old_location.lstrip(pool).replace(
+                        "/iocage",
+                        self.iocroot.mountpoint
+                    )
+                    self.zfs_set_property(old_location, "readonly", "off")
+
+                    iocage_lib.ioc_common.logit(
+                        {
+                            "level": "INFO",
+                            "message": f"{uuid} converted to a jail."
+                        },
+                        _callback=self.callback,
+                        silent=self.silent)
+                    self.lgr.disabled = True
+
+        if key[:8] == "jail_zfs":
+            if status:
+                iocage_lib.ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message":
+                        f"{uuid} is running.\nPlease stop it first!"
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
+        elif key == "dhcp":
+            if status:
+                iocage_lib.ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message":
+                        f"{uuid} is running.\nPlease stop it first!"
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
+
+        # 2
+        value, conf = self.json_check_prop(key, value, self)
+        self.json_write(conf)
+        iocage_lib.ioc_common.logit(
+            {
+                "level": "INFO",
+                "message": f"Property: {key} has been updated to {value}"
+            },
+            _callback=self.callback,
+            silent=self.silent)
+
+        # We can attempt to set a property in realtime to jail.
+
+        if status:
+            if key in single_period:
+                key = key.replace("_", ".", 1)
+            else:
+                key = key.replace("_", ".")
+
+            if key in jail_params:
+                if conf["vnet"] == "on" and key == "ip4.addr" or key == \
+                        "ip6.addr":
+
+                    return
+
+                try:
+                    ip = True if key == "ip4.addr" or key == "ip6.addr" \
+                        else False
+
+                    if ip and value.lower() == "none":
+                        return
+
+                    if key == "vnet":
+                        # We can't switch vnet dynamically
+                        iocage_lib.ioc_common.logit(
+                            {
+                                "level":
+                                "INFO",
+                                "message":
+                                "vnet changes require a jail restart"
+                            },
+                            _callback=self.callback,
+                            silent=self.silent)
+
+                        return
+
+                    iocage_lib.ioc_common.checkoutput(
+                        ["jail", "-m", f"jid={jid}", f"{key}={value}"],
+                        stderr=su.STDOUT)
+                except su.CalledProcessError as err:
+                    raise RuntimeError(
+                        f"{err.output.decode('utf-8').rstrip()}")
+
+    def _json_set_default_value(self, key, value):
+
+        if key not in self.global_default_properties.keys():
+            iocage_lib.ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message":
+                    f"{key} is not a valid property for default!"
+                },
+                _callback=self.callback,
+                silent=self.silent)
+            return
+
+        user_defaults = self.user_default_properties
+        user_defaults[key] = value
+        self.json_write(
+            user_defaults,
+            "/defaults.json",
+            location=self.root_dataset.mountpoint
+        )
+
+        iocage_lib.ioc_common.logit(
+            {
+                "level":
+                "INFO",
+                "message":
+                f"Default Property: {key} has been updated to {value}"
+            },
+            _callback=self.callback,
+            silent=self.silent)
+
+    def json_check_config(self, conf):
         """
         Takes JSON as input and checks to see what is missing and adds the
         new keys with their default values if missing.
@@ -936,7 +936,7 @@ class IOCJson(dict):
 
         if release is None:
             err_name = self.location.rsplit("/", 1)[-1]
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level":
                     "EXCEPTION",
@@ -993,8 +993,8 @@ class IOCJson(dict):
             basejail = conf["basejail"]
         except KeyError:
             basejail = "no"
-        # Set all keys, even if it's the same value.
 
+        # Set all keys, even if it's the same value.
         conf["basejail"] = basejail
 
         # Version 5 keys
