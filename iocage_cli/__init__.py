@@ -144,7 +144,7 @@ class IOCLogger(object):
         logger.addHandler(handler)
 
 
-cmd_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), 'cli'))
+cmd_folder = os.path.abspath(os.path.dirname(__file__))
 
 
 class IOCageCLI(click.MultiCommand):
@@ -166,8 +166,8 @@ class IOCageCLI(click.MultiCommand):
 
     def get_command(self, ctx, name):
         try:
-            mod = __import__(f"iocage.cli.{name}", None, None, ["cli"])
-            mod_name = mod.__name__.replace("iocage.cli.", "")
+            mod = __import__(f"iocage_cli.{name}", None, None, ["cli"])
+            mod_name = mod.__name__.replace("iocage_cli.", "")
 
             try:
                 if mod.__rootcmd__ and "help" not in sys.argv[1:]:
@@ -213,7 +213,7 @@ def cli(version, force):
             skip_check = True
         elif "help" in sys.argv and len(sys.argv) == 3:
             cmd = sys.argv[sys.argv.index("help") - 1]
-            mod = __import__(f"iocage.cli.{cmd}", None, None, ["cli"])
+            mod = __import__(f"iocage_cli.{cmd}", None, None, ["iocage_cli"])
             with click.Context(mod.cli) as ctx:
                 print(mod.cli.get_help(ctx))
                 exit(0)
