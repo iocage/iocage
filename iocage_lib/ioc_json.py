@@ -768,7 +768,9 @@ class IOCJson(dict):
                     self.zfs.get_dataset(new_location).rename(
                         old_location, False, True)
                     self["type"] = "jail"
-                    self.location = old_location.lstrip(pool).replace(
+                    self.location = old_location.lstrip(
+                        self.pool.mountpoint
+                    ).replace(
                         "/iocage",
                         self.iocroot.mountpoint
                     )
@@ -1599,9 +1601,8 @@ class IOCJson(dict):
                     try:
                         # Can't rename when the child is
                         # in a non-global zone
-                        jail_parent_ds = f"{pool}/iocage/jails/{uuid}"
-                        data_dataset = self.zfs.get_dataset(
-                            f"{jail_parent_ds}/data")
+                        _parent = f"{self.pool.name}/iocage/jails/{uuid}"
+                        data_dataset = self.zfs.get_dataset(f"{_parent}/data")
                         dependents = data_dataset.dependents
 
                         self.zfs_set_property(f"{jail_parent_ds}/data",
@@ -1650,7 +1651,7 @@ class IOCJson(dict):
                             snap.clone(new_dataset)
 
                     # Datasets are not mounted upon creation
-                    new_jail_parent_ds = f"{pool}/iocage/jails/{tag}"
+                    new_jail_parent_ds = f"{self.pool.name}/iocage/jails/{tag}"
                     new_jail = self.zfs.get_dataset(new_jail_parent_ds)
                     new_jail.mount()
                     new_jail.promote()
@@ -1661,7 +1662,8 @@ class IOCJson(dict):
 
                     # Easier.
                     su.check_call([
-                        "zfs", "rename", "-r", f"{pool}/iocage@{uuid}",
+                        "zfs", "rename", "-r",
+                        f"{self.pool.name}/iocage@{uuid}",
                         f"@{tag}"
                     ])
 
