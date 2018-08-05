@@ -51,50 +51,19 @@ import libzfs
 class PoolAndDataset(object):
 
     def __init__(self):
-        self.pool = ioc_json.IOCJson().json_get_value("pool")
+        self.ioc_json = ioc_json.IOCJson()
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
 
-    def get_pool(self):
-        """
-        Helper to get the current pool.
+    @property
+    def pool(self):
+        return self.ioc_json.pool
 
-        Return:
-                string: with the pool name.
-        """
-
-        return self.pool
-
-    def get_datasets(self, option_type):
-        """
-        Helper to get datasets.
-
-        Return:
-                generator: from libzfs.ZFSDataset.
-        """
-        __types = {
-            'all': '/iocage/jails',
-            'base': '/iocage/releases',
-            'template': '/iocage/templates',
-            'uuid': '/iocage/jails',
-            'root': '/iocage',
-        }
-
-        if option_type in __types.keys():
-            return self.zfs.get_dataset(
-                f"{self.pool}{__types[option_type]}").children
-
-    def get_iocroot(self):
-        """
-        Helper to get the iocroot.
-
-        Return:
-                string: with the iocroot name.
-        """
-
-        return ioc_json.IOCJson(self.pool).json_get_value("iocroot")
+    @property
+    def iocroot(self):
+        return self.ioc_json.iocroot
 
 
-class IOCage(object):
+class IOCage(PoolAndDataset):
 
     def __init__(self,
                  jail=None,
@@ -111,9 +80,9 @@ class IOCage(object):
         os.environ.get("IOCAGE_SKIP", "FALSE")
         os.environ.get("IOCAGE_FORCE", "TRUE")
 
+        PoolAndDataset.__init__(self)
+
         if not activate:
-            self.pool = PoolAndDataset().get_pool()
-            self.iocroot = PoolAndDataset().get_iocroot()
 
             if not skip_jails:
                 # When they need to destroy a jail with a missing or bad

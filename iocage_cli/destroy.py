@@ -102,7 +102,7 @@ def cli(force, release, download, jails, recursive):
     """Destroys the jail's 2 datasets and the snapshot from the RELEASE."""
     # Want these here, otherwise they're reinstanced for each jail.
     zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
-    iocroot = ioc.PoolAndDataset().get_iocroot()
+    iocroot = ioc.PoolAndDataset().iocroot
 
     if download and not release:
         ioc_common.logit({
