@@ -33,11 +33,11 @@ import shutil
 import subprocess as su
 import sys
 
-import iocage.lib.ioc_common
-import iocage.lib.ioc_create
-import iocage.lib.ioc_exec
-import iocage.lib.ioc_list
-import iocage.lib.ioc_stop
+import iocage_lib.ioc_common
+import iocage_lib.ioc_create
+import iocage_lib.ioc_exec
+import iocage_lib.ioc_list
+import iocage_lib.ioc_stop
 import libzfs
 import netifaces
 
@@ -203,7 +203,7 @@ class IOCJson(object):
         except libzfs.ZFSException as err:
             if err.code == libzfs.Error.NOENT:
                 if os.path.isfile(self.location + "/config"):
-                    iocage.lib.ioc_common.logit(
+                    iocage_lib.ioc_common.logit(
                         {
                             "level": "EXCEPTION",
                             "message": "iocage_legacy develop had a broken"
@@ -225,7 +225,7 @@ class IOCJson(object):
             try:
                 jail_dataset.mount_recursive()
             except libzfs.ZFSException as err:
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": "EXCEPTION",
                         "message": err
@@ -246,7 +246,7 @@ class IOCJson(object):
                     # iocage legacy develop jail, not missing configuration
                     pass
                 else:
-                    iocage.lib.ioc_common.logit(
+                    iocage_lib.ioc_common.logit(
                         {
                             "level":
                             "EXCEPTION",
@@ -258,7 +258,7 @@ class IOCJson(object):
                         silent=self.silent)
 
             if not self.force:
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level":
                         "EXCEPTION",
@@ -296,7 +296,7 @@ class IOCJson(object):
                                       "r") as conf:
                                 conf = json.load(conf)
 
-                            iocage.lib.ioc_common.logit(
+                            iocage_lib.ioc_common.logit(
                                 {
                                     "level":
                                     "INFO",
@@ -309,11 +309,11 @@ class IOCJson(object):
                                 _callback=self.callback,
                                 silent=self.silent)
 
-                            status, _ = iocage.lib.ioc_list.IOCList(
+                            status, _ = iocage_lib.ioc_list.IOCList(
                             ).list_get_jid(full_uuid)
 
                             if status:
-                                iocage.lib.ioc_common.logit(
+                                iocage_lib.ioc_common.logit(
                                     {
                                         "level":
                                         "INFO",
@@ -322,7 +322,7 @@ class IOCJson(object):
                                     },
                                     _callback=self.callback,
                                     silent=self.silent)
-                                iocage.lib.ioc_stop.IOCStop(
+                                iocage_lib.ioc_stop.IOCStop(
                                     full_uuid,
                                     self.location,
                                     conf,
@@ -360,7 +360,7 @@ class IOCJson(object):
                             skip = True
 
                     if uuid is None:
-                        iocage.lib.ioc_common.logit(
+                        iocage_lib.ioc_common.logit(
                             {
                                 "level": "EXCEPTION",
                                 "message": "Configuration could not be loaded,"
@@ -386,7 +386,7 @@ class IOCJson(object):
                         for level, msg in messages.items():
                             level = level.partition("-")[2]
 
-                            iocage.lib.ioc_common.logit(
+                            iocage_lib.ioc_common.logit(
                                 {
                                     "level": level,
                                     "message": msg
@@ -411,7 +411,7 @@ class IOCJson(object):
 
     def json_write(self, data, _file="/config.json"):
         """Write a JSON file at the location given with supplied data."""
-        with iocage.lib.ioc_common.open_atomic(self.location + _file,
+        with iocage_lib.ioc_common.open_atomic(self.location + _file,
                                                'w') as out:
             json.dump(data, out, sort_keys=True, indent=4, ensure_ascii=False)
 
@@ -462,7 +462,7 @@ class IOCJson(object):
                 return _dataset
 
             elif match >= 2:
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": "ERROR",
                         "message": "Pools:"
@@ -471,7 +471,7 @@ class IOCJson(object):
                     silent=self.silent)
 
                 for zpool in zpools:
-                    iocage.lib.ioc_common.logit(
+                    iocage_lib.ioc_common.logit(
                         {
                             "level": "ERROR",
                             "message": f"  {zpool}"
@@ -491,7 +491,7 @@ class IOCJson(object):
                     try:
                         zpool = zpools[0]
                     except IndexError:
-                        iocage.lib.ioc_common.logit(
+                        iocage_lib.ioc_common.logit(
                             {
                                 "level":
                                 "EXCEPTION",
@@ -508,7 +508,7 @@ class IOCJson(object):
 
                     iocage_skip = os.environ.get("IOCAGE_SKIP", "FALSE")
                     if iocage_skip == "TRUE":
-                        iocage.lib.ioc_common.logit(
+                        iocage_lib.ioc_common.logit(
                             {
                                 "level":
                                 "EXCEPTION",
@@ -528,7 +528,7 @@ class IOCJson(object):
                                                "activate with iocage activate "
                                                "POOL")
 
-                    iocage.lib.ioc_common.logit(
+                    iocage_lib.ioc_common.logit(
                         {
                             "level":
                             "INFO",
@@ -576,7 +576,7 @@ class IOCJson(object):
         if not default:
             conf = self.json_load()
             uuid = conf["host_hostuuid"]
-            status, jid = iocage.lib.ioc_list.IOCList().list_get_jid(uuid)
+            status, jid = iocage_lib.ioc_list.IOCList().list_get_jid(uuid)
             conf[key] = value
             sysctls_cmd = ["sysctl", "-d", "security.jail.param"]
             jail_param_regex = re.compile("security.jail.param.")
@@ -598,7 +598,7 @@ class IOCJson(object):
                 new_location = f"{pool}/iocage/templates/{uuid}"
 
                 if status:
-                    iocage.lib.ioc_common.logit(
+                    iocage_lib.ioc_common.logit(
                         {
                             "level": "EXCEPTION",
                             "message":
@@ -607,7 +607,7 @@ class IOCJson(object):
                         _callback=self.callback,
                         silent=self.silent)
 
-                jails = iocage.lib.ioc_list.IOCList("uuid").list_datasets()
+                jails = iocage_lib.ioc_list.IOCList("uuid").list_datasets()
 
                 for j in jails:
                     _uuid = jails[j]
@@ -621,11 +621,11 @@ class IOCJson(object):
                     origin = self.zfs_get_property(_path, 'origin')
 
                     if origin == t_old_path or origin == t_path:
-                        _status, _ = iocage.lib.ioc_list.IOCList(
+                        _status, _ = iocage_lib.ioc_list.IOCList(
                         ).list_get_jid(_uuid)
 
                         if _status:
-                            iocage.lib.ioc_common.logit(
+                            iocage_lib.ioc_common.logit(
                                 {
                                     "level":
                                     "EXCEPTION",
@@ -648,7 +648,7 @@ class IOCJson(object):
                         if err.code == libzfs.Error.NOENT:
                             pass
                         else:
-                            iocage.lib.ioc_common.logit(
+                            iocage_lib.ioc_common.logit(
                                 {
                                     "level": "EXCEPTION",
                                     "message": err
@@ -660,7 +660,7 @@ class IOCJson(object):
                             new_location, False, True)
                     except libzfs.ZFSException as err:
                         # cannot rename
-                        iocage.lib.ioc_common.logit(
+                        iocage_lib.ioc_common.logit(
                             {
                                 "level": "EXCEPTION",
                                 "message": f"Cannot rename zfs dataset: {err}"
@@ -672,7 +672,7 @@ class IOCJson(object):
                     self.location = new_location.lstrip(pool).replace(
                         "/iocage", iocroot)
 
-                    iocage.lib.ioc_common.logit(
+                    iocage_lib.ioc_common.logit(
                         {
                             "level": "INFO",
                             "message": f"{uuid} converted to a template."
@@ -684,7 +684,7 @@ class IOCJson(object):
                     self.json_check_prop(key, value, conf)
                     self.json_write(conf)
 
-                    iocage.lib.ioc_common.logit(
+                    iocage_lib.ioc_common.logit(
                         {
                             "level":
                             "INFO",
@@ -706,7 +706,7 @@ class IOCJson(object):
                             "/iocage", iocroot)
                         self.zfs_set_property(old_location, "readonly", "off")
 
-                        iocage.lib.ioc_common.logit(
+                        iocage_lib.ioc_common.logit(
                             {
                                 "level": "INFO",
                                 "message": f"{uuid} converted to a jail."
@@ -717,7 +717,7 @@ class IOCJson(object):
 
             if key[:8] == "jail_zfs":
                 if status:
-                    iocage.lib.ioc_common.logit(
+                    iocage_lib.ioc_common.logit(
                         {
                             "level": "EXCEPTION",
                             "message":
@@ -727,7 +727,7 @@ class IOCJson(object):
                         silent=self.silent)
             elif key == "dhcp":
                 if status:
-                    iocage.lib.ioc_common.logit(
+                    iocage_lib.ioc_common.logit(
                         {
                             "level": "EXCEPTION",
                             "message":
@@ -743,7 +743,7 @@ class IOCJson(object):
         if not default:
             value, conf = self.json_check_prop(key, value, conf)
             self.json_write(conf)
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "INFO",
                     "message": f"Property: {key} has been updated to {value}"
@@ -774,7 +774,7 @@ class IOCJson(object):
 
                         if key == "vnet":
                             # We can't switch vnet dynamically
-                            iocage.lib.ioc_common.logit(
+                            iocage_lib.ioc_common.logit(
                                 {
                                     "level":
                                     "INFO",
@@ -786,7 +786,7 @@ class IOCJson(object):
 
                             return
 
-                        iocage.lib.ioc_common.checkoutput(
+                        iocage_lib.ioc_common.checkoutput(
                             ["jail", "-m", f"jid={jid}", f"{key}={value}"],
                             stderr=su.STDOUT)
                     except su.CalledProcessError as err:
@@ -797,7 +797,7 @@ class IOCJson(object):
                 conf[key] = value
                 self.json_write(conf, "/defaults.json")
 
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level":
                         "INFO",
@@ -807,7 +807,7 @@ class IOCJson(object):
                     _callback=self.callback,
                     silent=self.silent)
             else:
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": "EXCEPTION",
                         "message":
@@ -832,7 +832,7 @@ class IOCJson(object):
         renamed = False
 
         if os.geteuid() != 0:
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level":
                     "EXCEPTION",
@@ -865,7 +865,7 @@ class IOCJson(object):
 
             if release is None:
                 err_name = self.location.rsplit("/", 1)[-1]
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level":
                         "EXCEPTION",
@@ -939,7 +939,7 @@ class IOCJson(object):
             uuid = conf["host_hostuuid"]
 
             try:
-                state = iocage.lib.ioc_common.checkoutput(
+                state = iocage_lib.ioc_common.checkoutput(
                     ["jls", "-j", f"ioc-{uuid.replace('.', '_')}"],
                     stderr=su.PIPE).split()[5]
             except su.CalledProcessError:
@@ -947,7 +947,7 @@ class IOCJson(object):
 
             if tag != uuid:
                 if not self.force:
-                    iocage.lib.ioc_common.logit(
+                    iocage_lib.ioc_common.logit(
                         {
                             "level":
                             "EXCEPTION",
@@ -1034,7 +1034,7 @@ class IOCJson(object):
                 for level, msg in messages.items():
                     level = level.partition("-")[2]
 
-                    iocage.lib.ioc_common.logit(
+                    iocage_lib.ioc_common.logit(
                         {
                             "level": level,
                             "message": msg
@@ -1059,7 +1059,7 @@ class IOCJson(object):
             for level, msg in messages.items():
                 level = level.partition("-")[2]
 
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": level,
                         "message": msg
@@ -1204,7 +1204,7 @@ class IOCJson(object):
                         value.upper().endswith(("M", "G", "T")):
                     err = f"{value} should have a suffix ending in" \
                         " M, G, or T."
-                    iocage.lib.ioc_common.logit(
+                    iocage_lib.ioc_common.logit(
                         {
                             "level": "EXCEPTION",
                             "message": err
@@ -1250,7 +1250,7 @@ class IOCJson(object):
                           "8g:log"
 
                 msg = err + msg
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": "EXCEPTION",
                         "message": msg
@@ -1266,7 +1266,7 @@ class IOCJson(object):
                 else:
                     return value, conf
 
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "EXCEPTION",
                     "message": msg
@@ -1282,7 +1282,7 @@ class IOCJson(object):
         except FileNotFoundError:
             msg = f"No settings.json exists in {self.location}/plugin!"
 
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "EXCEPTION",
                     "message": msg
@@ -1313,9 +1313,9 @@ class IOCJson(object):
         try:
             if prop[0] != "all":
                 if len(_prop) > 1:
-                    return iocage.lib.ioc_common.get_nested_key(settings, prop)
+                    return iocage_lib.ioc_common.get_nested_key(settings, prop)
                 else:
-                    return iocage.lib.ioc_exec.IOCExec(
+                    return iocage_lib.ioc_exec.IOCExec(
                         prop_cmd,
                         uuid,
                         _path,
@@ -1327,7 +1327,7 @@ class IOCJson(object):
         except KeyError:
             msg = f"Key: \"{prop_error}\" does not exist!"
 
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "EXCEPTION",
                     "message": msg
@@ -1341,7 +1341,7 @@ class IOCJson(object):
         uuid = conf["host_hostuuid"]
         _path = self.zfs_get_property(f"{pool}/iocage/jails/{uuid}",
                                       "mountpoint")
-        status, _ = iocage.lib.ioc_list.IOCList().list_get_jid(uuid)
+        status, _ = iocage_lib.ioc_list.IOCList().list_get_jid(uuid)
 
         # Plugin variables
         settings = self.json_plugin_load()
@@ -1375,7 +1375,7 @@ class IOCJson(object):
                     setting = setting[current]
 
             if readonly:
-                iocage.lib.ioc_common.logit({
+                iocage_lib.ioc_common.logit({
                     "level": "ERROR",
                     "message": "This key is readonly!"
                 })
@@ -1384,37 +1384,37 @@ class IOCJson(object):
 
             if status:
                 # IOCExec will not show this if it doesn't start the jail.
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": "INFO",
                         "message": "Command output:"
                     },
                     _callback=self.callback,
                     silent=self.silent)
-            iocage.lib.ioc_exec.IOCExec(
+            iocage_lib.ioc_exec.IOCExec(
                 prop_cmd, uuid, _path).exec_jail()
 
             if restart:
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": "INFO",
                         "message": "\n-- Restarting service --"
                     },
                     _callback=self.callback,
                     silent=self.silent)
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": "INFO",
                         "message": "Command output:"
                     },
                     _callback=self.callback,
                     silent=self.silent)
-                iocage.lib.ioc_exec.IOCExec(
+                iocage_lib.ioc_exec.IOCExec(
                     servicerestart,
                     uuid,
                     _path).exec_jail()
 
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "INFO",
                     "message": f"\nKey: {keys} has been updated to {value}"
@@ -1422,7 +1422,7 @@ class IOCJson(object):
                 _callback=self.callback,
                 silent=self.silent)
         except KeyError:
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "EXCEPTION",
                     "message": f"Key: \"{key}\" does not exist!"
@@ -1460,7 +1460,7 @@ class IOCJson(object):
                         return (conf, True, False)
 
                     if state:
-                        iocage.lib.ioc_common.logit(
+                        iocage_lib.ioc_common.logit(
                             {
                                 "level":
                                 "EXCEPTION",
@@ -1505,7 +1505,7 @@ class IOCJson(object):
                             err_msg = \
                                 f"Snapshot {jail_parent_ds}@{tag} already" \
                                 " exists!"
-                            iocage.lib.ioc_common.logit(
+                            iocage_lib.ioc_common.logit(
                                 {
                                     "level": "EXCEPTION",
                                     "message": err_msg

@@ -30,14 +30,14 @@ import subprocess as su
 import sys
 import uuid
 
-import iocage.lib.ioc_common
-import iocage.lib.ioc_destroy
-import iocage.lib.ioc_exec
-import iocage.lib.ioc_fstab
-import iocage.lib.ioc_json
-import iocage.lib.ioc_list
-import iocage.lib.ioc_start
-import iocage.lib.ioc_stop
+import iocage_lib.ioc_common
+import iocage_lib.ioc_destroy
+import iocage_lib.ioc_exec
+import iocage_lib.ioc_fstab
+import iocage_lib.ioc_json
+import iocage_lib.ioc_list
+import iocage_lib.ioc_start
+import iocage_lib.ioc_stop
 import libzfs
 
 
@@ -49,8 +49,8 @@ class IOCCreate(object):
                  migrate=False, config=None, silent=False, template=False,
                  short=False, basejail=False, thickjail=False, empty=False,
                  uuid=None, clone=False, callback=None):
-        self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
-        self.iocroot = iocage.lib.ioc_json.IOCJson(self.pool).json_get_value(
+        self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
+        self.iocroot = iocage_lib.ioc_json.IOCJson(self.pool).json_get_value(
             "iocroot")
         self.release = release
         self.props = props
@@ -87,7 +87,7 @@ class IOCCreate(object):
         try:
             return self._create_jail(jail_uuid, location)
         except KeyboardInterrupt:
-            iocage.lib.ioc_destroy.IOCDestroy().destroy_jail(location)
+            iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(location)
             sys.exit(1)
 
     def _create_jail(self, jail_uuid, location):
@@ -110,13 +110,13 @@ class IOCCreate(object):
                 if self.template:
                     _type = "templates"
                     temp_path = f"{self.iocroot}/{_type}/{self.release}"
-                    template_config = iocage.lib.ioc_json.IOCJson(
+                    template_config = iocage_lib.ioc_json.IOCJson(
                         temp_path).json_get_value
                     cloned_release = template_config("cloned_release")
                 elif self.clone:
                     _type = "jails"
                     clone_path = f"{self.iocroot}/{_type}/{self.release}"
-                    clone_config = iocage.lib.ioc_json.IOCJson(
+                    clone_config = iocage_lib.ioc_json.IOCJson(
                         clone_path).json_get_value
                     cloned_release = clone_config("cloned_release")
                     clone_uuid = clone_config("host_hostuuid")
@@ -150,7 +150,7 @@ class IOCCreate(object):
                 elif self.clone:
                     if os.path.isdir(f"{self.iocroot}/templates/"
                                      f"{self.release}"):
-                        iocage.lib.ioc_common.logit({
+                        iocage_lib.ioc_common.logit({
                             "level": "EXCEPTION",
                             "message": "You cannot clone a template, "
                                        "use create -t instead."
@@ -159,14 +159,14 @@ class IOCCreate(object):
                             silent=self.silent)
                     else:
                         # Yep, self.release is actually the source jail.
-                        iocage.lib.ioc_common.logit({
+                        iocage_lib.ioc_common.logit({
                             "level": "EXCEPTION",
                             "message": f"Jail: {self.release} not found!"
                         },
                             _callback=self.callback,
                             silent=self.silent)
                 else:
-                    iocage.lib.ioc_common.logit({
+                    iocage_lib.ioc_common.logit({
                         "level": "EXCEPTION",
                         "message": f"RELEASE: {self.release} not found!"
                     },
@@ -196,10 +196,10 @@ class IOCCreate(object):
                       f"{jail_uuid}", jail], stdout=su.PIPE).communicate()
 
             # self.release is actually the templates name
-            config["release"] = iocage.lib.ioc_json.IOCJson(
+            config["release"] = iocage_lib.ioc_json.IOCJson(
                 f"{self.iocroot}/templates/{self.release}").json_get_value(
                 "release")
-            config["cloned_release"] = iocage.lib.ioc_json.IOCJson(
+            config["cloned_release"] = iocage_lib.ioc_json.IOCJson(
                 f"{self.iocroot}/templates/{self.release}").json_get_value(
                 "cloned_release")
         elif self.clone:
@@ -222,10 +222,10 @@ class IOCCreate(object):
                 config = json.load(_clone_config)
 
             # self.release is actually the clones name
-            config["release"] = iocage.lib.ioc_json.IOCJson(
+            config["release"] = iocage_lib.ioc_json.IOCJson(
                 f"{self.iocroot}/jails/{self.release}").json_get_value(
                 "release")
-            config["cloned_release"] = iocage.lib.ioc_json.IOCJson(
+            config["cloned_release"] = iocage_lib.ioc_json.IOCJson(
                 f"{self.iocroot}/jails/{self.release}").json_get_value(
                 "cloned_release")
 
@@ -251,7 +251,7 @@ class IOCCreate(object):
                 except su.CalledProcessError:
                     try:
                         snapshot = self.zfs.get_snapshot(dataset)
-                        iocage.lib.ioc_common.logit({
+                        iocage_lib.ioc_common.logit({
                             "level": "EXCEPTION",
                             "message": f"Snapshot: {snapshot.name} exists!\n"
                                        "Please manually run zfs destroy"
@@ -290,7 +290,7 @@ class IOCCreate(object):
                                   f"{self.release}/root@"
                                   f"{jail_uuid}"],
                                   stdout=su.PIPE).communicate()
-                        iocage.lib.ioc_common.logit({
+                        iocage_lib.ioc_common.logit({
                             "level": "EXCEPTION",
                             "message": "Can't copy release!"
                         },
@@ -298,22 +298,22 @@ class IOCCreate(object):
                             silent=self.silent)
             else:
                 try:
-                    iocage.lib.ioc_common.checkoutput(
+                    iocage_lib.ioc_common.checkoutput(
                         ["zfs", "create", "-p", jail],
                         stderr=su.PIPE)
                 except su.CalledProcessError as err:
                     raise RuntimeError(err.output.decode("utf-8").rstrip())
 
-        iocjson = iocage.lib.ioc_json.IOCJson(location, silent=True)
+        iocjson = iocage_lib.ioc_json.IOCJson(location, silent=True)
 
         # This test is to avoid the same warnings during install_packages.
 
         if not self.plugin:
             if jail_uuid == "default":
-                iocage.lib.ioc_destroy.IOCDestroy(
+                iocage_lib.ioc_destroy.IOCDestroy(
                 ).__destroy_parse_datasets__(
                     f"{self.pool}/iocage/jails/{jail_uuid}")
-                iocage.lib.ioc_common.logit({
+                iocage_lib.ioc_common.logit({
                     "level": "EXCEPTION",
                     "message": "You cannot name a jail default, "
                                "that is a reserved name."
@@ -321,10 +321,10 @@ class IOCCreate(object):
                     _callback=self.callback,
                     silent=self.silent)
             elif jail_uuid == "help":
-                iocage.lib.ioc_destroy.IOCDestroy(
+                iocage_lib.ioc_destroy.IOCDestroy(
                 ).__destroy_parse_datasets__(
                     f"{self.pool}/iocage/jails/{jail_uuid}")
-                iocage.lib.ioc_common.logit({
+                iocage_lib.ioc_common.logit({
                     "level": "EXCEPTION",
                     "message": "You cannot name a jail help, "
                                "that is a reserved name."
@@ -359,12 +359,12 @@ class IOCCreate(object):
                     config[key] = value
                 except RuntimeError as err:
                     iocjson.json_write(config)  # Destroy counts on this.
-                    iocage.lib.ioc_destroy.IOCDestroy().destroy_jail(location)
+                    iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(location)
 
                     raise RuntimeError(f"***\n{err}\n***\n")
                 except SystemExit:
                     iocjson.json_write(config)  # Destroy counts on this.
-                    iocage.lib.ioc_destroy.IOCDestroy().destroy_jail(location)
+                    iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(location)
                     exit(1)
 
             iocjson.json_write(config)
@@ -396,7 +396,7 @@ class IOCCreate(object):
             open(f"{location}/fstab", "wb").close()
 
             with open(f"{location}/root/etc/hosts", "r") as _etc_hosts:
-                with iocage.lib.ioc_common.open_atomic(
+                with iocage_lib.ioc_common.open_atomic(
                         f"{location}/root/etc/hosts", "w") as etc_hosts:
                     # open_atomic will empty the file, we need these still.
 
@@ -412,7 +412,7 @@ class IOCCreate(object):
                             etc_hosts.write(final_line)
         else:
             with open(clone_fstab, "r") as _clone_fstab:
-                with iocage.lib.ioc_common.open_atomic(
+                with iocage_lib.ioc_common.open_atomic(
                         clone_fstab, "w") as _fstab:
                     # open_atomic will empty the file, we need these still.
 
@@ -420,7 +420,7 @@ class IOCCreate(object):
                         _fstab.write(line.replace(clone_uuid, jail_uuid))
 
             with open(clone_etc_hosts, "r") as _clone_etc_hosts:
-                with iocage.lib.ioc_common.open_atomic(
+                with iocage_lib.ioc_common.open_atomic(
                         clone_etc_hosts, "w") as etc_hosts:
                     # open_atomic will empty the file, we need these still.
 
@@ -455,7 +455,7 @@ class IOCCreate(object):
                 su.Popen(["rm", "-r", "-f", destination]).communicate()
                 os.mkdir(destination)
 
-                iocage.lib.ioc_fstab.IOCFstab(jail_uuid, "add", source,
+                iocage_lib.ioc_fstab.IOCFstab(jail_uuid, "add", source,
                                               destination, "nullfs", "ro", "0",
                                               "0", silent=True)
                 config["basejail"] = "yes"
@@ -468,7 +468,7 @@ class IOCCreate(object):
             else:
                 msg = f"{jail_uuid} successfully created!"
 
-            iocage.lib.ioc_common.logit({
+            iocage_lib.ioc_common.logit({
                 "level": "INFO",
                 "message": msg
             },
@@ -478,7 +478,7 @@ class IOCCreate(object):
         if self.pkglist:
             if config["ip4_addr"] == "none" and config["ip6_addr"] == "none" \
                     and config["dhcp"] != "on":
-                iocage.lib.ioc_common.logit({
+                iocage_lib.ioc_common.logit({
                     "level": "WARNING",
                     "message": "You need an IP address for the jail to"
                                " install packages!\n"
@@ -489,7 +489,7 @@ class IOCCreate(object):
                 self.create_install_packages(jail_uuid, location, config)
 
         if start:
-            iocage.lib.ioc_start.IOCStart(jail_uuid, location, config,
+            iocage_lib.ioc_start.IOCStart(jail_uuid, location, config,
                                           silent=self.silent)
 
         if is_template:
@@ -504,7 +504,7 @@ class IOCCreate(object):
         Loads default props and sets the user properties, along with some mild
         sanity checking
         """
-        ioc_json = iocage.lib.ioc_json.IOCJson()
+        ioc_json = iocage_lib.ioc_json.IOCJson()
         jail_props = ioc_json.json_check_default_config()
 
         # Unique jail properties, they will be overridden by user supplied
@@ -526,12 +526,12 @@ class IOCCreate(object):
         Takes a list of pkg's to install into the target jail. The resolver
         property is required for pkg to have network access.
         """
-        status, jid = iocage.lib.ioc_list.IOCList().list_get_jid(jail_uuid)
+        status, jid = iocage_lib.ioc_list.IOCList().list_get_jid(jail_uuid)
 
         if not status:
-            iocage.lib.ioc_start.IOCStart(jail_uuid, location, config,
+            iocage_lib.ioc_start.IOCStart(jail_uuid, location, config,
                                           silent=True)
-            status, jid = iocage.lib.ioc_list.IOCList().list_get_jid(jail_uuid)
+            status, jid = iocage_lib.ioc_list.IOCList().list_get_jid(jail_uuid)
 
         if repo:
             r = re.match('(https?(://)?)?([^/]+)', repo)
@@ -544,7 +544,7 @@ class IOCCreate(object):
         dnssec_connect_cmd = ["drill", "-D", f"{repo}"]
         dns_connect_cmd = ["drill", f"{repo}"]
 
-        iocage.lib.ioc_common.logit({
+        iocage_lib.ioc_common.logit({
             "level": "INFO",
             "message": f"\nTesting SRV response to {site}"
         },
@@ -553,13 +553,13 @@ class IOCCreate(object):
 
         # msg_err_return is set to silence stderr, we tell them user that
         # error before
-        _, _, srv_err = iocage.lib.ioc_exec.IOCExec(
+        _, _, srv_err = iocage_lib.ioc_exec.IOCExec(
             srv_connect_cmd, jail_uuid, location, plugin=self.plugin,
             silent=True, msg_err_return=True).exec_jail()
 
         if srv_err:
             # This shouldn't be fatal since SRV records are not required
-            iocage.lib.ioc_common.logit({
+            iocage_lib.ioc_common.logit({
                 "level": "WARNING",
                 "message":
                     f"{repo}'s SRV record could not be verified.\n"
@@ -567,38 +567,38 @@ class IOCCreate(object):
                 _callback=self.callback,
                 silent=False)
 
-        iocage.lib.ioc_common.logit({
+        iocage_lib.ioc_common.logit({
             "level": "INFO",
             "message": f"Testing DNSSEC response to {site}"
         },
             _callback=self.callback,
             silent=False)
-        _, _, dnssec_err = iocage.lib.ioc_exec.IOCExec(
+        _, _, dnssec_err = iocage_lib.ioc_exec.IOCExec(
             dnssec_connect_cmd, jail_uuid, location, plugin=self.plugin,
             silent=True, msg_err_return=True).exec_jail()
 
         if dnssec_err:
             # Not fatal, they may not be using DNSSEC
-            iocage.lib.ioc_common.logit({
+            iocage_lib.ioc_common.logit({
                 "level": "WARNING",
                 "message": f"{repo} could not be reached via DNSSEC.\n"
             },
                 _callback=self.callback,
                 silent=False)
 
-            iocage.lib.ioc_common.logit({
+            iocage_lib.ioc_common.logit({
                 "level": "INFO",
                 "message": f"Testing DNS response to {site}"
             },
                 _callback=self.callback,
                 silent=False)
 
-            _, _, dns_err = iocage.lib.ioc_exec.IOCExec(
+            _, _, dns_err = iocage_lib.ioc_exec.IOCExec(
                 dns_connect_cmd, jail_uuid, location, plugin=self.plugin,
                 silent=True, msg_err_return=True).exec_jail()
 
             if dns_err:
-                iocage.lib.ioc_common.logit({
+                iocage_lib.ioc_common.logit({
                     "level": "EXCEPTION",
                     "message": f"{repo} could not be reached via DNS, check"
                     " your network"
@@ -610,7 +610,7 @@ class IOCCreate(object):
             with open(self.pkglist, "r") as j:
                 self.pkglist = json.load(j)["pkgs"]
 
-        iocage.lib.ioc_common.logit({
+        iocage_lib.ioc_common.logit({
             "level": "INFO",
             "message": "\nInstalling pkg... "
         },
@@ -623,14 +623,14 @@ class IOCCreate(object):
         # We will have mismatched ABI errors from earlier, this is to be safe.
         os.environ["ASSUME_ALWAYS_YES"] = "yes"
         cmd = ("pkg-static", "upgrade", "-f", "-q", "-y")
-        pkg_upgrade, pkgup_stderr, pkgup_err = iocage.lib.ioc_exec.IOCExec(
+        pkg_upgrade, pkgup_stderr, pkgup_err = iocage_lib.ioc_exec.IOCExec(
             cmd, jail_uuid, location, plugin=self.plugin,
             msg_err_return=True).exec_jail()
 
         if pkgup_err:
-            iocage.lib.ioc_stop.IOCStop(jail_uuid, location, config,
+            iocage_lib.ioc_stop.IOCStop(jail_uuid, location, config,
                                         force=True, silent=True)
-            iocage.lib.ioc_common.logit({
+            iocage_lib.ioc_common.logit({
                 "level": "EXCEPTION",
                 "message": pkgup_stderr.decode().rstrip()
             },
@@ -641,7 +641,7 @@ class IOCCreate(object):
         if self.plugin:
             supply_msg = ("\nInstalling plugin packages:", False)
 
-        iocage.lib.ioc_common.logit({
+        iocage_lib.ioc_common.logit({
             "level": "INFO",
             "message": supply_msg[0]
         },
@@ -649,7 +649,7 @@ class IOCCreate(object):
             silent=supply_msg[1])
 
         for pkg in self.pkglist:
-            iocage.lib.ioc_common.logit({
+            iocage_lib.ioc_common.logit({
                 "level": "INFO",
                 "message": f"  - {pkg}... "
             },
@@ -657,12 +657,12 @@ class IOCCreate(object):
                 silent=supply_msg[1])
             cmd = ("pkg", "install", "-q", "-y", pkg)
 
-            pkg_stdout, pkg_stderr, pkg_err = iocage.lib.ioc_exec.IOCExec(
+            pkg_stdout, pkg_stderr, pkg_err = iocage_lib.ioc_exec.IOCExec(
                 cmd, jail_uuid, location, plugin=self.plugin,
                 silent=self.silent, msg_err_return=True).exec_jail()
 
             if pkg_err and not self.plugin:
-                iocage.lib.ioc_common.logit({
+                iocage_lib.ioc_common.logit({
                     "level": "ERROR",
                     "message": pkg_stderr.decode().rstrip()
                 },
@@ -671,7 +671,7 @@ class IOCCreate(object):
         os.remove(f"{location}/root/etc/resolv.conf")
 
         if status:
-            iocage.lib.ioc_stop.IOCStop(jail_uuid, location, config,
+            iocage_lib.ioc_stop.IOCStop(jail_uuid, location, config,
                                         silent=True)
 
         if self.plugin and pkg_err:

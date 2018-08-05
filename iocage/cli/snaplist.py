@@ -25,8 +25,8 @@
 import click
 import texttable
 
-import iocage.lib.ioc_common as ioc_common
-import iocage.lib.iocage as ioc
+import iocage_lib.ioc_common as ioc_common
+import iocage_lib.iocage as ioc
 
 
 @click.command(name="snaplist", help="Show snapshots of a specified jail.")

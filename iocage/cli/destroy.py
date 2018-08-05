@@ -25,8 +25,8 @@
 import os
 
 import click
-import iocage.lib.ioc_common as ioc_common
-import iocage.lib.iocage as ioc
+import iocage_lib.ioc_common as ioc_common
+import iocage_lib.iocage as ioc
 import libzfs
 
 __rootcmd__ = True

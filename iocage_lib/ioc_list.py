@@ -28,8 +28,8 @@ import re
 import subprocess as su
 import uuid as _uuid
 
-import iocage.lib.ioc_common
-import iocage.lib.ioc_json
+import iocage_lib.ioc_common
+import iocage_lib.ioc_json
 import libzfs
 import texttable
 
@@ -49,7 +49,7 @@ class IOCList(object):
         self.list_type = lst_type
         self.header = hdr
         self.full = full
-        self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
+        self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.sort = _sort
         self.silent = silent
@@ -112,7 +112,7 @@ class IOCList(object):
                     conf = json.load(loc)
             except FileNotFoundError:
                 uuid = mountpoint.rsplit("/", 1)[-1]
-                iocage.lib.ioc_common.logit({
+                iocage_lib.ioc_common.logit({
                     "level": "EXCEPTION",
                     "message": f"{uuid} is missing its configuration file."
                                "\nPlease run just 'list' instead to create"
@@ -150,7 +150,7 @@ class IOCList(object):
 
         for jail in jails:
             mountpoint = jail.properties["mountpoint"].value
-            conf = iocage.lib.ioc_json.IOCJson(mountpoint).json_load()
+            conf = iocage_lib.ioc_json.IOCJson(mountpoint).json_load()
 
             uuid_full = conf["host_hostuuid"]
             uuid = uuid_full
@@ -264,7 +264,7 @@ class IOCList(object):
                 jail_list.append([jid, uuid, state, short_release, short_ip4])
 
         list_type = "list_full" if self.full else "list_short"
-        sort = iocage.lib.ioc_common.ioc_sort(list_type,
+        sort = iocage_lib.ioc_common.ioc_sort(list_type,
                                               self.sort, data=jail_list)
         jail_list.sort(key=sort)
 
@@ -304,7 +304,7 @@ class IOCList(object):
 
     def list_bases(self, datasets):
         """Lists all bases."""
-        base_list = iocage.lib.ioc_common.ioc_sort(
+        base_list = iocage_lib.ioc_common.ioc_sort(
             "list_release", "release", data=datasets)
         table = texttable.Texttable(max_width=0)
 
@@ -324,7 +324,7 @@ class IOCList(object):
     def list_get_jid(cls, uuid):
         """Return a tuple containing True or False and the jail's id or '-'."""
         try:
-            jid = iocage.lib.ioc_common.checkoutput(
+            jid = iocage_lib.ioc_common.checkoutput(
                 ["jls", "-j", f"ioc-{uuid.replace('.', '_')}"],
                 stderr=su.PIPE).split()[5]
 

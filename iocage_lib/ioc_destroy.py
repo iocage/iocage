@@ -27,8 +27,8 @@ import json
 import os
 import subprocess as su
 
-import iocage.lib.ioc_json
-import iocage.lib.ioc_stop
+import iocage_lib.ioc_json
+import iocage_lib.ioc_stop
 import libzfs
 
 
@@ -40,8 +40,8 @@ class IOCDestroy(object):
     """
 
     def __init__(self):
-        self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
-        self.iocroot = iocage.lib.ioc_json.IOCJson(
+        self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
+        self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.ds = self.zfs.get_dataset
@@ -87,8 +87,8 @@ class IOCDestroy(object):
             _path = _path if _path != "none" else None
 
             if (dataset.name.endswith(uuid) or root) and _path is not None:
-                conf = iocage.lib.ioc_json.IOCJson(_path).json_load()
-                iocage.lib.ioc_stop.IOCStop(uuid, _path, conf, silent=True)
+                conf = iocage_lib.ioc_json.IOCJson(_path).json_load()
+                iocage_lib.ioc_stop.IOCStop(uuid, _path, conf, silent=True)
 
     def __destroy_leftovers__(self, dataset, clean=False):
         """Removes parent datasets and logs."""
@@ -245,8 +245,8 @@ class IOCDestroy(object):
             return
 
         try:
-            conf = iocage.lib.ioc_json.IOCJson(path).json_load()
-            iocage.lib.ioc_stop.IOCStop(uuid, path, conf, silent=True)
+            conf = iocage_lib.ioc_json.IOCJson(path).json_load()
+            iocage_lib.ioc_stop.IOCStop(uuid, path, conf, silent=True)
         except (FileNotFoundError, RuntimeError, libzfs.ZFSException,
                 SystemExit):
             # Broad exception as we don't care why this failed. iocage

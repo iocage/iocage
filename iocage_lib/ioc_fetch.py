@@ -36,11 +36,11 @@ import requests
 import requests.auth
 import requests.packages.urllib3.exceptions
 
-import iocage.lib.ioc_common
-import iocage.lib.ioc_destroy
-import iocage.lib.ioc_exec
-import iocage.lib.ioc_json
-import iocage.lib.ioc_start
+import iocage_lib.ioc_common
+import iocage_lib.ioc_destroy
+import iocage_lib.ioc_exec
+import iocage_lib.ioc_json
+import iocage_lib.ioc_start
 import libzfs
 
 
@@ -65,8 +65,8 @@ class IOCFetch(object):
                         "src.txz"),
                  silent=False,
                  callback=None):
-        self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
-        self.iocroot = iocage.lib.ioc_json.IOCJson(
+        self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
+        self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")
         self.server = server
         self.user = user
@@ -148,14 +148,14 @@ class IOCFetch(object):
                 # Time to print the list again
 
                 for r in releases:
-                    iocage.lib.ioc_common.logit(
+                    iocage_lib.ioc_common.logit(
                         {
                             "level": "INFO",
                             "message": f"[{releases.index(r)}] {r}"
                         },
                         _callback=self.callback,
                         silent=self.silent)
-                host_release = iocage.lib.ioc_common.get_host_release()
+                host_release = iocage_lib.ioc_common.get_host_release()
                 self.release = input("\nType the number of the desired"
                                      " RELEASE\nPress [Enter] to fetch "
                                      f"the default selection: ({host_release})"
@@ -166,20 +166,20 @@ class IOCFetch(object):
 
         try:
             self.release = releases[int(self.release)]
-            iocage.lib.ioc_common.check_release_newer(
+            iocage_lib.ioc_common.check_release_newer(
                 self.release, self.callback, self.silent)
         except IndexError:
             # Time to print the list again
 
             for r in releases:
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": "INFO",
                         "message": f"[{releases.index(r)}] {r}"
                     },
                     _callback=self.callback,
                     silent=self.silent)
-            host_release = iocage.lib.ioc_common.get_host_release()
+            host_release = iocage_lib.ioc_common.get_host_release()
             self.release = input("\nType the number of the desired"
                                  " RELEASE\nPress [Enter] to fetch "
                                  f"the default selection: ({host_release})"
@@ -190,7 +190,7 @@ class IOCFetch(object):
             # not be on the mirrors anymore.
             try:
                 if self.release == "":
-                    self.release = iocage.lib.ioc_common.get_host_release()
+                    self.release = iocage_lib.ioc_common.get_host_release()
 
                 if "-STABLE" in self.release:
                     # Custom HardenedBSD server
@@ -203,14 +203,14 @@ class IOCFetch(object):
                 # Time to print the list again
 
                 for r in releases:
-                    iocage.lib.ioc_common.logit(
+                    iocage_lib.ioc_common.logit(
                         {
                             "level": "INFO",
                             "message": f"[{releases.index(r)}] {r}"
                         },
                         _callback=self.callback,
                         silent=self.silent)
-                host_release = iocage.lib.ioc_common.get_host_release()
+                host_release = iocage_lib.ioc_common.get_host_release()
                 self.release = input("\nType the number of the desired"
                                      " RELEASE\nPress [Enter] to fetch "
                                      f"the default selection: ({host_release})"
@@ -236,7 +236,7 @@ class IOCFetch(object):
             # Format for file directory should be: root-dir/RELEASE/*.txz
 
             if not self.root_dir:
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": "EXCEPTION",
                         "message": "Please supply --root-dir or -d."
@@ -245,7 +245,7 @@ class IOCFetch(object):
                     silent=self.silent)
 
             if self.release is None:
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": "EXCEPTION",
                         "message": "Please supply a RELEASE!"
@@ -256,7 +256,7 @@ class IOCFetch(object):
             try:
                 os.chdir(f"{self.root_dir}/{self.release}")
             except OSError as err:
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": "EXCEPTION",
                         "message": err
@@ -290,7 +290,7 @@ class IOCFetch(object):
                             f"\nPlease place it in {self.root_dir}/" \
                                 f"{self.release}"
 
-                    iocage.lib.ioc_common.logit(
+                    iocage_lib.ioc_common.logit(
                         {
                             "level": "EXCEPTION",
                             "message": error
@@ -298,7 +298,7 @@ class IOCFetch(object):
                         _callback=self.callback,
                         silent=self.silent)
 
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": "INFO",
                         "message": f"Copying: {f}... "
@@ -308,7 +308,7 @@ class IOCFetch(object):
                 shutil.copy(f, dataset)
 
                 if f != "MANIFEST":
-                    iocage.lib.ioc_common.logit(
+                    iocage_lib.ioc_common.logit(
                         {
                             "level": "INFO",
                             "message": f"Extracting: {f}... "
@@ -377,7 +377,7 @@ class IOCFetch(object):
                             releases.append(rel)
 
                 if len(releases) == 0:
-                    iocage.lib.ioc_common.logit(
+                    iocage_lib.ioc_common.logit(
                         {
                             "level":
                             "EXCEPTION",
@@ -394,17 +394,17 @@ class IOCFetch(object):
                         _callback=self.callback,
                         silent=self.silent)
 
-                releases = iocage.lib.ioc_common.sort_release(releases)
+                releases = iocage_lib.ioc_common.sort_release(releases)
 
                 for r in releases:
-                    iocage.lib.ioc_common.logit(
+                    iocage_lib.ioc_common.logit(
                         {
                             "level": "INFO",
                             "message": f"[{releases.index(r)}] {r}"
                         },
                         _callback=self.callback,
                         silent=self.silent)
-                host_release = iocage.lib.ioc_common.get_host_release()
+                host_release = iocage_lib.ioc_common.get_host_release()
                 self.release = input("\nType the number of the desired"
                                      " RELEASE\nPress [Enter] to fetch "
                                      f"the default selection: ({host_release})"
@@ -444,7 +444,7 @@ class IOCFetch(object):
                             releases.append(rel)
 
                 if len(releases) == 0:
-                    iocage.lib.ioc_common.logit(
+                    iocage_lib.ioc_common.logit(
                         {
                             "level":
                             "EXCEPTION",
@@ -464,11 +464,11 @@ class IOCFetch(object):
                 if _list:
                     return releases
 
-                releases = iocage.lib.ioc_common.sort_release(releases)
+                releases = iocage_lib.ioc_common.sort_release(releases)
 
                 for r in releases:
                     if r in eol:
-                        iocage.lib.ioc_common.logit(
+                        iocage_lib.ioc_common.logit(
                             {
                                 "level": "INFO",
                                 "message": f"[{releases.index(r)}] {r} (EOL)"
@@ -476,7 +476,7 @@ class IOCFetch(object):
                             _callback=self.callback,
                             silent=self.silent)
                     else:
-                        iocage.lib.ioc_common.logit(
+                        iocage_lib.ioc_common.logit(
                             {
                                 "level": "INFO",
                                 "message": f"[{releases.index(r)}] {r}"
@@ -484,7 +484,7 @@ class IOCFetch(object):
                             _callback=self.callback,
                             silent=self.silent)
 
-                host_release = iocage.lib.ioc_common.get_host_release()
+                host_release = iocage_lib.ioc_common.get_host_release()
                 self.release = input("\nType the number of the desired"
                                      " RELEASE\nPress [Enter] to fetch "
                                      f"the default selection: ({host_release})"
@@ -496,7 +496,7 @@ class IOCFetch(object):
                 f"{self.arch}-LATEST"
 
         self.__fetch_exists__()
-        iocage.lib.ioc_common.logit(
+        iocage_lib.ioc_common.logit(
             {
                 "level": "INFO",
                 "message": f"Fetching: {self.release}\n"
@@ -535,7 +535,7 @@ class IOCFetch(object):
                 release, verify=self.verify)
 
         if r.status_code == 404:
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "EXCEPTION",
                     "message": f"{self.release} was not found!"
@@ -601,7 +601,7 @@ class IOCFetch(object):
 
                             if hashes[f] != sha256.hexdigest():
                                 if not _missing:
-                                    iocage.lib.ioc_common.logit(
+                                    iocage_lib.ioc_common.logit(
                                         {
                                             "level":
                                             "WARNING",
@@ -613,7 +613,7 @@ class IOCFetch(object):
                                         silent=self.silent)
                                     missing.append(f)
                                 else:
-                                    iocage.lib.ioc_common.logit(
+                                    iocage_lib.ioc_common.logit(
                                         {
                                             "level":
                                             "EXCEPTION",
@@ -625,7 +625,7 @@ class IOCFetch(object):
                                         silent=self.silent)
                     except (FileNotFoundError, KeyError) as err:
                         if not _missing:
-                            iocage.lib.ioc_common.logit(
+                            iocage_lib.ioc_common.logit(
                                 {
                                     "level":
                                     "WARNING",
@@ -636,7 +636,7 @@ class IOCFetch(object):
                                 silent=self.silent)
                             missing.append(f)
                         else:
-                            iocage.lib.ioc_common.logit(
+                            iocage_lib.ioc_common.logit(
                                 {
                                     "level": "EXCEPTION",
                                     "message": "Too many failed verifications!"
@@ -645,7 +645,7 @@ class IOCFetch(object):
                                 silent=self.silent)
 
                 if not missing:
-                    iocage.lib.ioc_common.logit(
+                    iocage_lib.ioc_common.logit(
                         {
                             "level": "INFO",
                             "message": f"Extracting: {f}... "
@@ -771,7 +771,7 @@ class IOCFetch(object):
                 continue
 
             if ".." in m.name:
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": "WARNING",
                         "message":
@@ -818,7 +818,7 @@ class IOCFetch(object):
             ]
             new_root = f"{self.iocroot}/jails/{uuid}/root"
 
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level":
                     "INFO",
@@ -835,7 +835,7 @@ class IOCFetch(object):
             ]
             new_root = f"{self.iocroot}/releases/{self.release}/root"
 
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level":
                     "INFO",

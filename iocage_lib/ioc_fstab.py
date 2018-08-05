@@ -28,9 +28,9 @@ import shutil
 import subprocess as su
 import tempfile
 
-import iocage.lib.ioc_common
-import iocage.lib.ioc_json
-import iocage.lib.ioc_list
+import iocage_lib.ioc_common
+import iocage_lib.ioc_json
+import iocage_lib.ioc_list
 import texttable
 
 
@@ -41,8 +41,8 @@ class IOCFstab(object):
     def __init__(self, uuid, action, source, destination, fstype, fsoptions,
                  fsdump, fspass, index=None, silent=False, callback=None,
                  header=False, _fstab_list=None):
-        self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
-        self.iocroot = iocage.lib.ioc_json.IOCJson(
+        self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
+        self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")
         self.uuid = uuid
         self.action = action
@@ -86,7 +86,7 @@ class IOCFstab(object):
     def __fstab_add__(self):
         """Adds a users mount to the jails fstab"""
         with open(f"{self.iocroot}/jails/{self.uuid}/fstab", "r") as fstab:
-            with iocage.lib.ioc_common.open_atomic(
+            with iocage_lib.ioc_common.open_atomic(
                     f"{self.iocroot}/jails/{self.uuid}/fstab",
                     "w") as _fstab:
                 # open_atomic will empty the file, we need these still.
@@ -97,7 +97,7 @@ class IOCFstab(object):
                 date = datetime.datetime.utcnow().strftime("%F %T")
                 _fstab.write(f"{self.mount} # Added by iocage on {date}\n")
 
-        iocage.lib.ioc_common.logit({
+        iocage_lib.ioc_common.logit({
             "level": "INFO",
             "message": f"Successfully added mount to {self.uuid}'s fstab"
         },
@@ -114,7 +114,7 @@ class IOCFstab(object):
         index = 0
 
         with open(f"{self.iocroot}/jails/{self.uuid}/fstab", "r") as fstab:
-            with iocage.lib.ioc_common.open_atomic(
+            with iocage_lib.ioc_common.open_atomic(
                     f"{self.iocroot}/jails/{self.uuid}/fstab",
                     "w") as _fstab:
 
@@ -130,7 +130,7 @@ class IOCFstab(object):
                     index += 1
 
         if removed:
-            iocage.lib.ioc_common.logit({
+            iocage_lib.ioc_common.logit({
                 "level": "INFO",
                 "message": f"Successfully removed mount from {self.uuid}"
                            "'s fstab"
@@ -140,7 +140,7 @@ class IOCFstab(object):
 
             return dest  # Needed for umounting, otherwise we lack context.
 
-        iocage.lib.ioc_common.logit({
+        iocage_lib.ioc_common.logit({
             "level": "INFO",
             "message": "No matching fstab entry."
         },
@@ -149,7 +149,7 @@ class IOCFstab(object):
 
     def __fstab_mount__(self):
         """Mounts the users mount if the jail is running."""
-        status, _ = iocage.lib.ioc_list.IOCList().list_get_jid(self.uuid)
+        status, _ = iocage_lib.ioc_list.IOCList().list_get_jid(self.uuid)
 
         if not status:
             return
@@ -169,7 +169,7 @@ class IOCFstab(object):
 
         :param dest: The destination to umount.
         """
-        status, _ = iocage.lib.ioc_list.IOCList().list_get_jid(self.uuid)
+        status, _ = iocage_lib.ioc_list.IOCList().list_get_jid(self.uuid)
 
         if not status:
             return
@@ -193,7 +193,7 @@ class IOCFstab(object):
             matched = False
 
             with open(jail_fstab, "r") as fstab:
-                with iocage.lib.ioc_common.open_atomic(
+                with iocage_lib.ioc_common.open_atomic(
                         jail_fstab, "w") as _fstab:
 
                     for i, line in enumerate(fstab.readlines()):
@@ -203,7 +203,7 @@ class IOCFstab(object):
                                 f"{self.mount} # Added by iocage on {date}\n")
                             matched = True
 
-                            iocage.lib.ioc_common.logit({
+                            iocage_lib.ioc_common.logit({
                                 "level": "INFO",
                                 "message": f"Index {self.index} replaced."
                             },
@@ -213,7 +213,7 @@ class IOCFstab(object):
                             _fstab.write(line)
 
             if not matched:
-                iocage.lib.ioc_common.logit({
+                iocage_lib.ioc_common.logit({
                     "level": "EXCEPTION",
                     "message": f"Index {self.index} not found."
                 },

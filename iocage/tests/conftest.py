@@ -25,7 +25,7 @@ import os
 
 import pytest
 
-from iocage.lib.ioc_common import checkoutput
+from iocage_lib.ioc_common import checkoutput
 
 
 def pytest_addoption(parser):

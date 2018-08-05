@@ -26,9 +26,9 @@ import os
 import re
 import subprocess as su
 
-import iocage.lib.ioc_common
-import iocage.lib.ioc_json
-import iocage.lib.ioc_list
+import iocage_lib.ioc_common
+import iocage_lib.ioc_json
+import iocage_lib.ioc_list
 
 
 class IOCStop(object):
@@ -36,14 +36,14 @@ class IOCStop(object):
 
     def __init__(self, uuid, path, conf,
                  silent=False, callback=None, force=False):
-        self.pool = iocage.lib.ioc_json.IOCJson(" ").json_get_value("pool")
-        self.iocroot = iocage.lib.ioc_json.IOCJson(
+        self.pool = iocage_lib.ioc_json.IOCJson(" ").json_get_value("pool")
+        self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")
         self.uuid = uuid.replace(".", "_")
         self.path = path
         self.conf = conf
         self.force = force
-        self.status, self.jid = iocage.lib.ioc_list.IOCList().list_get_jid(
+        self.status, self.jid = iocage_lib.ioc_list.IOCList().list_get_jid(
             uuid)
         self.nics = conf["interfaces"]
         self.callback = callback
@@ -69,7 +69,7 @@ class IOCStop(object):
             return True, "Script is not executable!"
 
         try:
-            out = iocage.lib.ioc_common.checkoutput(script,
+            out = iocage_lib.ioc_common.checkoutput(script,
                                                     stderr=su.STDOUT)
         except su.CalledProcessError as err:
             return False, err.output.decode().rstrip("\n")
@@ -88,7 +88,7 @@ class IOCStop(object):
 
         if not self.status:
             msg = f"{self.uuid} is not running!"
-            iocage.lib.ioc_common.logit({
+            iocage_lib.ioc_common.logit({
                 "level": "ERROR",
                 "message": msg
             },
@@ -98,7 +98,7 @@ class IOCStop(object):
             return
 
         msg = f"* Stopping {self.uuid}"
-        iocage.lib.ioc_common.logit({
+        iocage_lib.ioc_common.logit({
             "level": "INFO",
             "message": msg
         },
@@ -110,7 +110,7 @@ class IOCStop(object):
 
             if prestop and prestop_err:
                 msg = f"  + Running prestop WARNING\n{prestop_err}"
-                iocage.lib.ioc_common.logit({
+                iocage_lib.ioc_common.logit({
                     "level": "WARNING",
                     "message": msg
                 },
@@ -118,7 +118,7 @@ class IOCStop(object):
                     silent=self.silent)
             elif prestop:
                 msg = "  + Running prestop OK"
-                iocage.lib.ioc_common.logit({
+                iocage_lib.ioc_common.logit({
                     "level": "INFO",
                     "message": msg
                 },
@@ -131,7 +131,7 @@ class IOCStop(object):
                 else:
                     msg = f"  + Running prestop FAILED"
 
-                iocage.lib.ioc_common.logit({
+                iocage_lib.ioc_common.logit({
                     "level": "ERROR",
                     "message": msg
                 },
@@ -149,7 +149,7 @@ class IOCStop(object):
 
             if services:
                 msg = "  + Stopping services FAILED"
-                iocage.lib.ioc_common.logit({
+                iocage_lib.ioc_common.logit({
                     "level": "ERROR",
                     "message": msg
                 },
@@ -157,7 +157,7 @@ class IOCStop(object):
                     silent=self.silent)
             else:
                 msg = "  + Stopping services OK"
-                iocage.lib.ioc_common.logit({
+                iocage_lib.ioc_common.logit({
                     "level": "INFO",
                     "message": msg
                 },
@@ -169,7 +169,7 @@ class IOCStop(object):
                     jdataset = jdataset.strip()
 
                     try:
-                        children = iocage.lib.ioc_common.checkoutput(
+                        children = iocage_lib.ioc_common.checkoutput(
                             ["zfs", "list", "-H", "-r", "-o", "name",
                              "-S", "name",
                              f"{self.pool}/{jdataset}"], stderr=su.STDOUT)
@@ -178,12 +178,12 @@ class IOCStop(object):
                             child = child.strip()
 
                             try:
-                                iocage.lib.ioc_common.checkoutput(
+                                iocage_lib.ioc_common.checkoutput(
                                     ["setfib", exec_fib, "jexec",
                                      f"ioc-{self.uuid}", "zfs", "umount",
                                      child], stderr=su.STDOUT)
                             except su.CalledProcessError as err:
-                                mountpoint = iocage.lib.ioc_common.checkoutput(
+                                mountpoint = iocage_lib.ioc_common.checkoutput(
                                     ["zfs", "get", "-H", "-o", "value",
                                      "mountpoint", f"{self.pool}/{jdataset}"]
                                 ).strip()
@@ -197,7 +197,7 @@ class IOCStop(object):
                                         ))
 
                         try:
-                            iocage.lib.ioc_common.checkoutput(
+                            iocage_lib.ioc_common.checkoutput(
                                 ["zfs", "unjail", f"ioc-{self.uuid}",
                                  f"{self.pool}/{jdataset}"], stderr=su.STDOUT)
                         except su.CalledProcessError as err:
@@ -225,21 +225,21 @@ class IOCStop(object):
                 for nic in self.nics.split(","):
                     nic = nic.split(":")[0]
                     try:
-                        iocage.lib.ioc_common.checkoutput(
+                        iocage_lib.ioc_common.checkoutput(
                             ["ifconfig", f"{nic}:{self.jid}", "destroy"],
                             stderr=su.STDOUT)
                     except su.CalledProcessError as err:
                         vnet_err.append(err.output.decode().rstrip())
 
                 if not vnet_err:
-                    iocage.lib.ioc_common.logit({
+                    iocage_lib.ioc_common.logit({
                         "level": "INFO",
                         "message": "  + Tearing down VNET OK"
                     },
                         _callback=self.callback,
                         silent=self.silent)
                 elif vnet_err:
-                    iocage.lib.ioc_common.logit({
+                    iocage_lib.ioc_common.logit({
                         "level": "INFO",
                         "message": "  + Tearing down VNET FAILED"
                     },
@@ -247,7 +247,7 @@ class IOCStop(object):
                         silent=self.silent)
 
                     for v_err in vnet_err:
-                        iocage.lib.ioc_common.logit({
+                        iocage_lib.ioc_common.logit({
                             "level": "WARNING",
                             "message": f"  {v_err}"
                         },
@@ -264,7 +264,7 @@ class IOCStop(object):
                         try:
                             iface, addr = ip4.split("/")[0].split("|")
                             addr = addr.split()
-                            iocage.lib.ioc_common.checkoutput(
+                            iocage_lib.ioc_common.checkoutput(
                                 ["ifconfig", iface] + addr +
                                 ["-alias"],
                                 stderr=su.STDOUT)
@@ -290,7 +290,7 @@ class IOCStop(object):
                         try:
                             iface, addr = ip6.split("/")[0].split("|")
                             addr = addr.split()
-                            iocage.lib.ioc_common.checkoutput(
+                            iocage_lib.ioc_common.checkoutput(
                                 ["ifconfig", iface, "inet6"] + addr +
                                 ["-alias"], stderr=su.STDOUT)
                         except su.CalledProcessError as err:
@@ -312,7 +312,7 @@ class IOCStop(object):
 
         if stop:
             msg = "  + Removing jail process FAILED"
-            iocage.lib.ioc_common.logit({
+            iocage_lib.ioc_common.logit({
                 "level": "ERROR",
                 "message": msg
             },
@@ -320,7 +320,7 @@ class IOCStop(object):
                 silent=self.silent)
         else:
             msg = "  + Removing jail process OK"
-            iocage.lib.ioc_common.logit({
+            iocage_lib.ioc_common.logit({
                 "level": "INFO",
                 "message": msg
             },
@@ -331,7 +331,7 @@ class IOCStop(object):
 
         if poststop and poststop_err:
             msg = f"  + Running poststop WARNING\n{poststop_err}"
-            iocage.lib.ioc_common.logit({
+            iocage_lib.ioc_common.logit({
                 "level": "WARNING",
                 "message": msg
             },
@@ -339,7 +339,7 @@ class IOCStop(object):
                 silent=self.silent)
         elif poststop:
             msg = "  + Running poststop OK"
-            iocage.lib.ioc_common.logit({
+            iocage_lib.ioc_common.logit({
                 "level": "INFO",
                 "message": msg
             },
@@ -352,7 +352,7 @@ class IOCStop(object):
             else:
                 msg = f"  + Running poststop FAILED"
 
-            iocage.lib.ioc_common.logit({
+            iocage_lib.ioc_common.logit({
                 "level": "ERROR",
                 "message": msg
             },

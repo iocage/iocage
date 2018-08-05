@@ -25,8 +25,8 @@
 import collections
 import os
 
-import iocage.lib.ioc_common
-import iocage.lib.ioc_json
+import iocage_lib.ioc_common
+import iocage_lib.ioc_json
 import libzfs
 
 
@@ -35,7 +35,7 @@ class IOCCheck(object):
     """Checks if the required iocage datasets are present"""
 
     def __init__(self, silent=False, callback=None):
-        self.pool = iocage.lib.ioc_json.IOCJson(silent=silent).json_get_value(
+        self.pool = iocage_lib.ioc_json.IOCJson(silent=silent).json_get_value(
             "pool")
         self.callback = callback
         self.silent = silent
@@ -89,7 +89,7 @@ class IOCCheck(object):
                     raise RuntimeError("Run as root to create missing"
                                        " datasets!")
 
-                iocage.lib.ioc_common.logit({
+                iocage_lib.ioc_common.logit({
                     "level": "INFO",
                     "message": f"Creating {self.pool}/{dataset}"
                 },
@@ -113,7 +113,7 @@ class IOCCheck(object):
 
             prop = ds.properties.get("exec")
             if prop.value != "on":
-                iocage.lib.ioc_common.logit({
+                iocage_lib.ioc_common.logit({
                     "level": "EXCEPTION",
                     "message": f"Dataset \"{dataset}\" has "
                                f"exec={prop.value} (should be on)"
@@ -145,7 +145,7 @@ class IOCCheck(object):
         for level, msg in messages.items():
             level = level.partition("-")[2]
 
-            iocage.lib.ioc_common.logit({
+            iocage_lib.ioc_common.logit({
                 "level": level,
                 "message": msg
             },

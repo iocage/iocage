@@ -24,7 +24,7 @@
 """chroot module for the cli."""
 import click
 
-import iocage.lib.iocage as ioc
+import iocage_lib.iocage as ioc
 
 
 @click.command(context_settings=dict(

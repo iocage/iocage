@@ -24,7 +24,7 @@
 """import module for the cli."""
 import click
 
-import iocage.lib.iocage as ioc
+import iocage_lib.iocage as ioc
 
 __rootcmd__ = True
 

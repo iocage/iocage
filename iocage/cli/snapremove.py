@@ -26,9 +26,9 @@ import subprocess as su
 
 import click
 
-import iocage.lib.ioc_common as ioc_common
-import iocage.lib.ioc_json as ioc_json
-import iocage.lib.ioc_list as ioc_list
+import iocage_lib.ioc_common as ioc_common
+import iocage_lib.ioc_json as ioc_json
+import iocage_lib.ioc_list as ioc_list
 
 
 @click.command(name="snapremove", help="Remove specified snapshot of a jail.")

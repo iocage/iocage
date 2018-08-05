@@ -34,7 +34,7 @@ import sys
 
 import click
 import coloredlogs
-import iocage.lib.ioc_check as ioc_check
+import iocage_lib.ioc_check as ioc_check
 # This prevents it from getting in our way.
 from click import core
 

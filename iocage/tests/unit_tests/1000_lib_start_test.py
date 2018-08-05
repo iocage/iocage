@@ -22,10 +22,10 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 import mock
-import iocage.lib.ioc_start as ioc_start
+import iocage_lib.ioc_start as ioc_start
 
 
-@mock.patch('iocage.lib.ioc_common.checkoutput')
+@mock.patch('iocage_lib.ioc_common.checkoutput')
 def test_should_return_mtu_of_first_member(mock_checkoutput):
     mock_checkoutput.side_effect = [bridge_if_config, member_if_config]
 
@@ -35,7 +35,7 @@ def test_should_return_mtu_of_first_member(mock_checkoutput):
                                        mock.call(["ifconfig", "bge0"])])
 
 
-@mock.patch('iocage.lib.ioc_common.checkoutput')
+@mock.patch('iocage_lib.ioc_common.checkoutput')
 def test_should_return_mtu_of_first_member_with_description(mock_checkoutput):
     mock_checkoutput.side_effect = [bridge_with_description_if_config,
                                     member_if_config]
@@ -46,7 +46,7 @@ def test_should_return_mtu_of_first_member_with_description(mock_checkoutput):
                                        mock.call(["ifconfig", "bge0"])])
 
 
-@mock.patch('iocage.lib.ioc_common.checkoutput')
+@mock.patch('iocage_lib.ioc_common.checkoutput')
 def test_should_return_default_mtu_if_no_members(mock_checkoutput):
     mock_checkoutput.side_effect = [bridge_with_no_members_if_config,
                                     member_if_config]

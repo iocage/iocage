@@ -30,9 +30,9 @@ import subprocess as su
 import tempfile
 import urllib.request
 
-import iocage.lib.ioc_common
-import iocage.lib.ioc_json
-import iocage.lib.ioc_list
+import iocage_lib.ioc_common
+import iocage_lib.ioc_json
+import iocage_lib.ioc_list
 
 
 class IOCUpgrade(object):
@@ -46,10 +46,10 @@ class IOCUpgrade(object):
                  silent=False,
                  callback=None,
                  ):
-        self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
-        self.iocroot = iocage.lib.ioc_json.IOCJson(
+        self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
+        self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")
-        self.freebsd_version = iocage.lib.ioc_common.checkoutput(
+        self.freebsd_version = iocage_lib.ioc_common.checkoutput(
             ["freebsd-version"])
         self.conf = conf
         self.uuid = conf["host_hostuuid"]
@@ -60,7 +60,7 @@ class IOCUpgrade(object):
             conf["release"]
         self.new_release = new_release
         self.path = path
-        self.status, self.jid = iocage.lib.ioc_list.IOCList.list_get_jid(
+        self.status, self.jid = iocage_lib.ioc_list.IOCList.list_get_jid(
             self.uuid)
         self._freebsd_version = f"{self.iocroot}/jails/" \
             f"{self.uuid}/root/bin/freebsd-version"
@@ -124,7 +124,7 @@ class IOCUpgrade(object):
                     tmp.close()
                 os.remove(tmp.name)
 
-        iocage.lib.ioc_json.IOCJson(
+        iocage_lib.ioc_json.IOCJson(
             f"{self.path.replace('/root', '')}",
             silent=True).json_set_value(f"release={new_release}")
 
@@ -134,7 +134,7 @@ class IOCUpgrade(object):
         if "HBSD" in self.freebsd_version:
             # TODO: Not supported yet
             msg = "Upgrading basejails on HardenedBSD is not supported yet."
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "EXCEPTION",
                     "message": msg
@@ -149,7 +149,7 @@ class IOCUpgrade(object):
 
         if not release_p.exists():
             msg = f"{self.new_release} is missing, please fetch it!"
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "EXCEPTION",
                     "message": msg
@@ -171,7 +171,7 @@ class IOCUpgrade(object):
 
         if not p_files:
             msg = f"{self.new_release} is missing 'src.txz', please refetch!"
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "EXCEPTION",
                     "message": msg
@@ -196,7 +196,7 @@ class IOCUpgrade(object):
             msg = "Mounting src into jail failed! Rolling back snapshot."
             self.__rollback_jail__()
 
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "EXCEPTION",
                     "message": msg
@@ -231,7 +231,7 @@ class IOCUpgrade(object):
                 "umount", "-f", f"{self.path}/iocage_upgrade"
             ]).communicate()
 
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "EXCEPTION",
                     "message": msg
@@ -249,7 +249,7 @@ class IOCUpgrade(object):
                         new_release = line.rstrip().partition("=")[2].strip(
                             '"')
 
-        iocage.lib.ioc_json.IOCJson(
+        iocage_lib.ioc_json.IOCJson(
             f"{self.path.replace('/root', '')}",
             silent=True).json_set_value(f"release={new_release}")
 
@@ -281,7 +281,7 @@ class IOCUpgrade(object):
 
         for i in install.stdout:
             i = i.decode().rstrip()
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "INFO",
                     "message": i
@@ -318,12 +318,12 @@ class IOCUpgrade(object):
         os.remove(f"{path}.bak")
 
     def __snapshot_jail__(self):
-        import iocage.lib.iocage as ioc  # Avoids dep issues
+        import iocage_lib.iocage as ioc  # Avoids dep issues
         name = f"ioc_upgrade_{self.date}"
         ioc.IOCage(jail=self.uuid, skip_jails=True, silent=True).snapshot(name)
 
     def __rollback_jail__(self):
-        import iocage.lib.iocage as ioc  # Avoids dep issues
+        import iocage_lib.iocage as ioc  # Avoids dep issues
         name = f"ioc_upgrade_{self.date}"
         iocage = ioc.IOCage(jail=self.uuid, skip_jails=True, silent=True)
         iocage.stop()

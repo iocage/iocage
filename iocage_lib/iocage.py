@@ -29,20 +29,20 @@ import os
 import subprocess as su
 import uuid
 
-import iocage.lib.ioc_clean as ioc_clean
-import iocage.lib.ioc_common as ioc_common
-import iocage.lib.ioc_create as ioc_create
-import iocage.lib.ioc_destroy as ioc_destroy
-import iocage.lib.ioc_exec as ioc_exec
-import iocage.lib.ioc_fetch as ioc_fetch
-import iocage.lib.ioc_fstab as ioc_fstab
-import iocage.lib.ioc_image as ioc_image
-import iocage.lib.ioc_json as ioc_json
-import iocage.lib.ioc_list as ioc_list
-import iocage.lib.ioc_plugin as ioc_plugin
-import iocage.lib.ioc_start as ioc_start
-import iocage.lib.ioc_stop as ioc_stop
-import iocage.lib.ioc_upgrade as ioc_upgrade
+import iocage_lib.ioc_clean as ioc_clean
+import iocage_lib.ioc_common as ioc_common
+import iocage_lib.ioc_create as ioc_create
+import iocage_lib.ioc_destroy as ioc_destroy
+import iocage_lib.ioc_exec as ioc_exec
+import iocage_lib.ioc_fetch as ioc_fetch
+import iocage_lib.ioc_fstab as ioc_fstab
+import iocage_lib.ioc_image as ioc_image
+import iocage_lib.ioc_json as ioc_json
+import iocage_lib.ioc_list as ioc_list
+import iocage_lib.ioc_plugin as ioc_plugin
+import iocage_lib.ioc_start as ioc_start
+import iocage_lib.ioc_stop as ioc_stop
+import iocage_lib.ioc_upgrade as ioc_upgrade
 import libzfs
 
 

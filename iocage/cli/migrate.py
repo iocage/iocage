@@ -29,10 +29,10 @@ import shutil
 import subprocess as su
 
 import click
-import iocage.lib.ioc_common as ioc_common
-import iocage.lib.ioc_create as ioc_create
-import iocage.lib.ioc_json as ioc_json
-import iocage.lib.ioc_list as ioc_list
+import iocage_lib.ioc_common as ioc_common
+import iocage_lib.ioc_create as ioc_create
+import iocage_lib.ioc_json as ioc_json
+import iocage_lib.ioc_list as ioc_list
 
 __rootcmd__ = True
 

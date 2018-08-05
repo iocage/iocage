@@ -36,12 +36,12 @@ import sys
 import requests
 from dulwich import porcelain
 
-import iocage.lib.ioc_common
-import iocage.lib.ioc_create
-import iocage.lib.ioc_destroy
-import iocage.lib.ioc_exec
-import iocage.lib.ioc_json
-import iocage.lib.ioc_upgrade
+import iocage_lib.ioc_common
+import iocage_lib.ioc_create
+import iocage_lib.ioc_destroy
+import iocage_lib.ioc_exec
+import iocage_lib.ioc_json
+import iocage_lib.ioc_upgrade
 import libzfs
 import texttable
 import dulwich.client
@@ -58,8 +58,8 @@ class IOCPlugin(object):
 
     def __init__(self, release=None, plugin=None, branch=None,
                  callback=None, silent=False, **kwargs):
-        self.pool = iocage.lib.ioc_json.IOCJson().json_get_value("pool")
-        self.iocroot = iocage.lib.ioc_json.IOCJson(
+        self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
+        self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.release = release
@@ -96,7 +96,7 @@ class IOCPlugin(object):
             with open(_json, "r") as j:
                 conf = json.load(j)
         except FileNotFoundError:
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "EXCEPTION",
                     "message": f"{_json} was not found!"
@@ -104,7 +104,7 @@ class IOCPlugin(object):
                 _callback=self.callback,
                 silent=self.silent)
         except json.decoder.JSONDecodeError:
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level":
                     "EXCEPTION",
@@ -132,21 +132,21 @@ class IOCPlugin(object):
                                                    _conf, pkg, props, repo_dir)
             self.__fetch_plugin_post_install__(conf, _conf, jaildir, jail_name)
         except KeyboardInterrupt:
-            iocage.lib.ioc_destroy.IOCDestroy().destroy_jail(location)
+            iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(location)
             sys.exit(1)
 
     def __fetch_plugin_inform__(self, conf, num, plugins, accept_license):
         """Logs the pertinent information before fetching a plugin"""
 
         if num <= 1:
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "INFO",
                     "message": f"Plugin: {conf['name']}"
                 },
                 _callback=self.callback,
                 silent=self.silent)
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "INFO",
                     "message":
@@ -154,28 +154,28 @@ class IOCPlugin(object):
                 },
                 _callback=self.callback,
                 silent=self.silent)
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "INFO",
                     "message": f"  Using RELEASE: {conf['release']}"
                 },
                 _callback=self.callback,
                 silent=self.silent)
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "INFO",
                     "message": f"  Using Branch: {self.branch}"
                 },
                 _callback=self.callback,
                 silent=self.silent)
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "INFO",
                     "message": f"  Post-install Artifact: {conf['artifact']}"
                 },
                 _callback=self.callback,
                 silent=self.silent)
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "INFO",
                     "message": "  These pkgs will be installed:"
@@ -184,7 +184,7 @@ class IOCPlugin(object):
                 silent=self.silent)
 
             for pkg in conf["pkgs"]:
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": "INFO",
                         "message": f"    - {pkg}"
@@ -211,7 +211,7 @@ class IOCPlugin(object):
             if license and not accept_license:
                 license_text = requests.get(license)
 
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level":
                         "WARNING",
@@ -221,7 +221,7 @@ class IOCPlugin(object):
                     },
                     _callback=self.callback,
                     silent=self.silent)
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": "VERBOSE",
                         "message": f"{license_text.text}"
@@ -232,7 +232,7 @@ class IOCPlugin(object):
                 agree = input("Do you agree? (y/N) ")
 
                 if agree.lower() != "y":
-                    iocage.lib.ioc_common.logit(
+                    iocage_lib.ioc_common.logit(
                         {
                             "level": "EXCEPTION",
                             "message":
@@ -260,7 +260,7 @@ class IOCPlugin(object):
                 props.append(_p)
 
             if not os.path.isdir(f"{self.iocroot}/releases/{self.release}"):
-                iocage.lib.ioc_common.check_release_newer(
+                iocage_lib.ioc_common.check_release_newer(
                     self.release, self.callback, self.silent)
                 self.__fetch_release__(self.release)
 
@@ -268,7 +268,7 @@ class IOCPlugin(object):
             # 9.3-RELEASE and under don't actually have this binary.
             release = conf["release"]
         else:
-            iocage.lib.ioc_common.check_release_newer(
+            iocage_lib.ioc_common.check_release_newer(
                 self.release, self.callback, self.silent)
 
             try:
@@ -278,7 +278,7 @@ class IOCPlugin(object):
                             release = line.rstrip().partition("=")[2].strip(
                                 '"')
             except FileNotFoundError:
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level":
                         "WARNING",
@@ -312,7 +312,7 @@ class IOCPlugin(object):
 
     def __fetch_plugin_create__(self, create_props, uuid):
         """Creates the plugin with the provided properties"""
-        iocage.lib.ioc_create.IOCCreate(
+        iocage_lib.ioc_create.IOCCreate(
             self.release,
             create_props,
             0,
@@ -322,14 +322,14 @@ class IOCPlugin(object):
         jaildir = f"{self.iocroot}/jails/{uuid}"
         repo_dir = f"{jaildir}/root/usr/local/etc/pkg/repos"
         path = f"{self.pool}/iocage/jails/{uuid}"
-        _conf = iocage.lib.ioc_json.IOCJson(jaildir).json_load()
+        _conf = iocage_lib.ioc_json.IOCJson(jaildir).json_load()
 
         # We do this test again as the user could supply a malformed IP to
         # fetch that bypasses the more naive check in cli/fetch
 
         if _conf["ip4_addr"] == "none" and _conf["ip6_addr"] == "none" and \
            _conf["dhcp"] != "on":
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "ERROR",
                     "message": "\nAn IP address is needed to fetch a "
@@ -337,8 +337,8 @@ class IOCPlugin(object):
                 },
                 _callback=self.callback,
                 silent=self.silent)
-            iocage.lib.ioc_destroy.IOCDestroy().destroy_jail(path)
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(path)
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "EXCEPTION",
                     "message": "Destroyed partial plugin."
@@ -359,7 +359,7 @@ class IOCPlugin(object):
                 su.check_call(
                     ["kldload", "-n", kmod], stdout=su.PIPE, stderr=su.PIPE)
             except su.CalledProcessError:
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": "EXCEPTION",
                         "message": "Module not found!"
@@ -369,7 +369,7 @@ class IOCPlugin(object):
 
         if secure:
             # Certificate verification
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level":
                     "INFO",
@@ -380,7 +380,7 @@ class IOCPlugin(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-            err = iocage.lib.ioc_create.IOCCreate(
+            err = iocage_lib.ioc_create.IOCCreate(
                 self.release,
                 create_props,
                 0,
@@ -389,7 +389,7 @@ class IOCPlugin(object):
                     uuid, jaildir, _conf)
 
             if err:
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level":
                         "EXCEPTION",
@@ -436,7 +436,7 @@ FreeBSD: { enabled: no }
             try:
                 os.makedirs(f_dir, 0o755)
             except OSError:
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": "ERROR",
                         "message":
@@ -465,7 +465,7 @@ fingerprint: {fingerprint}
                             function=r["function"],
                             fingerprint=r["fingerprint"]))
 
-        err = iocage.lib.ioc_create.IOCCreate(
+        err = iocage_lib.ioc_create.IOCCreate(
             self.release,
             create_props,
             0,
@@ -475,7 +475,7 @@ fingerprint: {fingerprint}
                 uuid, jaildir, _conf, repo=conf["packagesite"], site=repo_name)
 
         if err:
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "EXCEPTION",
                     "message": f"\npkg error:\n  - {err}\n"
@@ -513,7 +513,7 @@ fingerprint: {fingerprint}
         # We need to pipe from tar to the root of the jail.
 
         if conf["artifact"]:
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "INFO",
                     "message": "\nFetching artifact... "
@@ -536,7 +536,7 @@ fingerprint: {fingerprint}
                 shutil.copy(f"{jaildir}/plugin/post_install.sh",
                             f"{jaildir}/root/root")
 
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": "INFO",
                         "message": "\nRunning post_install.sh"
@@ -545,18 +545,18 @@ fingerprint: {fingerprint}
                     silent=self.silent)
 
                 command = ["sh", "/root/post_install.sh"]
-                msg, err = iocage.lib.ioc_exec.IOCExec(
+                msg, err = iocage_lib.ioc_exec.IOCExec(
                     command, uuid, jaildir, plugin=True,
                     skip=True).exec_jail()
 
                 if err:
-                    iocage.lib.ioc_common.logit(
+                    iocage_lib.ioc_common.logit(
                         {
                             "level": "EXCEPTION",
                             "message": "An error occured! Please read above"
                         })
 
-                iocage.lib.ioc_common.logit({"level": "INFO", "message": msg})
+                iocage_lib.ioc_common.logit({"level": "INFO", "message": msg})
 
                 ui_json = f"{jaildir}/plugin/ui.json"
 
@@ -578,7 +578,7 @@ fingerprint: {fingerprint}
                     with open(ui_json, "r") as u:
                         admin_portal = json.load(u)["adminportal"]
                         admin_portal = admin_portal.replace("%%IP%%", ip)
-                        iocage.lib.ioc_common.logit(
+                        iocage_lib.ioc_common.logit(
                             {
                                 "level": "INFO",
                                 "message": f"Admin Portal:\n{admin_portal}"
@@ -613,7 +613,7 @@ fingerprint: {fingerprint}
             try:
                 self.__clone_repo(git_server, git_working_dir)
             except Exception as err:
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": "EXCEPTION",
                         "message": err
@@ -628,7 +628,7 @@ fingerprint: {fingerprint}
 
         if self.plugin is None and not _list:
             for p in _plugins:
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": "INFO",
                         "message": f"[{_plugins.index(p)}] {p}"
@@ -704,7 +704,7 @@ fingerprint: {fingerprint}
             try:
                 plugin = plugins[int(plugin)]
             except IndexError:
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": "EXCEPTION",
                         "message": f"Plugin: {_plugin} not in list!"
@@ -724,7 +724,7 @@ fingerprint: {fingerprint}
                 try:
                     plugin = plugins[int(plugin[0])]
                 except IndexError:
-                    iocage.lib.ioc_common.logit(
+                    iocage_lib.ioc_common.logit(
                         {
                             "level": "EXCEPTION",
                             "message": f"Plugin: {_plugin} not in list!"
@@ -732,7 +732,7 @@ fingerprint: {fingerprint}
                         _callback=self.callback,
                         silent=self.silent)
             except ValueError as err:
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": "EXCEPTION",
                         "message": err
@@ -770,7 +770,7 @@ fingerprint: {fingerprint}
         return plugin_list
 
     def update(self):
-        iocage.lib.ioc_common.logit(
+        iocage_lib.ioc_common.logit(
             {
                 "level": "INFO",
                 "message": f"Snapshotting {self.plugin}... "
@@ -780,7 +780,7 @@ fingerprint: {fingerprint}
 
         self.__snapshot_jail__(name="update")
 
-        iocage.lib.ioc_common.logit(
+        iocage_lib.ioc_common.logit(
             {
                 "level": "INFO",
                 "message": "Updating plugin INDEX... "
@@ -792,7 +792,7 @@ fingerprint: {fingerprint}
         plugin_conf = self.__load_plugin_json()
         self.__check_manifest__(plugin_conf)
 
-        iocage.lib.ioc_common.logit(
+        iocage_lib.ioc_common.logit(
             {
                 "level": "INFO",
                 "message": "Removing old pkgs... "
@@ -801,7 +801,7 @@ fingerprint: {fingerprint}
             silent=self.silent)
         self.__update_pkg_remove__()
 
-        iocage.lib.ioc_common.logit(
+        iocage_lib.ioc_common.logit(
             {
                 "level": "INFO",
                 "message": "Installing new pkgs... "
@@ -811,7 +811,7 @@ fingerprint: {fingerprint}
         self.__update_pkg_install__(plugin_conf)
 
         if plugin_conf["artifact"]:
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "INFO",
                     "message": "Updating plugin artifact... "
@@ -824,7 +824,7 @@ fingerprint: {fingerprint}
                 f"{self.iocroot}/jails/{self.plugin}/plugin/post_upgrade.sh"
 
             if os.path.exists(post_path):
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": "INFO",
                         "message": "Running post_upgrade.sh... "
@@ -856,7 +856,7 @@ fingerprint: {fingerprint}
                 porcelain.pull(git_working_dir, git_server,
                                outstream=devnull, errstream=devnull)
         except Exception as err:
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "EXCEPTION",
                     "message": err
@@ -882,7 +882,7 @@ fingerprint: {fingerprint}
 
     def __update_pkg_remove__(self):
         """Remove all pkgs from the plugin"""
-        _, out_stderr, pkg_err = iocage.lib.ioc_exec.IOCExec(
+        _, out_stderr, pkg_err = iocage_lib.ioc_exec.IOCExec(
             command=["pkg", "delete", "-a", "-f", "-y"],
             uuid=self.plugin,
             path=f"{self.iocroot}/jails/{self.plugin}",
@@ -894,7 +894,7 @@ fingerprint: {fingerprint}
             msg = out_stderr.decode()
             final_msg = "PKG error, update failed! Rolling back snapshot.\n"
 
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "ERROR",
                     "message": msg
@@ -902,7 +902,7 @@ fingerprint: {fingerprint}
                 _callback=self.callback,
                 silent=self.silent)
 
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "EXCEPTION",
                     "message": final_msg
@@ -913,7 +913,7 @@ fingerprint: {fingerprint}
     def __update_pkg_install__(self, plugin_conf):
         """Installs all pkgs listed in the plugins configuration"""
         path = f"{self.iocroot}/jails/{self.plugin}"
-        conf = iocage.lib.ioc_json.IOCJson(
+        conf = iocage_lib.ioc_json.IOCJson(
             location=path).json_load()
 
         secure = True if "https://" in plugin_conf["packagesite"] else False
@@ -921,7 +921,7 @@ fingerprint: {fingerprint}
 
         if secure:
             # Certificate verification
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "INFO",
                     "message": "Secure packagesite detected, installing"
@@ -930,7 +930,7 @@ fingerprint: {fingerprint}
                 _callback=self.callback,
                 silent=self.silent)
 
-            err = iocage.lib.ioc_create.IOCCreate(
+            err = iocage_lib.ioc_create.IOCCreate(
                 self.release,
                 "",
                 0,
@@ -942,7 +942,7 @@ fingerprint: {fingerprint}
 
             if err:
                 self.__rollback_jail__(name="update")
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level":
                         "EXCEPTION",
@@ -955,7 +955,7 @@ fingerprint: {fingerprint}
         for repo in pkg_repos:
             repo_name = repo
 
-            err = iocage.lib.ioc_create.IOCCreate(
+            err = iocage_lib.ioc_create.IOCCreate(
                 self.release,
                 "",
                 0,
@@ -971,7 +971,7 @@ fingerprint: {fingerprint}
             if err:
                 self.__rollback_jail__(name="update")
                 msg = "PKG error, update failed! Rolling back snapshot.\n"
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": "EXCEPTION",
                         "message": msg
@@ -980,10 +980,10 @@ fingerprint: {fingerprint}
                     silent=self.silent)
 
     def upgrade(self):
-        jail_conf = iocage.lib.ioc_json.IOCJson(
+        jail_conf = iocage_lib.ioc_json.IOCJson(
             location=f"{self.iocroot}/jails/{self.plugin}").json_load()
 
-        iocage.lib.ioc_common.logit(
+        iocage_lib.ioc_common.logit(
             {
                 "level": "INFO",
                 "message": f"Snapshotting {self.plugin}... "
@@ -993,7 +993,7 @@ fingerprint: {fingerprint}
 
         self.__snapshot_jail__(name="upgrade")
 
-        iocage.lib.ioc_common.logit(
+        iocage_lib.ioc_common.logit(
             {
                 "level": "INFO",
                 "message": "Updating plugin INDEX... "
@@ -1005,14 +1005,14 @@ fingerprint: {fingerprint}
         plugin_conf = self.__load_plugin_json()
         self.__check_manifest__(plugin_conf)
         plugin_release = plugin_conf["release"]
-        iocage.lib.ioc_common.check_release_newer(
+        iocage_lib.ioc_common.check_release_newer(
             plugin_release, self.callback, self.silent)
         release_p = pathlib.Path(f"{self.iocroot}/releases/{plugin_release}")
 
         if not release_p.exists():
-            iocage.lib.ioc_common.check_release_newer(
+            iocage_lib.ioc_common.check_release_newer(
                 plugin_release, self.callback, self.silent)
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "WARNING",
                     "message": "New plugin RELEASE missing, fetching now... "
@@ -1023,7 +1023,7 @@ fingerprint: {fingerprint}
 
         path = f"{self.iocroot}/jails/{self.plugin}/root"
 
-        iocage.lib.ioc_common.logit(
+        iocage_lib.ioc_common.logit(
             {
                 "level": "INFO",
                 "message": "Running upgrade... "
@@ -1031,7 +1031,7 @@ fingerprint: {fingerprint}
             _callback=self.callback,
             silent=self.silent)
 
-        new_release = iocage.lib.ioc_upgrade.IOCUpgrade(
+        new_release = iocage_lib.ioc_upgrade.IOCUpgrade(
             jail_conf, plugin_release, path, silent=True).upgrade_basejail(
                 snapshot=False)
 
@@ -1043,7 +1043,7 @@ fingerprint: {fingerprint}
     def __snapshot_jail__(self, name):
         """Snapshot the plugin"""
         # Utilize the nicer API interface for this
-        import iocage.lib.iocage as ioc  # Avoids dep issues
+        import iocage_lib.iocage as ioc  # Avoids dep issues
         name = f"ioc_plugin_{name}_{self.date}"
 
         ioc.IOCage(
@@ -1055,7 +1055,7 @@ fingerprint: {fingerprint}
     def __rollback_jail__(self, name):
         """Rollback the plugins snapshot"""
         # Utilize the nicer API interface for this
-        import iocage.lib.iocage as ioc  # Avoids dep issues
+        import iocage_lib.iocage as ioc  # Avoids dep issues
         name = f"ioc_plugin_{name}_{self.date}"
 
         iocage = ioc.IOCage(
@@ -1074,7 +1074,7 @@ fingerprint: {fingerprint}
             with open(_json, "r") as j:
                 _conf = json.load(j)
         except FileNotFoundError:
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "EXCEPTION",
                     "message": f"{_json} was not found!"
@@ -1082,7 +1082,7 @@ fingerprint: {fingerprint}
                 _callback=self.callback,
                 silent=self.silent)
         except json.decoder.JSONDecodeError:
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level":
                     "EXCEPTION",
@@ -1103,7 +1103,7 @@ fingerprint: {fingerprint}
                     f"{path}/root/root")
 
         command = ["sh", "/root/post_upgrade.sh"]
-        iocage.lib.ioc_common.logit(
+        iocage_lib.ioc_common.logit(
             {
                 "level": "INFO",
                 "message": "\nCommand output:"
@@ -1111,7 +1111,7 @@ fingerprint: {fingerprint}
             _callback=self.callback,
             silent=self.silent)
 
-        out_stdout, err = iocage.lib.ioc_exec.IOCExec(
+        out_stdout, err = iocage_lib.ioc_exec.IOCExec(
             command,
             self.plugin,
             path,
@@ -1120,7 +1120,7 @@ fingerprint: {fingerprint}
         ).exec_jail()
 
         if err:
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "EXCEPTION",
                     "message": "An error occurred! Please read above"
@@ -1140,7 +1140,7 @@ fingerprint: {fingerprint}
                 snap.delete()
 
     def __stop_rc__(self):
-        iocage.lib.ioc_exec.IOCExec(
+        iocage_lib.ioc_exec.IOCExec(
             command=["/bin/sh", "/etc/rc.shutdown"],
             uuid=self.plugin,
             path=f"{self.iocroot}/jails/{self.plugin}",
@@ -1149,7 +1149,7 @@ fingerprint: {fingerprint}
         ).exec_jail()
 
     def __start_rc__(self):
-        iocage.lib.ioc_exec.IOCExec(
+        iocage_lib.ioc_exec.IOCExec(
             command=["/bin/sh", "/etc/rc"],
             uuid=self.plugin,
             path=f"{self.iocroot}/jails/{self.plugin}",
@@ -1159,7 +1159,7 @@ fingerprint: {fingerprint}
 
     def __check_manifest__(self, plugin_conf):
         """If the Major ABI changed, they cannot update anymore."""
-        jail_conf = iocage.lib.ioc_json.IOCJson(
+        jail_conf = iocage_lib.ioc_json.IOCJson(
             location=f"{self.iocroot}/jails/{self.plugin}").json_load()
 
         jail_rel = int(jail_conf["release"].split(".", 1)[0])
@@ -1167,12 +1167,12 @@ fingerprint: {fingerprint}
         manifest_major_minor = float(
             plugin_conf["release"].rsplit("-", 1)[0].rsplit("-", 1)[0])
 
-        iocage.lib.ioc_common.check_release_newer(
+        iocage_lib.ioc_common.check_release_newer(
             manifest_major_minor, self.callback, self.silent)
 
         if jail_rel < manifest_rel:
             self.__remove_snapshot__(name="update")
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "EXCEPTION",
                     "message": "Major ABI change detected, please run"
@@ -1182,7 +1182,7 @@ fingerprint: {fingerprint}
 
     def __fetch_release__(self, release):
         """Will call fetch to get the new RELEASE the plugin will rely on"""
-        iocage.lib.ioc_fetch.IOCFetch(
+        iocage_lib.ioc_fetch.IOCFetch(
             release, silent=self.silent).fetch_release()
 
     def __clone_repo(self, repo_url, destination):
@@ -1210,7 +1210,7 @@ fingerprint: {fingerprint}
             ]
 
             for msg in msgs:
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         'level': 'INFO',
                         'message': msg

@@ -24,10 +24,10 @@
 """iocage exec module."""
 import subprocess as su
 
-import iocage.lib.ioc_common
-import iocage.lib.ioc_json
-import iocage.lib.ioc_list
-import iocage.lib.ioc_start
+import iocage_lib.ioc_common
+import iocage_lib.ioc_json
+import iocage_lib.ioc_list
+import iocage_lib.ioc_start
 
 
 class IOCExec(object):
@@ -70,13 +70,13 @@ class IOCExec(object):
             flag = "-u"
             user = self.host_user
 
-        status, _ = iocage.lib.ioc_list.IOCList().list_get_jid(self.uuid)
-        conf = iocage.lib.ioc_json.IOCJson(self.path).json_load()
+        status, _ = iocage_lib.ioc_list.IOCList().list_get_jid(self.uuid)
+        conf = iocage_lib.ioc_json.IOCJson(self.path).json_load()
         exec_fib = conf["exec_fib"]
 
         if not status:
             if not self.plugin and not self.skip:
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level": "INFO",
                         "message": f"{self.uuid} is not running, starting jail"
@@ -85,10 +85,10 @@ class IOCExec(object):
                     silent=self.silent)
 
             if conf["type"] in ("jail", "plugin", "pluginv2", "clonejail"):
-                iocage.lib.ioc_start.IOCStart(
+                iocage_lib.ioc_start.IOCStart(
                     self.uuid, self.path, conf, silent=True)
             elif conf["type"] == "basejail":
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level":
                         "EXCEPTION",
@@ -99,7 +99,7 @@ class IOCExec(object):
                     _callback=self.callback,
                     silent=self.silent)
             elif conf["type"] == "template":
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level":
                         "EXCEPTION",
@@ -110,7 +110,7 @@ class IOCExec(object):
                     _callback=self.callback,
                     silent=self.silent)
             else:
-                iocage.lib.ioc_common.logit(
+                iocage_lib.ioc_common.logit(
                     {
                         "level":
                         "EXCEPTION",
@@ -121,7 +121,7 @@ class IOCExec(object):
                     _callback=self.callback,
                     silent=self.silent)
 
-            iocage.lib.ioc_common.logit(
+            iocage_lib.ioc_common.logit(
                 {
                     "level": "INFO",
                     "message": "\nCommand output:"
