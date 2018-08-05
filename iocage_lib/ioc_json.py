@@ -1605,7 +1605,7 @@ class IOCJson(dict):
                         data_dataset = self.zfs.get_dataset(f"{_parent}/data")
                         dependents = data_dataset.dependents
 
-                        self.zfs_set_property(f"{jail_parent_ds}/data",
+                        self.zfs_set_property(f"{_parent}/data",
                                               "jailed", "off")
 
                         for dep in dependents:
@@ -1619,15 +1619,15 @@ class IOCJson(dict):
                         # No data dataset exists
                         pass
 
-                    jail = self.zfs.get_dataset(jail_parent_ds)
+                    jail = self.zfs.get_dataset(_parent)
 
                     try:
                         jail.snapshot(
-                            f"{jail_parent_ds}@{tag}", recursive=True)
+                            f"{_parent}@{tag}", recursive=True)
                     except libzfs.ZFSException as err:
                         if err.code == libzfs.Error.EXISTS:
                             err_msg = \
-                                f"Snapshot {jail_parent_ds}@{tag} already" \
+                                f"Snapshot {_parent}@{tag} already" \
                                 " exists!"
                             iocage_lib.ioc_common.logit(
                                 {
