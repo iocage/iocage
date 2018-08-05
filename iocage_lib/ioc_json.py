@@ -1758,7 +1758,6 @@ class IOCJson(dict):
             properties[key] = value
         return properties
 
-
     @property
     def default_properties(self):
         merged_default_props = self.global_default_properties
@@ -1909,4 +1908,3 @@ class IOCJson(dict):
                     continue
                 return line.rstrip().partition("=")[2].strip("\"")
         raise Exception("Could not determine host release.")
-
