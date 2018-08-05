@@ -1055,8 +1055,7 @@ class IOCage(PoolAndDataset):
                     return next(props).decode("utf-8")
             elif prop == "all":
                 _props = {}
-
-                props = ioc_json.IOCJson(path)
+                props = ioc_json.IOCJson(path).all_properties
 
                 # We want this sorted below, so we add it to the old dict
                 props["state"] = state

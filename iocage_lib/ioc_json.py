@@ -1749,6 +1749,14 @@ class IOCJson(dict):
             return None
 
     @property
+    def all_properties(self):
+        properties = self.default_properties
+        for key, value in self.items():
+            properties[key] = value
+        return properties
+
+
+    @property
     def default_properties(self):
         merged_default_props = self.global_default_properties
         user_default_props = self.user_default_properties
