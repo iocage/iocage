@@ -87,6 +87,9 @@ class IOCStart(object):
             return self.conf[key]
         return self.ioc_json.default_properties[key]
 
+    def _parse_bool(self, value):
+        return ((value == "yes") or (value == "on") or (value == 1)) is True
+
     def __start_jail__(self):
         """
         Takes a UUID, and the user supplied name of a jail, the path and the
@@ -134,7 +137,9 @@ class IOCStart(object):
         children_max = self._get_conf_value("children_max")
         allow_set_hostname = self._get_conf_value("allow_set_hostname")
         allow_sysvipc = self._get_conf_value("allow_sysvipc")
-        allow_raw_sockets = self._get_conf_value("allow_raw_sockets")
+        allow_raw_sockets = self._parse_bool(
+            self._get_conf_value("allow_raw_sockets")
+        )
         allow_chflags = self._get_conf_value("allow_chflags")
         allow_mlock = self._get_conf_value("allow_mlock")
         allow_mount = self._get_conf_value("allow_mount")
@@ -364,46 +369,47 @@ class IOCStart(object):
                     _callback=self.callback,
                     silent=self.silent)
 
-        start_cmd = [x for x in ["jail", "-c"] + net +
-                          [f"name=ioc-{self.uuid}",
-                           f"host.domainname={host_domainname}",
-                           f"host.hostname={host_hostname}",
-                           f"path={self.path}/root",
-                           f"securelevel={securelevel}",
-                           f"host.hostuuid={self.uuid}",
-                           f"devfs_ruleset={devfs_ruleset}",
-                           f"enforce_statfs={enforce_statfs}",
-                           f"children.max={children_max}",
-                           f"allow.set_hostname={allow_set_hostname}",
-                           f"allow.sysvipc={allow_sysvipc}",
-                           _sysvmsg,
-                           _sysvsem,
-                           _sysvshm,
-                           f"allow.raw_sockets={allow_raw_sockets}",
-                           f"allow.chflags={allow_chflags}",
-                           _allow_mlock,
-                           f"allow.mount={allow_mount}",
-                           f"allow.mount.devfs={allow_mount_devfs}",
-                           f"allow.mount.nullfs={allow_mount_nullfs}",
-                           f"allow.mount.procfs={allow_mount_procfs}",
-                           tmpfs,
-                           f"allow.mount.zfs={allow_mount_zfs}",
-                           f"allow.quotas={allow_quotas}",
-                           f"allow.socket_af={allow_socket_af}",
-                           f"exec.prestart={exec_prestart}",
-                           f"exec.poststart={exec_poststart}",
-                           f"exec.prestop={exec_prestop}",
-                           f"exec.stop={exec_stop}",
-                           f"exec.clean={exec_clean}",
-                           f"exec.timeout={exec_timeout}",
-                           f"stop.timeout={stop_timeout}",
-                           f"mount.fstab={self.path}/fstab",
-                           f"mount.devfs={mount_devfs}",
-                           fdescfs,
-                           "allow.dying",
-                           f"exec.consolelog={self.iocroot}/log/ioc-"
-                           f"{self.uuid}-console.log",
-                           "persist"] if x != '']
+        start_cmd = [x for x in ["jail", "-c"] + net + [
+            f"name=ioc-{self.uuid}",
+            f"host.domainname={host_domainname}",
+            f"host.hostname={host_hostname}",
+            f"path={self.path}/root",
+            f"securelevel={securelevel}",
+            f"host.hostuuid={self.uuid}",
+            f"devfs_ruleset={devfs_ruleset}",
+            f"enforce_statfs={enforce_statfs}",
+            f"children.max={children_max}",
+            f"allow.set_hostname={allow_set_hostname}",
+            f"allow.sysvipc={allow_sysvipc}",
+            _sysvmsg,
+            _sysvsem,
+            _sysvshm,
+            f"allow.raw_sockets={1 if allow_raw_sockets else 0}",
+            f"allow.chflags={allow_chflags}",
+            _allow_mlock,
+            f"allow.mount={allow_mount}",
+            f"allow.mount.devfs={allow_mount_devfs}",
+            f"allow.mount.nullfs={allow_mount_nullfs}",
+            f"allow.mount.procfs={allow_mount_procfs}",
+            tmpfs,
+            f"allow.mount.zfs={allow_mount_zfs}",
+            f"allow.quotas={allow_quotas}",
+            f"allow.socket_af={allow_socket_af}",
+            f"exec.prestart={exec_prestart}",
+            f"exec.poststart={exec_poststart}",
+            f"exec.prestop={exec_prestop}",
+            f"exec.stop={exec_stop}",
+            f"exec.clean={exec_clean}",
+            f"exec.timeout={exec_timeout}",
+            f"stop.timeout={stop_timeout}",
+            f"mount.fstab={self.path}/fstab",
+            f"mount.devfs={mount_devfs}",
+            fdescfs,
+            "allow.dying",
+            f"exec.consolelog={self.iocroot}/log/ioc-"
+            f"{self.uuid}-console.log",
+            "persist"
+        ] if x != '']
 
         start_env = {
             **os.environ,
