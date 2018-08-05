@@ -55,5 +55,4 @@ def cli(jail, props, plugin):
             })
 
     for prop in props:
-        ioc.IOCage(
-            jail=jail, skip_jails=True).set(prop, plugin)
+        ioc.IOCage(jail=jail, skip_jails=True).set(prop, plugin)
