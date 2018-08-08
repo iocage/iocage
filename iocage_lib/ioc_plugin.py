@@ -101,19 +101,15 @@ class IOCPlugin(object):
                     "level": "EXCEPTION",
                     "message": f"{_json} was not found!"
                 },
-                _callback=self.callback,
-                silent=self.silent)
+                _callback=self.callback)
         except json.decoder.JSONDecodeError:
             iocage_lib.ioc_common.logit(
                 {
-                    "level":
-                    "EXCEPTION",
-                    "message":
-                    "Invalid JSON file supplied, please supply a "
+                    "level": "EXCEPTION",
+                    "message": "Invalid JSON file supplied, please supply a "
                     "correctly formatted JSON file."
                 },
-                _callback=self.callback,
-                silent=self.silent)
+                _callback=self.callback)
 
         if self.hardened:
             conf['release'] = conf['release'].replace("-RELEASE", "-STABLE")
@@ -213,10 +209,9 @@ class IOCPlugin(object):
 
                 iocage_lib.ioc_common.logit(
                     {
-                        "level":
-                        "WARNING",
+                        "level": "WARNING",
                         "message":
-                        "  This plugin requires accepting a license "
+                         "  This plugin requires accepting a license "
                         "to proceed:"
                     },
                     _callback=self.callback,
@@ -238,8 +233,7 @@ class IOCPlugin(object):
                             "message":
                             "You must accept the license to continue!"
                         },
-                        _callback=self.callback,
-                        silent=self.silent)
+                        _callback=self.callback)
 
     def __fetch_plugin_props__(self, conf, props, num):
         """Generates the list of properties that a user and the JSON supply"""
@@ -280,10 +274,8 @@ class IOCPlugin(object):
             except FileNotFoundError:
                 iocage_lib.ioc_common.logit(
                     {
-                        "level":
-                        "WARNING",
-                        "message":
-                        f"Release {self.release} missing, "
+                        "level": "WARNING",
+                        "message": f"Release {self.release} missing, "
                         f"will attempt to fetch it."
                     },
                     _callback=self.callback,
@@ -318,7 +310,8 @@ class IOCPlugin(object):
             0,
             silent=True,
             basejail=True,
-            uuid=uuid).create_jail()
+            uuid=uuid,
+            callback=self.callback).create_jail()
         jaildir = f"{self.iocroot}/jails/{uuid}"
         repo_dir = f"{jaildir}/root/usr/local/etc/pkg/repos"
         path = f"{self.pool}/iocage/jails/{uuid}"
@@ -343,8 +336,7 @@ class IOCPlugin(object):
                     "level": "EXCEPTION",
                     "message": "Destroyed partial plugin."
                 },
-                _callback=self.callback,
-                silent=self.silent)
+                _callback=self.callback)
 
         return jaildir, _conf, repo_dir
 
@@ -364,18 +356,15 @@ class IOCPlugin(object):
                         "level": "EXCEPTION",
                         "message": "Module not found!"
                     },
-                    _callback=self.callback,
-                    silent=self.silent)
+                    _callback=self.callback)
 
         if secure:
             # Certificate verification
             iocage_lib.ioc_common.logit(
                 {
-                    "level":
-                    "INFO",
-                    "message":
-                    "Secure packagesite detected,"
-                    " installing ca_root_nss package."
+                    "level": "INFO",
+                    "message": "Secure packagesite detected, installing "
+                    "ca_root_nss package."
                 },
                 _callback=self.callback,
                 silent=self.silent)
@@ -385,19 +374,18 @@ class IOCPlugin(object):
                 create_props,
                 0,
                 pkglist=["ca_root_nss"],
-                silent=True).create_install_packages(
+                silent=True,
+                callback=self.callback).create_install_packages(
                     uuid, jaildir, _conf)
 
             if err:
                 iocage_lib.ioc_common.logit(
                     {
-                        "level":
-                        "EXCEPTION",
+                        "level": "EXCEPTION",
                         "message":
                         "pkg error, please try non-secure packagesite."
                     },
-                    _callback=self.callback,
-                    silent=self.silent)
+                    _callback=self.callback)
 
         try:
             os.makedirs(f"{jaildir}/root/usr/local/etc/pkg/repos", 0o755)
@@ -471,7 +459,8 @@ fingerprint: {fingerprint}
             0,
             pkglist=conf["pkgs"],
             silent=True,
-            plugin=True).create_install_packages(
+            plugin=True,
+            callback=self.callback).create_install_packages(
                 uuid, jaildir, _conf, repo=conf["packagesite"], site=repo_name)
 
         if err:
@@ -481,8 +470,7 @@ fingerprint: {fingerprint}
                     "message": f"\npkg error:\n  - {err}\n"
                     "\nRefusing to fetch artifact and run post_install.sh!"
                 },
-                _callback=self.callback,
-                silent=self.silent)
+                _callback=self.callback)
 
     def __fetch_plugin_post_install__(self, conf, _conf, jaildir, uuid):
         """Fetches the users artifact and runs the post install"""
@@ -547,16 +535,22 @@ fingerprint: {fingerprint}
                 command = ["sh", "/root/post_install.sh"]
                 msg, err = iocage_lib.ioc_exec.IOCExec(
                     command, uuid, jaildir, plugin=True,
-                    skip=True).exec_jail()
+                    skip=True, callback=self.callback,
+                    msg_return=True).exec_jail()
 
                 if err:
                     iocage_lib.ioc_common.logit(
                         {
                             "level": "EXCEPTION",
                             "message": "An error occured! Please read above"
-                        })
+                        }, _callback=self.callback)
 
-                iocage_lib.ioc_common.logit({"level": "INFO", "message": msg})
+                iocage_lib.ioc_common.logit(
+                    {
+                        "level": "INFO",
+                        "message": msg.decode()
+                    },
+                    _callback=self.callback)
 
                 ui_json = f"{jaildir}/plugin/ui.json"
 
@@ -618,8 +612,7 @@ fingerprint: {fingerprint}
                         "level": "EXCEPTION",
                         "message": err
                     },
-                    _callback=self.callback,
-                    silent=self.silent)
+                    _callback=self.callback)
 
         with open(f"{self.iocroot}/.plugin_index/INDEX", "r") as plugins:
             plugins = json.load(plugins)
@@ -709,8 +702,7 @@ fingerprint: {fingerprint}
                         "level": "EXCEPTION",
                         "message": f"Plugin: {_plugin} not in list!"
                     },
-                    _callback=self.callback,
-                    silent=self.silent)
+                    _callback=self.callback)
             except ValueError:
                 exit()
         else:
@@ -729,16 +721,14 @@ fingerprint: {fingerprint}
                             "level": "EXCEPTION",
                             "message": f"Plugin: {_plugin} not in list!"
                         },
-                        _callback=self.callback,
-                        silent=self.silent)
+                        _callback=self.callback)
             except ValueError as err:
                 iocage_lib.ioc_common.logit(
                     {
                         "level": "EXCEPTION",
                         "message": err
                     },
-                    _callback=self.callback,
-                    silent=self.silent)
+                    _callback=self.callback)
 
         return plugin.rsplit("(", 1)[1].replace(")", "")
 
@@ -861,8 +851,7 @@ fingerprint: {fingerprint}
                     "level": "EXCEPTION",
                     "message": err
                 },
-                _callback=self.callback,
-                silent=self.silent)
+                _callback=self.callback)
 
     def __update_pull_plugin_artifact__(self, plugin_conf):
         """Pull the latest artifact to be sure we're up to date"""
@@ -887,7 +876,8 @@ fingerprint: {fingerprint}
             uuid=self.plugin,
             path=f"{self.iocroot}/jails/{self.plugin}",
             silent=True,
-            msg_err_return=True).exec_jail()
+            msg_err_return=True,
+            callback=self.callback).exec_jail()
 
         if pkg_err:
             self.__rollback_jail__(name="update")
@@ -907,8 +897,7 @@ fingerprint: {fingerprint}
                     "level": "EXCEPTION",
                     "message": final_msg
                 },
-                _callback=self.callback,
-                silent=self.silent)
+                _callback=self.callback)
 
     def __update_pkg_install__(self, plugin_conf):
         """Installs all pkgs listed in the plugins configuration"""
@@ -931,26 +920,26 @@ fingerprint: {fingerprint}
                 silent=self.silent)
 
             err = iocage_lib.ioc_create.IOCCreate(
-                self.release,
-                "",
-                0,
-                pkglist=["ca_root_nss"],
-                silent=True).create_install_packages(
-                self.plugin,
-                path,
-                conf)
+                    self.release,
+                    "",
+                    0,
+                    pkglist=["ca_root_nss"],
+                    silent=True, callback=self.callback
+                ).create_install_packages(
+                    self.plugin,
+                    path,
+                    conf
+                )
 
             if err:
                 self.__rollback_jail__(name="update")
                 iocage_lib.ioc_common.logit(
                     {
-                        "level":
-                        "EXCEPTION",
+                        "level": "EXCEPTION",
                         "message":
                         "PKG error, please try non-secure packagesite."
                     },
-                    _callback=self.callback,
-                    silent=self.silent)
+                    _callback=self.callback)
 
         for repo in pkg_repos:
             repo_name = repo
@@ -961,7 +950,8 @@ fingerprint: {fingerprint}
                 0,
                 pkglist=plugin_conf["pkgs"],
                 silent=True,
-                plugin=True).create_install_packages(
+                plugin=True,
+                callback=self.callback).create_install_packages(
                 self.plugin,
                 path,
                 conf,
@@ -976,8 +966,7 @@ fingerprint: {fingerprint}
                         "level": "EXCEPTION",
                         "message": msg
                     },
-                    _callback=self.callback,
-                    silent=self.silent)
+                    _callback=self.callback)
 
     def upgrade(self):
         jail_conf = iocage_lib.ioc_json.IOCJson(
@@ -1079,19 +1068,16 @@ fingerprint: {fingerprint}
                     "level": "EXCEPTION",
                     "message": f"{_json} was not found!"
                 },
-                _callback=self.callback,
-                silent=self.silent)
+                _callback=self.callback)
         except json.decoder.JSONDecodeError:
             iocage_lib.ioc_common.logit(
                 {
-                    "level":
-                    "EXCEPTION",
+                    "level": "EXCEPTION",
                     "message":
                     "Invalid JSON file supplied, please supply a "
                     "correctly formatted JSON file."
                 },
-                _callback=self.callback,
-                silent=self.silent)
+                _callback=self.callback)
 
         return _conf
 
@@ -1117,6 +1103,7 @@ fingerprint: {fingerprint}
             path,
             plugin=True,
             skip=True,
+            callback=self.callback
         ).exec_jail()
 
         if err:
@@ -1124,7 +1111,7 @@ fingerprint: {fingerprint}
                 {
                     "level": "EXCEPTION",
                     "message": "An error occurred! Please read above"
-                })
+                }, _callback=self.callback)
 
     def __remove_snapshot__(self, name):
         """Removes all matching plugin snapshots"""
@@ -1145,7 +1132,8 @@ fingerprint: {fingerprint}
             uuid=self.plugin,
             path=f"{self.iocroot}/jails/{self.plugin}",
             silent=True,
-            msg_err_return=True
+            msg_err_return=True,
+            callback=self.callback
         ).exec_jail()
 
     def __start_rc__(self):
@@ -1154,7 +1142,8 @@ fingerprint: {fingerprint}
             uuid=self.plugin,
             path=f"{self.iocroot}/jails/{self.plugin}",
             silent=True,
-            msg_err_return=True
+            msg_err_return=True,
+            callback=self.callback
         ).exec_jail()
 
     def __check_manifest__(self, plugin_conf):
