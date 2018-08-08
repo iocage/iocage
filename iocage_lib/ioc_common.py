@@ -71,17 +71,13 @@ def callback(_log):
 
 def logit(content, _callback=None, silent=False):
     """Helper to check callable status of callback or call ours."""
-    level = content["level"]
-    msg = content["message"]
-
-    if silent and level != "EXCEPTION":
+    if silent and content['level'] != "EXCEPTION":
         # They need to see these errors, too bad!
-
         return
 
     # This will log with our callback method if they didn't supply one.
     _callback = _callback if callable(_callback) else callback
-    _callback({"level": level, "message": msg})
+    _callback(content)
 
 
 def raise_sort_error(sort_list):

@@ -132,7 +132,7 @@ class IOCage(object):
         self.skip_jails = skip_jails
         self.jail = jail
         self._all = True if self.jail and 'ALL' in self.jail else False
-        self.callback = ioc_common.callback if not callback else callback
+        self.callback = callback
         self.silent = silent
 
     def __all__(self, jail_order, action):
@@ -880,13 +880,13 @@ class IOCage(object):
             if count == 1:
                 ioc_plugin.IOCPlugin(
                     release=release, branch=branch,
-                    silent=self.silent, **kwargs
+                    silent=self.silent, callback=self.callback, **kwargs
                 ).fetch_plugin(name, props, 0, accept)
             else:
                 for j in range(1, count + 1):
                     ioc_plugin.IOCPlugin(
                         release=release, branch=branch,
-                        silent=self.silent, **kwargs
+                        silent=self.silent, callback=self.callback, **kwargs
                     ).fetch_plugin(name, props, j, accept)
         else:
             if _list:
@@ -901,7 +901,8 @@ class IOCage(object):
 
             ioc_fetch.IOCFetch(
                 release,
-                silent=self.silent, **kwargs).fetch_release()
+                silent=self.silent, callback=self.callback,
+                **kwargs).fetch_release()
 
     def fstab(self,
               action,
