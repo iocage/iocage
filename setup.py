@@ -24,16 +24,16 @@
 import os
 import sys
 
-from setuptools import find_packages, setup
-
 import fastentrypoints
+
+from setuptools import find_packages, setup
 
 if os.path.isdir("/".join([sys.prefix, "etc/init.d"])):
     _data = [('etc/init.d', ['rc.d/iocage']),
-             ('man/man8', ['iocage/iocage.8.gz'])]
+             ('man/man8', ['iocage.8.gz'])]
 else:
     _data = [('etc/rc.d', ['rc.d/iocage']),
-             ('man/man8', ['iocage/iocage.8.gz'])]
+             ('man/man8', ['iocage.8.gz'])]
 
 if os.path.isdir("/".join([sys.prefix, "share/zsh/site-functions/"])):
     _data.append(('share/zsh/site-functions', ['zsh-completion/_iocage']))
@@ -41,9 +41,11 @@ if os.path.isdir("/".join([sys.prefix, "share/zsh/site-functions/"])):
 if sys.version_info < (3, 6):
     exit("Only Python 3.6 and higher is supported.")
 
+VERSION = '1.0a1'
+
 setup(
-    name='iocage',
-    version='1.0a',
+    name='iocage_lib',
+    version=VERSION,
     description='A jail manager that uses ZFS.',
     author='iocage Contributors',
     author_email='https://groups.google.com/forum/#!forum/iocage',
@@ -51,10 +53,32 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        'click>=6.7', 'texttable>=1.2.1', 'requests>=2.18.4',
-        'coloredlogs>=9.0', 'dulwich>=0.18.6', 'netifaces>=0.10.6', 'libzfs'
+        'dulwich>=0.18.6',
+        'netifaces>=0.10.6',
+        'libzfs'
     ],
     setup_requires=['pytest-runner'],
-    entry_points={'console_scripts': ['iocage = iocage.main:cli']},
+    entry_points={'console_scripts': ['iocage = iocage_lib:cli']},
     data_files=_data,
-    tests_require=['pytest', 'pytest-cov', 'pytest-pep8'])
+    tests_require=['pytest', 'pytest-cov', 'pytest-pep8']
+)
+
+setup(
+    name='iocage_cli',
+    version=VERSION,
+    description='A jail manager that uses ZFS.',
+    author='iocage Contributors',
+    author_email='https://groups.google.com/forum/#!forum/iocage',
+    url='https://github.com/iocage/iocage',
+    packages=find_packages(),
+    include_package_data=True,
+    install_requires=[
+        'click>=6.7',
+        'texttable>=1.2.1',
+        'requests>=2.18.4',
+        'coloredlogs>=9.0'
+    ],
+    entry_points={'console_scripts': ['iocage = iocage_cli:cli']},
+    data_files=_data,
+    tests_require=['pytest', 'pytest-cov', 'pytest-pep8']
+)
