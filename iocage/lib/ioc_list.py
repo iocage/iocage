@@ -245,8 +245,8 @@ class IOCList(object):
 
                 try:
                     with open(f"{mountpoint}/plugin/ui.json", "r") as u:
-                        ip = full_ip4.split("|", 1)[
-                            1] if "DHCP" not in full_ip4 else "DHCP"
+                        ip = full_ip4.split("|", 1)[1].split("/", 1)[
+                            0] if "DHCP" not in full_ip4 else "DHCP"
                         admin_portal = json.load(u)["adminportal"]
                         admin_portal = admin_portal.replace("%%IP%%", ip)
                 except FileNotFoundError:
