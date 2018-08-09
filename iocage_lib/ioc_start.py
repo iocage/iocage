@@ -656,7 +656,7 @@ class IOCStart(object):
                 iocage_lib.ioc_common.logit({
                     "level": "EXCEPTION",
                     "message": "No default gateway interface found",
-                }, exit_on_error=self.exit_on_error, _callback=self.callback,
+                }, _callback=self.callback,
                     silent=self.silent)
             except su.CalledProcessError:
                 # Already exists
