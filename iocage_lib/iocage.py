@@ -43,6 +43,7 @@ import iocage_lib.ioc_plugin as ioc_plugin
 import iocage_lib.ioc_start as ioc_start
 import iocage_lib.ioc_stop as ioc_stop
 import iocage_lib.ioc_upgrade as ioc_upgrade
+import iocage_lib.ioc_debug as ioc_debug
 import libzfs
 
 
@@ -1793,3 +1794,9 @@ Remove the snapshot: ioc_upgrade_{_date} if everything is OK
             "level": "INFO",
             "message": msg
         })
+
+    def debug(self, directory):
+        if directory is None:
+            directory = f'{self.iocroot}/debug'
+
+        ioc_debug.IOCDebug(directory).run_debug()
