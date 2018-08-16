@@ -122,8 +122,9 @@ class IOCPlugin(object):
         location = f"{self.iocroot}/jails/{jail_name}"
 
         try:
-            jaildir, _conf, repo_dir = self.__fetch_plugin_create__(
+            jail_name, jaildir, _conf, repo_dir = self.__fetch_plugin_create__(
                 props, jail_name)
+            location = f"{self.iocroot}/jails/{jail_name}"
             self.__fetch_plugin_install_packages__(jail_name, jaildir, conf,
                                                    _conf, pkg, props, repo_dir)
             self.__fetch_plugin_post_install__(conf, _conf, jaildir, jail_name)
@@ -304,14 +305,17 @@ class IOCPlugin(object):
 
     def __fetch_plugin_create__(self, create_props, uuid):
         """Creates the plugin with the provided properties"""
-        iocage_lib.ioc_create.IOCCreate(
-            self.release,
-            create_props,
-            0,
-            silent=True,
-            basejail=True,
-            uuid=uuid,
-            callback=self.callback).create_jail()
+        uuid = iocage_lib.ioc_create.IOCCreate(
+                self.release,
+                create_props,
+                0,
+                silent=True,
+                basejail=True,
+                uuid=uuid,
+                plugin=True,
+                callback=self.callback
+        ).create_jail()
+
         jaildir = f"{self.iocroot}/jails/{uuid}"
         repo_dir = f"{jaildir}/root/usr/local/etc/pkg/repos"
         path = f"{self.pool}/iocage/jails/{uuid}"
@@ -338,7 +342,7 @@ class IOCPlugin(object):
                 },
                 _callback=self.callback)
 
-        return jaildir, _conf, repo_dir
+        return uuid, jaildir, _conf, repo_dir
 
     def __fetch_plugin_install_packages__(self, uuid, jaildir, conf, _conf,
                                           pkg_repos, create_props, repo_dir):
@@ -1057,7 +1061,8 @@ fingerprint: {fingerprint}
 
     def __load_plugin_json(self):
         """Load the plugins configuration"""
-        _json = f"{self.iocroot}/.plugin_index/{self.plugin}.json"
+        plugin_name = self.plugin.rsplit('_', 1)[0]
+        _json = f"{self.iocroot}/.plugin_index/{plugin_name}.json"
 
         try:
             with open(_json, "r") as j:

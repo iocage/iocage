@@ -39,6 +39,7 @@ import iocage_lib.ioc_list
 import iocage_lib.ioc_start
 import iocage_lib.ioc_stop
 import libzfs
+import itertools
 
 
 class IOCCreate(object):
@@ -67,7 +68,6 @@ class IOCCreate(object):
         self.uuid = uuid
         self.clone = clone
         self.silent = silent
-
         self.callback = callback
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
 
@@ -101,7 +101,18 @@ class IOCCreate(object):
 
         if os.path.isdir(location) or os.path.isdir(
                 f"{self.iocroot}/templates/{jail_uuid}"):
-            raise RuntimeError(f"Jail: {jail_uuid} already exists!")
+            if not self.plugin:
+                raise RuntimeError(f"Jail: {jail_uuid} already exists!")
+
+            for i in itertools.count(start=2, step=1):
+                if os.path.isdir(f'{location}_{i}'):
+                    continue
+
+                # They now have a uniquely named plugin
+                jail_uuid = f'{jail_uuid}_{i}'
+                location = f'{location}_{i}'
+                self.uuid = jail_uuid
+                break
 
         if self.migrate:
             config = self.config
@@ -308,65 +319,54 @@ class IOCCreate(object):
 
         # This test is to avoid the same warnings during install_packages.
 
+        if jail_uuid == "default" or jail_uuid == "help":
+            iocage_lib.ioc_destroy.IOCDestroy(
+            ).__destroy_parse_datasets__(
+                f"{self.pool}/iocage/jails/{jail_uuid}")
+            iocage_lib.ioc_common.logit({
+                "level": "EXCEPTION",
+                "message": f"You cannot name a jail {jail_uuid}, "
+                           "that is a reserved name."
+            },
+                _callback=self.callback,
+                silent=self.silent)
+
+        for prop in self.props:
+            key, _, value = prop.partition("=")
+
+            if key == "boot" and value == "on" and not self.empty:
+                start = True
+            elif key == "template" and value == "yes":
+                iocjson.json_write(config)  # Set counts on this.
+                location = location.replace("/jails/", "/templates/")
+
+                iocjson.json_set_value("type=template")
+                iocjson.json_set_value("template=yes")
+                iocjson.zfs_set_property(f"{self.pool}/iocage/templates/"
+                                         f"{jail_uuid}", "readonly", "off")
+
+                # If you supply pkglist and templates without setting the
+                # config's type, you will end up with a type of jail
+                # instead of template like we want.
+                config["type"] = "template"
+                start = False
+                is_template = True
+
+            try:
+                iocjson.json_check_prop(key, value, config)
+
+                config[key] = value
+            except RuntimeError as err:
+                iocjson.json_write(config)  # Destroy counts on this.
+                iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(location)
+
+                raise RuntimeError(f"***\n{err}\n***\n")
+            except SystemExit:
+                iocjson.json_write(config)  # Destroy counts on this.
+                iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(location)
+                exit(1)
+
         if not self.plugin:
-            if jail_uuid == "default":
-                iocage_lib.ioc_destroy.IOCDestroy(
-                ).__destroy_parse_datasets__(
-                    f"{self.pool}/iocage/jails/{jail_uuid}")
-                iocage_lib.ioc_common.logit({
-                    "level": "EXCEPTION",
-                    "message": "You cannot name a jail default, "
-                               "that is a reserved name."
-                },
-                    _callback=self.callback,
-                    silent=self.silent)
-            elif jail_uuid == "help":
-                iocage_lib.ioc_destroy.IOCDestroy(
-                ).__destroy_parse_datasets__(
-                    f"{self.pool}/iocage/jails/{jail_uuid}")
-                iocage_lib.ioc_common.logit({
-                    "level": "EXCEPTION",
-                    "message": "You cannot name a jail help, "
-                               "that is a reserved name."
-                },
-                    _callback=self.callback,
-                    silent=self.silent)
-
-            for prop in self.props:
-                key, _, value = prop.partition("=")
-
-                if key == "boot" and value == "on" and not self.empty:
-                    start = True
-                elif key == "template" and value == "yes":
-                    iocjson.json_write(config)  # Set counts on this.
-                    location = location.replace("/jails/", "/templates/")
-
-                    iocjson.json_set_value("type=template")
-                    iocjson.json_set_value("template=yes")
-                    iocjson.zfs_set_property(f"{self.pool}/iocage/templates/"
-                                             f"{jail_uuid}", "readonly", "off")
-
-                    # If you supply pkglist and templates without setting the
-                    # config's type, you will end up with a type of jail
-                    # instead of template like we want.
-                    config["type"] = "template"
-                    start = False
-                    is_template = True
-
-                try:
-                    iocjson.json_check_prop(key, value, config)
-
-                    config[key] = value
-                except RuntimeError as err:
-                    iocjson.json_write(config)  # Destroy counts on this.
-                    iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(location)
-
-                    raise RuntimeError(f"***\n{err}\n***\n")
-                except SystemExit:
-                    iocjson.json_write(config)  # Destroy counts on this.
-                    iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(location)
-                    exit(1)
-
             iocjson.json_write(config)
 
         # Just "touch" the fstab file, since it won't exist and write
