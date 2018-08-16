@@ -222,7 +222,7 @@ class IOCFetch(object):
     def fetch_release(self, _list=False):
         """Small wrapper to choose the right fetch."""
 
-        if self.http:
+        if self.http and not self._file:
             if self.eol and self.verify:
                 eol = self.__fetch_eol_check__()
             else:
