@@ -631,8 +631,8 @@ def check_release_newer(release, callback=None, silent=False):
     if host_release == "Not a RELEASE":
         return
 
-    h_float = float(host_release.rsplit("-", 1)[0])
-    r_float = float(release.rsplit("-", 1)[0])
+    h_float = float(str(host_release).rsplit("-", 1)[0])
+    r_float = float(str(release).rsplit("-", 1)[0])
 
     if h_float < r_float:
         logit(
