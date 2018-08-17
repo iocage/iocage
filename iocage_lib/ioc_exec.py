@@ -28,6 +28,7 @@ import iocage_lib.ioc_common
 import iocage_lib.ioc_json
 import iocage_lib.ioc_list
 import iocage_lib.ioc_start
+import select
 
 
 class IOCExec(object):
@@ -138,10 +139,6 @@ class IOCExec(object):
             return None, False
         else:
             try:
-                stdout = None if not self.silent else su.DEVNULL
-                stdout = su.PIPE if self.msg_return else stdout
-                stderr = su.PIPE if self.msg_err_return else None
-
                 if not self.pkg:
                     cmd = [
                         "setfib", exec_fib, "jexec", flag, user,
@@ -150,18 +147,42 @@ class IOCExec(object):
                 else:
                     cmd = self.command
 
-                p = su.Popen(cmd, stdout=stdout, stderr=stderr)
+                if self.msg_return or self.msg_err_return:
+                    p = su.Popen(cmd, stdout=su.PIPE, stderr=su.PIPE,
+                                 close_fds=True, bufsize=1)
 
-                exec_out = p.communicate(b"\r")
-                exec_stdout = exec_out[0]
-                exec_stderr = exec_out[1]
-                msg = exec_stdout if exec_stdout is not None else ""
-                msg_err = exec_stderr if exec_stderr is not None else ""
-                error = True if p.returncode != 0 else False
+                    rtrn_stdout = b''
+                    rtrn_stderr = b''
 
-                if self.msg_err_return:
-                    return msg, msg_err, error
+                    while True:
+                        r = select.select([p.stdout.fileno(),
+                                           p.stderr.fileno()], [], [], 0.5)[0]
+                        if r:
+                            if p.stdout.fileno() in r:
+                                rtrn_stdout += p.stdout.readline()
+                            if p.stderr.fileno() in r:
+                                rtrn_stderr += p.stderr.readline()
 
-                return msg, error
+                        if p.poll() is not None:
+                            break
+
+                    p.stdout.close()
+                    p.stderr.close()
+
+                    error = True if p.returncode != 0 else False
+
+                    if self.msg_err_return:
+                        return rtrn_stdout, rtrn_stderr, error
+
+                    return rtrn_stdout, error
+                else:
+                    stdout = None if not self.silent else su.DEVNULL
+                    stderr = None if not self.silent else su.DEVNULL
+
+                    p = su.Popen(
+                        cmd, stdout=stdout, stderr=stderr
+                    ).communicate()
+
+                    return "", False
             except su.CalledProcessError as err:
                 return err.output.decode("utf-8").rstrip(), True
