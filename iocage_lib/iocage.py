@@ -819,6 +819,7 @@ class IOCage(object):
         _long = kwargs.pop("_long", False)
         official = kwargs.pop("official", False)
         branch = kwargs.pop("branch", None)
+        keep_jail_on_failure = kwargs.pop("keep_jail_on_failure", False)
 
         freebsd_version = ioc_common.checkoutput(["freebsd-version"])
         arch = os.uname()[4]
@@ -881,13 +882,17 @@ class IOCage(object):
             if count == 1:
                 ioc_plugin.IOCPlugin(
                     release=release, branch=branch,
-                    silent=self.silent, callback=self.callback, **kwargs
+                    silent=self.silent,
+                    keep_jail_on_failure=keep_jail_on_failure,
+                    callback=self.callback, **kwargs
                 ).fetch_plugin(name, props, 0, accept)
             else:
                 for j in range(1, count + 1):
                     ioc_plugin.IOCPlugin(
                         release=release, branch=branch,
-                        silent=self.silent, callback=self.callback, **kwargs
+                        silent=self.silent,
+                        keep_jail_on_failure=keep_jail_on_failure,
+                        callback=self.callback, **kwargs
                     ).fetch_plugin(name, props, j, accept)
         else:
             if _list:

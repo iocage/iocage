@@ -57,7 +57,7 @@ class IOCPlugin(object):
     """
 
     def __init__(self, release=None, plugin=None, branch=None,
-                 callback=None, silent=False, keep_jail_on_failure=False,
+                 keep_jail_on_failure=False, callback=None, silent=False,
                  **kwargs):
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage_lib.ioc_json.IOCJson(
@@ -130,7 +130,7 @@ class IOCPlugin(object):
             self.__fetch_plugin_install_packages__(jail_name, jaildir, conf,
                                                    _conf, pkg, props, repo_dir)
             self.__fetch_plugin_post_install__(conf, _conf, jaildir, jail_name)
-        except (KeyboardInterrupt, SystemExit) as e:
+        except (KeyboardInterrupt, SystemExit, RuntimeError) as e:
             if isinstance(e, KeyboardInterrupt) or not self.keep_jail_on_failure:
                 iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(location)
             sys.exit(1)
