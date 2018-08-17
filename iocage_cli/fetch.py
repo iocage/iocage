@@ -60,6 +60,8 @@ def validate_count(ctx, param, value):
               help="Specify the files to fetch from the mirror.")
 @click.option("--server", "-s", default="download.freebsd.org",
               help="Server to fetch from.")
+@click.option("--keep_jail_on_failure", "-k", default=False,
+              help="Keep jails on failure")
 @click.option("--user", "-u", default="anonymous", help="The user to use.")
 @click.option(
     "--password", "-p", default="anonymous@", help="The password to use.")
