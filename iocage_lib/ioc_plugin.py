@@ -57,7 +57,8 @@ class IOCPlugin(object):
     """
 
     def __init__(self, release=None, plugin=None, branch=None,
-                 callback=None, silent=False, **kwargs):
+                 callback=None, silent=False, keep_jail_on_failure=False,
+                 **kwargs):
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")
@@ -71,6 +72,7 @@ class IOCPlugin(object):
         self.branch = branch
         self.silent = silent
         self.callback = callback
+        self.keep_jail_on_failure = keep_jail_on_failure
 
         if self.branch is None and not self.hardened:
             host_rel = os.uname()[2].rsplit("-", 1)[0].rsplit("-", 1)[0]
@@ -128,8 +130,9 @@ class IOCPlugin(object):
             self.__fetch_plugin_install_packages__(jail_name, jaildir, conf,
                                                    _conf, pkg, props, repo_dir)
             self.__fetch_plugin_post_install__(conf, _conf, jaildir, jail_name)
-        except KeyboardInterrupt:
-            iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(location)
+        except (KeyboardInterrupt, SystemExit) as e:
+            if isinstance(e, KeyboardInterrupt) or not self.keep_jail_on_failure:
+                iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(location)
             sys.exit(1)
 
     def __fetch_plugin_inform__(self, conf, num, plugins, accept_license):
