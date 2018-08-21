@@ -10,7 +10,7 @@ install:
 	export FREEBSD_SRC=$(SRC_BASE) && cd py-libzfs && python3.6 setup.py build && python3.6 setup.py install
 	python3.6 -m pip install -U .
 uninstall:
-	python3.6 -m pip uninstall -y iocage_lib iocage_cli
+	python3.6 -m pip uninstall -y iocage-lib iocage-cli
 test:
 	pytest --zpool $(ZPOOL) --server $(SERVER)
 help:
