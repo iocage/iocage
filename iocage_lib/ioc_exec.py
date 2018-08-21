@@ -172,7 +172,7 @@ class IOCExec(object):
 
                     while p.poll() is None:
                         r = select.select([p.stdout.fileno(),
-                                           p.stderr.fileno()], [], [], 0)[0]
+                                           p.stderr.fileno()], [], [], 0.1)[0]
                         if r:
                             if p.stdout.fileno() in r:
                                 rtrn_stdout += p.stdout.read()
