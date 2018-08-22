@@ -122,6 +122,42 @@ class IOCPlugin(object):
         location = f"{self.iocroot}/jails/{jail_name}"
 
         try:
+            devfs = conf.get("devfs_ruleset", None)
+
+            if devfs is not None:
+                devfs_cmd = ["service", "devfs", "restart"]
+                plugin_devfs = devfs[f'plugin_{jail_name}']
+                plugin_devfs_paths = plugin_devfs['paths']
+
+                for prop in props:
+                    key, _, value = prop.partition("=")
+
+                    if key == "dhcp" and value == "on":
+                        if 'bpf*' not in plugin_devfs_paths:
+                            plugin_devfs_paths["bpf*"] = None
+
+                plugin_devfs_includes = None if 'includes' not in plugin_devfs\
+                    else plugin_devfs['includes']
+
+                with open("/etc/devfs.rules", "a+") as devfs:
+                    # Same plugin, so the name being unique as it might become
+                    # later does not matter
+                    devfs_str, devfs_rule = \
+                        iocage_lib.ioc_common.construct_devfs(
+                            f'plugin_{jail_name}',
+                            paths=plugin_devfs_paths,
+                            includes=plugin_devfs_includes
+                        )
+
+                    if 'bpf*' in plugin_devfs_paths:
+                        # Plugin needs to use it now
+                        props += [f'devfs_ruleset={devfs_rule}']
+
+                    if devfs_str is not None:
+                        devfs.write(devfs_str)
+                        su.check_call(devfs_cmd, stdout=su.PIPE,
+                                      stderr=su.PIPE)
+
             jail_name, jaildir, _conf, repo_dir = self.__fetch_plugin_create__(
                 props, jail_name)
             location = f"{self.iocroot}/jails/{jail_name}"
@@ -514,6 +550,9 @@ fingerprint: {fingerprint}
                 silent=self.silent)
 
             self.__clone_repo(conf['artifact'], f'{jaildir}/plugin')
+
+            with open(f"{jaildir}/{uuid.rsplit('_', 1)[0]}.json", "w") as f:
+                f.write(json.dumps(conf, indent=4, sort_keys=True))
 
             try:
                 distutils.dir_util.copy_tree(
