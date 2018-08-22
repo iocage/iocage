@@ -170,14 +170,21 @@ class IOCExec(object):
                         fl = fcntl.fcntl(fileno, fcntl.F_GETFL)
                         fcntl.fcntl(fileno, fcntl.F_SETFL, fl | os.O_NONBLOCK)
 
-                    while p.poll() is None:
+                    timeout = 0.1
+                    while True:
                         r = select.select([p.stdout.fileno(),
-                                           p.stderr.fileno()], [], [], 0.1)[0]
+                                           p.stderr.fileno()], [], [], timeout)[0]
                         if r:
                             if p.stdout.fileno() in r:
                                 rtrn_stdout += p.stdout.read()
                             if p.stderr.fileno() in r:
                                 rtrn_stderr += p.stderr.read()
+
+                        if p.poll() is not None:
+                            if timeout == 0:
+                                break
+                            else:
+                                timeout = 0
 
                     p.stdout.close()
                     p.stderr.close()
