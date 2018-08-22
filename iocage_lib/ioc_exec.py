@@ -29,6 +29,8 @@ import iocage_lib.ioc_json
 import iocage_lib.ioc_list
 import iocage_lib.ioc_start
 import select
+import fcntl
+import os
 
 
 class IOCExec(object):
@@ -149,22 +151,40 @@ class IOCExec(object):
 
                 if self.msg_return or self.msg_err_return:
                     p = su.Popen(cmd, stdout=su.PIPE, stderr=su.PIPE,
-                                 close_fds=True, bufsize=1)
+                                 close_fds=True, bufsize=0)
 
+                    # Courtesy of @william-gr
+                    # service(8) and some rc.d scripts have the bad habit of
+                    # exec'ing and never closing stdout/stderr. This makes
+                    # sure we read only enough until the command exits and do
+                    # not wait on the pipe to close on the other end.
+                    #
+                    # Same issue can be demonstrated with:
+                    # $ jexec 1 service postgresql onerestart | cat
+                    # ... <hangs>
+                    # postgresql rc.d command never closes the pipe
                     rtrn_stdout = b''
                     rtrn_stderr = b''
+                    for i in ('stdout', 'stderr'):
+                        fileno = getattr(p, i).fileno()
+                        fl = fcntl.fcntl(fileno, fcntl.F_GETFL)
+                        fcntl.fcntl(fileno, fcntl.F_SETFL, fl | os.O_NONBLOCK)
 
+                    timeout = 0.1
                     while True:
                         r = select.select([p.stdout.fileno(),
-                                           p.stderr.fileno()], [], [], 0.5)[0]
+                                           p.stderr.fileno()], [], [], timeout)[0]
                         if r:
                             if p.stdout.fileno() in r:
-                                rtrn_stdout += p.stdout.readline()
+                                rtrn_stdout += p.stdout.read()
                             if p.stderr.fileno() in r:
-                                rtrn_stderr += p.stderr.readline()
+                                rtrn_stderr += p.stderr.read()
 
                         if p.poll() is not None:
-                            break
+                            if timeout == 0:
+                                break
+                            else:
+                                timeout = 0
 
                     p.stdout.close()
                     p.stderr.close()
