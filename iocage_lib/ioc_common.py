@@ -690,7 +690,7 @@ def construct_devfs(ruleset_name, paths, includes=None, comment=None):
         )
 
     while ruleset_number in rules:
-            ruleset_number += 1
+        ruleset_number += 1
 
     devfs_string = f'\n{ct_str}\n[{ruleset_name}={ruleset_number}]'
 

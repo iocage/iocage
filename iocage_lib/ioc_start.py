@@ -264,37 +264,40 @@ class IOCStart(object):
                       "r") as f:
                 plugin_name = self.uuid.rsplit('_', 1)[0]
                 devfs_json = json.load(f)
-                plugin_devfs = devfs_json[
-                    "devfs_ruleset"][f'plugin_{plugin_name}']
-                plugin_devfs_paths = plugin_devfs['paths']
+                if "devfs_ruleset" not in devfs_json:
+                    generated_devfs_ruleset = self.__generate_dhcp_ruleset()
+                else:
+                    plugin_devfs = devfs_json[
+                        "devfs_ruleset"][f"plugin_{plugin_name}"]
+                    plugin_devfs_paths = plugin_devfs['paths']
 
-                if dhcp == "on":
-                    if 'bpf*' not in plugin_devfs_paths:
-                        plugin_devfs_paths["bpf*"] = None
+                    if dhcp == "on":
+                        if 'bpf*' not in plugin_devfs_paths:
+                            plugin_devfs_paths["bpf*"] = None
 
-                plugin_devfs_includes = None if 'includes' not in plugin_devfs\
-                    else plugin_devfs['includes']
+                    plugin_devfs_includes = None if 'includes' not in \
+                        plugin_devfs else plugin_devfs['includes']
 
-            with open("/etc/devfs.rules", "a+") as devfs:
-                # Same plugin, so the name being unique as it might become
-                # later does not matter
-                devfs_str, devfs_rule = \
-                    iocage_lib.ioc_common.construct_devfs(
-                        f'plugin_{plugin_name}',
-                        paths=plugin_devfs_paths,
-                        includes=plugin_devfs_includes
-                    )
+                    with open("/etc/devfs.rules", "a+") as devfs:
+                        # Same plugin, so the name being unique as it might
+                        # become later does not matter
+                        devfs_str, devfs_rule = \
+                            iocage_lib.ioc_common.construct_devfs(
+                                f'plugin_{plugin_name}',
+                                paths=plugin_devfs_paths,
+                                includes=plugin_devfs_includes
+                            )
 
-                if 'bpf*' in plugin_devfs_paths:
-                    # Plugin needs to use it now
-                    devfs_ruleset = devfs_rule
+                        if 'bpf*' in plugin_devfs_paths:
+                            # Plugin needs to use it now
+                            devfs_ruleset = devfs_rule
 
-                if devfs_str is not None:
-                    devfs.write(devfs_str)
-                    su.check_call(devfs_cmd, stdout=su.PIPE,
-                                  stderr=su.PIPE)
+                        if devfs_str is not None:
+                            devfs.write(devfs_str)
+                            su.check_call(devfs_cmd, stdout=su.PIPE,
+                                          stderr=su.PIPE)
 
-                generated_devfs_ruleset = devfs_rule
+                        generated_devfs_ruleset = devfs_rule
         else:
             generated_devfs_ruleset = self.__generate_dhcp_ruleset()
 
@@ -833,16 +836,16 @@ class IOCStart(object):
         ]
 
         with open("/etc/devfs.rules", "a+") as devfs:
-                devfs_str, devfs_rule = iocage_lib.ioc_common.construct_devfs(
-                    'devfsrules_jail_dhcp',
-                    paths=devfs_dict,
-                    includes=devfs_includes,
-                    comment='## IOCAGE -- Add DHCP to ruleset 4'
-                )
+            devfs_str, devfs_rule = iocage_lib.ioc_common.construct_devfs(
+                'devfsrules_jail_dhcp',
+                paths=devfs_dict,
+                includes=devfs_includes,
+                comment='## IOCAGE -- Add DHCP to ruleset 4'
+            )
 
-                if devfs_str is not None:
-                    devfs.write(devfs_str)
-                    su.check_call(devfs_cmd, stdout=su.PIPE, stderr=su.PIPE)
+            if devfs_str is not None:
+                devfs.write(devfs_str)
+                su.check_call(devfs_cmd, stdout=su.PIPE, stderr=su.PIPE)
 
         return devfs_rule
 
