@@ -153,10 +153,22 @@ class IOCage(object):
                     err, msg = self.start(j)
 
                     if err:
-                        self.callback({'level': 'ERROR', 'message': msg})
+                        ioc_common.logit(
+                            {
+                                'level': 'ERROR',
+                                'message': msg
+                            },
+                            _callback=self.callback, silent=self.silent
+                        )
                 else:
                     message = f"{uuid} ({j}) is already running!"
-                    self.callback({'level': 'WARNING', 'message': message})
+                    ioc_common.logit(
+                        {
+                            'level': 'WARNING',
+                            'message': message
+                        },
+                        _callback=self.callback, silent=self.silent
+                    )
 
     def __jail_order__(self, action):
         """Helper to gather lists of all the jails by order and boot order."""
@@ -209,24 +221,54 @@ class IOCage(object):
             if action == 'stop':
                 if status:
                     message = f"  Stopping {uuid}"
-                    self.callback({'level': 'INFO', 'message': message})
+                    ioc_common.logit(
+                        {
+                            'level': 'INFO',
+                            'message': message
+                        },
+                        _callback=self.callback, silent=self.silent
+                    )
 
                     self.stop(j)
                 else:
                     message = f"{uuid} is not running!"
-                    self.callback({'level': 'INFO', 'message': message})
+                    ioc_common.logit(
+                        {
+                            'level': 'INFO',
+                            'message': message
+                        },
+                        _callback=self.callback, silent=self.silent
+                    )
             elif action == 'start':
                 if not status:
                     message = f"  Starting {uuid}"
-                    self.callback({'level': 'INFO', 'message': message})
+                    ioc_common.logit(
+                        {
+                            'level': 'INFO',
+                            'message': message
+                        },
+                        _callback=self.callback, silent=self.silent
+                    )
 
                     err, msg = self.start(j)
 
                     if err:
-                        self.callback({'level': 'ERROR', 'message': msg})
+                        ioc_common.logit(
+                            {
+                                'level': 'ERROR',
+                                'message': msg
+                            },
+                            _callback=self.callback, silent=self.silent
+                        )
                 else:
                     message = f"{uuid} is already running!"
-                    self.callback({'level': 'WARNING', 'message': message})
+                    ioc_common.logit(
+                        {
+                            'level': 'WARNING',
+                            'message': message
+                        },
+                        _callback=self.callback, silent=self.silent
+                    )
 
     def __check_jail_existence__(self):
         """
@@ -1584,7 +1626,13 @@ class IOCage(object):
                 if jail:
                     return err, msg
                 else:
-                    self.callback({"level": "ERROR", "message": msg})
+                    ioc_common.logit(
+                        {
+                            'level': 'ERROR',
+                            'message': msg
+                        },
+                        _callback=self.callback, silent=self.silent
+                    )
                     exit(1)
 
     def stop(self, jail=None, force=False):
