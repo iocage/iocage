@@ -643,3 +643,68 @@ def check_release_newer(release, callback=None, silent=False):
             },
             _callback=callback,
             silent=silent)
+
+
+def construct_devfs(ruleset_name, paths, includes=None, comment=None):
+    """
+    ruleset_name: The ruleset without the brackets or a number,
+        for example 'foo' will be contructed into [foo=IOCAGE_GEN_RULENUM]
+
+    Will construct a devfs ruleset from dict(paths), and list(includes) with:
+        paths dict:
+            EXAMPLE: "usbctl": mode 660 group uucp
+            - path to unhide: mode (can be None)
+        includes list:
+            EXAMPLE ["$devfsrules_hide_all", "$devfsrules_unhide_basic"]
+            - [entry, entry]
+
+    Returns a tuple containing the string and which devfs_ruleset got assigned.
+    """
+    includes = [] if includes is None else includes
+    ct_str = f'## {ruleset_name}' if comment is None else comment
+    rules = []
+    ruleset_number = 5  # The system has 4 already claimed.
+
+    try:
+        with open('/etc/devfs.rules', 'r') as f:
+            exists = False
+
+            for line in f.readlines():
+                if line.rstrip() == ct_str:
+                    exists = True
+                    continue
+
+                if exists:
+                    return None, int(line.rsplit('=')[1].strip(']\n'))
+
+                if '[' in line:
+                    line = int(line.rsplit('=')[1].strip(']\n'))
+                    rules.append(line)
+    except FileNotFoundError:
+        logit(
+            {
+                'level': 'EXCEPTION',
+                'message':
+                    '/etc/devfs.rules could not be found, unable to continue.'
+            }
+        )
+
+    while ruleset_number in rules:
+        ruleset_number += 1
+
+    devfs_string = f'\n{ct_str}\n[{ruleset_name}={ruleset_number}]'
+
+    for include in includes:
+        devfs_string += f'\nadd include {include}'
+
+    for path, mode in paths.items():
+        path_str = f'add path \'{path}\''
+
+        if mode is not None:
+            path_str += f' {mode}'
+        else:
+            path_str += ' unhide'
+
+        devfs_string += f'\n{path_str}'
+
+    return f'{devfs_string}\n', str(ruleset_number)
