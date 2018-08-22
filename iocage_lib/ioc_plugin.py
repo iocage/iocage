@@ -536,7 +536,7 @@ fingerprint: {fingerprint}
             dhcp = True
             ip = ""
 
-        os.environ["IOCAGE_PLUGIN_IP"] = ip
+        os.environ["IOCAGE_PLUGIN_IP"] = ip.rsplit(',')[0]
 
         # We need to pipe from tar to the root of the jail.
 
@@ -614,7 +614,8 @@ fingerprint: {fingerprint}
                 try:
                     with open(ui_json, "r") as u:
                         admin_portal = json.load(u)["adminportal"]
-                        admin_portal = admin_portal.replace("%%IP%%", ip)
+                        admin_portal = admin_portal.replace("%%IP%%",
+                                                            ip.rsplit(',')[0])
                         iocage_lib.ioc_common.logit(
                             {
                                 "level": "INFO",
