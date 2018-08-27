@@ -45,8 +45,6 @@ import iocage_lib.ioc_upgrade
 import libzfs
 import texttable
 import dulwich.client
-from dulwich.repo import Repo
-from dulwich import index
 
 
 class IOCPlugin(object):
@@ -73,8 +71,12 @@ class IOCPlugin(object):
         self.callback = callback
 
         if self.branch is None and not self.hardened:
-            host_rel = os.uname()[2].rsplit("-", 1)[0].rsplit("-", 1)[0]
-            self.branch = f'{host_rel}-RELEASE'
+            freebsd_version = su.run(['freebsd-version'],
+                                     stdout=su.PIPE,
+                                     stderr=su.STDOUT)
+            r = freebsd_version.stdout.decode().rstrip().rsplit('-', 1)[0]
+
+            self.branch = f'{r}-RELEASE' if '.' in r else f'{r}.0-RELEASE'
         elif self.branch is None and self.hardened:
             # Backwards compat
             self.branch = 'master'
@@ -1221,22 +1223,24 @@ fingerprint: {fingerprint}
 
     def __clone_repo(self, repo_url, destination):
         """
-        This is to replicate the functionality of cloning a repo, without
-        using the porcelain interface.
+        This is to replicate the functionality of cloning/pulling a repo
         """
         try:
-            local = Repo.init(destination, mkdir=True)
-        except FileExistsError:
-            local = Repo(destination)
+            with open('/dev/null', 'wb') as devnull:
+                repo = porcelain.pull(destination, repo_url, errstream=devnull)
+        except dulwich.errors.NotGitRepository:
+            with open('/dev/null', 'wb') as devnull:
+                repo = porcelain.clone(
+                    repo_url, destination, errstream=devnull
+                )
 
-        client, path = dulwich.client.get_transport_and_path(repo_url)
-        remote_refs = client.fetch(repo_url, local)
-        ref = f'refs/heads/{self.branch}'
+        remote_refs = porcelain.fetch(repo, repo_url)
+        ref = f'refs/heads/{self.branch}'.encode()
 
         try:
-            local[ref.encode()] = remote_refs[ref.encode()]
+            repo[ref] = remote_refs[ref]
         except KeyError:
-            ref = 'refs/heads/master'
+            ref = b'refs/heads/master'
             msgs = [
                 f'\nBranch {self.branch} does not exist at {repo_url}!',
                 'Using "master" branch for plugin, this may not work '
@@ -1251,10 +1255,10 @@ fingerprint: {fingerprint}
                     },
                     _callback=self.callback)
 
-            local[ref.encode()] = remote_refs[ref.encode()]
+            repo[ref] = remote_refs[ref]
 
-        index_file = local.index_path()
-        tree = local[ref.encode()].tree
+        tree = repo[ref].tree
 
-        index.build_index_from_tree(local.path, index_file, local.object_store,
-                                    tree)
+        # Let git reflect reality
+        repo.reset_index(tree)
+        repo.refs.set_symbolic_ref(b'HEAD', ref)
