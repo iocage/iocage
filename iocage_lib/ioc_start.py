@@ -101,7 +101,7 @@ class IOCStart(object):
                                " 'hostid_strict_check' is on!"
                                " - Not starting jail"
                 }, _callback=self.callback, silent=self.silent)
-            return
+                return
 
         mount_procfs = self.conf["mount_procfs"]
         host_domainname = self.conf["host_domainname"]
