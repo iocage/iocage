@@ -1230,7 +1230,8 @@ fingerprint: {fingerprint}
         """
         try:
             with open('/dev/null', 'wb') as devnull:
-                repo = porcelain.pull(destination, repo_url, errstream=devnull)
+                porcelain.pull(destination, repo_url, errstream=devnull)
+                repo = porcelain.open_repo(destination)
         except dulwich.errors.NotGitRepository:
             with open('/dev/null', 'wb') as devnull:
                 repo = porcelain.clone(
