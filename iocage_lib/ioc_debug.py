@@ -80,27 +80,40 @@ class IOCDebug(object):
         self.__write_debug__(df, host_path, '\nDF -H')
 
     def run_jail_debug(self, name, path):
-        jail_path = f'{self.path}/{name}'
+        jail_debug_path = f'{self.path}/{name}'
+        jail_path = f'{path}/root'
 
         all_props = self.__get_jail_props__(name, path)
-        hosts = self.__execute_debug__(['cat', '/etc/hosts'], jail=name)
-        rc = self.__execute_debug__(['cat', '/etc/rc.conf'], jail=name)
-        nsswitch = self.__execute_debug__(['cat', '/etc/nsswitch.conf'],
-                                          jail=name)
-        ifconfig = self.__execute_debug__(['ifconfig', '-a'], jail=name)
-        netstat = self.__execute_debug__(['netstat', '-nr'], jail=name)
-        resolv = self.__execute_debug__(['cat', '/etc/resolv.conf'], jail=name)
+        hosts = self.__execute_debug__(['cat', f'{jail_path}/etc/hosts'],
+                                       jail=name)
+        rc = self.__execute_debug__(['cat', f'{jail_path}/etc/rc.conf'],
+                                    jail=name)
+        nsswitch = self.__execute_debug__(
+            ['cat', f'{jail_path}/etc/nsswitch.conf'], jail=name
+        )
 
-        self.__write_debug__(all_props, jail_path, 'PROPS', json=True)
-        self.__write_debug__(hosts, jail_path, '\n/ETC/HOSTS')
-        self.__write_debug__(rc, jail_path, '\n/ETC/RC.CONF')
-        self.__write_debug__(nsswitch, jail_path, '\n/ETC/NSSWITCH.CONF')
-        self.__write_debug__(ifconfig, jail_path, '\nIFCONFIG -a')
-        self.__write_debug__(netstat, jail_path, '\nNETSTAT -nr')
-        self.__write_debug__(resolv, jail_path, '\n/ETC/RESOLV.CONF')
+        if all_props['state'] == 'up':
+            ifconfig = self.__execute_debug__(['ifconfig', '-a'], jail=name,
+                                              jexec=True)
+            netstat = self.__execute_debug__(['netstat', '-nr'], jail=name,
+                                             jexec=True)
+        else:
+            ifconfig = netstat = [f'{name} not running -- cannot run command']
 
-    def __execute_debug__(self, command, jail=None):
-        if jail is not None:
+        resolv = self.__execute_debug__(
+            ['cat', f'{jail_path}/etc/resolv.conf'], jail=name
+        )
+
+        self.__write_debug__(all_props, jail_debug_path, 'PROPS', json=True)
+        self.__write_debug__(hosts, jail_debug_path, '\n/ETC/HOSTS')
+        self.__write_debug__(rc, jail_debug_path, '\n/ETC/RC.CONF')
+        self.__write_debug__(nsswitch, jail_debug_path, '\n/ETC/NSSWITCH.CONF')
+        self.__write_debug__(ifconfig, jail_debug_path, '\nIFCONFIG -a')
+        self.__write_debug__(netstat, jail_debug_path, '\nNETSTAT -nr')
+        self.__write_debug__(resolv, jail_debug_path, '\n/ETC/RESOLV.CONF')
+
+    def __execute_debug__(self, command, jail=None, jexec=False):
+        if jail is not None and jexec:
             jail_cmd = ['jexec', f'ioc-{jail}']
             command = jail_cmd + command
 
@@ -112,7 +125,7 @@ class IOCDebug(object):
     def __write_debug__(self, data, path, title, json=False):
         title_sep = '-' * 10
 
-        with open(path, 'a+') as f:
+        with open(f'{path}.txt', 'a+') as f:
             f.write(title)
             f.write(f'\n{title_sep}\n')
 
