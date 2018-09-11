@@ -51,6 +51,7 @@
 .Op Fl r | -release Cm latest | Cm LATEST
 .Op Fl s | -short
 .Op Fl t | -template Ar TEXT
+.Op Fl T | -thickjail
 .Op Fl u | -uuid | Ar TEXT
 .Op Ar PROPERTIES
 .\" == DESTROY ==
@@ -393,6 +394,8 @@ Creat a new jail with the latest release available.
 Use a short UUID of 8 characters instead of the default 36.
 .It Op Fl t | -template Ar TEXT
 Create a jail from the specified template.
+.It Op Fl T | -thickjail
+Thick jails are copies of the release, not clones.
 .It Op Fl u | -uuid Ar TEXT
 Specify a desired UUID for the new jail.
 .El
