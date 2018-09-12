@@ -25,6 +25,7 @@
 import os
 import re
 import subprocess as su
+import netifaces
 
 import iocage_lib.ioc_common
 import iocage_lib.ioc_json
@@ -256,11 +257,20 @@ class IOCStop(object):
 
             if ip4_addr != "inherit" and vnet == "off":
                 if ip4_addr != "none":
+                    gws = netifaces.gateways()
+
                     for ip4 in ip4_addr.split(","):
                         # Don't try to remove an alias if there's no interface.
 
                         if "|" not in ip4:
-                            continue
+                            try:
+                                def_iface = gws[
+                                    "default"][netifaces.AF_INET][1]
+                                ip4 = f'{def_iface}|{ip4}'
+                            except KeyError:
+                                # Best effort for default interface
+                                continue
+
                         try:
                             iface, addr = ip4.split("/")[0].split("|")
                             addr = addr.split()
