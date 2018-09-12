@@ -236,7 +236,6 @@ class IOCStart(object):
 
             if ip4_addr != "none":
                 gws = netifaces.gateways()
-                def_iface = gws["default"][netifaces.AF_INET][1]
 
                 for _ip4_addr in ip4_addr.split(","):
                     if "|" not in _ip4_addr:
