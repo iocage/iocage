@@ -241,12 +241,12 @@ class IOCStart(object):
                     if "|" not in _ip4_addr:
                         try:
                             def_iface = gws["default"][netifaces.AF_INET][1]
-                            ip4_addr = f'{def_iface}|{_ip4_addr}'
+                            _ip4_addr = f'{def_iface}|{_ip4_addr}'
                         except KeyError:
                             # Best effort for default interface
                             pass
 
-                    net.append(f"ip4.addr={ip4_addr}")
+                    net.append(f"ip4.addr={_ip4_addr}")
 
             if ip6_addr != "none":
                 net.append(f"ip6.addr={ip6_addr}")
