@@ -29,6 +29,7 @@ import re
 import shutil
 import json
 import subprocess as su
+import netifaces
 
 import iocage_lib.ioc_common
 import iocage_lib.ioc_json
@@ -234,7 +235,19 @@ class IOCStart(object):
             net = []
 
             if ip4_addr != "none":
-                net.append(f"ip4.addr={ip4_addr}")
+                gws = netifaces.gateways()
+                def_iface = gws["default"][netifaces.AF_INET][1]
+
+                for _ip4_addr in ip4_addr.split(","):
+                    if "|" not in _ip4_addr:
+                        try:
+                            def_iface = gws["default"][netifaces.AF_INET][1]
+                            ip4_addr = f'{def_iface}|{_ip4_addr}'
+                        except KeyError:
+                            # Best effort for default interface
+                            pass
+
+                    net.append(f"ip4.addr={ip4_addr}")
 
             if ip6_addr != "none":
                 net.append(f"ip6.addr={ip6_addr}")
