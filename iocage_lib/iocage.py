@@ -970,7 +970,7 @@ class IOCage(object):
             if add_path:
                 destination = f"{self.iocroot}/jails/{uuid}/root{destination}"
 
-            if len(destination) > 88:
+            if destination and len(destination) > 88:
                 ioc_common.logit(
                     {
                         "level":
