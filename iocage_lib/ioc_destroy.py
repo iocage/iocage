@@ -22,7 +22,6 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """iocage destroy module."""
-import glob
 import json
 import os
 import subprocess as su
@@ -116,9 +115,10 @@ class IOCDestroy(object):
             snapshot = True
 
         if path:
-            for file in glob.glob(f"{self.iocroot}/log/*"):
-                if file == f"{self.iocroot}/log/{uuid}-console.log":
-                    os.remove(file)
+            try:
+                os.remove(f"{self.iocroot}/log/{uuid}-console.log")
+            except FileNotFoundError:
+                pass
 
             # Dangling mounts are bad...mmkay?
             su.Popen(
