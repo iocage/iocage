@@ -1068,9 +1068,6 @@ interface|ip-address/netmask,interface|ip-address/netmask
 .Pp
 On shared IP jails, an interface name given before the IP address
 adds an alias to that interface.
-If the DEFAULT keyword is given instead of an interface name, the
-interface is automatically assigned based on the system's default
-interface.
 .Pp
 A netmask in either dotted-quad or CIDR form given after the IP
 address is used when adding the IP alias.
@@ -1798,11 +1795,12 @@ Default: off
 .Pp
 Source:
 .Xr cpuset 1
-.It vnet.interface
-A network interface to give to a vnet-enabled jail after it is created.
-The interface will automatically be released when the jail is removed.
+.It vnet_interfaces
+A space delimited list of network interfaces to give to a VNET-enabled
+jail after it is created.
+Interfaces are automatically released when the jail is removed.
 .Pp
-Defualt: none
+Default: none
 .Pp
 Source:
 .Xr jail(8)
