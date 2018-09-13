@@ -395,7 +395,11 @@ class IOCCreate(object):
         elif not self.clone:
             open(f"{location}/fstab", "wb").close()
 
-            with open(f"{location}/root/etc/hosts", "r") as _etc_hosts:
+            with open(
+                    f"{self.iocroot}/"
+                    f"{'releases' if not self.template else 'templates'}/"
+                    f"{self.release}/root/etc/hosts", "r"
+            ) as _etc_hosts:
                 with iocage_lib.ioc_common.open_atomic(
                         f"{location}/root/etc/hosts", "w") as etc_hosts:
                     # open_atomic will empty the file, we need these still.
