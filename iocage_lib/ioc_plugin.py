@@ -521,15 +521,13 @@ fingerprint: {fingerprint}
         """Fetches the users artifact and runs the post install"""
         dhcp = False
 
-        try:
-            ip4 = _conf["ip4_addr"].split("|")[1].rsplit("/")[0]
-        except IndexError:
-            ip4 = "none"
+        ip4 = _conf["ip4_addr"]
+        if '|' in ip4:
+            ip4 = ip4.split("|")[1].rsplit("/")[0]
 
-        try:
-            ip6 = _conf["ip6_addr"].split("|")[1].rsplit("/")[0]
-        except IndexError:
-            ip6 = "none"
+        ip6 = _conf["ip6_addr"]
+        if '|' in ip6:
+            ip6 = ip6.split("|")[1].rsplit("/")[0]
 
         if ip4 != "none":
             ip = ip4
