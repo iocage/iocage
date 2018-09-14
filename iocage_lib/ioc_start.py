@@ -843,7 +843,7 @@ class IOCStart(object):
             mac_a, mac_b = self.__generate_mac_address_pair(nic)
             self.set(f"{nic}_mac={mac_a},{mac_b}")
         else:
-            mac_a, mac_b = mac.split(",")
+            mac_a, mac_b = mac.split()
 
         return mac_a, mac_b
 
