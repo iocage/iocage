@@ -434,13 +434,18 @@ class IOCStart(object):
                         # Jails default is epairNb
                         interface = f"{interface.replace('vnet', 'epair')}b"
 
+                    # We'd like to use ifconfig -f inet:cidr here,
+                    # but only FreeBSD 11.0 and newer support it...
                     cmd = ["jexec", f"ioc-{self.uuid}", "ifconfig",
                            interface, "inet"]
                     out = su.check_output(cmd)
 
-                    hexmask = out.splitlines()[2].split()[3].decode()
+                    # ...so we extract the ip4 address and mask,
+                    # and calculate cidr manually
+                    addr_split = out.splitlines()
+                    ip4_addr = addr_split[2].split()[1].decode()
+                    hexmask = addr_split[2].split()[3].decode()
                     maskcidr = sum([bin(int(hexmask, 16)).count("1")])
-                    ip4_addr = out.splitlines()[2].split()[1].decode()
 
                     addr = f"{ip4_addr}/{maskcidr}"
                 except su.CalledProcessError:
