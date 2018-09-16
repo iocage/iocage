@@ -442,9 +442,9 @@ class IOCStart(object):
 
                     # ...so we extract the ip4 address and mask,
                     # and calculate cidr manually
-                    addr_split = out.splitlines()
-                    ip4_addr = addr_split[2].split()[1].decode()
-                    hexmask = addr_split[2].split()[3].decode()
+                    addr_split = out.splitlines()[2]
+                    ip4_addr = addr_split.split()[1].decode()
+                    hexmask = addr_split.split()[3].decode()
                     maskcidr = sum([bin(int(hexmask, 16)).count("1")])
 
                     addr = f"{ip4_addr}/{maskcidr}"
