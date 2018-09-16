@@ -76,7 +76,7 @@ class IOCPlugin(object):
             freebsd_version = su.run(['freebsd-version'],
                                      stdout=su.PIPE,
                                      stderr=su.STDOUT)
-            r = freebsd_version.stdout.decode().rstrip().rsplit('-', 1)[0]
+            r = freebsd_version.stdout.decode().rstrip().split('-', 1)[0]
 
             self.branch = f'{r}-RELEASE' if '.' in r else f'{r}.0-RELEASE'
         elif self.branch is None and self.hardened:
