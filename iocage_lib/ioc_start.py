@@ -1003,6 +1003,7 @@ class IOCStart(object):
                 default_if = self.get('vnet_default_interface')
                 if default_if == 'none':
                     default_if = self.get_default_gateway()[1]
+
                 bridge_cmd = [
                     "ifconfig", bridge, "create", "addm", default_if
                 ]
@@ -1015,7 +1016,6 @@ class IOCStart(object):
             pass
 
         memberif = self.get_bridge_members(bridge)
-
         if not memberif:
             return '1500'
 
