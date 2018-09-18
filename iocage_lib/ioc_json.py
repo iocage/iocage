@@ -38,6 +38,7 @@ import iocage_lib.ioc_create
 import iocage_lib.ioc_exec
 import iocage_lib.ioc_list
 import iocage_lib.ioc_stop
+import iocage_lib.ioc_exceptions as ioc_exceptions
 import libzfs
 import netifaces
 
@@ -493,40 +494,51 @@ class IOCJson(object):
                     except IndexError:
                         iocage_lib.ioc_common.logit(
                             {
-                                "level":
-                                "EXCEPTION",
-                                "message":
-                                "No zpools found! Please create one "
-                                "before using iocage."
+                                'level': 'EXCEPTION',
+                                'message': 'No zpools found! Please create one'
+                                ' before using iocage.'
                             },
                             _callback=self.callback,
-                            silent=self.silent)
+                            silent=self.silent,
+                            exception=ioc_exceptions.PoolNotActivated)
 
                     if os.geteuid() != 0:
-                        raise RuntimeError("Run as root to automatically "
-                                           "activate the first zpool!")
+                        iocage_lib.ioc_common.logit(
+                            {
+                                'level': 'EXCEPTION',
+                                'message': 'Run as root to automatically'
+                                ' activate the first zpool!'
+                            },
+                            _callback=self.callback,
+                            silent=self.silent,
+                            exception=ioc_exceptions.PoolNotActivated)
 
                     iocage_skip = os.environ.get("IOCAGE_SKIP", "FALSE")
                     if iocage_skip == "TRUE":
                         iocage_lib.ioc_common.logit(
                             {
-                                "level":
-                                "EXCEPTION",
-                                "message":
-                                "IOCAGE_SKIP is TRUE or an RC operation, not"
-                                " activating a pool.\nPlease manually issue"
-                                " iocage activate POOL"
+                                'level': 'EXCEPTION',
+                                'message': 'IOCAGE_SKIP is TRUE or an RC'
+                                ' operation, not activating a pool.\nPlease'
+                                ' manually issue iocage activate POOL'
                             },
                             _callback=self.callback,
-                            silent=self.silent)
+                            silent=self.silent,
+                            exception=ioc_exceptions.PoolNotActivated)
 
                     if zpool == "freenas-boot":
                         try:
                             zpool = zpools[1]
                         except IndexError:
-                            raise RuntimeError("Please specify a pool to "
-                                               "activate with iocage activate "
-                                               "POOL")
+                            iocage_lib.ioc_common.logit(
+                                {
+                                    'level': 'EXCEPTION',
+                                    'message': 'Please specify a pool to'
+                                    ' activate with iocage activate POOL'
+                                },
+                                _callback=self.callback,
+                                silent=self.silent,
+                                exception=ioc_exceptions.PoolNotActivated)
 
                     iocage_lib.ioc_common.logit(
                         {
@@ -641,7 +653,7 @@ class IOCJson(object):
                         jail_zfs_dataset = f"{pool}/" \
                             f"{conf['jail_zfs_dataset']}"
                         self.zfs_set_property(jail_zfs_dataset, "jailed",
-                                                "off")
+                                              "off")
                     except libzfs.ZFSException as err:
                         # The dataset doesn't exist, that's OK
 
