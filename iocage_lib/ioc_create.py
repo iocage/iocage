@@ -521,6 +521,7 @@ class IOCCreate(object):
         jail_props["jail_zfs_dataset"] = f"iocage/jails/{jail_uuid}/data"
         jail_props["depends"] = "none"
         jail_props["vnet_interfaces"] = "none"
+        jail_props["vnet_default_interface"] = "none"
 
         return jail_props
 

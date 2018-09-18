@@ -829,7 +829,7 @@ class IOCJson(object):
     @staticmethod
     def json_get_version():
         """Sets the iocage configuration version."""
-        version = "11"
+        version = "12"
 
         return version
 
@@ -1025,6 +1025,10 @@ class IOCJson(object):
         # Set all keys, even if it's the same value.
         conf["hostid_strict_check"] = hostid_strict_check
 
+        # Version 12 keys
+        if not conf.get('vnet_default_interface', None):
+            conf['vnet_default_interface'] = 'none'
+
         if not default:
             try:
                 if not renamed:
@@ -1180,6 +1184,7 @@ class IOCJson(object):
             "mount_procfs": ("0", "1"),
             "mount_linprocfs": ("0", "1"),
             "vnet": ("off", "on"),
+            "vnet_default_interface": ("string", ),
             "template": ("no", "yes"),
             "comment": ("string", ),
             "host_time": ("no", "yes"),
@@ -1270,6 +1275,17 @@ class IOCJson(object):
                         # Let's standardise the value to none in case
                         # vnetX_mac is not provided
                         value = 'none'
+                elif key == 'vnet_default_interface':
+                    if value not in netifaces.interfaces():
+                        iocage_lib.ioc_common.logit(
+                            {
+                                'level': 'EXCEPTION',
+                                'message': 'Please provide a valid NIC to be used '
+                                           'with vnet'
+                            },
+                            _callback=self.callback,
+                            silent=self.silent
+                        )
 
                 return value, conf
             else:

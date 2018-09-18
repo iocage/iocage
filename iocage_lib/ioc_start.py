@@ -61,6 +61,7 @@ class IOCStart(object):
                                                    silent=True).json_get_value
             self.set = iocage_lib.ioc_json.IOCJson(self.path,
                                                    silent=True).json_set_value
+
             self.exec_fib = self.conf["exec_fib"]
             self.__start_jail__()
         except TypeError:
@@ -582,6 +583,15 @@ class IOCStart(object):
             (self.get("ip6_addr"), self.get("defaultrouter6"), True))
         nics = self.get("interfaces").split(",")
 
+        vnet_default_interface = self.get('vnet_default_interface')
+        if vnet_default_interface not in netifaces.interfaces():
+            # Let's not go into starting a vnet at all if the default
+            # interface isn't specified
+            return [
+                'Please specify a valid default interface to be used with vnet '
+                'by setting the property "vnet_default_interface"'
+            ]
+
         for nic in nics:
             err = self.start_network_interface_vnet(nic, net_configs, jid)
 
@@ -661,6 +671,8 @@ class IOCStart(object):
         :param jid: The jails ID
         :return: If an error occurs it returns the error. Otherwise, it's None
         """
+        vnet_default_interface = self.get('vnet_default_interface')
+
         mac_a, mac_b = self.__start_generate_vnet_mac__(nic)
         epair_a_cmd = ["ifconfig", "epair", "create"]
         epair_a = su.Popen(epair_a_cmd, stdout=su.PIPE).communicate()[0]
@@ -705,31 +717,23 @@ class IOCStart(object):
 
             try:
                 # Host
-                gws = netifaces.gateways()
-                def_iface = gws["default"][netifaces.AF_INET][1]
                 # Host interface also needs to be on the bridge
                 iocage_lib.ioc_common.checkoutput(
-                    ["ifconfig", bridge, "addm", def_iface], stderr=su.STDOUT)
-            except KeyError:
-                iocage_lib.ioc_common.logit({
-                    "level": "EXCEPTION",
-                    "message": "No default gateway interface found",
-                }, _callback=self.callback,
-                    silent=self.silent)
+                    ["ifconfig", bridge, "addm", vnet_default_interface], stderr=su.STDOUT)
             except su.CalledProcessError:
                 # Already exists
                 pass
 
             iocage_lib.ioc_common.checkoutput(
                 ["ifconfig", bridge, "addm", f"{nic}:{jid}", "up"],
-                stderr=su.STDOUT)
+                stderr=su.STDOUT
+            )
             iocage_lib.ioc_common.checkoutput(
                 ["ifconfig", f"{nic}:{jid}", "up"],
-                stderr=su.STDOUT)
+                stderr=su.STDOUT
+            )
         except su.CalledProcessError as err:
             return f"{err.output.decode('utf-8')}".rstrip()
-        else:
-            return
 
     def start_network_vnet_addr(self, iface, ip, defaultgw, ipv6=False):
         """
@@ -912,16 +916,12 @@ class IOCStart(object):
 
         try:
             if dhcp == "on":
-                default_iface_cmd = ["netstat", "-f", "inet", "-nrW"]
-                default_iface = su.check_output(default_iface_cmd)
-                default_if = ""
+                # Let's get the default vnet interface
+                default_if = self.get('vnet_default_interface')
 
-                for line in default_iface.splitlines():
-                    if b"default" in line:
-                        default_if = line.split()[5].decode()
-
-                bridge_cmd = ["ifconfig", bridge, "create", "addm",
-                              default_if]
+                bridge_cmd = [
+                    "ifconfig", bridge, "create", "addm", default_if
+                ]
             else:
                 bridge_cmd = ["ifconfig", bridge, "create", "addm"]
 
@@ -930,16 +930,19 @@ class IOCStart(object):
             # The bridge already exists, this is just best effort.
             pass
 
-        memberif = [x for x in
-                    iocage_lib.ioc_common.checkoutput(
-                        ["ifconfig", bridge]).splitlines()
-
-                    if x.strip().startswith("member")]
+        memberif = [
+            x for x in
+            iocage_lib.ioc_common.checkoutput(
+                ["ifconfig", bridge]
+            ).splitlines()
+            if x.strip().startswith("member")
+        ]
 
         if not memberif:
             return '1500'
 
         membermtu = iocage_lib.ioc_common.checkoutput(
-            ["ifconfig", memberif[0].split()[1]]).split()
+            ["ifconfig", memberif[0].split()[1]]
+        ).split()
 
         return membermtu[5]
