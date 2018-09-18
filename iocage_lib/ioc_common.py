@@ -37,7 +37,7 @@ import datetime as dt
 import re
 
 
-def callback(_log):
+def callback(_log, callback_exception):
     """Helper to call the appropriate logging level"""
     log = logging.getLogger("iocage")
     level = _log["level"]
@@ -60,16 +60,16 @@ def callback(_log):
     elif level == 'EXCEPTION':
         try:
             if not os.isatty(sys.stdout.fileno()):
-                raise RuntimeError(message)
+                raise callback_exception(message)
             else:
                 log.error(message)
                 raise SystemExit(1)
         except AttributeError:
             # They are lacking the fileno object
-            raise RuntimeError(message)
+            raise callback_exception(message)
 
 
-def logit(content, _callback=None, silent=False):
+def logit(content, _callback=None, silent=False, exception=RuntimeError):
     """Helper to check callable status of callback or call ours."""
     if silent and content['level'] != "EXCEPTION":
         # They need to see these errors, too bad!
@@ -77,7 +77,7 @@ def logit(content, _callback=None, silent=False):
 
     # This will log with our callback method if they didn't supply one.
     _callback = _callback if callable(_callback) else callback
-    _callback(content)
+    _callback(content, exception)
 
 
 def raise_sort_error(sort_list):
