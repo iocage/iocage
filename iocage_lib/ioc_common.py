@@ -677,8 +677,11 @@ def construct_devfs(ruleset_name, paths, includes=None, comment=None):
                 if exists:
                     return None, int(line.rsplit('=')[1].strip(']\n'))
 
-                if '[' in line:
-                    line = int(line.rsplit('=')[1].strip(']\n'))
+                if line.startswith('['):
+                    try:
+                        line = int(line.rsplit('=')[1].strip(']\n'))
+                    except IndexError:
+                        rules.append(line)
                     rules.append(line)
     except FileNotFoundError:
         logit(
