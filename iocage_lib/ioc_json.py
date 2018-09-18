@@ -1026,7 +1026,7 @@ class IOCJson(object):
         conf["hostid_strict_check"] = hostid_strict_check
 
         # Version 12 keys
-        if not conf.get('vnet_default_interface', None):
+        if not conf.get('vnet_default_interface'):
             conf['vnet_default_interface'] = 'none'
 
         if not default:
@@ -1275,7 +1275,7 @@ class IOCJson(object):
                         # Let's standardise the value to none in case
                         # vnetX_mac is not provided
                         value = 'none'
-                elif key == 'vnet_default_interface':
+                elif key == 'vnet_default_interface' and value != 'none':
                     if value not in netifaces.interfaces():
                         iocage_lib.ioc_common.logit(
                             {
@@ -1687,6 +1687,7 @@ class IOCJson(object):
                 "vnet1_mac": "none",
                 "vnet2_mac": "none",
                 "vnet3_mac": "none",
+                "vnet_default_interface": "none",
                 "devfs_ruleset": "4",
                 "exec_start": "/bin/sh /etc/rc",
                 "exec_stop": "/bin/sh /etc/rc.shutdown",

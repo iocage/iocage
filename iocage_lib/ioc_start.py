@@ -584,12 +584,15 @@ class IOCStart(object):
         nics = self.get("interfaces").split(",")
 
         vnet_default_interface = self.get('vnet_default_interface')
-        if vnet_default_interface not in netifaces.interfaces():
+        if (
+                vnet_default_interface != 'none' and
+                vnet_default_interface not in netifaces.interfaces()
+        ):
             # Let's not go into starting a vnet at all if the default
-            # interface isn't specified
+            # interface is supplied incorrectly
             return [
-                'Please specify a valid default interface to be used with vnet '
-                'by setting the property "vnet_default_interface"'
+                'Set property "vnet_default_interface" to "none" or a valid'
+                'interface e.g "lagg0"'
             ]
 
         for nic in nics:
@@ -672,6 +675,8 @@ class IOCStart(object):
         :return: If an error occurs it returns the error. Otherwise, it's None
         """
         vnet_default_interface = self.get('vnet_default_interface')
+        if vnet_default_interface == 'none':
+            vnet_default_interface = self.get_default_gateway()[1]
 
         mac_a, mac_b = self.__start_generate_vnet_mac__(nic)
         epair_a_cmd = ["ifconfig", "epair", "create"]
@@ -687,39 +692,57 @@ class IOCStart(object):
 
         try:
             # Host
-            iocage_lib.ioc_common.checkoutput(["ifconfig", epair_a, "name",
-                                               f"{nic}:{jid}", "mtu", mtu],
-                                              stderr=su.STDOUT)
+            iocage_lib.ioc_common.checkoutput(
+                [
+                    "ifconfig", epair_a, "name",
+                    f"{nic}:{jid}", "mtu", mtu
+                ],
+                stderr=su.STDOUT
+            )
             iocage_lib.ioc_common.checkoutput(
                 ["ifconfig", f"{nic}:{jid}", "link", mac_a],
-                stderr=su.STDOUT)
+                stderr=su.STDOUT
+            )
             iocage_lib.ioc_common.checkoutput(
                 ["ifconfig", f"{nic}:{jid}", "description",
-                 "associated with jail:"
-                 f" {self.uuid}"],
-                stderr=su.STDOUT)
+                 f"associated with jail: {self.uuid}"],
+                stderr=su.STDOUT
+            )
 
             # Jail
-            iocage_lib.ioc_common.checkoutput(["ifconfig", epair_b, "vnet",
-                                               f"ioc-{self.uuid}"],
-                                              stderr=su.STDOUT)
+            iocage_lib.ioc_common.checkoutput(
+                [
+                    "ifconfig", epair_b, "vnet",
+                    f"ioc-{self.uuid}"
+                ],
+                stderr=su.STDOUT
+            )
 
             if epair_b.decode() != jail_nic:
                 # This occurs on default vnet0 ip4_addr's
                 iocage_lib.ioc_common.checkoutput(
-                    ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
-                     "ifconfig", epair_b, "name", jail_nic, "mtu", mtu],
-                    stderr=su.STDOUT)
+                    [
+                        "setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
+                        "ifconfig", epair_b, "name", jail_nic, "mtu", mtu
+                    ],
+                    stderr=su.STDOUT
+                )
 
             iocage_lib.ioc_common.checkoutput(
-                ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
-                 "ifconfig", jail_nic, "link", mac_b], stderr=su.STDOUT)
+                [
+                    "setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
+                    "ifconfig", jail_nic, "link", mac_b
+                ],
+                stderr=su.STDOUT
+            )
 
             try:
                 # Host
-                # Host interface also needs to be on the bridge
+                # Host interface as supplied by user also needs to be on the bridge
                 iocage_lib.ioc_common.checkoutput(
-                    ["ifconfig", bridge, "addm", vnet_default_interface], stderr=su.STDOUT)
+                    ["ifconfig", bridge, "addm", vnet_default_interface],
+                    stderr=su.STDOUT
+                )
             except su.CalledProcessError:
                 # Already exists
                 pass
@@ -907,6 +930,19 @@ class IOCStart(object):
                 for line in _rc:
                     rc.write(line)
 
+    def get_default_gateway(self):
+        # e.g response - ('192.168.122.1', 'lagg0')
+        return netifaces.gateways()["default"][netifaces.AF_INET]
+
+    def get_bridge_members(self, bridge):
+        return [
+            x.split()[1] for x in
+            iocage_lib.ioc_common.checkoutput(
+                ["ifconfig", bridge]
+            ).splitlines()
+            if x.strip().startswith("member")
+        ]
+
     def find_bridge_mtu(self, bridge):
         try:
             dhcp = self.get("dhcp")
@@ -918,6 +954,8 @@ class IOCStart(object):
             if dhcp == "on":
                 # Let's get the default vnet interface
                 default_if = self.get('vnet_default_interface')
+                if default_if == 'none':
+                    default_if = self.get_default_gateway()[1]
 
                 bridge_cmd = [
                     "ifconfig", bridge, "create", "addm", default_if
@@ -930,19 +968,12 @@ class IOCStart(object):
             # The bridge already exists, this is just best effort.
             pass
 
-        memberif = [
-            x for x in
-            iocage_lib.ioc_common.checkoutput(
-                ["ifconfig", bridge]
-            ).splitlines()
-            if x.strip().startswith("member")
-        ]
-
+        memberif = self.get_bridge_members(bridge)
         if not memberif:
             return '1500'
 
         membermtu = iocage_lib.ioc_common.checkoutput(
-            ["ifconfig", memberif[0].split()[1]]
+            ["ifconfig", memberif[0]]
         ).split()
 
         return membermtu[5]
