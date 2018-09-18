@@ -932,7 +932,17 @@ class IOCStart(object):
 
     def get_default_gateway(self):
         # e.g response - ('192.168.122.1', 'lagg0')
-        return netifaces.gateways()["default"][netifaces.AF_INET]
+        try:
+            return netifaces.gateways()["default"][netifaces.AF_INET]
+        except KeyError:
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message': 'No default gateway interface found'
+                },
+                _callback=self.callback,
+                silent=self.silent
+            )
 
     def get_bridge_members(self, bridge):
         return [
