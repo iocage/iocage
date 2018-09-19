@@ -74,7 +74,7 @@ class IOCUpgrade(object):
 
             return
 
-        os.environ["PAGER"] = "/bin/cat"
+        upgrade_env = {"PAGER": "/bin/cat"}
 
         if not os.path.isfile(f"{self.path}/etc/freebsd-update.conf"):
             return
@@ -100,7 +100,7 @@ class IOCUpgrade(object):
                     "--not-running-from-cron", "--currently-running "
                     f"{self.jail_release}", "-r", self.new_release, "upgrade"
                 ],
-                stdin=su.PIPE)
+                stdin=su.PIPE, env=upgrade_env)
             fetch.communicate(b"y")
 
             if fetch.returncode:
@@ -142,7 +142,7 @@ class IOCUpgrade(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-        os.environ["PAGER"] = "/bin/cat"
+        upgrade_env = {"PAGER": "/bin/cat"}
         release_p = pathlib.Path(f"{self.iocroot}/releases/{self.new_release}")
         self._freebsd_version = f"{self.iocroot}/releases/"\
             f"{self.new_release}/root/bin/freebsd-version"
@@ -204,21 +204,13 @@ class IOCUpgrade(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-        # etcupdate = su.Popen([
-            # "etcupdate", "-D", self.path, "-F", "-s",
-            # f"{self.iocroot}/releases/{self.new_release}/root/usr/src"
-        # ])
-        # print(
-            # f"etcupdate -D {self.path} -F -s"
-            # f" {self.iocroot}/releases/{self.new_release}/root/usr/src")
-        # etcupdate.communicate()
         stdout = None if not self.silent else su.DEVNULL
         stderr = None if self.silent else su.DEVNULL
 
         etcupdate = su.Popen([
-            "jexec", f"ioc-{self.uuid.replace('.', '_')}",
+            "/usr/sbin/jexec", f"ioc-{self.uuid.replace('.', '_')}",
             "/usr/sbin/etcupdate", "-F", "-s", "/iocage_upgrade"
-        ], stdout=stdout, stderr=stderr)
+        ], stdout=stdout, stderr=stderr, env=upgrade_env)
         etcupdate.communicate()
 
         if etcupdate.returncode != 0:
@@ -259,8 +251,9 @@ class IOCUpgrade(object):
             mq.mkdir(exist_ok=True, parents=True)
 
         su.check_call([
-            "jexec", f"ioc-{self.uuid.replace('.', '_')}", "newaliases"
-        ], stdout=stdout, stderr=stderr)
+            "/usr/sbin/jexec", f"ioc-{self.uuid.replace('.', '_')}",
+            "newaliases"
+        ], stdout=stdout, stderr=stderr, env=upgrade_env)
         su.Popen([
             "umount", "-f", f"{self.path}/iocage_upgrade"
         ]).communicate()
