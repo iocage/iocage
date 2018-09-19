@@ -849,8 +849,7 @@ class IOCFetch(object):
         su.Popen(cmd).communicate()
         shutil.copy("/etc/resolv.conf", f"{new_root}/etc/resolv.conf")
 
-        os.environ["UNAME_r"] = self.release
-        os.environ["PAGER"] = "/bin/cat"
+        fetch_env = {"UNAME_r": self.release, "PAGER": "/bin/cat"}
 
         if os.path.isfile(f"{new_root}/etc/freebsd-update.conf"):
             if self.verify:
@@ -873,7 +872,7 @@ class IOCFetch(object):
                 "--not-running-from-cron", "fetch"
             ]
 
-            fetch = su.Popen(fetch_cmd)
+            fetch = su.Popen(fetch_cmd, env=fetch_env)
             fetch.communicate()
 
             # They may have missing files, we don't need that noise
@@ -884,7 +883,7 @@ class IOCFetch(object):
                     f"{new_root}/var/db/freebsd-update/", "-f",
                     f"{new_root}/etc/freebsd-update.conf", "install"
                 ],
-                stderr=su.DEVNULL).communicate()
+                env=fetch_env, stderr=su.DEVNULL).communicate()
 
             if self.verify:
                 # tmp only exists if they verify SSL certs
