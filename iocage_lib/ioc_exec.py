@@ -64,6 +64,14 @@ class IOCExec(object):
         self.silent = silent
         self.msg_return = msg_return
         self.msg_err_return = msg_err_return
+
+        path = '/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:'\
+               '/usr/local/bin:/root/bin'
+        su_env = su_env or {}
+        su_env.setdefault('PATH', path)
+        su_env.setdefault('PWD', '/')
+        su_env.setdefault('HOME', '/')
+
         self.su_env = su_env
         self.callback = callback
 

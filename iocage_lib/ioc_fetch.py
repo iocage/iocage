@@ -849,7 +849,15 @@ class IOCFetch(object):
         su.Popen(cmd).communicate()
         shutil.copy("/etc/resolv.conf", f"{new_root}/etc/resolv.conf")
 
-        fetch_env = {"UNAME_r": self.release, "PAGER": "/bin/cat"}
+        path = '/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:'\
+               '/usr/local/bin:/root/bin'
+        fetch_env = {
+            'UNAME_r': self.release,
+            'PAGER': '/bin/cat',
+            'PATH': path,
+            'PWD': '/',
+            'HOME': '/'
+            }
 
         if os.path.isfile(f"{new_root}/etc/freebsd-update.conf"):
             if self.verify:
