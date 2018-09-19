@@ -625,11 +625,11 @@ class IOCCreate(object):
                   "pkg"], stdout=su.DEVNULL, stderr=su.DEVNULL).communicate()
 
         # We will have mismatched ABI errors from earlier, this is to be safe.
-        os.environ["ASSUME_ALWAYS_YES"] = "yes"
-        cmd = ("pkg-static", "upgrade", "-f", "-q", "-y")
+        pkg_env = {"ASSUME_ALWAYS_YES": "yes"}
+        cmd = ("/usr/local/sbin/pkg-static", "upgrade", "-f", "-q", "-y")
         pkg_upgrade, pkgup_stderr, pkgup_err = iocage_lib.ioc_exec.IOCExec(
             cmd, jail_uuid, location, plugin=self.plugin,
-            msg_err_return=True).exec_jail()
+            msg_err_return=True, su_env=pkg_env).exec_jail()
 
         if pkgup_err:
             iocage_lib.ioc_stop.IOCStop(jail_uuid, location, config,
@@ -661,11 +661,12 @@ class IOCCreate(object):
             },
                 _callback=self.callback,
                 silent=supply_msg[1])
-            cmd = ("pkg", "install", "-q", "-y", pkg)
+            cmd = ("/usr/local/sbin/pkg", "install", "-q", "-y", pkg)
 
             pkg_stdout, pkg_stderr, pkg_err = iocage_lib.ioc_exec.IOCExec(
                 cmd, jail_uuid, location, plugin=self.plugin,
-                silent=self.silent, msg_err_return=True).exec_jail()
+                silent=self.silent, msg_err_return=True,
+                su_env=pkg_env).exec_jail()
 
             if pkg_err:
                 pkg_err_list.append(f'{pkg} :{pkg_stderr.decode().rstrip()}')

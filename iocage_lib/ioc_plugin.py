@@ -539,7 +539,7 @@ fingerprint: {fingerprint}
             dhcp = True
             ip = ""
 
-        os.environ["IOCAGE_PLUGIN_IP"] = ip.rsplit(',')[0]
+        plugin_env = {"IOCAGE_PLUGIN_IP": ip.rsplit(',')[0]}
 
         # We need to pipe from tar to the root of the jail.
 
@@ -578,11 +578,11 @@ fingerprint: {fingerprint}
                     _callback=self.callback,
                     silent=self.silent)
 
-                command = ["sh", "/root/post_install.sh"]
+                command = ["/bin/sh", "/root/post_install.sh"]
                 msg, err = iocage_lib.ioc_exec.IOCExec(
                     command, uuid, jaildir, plugin=True,
                     skip=True, callback=self.callback,
-                    msg_return=True).exec_jail()
+                    msg_return=True, su_env=plugin_env).exec_jail()
 
                 if err:
                     iocage_lib.ioc_common.logit(

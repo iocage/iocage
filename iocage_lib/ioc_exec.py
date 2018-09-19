@@ -50,6 +50,7 @@ class IOCExec(object):
                  silent=False,
                  msg_return=False,
                  msg_err_return=False,
+                 su_env=None,
                  callback=None):
         self.command = command
         self.uuid = uuid.replace(".", "_")
@@ -63,6 +64,15 @@ class IOCExec(object):
         self.silent = silent
         self.msg_return = msg_return
         self.msg_err_return = msg_err_return
+
+        path = '/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:'\
+               '/usr/local/bin:/root/bin'
+        su_env = su_env or {}
+        su_env.setdefault('PATH', path)
+        su_env.setdefault('PWD', '/')
+        su_env.setdefault('HOME', '/')
+
+        self.su_env = su_env
         self.callback = callback
 
     def exec_jail(self):
@@ -135,15 +145,15 @@ class IOCExec(object):
         if self.console:
             login_flags = conf["login_flags"].split()
             su.Popen([
-                "setfib", exec_fib, "jexec", f"ioc-{self.uuid}", "login"
-            ] + login_flags).communicate()
+                "/usr/sbin/setfib", exec_fib, "jexec", f"ioc-{self.uuid}",
+                "login"] + login_flags, env=self.su_env).communicate()
 
             return None, False
         else:
             try:
                 if not self.pkg:
                     cmd = [
-                        "setfib", exec_fib, "jexec", flag, user,
+                        "/usr/sbin/setfib", exec_fib, "jexec", flag, user,
                         f"ioc-{self.uuid}"
                     ] + list(self.command)
                 else:
@@ -151,7 +161,7 @@ class IOCExec(object):
 
                 if self.msg_return or self.msg_err_return:
                     p = su.Popen(cmd, stdout=su.PIPE, stderr=su.PIPE,
-                                 close_fds=True, bufsize=0)
+                                 close_fds=True, bufsize=0, env=self.su_env)
 
                     # Courtesy of @william-gr
                     # service(8) and some rc.d scripts have the bad habit of
@@ -200,7 +210,7 @@ class IOCExec(object):
                     stderr = None if not self.silent else su.DEVNULL
 
                     p = su.Popen(
-                        cmd, stdout=stdout, stderr=stderr
+                        cmd, stdout=stdout, stderr=stderr, env=self.su_env
                     ).communicate()
 
                     return "", False
