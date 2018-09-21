@@ -228,7 +228,7 @@ class IOCStart(object):
 
         # FreeBSD before 12.0 does not support this.
 
-        if userland_version >= 12.0:
+        if userland_version < 12.0:
             _allow_mlock = ""
         else:
             _allow_mlock = f"allow.mlock={allow_mlock}"
