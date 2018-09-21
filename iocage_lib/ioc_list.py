@@ -225,9 +225,14 @@ class IOCList(object):
                 short_ip4 = "DHCP"
                 full_ip4_cmd = ["jexec", f"ioc-{uuid_full}", "ifconfig",
                                 interface, "inet"]
-                out = su.check_output(full_ip4_cmd)
-                full_ip4 = f"{interface}|" \
-                    f"{out.splitlines()[2].split()[1].decode()}"
+                try:
+                    out = su.check_output(full_ip4_cmd)
+                except su.CalledProcessError as e:
+                    short_ip4 += "(Network Issue)"
+                    full_ip4 = f"DHCP - Network Issue:{e}"
+                else:
+                    full_ip4 = f"{interface}|" \
+                        f"{out.splitlines()[2].split()[1].decode()}"
             elif conf["dhcp"] == "on" and not status:
                 short_ip4 = "DHCP"
                 full_ip4 = "DHCP (not running)"
