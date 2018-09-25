@@ -172,8 +172,8 @@ class IOCPlugin(object):
                 iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(location)
                 iocage_lib.ioc_common.logit({
                     'level': 'EXCEPTION',
-                    'message': f'Exception: {str(e)} occured, destroyed'
-                               f' {jail_name}.'
+                    'message': f'Exception: {e.__class__.__name__} occured,'
+                               f' destroyed {jail_name}.'
                 },
                     _callback=self.callback,
                     silent=self.silent)
