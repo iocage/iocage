@@ -1610,8 +1610,11 @@ class IOCage(object):
             if not err:
                 for depend in depends:
                     if depend != "none":
-                        self.jail = depend
-                        self.start()
+                        try:
+                            self.jail = depend
+                            self.start()
+                        except:
+                            pass
 
                 ioc_start.IOCStart(
                     uuid,
