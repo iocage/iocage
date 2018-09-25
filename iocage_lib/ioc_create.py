@@ -27,7 +27,6 @@ import os
 import pathlib
 import re
 import subprocess as su
-import sys
 import uuid
 
 import iocage_lib.ioc_common
@@ -88,7 +87,12 @@ class IOCCreate(object):
             return self._create_jail(jail_uuid, location)
         except KeyboardInterrupt:
             iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(location)
-            sys.exit(1)
+            iocage_lib.ioc_common.logit({
+                'level': 'EXCEPTION',
+                'message': 'Keyboard interrupt detected, destroyed jail.'
+            },
+                _callback=self.callback,
+                silent=self.silent)
 
     def _create_jail(self, jail_uuid, location):
         """
@@ -96,6 +100,7 @@ class IOCCreate(object):
         jail from that. The user can also specify properties to override the
         defaults.
         """
+        raise KeyboardInterrupt()
         start = False
         is_template = False
 
