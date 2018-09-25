@@ -685,6 +685,8 @@ class IOCCreate(object):
             _callback=self.callback,
             silent=supply_msg[1])
 
+        pkg_err_list = []
+
         for pkg in self.pkglist:
             iocage_lib.ioc_common.logit({
                 "level": "INFO",
@@ -700,6 +702,7 @@ class IOCCreate(object):
                 su_env=pkg_env).exec_jail()
 
             if pkg_err:
+                pkg_err_list.append(f'{pkg} :{pkg_stderr.decode().rstrip()}')
                 pkg_retry = 1
 
                 while True:
@@ -738,8 +741,8 @@ class IOCCreate(object):
             iocage_lib.ioc_stop.IOCStop(jail_uuid, location, config,
                                         silent=True)
 
-        if self.plugin and pkg_err:
-            return pkg_stderr.decode().rstrip()
+        if self.plugin and pkg_err_list:
+            return ','.join(pkg_err_list)
 
     @staticmethod
     def create_rc(location, host_hostname):
