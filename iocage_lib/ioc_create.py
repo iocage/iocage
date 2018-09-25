@@ -620,9 +620,42 @@ class IOCCreate(object):
         },
             _callback=self.callback,
             silent=self.silent)
+
         # To avoid a user being prompted about pkg.
-        su.Popen(["pkg-static", "-j", jid, "install", "-q", "-y",
-                  "pkg"], stdout=su.DEVNULL, stderr=su.DEVNULL).communicate()
+        pkg_install = su.run(["pkg-static", "-j", jid, "install", "-q", "-y",
+                              "pkg"],
+                             stdout=su.DEVNULL, stderr=su.DEVNULL).returncode
+
+        if pkg_install != 0:
+            pkg_retry = 1
+
+            while True:
+                iocage_lib.ioc_common.logit(
+                    {
+                        "level": 'INFO',
+                        "message": f'pkg failed to install, retry #{pkg_retry}'
+                    },
+                    silent=self.silent,
+                    _callback=self.callback)
+                pkg_install = su.run(["pkg-static", "-j", jid, "install", "-q",
+                                      "-y", "pkg"],
+                                     stdout=su.PIPE, stderr=su.STDOUT)
+                pkg_err = pkg_install.returncode
+                pkg_err_output = pkg_install.stdout.decode().rstrip()
+
+                if pkg_err != 0 and pkg_retry <= 2:
+                    pkg_retry += 1
+                    continue
+                elif pkg_err != 0 and pkg_retry == 3:
+                    iocage_lib.ioc_common.logit(
+                        {
+                            "level": "EXCEPTION",
+                            "message": f"\npkg error:\n  - {pkg_err_output}\n"
+                                     '\nPlease check your network'
+                        },
+                        _callback=self.callback)
+                else:
+                    break
 
         # We will have mismatched ABI errors from earlier, this is to be safe.
         pkg_env = {"ASSUME_ALWAYS_YES": "yes"}
@@ -666,12 +699,38 @@ class IOCCreate(object):
                 silent=self.silent, msg_err_return=True,
                 su_env=pkg_env).exec_jail()
 
-            if pkg_err and not self.plugin:
-                iocage_lib.ioc_common.logit({
-                    "level": "ERROR",
-                    "message": pkg_stderr.decode().rstrip()
-                },
-                    _callback=self.callback)
+            if pkg_err:
+                pkg_retry = 1
+
+                while True:
+                    iocage_lib.ioc_common.logit(
+                        {
+                            "level": 'INFO',
+                            "message": f'    - {pkg} failed to install, retry'
+                                       f' #{pkg_retry}'
+                        },
+                        silent=False,
+                        _callback=self.callback)
+
+                    pkg_stdout, pkg_stderr, pkg_err = \
+                        iocage_lib.ioc_exec.IOCExec(
+                            cmd, jail_uuid, location, plugin=self.plugin,
+                            silent=self.silent, msg_err_return=True,
+                            su_env=pkg_env).exec_jail()
+
+                    if pkg_err and pkg_retry <= 2:
+                        pkg_retry += 1
+                        continue
+                    elif pkg_err and pkg_retry == 3 and not self.plugin:
+                        pkg_err_output = pkg_stderr.decode().rstrip()
+                        iocage_lib.ioc_common.logit(
+                            {
+                                "level": "ERROR",
+                                "message": pkg_err_output
+                            },
+                            _callback=self.callback)
+                    else:
+                        break
 
         os.remove(f"{location}/root/etc/resolv.conf")
 
