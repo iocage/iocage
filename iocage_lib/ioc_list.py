@@ -170,7 +170,7 @@ class IOCList(object):
             ip6 = conf["ip6_addr"]
 
             try:
-                short_ip4 = full_ip4.split("|")[1].split("/")[0]
+                short_ip4 = ",".join([item.split("|")[1].split("/")[0] for item in full_ip4.split(",")])
             except IndexError:
                 short_ip4 = full_ip4 if full_ip4 != "none" else "-"
 
