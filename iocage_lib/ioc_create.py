@@ -89,7 +89,8 @@ class IOCCreate(object):
             iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(location)
             iocage_lib.ioc_common.logit({
                 'level': 'EXCEPTION',
-                'message': 'Keyboard interrupt detected, destroyed jail.'
+                'message': 'Keyboard interrupt detected, destroyed'
+                           f'{jail_uuid}.'
             },
                 _callback=self.callback,
                 silent=self.silent)
@@ -100,7 +101,6 @@ class IOCCreate(object):
         jail from that. The user can also specify properties to override the
         defaults.
         """
-        raise KeyboardInterrupt()
         start = False
         is_template = False
 

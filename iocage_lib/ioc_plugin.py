@@ -168,15 +168,16 @@ class IOCPlugin(object):
                                                    _conf, pkg, props, repo_dir)
             self.__fetch_plugin_post_install__(conf, _conf, jaildir, jail_name)
         except (KeyboardInterrupt, SystemExit, RuntimeError) as e:
-            if isinstance(e, KeyboardInterrupt) or not \
-                    self.keep_jail_on_failure:
+            if not self.keep_jail_on_failure:
                 iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(location)
-            iocage_lib.ioc_common.logit({
-                'level': 'EXCEPTION',
-                'message': 'Keyboard interrupt detected, destroyed jail.'
-            },
-                _callback=self.callback,
-                silent=self.silent)
+                iocage_lib.ioc_common.logit({
+                    'level': 'EXCEPTION',
+                    'message': f'Exception: {str(e)} occured, destroyed '
+                               f'{jail_name}.'
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+            raise
 
     def __fetch_plugin_inform__(self, conf, num, plugins, accept_license):
         """Logs the pertinent information before fetching a plugin"""
