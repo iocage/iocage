@@ -90,7 +90,7 @@ class IOCCreate(object):
             iocage_lib.ioc_common.logit({
                 'level': 'EXCEPTION',
                 'message': 'Keyboard interrupt detected, destroyed'
-                           f'{jail_uuid}.'
+                           f' {jail_uuid}.'
             },
                 _callback=self.callback,
                 silent=self.silent)
