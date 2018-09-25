@@ -652,6 +652,8 @@ class IOCCreate(object):
             _callback=self.callback,
             silent=supply_msg[1])
 
+        pkg_err_list = []
+
         for pkg in self.pkglist:
             iocage_lib.ioc_common.logit({
                 "level": "INFO",
@@ -666,6 +668,9 @@ class IOCCreate(object):
                 silent=self.silent, msg_err_return=True,
                 su_env=pkg_env).exec_jail()
 
+            if pkg_err:
+                pkg_err_list.append(f'{pkg} :{pkg_stderr.decode().rstrip()}')
+
             if pkg_err and not self.plugin:
                 iocage_lib.ioc_common.logit({
                     "level": "ERROR",
@@ -679,8 +684,9 @@ class IOCCreate(object):
             iocage_lib.ioc_stop.IOCStop(jail_uuid, location, config,
                                         silent=True)
 
-        if self.plugin and pkg_err:
-            return pkg_stderr.decode().rstrip()
+        if self.plugin and pkg_err_list:
+            # TODO: Motivation behind returning this here ? Should this be moved in the for loop ?
+            return ','.join(pkg_err_list)
 
     @staticmethod
     def create_rc(location, host_hostname):
