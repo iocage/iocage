@@ -115,6 +115,7 @@ class IOCStart(object):
         allow_sysvipc = self.conf["allow_sysvipc"]
         allow_raw_sockets = self.conf["allow_raw_sockets"]
         allow_chflags = self.conf["allow_chflags"]
+        allow_mlock = self.conf["allow_mlock"]
         allow_mount = self.conf["allow_mount"]
         allow_mount_devfs = self.conf["allow_mount_devfs"]
         allow_mount_nullfs = self.conf["allow_mount_nullfs"]
@@ -224,6 +225,13 @@ class IOCStart(object):
             _sysvmsg = f"sysvmsg={sysvmsg}"
             _sysvsem = f"sysvsem={sysvsem}"
             _sysvshm = f"sysvshm={sysvshm}"
+
+        # FreeBSD before 12.0 does not support this.
+
+        if userland_version < 12.0:
+            _allow_mlock = ""
+        else:
+            _allow_mlock = f"allow.mlock={allow_mlock}"
 
         if self.conf["vnet"] == "off":
             ip4_addr = self.conf["ip4_addr"]
@@ -351,6 +359,7 @@ class IOCStart(object):
                            _sysvshm,
                            f"allow.raw_sockets={allow_raw_sockets}",
                            f"allow.chflags={allow_chflags}",
+                           _allow_mlock,
                            f"allow.mount={allow_mount}",
                            f"allow.mount.devfs={allow_mount_devfs}",
                            f"allow.mount.nullfs={allow_mount_nullfs}",
