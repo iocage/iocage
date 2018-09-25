@@ -708,7 +708,10 @@ class IOCCreate(object):
                 if not pkg_err:
                     break
 
-                pkg_err_list.append(f'{pkg} :{pkg_stderr.decode().rstrip()}')
+                pkg_err_msg = f'{pkg} :{pkg_stderr.decode().rstrip()}'
+                if pkg_err_msg not in pkg_err_list:
+                    pkg_err_list.append(pkg_err_msg)
+
                 iocage_lib.ioc_common.logit(
                     {
                         "level": 'INFO',
