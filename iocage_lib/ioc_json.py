@@ -829,7 +829,7 @@ class IOCJson(object):
     @staticmethod
     def json_get_version():
         """Sets the iocage configuration version."""
-        version = "12"
+        version = "13"
 
         return version
 
@@ -1029,6 +1029,15 @@ class IOCJson(object):
         if not conf.get('vnet_default_interface'):
             conf['vnet_default_interface'] = 'none'
 
+        # Version 13 keys
+        try:
+            allow_mlock = conf["allow_mlock"]
+        except KeyError:
+            allow_mlock = "0"
+
+        # Set all keys, even if it's the same value.
+        conf["allow_mlock"] = allow_mlock
+
         if not default:
             try:
                 if not renamed:
@@ -1137,6 +1146,7 @@ class IOCJson(object):
             "allow_sysvipc": ("0", "1"),
             "allow_raw_sockets": ("0", "1"),
             "allow_chflags": ("0", "1"),
+            "allow_mlock": ("0", "1"),
             "allow_mount": ("0", "1"),
             "allow_mount_devfs": ("0", "1"),
             "allow_mount_nullfs": ("0", "1"),
@@ -1714,6 +1724,7 @@ class IOCJson(object):
                 "allow_sysvipc": "0",
                 "allow_raw_sockets": "0",
                 "allow_chflags": "0",
+                "allow_mlock": "0",
                 "allow_mount": "0",
                 "allow_mount_devfs": "0",
                 "allow_mount_nullfs": "0",
