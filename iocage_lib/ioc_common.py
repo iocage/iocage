@@ -42,6 +42,7 @@ def callback(_log, callback_exception):
     log = logging.getLogger("iocage")
     level = _log["level"]
     message = _log["message"]
+    force_raise = _log.get("force_raise")
 
     if level == 'CRITICAL':
         log.critical(message)
@@ -63,7 +64,10 @@ def callback(_log, callback_exception):
                 raise callback_exception(message)
             else:
                 log.error(message)
-                raise SystemExit(1)
+                if force_raise:
+                    raise callback_exception(message)
+                else:
+                    raise SystemExit(1)
         except AttributeError:
             # They are lacking the fileno object
             raise callback_exception(message)

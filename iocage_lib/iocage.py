@@ -44,6 +44,7 @@ import iocage_lib.ioc_start as ioc_start
 import iocage_lib.ioc_stop as ioc_stop
 import iocage_lib.ioc_upgrade as ioc_upgrade
 import iocage_lib.ioc_debug as ioc_debug
+import iocage_lib.ioc_exceptions as ioc_exceptions
 import libzfs
 
 
@@ -135,6 +136,7 @@ class IOCage(object):
         self._all = True if self.jail and 'ALL' in self.jail else False
         self.callback = callback
         self.silent = silent
+        self.is_depend = False
 
     def __all__(self, jail_order, action):
         # So we can properly start these.
@@ -1610,15 +1612,23 @@ class IOCage(object):
             if not err:
                 for depend in depends:
                     if depend != "none":
-                        self.jail = depend
-                        self.start()
+                        try:
+                            self.jail = depend
+                            _is_depend = self.is_depend
+                            self.is_depend = True
+                            self.start(depend)
+                        except ioc_exceptions.JailRunning:
+                            pass
+                        finally:
+                            self.is_depend = _is_depend
 
                 ioc_start.IOCStart(
                     uuid,
                     path,
                     conf,
                     silent=self.silent,
-                    callback=self.callback
+                    callback=self.callback,
+                    is_depend=self.is_depend
                 )
 
                 return False, None
