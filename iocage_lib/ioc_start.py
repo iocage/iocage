@@ -35,6 +35,7 @@ import iocage_lib.ioc_common
 import iocage_lib.ioc_json
 import iocage_lib.ioc_list
 import iocage_lib.ioc_stop
+import iocage_lib.ioc_exceptions as ioc_exceptions
 
 
 class IOCStart(object):
@@ -46,12 +47,13 @@ class IOCStart(object):
     """
 
     def __init__(self, uuid, path, conf, silent=False,
-                 callback=None):
+                 callback=None, is_depend=False):
         self.uuid = uuid.replace(".", "_")
         self.path = path
         self.conf = conf
         self.callback = callback
         self.silent = silent
+        self.is_depend = is_depend
 
         try:
             self.pool = iocage_lib.ioc_json.IOCJson(" ").json_get_value("pool")
@@ -88,9 +90,11 @@ class IOCStart(object):
             msg = f"{self.uuid} is already running!"
             iocage_lib.ioc_common.logit({
                 "level": "EXCEPTION",
-                "message": msg
+                "message": msg,
+                "force_raise": self.is_depend
             }, _callback=self.callback,
-                silent=self.silent)
+                silent=self.silent,
+                exception=ioc_exceptions.JailRunning)
 
         if self.conf["hostid_strict_check"] == "on":
             with open("/etc/hostid", "r") as _file:
