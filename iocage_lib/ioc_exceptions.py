@@ -26,3 +26,6 @@
 
 class PoolNotActivated(Exception):
     pass
+
+class JailRunning(Exception):
+    pass
