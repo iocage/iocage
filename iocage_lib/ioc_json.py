@@ -831,7 +831,7 @@ class IOCJson(object):
     @staticmethod
     def json_get_version():
         """Sets the iocage configuration version."""
-        version = "12"
+        version = "13"
 
         return version
 
@@ -1036,6 +1036,10 @@ class IOCJson(object):
         # Set all keys, even if it's the same value.
         conf["allow_mlock"] = allow_mlock
 
+        # Version 13 keys
+        if not conf.get('vnet_default_interface'):
+            conf['vnet_default_interface'] = 'none'
+
         if not default:
             try:
                 if not renamed:
@@ -1192,6 +1196,7 @@ class IOCJson(object):
             "mount_procfs": ("0", "1"),
             "mount_linprocfs": ("0", "1"),
             "vnet": ("off", "on"),
+            "vnet_default_interface": ("string",),
             "template": ("no", "yes"),
             "comment": ("string", ),
             "host_time": ("no", "yes"),
@@ -1256,6 +1261,17 @@ class IOCJson(object):
                             conf[key] = value
                     except ValueError:
                         pass
+                elif key == 'vnet_default_interface' and value != 'none':
+                    if value not in netifaces.interfaces():
+                        iocage_lib.ioc_common.logit(
+                            {
+                                'level': 'EXCEPTION',
+                                'message': 'Please provide a valid NIC to be used '
+                                           'with vnet'
+                            },
+                            _callback=self.callback,
+                            silent=self.silent
+                        )
 
                 return value, conf
             else:
@@ -1657,6 +1673,7 @@ class IOCJson(object):
                 "vnet1_mac": "none",
                 "vnet2_mac": "none",
                 "vnet3_mac": "none",
+                "vnet_default_interface": "none",
                 "devfs_ruleset": "4",
                 "exec_start": "/bin/sh /etc/rc",
                 "exec_stop": "/bin/sh /etc/rc.shutdown",
