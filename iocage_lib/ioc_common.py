@@ -35,6 +35,7 @@ import tempfile as tmp
 import requests
 import datetime as dt
 import re
+import shlex
 
 
 def callback(_log, callback_exception):
@@ -711,3 +712,30 @@ def construct_devfs(ruleset_name, paths, includes=None, comment=None):
         devfs_string += f'\n{path_str}'
 
     return f'{devfs_string}\n', str(ruleset_number)
+
+
+def runscript(script):
+    """
+    Runs the users provided script, otherwise returns a tuple with
+    True/False and the error.
+    """
+    script = shlex.split(script)
+
+    if len(script) > 1:
+        # We may be getting ';', '&&' and so forth. Adding the shell for
+        # safety.
+        script = ["/bin/sh", "-c", " ".join(script)]
+    elif os.access(script[0], os.X_OK):
+        script = script[0]
+    else:
+        return True, "Script is not executable!"
+
+    try:
+        out = checkoutput(script, stderr=su.STDOUT)
+    except su.CalledProcessError as err:
+        return False, err.output.decode().rstrip("\n")
+
+    if out:
+        return True, out.rstrip("\n")
+
+    return True, None

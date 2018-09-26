@@ -52,34 +52,6 @@ class IOCStop(object):
 
         self.__stop_jail__()
 
-    def runscript(self, script):
-        """
-        Runs the users provided script, otherwise returns a tuple with
-        True/False and the error.
-        """
-        script = re.split(r"(;|&&)", script)
-
-        if len(script) > 1:
-            # We may be getting ';', '&&' and so forth. Adding the shell for
-            # safety.
-            # TODO: Check if each command is executable as well
-            script = ["/bin/sh", "-c", " ".join(script)]
-        elif os.access(script[0], os.X_OK):
-            script = script[0]
-        else:
-            return True, "Script is not executable!"
-
-        try:
-            out = iocage_lib.ioc_common.checkoutput(script,
-                                                    stderr=su.STDOUT)
-        except su.CalledProcessError as err:
-            return False, err.output.decode().rstrip("\n")
-
-        if out:
-            return True, out.rstrip("\n")
-
-        return True, None
-
     def __stop_jail__(self):
         ip4_addr = self.conf["ip4_addr"]
         ip6_addr = self.conf["ip6_addr"]
@@ -107,7 +79,8 @@ class IOCStop(object):
             silent=self.silent)
 
         if not self.force:
-            prestop, prestop_err = self.runscript(self.conf["exec_prestop"])
+            prestop, prestop_err = iocage_lib.ioc_common.runscript(
+                self.conf["exec_prestop"])
 
             if prestop and prestop_err:
                 msg = f"  + Running prestop WARNING\n{prestop_err}"
@@ -337,7 +310,8 @@ class IOCStop(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-        poststop, poststop_err = self.runscript(self.conf["exec_poststop"])
+        poststop, poststop_err = iocage_lib.ioc_common.runscript(
+            self.conf["exec_poststop"])
 
         if poststop and poststop_err:
             msg = f"  + Running poststop WARNING\n{poststop_err}"
