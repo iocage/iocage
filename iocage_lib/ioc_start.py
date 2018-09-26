@@ -628,7 +628,7 @@ class IOCStart(object):
                 ifaces = []
 
                 for addrs, gw, ipv6 in net_configs:
-                    if dhcp == "on":
+                    if dhcp == "on" and 'accept_rtadv' not in addrs:
                         # Spoofing IP address, it doesn't matter with DHCP
                         addrs = f"{nic}|''"
 
@@ -709,6 +709,12 @@ class IOCStart(object):
                 stderr=su.STDOUT
             )
 
+            if 'accept_rtadv' in self.get('ip6_addr'):
+                # Set linklocal for IP6 + rtsold
+                iocage_lib.ioc_common.checkoutput(
+                    ['ifconfig', f'{nic}:{jid}', 'inet6', 'auto_linklocal'],
+                    stderr=su.STDOUT)
+
             # Jail
             iocage_lib.ioc_common.checkoutput(
                 [
@@ -784,7 +790,7 @@ class IOCStart(object):
             route = ["add", "default", defaultgw]
 
         try:
-            if dhcp == "off":
+            if dhcp == "off" and ip != 'accept_rtadv':
                 # Jail side
                 iocage_lib.ioc_common.checkoutput(
                     ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
@@ -794,15 +800,17 @@ class IOCStart(object):
                      "route"] + route, stderr=su.STDOUT)
             else:
                 if ipv6:
-                    # Requires either rtsol or ISC dhclient, the user likely
-                    #  knows which they want, DHCP is for IP4 in iocage.
-
-                    return
-
-                iocage_lib.ioc_common.checkoutput(
-                    ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
-                     "service", "dhclient", "start", iface],
-                    stderr=su.STDOUT)
+                    if ip == 'accept_rtadv':
+                        # rtsold support
+                        iocage_lib.ioc_common.checkoutput(
+                            ['setfib', self.exec_fib, 'jexec',
+                             f'ioc-{self.uuid}', 'service', 'rtsold',
+                             'onestart'], stderr=su.STDOUT)
+                else:
+                    iocage_lib.ioc_common.checkoutput(
+                        ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
+                         "service", "dhclient", "start", iface],
+                        stderr=su.STDOUT)
         except su.CalledProcessError as err:
             return f"{err.output.decode('utf-8')}".rstrip()
         else:
