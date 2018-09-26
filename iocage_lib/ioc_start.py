@@ -451,9 +451,9 @@ class IOCStart(object):
 
                     # ...so we extract the ip4 address and mask,
                     # and calculate cidr manually
-                    addr_split = out.splitlines()[2]
-                    ip4_addr = addr_split.split()[1].decode()
-                    hexmask = addr_split.split()[3].decode()
+                    addr_split = out.splitlines()[2].split()
+                    ip4_addr = addr_split[1].decode()
+                    hexmask = addr_split[3].decode()
                     maskcidr = sum([bin(int(hexmask, 16)).count("1")])
 
                     addr = f"{ip4_addr}/{maskcidr}"
@@ -634,7 +634,7 @@ class IOCStart(object):
                 ifaces = []
 
                 for addrs, gw, ipv6 in net_configs:
-                    if dhcp == "on":
+                    if dhcp == "on" and 'accept_rtadv' not in addrs:
                         # Spoofing IP address, it doesn't matter with DHCP
                         addrs = f"{nic}|''"
 
@@ -706,6 +706,12 @@ class IOCStart(object):
                  f" {self.uuid}"],
                 stderr=su.STDOUT)
 
+            if 'accept_rtadv' in self.get('ip6_addr'):
+                # Set linklocal for IP6 + rtsold
+                iocage_lib.ioc_common.checkoutput(
+                    ['ifconfig', f'{nic}:{jid}', 'inet6', 'auto_linklocal'],
+                    stderr=su.STDOUT)
+
             # Jail
             iocage_lib.ioc_common.checkoutput(["ifconfig", epair_b, "vnet",
                                                f"ioc-{self.uuid}"],
@@ -759,7 +765,7 @@ class IOCStart(object):
             route = ["add", "default", defaultgw]
 
         try:
-            if dhcp == "off":
+            if dhcp == "off" and ip != 'accept_rtadv':
                 # Jail side
                 iocage_lib.ioc_common.checkoutput(
                     ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
@@ -769,15 +775,17 @@ class IOCStart(object):
                      "route"] + route, stderr=su.STDOUT)
             else:
                 if ipv6:
-                    # Requires either rtsol or ISC dhclient, the user likely
-                    #  knows which they want, DHCP is for IP4 in iocage.
-
-                    return
-
-                iocage_lib.ioc_common.checkoutput(
-                    ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
-                     "service", "dhclient", "start", iface],
-                    stderr=su.STDOUT)
+                    if ip == 'accept_rtadv':
+                        # rtsold support
+                        iocage_lib.ioc_common.checkoutput(
+                            ['setfib', self.exec_fib, 'jexec',
+                             f'ioc-{self.uuid}', 'service', 'rtsold',
+                             'onestart'], stderr=su.STDOUT)
+                else:
+                    iocage_lib.ioc_common.checkoutput(
+                        ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
+                         "service", "dhclient", "start", iface],
+                        stderr=su.STDOUT)
         except su.CalledProcessError as err:
             return f"{err.output.decode('utf-8')}".rstrip()
         else:
