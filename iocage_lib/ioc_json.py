@@ -831,7 +831,7 @@ class IOCJson(object):
     @staticmethod
     def json_get_version():
         """Sets the iocage configuration version."""
-        version = "13"
+        version = "14"
 
         return version
 
@@ -1040,6 +1040,10 @@ class IOCJson(object):
         if not conf.get('vnet_default_interface'):
             conf['vnet_default_interface'] = 'none'
 
+        # Version 14 keys
+        if not conf.get('allow_tun'):
+            conf['allow_tun'] = '0'
+
         if not default:
             try:
                 if not renamed:
@@ -1200,7 +1204,8 @@ class IOCJson(object):
             "template": ("no", "yes"),
             "comment": ("string", ),
             "host_time": ("no", "yes"),
-            "depends": ("string", )
+            "depends": ("string", ),
+            "allow_tun": ("0", "1")
         }
 
         zfs_props = {
@@ -1709,6 +1714,7 @@ class IOCJson(object):
                 "allow_mount_zfs": "0",
                 "allow_quotas": "0",
                 "allow_socket_af": "0",
+                "allow_tun": "0",
                 "cpuset": "off",
                 "rlimits": "off",
                 "memoryuse": "off",
