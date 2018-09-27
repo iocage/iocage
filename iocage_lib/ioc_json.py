@@ -1241,6 +1241,8 @@ class IOCJson(object):
 
             self.zfs_set_property(f"{pool}/iocage/{_type}/{uuid}", key, value)
 
+            return value, conf
+
         elif key in props.keys():
             # Either it contains what we expect, or it's a string.
 
