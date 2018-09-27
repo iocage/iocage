@@ -334,7 +334,7 @@ class IOCStart(object):
             _callback=self.callback,
             silent=self.silent)
 
-        if devfs_ruleset is None and dhcp == "on" or allow_tun == "1":
+        if devfs_ruleset is None and (dhcp == "on" or allow_tun == "1"):
             devfs_ruleset = generated_devfs_ruleset
         elif generated_devfs_ruleset != devfs_ruleset and dhcp == "on":
             if self.conf["type"] != "pluginv2" and devfs_ruleset != "4":
