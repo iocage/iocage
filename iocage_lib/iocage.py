@@ -767,6 +767,12 @@ class IOCage(object):
                 silent=self.silent)
 
         uuid, path = self.__check_jail_existence__()
+        exec_clean = self.get('exec_clean')
+
+        if exec_clean == '1':
+            su_env = None
+        else:
+            su_env = os.environ.copy()
 
         if pkg:
             ip4_addr = self.get("ip4_addr")
@@ -802,7 +808,8 @@ class IOCage(object):
             console=console,
             silent=self.silent,
             msg_return=msg_return,
-            pkg=pkg).exec_jail()
+            pkg=pkg,
+            su_env=su_env).exec_jail()
 
         if not console:
             if err:
