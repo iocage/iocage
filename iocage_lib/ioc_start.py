@@ -125,6 +125,7 @@ class IOCStart(object):
         allow_mount_zfs = self.conf["allow_mount_zfs"]
         allow_quotas = self.conf["allow_quotas"]
         allow_socket_af = self.conf["allow_socket_af"]
+        allow_tun = self.conf["allow_tun"]
         exec_prestart = self.conf["exec_prestart"]
         exec_poststart = self.conf["exec_poststart"]
         exec_prestop = self.conf["exec_prestop"]
@@ -286,7 +287,7 @@ class IOCStart(object):
                 plugin_name = self.uuid.rsplit('_', 1)[0]
                 devfs_json = json.load(f)
                 if "devfs_ruleset" not in devfs_json:
-                    generated_devfs_ruleset = self.__generate_dhcp_ruleset()
+                    generated_devfs_ruleset = self.__generate_devfs_ruleset()
                 else:
                     plugin_devfs = devfs_json[
                         "devfs_ruleset"][f"plugin_{plugin_name}"]
@@ -320,7 +321,7 @@ class IOCStart(object):
 
                         generated_devfs_ruleset = devfs_rule
         else:
-            generated_devfs_ruleset = self.__generate_dhcp_ruleset()
+            generated_devfs_ruleset = self.__generate_devfs_ruleset()
 
         msg = f"* Starting {self.uuid}"
         iocage_lib.ioc_common.logit({
@@ -330,7 +331,7 @@ class IOCStart(object):
             _callback=self.callback,
             silent=self.silent)
 
-        if devfs_ruleset is None and dhcp == "on":
+        if devfs_ruleset is None and (dhcp == "on" or allow_tun == "1"):
             devfs_ruleset = generated_devfs_ruleset
         elif generated_devfs_ruleset != devfs_ruleset and dhcp == "on":
             if self.conf["type"] != "pluginv2" and devfs_ruleset != "4":
@@ -891,29 +892,35 @@ class IOCStart(object):
 
         return mac_a, mac_b
 
-    @staticmethod
-    def __generate_dhcp_ruleset():
+    def __generate_devfs_ruleset(self):
         """
         Will add the bpf ruleset to the hosts /etc/devfs.rules if it doesn't
         exist, otherwise it will do nothing.
         """
         devfs_cmd = ["service", "devfs", "restart"]
         devfs_dict = {
-            'zfs': None,
-            'bpf*': None
+            'zfs': None
         }
         devfs_includes = [
             '$devfsrules_hide_all',
             '$devfsrules_unhide_basic',
             '$devfsrules_unhide_login'
         ]
+        name = f'{self.uuid}_ruleset'
+        comment = f"## IOCAGE -- {self.uuid} ruleset"
+
+        # We may end up setting all of these.
+        if self.conf['allow_tun'] == '1':
+            devfs_dict['tun*'] = None
+        if self.conf['dhcp'] == 'on':
+            devfs_dict['bpf*'] = None
 
         with open("/etc/devfs.rules", "a+") as devfs:
             devfs_str, devfs_rule = iocage_lib.ioc_common.construct_devfs(
-                'devfsrules_jail_dhcp',
+                name,
                 paths=devfs_dict,
                 includes=devfs_includes,
-                comment='## IOCAGE -- Add DHCP to ruleset 4'
+                comment=comment
             )
 
             if devfs_str is not None:
