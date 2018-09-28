@@ -53,30 +53,7 @@ class IOCCheck(object):
                     "iocage/templates")
 
         zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
-        zpools = zfs.pools
-        iocage_datasets = []
-
-        for p in zpools:
-            try:
-                z = zfs.get_dataset(f"{p.name}/iocage")
-                iocage_datasets.append(z)
-            except libzfs.ZFSException:
-                # Doesn't exist, that's fine
-
-                continue
-
         pool = zfs.get(self.pool)
-        altroot = pool.properties["altroot"].value
-        dataset_mounts = []
-
-        for ds in iocage_datasets:
-            mount = ds.mountpoint
-
-            mountpoint = mount if altroot != "-" else f"{altroot}{mount}"
-            dataset_mounts.append(mountpoint)
-
-        has_duplicates = True if len(dataset_mounts) != len(
-            set(dataset_mounts)) else False
 
         for dataset in datasets:
             zfs_dataset_name = f"{self.pool}/{dataset}"
@@ -101,11 +78,6 @@ class IOCCheck(object):
                     "aclmode": "passthrough",
                     "aclinherit": "passthrough"
                 }
-
-                if dataset == "iocage" and not has_duplicates:
-                    dataset_options["mountpoint"] = "/iocage"
-                elif dataset == "iocage" and has_duplicates:
-                    dataset_options["mountpoint"] = f"/{self.pool}/iocage"
 
                 pool.create(zfs_dataset_name, dataset_options)
                 ds = zfs.get_dataset(zfs_dataset_name)
