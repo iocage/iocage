@@ -631,8 +631,8 @@ class IOCCreate(object):
         while True:
             pkg_install = su.run(["pkg-static", "-j", jid, "install", "-q",
                                   "-y", "pkg"],
-                                 stdout=su.DEVNULL,
-                                 stderr=su.DEVNULL)
+                                 stdout=su.PIPE,
+                                 stderr=su.STDOUT)
             pkg_err = pkg_install.returncode
 
             if pkg_err == 0:
