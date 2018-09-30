@@ -223,8 +223,8 @@ class IOCList(object):
                     interface = f"{interface.replace('vnet', 'epair')}b"
 
                 short_ip4 = "DHCP"
-                full_ip4_cmd = ["jexec", f"ioc-{uuid_full}", "ifconfig",
-                                interface, "inet"]
+                full_ip4_cmd = ["jexec", f"ioc-{uuid_full.replace('.', '_')}",
+                                "ifconfig", interface, "inet"]
                 out = su.check_output(full_ip4_cmd)
                 full_ip4 = f"{interface}|" \
                     f"{out.splitlines()[2].split()[1].decode()}"

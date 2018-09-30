@@ -614,7 +614,8 @@ fingerprint: {fingerprint}
                         interface = f"{interface.replace('vnet', 'epair')}b"
 
                     ip4_cmd = [
-                        "jexec", f"ioc-{uuid}", "ifconfig", interface, "inet"
+                        "jexec", f"ioc-{uuid.replace('.', '_')}",
+                        "ifconfig", interface, "inet"
                     ]
                     out = su.check_output(ip4_cmd).decode()
                     ip = f"{out.splitlines()[2].split()[1]}"

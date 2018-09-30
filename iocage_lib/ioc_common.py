@@ -36,6 +36,7 @@ import requests
 import datetime as dt
 import re
 import shlex
+import glob
 
 
 def callback(_log, callback_exception):
@@ -743,3 +744,29 @@ def runscript(script):
         return True, out.rstrip("\n")
 
     return True, None
+
+
+def match_to_dir(iocroot, uuid, rename=None):
+    """
+    Checks for existence of jail/template with specified uuid.
+    Replaces dots and underscores in the uuid with pattern [._] and returns
+    the template- or jail directory that matches, or returns None if no match
+    was found.
+    Background: jail(8) doesn't allow dots in the name, they will be replaced
+    with underscores. Because of this, foo.bar and foo_bar will be considered
+    identical, as they cannot coexist.
+    """
+    uuid = uuid.replace(".", "_").replace("_", "[._]")
+    matches = glob.glob(f"{iocroot}/jails/{uuid}") \
+        + glob.glob(f"{iocroot}/templates/{uuid}")
+
+    if rename:
+        try:
+            matches.remove(rename)
+        except ValueError:
+            pass
+
+    if matches:
+        return matches[0]
+    else:
+        return None
