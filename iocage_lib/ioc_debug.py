@@ -116,7 +116,7 @@ class IOCDebug(object):
 
     def __execute_debug__(self, command, jail=None, jexec=False):
         if jail is not None and jexec:
-            jail_cmd = ['jexec', f'ioc-{jail}']
+            jail_cmd = ['jexec', f'ioc-{jail.replace(".", "_")}']
             command = jail_cmd + command
 
         cmd_stdout = su.run(command, stdout=su.PIPE, stderr=su.STDOUT)

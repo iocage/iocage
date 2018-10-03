@@ -223,8 +223,8 @@ class IOCList(object):
                     interface = f"{interface.replace('vnet', 'epair')}b"
 
                 short_ip4 = "DHCP"
-                full_ip4_cmd = ["jexec", f"ioc-{uuid_full}", "ifconfig",
-                                interface, "inet"]
+                full_ip4_cmd = ["jexec", f"ioc-{uuid_full.replace('.', '_')}",
+                                "ifconfig", interface, "inet"]
                 try:
                     out = su.check_output(full_ip4_cmd)
                 except su.CalledProcessError as e:
