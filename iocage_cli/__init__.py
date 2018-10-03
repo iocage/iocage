@@ -22,23 +22,38 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """The main CLI for ioc."""
+import typing
+
 import locale
-import logging
-import logging.config
-import logging.handlers
 import os
 import re
 import signal
-import subprocess as su
+import subprocess
 import sys
-
 import click
+
+# v1
+import logging
+import logging.config
+import logging.handlers
 import coloredlogs
 import iocage_lib.ioc_check as ioc_check
-# This prevents it from getting in our way.
-from click import core
 
-core._verify_python3_env = lambda: None
+# v2
+from iocage.Logger import Logger
+from iocage.events import IocageEvent
+from iocage.errors import (
+    InvalidLogLevel,
+    IocageNotActivated,
+    ZFSSourceMountpoint
+)
+from iocage.ZFS import get_zfs
+from iocage.Datasets import Datasets
+from iocage.Host import HostGenerator
+
+logger = Logger()
+
+click.core._verify_python3_env = lambda: None  # type: ignore
 user_locale = os.environ.get("LANG", "en_US.UTF-8")
 locale.setlocale(locale.LC_ALL, user_locale)
 
@@ -51,11 +66,16 @@ signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 # @formatter:on
 
 try:
-    su.check_call(
-        ["sysctl", "vfs.zfs.version.spa"], stdout=su.PIPE, stderr=su.PIPE)
-except su.CalledProcessError:
-    sys.exit("ZFS is required to use iocage.\n"
-             "Try calling 'kldload zfs' as root.")
+    subprocess.check_call(
+        ["sysctl", "vfs.zfs.version.spa"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+except subprocess.CalledProcessError:
+    sys.exit(
+        "ZFS is required to use iocage.\n"
+        "Try calling 'kldload zfs' as root."
+    )
 
 
 def print_version(ctx, param, value):
@@ -147,6 +167,60 @@ class IOCLogger(object):
 cmd_folder = os.path.abspath(os.path.dirname(__file__))
 
 
+def print_events(
+    generator: typing.Generator[typing.Union[IocageEvent, bool], None, None]
+) -> typing.Optional[bool]:
+
+    lines: typing.Dict[str, str] = {}
+    for event in generator:
+
+        if isinstance(event, bool):
+            # a boolean terminates the event stream
+            return event
+
+        if event.identifier is None:
+            identifier = "generic"
+        else:
+            identifier = event.identifier
+
+        if event.type not in lines:
+            lines[event.type] = {}
+
+        # output fragments
+        running_indicator = "+" if (event.done or event.skipped) else "-"
+        name = event.type
+        if event.identifier is not None:
+            name += f"@{event.identifier}"
+
+        output = f"[{running_indicator}] {name}: "
+
+        if event.message is not None:
+            output += event.message
+        else:
+            output += event.get_state_string(
+                done="OK",
+                error="FAILED",
+                skipped="SKIPPED",
+                pending="..."
+            )
+
+        if event.duration is not None:
+            output += " [" + str(round(event.duration, 3)) + "s]"
+
+        # new line or update of previous
+        if identifier not in lines[event.type]:
+            # Indent if previous task is not finished
+            lines[event.type][identifier] = logger.screen(
+                output,
+                indent=event.parent_count
+            )
+        else:
+            lines[event.type][identifier].edit(
+                output,
+                indent=event.parent_count
+            )
+
+
 class IOCageCLI(click.MultiCommand):
 
     """
@@ -176,11 +250,13 @@ class IOCageCLI(click.MultiCommand):
                             sys.exit("You need to have root privileges to"
                                      f" run {mod_name}")
             except AttributeError:
+                raise
                 # It's not a root required command.
                 pass
 
             return mod.cli
         except (ImportError, AttributeError):
+            raise
             return
 
 
@@ -192,12 +268,54 @@ class IOCageCLI(click.MultiCommand):
     callback=print_version,
     help="Display iocage's version and exit.")
 @click.option(
+    "--log-level",
+    "-d",
+    default=None,
+    help=(
+        f"Set the CLI log level {Logger.LOG_LEVELS}"
+    )
+)
+@click.option(
+    "--source",
+    multiple=True,
+    type=str,
+    help="Globally override the activated iocage dataset(s)"
+)
+@click.option(
     "--force",
     "-f",
     is_flag=True,
     help="Allow iocage to rename datasets.")
-def cli(version, force):
+@click.pass_context
+def cli(ctx, version: bool, log_level: str, source: set, force: bool) -> None:
     """A jail manager."""
+    if log_level is not None:
+        try:
+            logger.print_level = log_level
+        except InvalidLogLevel:
+            exit(1)
+    ctx.logger = logger
+    ctx.zfs = get_zfs(logger=ctx.logger)
+    ctx.user_sources = None if (len(source) == 0) else set_to_dict(source)
+
+    if ctx.invoked_subcommand in ["activate", "deactivate"]:
+        return
+
+    try:
+        datasets = Datasets(
+            sources=ctx.user_sources,
+            zfs=ctx.zfs,
+            logger=ctx.logger
+        )
+        ctx.host = HostGenerator(
+            datasets=datasets,
+            logger=ctx.logger,
+            zfs=ctx.zfs
+        )
+    except (IocageNotActivated, ZFSSourceMountpoint):
+        exit(1)
+
+    # v1
     IOCLogger()
     skip_check = False
     os.environ["IOCAGE_SKIP"] = "FALSE"
