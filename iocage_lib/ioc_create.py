@@ -104,13 +104,13 @@ class IOCCreate(object):
         start = False
         is_template = False
 
-        if os.path.isdir(location) or os.path.isdir(
-                f"{self.iocroot}/templates/{jail_uuid}"):
+        if iocage_lib.ioc_common.match_to_dir(self.iocroot, jail_uuid):
             if not self.plugin:
                 raise RuntimeError(f"Jail: {jail_uuid} already exists!")
 
             for i in itertools.count(start=2, step=1):
-                if os.path.isdir(f'{location}_{i}'):
+                if iocage_lib.ioc_common.match_to_dir(self.iocroot,
+                                                      f'{jail_uuid}_{i}'):
                     continue
 
                 # They now have a uniquely named plugin
