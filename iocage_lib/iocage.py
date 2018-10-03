@@ -1164,7 +1164,8 @@ class IOCage(object):
 
         new_mountpoint = f"{self.iocroot}/{_folders[0]}/{new_name}"
 
-        if ioc_common.match_to_dir(self.iocroot, new_name, old_mountpoint):
+        if ioc_common.match_to_dir(self.iocroot, new_name,
+                                   old_uuid=old_mountpoint):
 
             ioc_common.logit(
                 {

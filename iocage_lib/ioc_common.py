@@ -746,7 +746,7 @@ def runscript(script):
     return True, None
 
 
-def match_to_dir(iocroot, uuid, rename=None):
+def match_to_dir(iocroot, uuid, old_uuid=None):
     """
     Checks for existence of jail/template with specified uuid.
     Replaces dots and underscores in the uuid with pattern [._] and returns
@@ -760,9 +760,9 @@ def match_to_dir(iocroot, uuid, rename=None):
     matches = glob.glob(f"{iocroot}/jails/{uuid}") \
         + glob.glob(f"{iocroot}/templates/{uuid}")
 
-    if rename:
+    if old_uuid:
         try:
-            matches.remove(rename)
+            matches.remove(old_uuid)
         except ValueError:
             pass
 
