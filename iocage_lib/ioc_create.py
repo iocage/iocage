@@ -358,7 +358,7 @@ class IOCCreate(object):
                 is_template = True
 
             try:
-                iocjson.json_check_prop(key, value, config)
+                value, config = iocjson.json_check_prop(key, value, config)
 
                 config[key] = value
             except RuntimeError as err:
