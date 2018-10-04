@@ -1268,6 +1268,32 @@ class IOCJson(object):
                             conf[key] = value
                     except ValueError:
                         pass
+                elif key in [f'vnet{i}_mac' for i in range(0, 4)]:
+                    if value and value != 'none':
+                        value = value.replace(',', ' ')
+                        if (
+                            any(
+                                not re.match(
+                                    "[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$",
+                                    v.lower()
+                                ) for v in value.split()
+                            ) or
+                            len(value.split()) != 2 or
+                            any(value.split().count(v) > 1 for v in value.split())
+                        ):
+                            iocage_lib.ioc_common.logit(
+                                {
+                                    'level': 'EXCEPTION',
+                                    'message': 'Please Enter two valid and different '
+                                               f'space/comma-delimited MAC addresses for {key}.'
+                                },
+                                _callback=self.callback,
+                                silent=self.silent
+                            )
+                    elif not value:
+                        # Let's standardise the value to none in case
+                        # vnetX_mac is not provided
+                        value = 'none'
                 elif key == 'vnet_default_interface' and value != 'none':
                     if value not in netifaces.interfaces():
                         iocage_lib.ioc_common.logit(

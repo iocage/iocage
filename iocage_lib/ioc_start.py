@@ -63,6 +63,7 @@ class IOCStart(object):
                                                    silent=True).json_get_value
             self.set = iocage_lib.ioc_json.IOCJson(self.path,
                                                    silent=True).json_set_value
+
             self.exec_fib = self.conf["exec_fib"]
             self.__start_jail__()
         except TypeError:
@@ -1002,6 +1003,7 @@ class IOCStart(object):
                 default_if = self.get('vnet_default_interface')
                 if default_if == 'none':
                     default_if = self.get_default_gateway()[1]
+
                 bridge_cmd = [
                     "ifconfig", bridge, "create", "addm", default_if
                 ]
@@ -1014,7 +1016,6 @@ class IOCStart(object):
             pass
 
         memberif = self.get_bridge_members(bridge)
-
         if not memberif:
             return '1500'
 
