@@ -21,77 +21,229 @@
 # STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""list module for the cli."""
+"""List jails, releases and templates with the CLI."""
 import click
-import iocage_lib.ioc_common as ioc_common
-import iocage_lib.iocage as ioc
+import json
+import typing
+
+import iocage.errors
+import iocage.Logger
+import iocage.Host
+import iocage.Resource
+import iocage.ListableResource
+import iocage.Jails
+import iocage.Releases
+
+from .shared.output import print_table
+from .shared.click import IocageClickContext
+
+__rootcmd__ = True
+
+supported_output_formats = ['table', 'csv', 'list', 'json']
 
 
 @click.command(
     name="list",
-    help="List a specified dataset type, by default lists all jails.")
+    help="List a specified dataset type, by default lists all jails."
+)
+@click.pass_context
 @click.option("--release", "--base", "-r", "-b", "dataset_type",
               flag_value="base", help="List all bases.")
-@click.option("--template", "-t", "dataset_type", flag_value="template",
-              help="List all templates.")
-@click.option("--header", "-h", "-H", is_flag=True, default=True,
-              help="For scripting, use tabs for separators.")
+@click.option("--template", "-t", "dataset_type",
+              flag_value="template", help="List all templates.")
+@click.option("--dataset", "-d", "dataset_type",
+              flag_value="datasets", help="List all root data sources.")
 @click.option("--long", "-l", "_long", is_flag=True, default=False,
               help="Show the full uuid and ip4 address.")
-@click.option("--remote", "-R", is_flag=True,
-              help="Show remote's available RELEASEs.")
-@click.option("--plugins", "-P", is_flag=True, help="Show available plugins.")
-@click.option("--http", default=True, help="Have --remote use HTTP instead.",
-              is_flag=True)
-@click.option("--sort", "-s", "_sort", default="name", nargs=1,
+@click.option("--remote", "-R",
+              is_flag=True, help="Show remote's available RELEASEs.")
+@click.option("--sort", "-s", "_sort", default=None, nargs=1,
               help="Sorts the list by the given type")
-@click.option("--quick", "-q", is_flag=True, default=False,
-              help="Lists all jails with less processing and fields.")
-@click.option("--official", "-O", is_flag=True, default=False,
-              help="Lists only official plugins.")
-def cli(dataset_type, header, _long, remote, http, plugins, _sort, quick,
-        official):
-    """This passes the arg and calls the jail_datasets function."""
-    freebsd_version = ioc_common.checkoutput(["freebsd-version"])
-    iocage = ioc.IOCage(skip_jails=True)
+@click.option("--output", "-o", default=None)
+@click.option("--output-format", "-f", default="table",
+              type=click.Choice(supported_output_formats))
+@click.option("--header/--no-header", "-H/-NH", is_flag=True, default=True,
+              help="Show or hide column name heading.")
+@click.argument("filters", nargs=-1)
+def cli(
+    ctx: IocageClickContext,
+    dataset_type: str,
+    header: bool,
+    _long: bool,
+    remote: bool,
+    _sort: typing.Optional[str],
+    output: typing.Optional[str],
+    output_format: str,
+    filters: typing.Tuple[str, ...]
+) -> None:
+    """List jails in various formats."""
+    logger = ctx.parent.logger
+    host: iocage.Host.HostGenerator = ctx.parent.host
 
-    if dataset_type is None:
-        dataset_type = "all"
+    if output is not None and _long is True:
+        logger.error("--output and --long can't be used together")
+        exit(1)
 
-    if remote and not plugins:
-        if "HBSD" in freebsd_version:
-            hardened = True
+    if output_format != "table" and _sort is not None:
+        # Sorting destroys the ability to stream generators
+        # ToDo: Figure out if we need to sort other output formats as well
+        raise Exception("Sorting only allowed for tables")
+
+    # empty filters will match all jails
+    if len(filters) == 0:
+        filters += ("*",)
+
+    columns: typing.List[str] = []
+
+    try:
+
+        if (dataset_type == "base") and (remote is True):
+            columns = ["name", "eol"]
+            resources = host.distribution.releases
+
         else:
-            hardened = False
 
-        _list = iocage.fetch(
-            list=True, remote=True, http=http, hardened=hardened)
-        header = False
-
-    if plugins and remote:
-        _list = iocage.fetch(
-            list=True,
-            remote=True,
-            header=header,
-            _long=_long,
-            plugin_file=True,
-            official=official)
-    elif not remote:
-        _list = iocage.list(
-            dataset_type, header, _long, _sort, plugin=plugins, quick=quick)
-
-    if not header:
-        if dataset_type == "base":
-            for item in _list:
-                ioc_common.logit({"level": "INFO", "message": item})
-        else:
-            for item in _list:
-                if remote and not plugins:
-                    ioc_common.logit({"level": "INFO", "message": item})
+            if (dataset_type == "base"):
+                resources_class = iocage.Releases.ReleasesGenerator
+                columns = ["full_name"]
+            elif (dataset_type == "datasets"):
+                resources_class = None
+                columns = ["name", "dataset"]
+                resources = [
+                    dict(name=name, dataset=root_datasets.root.name)
+                    for name, root_datasets
+                    in host.datasets.items()
+                ]
+            else:
+                resources_class = iocage.Jails.JailsGenerator
+                columns = _list_output_comumns(output, _long)
+                if dataset_type == "template":
+                    filters += ("template=yes",)
                 else:
-                    ioc_common.logit({
-                        "level": "INFO",
-                        "message": "\t".join(item)
-                    })
+                    filters += ("template=no,-",)
+
+            if resources_class is not None:
+                resources = resources_class(
+                    logger=logger,
+                    host=host,
+                    zfs=ctx.parent.zfs,
+                    # ToDo: allow quoted whitespaces from user inputs
+                    filters=filters
+                )
+
+    except iocage.errors.IocageException:
+        exit(1)
+
+    if output_format == "list":
+        _print_list(resources, columns, header, "\t")
+    elif output_format == "csv":
+        _print_list(resources, columns, header, ";")
+    elif output_format == "json":
+        _print_json(resources, columns)
     else:
-        ioc_common.logit({"level": "INFO", "message": _list})
+        _print_table(resources, columns, header, _sort)
+
+
+def _print_table(
+    resources: typing.Generator[
+        iocage.ListableResource.ListableResource,
+        None,
+        None
+    ],
+    columns: list,
+    show_header: bool,
+    sort_key: typing.Optional[str]=None
+) -> None:
+
+    table_data = []
+    for resource in resources:
+        table_data.append(_lookup_resource_values(resource, columns))
+
+    print_table(table_data, columns, show_header, sort_key)
+
+
+def _print_list(
+    resources: typing.Generator[
+        iocage.Jails.JailsGenerator,
+        None,
+        None
+    ],
+    columns: list,
+    show_header: bool,
+    separator: str=";"
+) -> None:
+
+    if show_header is True:
+        print(separator.join(columns).upper())
+
+    for resource in resources:
+        print(separator.join(_lookup_resource_values(resource, columns)))
+
+
+def _print_json(
+    resources: typing.Generator[
+        iocage.Jails.JailsGenerator,
+        None,
+        None
+    ],
+    columns: list,
+    # json.dumps arguments
+    indent: int=2,
+    sort_keys: bool=True
+) -> None:
+
+    output = []
+    for resource in resources:
+        output.append(dict(zip(
+            columns,
+            _lookup_resource_values(resource, columns)
+        )))
+
+    print(json.dumps(
+        output,
+        indent=indent,
+        sort_keys=sort_keys
+    ))
+
+
+def _lookup_resource_values(
+    resource: 'iocage.Resource.Resource',
+    columns: typing.List[str]
+) -> typing.List[str]:
+    if "getstring" in resource.__dir__():
+        return list(map(
+            lambda column: str(resource.getstring(column)),
+            columns
+        ))
+    else:
+        return list(map(
+            lambda column: str(resource[column]),
+            columns
+        ))
+
+
+def _list_output_comumns(
+    user_input: typing.Optional[str]="",
+    long_mode: bool=False
+) -> typing.List[str]:
+
+    if user_input is not None:
+        return user_input.strip().split(',')
+    else:
+        columns = ["jid", "full_name"]
+
+        if long_mode is True:
+            columns += [
+                "running",
+                "release",
+                "ip4_addr",
+                "ip6_addr"
+            ]
+        else:
+            columns += [
+                "running",
+                "release",
+                "ip4_addr"
+            ]
+
+        return columns
