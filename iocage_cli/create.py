@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2017, iocage
+# Copyright (c) 2014-2018, iocage
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -105,6 +105,10 @@ def cli(release, template, count, props, pkglist, basejail, thickjail, empty,
         })
     elif release and release.lower() == "latest":
         release = ioc_common.parse_latest_release()
+
+    if release:
+        release = release.upper()
+        ioc_common.check_release_newer(release)
 
     # We don't really care it's not a RELEASE at this point.
     release = template if template else release

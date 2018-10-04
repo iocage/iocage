@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2017, iocage
+# Copyright (c) 2014-2018, iocage
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -44,6 +44,7 @@ import iocage_lib.ioc_start as ioc_start
 import iocage_lib.ioc_stop as ioc_stop
 import iocage_lib.ioc_upgrade as ioc_upgrade
 import iocage_lib.ioc_debug as ioc_debug
+import iocage_lib.ioc_exceptions as ioc_exceptions
 import libzfs
 
 
@@ -135,6 +136,7 @@ class IOCage(object):
         self._all = True if self.jail and 'ALL' in self.jail else False
         self.callback = callback
         self.silent = silent
+        self.is_depend = False
 
     def __all__(self, jail_order, action):
         # So we can properly start these.
@@ -1162,8 +1164,8 @@ class IOCage(object):
 
         new_mountpoint = f"{self.iocroot}/{_folders[0]}/{new_name}"
 
-        if (os.path.isdir(new_mountpoint) or
-                os.path.isdir(f"{self.iocroot}/{_folders[1]}/{new_name}")):
+        if ioc_common.match_to_dir(self.iocroot, new_name,
+                                   old_uuid=old_mountpoint):
 
             ioc_common.logit(
                 {
@@ -1617,15 +1619,23 @@ class IOCage(object):
             if not err:
                 for depend in depends:
                     if depend != "none":
-                        self.jail = depend
-                        self.start()
+                        try:
+                            self.jail = depend
+                            _is_depend = self.is_depend
+                            self.is_depend = True
+                            self.start(depend)
+                        except ioc_exceptions.JailRunning:
+                            pass
+                        finally:
+                            self.is_depend = _is_depend
 
                 ioc_start.IOCStart(
                     uuid,
                     path,
                     conf,
                     silent=self.silent,
-                    callback=self.callback
+                    callback=self.callback,
+                    is_depend=self.is_depend
                 )
 
                 return False, None

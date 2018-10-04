@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2017, iocage
+# Copyright (c) 2014-2018, iocage
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -25,7 +25,6 @@
 import hashlib
 import logging
 import os
-import re
 import shutil
 import subprocess as su
 import tarfile
@@ -325,7 +324,7 @@ class IOCFetch(object):
         root-directory containing the release tree that looks like so:
             - XX.X-RELEASE
             - XX.X-RELEASE
-            - XX.X_RELEASE
+            - XX.X-RELEASE
         """
 
         if self.hardened:
@@ -389,7 +388,7 @@ class IOCFetch(object):
     pointing to a top-level directory with the format:
         - XX.X-RELEASE
         - XX.X-RELEASE
-        - XX.X_RELEASE
+        - XX.X-RELEASE
     """
                         },
                         _callback=self.callback,
@@ -456,7 +455,7 @@ class IOCFetch(object):
     pointing to a top-level directory with the format:
         - XX.X-RELEASE
         - XX.X-RELEASE
-        - XX.X_RELEASE
+        - XX.X-RELEASE
     """
                         },
                         _callback=self.callback,

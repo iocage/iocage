@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2017, iocage
+# Copyright (c) 2014-2018, iocage
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -170,7 +170,8 @@ class IOCList(object):
             ip6 = conf["ip6_addr"]
 
             try:
-                short_ip4 = full_ip4.split("|")[1].split("/")[0]
+                short_ip4 = ",".join([item.split("|")[1].split("/")[0]
+                                      for item in full_ip4.split(",")])
             except IndexError:
                 short_ip4 = full_ip4 if full_ip4 != "none" else "-"
 
@@ -222,8 +223,8 @@ class IOCList(object):
                     interface = f"{interface.replace('vnet', 'epair')}b"
 
                 short_ip4 = "DHCP"
-                full_ip4_cmd = ["jexec", f"ioc-{uuid_full}", "ifconfig",
-                                interface, "inet"]
+                full_ip4_cmd = ["jexec", f"ioc-{uuid_full.replace('.', '_')}",
+                                "ifconfig", interface, "inet"]
                 try:
                     out = su.check_output(full_ip4_cmd)
                 except su.CalledProcessError as e:

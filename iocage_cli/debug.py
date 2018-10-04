@@ -26,6 +26,8 @@
 import click
 import iocage_lib.iocage as ioc
 
+__rootcmd__ = True
+
 
 @click.command(name="debug", help="Create a directory with all the debug"
                " for iocage jails.")

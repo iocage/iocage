@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2017, iocage
+# Copyright (c) 2014-2018, iocage
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -36,6 +36,7 @@ import requests
 import datetime as dt
 import re
 import shlex
+import glob
 
 
 def callback(_log, callback_exception):
@@ -43,6 +44,7 @@ def callback(_log, callback_exception):
     log = logging.getLogger("iocage")
     level = _log["level"]
     message = _log["message"]
+    force_raise = _log.get("force_raise")
 
     if level == 'CRITICAL':
         log.critical(message)
@@ -64,7 +66,10 @@ def callback(_log, callback_exception):
                 raise callback_exception(message)
             else:
                 log.error(message)
-                raise SystemExit(1)
+                if force_raise:
+                    raise callback_exception(message)
+                else:
+                    raise SystemExit(1)
         except AttributeError:
             # They are lacking the fileno object
             raise callback_exception(message)
@@ -739,3 +744,29 @@ def runscript(script):
         return True, out.rstrip("\n")
 
     return True, None
+
+
+def match_to_dir(iocroot, uuid, old_uuid=None):
+    """
+    Checks for existence of jail/template with specified uuid.
+    Replaces dots and underscores in the uuid with pattern [._] and returns
+    the template- or jail directory that matches, or returns None if no match
+    was found.
+    Background: jail(8) doesn't allow dots in the name, they will be replaced
+    with underscores. Because of this, foo.bar and foo_bar will be considered
+    identical, as they cannot coexist.
+    """
+    uuid = uuid.replace(".", "_").replace("_", "[._]")
+    matches = glob.glob(f"{iocroot}/jails/{uuid}") \
+        + glob.glob(f"{iocroot}/templates/{uuid}")
+
+    if old_uuid:
+        try:
+            matches.remove(old_uuid)
+        except ValueError:
+            pass
+
+    if matches:
+        return matches[0]
+    else:
+        return None

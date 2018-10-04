@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2017, iocage
+# Copyright (c) 2014-2018, iocage
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -75,7 +75,7 @@ class IOCPlugin(object):
             freebsd_version = su.run(['freebsd-version'],
                                      stdout=su.PIPE,
                                      stderr=su.STDOUT)
-            r = freebsd_version.stdout.decode().rstrip().rsplit('-', 1)[0]
+            r = freebsd_version.stdout.decode().rstrip().split('-', 1)[0]
 
             self.branch = f'{r}-RELEASE' if '.' in r else f'{r}.0-RELEASE'
         elif self.branch is None and self.hardened:
@@ -614,7 +614,8 @@ fingerprint: {fingerprint}
                         interface = f"{interface.replace('vnet', 'epair')}b"
 
                     ip4_cmd = [
-                        "jexec", f"ioc-{uuid}", "ifconfig", interface, "inet"
+                        "jexec", f"ioc-{uuid.replace('.', '_')}",
+                        "ifconfig", interface, "inet"
                     ]
                     out = su.check_output(ip4_cmd).decode()
                     ip = f"{out.splitlines()[2].split()[1]}"
@@ -1234,12 +1235,13 @@ fingerprint: {fingerprint}
         """
         try:
             with open('/dev/null', 'wb') as devnull:
-                porcelain.pull(destination, repo_url, errstream=devnull)
+                porcelain.pull(destination, repo_url, outstream=devnull,
+                               errstream=devnull)
                 repo = porcelain.open_repo(destination)
         except dulwich.errors.NotGitRepository:
             with open('/dev/null', 'wb') as devnull:
                 repo = porcelain.clone(
-                    repo_url, destination, errstream=devnull
+                    repo_url, destination, outstream=devnull, errstream=devnull
                 )
 
         remote_refs = porcelain.fetch(repo, repo_url)

@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2017, iocage
+# Copyright (c) 2014-2018, iocage
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -104,13 +104,13 @@ class IOCCreate(object):
         start = False
         is_template = False
 
-        if os.path.isdir(location) or os.path.isdir(
-                f"{self.iocroot}/templates/{jail_uuid}"):
+        if iocage_lib.ioc_common.match_to_dir(self.iocroot, jail_uuid):
             if not self.plugin:
                 raise RuntimeError(f"Jail: {jail_uuid} already exists!")
 
             for i in itertools.count(start=2, step=1):
-                if os.path.isdir(f'{location}_{i}'):
+                if iocage_lib.ioc_common.match_to_dir(self.iocroot,
+                                                      f'{jail_uuid}_{i}'):
                     continue
 
                 # They now have a uniquely named plugin
@@ -358,7 +358,7 @@ class IOCCreate(object):
                 is_template = True
 
             try:
-                value, config = iocjson.json_check_prop(key, value, config)
+                iocjson.json_check_prop(key, value, config)
 
                 config[key] = value
             except RuntimeError as err:
@@ -548,7 +548,7 @@ class IOCCreate(object):
                 repo = r.group(3)
 
         # Connectivity test courtesy David Cottlehuber off Google Group
-        # XXX Why are we using drill? Why can't we use python's dns.resolver here? XXX
+        # TODO: Use python's dns.resolver here?
         srv_connect_cmd = ["drill", "-t", f"_http._tcp.{repo} SRV"]
         dnssec_connect_cmd = ["drill", "-D", f"{repo}"]
         dns_connect_cmd = ["drill", f"{repo}"]

@@ -41,7 +41,7 @@ To get started, open a command line and type
 be a valid IP not already in use. Use the *- -name* flag to easily fetch a
 specific plugin:
 
-:samp:`$ iocage fetch --plugins --name plexmediaserver ip4_address="igb0|192.168.0.91"`
+:samp:`$ iocage fetch --plugins --name plexmediaserver ip4_addr="igb0|192.168.0.91"`
 
 If available, plugins can also be fetched locally with
 :command:`iocage fetch -P the/path/to/plugin.json ip4_addr="re0|192.168.0.100"`

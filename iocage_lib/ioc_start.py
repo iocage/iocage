@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2017, iocage
+# Copyright (c) 2014-2018, iocage
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -35,6 +35,7 @@ import iocage_lib.ioc_common
 import iocage_lib.ioc_json
 import iocage_lib.ioc_list
 import iocage_lib.ioc_stop
+import iocage_lib.ioc_exceptions as ioc_exceptions
 
 
 class IOCStart(object):
@@ -46,12 +47,13 @@ class IOCStart(object):
     """
 
     def __init__(self, uuid, path, conf, silent=False,
-                 callback=None):
+                 callback=None, is_depend=False):
         self.uuid = uuid.replace(".", "_")
         self.path = path
         self.conf = conf
         self.callback = callback
         self.silent = silent
+        self.is_depend = is_depend
 
         try:
             self.pool = iocage_lib.ioc_json.IOCJson(" ").json_get_value("pool")
@@ -89,9 +91,11 @@ class IOCStart(object):
             msg = f"{self.uuid} is already running!"
             iocage_lib.ioc_common.logit({
                 "level": "EXCEPTION",
-                "message": msg
+                "message": msg,
+                "force_raise": self.is_depend
             }, _callback=self.callback,
-                silent=self.silent)
+                silent=self.silent,
+                exception=ioc_exceptions.JailRunning)
 
         if self.conf["hostid_strict_check"] == "on":
             with open("/etc/hostid", "r") as _file:
@@ -103,7 +107,7 @@ class IOCStart(object):
                                " 'hostid_strict_check' is on!"
                                " - Not starting jail"
                 }, _callback=self.callback, silent=self.silent)
-            return
+                return
 
         mount_procfs = self.conf["mount_procfs"]
         host_domainname = self.conf["host_domainname"]
@@ -445,12 +449,22 @@ class IOCStart(object):
                         # Jails default is epairNb
                         interface = f"{interface.replace('vnet', 'epair')}b"
 
-                    cmd = ["jexec", f"ioc-{self.uuid}", "ifconfig", "-f",
-                           "inet:cidr",
+                    # We'd like to use ifconfig -f inet:cidr here,
+                    # but only FreeBSD 11.0 and newer support it...
+                    cmd = ["jexec", f"ioc-{self.uuid}", "ifconfig",
                            interface, "inet"]
                     out = su.check_output(cmd)
 
-                    addr = f"{out.splitlines()[2].split()[1].decode()}"
+                    # ...so we extract the ip4 address and mask,
+                    # and calculate cidr manually
+                    addr_split = out.splitlines()[2].split()
+                    ip4_addr = addr_split[1].decode()
+                    hexmask = addr_split[3].decode()
+                    maskcidr = sum([bin(int(hexmask, 16)).count("1")])
+
+                    addr = f"{ip4_addr}/{maskcidr}"
+                except su.CalledProcessError:
+                    failed_dhcp = True
 
                     if "0.0.0.0" in addr:
                         failed_dhcp = True
@@ -753,7 +767,6 @@ class IOCStart(object):
             )
 
             try:
-                # Host
                 # Host interface as supplied by user also needs to be on the bridge
                 iocage_lib.ioc_common.checkoutput(
                     ["ifconfig", bridge, "addm", vnet_default_interface],
@@ -990,7 +1003,6 @@ class IOCStart(object):
                 default_if = self.get('vnet_default_interface')
                 if default_if == 'none':
                     default_if = self.get_default_gateway()[1]
-
                 bridge_cmd = [
                     "ifconfig", bridge, "create", "addm", default_if
                 ]
@@ -1003,6 +1015,7 @@ class IOCStart(object):
             pass
 
         memberif = self.get_bridge_members(bridge)
+
         if not memberif:
             return '1500'
 

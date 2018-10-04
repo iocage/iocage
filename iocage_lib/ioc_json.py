@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2017, iocage
+# Copyright (c) 2014-2018, iocage
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -76,7 +76,7 @@ class IOCJson(object):
             force_env = os.environ["IOCAGE_FORCE"]
         except KeyError:
             # FreeNAS or an API user, due to the sheer web of calls to this
-            # module we are assuming they are OK with any renaming opertaions
+            # module we are assuming they are OK with any renaming operations
 
             force_env = "TRUE"
 
@@ -154,7 +154,7 @@ class IOCJson(object):
             try:
                 self.zfs_set_property(f"{dataset}/root/data", "jailed", "off")
                 self.zfs.get_dataset(f"{dataset}/root/data").rename(
-                    f"{dataset}/data")
+                    f"{dataset}/data", False, True)
                 self.zfs_set_property(f"{dataset}/data", jail_zfs_prop,
                                       f"iocage/jails/{uuid}/data")
                 self.zfs_set_property(f"{dataset}/data", "jailed", "on")
@@ -352,7 +352,7 @@ class IOCJson(object):
                                                   f"{short_uuid}/data")
 
                             self.zfs.get_dataset(full_dataset).rename(
-                                short_dataset)
+                                short_dataset, False, True)
                             self.zfs_set_property(f"{short_dataset}/data",
                                                   "jailed", "on")
 
@@ -668,7 +668,8 @@ class IOCJson(object):
                                 _callback=self.callback)
 
                     try:
-                        self.zfs.get_dataset(old_location).rename(new_location)
+                        self.zfs.get_dataset(old_location).rename(
+                            new_location, False, True)
                     except libzfs.ZFSException as err:
                         # cannot rename
                         iocage_lib.ioc_common.logit(
@@ -710,7 +711,8 @@ class IOCJson(object):
                     return
                 elif value == "no":
                     if not _import:
-                        self.zfs.get_dataset(new_location).rename(old_location)
+                        self.zfs.get_dataset(new_location).rename(
+                            old_location, False, True)
                         conf["type"] = "jail"
                         self.location = old_location.lstrip(pool).replace(
                             "/iocage", iocroot)
@@ -1026,10 +1028,6 @@ class IOCJson(object):
         conf["hostid_strict_check"] = hostid_strict_check
 
         # Version 12 keys
-        if not conf.get('vnet_default_interface'):
-            conf['vnet_default_interface'] = 'none'
-
-        # Version 13 keys
         try:
             allow_mlock = conf["allow_mlock"]
         except KeyError:
@@ -1037,6 +1035,10 @@ class IOCJson(object):
 
         # Set all keys, even if it's the same value.
         conf["allow_mlock"] = allow_mlock
+
+        # Version 13 keys
+        if not conf.get('vnet_default_interface'):
+            conf['vnet_default_interface'] = 'none'
 
         # Version 14 keys
         if not conf.get('allow_tun'):
@@ -1198,7 +1200,7 @@ class IOCJson(object):
             "mount_procfs": ("0", "1"),
             "mount_linprocfs": ("0", "1"),
             "vnet": ("off", "on"),
-            "vnet_default_interface": ("string", ),
+            "vnet_default_interface": ("string",),
             "template": ("no", "yes"),
             "comment": ("string", ),
             "host_time": ("no", "yes"),
@@ -1266,32 +1268,6 @@ class IOCJson(object):
                             conf[key] = value
                     except ValueError:
                         pass
-                elif key in [f'vnet{i}_mac' for i in range(0, 4)]:
-                    if value and value != 'none':
-                        value = value.replace(',', ' ')
-                        if (
-                            any(
-                                not re.match(
-                                    "[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$",
-                                    v.lower()
-                                ) for v in value.split()
-                            ) or
-                            len(value.split()) != 2 or
-                            any(value.split().count(v) > 1 for v in value.split())
-                        ):
-                            iocage_lib.ioc_common.logit(
-                                {
-                                    'level': 'EXCEPTION',
-                                    'message': 'Please Enter two valid and different '
-                                               f'space/comma-delimited MAC addresses for {key}.'
-                                },
-                                _callback=self.callback,
-                                silent=self.silent
-                            )
-                    elif not value:
-                        # Let's standardise the value to none in case
-                        # vnetX_mac is not provided
-                        value = 'none'
                 elif key == 'vnet_default_interface' and value != 'none':
                     if value not in netifaces.interfaces():
                         iocage_lib.ioc_common.logit(
