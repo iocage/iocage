@@ -70,7 +70,7 @@ def cli(
 
     elif rc is True:
         if len(jails) > 0:
-            logger.error("Cannot use --rc and jail selectors simultaniously")
+            logger.error("Cannot use --rc and jail selectors simultaneously")
             exit(1)
 
         _autostop(
