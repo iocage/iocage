@@ -239,6 +239,7 @@ class IOCageCLI(click.MultiCommand):
         return rv
 
     def get_command(self, ctx, name):
+        ctx.print_events = print_events
         try:
             mod = __import__(f"iocage_cli.{name}", None, None, ["cli"])
             mod_name = mod.__name__.replace("iocage_cli.", "")
