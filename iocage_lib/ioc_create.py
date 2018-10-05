@@ -546,7 +546,9 @@ class IOCCreate(object):
         sanity checking
         """
         ioc_json = iocage_lib.ioc_json.IOCJson()
-        jail_props = ioc_json.json_check_default_config()
+        jail_props = dict(
+            CONFIG_VERSION=ioc_json.CONFIG_VERSION
+        )
 
         # Unique jail properties, they will be overridden by user supplied
         # values.

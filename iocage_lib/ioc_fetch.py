@@ -91,7 +91,6 @@ class IOCFetch(object):
         self.callback = callback
 
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
-        self.zpool = self.zfs.get(self.pool)
 
         if hardened:
             if release:
@@ -221,7 +220,6 @@ class IOCFetch(object):
 
     def fetch_release(self, _list=False):
         """Small wrapper to choose the right fetch."""
-
         if self.http and not self._file:
             if self.eol and self.verify:
                 eol = self.__fetch_eol_check__()
@@ -264,19 +262,23 @@ class IOCFetch(object):
                     _callback=self.callback,
                     silent=self.silent)
 
-            dataset = f"{self.iocroot}/download/{self.release}"
-            pool_dataset = f"{self.pool}/iocage/download/{self.release}"
+            pool_dataset_name = f"{self.pool}/iocage/download/{self.release}"
 
-            if os.path.isdir(dataset):
+            try:
+                dataset = self.zfs.get_dataset(
+                    f"{self.iocroot}/download/{self.release}"
+                )
+                return
+            except libzfs.ZFSException:
                 pass
-            else:
-                self.zpool.create(pool_dataset, {"compression": "lz4"})
-                self.zfs.get_dataset(pool_dataset).mount()
+
+            self.pool.create(pool_dataset_name, {"compression": "lz4"})
+            self.zfs.get_dataset(pool_dataset_name).mount()
 
             for f in self.files:
                 if not os.path.isfile(f):
 
-                    _dataset = self.zfs.get_dataset(pool_dataset)
+                    _dataset = self.zfs.get_dataset(pool_dataset_name)
 
                     _dataset.umount()
                     _dataset.delete()
@@ -341,6 +343,7 @@ class IOCFetch(object):
             self.server = "http://" + self.server
 
         logging.getLogger("requests").setLevel(logging.WARNING)
+        print("fetch_http_release")
 
         if self.hardened:
             if self.auth == "basic":
@@ -671,7 +674,7 @@ class IOCFetch(object):
 
             try:
                 # It may actually still exist, just unmounted.
-                self.zpool.create(dataset, {"compression": "lz4"})
+                self.pool.create(dataset, {"compression": "lz4"})
             except libzfs.ZFSException as err:
                 if err.code == libzfs.Error.EXISTS:
                     pass
@@ -796,7 +799,7 @@ class IOCFetch(object):
         dataset = f"{self.pool}/iocage/releases/{self.release}/root"
 
         if not os.path.isdir(dest):
-            self.zpool.create(dataset, {"compression": "lz4"},
+            self.pool.create(dataset, {"compression": "lz4"},
                               libzfs.DatasetType.FILESYSTEM, 0, True)
 
             self.zfs.get_dataset(dataset).mount_recursive(True)

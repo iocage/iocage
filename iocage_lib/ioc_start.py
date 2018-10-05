@@ -67,8 +67,8 @@ class IOCStart(object):
             ioc_json_pool = iocage_lib.ioc_json.IOCJson(self.pool)
             self.iocroot = ioc_json_pool.iocroot.mountpoint
             self.ioc_json = iocage_lib.ioc_json.IOCJson(self.path, silent=True)
-            self.get = ioc_json_pool.json_get_value
-            self.set = ioc_json_pool.json_set_value
+            self.get = self.ioc_json.json_get_value
+            self.set = self.ioc_json.json_set_value
             self.exec_fib = self._get_conf_value("exec_fib")
             self.__start_jail__()
         except TypeError:

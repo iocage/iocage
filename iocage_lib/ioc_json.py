@@ -890,7 +890,7 @@ class IOCJson(dict):
             _callback=self.callback,
             silent=self.silent)
 
-    def json_check_config(self, conf):
+    def json_check_config(self, conf, default=False):
         """
         Takes JSON as input and checks to see what is missing and adds the
         new keys with their default values if missing.
@@ -943,17 +943,19 @@ class IOCJson(dict):
         release = release.rsplit("-p", 1)[0]
         cloned_release = conf.get("cloned_release", "LEGACY_JAIL")
 
-        host_hostuuid = self["host_hostuuid"]
         freebsd_version_files = [
             (
                 f"{self.iocroot.mountpoint}/releases/{release}"
                 "/root/bin/freebsd-version"
-            ),
-            (
-                f"{self.iocroot.mountpoint}/templates/{host_hostuuid}"
-                "/root/bin/freebsd-version"
             )
         ]
+
+        if "host_hostuuid" in self.keys():
+            host_hostuuid = self["host_hostuuid"]
+            freebsd_version_file.append((
+                f"{self.iocroot.mountpoint}/templates/{host_hostuuid}"
+                "/root/bin/freebsd-version"
+            ))
 
         selected_freebsd_version_file = None
         for freebsd_version_file in freebsd_version_files:

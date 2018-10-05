@@ -505,9 +505,8 @@ class IOCage(PoolAndDataset):
                 _callback=self.callback,
                 silent=self.silent)
 
-        if not os.path.isdir(
-                f"{self.iocroot}/releases/{release}") and not template and \
-                not empty and not clone:
+        exists = os.path.isdir(f"{self.iocroot.mountpoint}/releases/{release}")
+        if not any([exists, template, empty, clone]):
             freebsd_version = ioc_common.checkoutput(["freebsd-version"])
 
             if "HBSD" in freebsd_version:

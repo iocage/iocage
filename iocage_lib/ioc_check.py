@@ -52,7 +52,7 @@ class IOCCheck(object):
                     "iocage/templates")
 
         zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
-        pool = zfs.get(self.pool)
+        pool = self.pool
 
         for dataset in datasets:
             zfs_dataset_name = f"{self.pool.name}/{dataset}"
