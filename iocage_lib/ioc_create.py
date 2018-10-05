@@ -408,18 +408,19 @@ class IOCCreate(object):
 
         # Just "touch" the fstab file, since it won't exist and write
         # /etc/hosts
-        etc_hosts_ip_addr = config["ip4_addr"].split("|", 1)[-1]
 
-        try:
-            jail_uuid_short = jail_uuid.rsplit(".")[-2]
-            jail_hostname = \
-                f"{jail_uuid}\t{jail_uuid_short}"
-        except IndexError:
-            # They supplied just a normal tag
-            jail_uuid_short = jail_uuid
-            jail_hostname = jail_uuid
-
-        final_line = f"{etc_hosts_ip_addr}\t{jail_hostname}\n"
+        jail_uuid_short = jail_uuid
+        jail_hostname = jail_uuid
+        has_ipv4 = False
+        if ("ip4_addr" in config.keys()) and (config["ip4_addr"] != "none"):
+            try:
+                etc_hosts_ip_addr = config["ip4_addr"].split("|", 1)[-1]
+                jail_uuid_short = jail_uuid.rsplit(".")[-2]
+                jail_hostname = f"{jail_uuid}\t{jail_uuid_short}"
+                final_hosts_line = f"{etc_hosts_ip_addr}\t{jail_hostname}\n"
+                has_ipv4 = True
+            except IndexError:
+                pass
 
         if self.empty:
             open(f"{location}/fstab", "wb").close()
@@ -433,7 +434,7 @@ class IOCCreate(object):
             open(f"{location}/fstab", "wb").close()
 
             with open(
-                    f"{self.iocroot}/"
+                    f"{self.iocroot.mountpoint}/"
                     f"{'releases' if not self.template else 'templates'}/"
                     f"{self.release}/root/etc/hosts", "r"
             ) as _etc_hosts:
@@ -448,9 +449,8 @@ class IOCCreate(object):
                         etc_hosts.write(line)
                     else:
                         # We want their IP to have the hostname at the end
-
-                        if config["ip4_addr"] != "none":
-                            etc_hosts.write(final_line)
+                        if has_ipv4 is True:
+                            etc_hosts.write(final_hosts_line)
         else:
             with open(clone_fstab, "r") as _clone_fstab:
                 with iocage_lib.ioc_common.open_atomic(
