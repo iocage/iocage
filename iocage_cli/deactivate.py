@@ -22,7 +22,7 @@
 # STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""Activate zfs pools for iocage with the CLI."""
+"""Deactivate ZFS pools for iocage with the CLI."""
 import click
 
 import iocage.errors
@@ -33,18 +33,13 @@ import iocage.ZFS
 __rootcmd__ = True
 
 
-@click.command(name="activate", help="Set a zpool active for iocage usage.")
+@click.command(name="deactivate", help="Disable a ZFS pool for iocage.")
 @click.pass_context
 @click.argument("zpool")
-@click.option("--mountpoint", "-m", default="/iocage")
-def cli(ctx, zpool, mountpoint):
-    """Call ZFS set to change the property org.freebsd.ioc:active to yes."""
+def cli(ctx, zpool):
+    """Call ZFS set to change the property org.freebsd.ioc:active to no."""
     logger = ctx.parent.logger
     zfs = ctx.parent.zfs
-
-    if ctx.parent.user_sources is not None:
-        logger.error("Cannot activate when executed with explicit sources.")
-        exit(1)
 
     iocage_pool = None
 
@@ -61,10 +56,11 @@ def cli(ctx, zpool, mountpoint):
             zfs=zfs,
             logger=logger
         )
-        datasets.activate_pool(
-            pool=iocage_pool,
-            mountpoint=mountpoint
-        )
-        logger.log(f"ZFS pool '{zpool}' activated")
+        datasets.attach_source("iocage", f"{iocage_pool.name}/iocage")
+        if datasets.is_pool_active():
+            datasets.deactivate()
+            logger.log(f"ZFS pool '{zpool}' deactivated")
+        else:
+            logger.warn(f"ZFS pool '{zpool}' is not active")
     except iocage.errors.IocageException:
         exit(1)
