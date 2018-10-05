@@ -82,7 +82,7 @@ def cli(
         host=host
     )
 
-    if os.path.isfile(destination) is True:
+    if os.path.exists(destination) is True:
         logger.error(f"The destination {destination} already exists")
         exit(1)
 
