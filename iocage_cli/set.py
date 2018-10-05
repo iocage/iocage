@@ -1,4 +1,5 @@
 # Copyright (c) 2014-2018, iocage
+# Copyright (c) 2017-2018, Stefan Grönke
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -21,39 +22,83 @@
 # STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""set module for the cli."""
+"""Set configuration values from the CLI."""
+import typing
 import click
-import iocage_lib.ioc_common as ioc_common
-import iocage_lib.iocage as ioc
+
+import iocage.errors
+import iocage.Logger
+import iocage.helpers
+import iocage.Resource
+import iocage.Jails
+
+from .shared.jail import set_properties
 
 __rootcmd__ = True
 
 
 @click.command(
-    context_settings=dict(
-        max_content_width=400, ),
+    context_settings=dict(max_content_width=400,),
     name="set",
-    help="Sets the specified property.")
+    help="Sets the specified property."
+)
+@click.pass_context
 @click.argument("props", nargs=-1)
-@click.argument("jail", nargs=1)
-@click.option(
-    "--plugin",
-    "-P",
-    help="Set the specified key for a plugin jail, if accessing a"
-    " nested key use . as a separator."
-    "\n\b Example: iocage set -P foo.bar.baz=VALUE PLUGIN",
-    is_flag=True)
-def cli(jail, props, plugin):
-    """Get a list of jails and print the property."""
+@click.argument("jail", nargs=1, required=True)
+def cli(
+    ctx: click.core.Context,
+    props: typing.Tuple[str, ...],
+    jail: str
+) -> None:
+    """Set one or many configuration properties of one jail."""
+    parent: typing.Any = ctx.parent
+    logger: iocage.Logger.Logger = parent.logger
+    host: iocage.Host.HostGenerator = parent.host
 
-    if not props:
-        # Click doesn't correctly assign the two variables for some reason
-        ioc_common.logit(
-            {
-                "level": "EXCEPTION",
-                "message": "You must specify a jail!"
-            })
+    # Defaults
+    if jail == "defaults":
+        updated_properties = set_properties(
+            properties=props,
+            target=host.defaults
+        )
+        if len(updated_properties) > 0:
+            logger.screen("Defaults updated: " + ", ".join(updated_properties))
+        else:
+            logger.screen("Defaults unchanged")
+        return
 
-    for prop in props:
-        ioc.IOCage(
-            jail=jail, skip_jails=True).set(prop, plugin)
+    # Jail Properties
+    filters = (f"name={jail}",)
+    ioc_jails = iocage.Jails.JailsGenerator(
+        filters,
+        host=host,
+        logger=logger
+    )
+
+    updated_jail_count = 0
+
+    for ioc_jail in ioc_jails:  # type: iocage.Jail.JailGenerator
+
+        try:
+            updated_properties = set_properties(
+                properties=props,
+                target=ioc_jail
+            )
+        except iocage.errors.IocageException:
+            exit(1)
+
+        if len(updated_properties) == 0:
+            logger.screen(f"Jail '{ioc_jail.humanreadable_name}' unchanged")
+        else:
+            logger.screen(
+                f"Jail '{ioc_jail.humanreadable_name}' updated: " +
+                ", ".join(updated_properties)
+            )
+
+        updated_jail_count += 1
+
+    if updated_jail_count == 0:
+        logger.error("No jails to update")
+        exit(1)
+
+    exit(0)
