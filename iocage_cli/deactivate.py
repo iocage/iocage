@@ -41,13 +41,9 @@ def cli(ctx, zpool):
     logger = ctx.parent.logger
     zfs = ctx.parent.zfs
 
-    iocage_pool = None
-
-    for pool in zfs.pools:
-        if pool.name == zpool:
-            iocage_pool = pool
-
-    if iocage_pool is None:
+    try:
+        iocage_pool = zfs.get(zpool)
+    except Exception:
         logger.error(f"ZFS pool '{zpool}' not found")
         exit(1)
 
