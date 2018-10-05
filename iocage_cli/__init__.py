@@ -250,13 +250,11 @@ class IOCageCLI(click.MultiCommand):
                             sys.exit("You need to have root privileges to"
                                      f" run {mod_name}")
             except AttributeError:
-                raise
                 # It's not a root required command.
                 pass
 
             return mod.cli
         except (ImportError, AttributeError):
-            raise
             return
 
 
