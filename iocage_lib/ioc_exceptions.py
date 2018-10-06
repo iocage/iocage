@@ -27,5 +27,12 @@
 class PoolNotActivated(Exception):
     pass
 
+
 class JailRunning(Exception):
     pass
+
+
+class CommandFailed(Exception):
+    def __init__(self, message):
+        self.message = message
+        super().__init__(message)
