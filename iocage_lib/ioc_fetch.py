@@ -810,13 +810,13 @@ class IOCFetch(object):
 
     def fetch_update(self, cli=False, uuid=None):
         """This calls 'freebsd-update' to update the fetched RELEASE."""
-
         if cli:
             cmd = [
                 "mount", "-t", "devfs", "devfs",
                 f"{self.iocroot}/jails/{uuid}/root/dev"
             ]
-            new_root = f"{self.iocroot}/jails/{uuid}/root"
+            mount = f'{self.iocroot}/jails/{uuid}'
+            mount_root = f'{mount}/root'
 
             iocage_lib.ioc_common.logit(
                 {
@@ -833,7 +833,8 @@ class IOCFetch(object):
                 "mount", "-t", "devfs", "devfs",
                 f"{self.iocroot}/releases/{self.release}/root/dev"
             ]
-            new_root = f"{self.iocroot}/releases/{self.release}/root"
+            mount = f'{self.iocroot}/releases/{self.release}'
+            mount_root = f'{mount}/root'
 
             iocage_lib.ioc_common.logit(
                 {
@@ -847,7 +848,7 @@ class IOCFetch(object):
                 silent=self.silent)
 
         su.Popen(cmd).communicate()
-        shutil.copy("/etc/resolv.conf", f"{new_root}/etc/resolv.conf")
+        shutil.copy("/etc/resolv.conf", f"{mount_root}/etc/resolv.conf")
 
         path = '/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:'\
                '/usr/local/bin:/root/bin'
@@ -859,7 +860,7 @@ class IOCFetch(object):
             'HOME': '/'
             }
 
-        if os.path.isfile(f"{new_root}/etc/freebsd-update.conf"):
+        if os.path.isfile(f"{mount_root}/etc/freebsd-update.conf"):
             if self.verify:
                 f = "https://raw.githubusercontent.com/freebsd/freebsd" \
                     "/master/usr.sbin/freebsd-update/freebsd-update.sh"
@@ -871,27 +872,55 @@ class IOCFetch(object):
                 os.chmod(tmp.name, 0o755)
                 fetch_name = tmp.name
             else:
-                fetch_name = f"{new_root}/usr/sbin/freebsd-update"
+                fetch_name = f"{mount_root}/usr/sbin/freebsd-update"
 
             fetch_cmd = [
-                fetch_name, "-b", new_root, "-d",
-                f"{new_root}/var/db/freebsd-update/", "-f",
-                f"{new_root}/etc/freebsd-update.conf",
+                fetch_name, "-b", mount_root, "-d",
+                f"{mount_root}/var/db/freebsd-update/", "-f",
+                f"{mount_root}/etc/freebsd-update.conf",
                 "--not-running-from-cron", "fetch"
             ]
 
-            fetch = su.Popen(fetch_cmd, env=fetch_env)
-            fetch.communicate()
+            stdout = iocage_lib.ioc_exec.IOCExec(
+                fetch_cmd,
+                uuid,
+                f"{self.iocroot}/jails/{uuid}",
+                pkg=True,
+                msg_return=True,
+                callback=self.callback,
+                su_env=fetch_env
+            ).exec_jail()
 
-            # They may have missing files, we don't need that noise
-            # since it's not fatal
-            su.Popen(
-                [
-                    fetch_name, "-b", new_root, "-d",
-                    f"{new_root}/var/db/freebsd-update/", "-f",
-                    f"{new_root}/etc/freebsd-update.conf", "install"
-                ],
-                env=fetch_env, stderr=su.DEVNULL).communicate()
+            for line in stdout:
+                iocage_lib.ioc_common.logit({
+                    "level": "INFO",
+                    "message": line.decode().rstrip()
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+
+            fetch_install_cmd = [
+                    fetch_name, "-b", mount_root, "-d",
+                    f"{mount_root}/var/db/freebsd-update/", "-f",
+                    f"{mount_root}/etc/freebsd-update.conf", "install"
+            ]
+            stdout = iocage_lib.ioc_exec.IOCExec(
+                fetch_install_cmd,
+                uuid,
+                f"{self.iocroot}/jails/{uuid}",
+                pkg=True,
+                msg_return=True,
+                callback=self.callback,
+                su_env=fetch_env
+            ).exec_jail()
+
+            for line in stdout:
+                iocage_lib.ioc_common.logit({
+                    "level": "INFO",
+                    "message": line.decode().rstrip()
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
 
             if self.verify:
                 # tmp only exists if they verify SSL certs
@@ -904,11 +933,11 @@ class IOCFetch(object):
         try:
             if not cli:
                 # Why this sometimes doesn't exist, we may never know.
-                os.remove(f"{new_root}/etc/resolv.conf")
+                os.remove(f"{mount_root}/etc/resolv.conf")
         except OSError:
             pass
 
-        su.Popen(["umount", f"{new_root}/dev"]).communicate()
+        su.Popen(["umount", f"{mount_root}/dev"]).communicate()
 
     def __fetch_extract_remove__(self, tar):
         """

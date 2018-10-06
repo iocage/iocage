@@ -41,6 +41,7 @@ import iocage_lib.ioc_destroy
 import iocage_lib.ioc_exec
 import iocage_lib.ioc_json
 import iocage_lib.ioc_upgrade
+import iocage_lib.ioc_exceptions
 import libzfs
 import texttable
 import dulwich.client
@@ -585,24 +586,25 @@ fingerprint: {fingerprint}
                     silent=self.silent)
 
                 command = ["/bin/sh", "/root/post_install.sh"]
-                msg, err = iocage_lib.ioc_exec.IOCExec(
-                    command, uuid, jaildir, plugin=True,
-                    skip=True, callback=self.callback,
-                    msg_return=True, su_env=plugin_env).exec_jail()
+                try:
+                    msg = iocage_lib.ioc_exec.IOCExec(
+                        command, uuid, jaildir, plugin=True,
+                        skip=True, callback=self.callback,
+                        msg_return=True, su_env=plugin_env).exec_jail()
 
-                if err:
+                    for line in msg:
+                        iocage_lib.ioc_common.logit(
+                            {
+                                "level": "INFO",
+                                "message": line.decode().rstrip()
+                            },
+                            _callback=self.callback)
+                except iocage_lib.ioc_exceptions.CommandFailed as e:
                     iocage_lib.ioc_common.logit(
                         {
                             "level": "EXCEPTION",
-                            "message": "An error occured! Please read above"
+                            "message": e.message.decode().rstrip()
                         }, _callback=self.callback)
-
-                iocage_lib.ioc_common.logit(
-                    {
-                        "level": "INFO",
-                        "message": msg.decode()
-                    },
-                    _callback=self.callback)
 
                 ui_json = f"{jaildir}/plugin/ui.json"
 
@@ -629,7 +631,7 @@ fingerprint: {fingerprint}
                         iocage_lib.ioc_common.logit(
                             {
                                 "level": "INFO",
-                                "message": f"Admin Portal:\n{admin_portal}"
+                                "message": f"\nAdmin Portal:\n{admin_portal}"
                             },
                             _callback=self.callback,
                             silent=self.silent)

@@ -37,8 +37,10 @@ import iocage_lib.ioc_json
 import iocage_lib.ioc_list
 import iocage_lib.ioc_start
 import iocage_lib.ioc_stop
+import iocage_lib.ioc_exceptions
 import libzfs
 import itertools
+import dns.resolver
 
 
 class IOCCreate(object):
@@ -547,54 +549,6 @@ class IOCCreate(object):
             if r and len(r.groups()) >= 3:
                 repo = r.group(3)
 
-        # Connectivity test courtesy David Cottlehuber off Google Group
-        # TODO: Use python's dns.resolver here?
-        srv_connect_cmd = ["drill", "-t", f"_http._tcp.{repo} SRV"]
-        dnssec_connect_cmd = ["drill", "-D", f"{repo}"]
-        dns_connect_cmd = ["drill", f"{repo}"]
-
-        iocage_lib.ioc_common.logit({
-            "level": "INFO",
-            "message": f"\nTesting SRV response to {site}"
-        },
-            _callback=self.callback,
-            silent=False)
-
-        # msg_err_return is set to silence stderr, we tell them user that
-        # error before
-        _, _, srv_err = iocage_lib.ioc_exec.IOCExec(
-            srv_connect_cmd, jail_uuid, location, plugin=self.plugin,
-            silent=True, msg_err_return=True).exec_jail()
-
-        if srv_err:
-            # This shouldn't be fatal since SRV records are not required
-            iocage_lib.ioc_common.logit({
-                "level": "WARNING",
-                "message":
-                    f"{repo}'s SRV record could not be verified.\n"
-            },
-                _callback=self.callback,
-                silent=False)
-
-        iocage_lib.ioc_common.logit({
-            "level": "INFO",
-            "message": f"Testing DNSSEC response to {site}"
-        },
-            _callback=self.callback,
-            silent=False)
-        _, _, dnssec_err = iocage_lib.ioc_exec.IOCExec(
-            dnssec_connect_cmd, jail_uuid, location, plugin=self.plugin,
-            silent=True, msg_err_return=True).exec_jail()
-
-        if dnssec_err:
-            # Not fatal, they may not be using DNSSEC
-            iocage_lib.ioc_common.logit({
-                "level": "WARNING",
-                "message": f"{repo} could not be reached via DNSSEC.\n"
-            },
-                _callback=self.callback,
-                silent=False)
-
             iocage_lib.ioc_common.logit({
                 "level": "INFO",
                 "message": f"Testing DNS response to {site}"
@@ -602,11 +556,9 @@ class IOCCreate(object):
                 _callback=self.callback,
                 silent=False)
 
-            _, _, dns_err = iocage_lib.ioc_exec.IOCExec(
-                dns_connect_cmd, jail_uuid, location, plugin=self.plugin,
-                silent=True, msg_err_return=True).exec_jail()
-
-            if dns_err:
+            try:
+                dns.resolver.query(repo)
+            except dns.resolver.NoNameservers:
                 iocage_lib.ioc_common.logit({
                     "level": "EXCEPTION",
                     "message": f"{repo} could not be reached via DNS, check"
@@ -661,16 +613,25 @@ class IOCCreate(object):
         # We will have mismatched ABI errors from earlier, this is to be safe.
         pkg_env = {"ASSUME_ALWAYS_YES": "yes"}
         cmd = ("/usr/local/sbin/pkg-static", "upgrade", "-f", "-q", "-y")
-        pkg_upgrade, pkgup_stderr, pkgup_err = iocage_lib.ioc_exec.IOCExec(
-            cmd, jail_uuid, location, plugin=self.plugin,
-            msg_err_return=True, su_env=pkg_env).exec_jail()
+        try:
+            pkg_stdout = iocage_lib.ioc_exec.IOCExec(
+                cmd, jail_uuid, location, plugin=self.plugin,
+                msg_err_return=True, su_env=pkg_env).exec_jail()
 
-        if pkgup_err:
+            for line in pkg_stdout:
+                iocage_lib.ioc_common.logit(
+                    {
+                        "level": 'INFO',
+                        "message": line.decode().rstrip()
+                    },
+                    silent=self.silent,
+                    _callback=self.callback)
+        except iocage_lib.ioc_exceptions.CommandFailed as e:
             iocage_lib.ioc_stop.IOCStop(jail_uuid, location, config,
                                         force=True, silent=True)
             iocage_lib.ioc_common.logit({
                 "level": "EXCEPTION",
-                "message": pkgup_stderr.decode().rstrip()
+                "message": e.message.decode().rstrip()
             },
                 _callback=self.callback)
 
@@ -700,15 +661,28 @@ class IOCCreate(object):
             while True:
                 cmd = ("/usr/local/sbin/pkg", "install", "-q", "-y", pkg)
 
-                pkg_stdout, pkg_stderr, pkg_err = iocage_lib.ioc_exec.IOCExec(
-                    cmd, jail_uuid, location, plugin=self.plugin,
-                    silent=self.silent, msg_err_return=True,
-                    su_env=pkg_env).exec_jail()
+                try:
+                    pkg_stdout = iocage_lib.ioc_exec.IOCExec(
+                        cmd, jail_uuid, location, plugin=self.plugin,
+                        silent=self.silent, msg_return=True,
+                        su_env=pkg_env).exec_jail()
+
+                    for line in pkg_stdout:
+                        iocage_lib.ioc_common.logit(
+                            {
+                                "level": 'INFO',
+                                "message": line.decode().rstrip()
+                            },
+                            silent=self.silent,
+                            _callback=self.callback)
+                except iocage_lib.ioc_exceptions.CommandFailed as e:
+                    pkg_stderr = e.message.decode().rstrip()
+                    pkg_err = True
 
                 if not pkg_err:
                     break
 
-                pkg_err_msg = f'{pkg} :{pkg_stderr.decode().rstrip()}'
+                pkg_err_msg = f'{pkg} :{pkg_stderr}'
                 if pkg_err_msg not in pkg_err_list:
                     pkg_err_list.append(pkg_err_msg)
 
@@ -724,11 +698,10 @@ class IOCCreate(object):
                 if pkg_retry <= 2:
                     pkg_retry += 1
                 elif pkg_retry == 3 and not self.plugin:
-                    pkg_err_output = pkg_stderr.decode().rstrip()
                     iocage_lib.ioc_common.logit(
                         {
                             "level": "ERROR",
-                            "message": pkg_err_output
+                            "message": pkg_stderr
                         },
                         _callback=self.callback)
                     break

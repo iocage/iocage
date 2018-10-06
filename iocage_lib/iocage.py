@@ -801,38 +801,58 @@ class IOCage(object):
 
             command = ["pkg", "-j", jid] + list(command)
 
-        msg, err = ioc_exec.IOCExec(
-            command,
-            uuid,
-            path,
-            host_user,
-            jail_user,
-            console=console,
-            silent=self.silent,
-            msg_return=msg_return,
-            pkg=pkg,
-            su_env=su_env).exec_jail()
+        if console:
+            status, jid = self.list("jid", uuid=uuid)
 
-        if not console:
-            if err:
-                ioc_common.logit(
-                    {
-                        "level": "EXCEPTION",
-                        "message": err
-                    },
-                    _callback=self.callback,
-                    silent=self.silent)
-            else:
-                ioc_common.logit(
-                    {
-                        "level": "INFO",
-                        "message": msg
-                    },
-                    _callback=self.callback,
-                    silent=self.silent)
+            if not status:
+                self.start()
+                status, jid = self.list("jid", uuid=uuid)
+
+            login_flags = self.get('login_flags').split()
+            exec_fib = self.get('exec_fib')
+            console_cmd = [
+                "/usr/sbin/setfib", exec_fib, "jexec", f"ioc-{uuid}",
+                "login"] + login_flags
+
+            su.Popen(console_cmd, env=su_env).communicate()
+
+        try:
+            msg = ioc_exec.IOCExec(
+                command,
+                uuid,
+                path,
+                host_user,
+                jail_user,
+                silent=self.silent,
+                msg_return=msg_return,
+                pkg=pkg,
+                su_env=su_env).exec_jail()
+
+        except ioc_exceptions.CommandFailed as e:
+            ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": e.message.decode().rstrip()
+                },
+                _callback=self.callback,
+                silent=self.silent)
 
         if msg_return:
-            return msg
+            messages = []
+            for message in msg:
+                messages.append(message.decode().rstrip())
+
+            return messages
+
+        for line in msg:
+            ioc_common.logit(
+                {
+                    "level": "INFO",
+                    "message": line.decode().rstrip()
+                },
+                _callback=self.callback,
+                silent=self.silent)
+
 
     def export(self):
         """Will export a jail"""
@@ -1064,7 +1084,7 @@ class IOCage(object):
                 if isinstance(props, dict):
                     return json.dumps(props, indent=4)
                 else:
-                    return props[0].decode("utf-8")
+                    return next(props).decode("utf-8")
             elif prop == "all":
                 _props = {}
 
@@ -1726,12 +1746,21 @@ class IOCage(object):
         else:
             if jail_type == "pluginv2" or jail_type == "plugin":
                 # TODO: Warn about erasing all pkgs
-                ioc_plugin.IOCPlugin(plugin=uuid).update()
+                ioc_plugin.IOCPlugin(
+                    plugin=uuid,
+                    callback=self.callback
+                ).update()
             elif conf["basejail"] != "yes":
-                ioc_fetch.IOCFetch(release).fetch_update(True, uuid)
+                ioc_fetch.IOCFetch(
+                    release,
+                    callback=self.callback
+                ).fetch_update(True, uuid)
             else:
                 # Basejails only need their RELEASE updated
-                ioc_fetch.IOCFetch(release).fetch_update()
+                ioc_fetch.IOCFetch(
+                    release,
+                    callback=self.callback
+                ).fetch_update()
 
             if started:
                 self.silent = True
