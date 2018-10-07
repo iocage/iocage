@@ -39,7 +39,7 @@ from .shared.click import IocageClickContext
     name="get",
     help="""Gets the specified property.
 
-    Specify an individual jail by its name or use `defaults` to get the hosts
+    Specify an individual jail by its name or use `defaults` to get the host's
     defaults from the main source dataset.
     """
 )
