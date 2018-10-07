@@ -55,6 +55,7 @@ setup(
     install_requires=[
         'dulwich>=0.18.6',
         'netifaces>=0.10.6',
+        'dnspython>=1.15.0',
         'libzfs'
     ],
     setup_requires=['pytest-runner'],
