@@ -22,7 +22,7 @@
 # STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""Start jails from the CLI.."""
+"""Start jails from the CLI."""
 import typing
 import click
 
@@ -75,7 +75,7 @@ def cli(
 
     elif rc is True:
         if len(jails) > 0:
-            logger.error("Cannot use --rc and jail selectors simultaniously")
+            logger.error("Cannot use --rc and jail selectors simultaneously")
             exit(1)
         _autostart(**start_args)
     else:
