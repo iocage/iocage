@@ -37,7 +37,11 @@ from .shared.click import IocageClickContext
 @click.command(
     context_settings=dict(max_content_width=400,),
     name="get",
-    help="Gets the specified property."
+    help="""Gets the specified property.
+
+    Specify an individual jail by its name or use `defaults` to get the hosts
+    defaults from the main source dataset.
+    """
 )
 @click.pass_context
 @click.argument("prop", nargs=-1, required=False, default=None)
