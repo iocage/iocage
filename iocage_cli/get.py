@@ -47,16 +47,10 @@ from .shared.click import IocageClickContext
     help="Get all properties for the specified jail.",
     is_flag=True
 )
-@click.option(
-    "--pool", "-p", "_pool",
-    help="Get the currently activated zpool.",
-    is_flag=True
-)
 def cli(
     ctx: IocageClickContext,
     prop: typing.Tuple[str],
     _all: bool,
-    _pool: bool,
     jail: typing.Optional[str]
 ) -> None:
     """Get a list of jails and print the property."""
@@ -64,14 +58,6 @@ def cli(
     host = iocage.Host.Host(logger=logger)
 
     _prop = None if len(prop) == 0 else prop[0]
-
-    if _pool is True:
-        try:
-            print(host.datasets.active_pool.name)
-        except Exception:
-            print("No active pool found")
-            exit(1)
-        exit(0)
 
     if _all is True:
         if jail is None:
