@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2018, iocage
+# Copyright (c) 2014-2017, iocage
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -21,158 +21,140 @@
 # STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""migrate module for the cli."""
-import datetime
-import fileinput
-import os
-import shutil
-import subprocess as su
-
+"""Migrate jails to the latest format (python-iocage)."""
+import typing
 import click
-import iocage_lib.ioc_common as ioc_common
-import iocage_lib.ioc_create as ioc_create
-import iocage_lib.ioc_json as ioc_json
-import iocage_lib.ioc_list as ioc_list
+
+import iocage.events
+import iocage.errors
+import iocage.helpers
+import iocage.Jails
+import iocage.Logger
+
+from .shared.click import IocageClickContext
 
 __rootcmd__ = True
 
 
-@click.command(
-    name="migrate",
-    help="Migrate all iocage_legacy develop basejails to new clonejails.")
-@click.option(
-    "--force",
-    "-f",
-    is_flag=True,
-    default=False,
-    help="Bypass the interactive question.")
-@click.option(
-    "--delete",
-    "-d",
-    is_flag=True,
-    default=False,
-    help="Delete the old dataset after it has been migrated.")
-def cli(force, delete):
-    """Migrates all the iocage_legacy develop basejails to clone jails."""
-    # TODO: Move to API
-    jails = ioc_list.IOCList("uuid").list_datasets()
+class JailMigrationEvent(iocage.events.IocageEvent):
+    """CLI event that occurs when a jail is migrated from legacy format."""
 
-    if not force:
-        ioc_common.logit({
-            "level":
-            "WARNING",
-            "message":
-            "\nThis will migrate ALL iocage-legacy develop"
-            " basejails to clonejails, it can take a long"
-            " time!\nPlease make sure you are not running"
-            " this on iocage-legacy 1.7.6 basejails."
-        })
+    def __init__(
+        self,
+        jail: 'iocage.Jail.JailGenerator'
+    ) -> None:
+        self.identifier = jail.full_name
+        iocage.events.IocageEvent.__init__(self)
 
-        if not click.confirm("\nAre you sure?"):
-            exit()
 
-    for uuid, path in jails.items():
-        pool = ioc_json.IOCJson().json_get_value("pool")
-        iocroot = ioc_json.IOCJson(pool).json_get_value("iocroot")
-        jail = f"{pool}/iocage/jails/{uuid}"
-        jail_old = f"{pool}/iocage/jails_old/{uuid}"
-        conf = ioc_json.IOCJson(path).json_load()
+@click.command(name="migrate", help="Migrate jails to the latest format.")
+@click.pass_context
+@click.argument("jails", nargs=-1)
+def cli(
+    ctx: IocageClickContext,
+    jails: typing.Tuple[str, ...]
+) -> None:
+    """Start one or many jails."""
+    logger = ctx.parent.logger
+    zfs = iocage.ZFS.get_zfs(logger=logger)
+    host = iocage.Host.HostGenerator(logger=logger, zfs=zfs)
 
-        try:
-            tag = conf["tag"]
-        except KeyError:
-            # These are actually NEW jails.
+    filters = jails + ("template=no,-",)
 
+    ioc_jails = iocage.Jails.JailsGenerator(
+        filters,
+        logger=logger,
+        host=host,
+        zfs=zfs
+    )
+
+    if len(ioc_jails) == 0:
+        logger.error(f"No jails started your input: {jails}")
+        exit(1)
+
+    ctx.parent.print_events(_migrate_jails(
+        ioc_jails,
+        logger=logger,
+        zfs=zfs,
+        host=host
+    ))
+
+
+def _migrate_jails(
+    jails: 'iocage.Jails.JailsGenerator',
+    logger: 'iocage.Logger.Logger',
+    host: 'iocage.Host.HostGenerator',
+    zfs: 'iocage.ZFS.ZFS'
+) -> typing.Generator['iocage.events.IocageEvent', None, None]:
+
+    for jail in jails:
+
+        event = JailMigrationEvent(jail=jail)
+        yield event.begin()
+
+        if jail.config.legacy is False:
+            yield event.skip()
             continue
 
-        release = conf["cloned_release"]
+        if jail.running is True:
+            yield event.fail(iocage.errors.JailAlreadyRunning(
+                jail=jail,
+                logger=logger
+            ))
+            continue
 
-        if conf["type"] == "basejail":
-            try:
-                ioc_common.checkoutput(
-                    ["zfs", "rename", "-p", jail, jail_old], stderr=su.STDOUT)
-            except su.CalledProcessError as err:
-                ioc_common.logit(
-                    {
-                        "level": "EXCEPTION",
-                        "message": f"{err.output.decode('utf-8').strip()}"
-                    })
+        if iocage.helpers.validate_name(jail.config["tag"]):
+            name = jail.config["tag"]
+            temporary_name = name
+        else:
+            name = jail.humanreadable_name
+            temporary_name = "import-" + str(hash(name) % (1 << 32))
 
-            try:
-                os.remove(f"{iocroot}/tags/{tag}")
-            except OSError:
-                pass
+        try:
+            new_jail = iocage.Jail.JailGenerator(
+                dict(name=temporary_name),
+                root_datasets_name=jail.root_datasets_name,
+                new=True,
+                logger=logger,
+                zfs=zfs,
+                host=host
+            )
+            if new_jail.exists is True:
+                raise iocage.errors.JailAlreadyExists(
+                    jail=new_jail,
+                    logger=logger
+                )
 
-            date_fmt_legacy = "%Y-%m-%d@%H:%M:%S"
-
-            # We don't want to rename datasets to a bunch of dates.
-            try:
-                datetime.datetime.strptime(tag, date_fmt_legacy)
-                _name = str(uuid.uuid4())
-            except ValueError:
-                # They already named this jail, making it like our new ones.
-                _name = tag
-
-            new_uuid = ioc_create.IOCCreate(
-                release,
-                "",
-                0,
+            def _destroy_unclean_migration() -> typing.Generator[
+                'iocage.events.IocageEvents',
                 None,
-                migrate=True,
-                config=conf,
-                silent=True,
-                uuid=_name,
-            ).create_jail()
-            new_prop = ioc_json.IOCJson(
-                f"{iocroot}/jails/{new_uuid}", silent=True).json_set_value
-            new_prop(f"host_hostname={new_uuid}")
-            new_prop(f"host_hostuuid={new_uuid}")
-            new_prop("type=jail")
-            new_prop(f"jail_zfs_dataset={iocroot}/jails/{new_uuid}/data")
+                None
+            ]:
+                _name = new_jail.humanreadable_name
+                logger.verbose(
+                    f"Destroying unfinished migration target jail {_name}"
+                )
+                yield from new_jail.destroy(
+                    force=True,
+                    event_scope=event.scope
+                )
+            event.add_rollback_step(_destroy_unclean_migration)
 
-            ioc_common.logit({
-                "level":
-                "INFO",
-                "message":
-                f"Copying files for {new_uuid}, please wait..."
-            })
+            yield from new_jail.clone_from_jail(jail, event_scope=event.scope)
+            new_jail.save()
+            new_jail.promote()
+            yield from jail.destroy(
+                force=True,
+                force_stop=True,
+                event_scope=event.scope
+            )
 
-            ioc_common.copytree(
-                f"{iocroot}/jails_old/{uuid}/root",
-                f"{iocroot}/jails/{new_uuid}/root",
-                symlinks=True)
+        except iocage.errors.IocageException as e:
+            yield event.fail(e)
+            continue
 
-            shutil.copy(f"{iocroot}/jails_old/{uuid}/fstab",
-                        f"{iocroot}/jails/{new_uuid}/fstab")
+        if name != temporary_name:
+            # the jail takes the old jails name
+            yield from new_jail.rename(name, event_scope=event.scope)
 
-            for line in fileinput.input(
-                    f"{iocroot}/jails/{new_uuid}/root/etc/"
-                    "rc.conf", inplace=1):
-                print(
-                    line.replace(f'hostname="{uuid}"',
-                                 f'hostname="{new_uuid}"').rstrip())
-
-            if delete:
-                try:
-                    ioc_common.checkoutput(
-                        ["zfs", "destroy", "-r", "-f", jail_old],
-                        stderr=su.STDOUT)
-                except su.CalledProcessError as err:
-                    raise RuntimeError(
-                        f"{err.output.decode('utf-8').rstrip()}")
-
-                try:
-                    su.check_call([
-                        "zfs", "destroy", "-r", "-f",
-                        f"{pool}/iocage/jails_old"
-                    ])
-                except su.CalledProcessError:
-                    # We just want the top level dataset gone, no big deal.
-                    pass
-
-            ioc_common.logit({
-                "level":
-                "INFO",
-                "message":
-                f"{uuid} ({tag}) migrated to {new_uuid}!\n"
-            })
+        yield event.end()
