@@ -29,6 +29,7 @@ import typing
 import iocage.errors
 import iocage.Logger
 import iocage.Host
+import iocage.Datasets
 import iocage.Resource
 import iocage.ListableResource
 import iocage.Jails
@@ -51,6 +52,8 @@ supported_output_formats = ['table', 'csv', 'list', 'json']
               flag_value="base", help="List all bases.")
 @click.option("--template", "-t", "dataset_type",
               flag_value="template", help="List all templates.")
+@click.option("--pools", "-p", "dataset_type",
+              flag_value="pool", help="List all iocage ZFS pools.")
 @click.option("--dataset", "-d", "dataset_type",
               flag_value="datasets", help="List all root data sources.")
 @click.option("--long", "-l", "_long", is_flag=True, default=False,
@@ -78,6 +81,7 @@ def cli(
 ) -> None:
     """List jails in various formats."""
     logger = ctx.parent.logger
+    zfs = ctx.parent.zfs
     host: iocage.Host.HostGenerator = ctx.parent.host
 
     if output is not None and _long is True:
@@ -100,6 +104,16 @@ def cli(
         if (dataset_type == "base") and (remote is True):
             columns = ["name", "eol"]
             resources = host.distribution.releases
+
+        elif (dataset_type == "pool"):
+            columns = ["name", "dataset"]
+            datasets = iocage.Datasets.Datasets(zfs=zfs, logger=logger)
+            resources = [
+                dict(
+                    name=name,
+                    dataset=x.root.name
+                ) for name, x in datasets.items()
+            ]
 
         else:
 
@@ -146,7 +160,10 @@ def cli(
 
 def _print_table(
     resources: typing.Generator[
-        iocage.ListableResource.ListableResource,
+        typing.Union[
+            iocage.ListableResource.ListableResource,
+            typing.List[typing.Dict[str, str]]
+        ],
         None,
         None
     ],
@@ -164,7 +181,10 @@ def _print_table(
 
 def _print_list(
     resources: typing.Generator[
-        iocage.Jails.JailsGenerator,
+        typing.Union[
+            iocage.ListableResource.ListableResource,
+            typing.List[typing.Dict[str, str]]
+        ],
         None,
         None
     ],
@@ -182,7 +202,10 @@ def _print_list(
 
 def _print_json(
     resources: typing.Generator[
-        iocage.Jails.JailsGenerator,
+        typing.Union[
+            iocage.ListableResource.ListableResource,
+            typing.List[typing.Dict[str, str]]
+        ],
         None,
         None
     ],
@@ -207,7 +230,10 @@ def _print_json(
 
 
 def _lookup_resource_values(
-    resource: 'iocage.Resource.Resource',
+    resource: typing.Union[
+        'iocage.Resource.Resource',
+        typing.Dict[str, str]
+    ],
     columns: typing.List[str]
 ) -> typing.List[str]:
     if "getstring" in resource.__dir__():
