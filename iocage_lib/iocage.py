@@ -815,6 +815,7 @@ class IOCage(object):
                 "login"] + login_flags
 
             su.Popen(console_cmd, env=su_env).communicate()
+            return
 
         try:
             msg = ioc_exec.IOCExec(
