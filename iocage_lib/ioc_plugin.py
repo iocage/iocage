@@ -603,7 +603,7 @@ fingerprint: {fingerprint}
                     iocage_lib.ioc_common.logit(
                         {
                             "level": "EXCEPTION",
-                            "message": e.message.decode().rstrip()
+                            "message": e.message[-1].decode().rstrip()
                         }, _callback=self.callback)
 
                 ui_json = f"{jaildir}/plugin/ui.json"
