@@ -32,6 +32,7 @@ import iocage_lib.ioc_exceptions
 import select
 import fcntl
 import os
+import re
 
 
 class IOCExec(object):
@@ -169,6 +170,10 @@ class IOCExec(object):
                 # postgresql rc.d command never closes the pipe
                 rtrn_stdout = b''
                 rtrn_stderr = b''
+
+                # If an exception occurs, we want the msg
+                _rtrn_stdout = _rtrn_stderr = b''
+
                 for i in ('stdout', 'stderr'):
                     fileno = getattr(p, i).fileno()
                     fl = fcntl.fcntl(fileno, fcntl.F_GETFL)
@@ -237,11 +242,18 @@ class IOCExec(object):
 
                 error = True if p.returncode != 0 else False
 
+                # self.uuid being None means a release being updated,
+                # We will get false positives for EOL notices
                 if error and self.uuid is not None:
-                    # self.uuid being None means a release being updated,
-                    # We will get false positives for EOL notices
-                    raise iocage_lib.ioc_exceptions.CommandFailed(
-                        rtrn_stderr)
+                    # EOL notice for jail updates
+                    jail_eol_regex = \
+                        rb'(WARNING: FreeBSD \d*\.\d-RELEASE HAS PASSED ITS'\
+                        rb' END-OF-LIFE DATE)'
+
+                    if not self.msg_err_return and not re.search(
+                            jail_eol_regex, _rtrn_stdout):
+                        raise iocage_lib.ioc_exceptions.CommandFailed(
+                            _rtrn_stderr)
             else:
                 stdout = None if not self.silent else su.DEVNULL
                 stderr = None if not self.silent else su.DEVNULL
