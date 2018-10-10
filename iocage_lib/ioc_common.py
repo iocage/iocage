@@ -770,3 +770,12 @@ def match_to_dir(iocroot, uuid, old_uuid=None):
         return matches[0]
     else:
         return None
+
+
+def consume(exec_gen):
+    """
+    The idea is to consume a generator without caring about it's output
+    such as the DNS queries with plugins
+    """
+    for _ in exec_gen:
+        pass
