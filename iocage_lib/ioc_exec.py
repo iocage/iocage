@@ -33,6 +33,7 @@ import select
 import fcntl
 import os
 import re
+import collections
 
 
 class IOCExec(object):
@@ -170,6 +171,7 @@ class IOCExec(object):
                 # postgresql rc.d command never closes the pipe
                 rtrn_stdout = b''
                 rtrn_stderr = b''
+                stderr_queue = collections.deque(maxlen=30)
 
                 # If an exception occurs, we want the msg
                 _rtrn_stdout = _rtrn_stderr = b''
@@ -203,7 +205,8 @@ class IOCExec(object):
                                 stdout = p.stdout.read()
                                 rtrn_stdout += stdout
 
-                                if rtrn_stdout.endswith(b'\n'):
+                                if rtrn_stdout.endswith(b'\n') or \
+                                        not rtrn_stdout:
                                     yield_stdout_now = True
 
                         if p.stderr.fileno() in r:
@@ -214,27 +217,22 @@ class IOCExec(object):
                                 stderr = p.stderr.read()
                                 rtrn_stderr += stderr
 
-                                if rtrn_stderr.endswith(b'\n'):
+                                if rtrn_stderr.endswith(b'\n') or \
+                                        not rtrn_stderr:
                                     yield_stderr_now = True
 
-                        if self.msg_err_return:
-                            if yield_stdout_now and yield_stderr_now:
-                                yield_stdout_now = yield_stderr_now = False
-                                _rtrn_stdout = rtrn_stdout
-                                _rtrn_stderr = rtrn_stderr
+                        if yield_stdout_now and yield_stderr_now:
+                            yield_stdout_now = yield_stderr_now = False
+                            _rtrn_stdout = rtrn_stdout
+                            _rtrn_stderr = rtrn_stderr
 
-                                # Set up a new line
-                                rtrn_stdout = rtrn_stderr = b''
+                            # Set up a new line
+                            stderr_queue.append(_rtrn_stderr)
+                            rtrn_stdout = rtrn_stderr = b''
 
+                            if self.msg_err_return:
                                 yield _rtrn_stdout, _rtrn_stderr
-                        else:
-                            if yield_stdout_now:
-                                yield_stdout_now = False
-                                _rtrn_stdout = rtrn_stdout
-
-                                # Set up a new line
-                                rtrn_stdout = b''
-
+                            else:
                                 yield _rtrn_stdout
 
                 p.stdout.close()
@@ -250,17 +248,25 @@ class IOCExec(object):
                         rb'(WARNING: FreeBSD \d*\.\d-RELEASE HAS PASSED ITS'\
                         rb' END-OF-LIFE DATE)'
 
-                    if not self.msg_err_return and not re.search(
-                            jail_eol_regex, _rtrn_stdout):
+                    if not re.search(jail_eol_regex, _rtrn_stdout):
                         raise iocage_lib.ioc_exceptions.CommandFailed(
-                            _rtrn_stderr)
+                            stderr_queue)
             else:
                 stdout = None if not self.silent else su.DEVNULL
                 stderr = None if not self.silent else su.DEVNULL
 
                 p = su.Popen(
                     cmd, stdout=stdout, stderr=stderr, env=self.su_env
-                ).communicate()
+                )
+                output, err = p.communicate()
+
+                if p.returncode != 0:
+                    return_output = output if output is not None else err
+                    return_output = \
+                        return_output.decode().rstrip if return_output else ''
+
+                    raise iocage_lib.ioc_exceptions.CommandFailed(
+                        return_output)
 
                 return "", False
         except su.CalledProcessError as err:

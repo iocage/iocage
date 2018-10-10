@@ -744,7 +744,7 @@ class IOCCreate(object):
                             silent=self.silent,
                             _callback=self.callback)
                 except iocage_lib.ioc_exceptions.CommandFailed as e:
-                    pkg_stderr = e.message.decode().rstrip()
+                    pkg_stderr = e.message[-1].decode().rstrip()
                     pkg_err = True
 
                 if not pkg_err:

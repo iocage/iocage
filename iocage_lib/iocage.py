@@ -828,32 +828,38 @@ class IOCage(object):
                 msg_return=msg_return,
                 pkg=pkg,
                 su_env=su_env).exec_jail()
+            msgs = [_msg.decode().rstrip() for _msg in msg]
 
+            if msg_return:
+                return msgs
+
+            for line in msgs:
+                ioc_common.logit(
+                    {
+                        "level": "INFO",
+                        "message": line
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
         except ioc_exceptions.CommandFailed as e:
-            ioc_common.logit(
-                {
-                    "level": "EXCEPTION",
-                    "message": e.message.decode().rstrip()
-                },
-                _callback=self.callback,
-                silent=self.silent)
-
-        if msg_return:
-            messages = []
-            for message in msg:
-                messages.append(message.decode().rstrip())
-
-            return messages
-
-        for line in msg:
-            ioc_common.logit(
-                {
-                    "level": "INFO",
-                    "message": line.decode().rstrip()
-                },
-                _callback=self.callback,
-                silent=self.silent)
-
+            msgs = [_msg.decode().rstrip() for _msg in e.message]
+            if msgs:
+                ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": '\n'.join(msgs)
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
+            else:
+                # 2: is to strip off our addition of /bin/sh -c
+                ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": f'Command: {"".join(command[2:])} failed!'
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
 
     def export(self):
         """Will export a jail"""
