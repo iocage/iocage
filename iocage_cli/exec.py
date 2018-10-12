@@ -58,4 +58,14 @@ def cli(command, jail, host_user, jail_user):
     # unsetting the convenience default
     host_user = "" if jail_user and host_user == "root" else host_user
 
-    ioc.IOCage(jail=jail).exec(command, host_user, jail_user)
+    try:
+        ioc.IOCage(jail=jail).exec(
+            command, host_user, jail_user, interactive=True)
+    except KeyboardInterrupt:
+        pass
+    except Exception as e:
+        ioc_common.logit({
+            'level': 'EXCEPTION',
+            'message': 'Command failed!\n'
+                       f'Exception: "{e.__class__.__name__}:{str(e)}" occured'
+        })

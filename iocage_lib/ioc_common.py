@@ -772,10 +772,31 @@ def match_to_dir(iocroot, uuid, old_uuid=None):
         return None
 
 
-def consume(exec_gen):
+def consume_and_log(exec_gen, return_list=False, callback=None, silent=False):
     """
-    The idea is to consume a generator without caring about it's output
-    such as the DNS queries with plugins
+    Consume a generator and massage the output with lines
     """
-    for _ in exec_gen:
-        pass
+    final_output = ''
+    output_list = []
+
+    for stdout, _ in exec_gen:
+        if silent:
+            continue
+
+        final_output += stdout.decode()
+
+        if not final_output.endswith('\n'):
+            continue
+
+        if return_list:
+            output_list.append(final_output.rstrip())
+        else:
+            logit({
+                "level": "INFO",
+                "message": final_output.rstrip()
+            },
+                _callback=callback)
+        final_output = ''
+
+    if return_list:
+        return output_list

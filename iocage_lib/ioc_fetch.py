@@ -880,47 +880,34 @@ class IOCFetch(object):
                 f"{mount_root}/etc/freebsd-update.conf",
                 "--not-running-from-cron", "fetch"
             ]
-
-            stdout = iocage_lib.ioc_exec.IOCExec(
+            with iocage_lib.ioc_exec.IOCExec(
                 fetch_cmd,
                 uuid,
                 f"{self.iocroot}/jails/{uuid}",
                 pkg=True,
-                msg_return=True,
                 callback=self.callback,
                 su_env=fetch_env
-            ).exec_jail()
-
-            for line in stdout:
-                iocage_lib.ioc_common.logit({
-                    "level": "INFO",
-                    "message": line.decode().rstrip()
-                },
-                    _callback=self.callback,
-                    silent=self.silent)
+            ) as _exec:
+                stdout = _exec.exec_jail()
+                iocage_lib.ioc_common.consume_and_log(
+                    stdout, callback=self.callback)
 
             fetch_install_cmd = [
                     fetch_name, "-b", mount_root, "-d",
                     f"{mount_root}/var/db/freebsd-update/", "-f",
                     f"{mount_root}/etc/freebsd-update.conf", "install"
             ]
-            stdout = iocage_lib.ioc_exec.IOCExec(
+            with iocage_lib.ioc_exec.IOCExec(
                 fetch_install_cmd,
                 uuid,
                 f"{self.iocroot}/jails/{uuid}",
                 pkg=True,
-                msg_return=True,
                 callback=self.callback,
                 su_env=fetch_env
-            ).exec_jail()
-
-            for line in stdout:
-                iocage_lib.ioc_common.logit({
-                    "level": "INFO",
-                    "message": line.decode().rstrip()
-                },
-                    _callback=self.callback,
-                    silent=self.silent)
+            ) as _exec:
+                stdout = _exec.exec_jail()
+                iocage_lib.ioc_common.consume_and_log(
+                    stdout, callback=self.callback)
 
             if self.verify:
                 # tmp only exists if they verify SSL certs

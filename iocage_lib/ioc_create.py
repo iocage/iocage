@@ -532,7 +532,7 @@ class IOCCreate(object):
         return jail_props
 
     def create_install_packages(self, jail_uuid, location, config,
-                                repo="pkg.freebsd.org", site="FreeBSD"):
+                                repo="pkg.freebsd.org"):
         """
         Takes a list of pkg's to install into the target jail. The resolver
         property is required for pkg to have network access.
@@ -551,7 +551,7 @@ class IOCCreate(object):
 
             iocage_lib.ioc_common.logit({
                 "level": "INFO",
-                "message": f"\nTesting Host DNS response to {site}"
+                "message": f"\nTesting Host DNS response to {repo}"
             },
                 _callback=self.callback,
                 silent=False)
@@ -574,16 +574,18 @@ class IOCCreate(object):
 
         iocage_lib.ioc_common.logit({
             "level": "INFO",
-            "message": f"Testing {jail_uuid}'s SRV response to {site}"
+            "message": f"Testing {jail_uuid}'s SRV response to {repo}"
         },
             _callback=self.callback,
             silent=False)
 
         try:
-            out = iocage_lib.ioc_exec.IOCExec(
-                srv_connect_cmd, jail_uuid, location, plugin=self.plugin,
-                msg_return=True, silent=True).exec_jail()
-            iocage_lib.ioc_common.consume(out)
+            with iocage_lib.ioc_exec.IOCExec(
+                srv_connect_cmd, jail_uuid, location, plugin=self.plugin
+            ) as _exec:
+                out = _exec.exec_jail()
+                iocage_lib.ioc_common.consume_and_log(out, silent=True)
+
         except iocage_lib.ioc_exceptions.CommandFailed:
             # This shouldn't be fatal since SRV records are not required
             iocage_lib.ioc_common.logit({
@@ -596,15 +598,16 @@ class IOCCreate(object):
 
         iocage_lib.ioc_common.logit({
             "level": "INFO",
-            "message": f"Testing {jail_uuid}'s DNSSEC response to {site}"
+            "message": f"Testing {jail_uuid}'s DNSSEC response to {repo}"
         },
             _callback=self.callback,
             silent=False)
         try:
-            out = iocage_lib.ioc_exec.IOCExec(
+            with iocage_lib.ioc_exec.IOCExec(
                 dnssec_connect_cmd, jail_uuid, location, plugin=self.plugin,
-                msg_return=True, silent=True).exec_jail()
-            iocage_lib.ioc_common.consume(out)
+            ) as _exec:
+                out = _exec.exec_jail()
+                iocage_lib.ioc_common.consume_and_log(out, silent=True)
         except iocage_lib.ioc_exceptions.CommandFailed:
             # Not fatal, they may not be using DNSSEC
             iocage_lib.ioc_common.logit({
@@ -616,16 +619,17 @@ class IOCCreate(object):
 
             iocage_lib.ioc_common.logit({
                 "level": "INFO",
-                "message": f"Testing {jail_uuid}'s DNS response to {site}"
+                "message": f"Testing {jail_uuid}'s DNS response to {repo}"
             },
                 _callback=self.callback,
                 silent=False)
 
             try:
-                out = iocage_lib.ioc_exec.IOCExec(
+                with iocage_lib.ioc_exec.IOCExec(
                     dns_connect_cmd, jail_uuid, location, plugin=self.plugin,
-                    msg_return=True, silent=True).exec_jail()
-                iocage_lib.ioc_common.consume(out)
+                ) as _exec:
+                    out = _exec.exec_jail()
+                    iocage_lib.ioc_common.consume_and_log(out, silent=True)
             except iocage_lib.ioc_exceptions.CommandFailed:
                 iocage_lib.ioc_common.logit({
                     "level": "EXCEPTION",
@@ -682,18 +686,15 @@ class IOCCreate(object):
         pkg_env = {"ASSUME_ALWAYS_YES": "yes"}
         cmd = ("/usr/local/sbin/pkg-static", "upgrade", "-f", "-q", "-y")
         try:
-            pkg_stdout = iocage_lib.ioc_exec.IOCExec(
-                cmd, jail_uuid, location, plugin=self.plugin,
-                msg_err_return=True, su_env=pkg_env).exec_jail()
-
-            for line in pkg_stdout:
-                iocage_lib.ioc_common.logit(
-                    {
-                        "level": 'INFO',
-                        "message": line.decode().rstrip()
-                    },
-                    silent=self.silent,
-                    _callback=self.callback)
+            with iocage_lib.ioc_exec.IOCExec(
+                cmd, jail_uuid, location, plugin=self.plugin, su_env=pkg_env
+            ) as _exec:
+                pkg_stdout = _exec.exec_jail()
+                iocage_lib.ioc_common.consume_and_log(
+                     pkg_stdout,
+                     callback=self.callback,
+                     silent=self.silent
+                )
         except iocage_lib.ioc_exceptions.CommandFailed as e:
             iocage_lib.ioc_stop.IOCStop(jail_uuid, location, config,
                                         force=True, silent=True)
@@ -730,19 +731,16 @@ class IOCCreate(object):
                 cmd = ("/usr/local/sbin/pkg", "install", "-q", "-y", pkg)
 
                 try:
-                    pkg_stdout = iocage_lib.ioc_exec.IOCExec(
+                    with iocage_lib.ioc_exec.IOCExec(
                         cmd, jail_uuid, location, plugin=self.plugin,
-                        silent=self.silent, msg_return=True,
-                        su_env=pkg_env).exec_jail()
-
-                    for line in pkg_stdout:
-                        iocage_lib.ioc_common.logit(
-                            {
-                                "level": 'INFO',
-                                "message": line.decode().rstrip()
-                            },
-                            silent=self.silent,
-                            _callback=self.callback)
+                        su_env=pkg_env
+                    ) as _exec:
+                        pkg_stdout = _exec.exec_jail()
+                        iocage_lib.ioc_common.consume_and_log(
+                            pkg_stdout,
+                            callback=self.callback,
+                            silent=self.silent
+                        )
                 except iocage_lib.ioc_exceptions.CommandFailed as e:
                     pkg_stderr = e.message[-1].decode().rstrip()
                     pkg_err = True

@@ -752,6 +752,7 @@ class IOCage(object):
              host_user="root",
              jail_user=None,
              console=False,
+             interactive=False,
              pkg=False,
              msg_return=False):
         """Executes a command in the jail as the supplied users."""
@@ -817,30 +818,52 @@ class IOCage(object):
             su.Popen(console_cmd, env=su_env).communicate()
             return
 
+        if interactive:
+            exec_fib = self.get('exec_fib')
+            interactive_cmd = (
+                "/usr/sbin/setfib", exec_fib, "jexec", f"ioc-{uuid}"
+                ) + command
+
+            try:
+                su_command = su.Popen(interactive_cmd, env=su_env)
+                stdout, stderr = su_command.communicate()
+
+                if su_command.returncode != 0:
+                    raise ioc_exceptions.CommandFailed(
+                        f'Command: {command}, stdout: {stdout},'
+                        f' stderr: {stderr}'
+                        )
+            except Exception as e:
+                raise
+            return
+
         try:
-            msg = ioc_exec.IOCExec(
+            with ioc_exec.IOCExec(
                 command,
                 uuid,
                 path,
                 host_user,
                 jail_user,
-                silent=self.silent,
-                msg_return=msg_return,
                 pkg=pkg,
-                su_env=su_env).exec_jail()
-            msgs = [_msg.decode().rstrip() for _msg in msg]
+                su_env=su_env
+            ) as _exec:
+                msg = _exec.exec_jail()
+                msgs = ioc_common.consume_and_log(
+                    msg,
+                    return_list=True
+                )
 
-            if msg_return:
-                return msgs
+                if msg_return:
+                    return msgs
 
-            for line in msgs:
-                ioc_common.logit(
-                    {
-                        "level": "INFO",
-                        "message": line
-                    },
-                    _callback=self.callback,
-                    silent=self.silent)
+                for line in msgs:
+                    ioc_common.logit(
+                        {
+                            "level": "INFO",
+                            "message": line
+                        },
+                        _callback=self.callback,
+                        silent=self.silent)
         except ioc_exceptions.CommandFailed as e:
             msgs = [_msg.decode().rstrip() for _msg in e.message]
             if msgs:
@@ -852,11 +875,10 @@ class IOCage(object):
                     _callback=self.callback,
                     silent=self.silent)
             else:
-                # 2: is to strip off our addition of /bin/sh -c
                 ioc_common.logit(
                     {
                         "level": "EXCEPTION",
-                        "message": f'Command: {"".join(command[2:])} failed!'
+                        "message": f'Command: {command} failed!'
                     },
                     _callback=self.callback,
                     silent=self.silent)
@@ -1091,7 +1113,7 @@ class IOCage(object):
                 if isinstance(props, dict):
                     return json.dumps(props, indent=4)
                 else:
-                    return next(props).decode("utf-8")
+                    return props
             elif prop == "all":
                 _props = {}
 
