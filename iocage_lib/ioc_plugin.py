@@ -623,9 +623,23 @@ fingerprint: {fingerprint}
 
                 try:
                     with open(ui_json, "r") as u:
-                        admin_portal = json.load(u)["adminportal"]
+                        ui_data = json.load(u)
+                        admin_portal = ui_data["adminportal"]
                         admin_portal = admin_portal.replace("%%IP%%",
                                                             ip.rsplit(',')[0])
+
+                        try:
+                            ph = ui_data["adminportal_placeholders"].items()
+                            for placeholder, prop in ph:
+                                admin_portal = admin_portal.replace(
+                                    placeholder,
+                                    iocage_lib.ioc_json.IOCJson(
+                                        jaildir).json_plugin_get_value(
+                                        prop.split("."))
+                                    )
+                        except KeyError:
+                            pass
+
                         iocage_lib.ioc_common.logit(
                             {
                                 "level": "INFO",
