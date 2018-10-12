@@ -37,9 +37,7 @@ import collections
 
 
 class IOCExec(object):
-
     """Run jexec with a user inside the specified jail."""
-
     def __init__(self,
                  command,
                  uuid,
@@ -50,9 +48,6 @@ class IOCExec(object):
                  pkg=False,
                  skip=False,
                  console=False,
-                 silent=False,
-                 msg_return=False,
-                 msg_err_return=False,
                  su_env=None,
                  callback=None):
         self.command = command
@@ -63,9 +58,6 @@ class IOCExec(object):
         self.plugin = plugin
         self.pkg = pkg
         self.skip = skip
-        self.silent = silent
-        self.msg_return = msg_return
-        self.msg_err_return = msg_err_return
 
         path = '/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:'\
                '/usr/local/bin:/root/bin'
@@ -76,198 +68,151 @@ class IOCExec(object):
 
         self.su_env = su_env
         self.callback = callback
-
-    def exec_jail(self):
-        if self.jail_user:
-            flag = "-U"
-            user = self.jail_user
-        else:
-            flag = "-u"
-            user = self.host_user
+        self.cmd = self.command
 
         if self.uuid is not None:
-            status, _ = iocage_lib.ioc_list.IOCList().list_get_jid(self.uuid)
-            conf = iocage_lib.ioc_json.IOCJson(self.path).json_load()
-            exec_fib = conf["exec_fib"]
+            self.status, _ = iocage_lib.ioc_list.IOCList().list_get_jid(
+                self.uuid)
+            self.conf = iocage_lib.ioc_json.IOCJson(self.path).json_load()
+            exec_fib = self.conf["exec_fib"]
 
-            if not status:
-                if not self.plugin and not self.skip:
-                    iocage_lib.ioc_common.logit(
-                        {
-                            "level": "INFO",
-                            "message": f"{self.uuid} is not running,"
-                            " starting jail"
-                        },
-                        _callback=self.callback,
-                        silent=self.silent)
+            self.flight_checks()
 
-                if conf["type"] in ("jail", "plugin", "pluginv2", "clonejail"):
-                    iocage_lib.ioc_start.IOCStart(
-                        self.uuid, self.path, conf, silent=True)
-                elif conf["type"] == "basejail":
-                    iocage_lib.ioc_common.logit(
-                        {
-                            "level":
-                            "EXCEPTION",
-                            "message":
-                            "Please run \"iocage migrate\" before trying"
-                            f" to start {self.uuid}"
-                        },
-                        _callback=self.callback,
-                        silent=self.silent)
-                elif conf["type"] == "template":
-                    iocage_lib.ioc_common.logit(
-                        {
-                            "level":
-                            "EXCEPTION",
-                            "message":
-                            "Please convert back to a jail before trying"
-                            f" to start {self.uuid}"
-                        },
-                        _callback=self.callback,
-                        silent=self.silent)
-                else:
-                    iocage_lib.ioc_common.logit(
-                        {
-                            "level":
-                            "EXCEPTION",
-                            "message":
-                            f"{conf['type']} is not a supported jail"
-                            " type."
-                        },
-                        _callback=self.callback,
-                        silent=self.silent)
-
-                iocage_lib.ioc_common.logit(
-                    {
-                        "level": "INFO",
-                        "message": "\nCommand output:"
-                    },
-                    _callback=self.callback,
-                    silent=self.silent)
-
-        try:
             if not self.pkg:
-                cmd = [
+                if self.jail_user:
+                    flag = "-U"
+                    user = self.jail_user
+                else:
+                    flag = "-u"
+                    user = self.host_user
+
+                self.cmd = [
                     "/usr/sbin/setfib", exec_fib, "jexec", flag, user,
                     f"ioc-{self.uuid}"
                 ] + list(self.command)
+
+    def __enter__(self):
+        self.proc = su.Popen(
+            self.cmd, stdout=su.PIPE, stderr=su.PIPE, close_fds=True,
+            bufsize=0, env=self.su_env
+        )
+        return self
+
+    def __exit__(self, *args):
+        try:
+            self.proc.wait(timeout=15)
+        except su.TimeoutExpired:
+            self.proc.kill()
+
+    def flight_checks(self):
+        if not self.status:
+            if not self.plugin and not self.skip:
+                iocage_lib.ioc_common.logit(
+                    {
+                        "level": "INFO",
+                        "message": f"{self.uuid} is not running,"
+                        " starting jail"
+                    },
+                    _callback=self.callback)
+
+            if self.conf["type"] in (
+                    "jail", "plugin", "pluginv2", "clonejail"):
+                iocage_lib.ioc_start.IOCStart(
+                    self.uuid, self.path, self.conf, silent=True)
+            elif self.conf["type"] == "basejail":
+                iocage_lib.ioc_common.logit(
+                    {
+                        "level":
+                        "EXCEPTION",
+                        "message":
+                        "Please run \"iocage migrate\" before trying"
+                        f" to start {self.uuid}"
+                    },
+                    _callback=self.callback)
+            elif self.conf["type"] == "template":
+                iocage_lib.ioc_common.logit(
+                    {
+                        "level":
+                        "EXCEPTION",
+                        "message":
+                        "Please convert back to a jail before trying"
+                        f" to start {self.uuid}"
+                    },
+                    _callback=self.callback)
             else:
-                cmd = self.command
+                iocage_lib.ioc_common.logit(
+                    {
+                        "level":
+                        "EXCEPTION",
+                        "message":
+                        f"{self.conf['type']} is not a supported jail type."
+                    },
+                    _callback=self.callback)
 
-            if self.msg_return or self.msg_err_return:
-                p = su.Popen(cmd, stdout=su.PIPE, stderr=su.PIPE,
-                             close_fds=True, bufsize=0, env=self.su_env)
+            iocage_lib.ioc_common.logit(
+                {
+                    "level": "INFO",
+                    "message": "\nCommand output:"
+                },
+                _callback=self.callback)
 
-                # Courtesy of @william-gr
-                # service(8) and some rc.d scripts have the bad habit of
-                # exec'ing and never closing stdout/stderr. This makes
-                # sure we read only enough until the command exits and do
-                # not wait on the pipe to close on the other end.
-                #
-                # Same issue can be demonstrated with:
-                # $ jexec 1 service postgresql onerestart | cat
-                # ... <hangs>
-                # postgresql rc.d command never closes the pipe
-                rtrn_stdout = b''
-                rtrn_stderr = b''
-                stderr_queue = collections.deque(maxlen=30)
+    def exec_jail(self):
+        # Courtesy of @william-gr
+        # service(8) and some rc.d scripts have the bad habit of
+        # exec'ing and never closing stdout/stderr. This makes
+        # sure we read only enough until the command exits and do
+        # not wait on the pipe to close on the other end.
+        #
+        # Same issue can be demonstrated with:
+        # $ jexec 1 service postgresql onerestart | cat
+        # ... <hangs>
+        # postgresql rc.d command never closes the pipe
+        stderr_queue = collections.deque(maxlen=30)
+        rtrn_stdout = _rtrn_stdout = rtrn_stderr = b''
 
-                # If an exception occurs, we want the msg
-                _rtrn_stdout = _rtrn_stderr = b''
+        for i in ('stdout', 'stderr'):
+            fileno = getattr(self.proc, i).fileno()
+            fl = fcntl.fcntl(fileno, fcntl.F_GETFL)
+            fcntl.fcntl(fileno, fcntl.F_SETFL, fl | os.O_NONBLOCK)
 
-                for i in ('stdout', 'stderr'):
-                    fileno = getattr(p, i).fileno()
-                    fl = fcntl.fcntl(fileno, fcntl.F_GETFL)
-                    fcntl.fcntl(fileno, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+        timeout = 0.1
 
-                timeout = 0.1
-                yield_stdout_now = False
-                yield_stderr_now = False
+        while True:
+            r = select.select([
+                self.proc.stdout.fileno(),
+                self.proc.stderr.fileno()], [], [], timeout)[0]
 
-                while True:
-                    r = select.select([
-                        p.stdout.fileno(),
-                        p.stderr.fileno()], [], [], timeout)[0]
+            if self.proc.poll() is not None:
+                if timeout == 0:
+                    break
+                else:
+                    timeout = 0
 
-                    if p.poll() is not None:
-                        if timeout == 0:
-                            break
-                        else:
-                            timeout = 0
+            if r:
+                if self.proc.stdout.fileno() in r:
+                    rtrn_stdout = self.proc.stdout.read()
 
-                    if r:
-                        if p.stdout.fileno() in r:
-                            if rtrn_stdout.endswith(b'\n'):
-                                yield_stdout_now = True
+                    if rtrn_stdout:
+                        _rtrn_stdout = rtrn_stdout
+                if self.proc.stderr.fileno() in r:
+                    rtrn_stderr = self.proc.stderr.read()
+                    stderr_queue.append(rtrn_stderr)
 
-                            if not yield_stdout_now:
-                                stdout = p.stdout.read()
-                                rtrn_stdout += stdout
+                yield rtrn_stdout, rtrn_stderr
 
-                                if rtrn_stdout.endswith(b'\n') or \
-                                        not rtrn_stdout:
-                                    yield_stdout_now = True
+        error = True if self.proc.returncode != 0 else False
 
-                        if p.stderr.fileno() in r:
-                            if rtrn_stderr.endswith(b'\n'):
-                                yield_stderr_now = True
+        # self.uuid being None means a release being updated,
+        # We will get false positives for EOL notices
+        if error and self.uuid is not None:
+            # EOL notice for jail updates
+            jail_eol_regex = \
+                rb'(WARNING: FreeBSD \d*\.\d-RELEASE HAS PASSED ITS'\
+                rb' END-OF-LIFE DATE)'
 
-                            if not yield_stderr_now:
-                                stderr = p.stderr.read()
-                                rtrn_stderr += stderr
+            if re.search(jail_eol_regex, _rtrn_stdout):
+                error = False
 
-                                if rtrn_stderr.endswith(b'\n') or \
-                                        not rtrn_stderr:
-                                    yield_stderr_now = True
-
-                        if yield_stdout_now and yield_stderr_now:
-                            yield_stdout_now = yield_stderr_now = False
-                            _rtrn_stdout = rtrn_stdout
-                            _rtrn_stderr = rtrn_stderr
-
-                            # Set up a new line
-                            stderr_queue.append(_rtrn_stderr)
-                            rtrn_stdout = rtrn_stderr = b''
-
-                            if self.msg_err_return:
-                                yield _rtrn_stdout, _rtrn_stderr
-                            else:
-                                yield _rtrn_stdout
-
-                p.stdout.close()
-                p.stderr.close()
-
-                error = True if p.returncode != 0 else False
-
-                # self.uuid being None means a release being updated,
-                # We will get false positives for EOL notices
-                if error and self.uuid is not None:
-                    # EOL notice for jail updates
-                    jail_eol_regex = \
-                        rb'(WARNING: FreeBSD \d*\.\d-RELEASE HAS PASSED ITS'\
-                        rb' END-OF-LIFE DATE)'
-
-                    if not re.search(jail_eol_regex, _rtrn_stdout):
-                        raise iocage_lib.ioc_exceptions.CommandFailed(
-                            stderr_queue)
-            else:
-                stdout = None if not self.silent else su.DEVNULL
-                stderr = None if not self.silent else su.DEVNULL
-
-                p = su.Popen(
-                    cmd, stdout=stdout, stderr=stderr, env=self.su_env
-                )
-                output, err = p.communicate()
-
-                if p.returncode != 0:
-                    return_output = output if output is not None else err
-                    return_output = \
-                        return_output.decode().rstrip if return_output else ''
-
-                    raise iocage_lib.ioc_exceptions.CommandFailed(
-                        return_output)
-
-                return "", False
-        except su.CalledProcessError as err:
-            return err.output.decode("utf-8").rstrip(), True
+            if error:
+                raise iocage_lib.ioc_exceptions.CommandFailed(
+                    list(stderr_queue))

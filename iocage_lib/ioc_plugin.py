@@ -513,7 +513,7 @@ fingerprint: {fingerprint}
             silent=True,
             plugin=True,
             callback=self.callback).create_install_packages(
-                uuid, jaildir, _conf, repo=conf["packagesite"], site=repo_name)
+                uuid, jaildir, _conf, repo=conf["packagesite"])
 
         if err:
             iocage_lib.ioc_common.logit(
@@ -585,20 +585,18 @@ fingerprint: {fingerprint}
                     _callback=self.callback,
                     silent=self.silent)
 
-                command = ["/bin/sh", "/root/post_install.sh"]
+                command = ["/root/post_install.sh"]
                 try:
-                    msg = iocage_lib.ioc_exec.IOCExec(
+                    with iocage_lib.ioc_exec.IOCExec(
                         command, uuid, jaildir, plugin=True,
                         skip=True, callback=self.callback,
-                        msg_return=True, su_env=plugin_env).exec_jail()
-
-                    for line in msg:
-                        iocage_lib.ioc_common.logit(
-                            {
-                                "level": "INFO",
-                                "message": line.decode().rstrip()
-                            },
-                            _callback=self.callback)
+                        su_env=plugin_env
+                    ) as _exec:
+                        msg = _exec.exec_jail()
+                        iocage_lib.ioc_common.consume_and_log(
+                            msg,
+                            callback=self.callback
+                        )
                 except iocage_lib.ioc_exceptions.CommandFailed as e:
                     iocage_lib.ioc_common.logit(
                         {
@@ -927,23 +925,27 @@ fingerprint: {fingerprint}
 
     def __update_pkg_remove__(self):
         """Remove all pkgs from the plugin"""
-        _, out_stderr, pkg_err = iocage_lib.ioc_exec.IOCExec(
-            command=["pkg", "delete", "-a", "-f", "-y"],
-            uuid=self.plugin,
-            path=f"{self.iocroot}/jails/{self.plugin}",
-            silent=True,
-            msg_err_return=True,
-            callback=self.callback).exec_jail()
-
-        if pkg_err:
+        try:
+            with iocage_lib.ioc_exec.IOCExec(
+                command=["pkg", "delete", "-a", "-f", "-y"],
+                uuid=self.plugin,
+                path=f"{self.iocroot}/jails/{self.plugin}",
+                callback=self.callback
+            ) as _exec:
+                output = _exec.exec_jail()
+                iocage_lib.ioc_common.consume_and_log(
+                    output,
+                    callback=self.callback,
+                    silent=self.silent
+                )
+        except iocage_lib.ioc_exceptions.CommandFailed as e:
             self.__rollback_jail__(name="update")
-            msg = out_stderr.decode()
             final_msg = "PKG error, update failed! Rolling back snapshot.\n"
 
             iocage_lib.ioc_common.logit(
                 {
                     "level": "ERROR",
-                    "message": msg
+                    "message": b'\n'.join(e.message).decode()
                 },
                 _callback=self.callback,
                 silent=self.silent)
@@ -998,8 +1000,6 @@ fingerprint: {fingerprint}
                     _callback=self.callback)
 
         for repo in pkg_repos:
-            repo_name = repo
-
             err = iocage_lib.ioc_create.IOCCreate(
                 self.release,
                 "",
@@ -1011,8 +1011,7 @@ fingerprint: {fingerprint}
                 self.plugin,
                 path,
                 conf,
-                repo=plugin_conf["packagesite"],
-                site=repo_name)
+                repo=plugin_conf["packagesite"])
 
             if err:
                 self.__rollback_jail__(name="update")
@@ -1154,21 +1153,38 @@ fingerprint: {fingerprint}
             _callback=self.callback,
             silent=self.silent)
 
-        out_stdout, err = iocage_lib.ioc_exec.IOCExec(
-            command,
-            self.plugin,
-            path,
-            plugin=True,
-            skip=True,
-            callback=self.callback
-        ).exec_jail()
+        try:
+            with iocage_lib.ioc_exec.IOCExec(
+                command,
+                self.plugin,
+                path,
+                plugin=True,
+                skip=True,
+                callback=self.callback
+            ) as _exec:
+                output = _exec.exec_jail()
+                iocage_lib.ioc_common.consume_and_log(
+                    output,
+                    callback=self.callback,
+                    silent=self.silent
+                )
+        except iocage_lib.ioc_exceptions.CommandFailed as e:
+            final_msg = 'An error occurred! Please read above'
 
-        if err:
+            iocage_lib.ioc_common.logit(
+                {
+                    "level": "ERROR",
+                    "message": b'\n'.join(e.message).decode()
+                },
+                _callback=self.callback,
+                silent=self.silent)
+
             iocage_lib.ioc_common.logit(
                 {
                     "level": "EXCEPTION",
-                    "message": "An error occurred! Please read above"
-                }, _callback=self.callback)
+                    "message": final_msg
+                },
+                _callback=self.callback)
 
     def __remove_snapshot__(self, name):
         """Removes all matching plugin snapshots"""
@@ -1184,24 +1200,32 @@ fingerprint: {fingerprint}
                 snap.delete()
 
     def __stop_rc__(self):
-        iocage_lib.ioc_exec.IOCExec(
+        with iocage_lib.ioc_exec.IOCExec(
             command=["/bin/sh", "/etc/rc.shutdown"],
             uuid=self.plugin,
             path=f"{self.iocroot}/jails/{self.plugin}",
-            silent=True,
-            msg_err_return=True,
             callback=self.callback
-        ).exec_jail()
+        ) as _exec:
+            output = _exec.exec_jail()
+            iocage_lib.ioc_common.consume_and_log(
+                output,
+                callback=self.callback,
+                silent=True
+            )
 
     def __start_rc__(self):
-        iocage_lib.ioc_exec.IOCExec(
+        with iocage_lib.ioc_exec.IOCExec(
             command=["/bin/sh", "/etc/rc"],
             uuid=self.plugin,
             path=f"{self.iocroot}/jails/{self.plugin}",
-            silent=True,
-            msg_err_return=True,
             callback=self.callback
-        ).exec_jail()
+        ) as _exec:
+            output = _exec.exec_jail()
+            iocage_lib.ioc_common.consume_and_log(
+                output,
+                callback=self.callback,
+                silent=True
+            )
 
     def __check_manifest__(self, plugin_conf):
         """If the Major ABI changed, they cannot update anymore."""
