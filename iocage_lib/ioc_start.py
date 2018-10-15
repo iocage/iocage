@@ -1007,11 +1007,7 @@ class IOCStart(object):
                 if default_if == 'auto':
                     default_if = self.get_default_gateway()[1]
 
-                if default_if == 'none':
-                    bridge_cmd = [
-                        "ifconfig", bridge, "create"
-                    ]
-                else:
+                if default_if != 'none':
                     bridge_cmd = [
                         "ifconfig", bridge, "create", "addm", default_if
                     ]
