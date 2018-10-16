@@ -256,8 +256,26 @@ class IOCList(object):
 
                         ip = ip.split("/", 1)[0] if "DHCP" not in full_ip4 \
                             else "DHCP"
-                        admin_portal = json.load(u)["adminportal"]
+                        ui_data = json.load(u)
+                        admin_portal = ui_data["adminportal"]
                         admin_portal = admin_portal.replace("%%IP%%", ip)
+
+                        try:
+                            ph = ui_data["adminportal_placeholders"].items()
+                            for placeholder, prop in ph:
+                                admin_portal = admin_portal.replace(
+                                    placeholder,
+                                    iocage_lib.ioc_json.IOCJson(
+                                        mountpoint).json_plugin_get_value(
+                                        prop.split("."))
+                                    )
+                        except KeyError:
+                            pass
+                        except iocage_lib.ioc_exceptions.CommandFailed as e:
+                            admin_portal = b' '.join(
+                                e.message).decode() if os.geteuid() == 0 else \
+                                "Admin Portal requires root"
+
                 except FileNotFoundError:
                     # They just didn't set a admin portal.
                     admin_portal = "-"
