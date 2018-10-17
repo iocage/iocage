@@ -708,10 +708,7 @@ class IOCCreate(object):
                 if not pkg_err:
                     break
 
-                pkg_err_msg = f'{pkg} :{pkg_stderr.decode().rstrip()}'
-                if pkg_err_msg not in pkg_err_list:
-                    pkg_err_list.append(pkg_err_msg)
-
+                pkg_err_msg = f'{pkg} :{pkg_stderr}'
                 iocage_lib.ioc_common.logit(
                     {
                         "level": 'INFO',
@@ -733,6 +730,8 @@ class IOCCreate(object):
                         _callback=self.callback)
                     break
                 elif pkg_retry == 3:
+                    if pkg_err_msg not in pkg_err_list:
+                        pkg_err_list.append(pkg_err_msg)
                     break
 
         os.remove(f"{location}/root/etc/resolv.conf")
