@@ -1466,9 +1466,13 @@ class IOCJson(object):
                     },
                     _callback=self.callback,
                     silent=self.silent)
-            iocage_lib.ioc_exec.SilentExec(
+            with iocage_lib.ioc_exec.IOCExec(
                 prop_cmd, uuid, _path
-            )
+            ) as _exec:
+                iocage_lib.ioc_common.consume_and_log(
+                    _exec,
+                    callback=self.callback
+                )
 
             if restart:
                 iocage_lib.ioc_common.logit(
@@ -1485,11 +1489,15 @@ class IOCJson(object):
                     },
                     _callback=self.callback,
                     silent=self.silent)
-                iocage_lib.ioc_exec.SilentExec(
+                with iocage_lib.ioc_exec.IOCExec(
                     servicerestart,
                     uuid,
                     _path
-                )
+                ) as _exec:
+                    iocage_lib.ioc_common.consume_and_log(
+                        _exec,
+                        callback=self.callback
+                    )
 
             iocage_lib.ioc_common.logit(
                 {
