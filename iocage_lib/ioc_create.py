@@ -580,12 +580,9 @@ class IOCCreate(object):
             silent=False)
 
         try:
-            with iocage_lib.ioc_exec.IOCExec(
+            iocage_lib.ioc_exec.SilentExec(
                 srv_connect_cmd, jail_uuid, location, plugin=self.plugin
-            ) as _exec:
-                out = _exec.exec_jail()
-                iocage_lib.ioc_common.consume_and_log(out, silent=True)
-
+            )
         except iocage_lib.ioc_exceptions.CommandFailed:
             # This shouldn't be fatal since SRV records are not required
             iocage_lib.ioc_common.logit({
@@ -603,11 +600,9 @@ class IOCCreate(object):
             _callback=self.callback,
             silent=False)
         try:
-            with iocage_lib.ioc_exec.IOCExec(
+            iocage_lib.ioc_exec.SilentExec(
                 dnssec_connect_cmd, jail_uuid, location, plugin=self.plugin,
-            ) as _exec:
-                out = _exec.exec_jail()
-                iocage_lib.ioc_common.consume_and_log(out, silent=True)
+            )
         except iocage_lib.ioc_exceptions.CommandFailed:
             # Not fatal, they may not be using DNSSEC
             iocage_lib.ioc_common.logit({
@@ -625,11 +620,9 @@ class IOCCreate(object):
                 silent=False)
 
             try:
-                with iocage_lib.ioc_exec.IOCExec(
+                iocage_lib.ioc_exec.SilentExec(
                     dns_connect_cmd, jail_uuid, location, plugin=self.plugin,
-                ) as _exec:
-                    out = _exec.exec_jail()
-                    iocage_lib.ioc_common.consume_and_log(out, silent=True)
+                )
             except iocage_lib.ioc_exceptions.CommandFailed:
                 iocage_lib.ioc_common.logit({
                     "level": "EXCEPTION",
@@ -689,11 +682,10 @@ class IOCCreate(object):
             with iocage_lib.ioc_exec.IOCExec(
                 cmd, jail_uuid, location, plugin=self.plugin, su_env=pkg_env
             ) as _exec:
-                pkg_stdout = _exec.exec_jail()
                 iocage_lib.ioc_common.consume_and_log(
-                     pkg_stdout,
+                     _exec,
                      callback=self.callback,
-                     silent=self.silent
+                     log=not(self.silent)
                 )
         except iocage_lib.ioc_exceptions.CommandFailed as e:
             iocage_lib.ioc_stop.IOCStop(jail_uuid, location, config,
@@ -735,11 +727,10 @@ class IOCCreate(object):
                         cmd, jail_uuid, location, plugin=self.plugin,
                         su_env=pkg_env
                     ) as _exec:
-                        pkg_stdout = _exec.exec_jail()
                         iocage_lib.ioc_common.consume_and_log(
-                            pkg_stdout,
+                            _exec,
                             callback=self.callback,
-                            silent=self.silent
+                            log=not(self.silent)
                         )
                 except iocage_lib.ioc_exceptions.CommandFailed as e:
                     pkg_stderr = e.message[-1].decode().rstrip()

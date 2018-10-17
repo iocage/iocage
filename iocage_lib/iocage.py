@@ -847,10 +847,8 @@ class IOCage(object):
                 pkg=pkg,
                 su_env=su_env
             ) as _exec:
-                msg = _exec.exec_jail()
                 msgs = ioc_common.consume_and_log(
-                    msg,
-                    return_list=True
+                    _exec
                 )
 
                 if msg_return:

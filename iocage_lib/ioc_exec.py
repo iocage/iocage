@@ -96,9 +96,17 @@ class IOCExec(object):
             self.cmd, stdout=su.PIPE, stderr=su.PIPE, close_fds=True,
             bufsize=0, env=self.su_env
         )
-        return self
+        self.exec_gen = self.exec_jail()
+
+        return self.exec_gen
 
     def __exit__(self, *args):
+        try:
+            for i in self.exec_gen:
+                continue
+        except StopIteration:
+            pass
+
         try:
             self.proc.wait(timeout=15)
         except su.TimeoutExpired:
@@ -216,3 +224,9 @@ class IOCExec(object):
             if error:
                 raise iocage_lib.ioc_exceptions.CommandFailed(
                     list(stderr_queue))
+
+
+class SilentExec(object):
+    def __init__(self, *args, **kwargs):
+        with IOCExec(*args, **kwargs) as silent:  # noqa
+            pass

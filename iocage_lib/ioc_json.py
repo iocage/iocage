@@ -1392,10 +1392,9 @@ class IOCJson(object):
                         _path,
                         plugin=True
                     ) as _exec:
-                        out = _exec.exec_jail()
                         prop_out = iocage_lib.ioc_common.consume_and_log(
-                            out,
-                            return_list=True
+                            _exec,
+                            log=False
                         )
                         return prop_out[0]
             else:
@@ -1467,15 +1466,9 @@ class IOCJson(object):
                     },
                     _callback=self.callback,
                     silent=self.silent)
-            with iocage_lib.ioc_exec.IOCExec(
+            iocage_lib.ioc_exec.SilentExec(
                 prop_cmd, uuid, _path
-            ) as _exec:
-                output = _exec.exec_jail()
-                iocage_lib.ioc_common.consume_and_log(
-                    output,
-                    callback=self.callback,
-                    silent=True
-                )
+            )
 
             if restart:
                 iocage_lib.ioc_common.logit(
@@ -1492,17 +1485,11 @@ class IOCJson(object):
                     },
                     _callback=self.callback,
                     silent=self.silent)
-                with iocage_lib.ioc_exec.IOCExec(
+                iocage_lib.ioc_exec.SilentExec(
                     servicerestart,
                     uuid,
                     _path
-                ) as _exec:
-                    output = _exec.exec_jail()
-                    iocage_lib.ioc_common.consume_and_log(
-                        output,
-                        callback=self.callback,
-                        silent=True
-                    )
+                )
 
             iocage_lib.ioc_common.logit(
                 {
