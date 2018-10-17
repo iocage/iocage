@@ -41,6 +41,7 @@ import iocage_lib.ioc_exceptions
 import libzfs
 import itertools
 import dns.resolver
+import dns.exception
 
 
 class IOCCreate(object):
@@ -560,9 +561,17 @@ class IOCCreate(object):
                 dns.resolver.query(repo)
             except dns.resolver.NoNameservers:
                 iocage_lib.ioc_common.logit({
-                    "level": "EXCEPTION",
-                    "message": f"{repo} could not be reached via DNS, check"
-                    " your network"
+                    'level': 'EXCEPTION',
+                    'message': f'{repo} could not be reached via DNS, check'
+                    ' your network'
+                },
+                    _callback=self.callback,
+                    silent=False)
+            except dns.exception.DNSException as e:
+                iocage_lib.ioc_common.logit({
+                    'level': 'EXCEPTION',
+                    'message': f'DNS Exception: {e}\n'
+                    f'{repo} could not be reached via DNS, check your network'
                 },
                     _callback=self.callback,
                     silent=False)
