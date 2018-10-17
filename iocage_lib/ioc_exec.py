@@ -45,9 +45,9 @@ class IOCExec(object):
                  host_user="root",
                  jail_user=None,
                  plugin=False,
-                 pkg=False,
+                 unjailed=False,
                  skip=False,
-                 console=False,
+                 stdin_bytestring=None,
                  su_env=None,
                  callback=None):
         self.command = command
@@ -56,8 +56,10 @@ class IOCExec(object):
         self.host_user = host_user
         self.jail_user = jail_user
         self.plugin = plugin
-        self.pkg = pkg
+        self.unjailed = unjailed
         self.skip = skip
+        self.stdin_bytestring = stdin_bytestring
+        self.stdin = su.PIPE if self.stdin_bytestring is not None else None
 
         path = '/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:'\
                '/usr/local/bin:/root/bin'
@@ -78,7 +80,7 @@ class IOCExec(object):
 
             self.flight_checks()
 
-            if not self.pkg:
+            if not self.unjailed:
                 if self.jail_user:
                     flag = "-U"
                     user = self.jail_user
@@ -93,9 +95,13 @@ class IOCExec(object):
 
     def __enter__(self):
         self.proc = su.Popen(
-            self.cmd, stdout=su.PIPE, stderr=su.PIPE, close_fds=True,
-            bufsize=0, env=self.su_env
+            self.cmd, stdout=su.PIPE, stderr=su.PIPE, stdin=self.stdin,
+            close_fds=True, bufsize=0, env=self.su_env
         )
+
+        if self.stdin is not None:
+            self.proc.stdin.write(self.stdin_bytestring)
+
         self.exec_gen = self.exec_jail()
 
         return self.exec_gen
@@ -109,8 +115,20 @@ class IOCExec(object):
 
         try:
             self.proc.wait(timeout=15)
+
+            self.proc.stdout.close()
+            self.proc.stderr.close()
+
+            if self.stdin is not None:
+                self.proc.stdin.close()
         except su.TimeoutExpired:
             self.proc.kill()
+
+            self.proc.stdout.close()
+            self.proc.stderr.close()
+
+            if self.stdin is not None:
+                self.proc.stdin.close()
 
     def flight_checks(self):
         if not self.status:
@@ -210,7 +228,7 @@ class IOCExec(object):
 
         error = True if self.proc.returncode != 0 else False
 
-        # self.uuid being None means a release being updated,
+        # self.uuid being None means a RELEASE being updated,
         # We will get false positives for EOL notices
         if error and self.uuid is not None:
             # EOL notice for jail updates

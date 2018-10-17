@@ -100,19 +100,25 @@ class IOCUpgrade(object):
             tmp.close()
             os.chmod(tmp.name, 0o755)
 
-            fetch = su.Popen(
-                [
+            fetch_cmd = [
                     tmp.name, "-b", self.path, "-d",
                     f"{self.path}/var/db/freebsd-update/", "-f",
                     f"{self.path}/etc/freebsd-update.conf",
                     "--not-running-from-cron", "--currently-running "
                     f"{self.jail_release}", "-r", self.new_release, "upgrade"
-                ],
-                stdin=su.PIPE, env=self.upgrade_env)
-            fetch.communicate(b"y")
-
-            if fetch.returncode:
-                raise RuntimeError("Error occured, jail not upgraded!")
+            ]
+            with iocage_lib.ioc_exec.IOCExec(
+                fetch_cmd,
+                self.uuid,
+                self.path.replace('/root', ''),
+                unjailed=True,
+                stdin_bytestring=b'y\n',
+                callback=self.callback,
+            ) as _exec:
+                iocage_lib.ioc_common.consume_and_log(
+                    _exec,
+                    callback=self.callback
+                )
 
             while not self.__upgrade_install__(tmp.name):
                 pass
@@ -133,7 +139,7 @@ class IOCUpgrade(object):
                 os.remove(tmp.name)
 
         iocage_lib.ioc_json.IOCJson(
-            f"{self.path.replace('/root', '')}",
+            self.path.replace('/root', ''),
             silent=True).json_set_value(f"release={new_release}")
 
         return new_release
@@ -269,27 +275,27 @@ class IOCUpgrade(object):
 
     def __upgrade_install__(self, name):
         """Installs the upgrade and returns the exit code."""
-        install = su.Popen(
-            [
+        install_cmd = [
                 name, "-b", self.path, "-d",
                 f"{self.path}/var/db/freebsd-update/", "-f",
                 f"{self.path}/etc/freebsd-update.conf", "-r", self.new_release,
                 "install"
-            ],
-            stderr=su.PIPE,
-            stdout=su.PIPE)
+        ]
 
-        for i in install.stdout:
-            i = i.decode().rstrip()
-            iocage_lib.ioc_common.logit(
-                {
-                    "level": "INFO",
-                    "message": i
-                },
-                _callback=self.callback,
-                silent=self.silent)
+        with iocage_lib.ioc_exec.IOCExec(
+            install_cmd,
+            self.uuid,
+            self.path.replace('/root', ''),
+            unjailed=True,
+            callback=self.callback,
+        ) as _exec:
+            update_output = iocage_lib.ioc_common.consume_and_log(
+                _exec,
+                callback=self.callback
+            )
 
-            if i == "No updates are available to install.":
+        for i in update_output:
+            if i == 'No updates are available to install.':
                 return True
 
         return False

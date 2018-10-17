@@ -753,9 +753,10 @@ class IOCage(object):
              jail_user=None,
              console=False,
              interactive=False,
-             pkg=False,
+             unjailed=False,
              msg_return=False):
         """Executes a command in the jail as the supplied users."""
+        pkg = unjailed
 
         if host_user and jail_user:
             ioc_common.logit(
@@ -844,7 +845,7 @@ class IOCage(object):
                 path,
                 host_user,
                 jail_user,
-                pkg=pkg,
+                unjailed=pkg,
                 su_env=su_env
             ) as _exec:
                 msgs = ioc_common.consume_and_log(
@@ -1817,7 +1818,8 @@ class IOCage(object):
                     "message":
                     f"\nHost: {host_release} is not greater than"
                     f" target: {_release}\nThis is unsupported."
-                })
+                },
+                _callback=self.callback)
 
         uuid, path = self.__check_jail_existence__()
         root_path = f"{path}/root"
@@ -1840,7 +1842,8 @@ class IOCage(object):
                         "level": "EXCEPTION",
                         "message":
                         f"Jail: {uuid} is already at version {release}!"
-                    })
+                    },
+                    _callback=self.callback)
 
         started = False
         basejail = False
@@ -1851,7 +1854,8 @@ class IOCage(object):
                 {
                     "level": "EXCEPTION",
                     "message": "Upgrading is not supported for empty jails."
-                })
+                },
+                _callback=self.callback)
 
         if conf["type"] == "jail":
             if not status:
@@ -1860,11 +1864,19 @@ class IOCage(object):
 
             if conf["basejail"] == "yes":
                 new_release = ioc_upgrade.IOCUpgrade(
-                    conf, release, root_path).upgrade_basejail()
+                    conf,
+                    release,
+                    root_path,
+                    callback=self.callback
+                ).upgrade_basejail()
                 basejail = True
             else:
-                new_release = ioc_upgrade.IOCUpgrade(conf, release,
-                                                     root_path).upgrade_jail()
+                new_release = ioc_upgrade.IOCUpgrade(
+                    conf,
+                    release,
+                    root_path,
+                    callback=self.callback
+                ).upgrade_jail()
         elif conf["type"] == "basejail":
             ioc_common.logit(
                 {
@@ -1873,7 +1885,8 @@ class IOCage(object):
                     "message":
                     "Please run \"iocage migrate\" before trying"
                     f" to upgrade {uuid}"
-                })
+                },
+                _callback=self.callback)
         elif conf["type"] == "template":
             ioc_common.logit(
                 {
@@ -1882,20 +1895,25 @@ class IOCage(object):
                     "message":
                     "Please convert back to a jail before trying"
                     f" to upgrade {uuid}"
-                })
+                },
+                _callback=self.callback)
         elif conf["type"] == "pluginv2":
             if not status:
                 ioc_start.IOCStart(uuid, path, conf, silent=True)
                 started = True
 
-            new_release = ioc_plugin.IOCPlugin(plugin=uuid).upgrade()
+            new_release = ioc_plugin.IOCPlugin(
+                plugin=uuid,
+                callback=self.callback
+            ).upgrade()
             plugin = True
         else:
             ioc_common.logit(
                 {
                     "level": "EXCEPTION",
                     "message": f"{conf['type']} is not a supported jail type."
-                })
+                },
+                _callback=self.callback)
 
         if started:
             _silent = self.silent
@@ -1919,7 +1937,8 @@ Remove the snapshot: ioc_upgrade_{_date} if everything is OK
         ioc_common.logit({
             "level": "INFO",
             "message": msg
-        })
+        },
+                _callback=self.callback)
 
     def debug(self, directory):
         if directory is None:
