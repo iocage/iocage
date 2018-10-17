@@ -888,9 +888,8 @@ class IOCFetch(object):
                 callback=self.callback,
                 su_env=fetch_env
             ) as _exec:
-                stdout = _exec.exec_jail()
                 iocage_lib.ioc_common.consume_and_log(
-                    stdout, callback=self.callback)
+                    _exec, callback=self.callback)
 
             fetch_install_cmd = [
                     fetch_name, "-b", mount_root, "-d",
@@ -905,9 +904,8 @@ class IOCFetch(object):
                 callback=self.callback,
                 su_env=fetch_env
             ) as _exec:
-                stdout = _exec.exec_jail()
                 iocage_lib.ioc_common.consume_and_log(
-                    stdout, callback=self.callback)
+                    _exec, callback=self.callback)
 
             if self.verify:
                 # tmp only exists if they verify SSL certs

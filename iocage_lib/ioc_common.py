@@ -772,7 +772,7 @@ def match_to_dir(iocroot, uuid, old_uuid=None):
         return None
 
 
-def consume_and_log(exec_gen, return_list=False, callback=None, silent=False):
+def consume_and_log(exec_gen, log=True, callback=None):
     """
     Consume a generator and massage the output with lines
     """
@@ -780,17 +780,14 @@ def consume_and_log(exec_gen, return_list=False, callback=None, silent=False):
     output_list = []
 
     for stdout, _ in exec_gen:
-        if silent:
-            continue
-
         final_output += stdout.decode()
 
         if not final_output.endswith('\n'):
             continue
 
-        if return_list:
-            output_list.append(final_output.rstrip())
-        else:
+        output_list.append(final_output.rstrip())
+
+        if log:
             logit({
                 "level": "INFO",
                 "message": final_output.rstrip()
@@ -798,5 +795,4 @@ def consume_and_log(exec_gen, return_list=False, callback=None, silent=False):
                 _callback=callback)
         final_output = ''
 
-    if return_list:
-        return output_list
+    return output_list
