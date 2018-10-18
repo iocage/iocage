@@ -198,14 +198,19 @@ class IOCUpgrade(object):
         if not ioc_up_dir.exists():
             ioc_up_dir.mkdir(exist_ok=True, parents=True)
 
-        mount = su.Popen([
+        mount_cmd = [
             "mount_nullfs", "-o", "ro",
             f"{self.iocroot}/releases/{self.new_release}/root/usr/src",
             f"{self.path}/iocage_upgrade"
-        ])
-        mount.communicate()
-
-        if mount.returncode != 0:
+        ]
+        try:
+            iocage_lib.ioc_exec.SilentExec(
+                mount_cmd,
+                self.uuid,
+                self.path.replace('/root', ''),
+                unjailed=True
+            )
+        except iocage_lib.ioc_exceptions.CommandFailed:
             msg = "Mounting src into jail failed! Rolling back snapshot."
             self.__rollback_jail__()
 
@@ -217,16 +222,18 @@ class IOCUpgrade(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-        stdout = None if not self.silent else su.DEVNULL
-        stderr = None if self.silent else su.DEVNULL
-
-        etcupdate = su.Popen([
+        etcupdate_cmd = [
             "/usr/sbin/jexec", f"ioc-{self.uuid.replace('.', '_')}",
             "/usr/sbin/etcupdate", "-F", "-s", "/iocage_upgrade"
-        ], stdout=stdout, stderr=stderr, env=self.upgrade_env)
-        etcupdate.communicate()
-
-        if etcupdate.returncode != 0:
+        ]
+        try:
+            iocage_lib.ioc_exec.SilentExec(
+                etcupdate_cmd,
+                self.uuid,
+                self.path.replace('/root', ''),
+                unjailed=True
+            )
+        except iocage_lib.ioc_exceptions.CommandFailed:
             # These are now the result of a failed merge, nuking and putting
             # the backup back
             msg = "etcupdate failed! Rolling back snapshot."
@@ -263,13 +270,21 @@ class IOCUpgrade(object):
         if not mq.exists():
             mq.mkdir(exist_ok=True, parents=True)
 
-        su.check_call([
-            "/usr/sbin/jexec", f"ioc-{self.uuid.replace('.', '_')}",
-            "newaliases"
-        ], stdout=stdout, stderr=stderr, env=self.upgrade_env)
-        su.Popen([
+        iocage_lib.ioc_exec.SilentExec(
+            ['newaliases'],
+            self.uuid,
+            self.path.replace('/root', ''),
+        )
+
+        umount_command = [
             "umount", "-f", f"{self.path}/iocage_upgrade"
-        ]).communicate()
+        ]
+        iocage_lib.ioc_exec.SilentExec(
+            umount_command,
+            self.uuid,
+            self.path.replace('/root', ''),
+            unjailed=True
+        )
 
         return new_release
 
