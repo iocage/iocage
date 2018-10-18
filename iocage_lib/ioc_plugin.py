@@ -1063,6 +1063,14 @@ fingerprint: {fingerprint}
         plugin_release = plugin_conf["release"]
         iocage_lib.ioc_common.check_release_newer(
             plugin_release, self.callback, self.silent)
+
+        # We want the new json to live with the jail
+        plugin_name = self.plugin.rsplit('_', 1)[0]
+        shutil.copy(
+            f'{self.iocroot}/.plugin_index/{plugin_name}.json',
+            f'{self.iocroot}/jails/{self.plugin}/{self.plugin}.json'
+        )
+
         release_p = pathlib.Path(f"{self.iocroot}/releases/{plugin_release}")
 
         if not release_p.exists():
