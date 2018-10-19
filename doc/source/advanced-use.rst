@@ -120,6 +120,9 @@ To enable a jail to auto-boot during a system boot, simply run:
 
 :samp:`# iocage set boot=on UUID|NAME`
 
+.. note:: Setting :command:`boot=on` during jail creation starts the
+   jail after the jail is created.
+
 .. index:: Boot Priority
 .. _Boot Priority:
 

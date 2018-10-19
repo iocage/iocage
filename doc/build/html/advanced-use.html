@@ -127,6 +127,11 @@ applies to basejails.</p>
 <p>Make sure <strong class="command">iocage_enable=&quot;YES&quot;</strong> is set in <code class="file docutils literal"><span class="pre">/etc/rc.conf</span></code>.</p>
 <p>To enable a jail to auto-boot during a system boot, simply run:</p>
 <p><code class="samp docutils literal"><span class="pre">#</span> <span class="pre">iocage</span> <span class="pre">set</span> <span class="pre">boot=on</span> <span class="pre">UUID|NAME</span></code></p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Setting <strong class="command">boot=on</strong> during jail creation starts the
+jail after the jail is created.</p>
+</div>
 <div class="section" id="boot-priority">
 <span id="index-7"></span><span id="id7"></span><h3>Boot Priority<a class="headerlink" href="#boot-priority" title="Permalink to this headline">¶</a></h3>
 <p>Boot order can be specified by setting the priority value:</p>
