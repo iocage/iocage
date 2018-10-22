@@ -81,6 +81,9 @@ def logit(content, _callback=None, silent=False, exception=RuntimeError):
         # They need to see these errors, too bad!
         return
 
+    if content['level'] == "EXCEPTION":
+        callback(content, exception)
+
     # This will log with our callback method if they didn't supply one.
     _callback = _callback if callable(_callback) else callback
     _callback(content, exception)
