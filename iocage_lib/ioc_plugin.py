@@ -167,7 +167,7 @@ class IOCPlugin(object):
             self.__fetch_plugin_install_packages__(jail_name, jaildir, conf,
                                                    _conf, pkg, props, repo_dir)
             self.__fetch_plugin_post_install__(conf, _conf, jaildir, jail_name)
-        except (KeyboardInterrupt, SystemExit, RuntimeError) as e:
+        except Exception as e:
             if not self.keep_jail_on_failure:
                 iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(location)
                 iocage_lib.ioc_common.logit({
