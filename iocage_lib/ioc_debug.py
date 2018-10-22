@@ -84,6 +84,7 @@ class IOCDebug(object):
         jail_path = f'{path}/root'
 
         all_props = self.__get_jail_props__(name, path)
+        fstab = self.__execute_debug__(['cat', f'{path}/fstab'], jail=name)
         hosts = self.__execute_debug__(['cat', f'{jail_path}/etc/hosts'],
                                        jail=name)
         rc = self.__execute_debug__(['cat', f'{jail_path}/etc/rc.conf'],
@@ -105,6 +106,7 @@ class IOCDebug(object):
         )
 
         self.__write_debug__(all_props, jail_debug_path, 'PROPS', json=True)
+        self.__write_debug__(fstab, jail_debug_path, '\nFSTAB')
         self.__write_debug__(hosts, jail_debug_path, '\n/ETC/HOSTS')
         self.__write_debug__(rc, jail_debug_path, '\n/ETC/RC.CONF')
         self.__write_debug__(nsswitch, jail_debug_path, '\n/ETC/NSSWITCH.CONF')
