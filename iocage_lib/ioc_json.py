@@ -909,11 +909,21 @@ class IOCJson(object):
                 # 9.3-RELEASE and under don't actually have this binary.
                 release = conf["release"]
             else:
-                with open(freebsd_version, "r") as r:
-                    for line in r:
-                        if line.startswith("USERLAND_VERSION"):
-                            release = line.rstrip().partition("=")[2]
-                            release = release.strip('"')
+                try:
+                    with open(freebsd_version, "r") as r:
+                        for line in r:
+                            if line.startswith("USERLAND_VERSION"):
+                                release = line.rstrip().partition("=")[2]
+                                release = release.strip('"')
+                except Exception as e:
+                    iocage_lib.ioc_common.logit(
+                        {
+                            'level': 'EXCEPTION',
+                            'message': 'Exception:'
+                            f' "{e.__class__.__name__}:{str(e)}" occured\n'
+                            "Loading {uuid}'s configuration failed"
+                        }
+                    )
 
                 cloned_release = conf["release"]
 
