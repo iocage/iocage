@@ -74,7 +74,7 @@
 .Op Fl U | -jail_user Ar NAME
 .Op Fl u | -host_user Ar NAME
 .Ar UUID | NAME
-.Cm COMMAND Op Ar ARGS
+.Cm -- COMMAND Op Ar ARGS
 .\" == EXPORT ==
 .Nm
 .Cm export
@@ -507,7 +507,8 @@ When using
 use the JID instead of the jail name.
 For more info see the manual page for
 .Xr jexec .
-Use -- in front of specified options to prevent iocage from parsing them.
+Use -- in front of the specified command to prevent iocage from parsing
+them.
 .Pp
 Options:
 .Bl -tag -width "[-u | --host_user NAME]"
@@ -1606,7 +1607,7 @@ Default: 0
 Source:
 .Xr jail 8
 .It Pf allow_tun= Op 0 | 1
-Unhides tun devices for the jail with a individual devfsruleset.
+Unhides tun devices for the jail with an individual devfsruleset.
 Allows the creation of tuns in the jail.
 .Pp
 Default: 0
@@ -1816,11 +1817,11 @@ Default: none
 .Pp
 Source:
 .Xr jail(8)
-.It Pf vnet_defualt_interface= Op none | Ar INTERFACE
-Defualt network interface used for the VNET bridge interface in the jail.
-Only takes effect when VNET is set and bridge interfaces are not active.
+.It Pf vnet_default_interface= Op none | Ar INTERFACE
+Default network interface used for the VNET bridge interface in the jail.
+Only takes effect when VNET is set.
 .Pp
-Defualt: none
+Default: none
 .El
 .Sh EXAMPLES
 Set up
@@ -1873,9 +1874,8 @@ Also see
 for how traffic is handled.
 Basically, bridges behave like a network switch.
 .Pp
-The PF firewall is supported inside VNET jails, and uses VNET for
-automated testing of PF.
-IPFW is fully supported inside a VNET jail.
+The PF firewall is supported inside VNET jails.
+IPFW and PF are fully supported inside a VNET jail.
 .Pp
 The actual jail name in the
 .Xr jls 8
