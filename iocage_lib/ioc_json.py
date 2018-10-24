@@ -906,6 +906,8 @@ class IOCJson(object):
             if release[:4].endswith("-"):
                 # 9.3-RELEASE and under don't actually have this binary.
                 release = conf["release"]
+            elif release == 'EMPTY':
+                pass
             else:
                 try:
                     with open(freebsd_version, "r") as r:
@@ -919,7 +921,7 @@ class IOCJson(object):
                             'level': 'EXCEPTION',
                             'message': 'Exception:'
                             f' "{e.__class__.__name__}:{str(e)}" occured\n'
-                            "Loading {uuid}'s configuration failed"
+                            f"Loading {uuid}'s configuration failed"
                         }
                     )
 
