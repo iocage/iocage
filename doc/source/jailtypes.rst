@@ -10,6 +10,7 @@ iocage supports several different jail types:
 * Basejail
 * Template
 * Empty
+* Thickjail
 
 All jail types have specific benefits and drawbacks, serving a variety
 of unique needs. This section describes and has creation examples for
@@ -86,3 +87,19 @@ an empty jail with :command:`iocage create -e`.
 
 These are ideal for experimentation with unsupported RELEASES or Linux
 jails.
+
+.. index:: Thickjail
+.. _Thick:
+
+Thickjail
+---------
+
+Thickjails jails are created with:
+
+:samp:`# iocage create -T -r 11.2-RELEASE`
+
+Thickjails are copied from the appropriate RELEASE at creation
+time. These consume a huge amount of space, but are fully independent.
+
+These are ideal for transmission or synchronization btween different 
+hosts with :command:`zfs send` and :command:`zfs receive`.
