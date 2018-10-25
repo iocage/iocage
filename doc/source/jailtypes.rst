@@ -99,7 +99,7 @@ Thickjails jails are created with:
 :samp:`# iocage create -T -r 11.2-RELEASE`
 
 Thickjails are copied from the appropriate RELEASE at creation
-time. These consume a huge amount of space, but are fully independent.
+time. These consume a large amount of space, but are fully independent.
 
-These are ideal for transmission or synchronization btween different 
+These are ideal for transmission or synchronization between different 
 hosts with :command:`zfs send` and :command:`zfs receive`.
