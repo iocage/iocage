@@ -854,24 +854,17 @@ class IOCJson(object):
                 },
                 _callback=self.callback,
                 silent=self.silent)
+        conf['CONFIG_VERSION'] = self.json_get_version()
 
         # Version 2 keys
-        try:
-            sysvmsg = conf["sysvmsg"]
-            sysvsem = conf["sysvsem"]
-            sysvshm = conf["sysvshm"]
-        except KeyError:
-            sysvmsg = "new"
-            sysvsem = "new"
-            sysvshm = "new"
-
-        # Set all keys, even if it's the same value.
-        conf["sysvmsg"] = sysvmsg
-        conf["sysvsem"] = sysvsem
-        conf["sysvshm"] = sysvshm
+        if not conf.get('sysvmsg'):
+            conf['sysvmsg'] = 'new'
+        if not conf.get('sysvsem'):
+            conf['sysvsem'] = 'new'
+        if not conf.get('sysvshm'):
+            conf['sysvshm'] = 'new'
 
         # Version 3 keys
-
         if not default:
             release = conf.get("release", None)
 
@@ -908,6 +901,8 @@ class IOCJson(object):
             if release[:4].endswith("-"):
                 # 9.3-RELEASE and under don't actually have this binary.
                 release = conf["release"]
+            elif release == 'EMPTY':
+                pass
             else:
                 try:
                     with open(freebsd_version, "r") as r:
@@ -921,7 +916,7 @@ class IOCJson(object):
                             'level': 'EXCEPTION',
                             'message': 'Exception:'
                             f' "{e.__class__.__name__}:{str(e)}" occured\n'
-                            "Loading {uuid}'s configuration failed"
+                            f"Loading {uuid}'s configuration failed"
                         }
                     )
 
@@ -932,28 +927,20 @@ class IOCJson(object):
             conf["cloned_release"] = cloned_release
 
             # Version 4 keys
-            try:
-                basejail = conf["basejail"]
-            except KeyError:
-                basejail = "no"
-
-            # Set all keys, even if it's the same value.
-            conf["basejail"] = basejail
+            if not conf.get('basejail'):
+                conf['basejail'] = 'no'
 
         # Version 5 keys
-        try:
-            comment = conf["comment"]
-        except KeyError:
-            comment = "none"
-
-        # Set all keys, even if it's the same value.
-        conf["comment"] = comment
+        if not conf.get('comment'):
+            conf['comment'] = 'none'
 
         # Version 6 keys
-        conf["host_time"] = "yes"
+        if not conf.get('host_time'):
+            conf['host_time'] = 'yes'
 
         # Version 7 keys
-        conf["depends"] = "none"
+        if not conf.get('depends'):
+            conf['depends'] = 'none'
 
         # Version 8 migration from uuid to tag named dataset
         try:
@@ -1005,46 +992,22 @@ class IOCJson(object):
             pass
 
         # Version 9 keys
-        try:
-            dhcp = conf["dhcp"]
-            bpf = conf["bpf"]
-        except KeyError:
-            dhcp = "off"
-            bpf = "no"
-
-        # Set all keys, even if it's the same value.
-        conf["dhcp"] = dhcp
-        conf["bpf"] = bpf
+        if not conf.get('dhcp'):
+            conf['dhcp'] = 'off'
+        if not conf.get('bpf'):
+            conf['bpf'] = 'no'
 
         # Version 10 keys
-        try:
-            vnet_interfaces = conf["vnet_interfaces"]
-        except KeyError:
-            vnet_interfaces = "none"
-
-        # Set all keys, even if it's the same value.
-        conf["vnet_interfaces"] = vnet_interfaces
-
-        # Set all keys, even if it's the same value.
-        conf["CONFIG_VERSION"] = self.json_get_version()
+        if not conf.get('vnet_interfaces'):
+            conf['vnet_interfaces'] = 'none'
 
         # Version 11 keys
-        try:
-            hostid_strict_check = conf["hostid_strict_check"]
-        except KeyError:
-            hostid_strict_check = "off"
-
-        # Set all keys, even if it's the same value.
-        conf["hostid_strict_check"] = hostid_strict_check
+        if not conf.get('hostid_strict_check'):
+            conf['hostid_strict_check'] = 'off'
 
         # Version 12 keys
-        try:
-            allow_mlock = conf["allow_mlock"]
-        except KeyError:
-            allow_mlock = "0"
-
-        # Set all keys, even if it's the same value.
-        conf["allow_mlock"] = allow_mlock
+        if not conf.get('allow_mlock'):
+            conf['allow_mlock'] = '0'
 
         # Version 13 keys
         if not conf.get('vnet_default_interface'):
@@ -1082,7 +1045,6 @@ class IOCJson(object):
                         silent=self.silent)
 
         # The above doesn't get triggered with legacy short UUIDs
-
         if renamed:
             self.location = f"{iocroot}/jails/{tag}"
 
