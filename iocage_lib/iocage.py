@@ -774,7 +774,14 @@ class IOCage(object):
         exec_clean = self.get('exec_clean')
 
         if exec_clean == '1':
-            su_env = None
+            env_path = '/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:'\
+                   '/usr/local/bin:/root/bin'
+            su_env = {
+                'PATH': env_path,
+                'PWD': '/',
+                'HOME': '/',
+                'TERM': 'xterm-256color'
+                }
         else:
             su_env = os.environ.copy()
 

@@ -73,7 +73,8 @@ class IOCUpgrade(object):
             'PAGER': '/bin/cat',
             'PATH': path,
             'PWD': '/',
-            'HOME': '/'
+            'HOME': '/',
+            'TERM': 'xterm-256color'
             }
 
         self.callback = callback
