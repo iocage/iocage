@@ -857,7 +857,8 @@ class IOCFetch(object):
             'PAGER': '/bin/cat',
             'PATH': path,
             'PWD': '/',
-            'HOME': '/'
+            'HOME': '/',
+            'TERM': 'xterm-256color'
             }
 
         if os.path.isfile(f"{mount_root}/etc/freebsd-update.conf"):

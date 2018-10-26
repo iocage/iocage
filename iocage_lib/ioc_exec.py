@@ -67,6 +67,7 @@ class IOCExec(object):
         su_env.setdefault('PATH', path)
         su_env.setdefault('PWD', '/')
         su_env.setdefault('HOME', '/')
+        su_env.setdefault('TERM', 'xterm-256color')
 
         self.su_env = su_env
         self.callback = callback
