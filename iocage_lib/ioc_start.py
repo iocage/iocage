@@ -891,7 +891,13 @@ class IOCStart(object):
             mac_a, mac_b = self.__generate_mac_address_pair(nic)
             self.set(f"{nic}_mac={mac_a} {mac_b}")
         else:
-            mac_a, mac_b = mac.replace(',', ' ').split()
+            try:
+                mac_a, mac_b = mac.replace(',', ' ').split()
+            except Exception as e:
+                iocage_lib.ioc_common.logit({
+                    "level": "EXCEPTION",
+                    "message": f'Please correct mac addresses format for {nic}'
+                })
 
         return mac_a, mac_b
 
