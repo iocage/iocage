@@ -646,72 +646,69 @@ def check_release_newer(release, callback=None, silent=False):
             silent=silent)
 
 
-def construct_devfs(ruleset_name, paths, includes=None, comment=None):
+def generate_devfs_ruleset(conf, paths=None, includes=None):
     """
-    ruleset_name: The ruleset without the brackets or a number,
-        for example 'foo' will be contructed into [foo=IOCAGE_GEN_RULENUM]
+    Will add a per jail devfs ruleset with the specified rules
 
-    Will construct a devfs ruleset from dict(paths), and list(includes) with:
-        paths dict:
-            EXAMPLE: "usbctl": mode 660 group uucp
-            - path to unhide: mode (can be None)
-        includes list:
-            EXAMPLE ["$devfsrules_hide_all", "$devfsrules_unhide_basic"]
-            - [entry, entry]
-
-    Returns a tuple containing the string and which devfs_ruleset got assigned.
+    Returns the devfs_ruleset number that has been allocated.
     """
-    includes = [] if includes is None else includes
-    ct_str = f'## {ruleset_name}' if comment is None else comment
-    rules = []
-    ruleset_number = 5  # The system has 4 already claimed.
+    ruleset = 5  # 0-4 is always reserved
+    devfs_rulesets = su.run(
+        ['devfs', 'rule', 'showsets'],
+        stdout=su.PIPE, universal_newlines=True
+    )
+    ruleset_list = [int(i) for i in devfs_rulesets.stdout.splitlines()]
+    devfs_dict = {
+        'zfs': None
+    }
+    devfs_includes = [
+        '1',  # '$devfsrules_hide_all'
+        '2',  # '$devfsrules_unhide_basic'
+        '3',  # '$devfsrules_unhide_login'
+    ]
 
-    try:
-        with open('/etc/devfs.rules', 'r') as f:
-            exists = False
+    while ruleset in ruleset_list:
+        ruleset += 1
 
-            for line in f.readlines():
-                if line.rstrip() == ct_str:
-                    exists = True
-                    continue
+    ruleset = str(ruleset)
+    if paths is not None:
+        devfs_dict.update(paths)
 
-                if exists:
-                    return None, int(line.rsplit('=')[1].strip(']\n'))
+    if includes is not None:
+        devfs_includes += includes
 
-                if line.startswith('['):
-                    try:
-                        line = int(line.rsplit('=')[1].strip(']\n'))
-                    except IndexError:
-                        rules.append(line)
-                    rules.append(line)
-    except FileNotFoundError:
-        logit(
-            {
-                'level': 'EXCEPTION',
-                'message':
-                    '/etc/devfs.rules could not be found, unable to continue.'
-            }
+    # We may end up setting all of these.
+    if conf['allow_tun'] == '1':
+        devfs_dict['tun*'] = None
+    if conf['dhcp'] == 'on':
+        devfs_dict['bpf*'] = None
+
+    for include in devfs_includes:
+        # In case a plugin or something tries to use the human readable names
+        if include == '$devfsrules_hide_all':
+            include = '1'
+        elif include == '$devfsrules_unhide_basic':
+            include = '2'
+        elif include == '$devfsrules_unhide_login':
+            include = '3'
+
+        su.run(
+            ['devfs', 'rule', '-s', ruleset, 'add', 'include', include],
+            stdout=su.PIPE
         )
 
-    while ruleset_number in rules:
-        ruleset_number += 1
-
-    devfs_string = f'\n{ct_str}\n[{ruleset_name}={ruleset_number}]'
-
-    for include in includes:
-        devfs_string += f'\nadd include {include}'
-
-    for path, mode in paths.items():
-        path_str = f'add path \'{path}\''
+    for path, mode in devfs_dict.items():
+        # path = ['add', 'path', f"'{path}'"]
+        path = ['add', 'path', path]
 
         if mode is not None:
-            path_str += f' {mode}'
+            path += [mode]
         else:
-            path_str += ' unhide'
+            path += ['unhide']
 
-        devfs_string += f'\n{path_str}'
+        su.run(['devfs', 'rule', '-s', ruleset] + path, stdout=su.PIPE)
 
-    return f'{devfs_string}\n', str(ruleset_number)
+    return ruleset
 
 
 def runscript(script):
