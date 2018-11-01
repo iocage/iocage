@@ -122,7 +122,8 @@ def ioc_sort(caller, s_type, data=None):
         "ava": sort_ava,
         "created": sort_created,
         "rsize": sort_res,
-        "used": sort_qta
+        "used": sort_qta,
+        "key": sort_key
     }
 
     list_full_sorts = [
@@ -328,6 +329,12 @@ def sort_name(name):
             name = name[1]
 
     return get_name_sortkey(name)
+
+
+def sort_key(item):
+    """Sort list by the first key."""
+
+    return (list(item.keys())[0],)
 
 
 def sort_template(template):
