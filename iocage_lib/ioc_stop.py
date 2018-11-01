@@ -22,8 +22,6 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """This stops jails."""
-import os
-import re
 import subprocess as su
 import netifaces
 
@@ -287,6 +285,45 @@ class IOCStop(object):
                                 raise RuntimeError(
                                     "{}".format(
                                         err.output.decode("utf-8").strip()))
+
+        # Clean up after our dynamic devfs rulesets
+        ruleset = su.check_output(
+            [
+                'jls', '-j', f'ioc-{self.uuid}', 'devfs_ruleset'
+            ]
+        ).decode().rstrip()
+
+        if int(ruleset) > 4:
+            try:
+                su.run(
+                    ['devfs', 'rule', '-s', ruleset, 'delset'],
+                    stdout=su.PIPE
+                )
+
+                msg = f'  + Removing devfs_ruleset: {ruleset} OK'
+                iocage_lib.ioc_common.logit({
+                    "level": "INFO",
+                    "message": msg
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+            except su.CalledProcessError as err:
+                msg = f'  + Removing devfs_ruleset: {ruleset} FAILED'
+                iocage_lib.ioc_common.logit({
+                    "level": 'ERROR',
+                    "message": msg
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+        else:
+            msg = f'  + Refusing to remove protected devfs_ruleset: {ruleset}'
+            iocage_lib.ioc_common.logit({
+                "level": 'ERROR',
+                "message": msg
+            },
+                _callback=self.callback,
+                silent=self.silent)
+
         try:
             stop = su.check_call(["jail", "-r", f"ioc-{self.uuid}"],
                                  stderr=su.PIPE)
