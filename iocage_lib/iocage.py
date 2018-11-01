@@ -1194,6 +1194,9 @@ class IOCage(object):
                         _callback=self.callback,
                         silent=self.silent)
 
+            sort = ioc_common.ioc_sort("get", "key")
+            jail_list.sort(key=sort)
+
             return jail_list
 
     def import_(self):
