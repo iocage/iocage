@@ -713,7 +713,6 @@ def generate_devfs_ruleset(conf, paths=None, includes=None):
         )
 
     for path, mode in devfs_dict.items():
-        # path = ['add', 'path', f"'{path}'"]
         path = ['add', 'path', path]
 
         if mode is not None:
