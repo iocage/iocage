@@ -129,7 +129,6 @@ class IOCPlugin(object):
             devfs = conf.get("devfs_ruleset", None)
 
             if devfs is not None:
-                devfs_cmd = ["service", "devfs", "restart"]
                 plugin_devfs = devfs[f'plugin_{jail_name}']
                 plugin_devfs_paths = plugin_devfs['paths']
 
@@ -143,25 +142,11 @@ class IOCPlugin(object):
                 plugin_devfs_includes = None if 'includes' not in plugin_devfs\
                     else plugin_devfs['includes']
 
-                with open("/etc/devfs.rules", "a+") as devfs:
-                    # Same plugin, so the name being unique as it might become
-                    # later does not matter
-                    devfs_str, devfs_rule = \
-                        iocage_lib.ioc_common.construct_devfs(
-                            f'plugin_{jail_name}',
-                            paths=plugin_devfs_paths,
-                            includes=plugin_devfs_includes
-                        )
-
-                    if 'bpf*' in plugin_devfs_paths:
-                        # Plugin needs to use it now
-                        props += [f'devfs_ruleset={devfs_rule}']
-
-                    if devfs_str is not None:
-                        devfs.write(devfs_str)
-                        su.check_call(devfs_cmd, stdout=su.PIPE,
-                                      stderr=su.PIPE)
-
+                iocage_lib.ioc_common.generate_devfs_ruleset(
+                    self.conf,
+                    paths=plugin_devfs_paths,
+                    includes=plugin_devfs_includes
+                )
             jail_name, jaildir, _conf, repo_dir = self.__fetch_plugin_create__(
                 props, jail_name)
             location = f"{self.iocroot}/jails/{jail_name}"
