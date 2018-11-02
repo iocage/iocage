@@ -646,36 +646,95 @@ def check_release_newer(release, callback=None, silent=False):
             silent=silent)
 
 
-def generate_devfs_ruleset(conf, paths=None, includes=None):
+def generate_devfs_ruleset(conf, paths=None, includes=None, callback=None,
+                           silent=False):
     """
-    Will add a per jail devfs ruleset with the specified rules
-
-    Returns the devfs_ruleset number that has been allocated.
+    Will add a per jail devfs ruleset with the specified rules,
+    specifying defaults that equal devfs_ruleset 4
     """
-    ruleset = 5  # 0-4 is always reserved
+    ruleset = conf['devfs_ruleset']
+    devfs_includes = []
     devfs_rulesets = su.run(
         ['devfs', 'rule', 'showsets'],
         stdout=su.PIPE, universal_newlines=True
     )
     ruleset_list = [int(i) for i in devfs_rulesets.stdout.splitlines()]
-    devfs_dict = {
-        'zfs': None
-    }
-    devfs_includes = [
-        '1',  # '$devfsrules_hide_all'
-        '2',  # '$devfsrules_unhide_basic'
-        '3',  # '$devfsrules_unhide_login'
-    ]
 
+    if ruleset != '4':
+        if int(ruleset) in ruleset_list:
+            return str(ruleset)
+
+        logit({
+            "level": "INFO",
+            "message": f'* Ruleset {ruleset} does not exist, using defaults'
+        },
+            _callback=callback,
+            silent=silent)
+
+    ruleset = 5  # 0-4 is always reserved
     while ruleset in ruleset_list:
         ruleset += 1
-
     ruleset = str(ruleset)
+
+    devfs_dict = {
+        'hide': None,
+        'null': None,
+        'zero': None,
+        'crypto': None,
+        'random': None,
+        'urandom': None,
+        'ptyp*': None,
+        'ptyq*': None,
+        'ptyr*': None,
+        'ptys*': None,
+        'ptyP*': None,
+        'ptyQ*': None,
+        'ptyR*': None,
+        'ptyS*': None,
+        'ptyl*': None,
+        'ptym*': None,
+        'ptyn*': None,
+        'ptyo*': None,
+        'ptyL*': None,
+        'ptyM*': None,
+        'ptyN*': None,
+        'ptyO*': None,
+        'ttyp*': None,
+        'ttyq*': None,
+        'ttyr*': None,
+        'ttys*': None,
+        'ttyP*': None,
+        'ttyQ*': None,
+        'ttyR*': None,
+        'ttyS*': None,
+        'ttyl*': None,
+        'ttym*': None,
+        'ttyn*': None,
+        'ttyo*': None,
+        'ttyL*': None,
+        'ttyM*': None,
+        'ttyN*': None,
+        'ttyO*': None,
+        'ptmx': None,
+        'pts': None,
+        'pts/*': None,
+        'fd': None,
+        'fd/*': None,
+        'stdin': None,
+        'stdout': None,
+        'stderr': None,
+        'zfs': None
+    }
+
+    # We set these up by default above
+    skip_includes = ['$devfsrules_hide_all', '$devfsrules_unhide_basic',
+                     '$devfsrules_unhide_login']
+    if includes is not None:
+        devfs_includes = [include for include in includes if include not in
+                          skip_includes]
+
     if paths is not None:
         devfs_dict.update(paths)
-
-    if includes is not None:
-        devfs_includes += includes
 
     # We may end up setting all of these.
     if conf['allow_tun'] == '1':
@@ -684,20 +743,21 @@ def generate_devfs_ruleset(conf, paths=None, includes=None):
         devfs_dict['bpf*'] = None
 
     for include in devfs_includes:
-        # In case a plugin or something tries to use the human readable names
-        if include == '$devfsrules_hide_all':
-            include = '1'
-        elif include == '$devfsrules_unhide_basic':
-            include = '2'
-        elif include == '$devfsrules_unhide_login':
-            include = '3'
-
         su.run(
-            ['devfs', 'rule', '-s', ruleset, 'add', 'include', include],
+            ['devfs', '-m', mountpoint, 'rule', '-s', ruleset, 'add',
+             '-s', ruleset, 'include', include],
             stdout=su.PIPE
         )
 
     for path, mode in devfs_dict.items():
+        # # Default hide all
+        if path == 'hide':
+            su.run(
+                ['devfs', 'rule', '-s', ruleset, 'add', 'hide'],
+                stdout=su.PIPE
+            )
+            continue
+
         path = ['add', 'path', path]
 
         if mode is not None:
