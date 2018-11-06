@@ -691,55 +691,14 @@ def generate_devfs_ruleset(conf, paths=None, includes=None, callback=None,
         ruleset += 1
     ruleset = str(ruleset)
 
-    devfs_dict = {
-        'hide': None,
-        'null': None,
-        'zero': None,
-        'crypto': None,
-        'random': None,
-        'urandom': None,
-        'ptyp*': None,
-        'ptyq*': None,
-        'ptyr*': None,
-        'ptys*': None,
-        'ptyP*': None,
-        'ptyQ*': None,
-        'ptyR*': None,
-        'ptyS*': None,
-        'ptyl*': None,
-        'ptym*': None,
-        'ptyn*': None,
-        'ptyo*': None,
-        'ptyL*': None,
-        'ptyM*': None,
-        'ptyN*': None,
-        'ptyO*': None,
-        'ttyp*': None,
-        'ttyq*': None,
-        'ttyr*': None,
-        'ttys*': None,
-        'ttyP*': None,
-        'ttyQ*': None,
-        'ttyR*': None,
-        'ttyS*': None,
-        'ttyl*': None,
-        'ttym*': None,
-        'ttyn*': None,
-        'ttyo*': None,
-        'ttyL*': None,
-        'ttyM*': None,
-        'ttyN*': None,
-        'ttyO*': None,
-        'ptmx': None,
-        'pts': None,
-        'pts/*': None,
-        'fd': None,
-        'fd/*': None,
-        'stdin': None,
-        'stdout': None,
-        'stderr': None,
-        'zfs': None
-    }
+    devfs_dict = dict((dev, None) for dev in (
+        'hide', 'null', 'zero', 'crypto', 'random', 'urandom', 'ptyp*',
+        'ptyq*', 'ptyr*', 'ptys*', 'ptyP*', 'ptyQ*', 'ptyR*', 'ptyS*', 'ptyl*',
+        'ptym*', 'ptyn*', 'ptyo*', 'ptyL*', 'ptyM*', 'ptyN*', 'ptyO*', 'ttyp*',
+        'ttyq*', 'ttyr*', 'ttys*', 'ttyP*', 'ttyQ*', 'ttyR*', 'ttyS*', 'ttyl*',
+        'ttym*', 'ttyn*', 'ttyo*', 'ttyL*', 'ttyM*', 'ttyN*', 'ttyO*', 'ptmx',
+        'pts', 'pts/*', 'fd', 'fd/*', 'stdin', 'stdout', 'stderr', 'zfs'
+    ))
 
     # We set these up by default above
     skip_includes = ['$devfsrules_hide_all', '$devfsrules_unhide_basic',
@@ -759,8 +718,7 @@ def generate_devfs_ruleset(conf, paths=None, includes=None, callback=None,
 
     for include in devfs_includes:
         su.run(
-            ['devfs', '-m', mountpoint, 'rule', '-s', ruleset, 'add',
-             '-s', ruleset, 'include', include],
+            ['devfs', 'rule', '-s', ruleset, 'add', 'include', include],
             stdout=su.PIPE
         )
 
