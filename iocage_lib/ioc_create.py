@@ -439,6 +439,12 @@ class IOCCreate(object):
         if not self.empty:
             self.create_rc(location, config["host_hostname"])
 
+            if key == "ip6_addr":
+                print(location)
+                rtsold_enable = "YES" if "accept_rtadv" in value else "NO"
+                iocage_lib.ioc_common.set_rcconf(
+                    location, "rtsold_enable", rtsold_enable)
+
         if self.basejail or self.plugin:
             basedirs = ["bin", "boot", "lib", "libexec", "rescue", "sbin",
                         "usr/bin", "usr/include", "usr/lib",
