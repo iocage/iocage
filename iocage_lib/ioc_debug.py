@@ -74,10 +74,12 @@ class IOCDebug(object):
         zfs_datasets = (z.name for z in self.zfs.datasets)
         mounted_filesystems = self.__execute_debug__('/sbin/mount')
         df = self.__execute_debug__(['df', '-h'])
+        netstat = self.__execute_debug__(['netstat', '-nr'])
 
-        self.__write_debug__(zfs_datasets, host_path, 'ZFS')
+        self.__write_debug__(zfs_datasets, host_path, 'ZFS', method='w')
         self.__write_debug__(mounted_filesystems, host_path, '\nMOUNT')
-        self.__write_debug__(df, host_path, '\nDF -H')
+        self.__write_debug__(df, host_path, '\nDF -h')
+        self.__write_debug__(netstat, host_path, '\nNETSTAT -nr')
 
     def run_jail_debug(self, name, path):
         jail_debug_path = f'{self.path}/{name}'
@@ -105,7 +107,8 @@ class IOCDebug(object):
             ['cat', f'{jail_path}/etc/resolv.conf'], jail=name
         )
 
-        self.__write_debug__(all_props, jail_debug_path, 'PROPS', json=True)
+        self.__write_debug__(all_props, jail_debug_path, 'PROPS', json=True,
+                             method='w')
         self.__write_debug__(fstab, jail_debug_path, '\nFSTAB')
         self.__write_debug__(hosts, jail_debug_path, '\n/ETC/HOSTS')
         self.__write_debug__(rc, jail_debug_path, '\n/ETC/RC.CONF')
@@ -124,10 +127,10 @@ class IOCDebug(object):
 
         return collection
 
-    def __write_debug__(self, data, path, title, json=False):
+    def __write_debug__(self, data, path, title, json=False, method='a+'):
         title_sep = '-' * 10
 
-        with open(f'{path}.txt', 'a+') as f:
+        with open(f'{path}.txt', method) as f:
             f.write(title)
             f.write(f'\n{title_sep}\n')
 
