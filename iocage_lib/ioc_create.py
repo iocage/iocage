@@ -103,6 +103,7 @@ class IOCCreate(object):
         """
         start = False
         is_template = False
+        rtsold_enable = 'NO'
 
         if os.path.isdir(location) or os.path.isdir(
                 f"{self.iocroot}/templates/{jail_uuid}"):
@@ -356,6 +357,32 @@ class IOCCreate(object):
                 config["type"] = "template"
                 start = False
                 is_template = True
+            elif key == 'ip6_addr':
+                if 'accept_rtadv' in value:
+                    if 'vnet=on' not in self.props:
+                        iocage_lib.ioc_common.logit({
+                            'level': 'WARNING',
+                            'message': 'accept_rtadv requires vnet=on!'
+                        },
+                            _callback=self.callback,
+                            silent=self.silent)
+
+                    rtsold_enable = 'YES'
+            elif key == 'dhcp' and value == 'on':
+                if 'vnet=on' not in self.props:
+                    iocage_lib.ioc_common.logit({
+                        'level': 'WARNING',
+                        'message': 'dhcp requires vnet=on!'
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
+                if 'bpf=yes' not in self.props:
+                    iocage_lib.ioc_common.logit({
+                        'level': 'WARNING',
+                        'message': 'dhcp requires bpf=yes!'
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
 
             try:
                 value, config = iocjson.json_check_prop(key, value, config)
@@ -439,8 +466,7 @@ class IOCCreate(object):
         if not self.empty:
             self.create_rc(location, config["host_hostname"])
 
-            if key == "ip6_addr":
-                rtsold_enable = "YES" if "accept_rtadv" in value else "NO"
+            if rtsold_enable == 'YES':
                 iocage_lib.ioc_common.set_rcconf(
                     location, "rtsold_enable", rtsold_enable)
 

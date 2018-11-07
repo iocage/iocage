@@ -140,25 +140,32 @@ class IOCStart(object):
         bpf = self.conf["bpf"]
         dhcp = self.conf["dhcp"]
         vnet_interfaces = self.conf["vnet_interfaces"]
+        ip6_addr = self.conf["ip6_addr"]
         prop_missing = False
 
         if dhcp == "on":
             if bpf != "yes":
-                msg = f"{self.uuid} requires bpf=yes!"
+                msg = f"{self.uuid}: dhcp requires bpf=yes!"
                 prop_missing = True
             elif self.conf["vnet"] != "on":
                 # We are already setting a vnet variable below.
-                msg = f"{self.uuid} requires vnet=on!"
+                msg = f"{self.uuid}: dhcp requires vnet=on!"
                 prop_missing = True
 
-            if prop_missing:
-                iocage_lib.ioc_common.logit({
-                    "level": "EXCEPTION",
-                    "message": msg
-                }, _callback=self.callback,
-                    silent=self.silent)
+        if 'accept_rtadv' in ip6_addr:
+            if self.conf['vnet'] != 'on':
+                msg = f'{self.uuid}: accept_rtadv requires vnet=on!'
+                prop_missing = True
 
-            self.__check_dhcp__()
+        if prop_missing:
+            iocage_lib.ioc_common.logit({
+                "level": "EXCEPTION",
+                "message": msg
+            }, _callback=self.callback,
+                silent=self.silent)
+
+            if dhcp == 'on':
+                self.__check_dhcp__()
 
         if mount_procfs == "1":
             su.Popen(["mount", "-t", "procfs", "proc", self.path +
@@ -237,7 +244,6 @@ class IOCStart(object):
             ip4_addr = self.conf["ip4_addr"]
             ip4_saddrsel = self.conf["ip4_saddrsel"]
             ip4 = self.conf["ip4"]
-            ip6_addr = self.conf["ip6_addr"]
             ip6_saddrsel = self.conf["ip6_saddrsel"]
             ip6 = self.conf["ip6"]
             net = []
