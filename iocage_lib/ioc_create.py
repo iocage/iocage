@@ -443,7 +443,6 @@ class IOCCreate(object):
             self.create_rc(location, config["host_hostname"])
 
             if key == "ip6_addr":
-                print(location)
                 rtsold_enable = "YES" if "accept_rtadv" in value else "NO"
                 iocage_lib.ioc_common.set_rcconf(
                     location, "rtsold_enable", rtsold_enable)
