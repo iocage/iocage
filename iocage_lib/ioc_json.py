@@ -237,6 +237,16 @@ class IOCJson(object):
         try:
             with open(self.location + "/config.json", "r") as conf:
                 conf = json.load(conf)
+        except json.decoder.JSONDecodeError:
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'EXCEPTION',
+                        'message': f'{jail_uuid} has a corrupt configuration,'
+                        ' please fix this jail or destroy and recreate it.'
+                    },
+                    _callback=self.callback,
+                    silent=self.silent,
+                    exception=ioc_exceptions.JailCorruptConfiguration)
         except FileNotFoundError:
             try:
                 # If this is a legacy jail, it will be missing this file but
@@ -256,7 +266,8 @@ class IOCJson(object):
                             " please destroy this jail and recreate it."
                         },
                         _callback=self.callback,
-                        silent=self.silent)
+                        silent=self.silent,
+                        exception=ioc_exceptions.JailMissingConfiguration)
 
             if not self.force:
                 iocage_lib.ioc_common.logit(

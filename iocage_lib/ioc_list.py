@@ -119,6 +119,14 @@ class IOCList(object):
                                " it."
                 }, _callback=self.callback,
                     silent=self.silent)
+            except (Exception, SystemExit):
+                # Jail is corrupt, we want the user to know
+                conf = {
+                    'host_hostuuid':
+                        f'{mountpoint.rsplit("/", 1)[-1]} - CORRUPTED',
+                    'ip4_addr': 'N/A',
+                    'dhcp': 'N/A'
+                }
 
             uuid = conf["host_hostuuid"]
             ip4 = conf["ip4_addr"] if conf["dhcp"] != "on" else "DHCP"
@@ -150,7 +158,23 @@ class IOCList(object):
 
         for jail in jails:
             mountpoint = jail.properties["mountpoint"].value
-            conf = iocage_lib.ioc_json.IOCJson(mountpoint).json_load()
+            try:
+                conf = iocage_lib.ioc_json.IOCJson(mountpoint).json_load()
+            except (Exception, SystemExit):
+                # Jail is corrupt, we want all the keys to exist.
+                # So we will take the defaults and let the user
+                # know that they are not correct.
+                def_props = iocage_lib.ioc_json.IOCJson().json_get_value(
+                    'all',
+                    default=True
+                )
+                conf = {
+                    x: 'N/A'
+                    for x in def_props
+                }
+                conf['host_hostuuid'] = \
+                    f'{jail.name.split("/")[-1]} - CORRUPTED'
+                conf['release'] = 'N/A'
 
             uuid_full = conf["host_hostuuid"]
             uuid = uuid_full
@@ -192,7 +216,9 @@ class IOCList(object):
             if ip6 == "none":
                 ip6 = "-"
 
-            status, jid = self.list_get_jid(uuid_full)
+            # Jail cannot have spaces, this is to remove the CORRUPTED from
+            # the name
+            status, jid = self.list_get_jid(uuid_full.split()[0])
 
             if status:
                 state = "up"

@@ -41,3 +41,21 @@ class CommandFailed(Exception):
 
         self.message = message
         super().__init__(message)
+
+
+class JailMisconfigured(Exception):
+    """message attribute will be a string if a message is supplied"""
+    def __init__(self, message):
+        if not isinstance(message, str):
+            message = str(message)
+
+        self.message = message
+        super().__init__(message)
+
+
+class JailCorruptConfiguration(JailMisconfigured):
+    pass
+
+
+class JailMissingConfiguration(JailMisconfigured):
+    pass
