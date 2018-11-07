@@ -109,7 +109,6 @@ class IOCStart(object):
         host_domainname = self.conf["host_domainname"]
         host_hostname = self.conf["host_hostname"]
         securelevel = self.conf["securelevel"]
-        devfs_ruleset = self.conf["devfs_ruleset"]
         enforce_statfs = self.conf["enforce_statfs"]
         children_max = self.conf["children_max"]
         allow_set_hostname = self.conf["allow_set_hostname"]
@@ -125,7 +124,7 @@ class IOCStart(object):
         allow_mount_zfs = self.conf["allow_mount_zfs"]
         allow_quotas = self.conf["allow_quotas"]
         allow_socket_af = self.conf["allow_socket_af"]
-        allow_tun = self.conf["allow_tun"]
+        devfs_ruleset = iocage_lib.ioc_common.generate_devfs_ruleset(self.conf)
         exec_prestart = self.conf["exec_prestart"]
         exec_poststart = self.conf["exec_poststart"]
         exec_prestop = self.conf["exec_prestop"]
@@ -160,7 +159,6 @@ class IOCStart(object):
                     silent=self.silent)
 
             self.__check_dhcp__()
-            devfs_ruleset = None if devfs_ruleset == "4" else devfs_ruleset
 
         if mount_procfs == "1":
             su.Popen(["mount", "-t", "procfs", "proc", self.path +
@@ -278,51 +276,6 @@ class IOCStart(object):
 
             vnet = True
 
-        if self.conf["type"] == "pluginv2" and os.path.isfile(
-                f"{self.path}/{self.uuid.rsplit('_', 1)[0]}.json"):
-            devfs_cmd = ["service", "devfs", "restart"]
-
-            with open(f"{self.path}/{self.uuid.rsplit('_', 1)[0]}.json",
-                      "r") as f:
-                plugin_name = self.uuid.rsplit('_', 1)[0]
-                devfs_json = json.load(f)
-                if "devfs_ruleset" not in devfs_json:
-                    generated_devfs_ruleset = self.__generate_devfs_ruleset()
-                else:
-                    plugin_devfs = devfs_json[
-                        "devfs_ruleset"][f"plugin_{plugin_name}"]
-                    plugin_devfs_paths = plugin_devfs['paths']
-
-                    if dhcp == "on":
-                        if 'bpf*' not in plugin_devfs_paths:
-                            plugin_devfs_paths["bpf*"] = None
-
-                    plugin_devfs_includes = None if 'includes' not in \
-                        plugin_devfs else plugin_devfs['includes']
-
-                    with open("/etc/devfs.rules", "a+") as devfs:
-                        # Same plugin, so the name being unique as it might
-                        # become later does not matter
-                        devfs_str, devfs_rule = \
-                            iocage_lib.ioc_common.construct_devfs(
-                                f'plugin_{plugin_name}',
-                                paths=plugin_devfs_paths,
-                                includes=plugin_devfs_includes
-                            )
-
-                        if 'bpf*' in plugin_devfs_paths:
-                            # Plugin needs to use it now
-                            devfs_ruleset = devfs_rule
-
-                        if devfs_str is not None:
-                            devfs.write(devfs_str)
-                            su.check_call(devfs_cmd, stdout=su.PIPE,
-                                          stderr=su.PIPE)
-
-                        generated_devfs_ruleset = devfs_rule
-        else:
-            generated_devfs_ruleset = self.__generate_devfs_ruleset()
-
         msg = f"* Starting {self.uuid}"
         iocage_lib.ioc_common.logit({
             "level": "INFO",
@@ -331,18 +284,37 @@ class IOCStart(object):
             _callback=self.callback,
             silent=self.silent)
 
-        if devfs_ruleset is None and (dhcp == "on" or allow_tun == "1"):
-            devfs_ruleset = generated_devfs_ruleset
-        elif generated_devfs_ruleset != devfs_ruleset and dhcp == "on":
-            if self.conf["type"] != "pluginv2" and devfs_ruleset != "4":
-                iocage_lib.ioc_common.logit({
-                    "level": "WARNING",
-                    "message": f"  {self.uuid} is not using the devfs_ruleset"
-                               f" of {generated_devfs_ruleset},"
-                               " DHCP may not work."
-                },
-                    _callback=self.callback,
-                    silent=self.silent)
+        if dhcp == 'on' and self.conf["type"] != "pluginv2" \
+                and self.conf['devfs_ruleset'] != "4":
+            iocage_lib.ioc_common.logit({
+                "level": "WARNING",
+                "message": f"  {self.uuid} is not using the devfs_ruleset"
+                           f" of 4, not generating a ruleset for the jail,"
+                           " DHCP may not work."
+            },
+                _callback=self.callback,
+                silent=self.silent)
+
+        if self.conf["type"] == "pluginv2" and os.path.isfile(
+                f"{self.path}/{self.uuid.rsplit('_', 1)[0]}.json"):
+            with open(f"{self.path}/{self.uuid.rsplit('_', 1)[0]}.json",
+                      "r") as f:
+                devfs_json = json.load(f)
+                if "devfs_ruleset" in devfs_json:
+                    plugin_name = self.uuid.rsplit('_', 1)[0]
+                    plugin_devfs = devfs_json[
+                        "devfs_ruleset"][f"plugin_{plugin_name}"]
+                    plugin_devfs_paths = plugin_devfs['paths']
+
+                    plugin_devfs_includes = None if 'includes' not in \
+                        plugin_devfs else plugin_devfs['includes']
+
+                    devfs_ruleset = \
+                        iocage_lib.ioc_common.generate_devfs_ruleset(
+                            self.conf,
+                            paths=plugin_devfs_paths,
+                            includes=plugin_devfs_includes
+                        )
 
         start_cmd = [x for x in ["jail", "-c"] + net +
                           [f"name=ioc-{self.uuid}",
@@ -897,43 +869,6 @@ class IOCStart(object):
                 })
 
         return mac_a, mac_b
-
-    def __generate_devfs_ruleset(self):
-        """
-        Will add the bpf ruleset to the hosts /etc/devfs.rules if it doesn't
-        exist, otherwise it will do nothing.
-        """
-        devfs_cmd = ["service", "devfs", "restart"]
-        devfs_dict = {
-            'zfs': None
-        }
-        devfs_includes = [
-            '$devfsrules_hide_all',
-            '$devfsrules_unhide_basic',
-            '$devfsrules_unhide_login'
-        ]
-        name = f'{self.uuid}_ruleset'
-        comment = f"## IOCAGE -- {self.uuid} ruleset"
-
-        # We may end up setting all of these.
-        if self.conf['allow_tun'] == '1':
-            devfs_dict['tun*'] = None
-        if self.conf['dhcp'] == 'on':
-            devfs_dict['bpf*'] = None
-
-        with open("/etc/devfs.rules", "a+") as devfs:
-            devfs_str, devfs_rule = iocage_lib.ioc_common.construct_devfs(
-                name,
-                paths=devfs_dict,
-                includes=devfs_includes,
-                comment=comment
-            )
-
-            if devfs_str is not None:
-                devfs.write(devfs_str)
-                su.check_call(devfs_cmd, stdout=su.PIPE, stderr=su.PIPE)
-
-        return devfs_rule
 
     def __check_dhcp__(self):
         nic_list = self.get("interfaces").split(",")
