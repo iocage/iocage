@@ -31,7 +31,7 @@ import iocage_lib.ioc_list as ioc_list
 
 class IOCDebug(object):
     """
-    Collects the following debug for a system + jails:
+    Collects the following debug for a system + jails/templates:
         Host side
         ----------
         zfs list
@@ -61,12 +61,20 @@ class IOCDebug(object):
         self.run_host_debug()
 
         jails = self.zfs.get_dataset(f'{self.pool}/iocage/jails').children
+        templates = self.zfs.get_dataset(
+            f'{self.pool}/iocage/templates').children
 
         for jail in jails:
             jail_path = jail.mountpoint
             jail = jail.name.rsplit('/', 1)[-1]
 
             self.run_jail_debug(jail, jail_path)
+
+        for template in templates:
+            template_path = template.mountpoint
+            template = template.name.rsplit('/', 1)[-1]
+
+            self.run_jail_debug(template, template_path)
 
     def run_host_debug(self):
         host_path = f'{self.path}/host'
