@@ -700,7 +700,8 @@ class IOCStart(object):
             if 'accept_rtadv' in self.get('ip6_addr'):
                 # Set linklocal for IP6 + rtsold
                 iocage_lib.ioc_common.checkoutput(
-                    ['ifconfig', f'{nic}:{jid}', 'inet6', 'auto_linklocal'],
+                    ['ifconfig', f'{nic}:{jid}', 'inet6', 'auto_linklocal',
+                     'accept_rtadv', 'autoconf'],
                     stderr=su.STDOUT)
 
             # Jail
