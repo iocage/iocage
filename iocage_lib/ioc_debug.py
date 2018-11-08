@@ -115,8 +115,14 @@ class IOCDebug(object):
             ['cat', f'{jail_path}/etc/resolv.conf'], jail=name
         )
 
-        self.__write_debug__(all_props, jail_debug_path, 'PROPS', json=True,
-                             method='w')
+        if all_props['state'] != 'CORRUPT':
+            self.__write_debug__(all_props, jail_debug_path, 'PROPS',
+                                 json=True, method='w')
+        else:
+            lines = [line.rstrip() for line in open(f'{path}/config.json')]
+            self.__write_debug__(lines, jail_debug_path, 'PROPS - CORRUPT',
+                                 method='w')
+
         self.__write_debug__(fstab, jail_debug_path, '\nFSTAB')
         self.__write_debug__(hosts, jail_debug_path, '\n/ETC/HOSTS')
         self.__write_debug__(rc, jail_debug_path, '\n/ETC/RC.CONF')
@@ -154,7 +160,14 @@ class IOCDebug(object):
         _props = {}
         status, jid = ioc_list.IOCList().list_get_jid(name)
         state = 'up' if status else 'down'
-        props = ioc_json.IOCJson(path).json_get_value('all')
+
+        try:
+            props = ioc_json.IOCJson(path).json_get_value('all')
+        except (Exception, SystemExit):
+            # Jail is corrupt, we want all the keys to exist.
+            _props['state'] = 'CORRUPT'
+
+            return _props
 
         # We want this sorted below, so we add it to the old dict
         props['state'] = state

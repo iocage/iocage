@@ -1184,8 +1184,8 @@ class IOCage(object):
                                 x: 'N/A'
                                 for x in def_props
                             }
-                            props['host_hostuuid'] = f'{uuid} - CORRUPTED'
-                            props['state'] = state
+                            props['host_hostuuid'] = uuid
+                            props['state'] = 'CORRUPT'
                             props['release'] = 'N/A'
                             jail_list.append({uuid: props})
 
