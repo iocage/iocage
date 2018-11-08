@@ -160,6 +160,7 @@ class IOCList(object):
             mountpoint = jail.properties["mountpoint"].value
             try:
                 conf = iocage_lib.ioc_json.IOCJson(mountpoint).json_load()
+                state = ''
             except (Exception, SystemExit):
                 # Jail is corrupt, we want all the keys to exist.
                 # So we will take the defaults and let the user
@@ -173,8 +174,10 @@ class IOCList(object):
                     for x in def_props
                 }
                 conf['host_hostuuid'] = \
-                    f'{jail.name.split("/")[-1]} - CORRUPTED'
+                    f'{jail.name.split("/")[-1]}'
                 conf['release'] = 'N/A'
+                state = 'CORRUPT'
+                jid = '-'
 
             uuid_full = conf["host_hostuuid"]
             uuid = uuid_full
@@ -216,14 +219,14 @@ class IOCList(object):
             if ip6 == "none":
                 ip6 = "-"
 
-            # Jail cannot have spaces, this is to remove the CORRUPTED from
-            # the name
-            status, jid = self.list_get_jid(uuid_full.split()[0])
+            # Will be set already by a corrupt jail
+            if state != 'CORRUPT':
+                status, jid = self.list_get_jid(uuid_full)
 
-            if status:
-                state = "up"
-            else:
-                state = "down"
+                if status:
+                    state = "up"
+                else:
+                    state = "down"
 
             if conf["type"] == "template":
                 template = "-"
