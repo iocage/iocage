@@ -26,3 +26,35 @@
 
 class PoolNotActivated(Exception):
     pass
+
+
+class JailRunning(Exception):
+    pass
+
+
+class CommandFailed(Exception):
+    """message attribute will be an iterable if a message is supplied"""
+    def __init__(self, message):
+        if not isinstance(message, collections.Iterable):
+            message = [message]
+
+        self.message = message
+        super().__init__(message)
+
+
+class JailMisconfigured(Exception):
+    """message attribute will be a string if a message is supplied"""
+    def __init__(self, message):
+        if not isinstance(message, str):
+            message = str(message)
+
+        self.message = message
+        super().__init__(message)
+
+
+class JailCorruptConfiguration(JailMisconfigured):
+    pass
+
+
+class JailMissingConfiguration(JailMisconfigured):
+    pass

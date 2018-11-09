@@ -1105,7 +1105,26 @@ class IOCage(object):
                         jail_list.append({uuid: state})
                     elif prop == "all":
                         _props = {}
-                        props = ioc_json.IOCJson(path).json_get_value(prop)
+                        try:
+                            props = ioc_json.IOCJson(path).json_get_value(prop)
+                        except (Exception, SystemExit):
+                            # Jail is corrupt, we want all the keys to exist.
+                            # So we will take the defaults and let the user
+                            # know that they are not correct.
+                            def_props = ioc_json.IOCJson().json_get_value(
+                                'all',
+                                default=True
+                            )
+                            props = {
+                                x: 'N/A'
+                                for x in def_props
+                            }
+                            props['host_hostuuid'] = uuid
+                            props['state'] = 'CORRUPT'
+                            props['release'] = 'N/A'
+                            jail_list.append({uuid: props})
+
+                            continue
 
                         # We want this sorted below, so we add it to the old
                         # dict
