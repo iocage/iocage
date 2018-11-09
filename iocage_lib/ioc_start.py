@@ -122,6 +122,7 @@ class IOCStart(object):
         allow_mlock = self.conf["allow_mlock"]
         allow_mount = self.conf["allow_mount"]
         allow_mount_devfs = self.conf["allow_mount_devfs"]
+        allow_mount_fusefs = self.conf["allow_mount_fusefs"]
         allow_mount_nullfs = self.conf["allow_mount_nullfs"]
         allow_mount_procfs = self.conf["allow_mount_procfs"]
         allow_mount_tmpfs = self.conf["allow_mount_tmpfs"]
@@ -346,6 +347,7 @@ class IOCStart(object):
                            _allow_mlock,
                            f"allow.mount={allow_mount}",
                            f"allow.mount.devfs={allow_mount_devfs}",
+                           f"allow.mount.fusefs={allow_mount_fusefs}",
                            f"allow.mount.nullfs={allow_mount_nullfs}",
                            f"allow.mount.procfs={allow_mount_procfs}",
                            tmpfs,

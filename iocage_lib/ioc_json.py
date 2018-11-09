@@ -842,7 +842,7 @@ class IOCJson(object):
     @staticmethod
     def json_get_version():
         """Sets the iocage configuration version."""
-        version = "14"
+        version = "15"
 
         return version
 
@@ -1028,6 +1028,10 @@ class IOCJson(object):
         if not conf.get('allow_tun'):
             conf['allow_tun'] = '0'
 
+        # Version 15 keys
+        if not conf.get('allow_mount_fusefs'):
+            conf['allow_mount_fusefs'] = '0'
+
         if not default:
             try:
                 if not renamed:
@@ -1138,6 +1142,7 @@ class IOCJson(object):
             "allow_mlock": ("0", "1"),
             "allow_mount": ("0", "1"),
             "allow_mount_devfs": ("0", "1"),
+            "allow_mount_fusefs": ("0", "1"),
             "allow_mount_nullfs": ("0", "1"),
             "allow_mount_procfs": ("0", "1"),
             "allow_mount_tmpfs": ("0", "1"),
@@ -1732,6 +1737,7 @@ class IOCJson(object):
             "allow_mlock": "0",
             "allow_mount": "0",
             "allow_mount_devfs": "0",
+            "allow_mount_fusefs": "0",
             "allow_mount_nullfs": "0",
             "allow_mount_procfs": "0",
             "allow_mount_tmpfs": "0",

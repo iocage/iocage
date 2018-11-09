@@ -1540,6 +1540,18 @@ Default: 0
 .Pp
 Source:
 .Xr jail 8
+.It Pf allow_mount_fusefs= Op 0 | 1
+Allow privileged users inside the jail to mount and unmount fusefs file
+systems.
+This permission is effective only together with allow_mount and if
+enforce_statfs is set to a value lower than 2.
+.Pp
+Note: This requires FreeBSD 12.0 or later.
+.Pp
+Default: 0
+.Pp
+Source:
+.Xr jail 8
 .It Pf allow_mount_nullfs= Op 0 | 1
 Allow privileged users inside the jail to mount and unmount the nullfs
 file system.
