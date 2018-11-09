@@ -31,7 +31,7 @@ import iocage_lib.ioc_list as ioc_list
 
 class IOCDebug(object):
     """
-    Collects the following debug for a system + jails:
+    Collects the following debug for a system + jails/templates:
         Host side
         ----------
         zfs list
@@ -61,6 +61,8 @@ class IOCDebug(object):
         self.run_host_debug()
 
         jails = self.zfs.get_dataset(f'{self.pool}/iocage/jails').children
+        templates = self.zfs.get_dataset(
+            f'{self.pool}/iocage/templates').children
 
         for jail in jails:
             jail_path = jail.mountpoint
@@ -68,16 +70,24 @@ class IOCDebug(object):
 
             self.run_jail_debug(jail, jail_path)
 
+        for template in templates:
+            template_path = template.mountpoint
+            template = template.name.rsplit('/', 1)[-1]
+
+            self.run_jail_debug(template, template_path)
+
     def run_host_debug(self):
         host_path = f'{self.path}/host'
 
         zfs_datasets = (z.name for z in self.zfs.datasets)
         mounted_filesystems = self.__execute_debug__('/sbin/mount')
         df = self.__execute_debug__(['df', '-h'])
+        netstat = self.__execute_debug__(['netstat', '-nr'])
 
-        self.__write_debug__(zfs_datasets, host_path, 'ZFS')
+        self.__write_debug__(zfs_datasets, host_path, 'ZFS', method='w')
         self.__write_debug__(mounted_filesystems, host_path, '\nMOUNT')
-        self.__write_debug__(df, host_path, '\nDF -H')
+        self.__write_debug__(df, host_path, '\nDF -h')
+        self.__write_debug__(netstat, host_path, '\nNETSTAT -nr')
 
     def run_jail_debug(self, name, path):
         jail_debug_path = f'{self.path}/{name}'
@@ -131,10 +141,10 @@ class IOCDebug(object):
 
         return collection
 
-    def __write_debug__(self, data, path, title, json=False):
+    def __write_debug__(self, data, path, title, json=False, method='a+'):
         title_sep = '-' * 10
 
-        with open(f'{path}.txt', 'a+') as f:
+        with open(f'{path}.txt', method) as f:
             f.write(title)
             f.write(f'\n{title_sep}\n')
 
