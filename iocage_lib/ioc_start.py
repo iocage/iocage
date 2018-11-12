@@ -242,8 +242,10 @@ class IOCStart(object):
 
         if userland_version < 12.0:
             _allow_mlock = ""
+            _allow_mount_fusefs = ""
         else:
             _allow_mlock = f"allow.mlock={allow_mlock}"
+            _allow_mount_fusefs = f"allow.mount.fusefs={allow_mount_fusefs}"
 
         if self.conf["vnet"] == "off":
             ip4_addr = self.conf["ip4_addr"]
@@ -347,7 +349,7 @@ class IOCStart(object):
                            _allow_mlock,
                            f"allow.mount={allow_mount}",
                            f"allow.mount.devfs={allow_mount_devfs}",
-                           f"allow.mount.fusefs={allow_mount_fusefs}",
+                           _allow_mount_fusefs,
                            f"allow.mount.nullfs={allow_mount_nullfs}",
                            f"allow.mount.procfs={allow_mount_procfs}",
                            tmpfs,
