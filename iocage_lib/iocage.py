@@ -820,7 +820,8 @@ class IOCage(object):
             login_flags = self.get('login_flags').split()
             exec_fib = self.get('exec_fib')
             console_cmd = [
-                "/usr/sbin/setfib", exec_fib, "jexec", f"ioc-{uuid}",
+                "/usr/sbin/setfib", exec_fib,
+                "jexec", f"ioc-{uuid.replace('.', '_')}",
                 "login"] + login_flags
 
             su.Popen(console_cmd, env=su_env).communicate()
@@ -829,7 +830,8 @@ class IOCage(object):
         if interactive:
             exec_fib = self.get('exec_fib')
             interactive_cmd = (
-                "/usr/sbin/setfib", exec_fib, "jexec", f"ioc-{uuid}"
+                "/usr/sbin/setfib", exec_fib,
+                "jexec", f"ioc-{uuid.replace('.', '_')}"
                 ) + command
 
             try:
