@@ -164,8 +164,8 @@ class IOCStart(object):
             }, _callback=self.callback,
                 silent=self.silent)
 
-            if dhcp == 'on':
-                self.__check_dhcp__()
+        if dhcp == 'on':
+            self.__check_dhcp__()
 
         if mount_procfs == "1":
             su.Popen(["mount", "-t", "procfs", "proc", self.path +
