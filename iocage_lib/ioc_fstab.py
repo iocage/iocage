@@ -141,7 +141,7 @@ class IOCFstab(object):
             return dest  # Needed for umounting, otherwise we lack context.
 
         iocage_lib.ioc_common.logit({
-            "level": "INFO",
+            "level": "EXCEPTION",
             "message": "No matching fstab entry."
         },
             _callback=self.callback,
