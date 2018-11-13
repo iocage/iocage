@@ -7,7 +7,7 @@
 iocage - A FreeBSD Jail Manager
 ===============================
 
-iocage is a zero dependency drop in jail/container manager, combining
+iocage is a jail/container manager written in Python, combining
 some of the best features and technologies the FreeBSD operating system
 has to offer. It is geared for ease of use with a simplistic and easy to
 learn command syntax.
