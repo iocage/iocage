@@ -1835,8 +1835,8 @@ class IOCJson(object):
             iocage_lib.ioc_common.logit(
                 {
                     'level': 'ERROR',
-                    'message': 'Defaults are corrupt, using iocage defaults in'
-                    ' memory'
+                    'message': f'{default_json_location} corrupted'
+                    ' (delete to recreate), using memory values.'
                 },
                 _callback=self.callback,
                 silent=False)
