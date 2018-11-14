@@ -201,17 +201,20 @@ class IOCImage(object):
                 silent=self.silent)
 
         image_target = f"{image_dir}/{matches[0]}"
-        uuid = matches[0].rsplit("_")[0]
-        date = matches[0].rsplit("_")[1].strip(".zip")
+        uuid, date = matches[0][:-4].rsplit('_', 1)  # :-4 will strip .zip
 
         import_image = zipfile.ZipFile(image_target, "r")
 
         for z in import_image.namelist():
             # Split the children dataset out
-            z_dataset_type = z.split("_", 1)[-1]
-            z_dataset_type = z_dataset_type.partition("_")[2]
-            z_dataset_type = \
-                f"{uuid}/{z_dataset_type.replace('_', '/')}".rstrip("/")
+            z_dataset_type = z.split(f'{date}_', 1)[-1]
+            z_dataset_type = z_dataset_type.split(f'{uuid}_', 1)[-1]
+            if z_dataset_type == date:
+                # This is the parent dataset
+                z_dataset_type = uuid
+            else:
+                z_dataset_type = \
+                    f"{uuid}/{z_dataset_type.replace('_', '/')}".rstrip('/')
 
             cmd = [
                 "zfs", "recv", "-F",
