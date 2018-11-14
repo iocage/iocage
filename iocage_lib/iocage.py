@@ -1460,6 +1460,7 @@ class IOCage(object):
 
         if default:
             ioc_json.IOCJson(self.iocroot).json_set_value(prop, default=True)
+            return
 
         uuid, path = self.__check_jail_existence__()
         iocjson = ioc_json.IOCJson(
