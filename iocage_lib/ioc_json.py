@@ -41,6 +41,7 @@ import iocage_lib.ioc_stop
 import iocage_lib.ioc_exceptions as ioc_exceptions
 import libzfs
 import netifaces
+import random
 
 
 def _get_pool_and_iocroot():
@@ -1676,6 +1677,22 @@ class IOCJson(object):
 
         return (conf, False, True)
 
+    def get_mac_prefix(self):
+        try:
+            default_gw = netifaces.gateways()['default'][netifaces.AF_INET][1]
+            default_mac = netifaces.ifaddresses(default_gw)[netifaces.AF_LINK]
+
+            # Use the hosts prefix to start generation from.
+            # Helps avoid clashes with other systems in the network
+            mac_prefix = default_mac[0]['addr'].replace(':', '')[:6]
+
+            return mac_prefix
+        except KeyError:
+            # They don't have a default gateway, opting for generation of mac
+            mac = random.randint(0x00, 0xfffff)
+
+            return f'{mac:06x}'
+
     def json_check_default_config(self):
         """This sets up the default configuration for jails."""
         _, iocroot = _get_pool_and_iocroot()
@@ -1702,7 +1719,7 @@ class IOCJson(object):
             "defaultrouter": "none",
             "defaultrouter6": "none",
             "resolver": "/etc/resolv.conf",
-            "mac_prefix": "02ff60",
+            "mac_prefix": self.get_mac_prefix(),
             "vnet0_mac": "none",
             "vnet1_mac": "none",
             "vnet2_mac": "none",
