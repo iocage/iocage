@@ -379,14 +379,15 @@ def sort_release(releases, split=False):
         pass
 
     if split:
-        for rel in releases:
+        for i, rel in enumerate(releases):
             rel, r_type = rel.properties["mountpoint"].value.rsplit("/")[
                 -1].split("-", 1)
 
             if len(rel) > 2:
                 rel = float(rel)
 
-            r_dict[rel] = r_type
+            # enumeration ensures 11.2-LOCAL does not take the place of 11.2-R
+            r_dict[f'{rel}_{i}'] = r_type
     else:
         if list_sort:
             _release = _release.split("-", 1)
@@ -415,6 +416,7 @@ def sort_release(releases, split=False):
 
     for r, t in ordered_r_dict.items():
         if split:
+            r = r.rsplit('_')[0]  # Remove the enumeration
             release_list.insert(index, [f"{r}-{t}"])
             index += 1
         else:
