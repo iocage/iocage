@@ -151,7 +151,7 @@ class IOCPlugin(object):
                 props, jail_name)
             location = f"{self.iocroot}/jails/{jail_name}"
             self.__fetch_plugin_install_packages__(jail_name, jaildir, conf,
-                                                   _conf, pkg, props, repo_dir)
+                                                   pkg, props, repo_dir)
             self.__fetch_plugin_post_install__(conf, _conf, jaildir, jail_name)
         except Exception as e:
             if not self.keep_jail_on_failure:
@@ -352,7 +352,7 @@ class IOCPlugin(object):
         jaildir = f"{self.iocroot}/jails/{uuid}"
         repo_dir = f"{jaildir}/root/usr/local/etc/pkg/repos"
         path = f"{self.pool}/iocage/jails/{uuid}"
-        _conf = iocage_lib.ioc_json.IOCJson(jaildir).json_load()
+        _conf = iocage_lib.ioc_json.IOCJson(jaildir).json_get_value('all')
 
         # We do this test again as the user could supply a malformed IP to
         # fetch that bypasses the more naive check in cli/fetch
@@ -377,8 +377,8 @@ class IOCPlugin(object):
 
         return uuid, jaildir, _conf, repo_dir
 
-    def __fetch_plugin_install_packages__(self, uuid, jaildir, conf, _conf,
-                                          pkg_repos, create_props, repo_dir):
+    def __fetch_plugin_install_packages__(self, uuid, jaildir, conf, pkg_repos,
+                                          create_props, repo_dir):
         """Attempts to start the jail and install the packages"""
         kmods = conf.get("kmods", {})
         secure = True if "https://" in conf["packagesite"] else False
@@ -413,7 +413,7 @@ class IOCPlugin(object):
                 pkglist=["ca_root_nss"],
                 silent=True,
                 callback=self.callback).create_install_packages(
-                    uuid, jaildir, _conf)
+                    uuid, jaildir)
 
             if err:
                 iocage_lib.ioc_common.logit(
@@ -498,7 +498,7 @@ fingerprint: {fingerprint}
             silent=True,
             plugin=True,
             callback=self.callback).create_install_packages(
-                uuid, jaildir, _conf, repo=conf["packagesite"])
+                uuid, jaildir, repo=conf["packagesite"])
 
         if err:
             iocage_lib.ioc_common.logit(
@@ -980,11 +980,7 @@ fingerprint: {fingerprint}
                     0,
                     pkglist=["ca_root_nss"],
                     silent=True, callback=self.callback
-                ).create_install_packages(
-                    self.plugin,
-                    path,
-                    conf
-                )
+                ).create_install_packages(self.plugin, path)
 
             if err:
                 self.__rollback_jail__(name="update")
@@ -1007,7 +1003,6 @@ fingerprint: {fingerprint}
                 callback=self.callback).create_install_packages(
                 self.plugin,
                 path,
-                conf,
                 repo=plugin_conf["packagesite"])
 
             if err:
@@ -1021,9 +1016,6 @@ fingerprint: {fingerprint}
                     _callback=self.callback)
 
     def upgrade(self):
-        jail_conf = iocage_lib.ioc_json.IOCJson(
-            location=f"{self.iocroot}/jails/{self.plugin}").json_load()
-
         iocage_lib.ioc_common.logit(
             {
                 "level": "INFO",
@@ -1081,7 +1073,7 @@ fingerprint: {fingerprint}
             silent=self.silent)
 
         new_release = iocage_lib.ioc_upgrade.IOCUpgrade(
-            jail_conf, plugin_release, path, silent=True).upgrade_basejail(
+            plugin_release, path, silent=True).upgrade_basejail(
                 snapshot=False)
 
         self.silent = True

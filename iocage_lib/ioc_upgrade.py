@@ -40,7 +40,6 @@ class IOCUpgrade(object):
     """Will upgrade a jail to the specified RELEASE."""
 
     def __init__(self,
-                 conf,
                  new_release,
                  path,
                  silent=False,
@@ -51,13 +50,13 @@ class IOCUpgrade(object):
             self.pool).json_get_value("iocroot")
         self.freebsd_version = iocage_lib.ioc_common.checkoutput(
             ["freebsd-version"])
-        self.conf = conf
-        self.uuid = conf["host_hostuuid"]
+        self.conf = iocage_lib.ioc_json.IOCJson(path).json_get_value('all')
+        self.uuid = self.conf["host_hostuuid"]
         self.host_release = os.uname()[2]
-        self.cloned_release = conf["cloned_release"]
-        _release = conf["release"].rsplit("-", 1)[0]
+        self.cloned_release = self.conf["cloned_release"]
+        _release = self.conf["release"].rsplit("-", 1)[0]
         self.jail_release = _release if "-RELEASE" in _release else \
-            conf["release"]
+            self.conf["release"]
         self.new_release = new_release
         self.path = path
         self.status, self.jid = iocage_lib.ioc_list.IOCList.list_get_jid(

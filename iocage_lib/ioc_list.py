@@ -129,7 +129,9 @@ class IOCList(object):
                 }
 
             uuid = conf["host_hostuuid"]
-            ip4 = conf["ip4_addr"] if conf["dhcp"] != "on" else "DHCP"
+            ip4 = conf.get('ip4_addr', 'none')
+            dhcp = conf.get('dhcp', 'off')
+            ip4 = ip4 if dhcp != 'on' else 'DHCP'
 
             jail_list.append([uuid, ip4])
 
@@ -159,7 +161,9 @@ class IOCList(object):
         for jail in jails:
             mountpoint = jail.properties["mountpoint"].value
             try:
-                conf = iocage_lib.ioc_json.IOCJson(mountpoint).json_load()
+                conf = iocage_lib.ioc_json.IOCJson(mountpoint).json_get_value(
+                    'all'
+                )
                 state = ''
             except (Exception, SystemExit):
                 # Jail is corrupt, we want all the keys to exist.

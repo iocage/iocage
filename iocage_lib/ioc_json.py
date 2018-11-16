@@ -338,7 +338,6 @@ class IOCJson(object):
                                 iocage_lib.ioc_stop.IOCStop(
                                     full_uuid,
                                     self.location,
-                                    conf,
                                     silent=True)
 
                             jail_zfs_prop = \
@@ -412,22 +411,23 @@ class IOCJson(object):
                                        f" Please destroy {uuid} and recreate"
                                        " it.")
 
-        try:
-            conf_version = conf["CONFIG_VERSION"]
-
-            if version != conf_version:
-                conf = self.json_check_config(conf)
-        except KeyError:
-            conf = self.json_check_config(conf)
+        conf = self.json_check_config(conf)
 
         return conf
 
-    def json_write(self, data, _file="/config.json"):
+    def json_write(self, data, _file="/config.json", defaults=False):
         """Write a JSON file at the location given with supplied data."""
         # Templates need to be set r/w and then back to r/o
-        template = True if data['template'] != 'no' else False
-        jail_dataset = self.zfs.get_dataset_by_path(self.location).name \
-            if template else None
+        try:
+            template = True if data['template'] != 'no' else False
+            jail_dataset = self.zfs.get_dataset_by_path(self.location).name \
+                if template else None
+        except KeyError:
+            # Not a template, it would exist in the configuration otherwise
+            template = False
+
+        # _file is a full path when creating defaults
+        write_location = f'{self.location}{_file}' if not defaults else _file
 
         if template:
             try:
@@ -442,8 +442,7 @@ class IOCJson(object):
                     exception=ioc_exceptions.CommandFailed
                 )
 
-        with iocage_lib.ioc_common.open_atomic(self.location + _file,
-                                               'w') as out:
+        with iocage_lib.ioc_common.open_atomic(write_location, 'w') as out:
             json.dump(data, out, sort_keys=True, indent=4, ensure_ascii=False)
 
         if template:
@@ -613,16 +612,22 @@ class IOCJson(object):
             except Exception:
                 raise RuntimeError(f"{self.location} not found!")
         elif prop == "all":
+            d_conf = self.json_check_default_config()
             conf = self.json_load()
+            d_conf.update(conf)
 
-            return conf
+            return d_conf
         else:
             conf = self.json_load()
 
             if prop == "last_started" and conf[prop] == "none":
                 return "never"
             else:
-                return conf[prop]
+                try:
+                    return conf[prop]
+                except KeyError:
+                    default_props = self.json_check_default_config()
+                    return default_props[prop]
 
     def json_set_value(self, prop, _import=False, default=False):
         """Set a property for the specified jail."""
@@ -878,112 +883,70 @@ class IOCJson(object):
 
         return version
 
-    def json_check_config(self, conf, default=False):
+    def check_jail_config(self, iocroot, conf):
         """
-        Takes JSON as input and checks to see what is missing and adds the
-        new keys with their default values if missing.
+        Checks the jails configuration and migrates anything needed
         """
-        _, iocroot = _get_pool_and_iocroot()
+        release = conf.get("release", None)
         renamed = False
 
-        if os.geteuid() != 0:
+        if release is None:
+            err_name = self.location.rsplit("/", 1)[-1]
             iocage_lib.ioc_common.logit(
                 {
                     "level":
                     "EXCEPTION",
                     "message":
-                    "You need to be root to convert the"
-                    " configurations to the new format!"
+                    f"{err_name} has a corrupt configuration,"
+                    " please destroy the jail."
                 },
                 _callback=self.callback,
                 silent=self.silent)
-        conf['CONFIG_VERSION'] = self.json_get_version()
 
-        # Version 2 keys
-        if not conf.get('sysvmsg'):
-            conf['sysvmsg'] = 'new'
-        if not conf.get('sysvsem'):
-            conf['sysvsem'] = 'new'
-        if not conf.get('sysvshm'):
-            conf['sysvshm'] = 'new'
+        release = release.rsplit("-p", 1)[0]
+        cloned_release = conf.get("cloned_release", "LEGACY_JAIL")
 
-        # Version 3 keys
-        if not default:
-            release = conf.get("release", None)
+        try:
+            freebsd_version = f"{iocroot}/releases/{release}/root/bin/" \
+                "freebsd-version"
+        except FileNotFoundError:
+            freebsd_version = f"{iocroot}/templates/" \
+                f"{conf['host_hostuuid']}" \
+                              "/root/bin/freebsd-version"
+        except KeyError:
+            # At this point it should be a real misconfigured jail
+            uuid = self.location.rsplit("/", 1)[-1]
+            raise RuntimeError("Configuration is missing!"
+                               f" Please destroy {uuid} and recreate"
+                               " it.")
 
-            if release is None:
-                err_name = self.location.rsplit("/", 1)[-1]
+        if release[:4].endswith("-"):
+            # 9.3-RELEASE and under don't actually have this binary.
+            release = conf["release"]
+        elif release == 'EMPTY':
+            pass
+        else:
+            try:
+                with open(freebsd_version, "r") as r:
+                    for line in r:
+                        if line.startswith("USERLAND_VERSION"):
+                            release = line.rstrip().partition("=")[2]
+                            release = release.strip('"')
+            except Exception as e:
                 iocage_lib.ioc_common.logit(
                     {
-                        "level":
-                        "EXCEPTION",
-                        "message":
-                        f"{err_name} has a corrupt configuration,"
-                        " please destroy the jail."
-                    },
-                    _callback=self.callback,
-                    silent=self.silent)
+                        'level': 'EXCEPTION',
+                        'message': 'Exception:'
+                        f' "{e.__class__.__name__}:{str(e)}" occured\n'
+                        f"Loading {uuid}'s configuration failed"
+                    }
+                )
 
-            release = release.rsplit("-p", 1)[0]
-            cloned_release = conf.get("cloned_release", "LEGACY_JAIL")
+            cloned_release = conf["release"]
 
-            try:
-                freebsd_version = f"{iocroot}/releases/{release}/root/bin/" \
-                    "freebsd-version"
-            except FileNotFoundError:
-                freebsd_version = f"{iocroot}/templates/" \
-                    f"{conf['host_hostuuid']}" \
-                                  "/root/bin/freebsd-version"
-            except KeyError:
-                # At this point it should be a real misconfigured jail
-                uuid = self.location.rsplit("/", 1)[-1]
-                raise RuntimeError("Configuration is missing!"
-                                   f" Please destroy {uuid} and recreate"
-                                   " it.")
-
-            if release[:4].endswith("-"):
-                # 9.3-RELEASE and under don't actually have this binary.
-                release = conf["release"]
-            elif release == 'EMPTY':
-                pass
-            else:
-                try:
-                    with open(freebsd_version, "r") as r:
-                        for line in r:
-                            if line.startswith("USERLAND_VERSION"):
-                                release = line.rstrip().partition("=")[2]
-                                release = release.strip('"')
-                except Exception as e:
-                    iocage_lib.ioc_common.logit(
-                        {
-                            'level': 'EXCEPTION',
-                            'message': 'Exception:'
-                            f' "{e.__class__.__name__}:{str(e)}" occured\n'
-                            f"Loading {uuid}'s configuration failed"
-                        }
-                    )
-
-                cloned_release = conf["release"]
-
-            # Set all Version 3 keys
-            conf["release"] = release
-            conf["cloned_release"] = cloned_release
-
-            # Version 4 keys
-            if not conf.get('basejail'):
-                conf['basejail'] = 'no'
-
-        # Version 5 keys
-        if not conf.get('comment'):
-            conf['comment'] = 'none'
-
-        # Version 6 keys
-        if not conf.get('host_time'):
-            conf['host_time'] = 'yes'
-
-        # Version 7 keys
-        if not conf.get('depends'):
-            conf['depends'] = 'none'
+        # Set all Version 3 keys
+        conf["release"] = release
+        conf["cloned_release"] = cloned_release
 
         # Version 8 migration from uuid to tag named dataset
         try:
@@ -1034,6 +997,104 @@ class IOCJson(object):
             # New jail creation
             pass
 
+        try:
+            if not renamed:
+                self.json_write(conf)
+        except FileNotFoundError:
+            # Dataset was renamed.
+            self.location = f"{iocroot}/jails/{tag}"
+
+            self.json_write(conf)
+            messages = collections.OrderedDict(
+                [("1-NOTICE", "*" * 80),
+                 ("2-WARNING", f"Jail: {uuid} was renamed to {tag}"),
+                 ("3-NOTICE",
+                  f"{'*' * 80}\n"), ("4-EXCEPTION",
+                                     "Please issue your command again.")])
+
+            for level, msg in messages.items():
+                level = level.partition("-")[2]
+
+                iocage_lib.ioc_common.logit(
+                    {
+                        "level": level,
+                        "message": msg
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
+
+        # The above doesn't get triggered with legacy short UUIDs
+        if renamed:
+            self.location = f"{iocroot}/jails/{tag}"
+
+            self.json_write(conf)
+
+            messages = collections.OrderedDict(
+                [("1-NOTICE", "*" * 80),
+                 ("2-WARNING", f"Jail: {uuid} was renamed to {tag}"),
+                 ("3-NOTICE",
+                  f"{'*' * 80}\n"), ("4-EXCEPTION",
+                                     "Please issue your command again.")])
+
+            for level, msg in messages.items():
+                level = level.partition("-")[2]
+
+                iocage_lib.ioc_common.logit(
+                    {
+                        "level": level,
+                        "message": msg
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
+        return conf
+
+    def json_check_config(self, conf, default=False):
+        """
+        Takes JSON as input and checks to see what is missing and adds the
+        new keys to the defaults with their default values if missing.
+        """
+        _, iocroot = _get_pool_and_iocroot()
+
+        if os.geteuid() != 0:
+            iocage_lib.ioc_common.logit(
+                {
+                    "level":
+                    "EXCEPTION",
+                    "message": "You need to be root to convert the"
+                        " configurations to the new format!"
+                },
+                _callback=self.callback,
+                silent=self.silent)
+
+        if not default:
+            jail_conf = self.check_jail_config(iocroot, conf)
+
+        conf['CONFIG_VERSION'] = self.json_get_version()
+
+        # Version 2 keys
+        if not conf.get('sysvmsg'):
+            conf['sysvmsg'] = 'new'
+        if not conf.get('sysvsem'):
+            conf['sysvsem'] = 'new'
+        if not conf.get('sysvshm'):
+            conf['sysvshm'] = 'new'
+
+        # Version 4 keys
+        if not conf.get('basejail'):
+            conf['basejail'] = 'no'
+
+        # Version 5 keys
+        if not conf.get('comment'):
+            conf['comment'] = 'none'
+
+        # Version 6 keys
+        if not conf.get('host_time'):
+            conf['host_time'] = 'yes'
+
+        # Version 7 keys
+        if not conf.get('depends'):
+            conf['depends'] = 'none'
+
         # Version 9 keys
         if not conf.get('dhcp'):
             conf['dhcp'] = 'off'
@@ -1065,55 +1126,7 @@ class IOCJson(object):
             conf['allow_mount_fusefs'] = '0'
 
         if not default:
-            try:
-                if not renamed:
-                    self.json_write(conf)
-            except FileNotFoundError:
-                # Dataset was renamed.
-                self.location = f"{iocroot}/jails/{tag}"
-
-                self.json_write(conf)
-                messages = collections.OrderedDict(
-                    [("1-NOTICE", "*" * 80),
-                     ("2-WARNING", f"Jail: {uuid} was renamed to {tag}"),
-                     ("3-NOTICE",
-                      f"{'*' * 80}\n"), ("4-EXCEPTION",
-                                         "Please issue your command again.")])
-
-                for level, msg in messages.items():
-                    level = level.partition("-")[2]
-
-                    iocage_lib.ioc_common.logit(
-                        {
-                            "level": level,
-                            "message": msg
-                        },
-                        _callback=self.callback,
-                        silent=self.silent)
-
-        # The above doesn't get triggered with legacy short UUIDs
-        if renamed:
-            self.location = f"{iocroot}/jails/{tag}"
-
-            self.json_write(conf)
-
-            messages = collections.OrderedDict(
-                [("1-NOTICE", "*" * 80),
-                 ("2-WARNING", f"Jail: {uuid} was renamed to {tag}"),
-                 ("3-NOTICE",
-                  f"{'*' * 80}\n"), ("4-EXCEPTION",
-                                     "Please issue your command again.")])
-
-            for level, msg in messages.items():
-                level = level.partition("-")[2]
-
-                iocage_lib.ioc_common.logit(
-                    {
-                        "level": level,
-                        "message": msg
-                    },
-                    _callback=self.callback,
-                    silent=self.silent)
+            conf.update(jail_conf)
 
         return conf
 
@@ -1846,7 +1859,9 @@ class IOCJson(object):
             "available": "readonly",
             "used": "readonly",
             "dedup": "off",
-            "reservation": "none"
+            "reservation": "none",
+            "depends": "none",
+            "vnet_interfaces": "none"
         }
 
         try:
@@ -1876,6 +1891,7 @@ class IOCJson(object):
             # They may have had new keys added to their default
             # configuration, or it never existed.
             if write:
-                self.json_write(default_props, default_json_location)
+                self.json_write(default_props, default_json_location,
+                                defaults=True)
 
         return default_props

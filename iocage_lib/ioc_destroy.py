@@ -86,8 +86,7 @@ class IOCDestroy(object):
             _path = _path if _path != "none" else None
 
             if (dataset.name.endswith(uuid) or root) and _path is not None:
-                conf = iocage_lib.ioc_json.IOCJson(_path).json_load()
-                iocage_lib.ioc_stop.IOCStop(uuid, _path, conf, silent=True)
+                iocage_lib.ioc_stop.IOCStop(uuid, _path, silent=True)
 
     def __destroy_leftovers__(self, dataset, clean=False):
         """Removes parent datasets and logs."""
@@ -245,8 +244,7 @@ class IOCDestroy(object):
             return
 
         try:
-            conf = iocage_lib.ioc_json.IOCJson(path).json_load()
-            iocage_lib.ioc_stop.IOCStop(uuid, path, conf, silent=True)
+            iocage_lib.ioc_stop.IOCStop(uuid, path, silent=True)
         except (FileNotFoundError, RuntimeError, libzfs.ZFSException,
                 SystemExit):
             # Broad exception as we don't care why this failed. iocage

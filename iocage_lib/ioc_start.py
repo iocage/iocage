@@ -46,11 +46,11 @@ class IOCStart(object):
     for them. It also finds any scripts the user supplies for exec_*
     """
 
-    def __init__(self, uuid, path, conf, silent=False,
-                 callback=None, is_depend=False):
+    def __init__(self, uuid, path, silent=False, callback=None,
+                 is_depend=False):
         self.uuid = uuid.replace(".", "_")
         self.path = path
-        self.conf = conf
+        self.conf = iocage_lib.ioc_json.IOCJson(path).json_get_value('all')
         self.callback = callback
         self.silent = silent
         self.is_depend = is_depend
@@ -456,8 +456,8 @@ class IOCStart(object):
 
                 if failed_dhcp:
                     iocage_lib.ioc_stop.IOCStop(self.uuid, self.path,
-                                                self.conf, force=True,
-                                                silent=True)
+                                                force=True, silent=True
+                    )
 
                     iocage_lib.ioc_common.logit({
                         "level": "EXCEPTION",
@@ -489,9 +489,9 @@ class IOCStart(object):
                     _callback=self.callback,
                     silent=self.silent)
 
-            iocage_lib.ioc_stop.IOCStop(self.uuid, self.path,
-                                        self.conf, force=True,
-                                        silent=True)
+            iocage_lib.ioc_stop.IOCStop(self.uuid, self.path, force=True,
+                                        silent=True
+            )
 
             iocage_lib.ioc_common.logit({
                 "level": "EXCEPTION",

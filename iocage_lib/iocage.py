@@ -182,7 +182,7 @@ class IOCage(object):
         for jail in self.jails:
             self.jail = jail
             uuid, path = self.__check_jail_existence__()
-            conf = ioc_json.IOCJson(path).json_load()
+            conf = ioc_json.IOCJson(path).json_get_value('all')
             boot = conf['boot']
             priority = conf['priority']
             jail_order[jail] = int(priority)
@@ -725,7 +725,7 @@ class IOCage(object):
         jail_list = []
 
         for jail, path in self.jails.items():
-            conf = ioc_json.IOCJson(path).json_load()
+            conf = ioc_json.IOCJson(path).json_get_value('all')
             mountpoint = f"{self.pool}/iocage/jails/{jail}"
 
             template = conf["type"]
@@ -1381,7 +1381,7 @@ class IOCage(object):
     def rollback(self, name):
         """Rolls back a jail and all datasets to the supplied snapshot"""
         uuid, path = self.__check_jail_existence__()
-        conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
+        conf = ioc_json.IOCJson(path, silent=self.silent).json_get_value('all')
         status, _ = self.list("jid", uuid=uuid)
 
         if status:
@@ -1538,7 +1538,7 @@ class IOCage(object):
     def snap_list(self, long=True, _sort="created"):
         """Gathers a list of snapshots and returns it"""
         uuid, path = self.__check_jail_existence__()
-        conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
+        conf = ioc_json.IOCJson(path, silent=self.silent).json_get_value('all')
         snap_list = []
         snap_list_temp = []
         snap_list_root = []
@@ -1607,7 +1607,7 @@ class IOCage(object):
             name = date
 
         # Looks like foo/iocage/jails/df0ef69a-57b6-4480-b1f8-88f7b6febbdf@BAR
-        conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
+        conf = ioc_json.IOCJson(path, silent=self.silent).json_get_value('all')
 
         if conf["template"] == "yes":
             target = f"{self.pool}/iocage/templates/{uuid}"
@@ -1643,7 +1643,7 @@ class IOCage(object):
         """
         uuid, path = self.__check_jail_existence__()
         status, jid = self.list("jid", uuid=uuid)
-        conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
+        conf = ioc_json.IOCJson(path, silent=self.silent).json_get_value('all')
 
         # These need to be a list.
         exec_start = conf["exec_start"].split()
@@ -1688,7 +1688,8 @@ class IOCage(object):
                 self.__jail_order__("start")
         else:
             uuid, path = self.__check_jail_existence__()
-            conf = ioc_json.IOCJson(path, silent=self.silent).json_load()
+            conf = ioc_json.IOCJson(path, silent=self.silent).json_get_value(
+                'all')
             host_release = float(os.uname()[2].rsplit("-", 1)[0].rsplit("-",
                                                                         1)[0])
             release = conf["release"]
@@ -1727,7 +1728,6 @@ class IOCage(object):
                 ioc_start.IOCStart(
                     uuid,
                     path,
-                    conf,
                     silent=self.silent,
                     callback=self.callback,
                     is_depend=self.is_depend
@@ -1755,20 +1755,13 @@ class IOCage(object):
                 self.__jail_order__("stop")
         else:
             uuid, path = self.__check_jail_existence__()
-            conf = ioc_json.IOCJson(path, silent=self.silent, stop=True
-                                    ).json_load()
-            ioc_stop.IOCStop(
-                uuid,
-                path,
-                conf,
-                silent=self.silent,
-                force=force)
+            ioc_stop.IOCStop(uuid, path, silent=self.silent, force=force)
 
     def update(self):
         """Updates a jail to the latest patchset."""
         uuid, path = self.__check_jail_existence__()
-        conf = ioc_json.IOCJson(path, silent=self.silent, stop=True
-                                ).json_load()
+        conf = ioc_json.IOCJson(
+            path, silent=self.silent, stop=True).json_get_value('all')
         freebsd_version = ioc_common.checkoutput(["freebsd-version"])
         status, jid = self.list("jid", uuid=uuid)
         started = False
@@ -1866,12 +1859,12 @@ class IOCage(object):
                     f"\nHost: {host_release} is not greater than"
                     f" target: {_release}\nThis is unsupported."
                 },
-                _callback=self.callback)
+                    _callback=self.callback)
 
         uuid, path = self.__check_jail_existence__()
         root_path = f"{path}/root"
         status, jid = self.list("jid", uuid=uuid)
-        conf = ioc_json.IOCJson(path).json_load()
+        conf = ioc_json.IOCJson(path).json_get_value('all')
 
         if release is None and conf["type"] != "pluginv2":
             ioc_common.logit({
@@ -1906,12 +1899,11 @@ class IOCage(object):
 
         if conf["type"] == "jail":
             if not status:
-                ioc_start.IOCStart(uuid, path, conf, silent=True)
+                ioc_start.IOCStart(uuid, path, silent=True)
                 started = True
 
             if conf["basejail"] == "yes":
                 new_release = ioc_upgrade.IOCUpgrade(
-                    conf,
                     release,
                     root_path,
                     callback=self.callback
@@ -1919,7 +1911,6 @@ class IOCage(object):
                 basejail = True
             else:
                 new_release = ioc_upgrade.IOCUpgrade(
-                    conf,
                     release,
                     root_path,
                     callback=self.callback
@@ -1946,7 +1937,7 @@ class IOCage(object):
                 _callback=self.callback)
         elif conf["type"] == "pluginv2":
             if not status:
-                ioc_start.IOCStart(uuid, path, conf, silent=True)
+                ioc_start.IOCStart(uuid, path, silent=True)
                 started = True
 
             new_release = ioc_plugin.IOCPlugin(
