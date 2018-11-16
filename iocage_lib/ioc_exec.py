@@ -76,7 +76,8 @@ class IOCExec(object):
         if self.uuid is not None:
             self.status, _ = iocage_lib.ioc_list.IOCList().list_get_jid(
                 self.uuid)
-            self.conf = iocage_lib.ioc_json.IOCJson(self.path).json_load()
+            self.conf = iocage_lib.ioc_json.IOCJson(self.path).json_get_value(
+                'all')
             exec_fib = self.conf["exec_fib"]
 
             self.flight_checks()
@@ -144,8 +145,8 @@ class IOCExec(object):
 
             if self.conf["type"] in (
                     "jail", "plugin", "pluginv2", "clonejail"):
-                iocage_lib.ioc_start.IOCStart(
-                    self.uuid, self.path, self.conf, silent=True)
+                iocage_lib.ioc_start.IOCStart(self.uuid, self.path,
+                                              silent=True)
             elif self.conf["type"] == "basejail":
                 iocage_lib.ioc_common.logit(
                     {

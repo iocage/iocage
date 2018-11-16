@@ -63,7 +63,7 @@ def cli(jail, name):
         })
 
     # Looks like foo/iocage/jails/df0ef69a-57b6-4480-b1f8-88f7b6febbdf@BAR
-    conf = ioc_json.IOCJson(path).json_load()
+    conf = ioc_json.IOCJson(path).json_get_value('all')
 
     if conf["template"] == "yes":
         target = f"{pool}/iocage/templates/{uuid}@{name}"

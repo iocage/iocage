@@ -33,18 +33,17 @@ import iocage_lib.ioc_list
 class IOCStop(object):
     """Stops a jail and unmounts the jails mountpoints."""
 
-    def __init__(self, uuid, path, conf,
-                 silent=False, callback=None, force=False):
+    def __init__(self, uuid, path, silent=False, callback=None, force=False):
         self.pool = iocage_lib.ioc_json.IOCJson(" ").json_get_value("pool")
         self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")
         self.uuid = uuid.replace(".", "_")
         self.path = path
-        self.conf = conf
+        self.conf = iocage_lib.ioc_json.IOCJson(path).json_get_value('all')
         self.force = force
         self.status, self.jid = iocage_lib.ioc_list.IOCList().list_get_jid(
             uuid)
-        self.nics = conf["interfaces"]
+        self.nics = self.conf["interfaces"]
         self.callback = callback
         self.silent = silent
 

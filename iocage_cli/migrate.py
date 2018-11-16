@@ -76,7 +76,7 @@ def cli(force, delete):
         iocroot = ioc_json.IOCJson(pool).json_get_value("iocroot")
         jail = f"{pool}/iocage/jails/{uuid}"
         jail_old = f"{pool}/iocage/jails_old/{uuid}"
-        conf = ioc_json.IOCJson(path).json_load()
+        conf = ioc_json.IOCJson(path).json_get_value('all')
 
         try:
             tag = conf["tag"]

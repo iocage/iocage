@@ -406,7 +406,11 @@ class IOCCreate(object):
 
         # Just "touch" the fstab file, since it won't exist and write
         # /etc/hosts
-        etc_hosts_ip_addr = config["ip4_addr"].split("|", 1)[-1]
+        try:
+            etc_hosts_ip_addr = config["ip4_addr"].split("|", 1)[-1]
+        except KeyError:
+            # No ip4_addr specified during creation
+            pass
 
         try:
             jail_uuid_short = jail_uuid.rsplit(".")[-2]
@@ -417,7 +421,6 @@ class IOCCreate(object):
             jail_uuid_short = jail_uuid
             jail_hostname = jail_uuid
 
-        final_line = f"{etc_hosts_ip_addr}\t{jail_hostname}\n"
 
         if self.empty:
             open(f"{location}/fstab", "wb").close()
@@ -447,8 +450,14 @@ class IOCCreate(object):
                     else:
                         # We want their IP to have the hostname at the end
 
-                        if config["ip4_addr"] != "none":
-                            etc_hosts.write(final_line)
+                        try:
+                            if config["ip4_addr"] != "none":
+                                final_line =\
+                                    f'{etc_hosts_ip_addr}\t{jail_hostname}\n'
+                                etc_hosts.write(final_line)
+                        except KeyError:
+                            # No ip4_addr specified during creation
+                            pass
         else:
             with open(clone_fstab, "r") as _clone_fstab:
                 with iocage_lib.ioc_common.open_atomic(
@@ -529,10 +538,10 @@ class IOCCreate(object):
                     _callback=self.callback,
                     silent=self.silent)
             else:
-                self.create_install_packages(jail_uuid, location, config)
+                self.create_install_packages(jail_uuid, location)
 
         if start:
-            iocage_lib.ioc_start.IOCStart(jail_uuid, location, config,
+            iocage_lib.ioc_start.IOCStart(jail_uuid, location,
                                           silent=self.silent)
 
         if is_template:
@@ -547,23 +556,19 @@ class IOCCreate(object):
         Loads default props and sets the user properties, along with some mild
         sanity checking
         """
-        ioc_json = iocage_lib.ioc_json.IOCJson()
-        jail_props = ioc_json.json_check_default_config()
-
         # Unique jail properties, they will be overridden by user supplied
         # values.
-        jail_props["host_hostname"] = jail_uuid
-        jail_props["host_hostuuid"] = jail_uuid
-        jail_props["hostid_strict_check"] = "off"
-        jail_props["release"] = release
-        jail_props["cloned_release"] = self.release
-        jail_props["jail_zfs_dataset"] = f"iocage/jails/{jail_uuid}/data"
-        jail_props["depends"] = "none"
-        jail_props["vnet_interfaces"] = "none"
+        jail_props = {
+            'host_hostname': jail_uuid,
+            'host_hostuuid': jail_uuid,
+            'release': release,
+            'cloned_release': self.release,
+            'jail_zfs_dataset': f'iocage/jails/{jail_uuid}/data'
+        }
 
         return jail_props
 
-    def create_install_packages(self, jail_uuid, location, config,
+    def create_install_packages(self, jail_uuid, location,
                                 repo="pkg.freebsd.org"):
         """
         Takes a list of pkg's to install into the target jail. The resolver
@@ -572,8 +577,7 @@ class IOCCreate(object):
         status, jid = iocage_lib.ioc_list.IOCList().list_get_jid(jail_uuid)
 
         if not status:
-            iocage_lib.ioc_start.IOCStart(jail_uuid, location, config,
-                                          silent=True)
+            iocage_lib.ioc_start.IOCStart(jail_uuid, location, silent=True)
             status, jid = iocage_lib.ioc_list.IOCList().list_get_jid(jail_uuid)
 
         if repo:
@@ -728,8 +732,8 @@ class IOCCreate(object):
                      log=not(self.silent)
                 )
         except iocage_lib.ioc_exceptions.CommandFailed as e:
-            iocage_lib.ioc_stop.IOCStop(jail_uuid, location, config,
-                                        force=True, silent=True)
+            iocage_lib.ioc_stop.IOCStop(jail_uuid, location, force=True,
+                                        silent=True)
             iocage_lib.ioc_common.logit({
                 "level": "EXCEPTION",
                 "message": e.message.decode().rstrip()
@@ -807,8 +811,7 @@ class IOCCreate(object):
         os.remove(f"{location}/root/etc/resolv.conf")
 
         if status:
-            iocage_lib.ioc_stop.IOCStop(jail_uuid, location, config,
-                                        silent=True)
+            iocage_lib.ioc_stop.IOCStop(jail_uuid, location, silent=True)
 
         if self.plugin and pkg_err_list:
             return ','.join(pkg_err_list)
