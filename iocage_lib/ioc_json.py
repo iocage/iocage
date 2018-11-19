@@ -888,7 +888,6 @@ class IOCJson(object):
         Checks the jails configuration and migrates anything needed
         """
         release = conf.get("release", None)
-        notes = conf.get('notes', 'none')
         template = conf.get('template', 'no')
         renamed = False
 
@@ -914,8 +913,7 @@ class IOCJson(object):
         except FileNotFoundError:
             if template == 'yes':
                 freebsd_version = f"{iocroot}/templates/" \
-                    f"{conf['host_hostuuid']}" \
-                                  "/root/bin/freebsd-version"
+                    f"{conf['host_hostuuid']}/root/bin/freebsd-version"
             else:
                 temp_uuid = self.location.rsplit("/", 1)[-1]
                 freebsd_version = f'{iocroot}/jails/{temp_uuid}/root/bin/' \
