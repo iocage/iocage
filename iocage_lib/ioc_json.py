@@ -194,7 +194,6 @@ class IOCJson(object):
     def json_load(self):
         """Load the JSON at the location given. Returns a JSON object."""
         pool, iocroot = _get_pool_and_iocroot()
-        version = self.json_get_version()
         jail_type, jail_uuid = self.location.rsplit("/", 2)[-2:]
         full_uuid = jail_uuid  # Saves jail_uuid for legacy ZFS migration
         legacy_short = False
@@ -613,7 +612,11 @@ class IOCJson(object):
                 raise RuntimeError(f"{self.location} not found!")
         elif prop == "all":
             d_conf = self.json_check_default_config()
-            conf = self.json_load()
+            conf, write = self.json_load()
+
+            if write:
+                self.json_write(conf)
+
             d_conf.update(conf)
 
             return d_conf
@@ -1059,14 +1062,23 @@ class IOCJson(object):
         new keys to the defaults with their default values if missing.
         """
         _, iocroot = _get_pool_and_iocroot()
+        iocage_conf_version = self.json_get_version()
+        current_conf_version = conf.get('CONFIG_VERSION', None)
+
+        if current_conf_version == iocage_conf_version:
+            return conf, False
+
+        if current_conf_version is None:
+            # New style thin configuration jails won't have this. Only their
+            # defaults will
+            return conf, False
 
         if os.geteuid() != 0:
             iocage_lib.ioc_common.logit(
                 {
-                    "level":
-                    "EXCEPTION",
-                    "message": "You need to be root to convert the"
-                        " configurations to the new format!"
+                    'level': 'EXCEPTION',
+                    'message': 'You need to be root to convert the'
+                               ' configurations to the new format!'
                 },
                 _callback=self.callback,
                 silent=self.silent)
@@ -1074,7 +1086,7 @@ class IOCJson(object):
         if not default:
             jail_conf = self.check_jail_config(iocroot, conf)
 
-        conf['CONFIG_VERSION'] = self.json_get_version()
+        conf['CONFIG_VERSION'] = iocage_conf_version
 
         # Version 2 keys
         if not conf.get('sysvmsg'):
@@ -1133,7 +1145,7 @@ class IOCJson(object):
         if not default:
             conf.update(jail_conf)
 
-        return conf
+        return conf, True
 
     def json_check_prop(self, key, value, conf):
         """
@@ -1872,7 +1884,7 @@ class IOCJson(object):
         try:
             with open(default_json_location, "r") as default_json:
                 default_props = json.load(default_json)
-                default_props = self.json_check_config(
+                default_props, write = self.json_check_config(
                     default_props, default=True)
         except FileNotFoundError:
             iocage_lib.ioc_common.logit(
