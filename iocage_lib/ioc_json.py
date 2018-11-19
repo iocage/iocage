@@ -883,6 +883,7 @@ class IOCJson(object):
 
         if not default:
             release = conf.get("release", None)
+            template = conf.get('template', 'no')
 
             if release is None:
                 err_name = self.location.rsplit("/", 1)[-1]
@@ -901,12 +902,16 @@ class IOCJson(object):
             cloned_release = conf.get("cloned_release", "LEGACY_JAIL")
 
             try:
-                freebsd_version = f"{iocroot}/releases/{release}/root/bin/" \
-                    "freebsd-version"
+                freebsd_version = f'{iocroot}/releases/{release}/root/bin/' \
+                    'freebsd-version'
             except FileNotFoundError:
-                freebsd_version = f"{iocroot}/templates/" \
-                    f"{conf['host_hostuuid']}" \
-                                  "/root/bin/freebsd-version"
+                if template == 'yes':
+                    freebsd_version = f"{iocroot}/templates/" \
+                        f"{conf['host_hostuuid']}/root/bin/freebsd-version"
+                else:
+                    temp_uuid = self.location.rsplit("/", 1)[-1]
+                    freebsd_version = f'{iocroot}/jails/{temp_uuid}/root/bin/'\
+                        'freebsd-version'
             except KeyError:
                 # At this point it should be a real misconfigured jail
                 uuid = self.location.rsplit("/", 1)[-1]
