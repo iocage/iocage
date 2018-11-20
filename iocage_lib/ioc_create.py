@@ -370,7 +370,7 @@ class IOCCreate(object):
                         },
                             _callback=self.callback,
                             silent=self.silent)
-                        conf['vnet'] = 'on'
+                        config['vnet'] = 'on'
 
                     rtsold_enable = 'YES'
             elif key == 'dhcp' and value == 'on':
