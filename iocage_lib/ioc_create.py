@@ -365,27 +365,40 @@ class IOCCreate(object):
                     if 'vnet=on' not in self.props:
                         iocage_lib.ioc_common.logit({
                             'level': 'WARNING',
-                            'message': 'accept_rtadv requires vnet=on!'
+                            'message': 'accept_rtadv requires vnet,'
+                            ' setting to on!'
                         },
                             _callback=self.callback,
                             silent=self.silent)
+                        conf['vnet'] = 'on'
 
                     rtsold_enable = 'YES'
             elif key == 'dhcp' and value == 'on':
                 if 'vnet=on' not in self.props:
                     iocage_lib.ioc_common.logit({
                         'level': 'WARNING',
-                        'message': 'dhcp requires vnet=on!'
+                        'message': 'dhcp requires vnet, setting to on!'
                     },
                         _callback=self.callback,
                         silent=self.silent)
+                    config['vnet'] = 'on'
                 if 'bpf=yes' not in self.props:
                     iocage_lib.ioc_common.logit({
                         'level': 'WARNING',
-                        'message': 'dhcp requires bpf=yes!'
+                        'message': 'dhcp requires bpf, setting to yes!'
                     },
                         _callback=self.callback,
                         silent=self.silent)
+                    config['bpf'] = 'yes'
+            elif key == 'bpf' and value == 'yes':
+                if 'vnet=on' not in self.props:
+                    iocage_lib.ioc_common.logit({
+                        'level': 'WARNING',
+                        'message': 'bpf requires vnet, setting to on!'
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
+                    config['vnet'] = 'on'
 
             try:
                 value, config = iocjson.json_check_prop(key, value, config)

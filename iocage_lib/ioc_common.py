@@ -715,7 +715,7 @@ def generate_devfs_ruleset(conf, paths=None, includes=None, callback=None,
     # We may end up setting all of these.
     if conf['allow_mount_fusefs'] == '1':
         devfs_dict['fuse'] = None
-    if conf['dhcp'] == 'on':
+    if conf['bpf'] == 'yes':
         devfs_dict['bpf*'] = None
     if conf['allow_tun'] == '1':
         devfs_dict['tun*'] = None
