@@ -410,8 +410,6 @@ class IOCJson(object):
                                        f" Please destroy {uuid} and recreate"
                                        " it.")
 
-        conf = self.json_check_config(conf)
-
         return conf
 
     def json_write(self, data, _file="/config.json", defaults=False):
@@ -612,7 +610,8 @@ class IOCJson(object):
                 raise RuntimeError(f"{self.location} not found!")
         elif prop == "all":
             d_conf = self.json_check_default_config()
-            conf, write = self.json_load()
+            conf = self.json_load()
+            conf, write = self.json_check_config(conf)
 
             if write:
                 self.json_write(conf)
