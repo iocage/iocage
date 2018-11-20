@@ -621,7 +621,7 @@ class IOCJson(object):
 
             return d_conf
         else:
-            conf = self.json_load()
+            conf, write = self.json_load()
 
             if prop == "last_started" and conf[prop] == "none":
                 return "never"
@@ -632,12 +632,15 @@ class IOCJson(object):
                     default_props = self.json_check_default_config()
                     return default_props[prop]
 
+            if write:
+                self.json_write(conf)
+
     def json_set_value(self, prop, _import=False, default=False):
         """Set a property for the specified jail."""
         key, _, value = prop.partition("=")
 
         if not default:
-            conf = self.json_load()
+            conf, write = self.json_load()
             uuid = conf["host_hostuuid"]
             status, jid = iocage_lib.ioc_list.IOCList().list_get_jid(uuid)
             conf[key] = value
@@ -798,10 +801,11 @@ class IOCJson(object):
                         },
                         _callback=self.callback,
                         silent=self.silent)
+            if write:
+                self.json_write(conf)
         else:
             _, iocroot = _get_pool_and_iocroot()
-            with open(f"{iocroot}/defaults.json", "r") as default_json:
-                conf = json.load(default_json)
+            conf = self.json_check_default_config()
 
         if not default:
             value, conf = self.json_check_prop(key, value, conf)
@@ -1415,7 +1419,7 @@ class IOCJson(object):
 
     def json_plugin_get_value(self, prop):
         pool, iocroot = _get_pool_and_iocroot()
-        conf = self.json_load()
+        conf, write = self.json_load()
         uuid = conf["host_hostuuid"]
         _path = self.zfs_get_property(f"{pool}/iocage/jails/{uuid}",
                                       "mountpoint")
@@ -1460,9 +1464,12 @@ class IOCJson(object):
                 _callback=self.callback,
                 silent=self.silent)
 
+        if write:
+            self.json_write(conf)
+
     def json_plugin_set_value(self, prop):
         pool, iocroot = _get_pool_and_iocroot()
-        conf = self.json_load()
+        conf, write = self.json_load()
         uuid = conf["host_hostuuid"]
         _path = self.zfs_get_property(f"{pool}/iocage/jails/{uuid}",
                                       "mountpoint")
@@ -1564,6 +1571,9 @@ class IOCJson(object):
                 },
                 _callback=self.callback,
                 silent=self.silent)
+
+        if write:
+            self.json_write(conf)
 
     def json_migrate_uuid_to_tag(self, uuid, tag, state, conf):
         """This will migrate an old uuid + tag jail to a tag only one"""
