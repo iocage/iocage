@@ -345,6 +345,8 @@ class IOCCreate(object):
 
             if key == "boot" and value == "on" and not self.empty:
                 start = True
+            elif self.plugin and key == "type" and value == "pluginv2":
+                config["type"] = value
             elif key == "template" and value == "yes":
                 iocjson.json_write(config)  # Set counts on this.
                 location = location.replace("/jails/", "/templates/")
