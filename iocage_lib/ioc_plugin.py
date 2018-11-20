@@ -957,7 +957,7 @@ fingerprint: {fingerprint}
     def __update_pkg_install__(self, plugin_conf):
         """Installs all pkgs listed in the plugins configuration"""
         path = f"{self.iocroot}/jails/{self.plugin}"
-        conf = iocage_lib.ioc_json.IOCJson(
+        conf, write = iocage_lib.ioc_json.IOCJson(
             location=path).json_load()
 
         secure = True if "https://" in plugin_conf["packagesite"] else False
@@ -1014,6 +1014,9 @@ fingerprint: {fingerprint}
                         "message": msg
                     },
                     _callback=self.callback)
+
+        if write:
+            self.json_write(conf)
 
     def upgrade(self):
         iocage_lib.ioc_common.logit(
@@ -1213,7 +1216,7 @@ fingerprint: {fingerprint}
 
     def __check_manifest__(self, plugin_conf):
         """If the Major ABI changed, they cannot update anymore."""
-        jail_conf = iocage_lib.ioc_json.IOCJson(
+        jail_conf, write = iocage_lib.ioc_json.IOCJson(
             location=f"{self.iocroot}/jails/{self.plugin}").json_load()
 
         jail_rel = int(jail_conf["release"].split(".", 1)[0])
@@ -1233,6 +1236,9 @@ fingerprint: {fingerprint}
                     " 'upgrade' instead."
                 },
                 _callback=self.callback)
+
+        if write:
+            self.json_write(conf)
 
     def __fetch_release__(self, release):
         """Will call fetch to get the new RELEASE the plugin will rely on"""
