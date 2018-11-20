@@ -31,7 +31,7 @@ from iocage_lib.ioc_common import checkoutput
 def pytest_addoption(parser):
     parser.addoption("--zpool", action="store", default=None,
                      help="Specify a zpool to use.")
-    parser.addoption("--release", action="store", default="11.0-RELEASE",
+    parser.addoption("--release", action="store", default="11.2-RELEASE",
                      help="Specify a RELEASE to use.")
     parser.addoption("--server", action="store", default="ftp.freebsd.org",
                      help="FTP server to login to.")

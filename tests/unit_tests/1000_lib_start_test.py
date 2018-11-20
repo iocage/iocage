@@ -29,7 +29,7 @@ import iocage_lib.ioc_start as ioc_start
 def test_should_return_mtu_of_first_member(mock_checkoutput):
     mock_checkoutput.side_effect = [bridge_if_config, member_if_config]
 
-    mtu = ioc_start.IOCStart("", "").find_bridge_mtu('bridge0')
+    mtu = ioc_start.IOCStart("", "", unit_test=True).find_bridge_mtu('bridge0')
     assert mtu == '1500'
     mock_checkoutput.assert_has_calls([mock.call(["ifconfig", "bridge0"]),
                                        mock.call(["ifconfig", "bge0"])])
@@ -40,7 +40,7 @@ def test_should_return_mtu_of_first_member_with_description(mock_checkoutput):
     mock_checkoutput.side_effect = [bridge_with_description_if_config,
                                     member_if_config]
 
-    mtu = ioc_start.IOCStart("", "").find_bridge_mtu('bridge0')
+    mtu = ioc_start.IOCStart("", "", unit_test=True).find_bridge_mtu('bridge0')
     assert mtu == '1500'
     mock_checkoutput.assert_has_calls([mock.call(["ifconfig", "bridge0"]),
                                        mock.call(["ifconfig", "bge0"])])
@@ -51,7 +51,7 @@ def test_should_return_default_mtu_if_no_members(mock_checkoutput):
     mock_checkoutput.side_effect = [bridge_with_no_members_if_config,
                                     member_if_config]
 
-    mtu = ioc_start.IOCStart("", "").find_bridge_mtu('bridge0')
+    mtu = ioc_start.IOCStart("", "", unit_test=True).find_bridge_mtu('bridge0')
     assert mtu == '1500'
     mock_checkoutput.called_with(["ifconfig", "bridge0"])
 

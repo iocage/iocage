@@ -47,15 +47,16 @@ class IOCStart(object):
     """
 
     def __init__(self, uuid, path, silent=False, callback=None,
-                 is_depend=False):
+                 is_depend=False, unit_test=False):
         self.uuid = uuid.replace(".", "_")
         self.path = path
-        self.conf = iocage_lib.ioc_json.IOCJson(path).json_get_value('all')
         self.callback = callback
         self.silent = silent
         self.is_depend = is_depend
+        self.unit_test = unit_test
 
-        try:
+        if not self.unit_test:
+            self.conf = iocage_lib.ioc_json.IOCJson(path).json_get_value('all')
             self.pool = iocage_lib.ioc_json.IOCJson(" ").json_get_value("pool")
             self.iocroot = iocage_lib.ioc_json.IOCJson(
                 self.pool).json_get_value("iocroot")
@@ -66,10 +67,6 @@ class IOCStart(object):
 
             self.exec_fib = self.conf["exec_fib"]
             self.__start_jail__()
-        except TypeError:
-            # Bridge MTU unit tests will not have these
-            # TODO: Something less terrible
-            pass
 
     def __start_jail__(self):
         """
@@ -956,11 +953,10 @@ class IOCStart(object):
         ]
 
     def find_bridge_mtu(self, bridge):
-        try:
+        if self.unit_test:
+            dhcp = 'off'
+        else:
             dhcp = self.get("dhcp")
-        except Exception:
-            # To spoof unit test.
-            dhcp = "off"
 
         try:
             if dhcp == "on":

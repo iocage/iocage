@@ -84,6 +84,11 @@ class IOCLogger(object):
         self.log_file = os.environ.get("IOCAGE_LOGFILE", "/var/log/iocage.log")
         self.colorize = os.environ.get("IOCAGE_COLOR", "FALSE")
         logger = logging.getLogger("iocage")
+        
+        if logger.hasHandlers():
+            # If we're imported multiple times (like tests) this will prevent
+            # a large duplicate flood of text.
+            logger.handlers = []
 
         logger.setLevel(logging.DEBUG)
         logging.addLevelName(5, "SPAM")
@@ -115,7 +120,7 @@ class IOCLogger(object):
                 '': {
                     'handlers': ['file'],
                     'level': 'DEBUG',
-                    'propagate': True
+                    'propagate': False
                 },
             },
         }

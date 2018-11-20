@@ -41,7 +41,7 @@ def test_fetch(release, server, user, password, auth, root_dir, http, _file,
         release = re.sub(r"\W\w.", "-", release)
 
     # Type Errors are bad mmmkay
-    command = ["fetch", "-r", release]
+    command = ["fetch", "-r", release, "-F", "base.txz"]
     command += ["-s", server] if server else []
     command += ["-h"] if http else []
     command += ["-f", _file] if _file else []
