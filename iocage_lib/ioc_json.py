@@ -472,8 +472,7 @@ class IOCJson(object):
 
         if default:
             _, iocroot = _get_pool_and_iocroot()
-            with open(f"{iocroot}/defaults.json", "r") as default_json:
-                conf = json.load(default_json)
+            conf = self.json_check_default_config()
 
             if prop == "all":
                 return conf
