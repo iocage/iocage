@@ -776,11 +776,14 @@ class IOCage(object):
         if exec_clean == '1':
             env_path = '/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:'\
                    '/usr/local/bin:/root/bin'
+            env_lang = os.environ.get('LANG', 'en_US.UTF-8')
             su_env = {
                 'PATH': env_path,
                 'PWD': '/',
                 'HOME': '/',
-                'TERM': 'xterm-256color'
+                'TERM': 'xterm-256color',
+                'LANG': env_lang,
+                'LC_ALL': env_lang
                 }
         else:
             su_env = os.environ.copy()
@@ -820,9 +823,9 @@ class IOCage(object):
             login_flags = self.get('login_flags').split()
             exec_fib = self.get('exec_fib')
             console_cmd = [
-                "/usr/sbin/setfib", exec_fib,
-                "jexec", f"ioc-{uuid.replace('.', '_')}",
-                "login"] + login_flags
+                '/usr/sbin/setfib', exec_fib,
+                'jexec', f"ioc-{uuid.replace('.', '_')}",
+                'login', '-p'] + login_flags
 
             su.Popen(console_cmd, env=su_env).communicate()
             return

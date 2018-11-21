@@ -63,11 +63,14 @@ class IOCExec(object):
 
         path = '/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:'\
                '/usr/local/bin:/root/bin'
+        env_lang = os.environ.get('LANG', 'en_US.UTF-8')
         su_env = su_env or {}
         su_env.setdefault('PATH', path)
         su_env.setdefault('PWD', '/')
         su_env.setdefault('HOME', '/')
         su_env.setdefault('TERM', 'xterm-256color')
+        su_env.setdefault('LANG', env_lang)
+        su_env.setdefault('LC_ALL', env_lang)
 
         self.su_env = su_env
         self.callback = callback
