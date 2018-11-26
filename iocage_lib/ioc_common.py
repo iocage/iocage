@@ -334,7 +334,7 @@ def sort_name(name):
 def sort_key(item):
     """Sort list by the first key."""
 
-    return (list(item.keys())[0],)
+    return (list(item[0].keys())[0],)
 
 
 def sort_template(template):
