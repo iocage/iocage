@@ -50,7 +50,8 @@ class IOCUpgrade(object):
             self.pool).json_get_value("iocroot")
         self.freebsd_version = iocage_lib.ioc_common.checkoutput(
             ["freebsd-version"])
-        self.conf = iocage_lib.ioc_json.IOCJson(path).json_get_value('all')
+        self.conf = iocage_lib.ioc_json.IOCJson(path.rsplit(
+            '/root', 1)[0]).json_get_value('all')
         self.uuid = self.conf["host_hostuuid"]
         self.host_release = os.uname()[2]
         self.cloned_release = self.conf["cloned_release"]
