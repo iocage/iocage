@@ -412,6 +412,13 @@ class IOCStart(object):
                 _callback=self.callback,
                 silent=self.silent)
 
+        iocage_lib.ioc_common.logit({
+            'level': 'INFO',
+            'message': f'  + Using devfs_ruleset: {devfs_ruleset}'
+        },
+            _callback=self.callback,
+            silent=self.silent)
+
         os_path = f"{self.path}/root/dev/log"
 
         if not os.path.isfile(os_path) and not os.path.islink(os_path):
