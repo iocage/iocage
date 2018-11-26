@@ -54,21 +54,21 @@ class IOCList(object):
         self.sort = _sort
         self.silent = silent
         self.callback = callback
+        self.basejail_only = False if self.list_type != 'basejail' else True
         self.plugin = plugin
         self.quick = quick
 
     def list_datasets(self):
         """Lists the datasets of given type."""
-
-        if self.list_type == "all" or self.list_type == "uuid":
-            ds = self.zfs.get_dataset(f"{self.pool}/iocage/jails").children
-        elif self.list_type == "base":
+        if self.list_type == "base":
             ds = self.zfs.get_dataset(f"{self.pool}/iocage/releases").children
         elif self.list_type == "template":
             ds = self.zfs.get_dataset(
                 f"{self.pool}/iocage/templates").children
+        else:
+            ds = self.zfs.get_dataset(f"{self.pool}/iocage/jails").children
 
-        if self.list_type == "all":
+        if self.list_type == "all" or self.list_type == 'basejail':
             if self.quick:
                 _all = self.list_all_quick(ds)
             else:
@@ -133,6 +133,9 @@ class IOCList(object):
             dhcp = conf.get('dhcp', 'off')
             ip4 = ip4 if dhcp != 'on' else 'DHCP'
 
+            if self.basejail_only and conf.get('basejail', 'no') != 'yes':
+                continue
+
             jail_list.append([uuid, ip4])
 
         # return the list
@@ -182,6 +185,9 @@ class IOCList(object):
                 conf['release'] = 'N/A'
                 state = 'CORRUPT'
                 jid = '-'
+
+            if self.basejail_only and conf.get('basejail', 'no') != 'yes':
+                continue
 
             uuid_full = conf["host_hostuuid"]
             uuid = uuid_full

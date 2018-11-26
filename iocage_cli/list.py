@@ -32,6 +32,8 @@ import iocage_lib.iocage as ioc
     help="List a specified dataset type, by default lists all jails.")
 @click.option("--release", "--base", "-r", "-b", "dataset_type",
               flag_value="base", help="List all bases.")
+@click.option("--basejails", "-B", "dataset_type",
+              flag_value="basejail", help="List all basejails.")
 @click.option("--template", "-t", "dataset_type", flag_value="template",
               help="List all templates.")
 @click.option("--header", "-h", "-H", is_flag=True, default=True,
