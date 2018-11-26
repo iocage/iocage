@@ -215,6 +215,7 @@ class IOCList(object):
             boot = conf["boot"]
             jail_type = conf["type"]
             full_release = conf["release"]
+            basejail = conf.get('basejail', 'no')
 
             if "HBSD" in full_release:
                 full_release = re.sub(r"\W\w.", "-", full_release)
@@ -324,8 +325,8 @@ class IOCList(object):
                                   admin_portal])
             elif self.full:
                 jail_list.append([jid, uuid, boot, state, jail_type,
-                                  full_release, full_ip4, ip6, template
-                                  ])
+                                  full_release, full_ip4, ip6, template,
+                                  basejail])
             else:
                 jail_list.append([jid, uuid, state, short_release, short_ip4])
 
@@ -355,10 +356,11 @@ class IOCList(object):
             else:
                 # We get an infinite float otherwise.
                 table.set_cols_dtype(["t", "t", "t", "t", "t", "t", "t", "t",
-                                      "t"])
+                                      "t", "t"])
 
                 jail_list.insert(0, ["JID", "NAME", "BOOT", "STATE", "TYPE",
-                                     "RELEASE", "IP4", "IP6", "TEMPLATE"])
+                                     "RELEASE", "IP4", "IP6", "TEMPLATE",
+                                     'BASEJAIL'])
         else:
             # We get an infinite float otherwise.
             table.set_cols_dtype(["t", "t", "t", "t", "t"])
