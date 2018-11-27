@@ -144,20 +144,12 @@ class IOCCreate(object):
                     _type = "releases"
                     rel_path = f"{self.iocroot}/{_type}/{self.release}"
 
-                    freebsd_version = f"{rel_path}/root/bin/freebsd-version"
-
                     if not self.empty:
-                        if self.release[:4].endswith("-"):
-                            # 9.3-RELEASE and under don't actually have this
-                            # binary.
-                            cloned_release = self.release
-                        else:
-                            with open(freebsd_version, "r") as r:
-                                for line in r:
-                                    if line.startswith("USERLAND_VERSION"):
-                                        # Long lines ftw?
-                                        cl = line.rstrip().partition("=")[2]
-                                        cloned_release = cl.strip('"')
+                        cloned_release = \
+                            iocage_lib.ioc_common.get_jail_freebsd_version(
+                                f'{rel_path}/root',
+                                self.release
+                            )
                     else:
                         cloned_release = "EMPTY"
             except (IOError, OSError, FileNotFoundError, UnboundLocalError):

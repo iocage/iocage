@@ -925,6 +925,12 @@ class IOCFetch(object):
 
         su.Popen(["umount", f"{mount_root}/dev"]).communicate()
 
+        new_release = iocage_lib.ioc_common.get_jail_freebsd_version(
+            mount_root, self.release
+        )
+
+        return new_release
+
     def __fetch_extract_remove__(self, tar):
         """
         Tries to remove any file that exists from the archive as overwriting

@@ -124,15 +124,10 @@ class IOCUpgrade(object):
             while not self.__upgrade_install__(tmp.name):
                 pass
 
-            if self.new_release[:4].endswith("-"):
-                # 9.3-RELEASE and under don't actually have this binary
-                new_release = self.new_release
-            else:
-                with open(self._freebsd_version, "r") as r:
-                    for line in r:
-                        if line.startswith("USERLAND_VERSION"):
-                            new_release = line.rstrip().partition("=")[
-                                2].strip('"')
+            new_release = iocage_lib.ioc_common.get_jail_freebsd_version(
+                self.path,
+                self.new_release
+            )
         finally:
             if tmp:
                 if not tmp.closed:
@@ -252,15 +247,10 @@ class IOCUpgrade(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-        if self.new_release[:4].endswith("-"):
-            # 9.3-RELEASE and under don't actually have this binary
-            new_release = self.new_release
-        else:
-            with open(self._freebsd_version, "r") as r:
-                for line in r:
-                    if line.startswith("USERLAND_VERSION"):
-                        new_release = line.rstrip().partition("=")[2].strip(
-                            '"')
+        new_release = iocage_lib.ioc_common.get_jail_freebsd_version(
+            f'{self.iocroot}/releases/{self.new_release}/root',
+            self.new_release
+        )
 
         iocage_lib.ioc_json.IOCJson(
             f"{self.path.replace('/root', '')}",
