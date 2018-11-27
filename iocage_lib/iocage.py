@@ -1822,16 +1822,42 @@ class IOCage(object):
                     callback=self.callback
                 ).update()
             elif conf["basejail"] != "yes":
-                ioc_fetch.IOCFetch(
+                new_release = ioc_fetch.IOCFetch(
                     release,
                     callback=self.callback
                 ).fetch_update(True, uuid)
+
+                conf['release'] = new_release
+                ioc_json.IOCJson(path).json_write(conf)
             else:
                 # Basejails only need their RELEASE updated
-                ioc_fetch.IOCFetch(
+                new_release = ioc_fetch.IOCFetch(
                     release,
                     callback=self.callback
                 ).fetch_update()
+
+                if release != new_release:
+                    jail_dicts = self.get('all', recursive=True)
+                    for jail in jail_dicts:
+                        # iocage returns UUID: PROPS for dict, we just want
+                        # props without specifying the UUID.
+                        jail = list(jail.values())[0]
+                        jail_uuid = jail['host_hostuuid']
+
+                        if jail.get('template', 'no') != 'no':
+                            path = f'{self.iocroot}/templates/{jail_uuid}'
+                        else:
+                            path = f'{self.iocroot}/jails/{jail_uuid}'
+
+                        basejail = jail['basejail']
+
+                        if basejail == 'yes':
+                            jail_rel = jail['release']
+
+                            # release is the shared parent
+                            if jail_rel == release:
+                                jail['release'] = new_release
+                                ioc_json.IOCJson(path).json_write(jail)
 
             if started:
                 self.silent = True
