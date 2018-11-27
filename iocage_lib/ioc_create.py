@@ -483,7 +483,11 @@ class IOCCreate(object):
                         etc_hosts.write(line.replace(clone_uuid, jail_uuid))
 
         if not self.empty:
-            self.create_rc(location, config["host_hostname"])
+            self.create_rc(
+                location,
+                config["host_hostname"],
+                config.get('basejail', 'no')
+            )
 
             if rtsold_enable == 'YES':
                 iocage_lib.ioc_common.set_rcconf(
@@ -824,7 +828,7 @@ class IOCCreate(object):
             return ','.join(pkg_err_list)
 
     @staticmethod
-    def create_rc(location, host_hostname):
+    def create_rc(location, host_hostname, basejail='no'):
         """
         Writes a boilerplate rc.conf file for a jail if it doesn't exist,
          otherwise changes the hostname.
@@ -832,9 +836,17 @@ class IOCCreate(object):
         rc_conf = pathlib.Path(f"{location}/root/etc/rc.conf")
 
         if rc_conf.is_file():
+            if basejail != 'no':
+                su.Popen(
+                    ['mount', '-F', f'{location}/fstab', '-a']).communicate()
+
             su.Popen(["sysrc", "-R", f"{location}/root",
                       f"host_hostname={host_hostname}"],
                      stdout=su.PIPE).communicate()
+
+            if basejail != 'no':
+                su.Popen(
+                    ['umount', '-F', f'{location}/fstab', '-a']).communicate()
         else:
             rcconf = """\
 host_hostname="{hostname}"
