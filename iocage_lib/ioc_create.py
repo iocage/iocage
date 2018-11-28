@@ -312,6 +312,7 @@ class IOCCreate(object):
                         },
                             _callback=self.callback,
                             silent=self.silent)
+                    del config['cloned_release']
             else:
                 try:
                     iocage_lib.ioc_common.checkoutput(

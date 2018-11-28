@@ -54,7 +54,6 @@ class IOCUpgrade(object):
             '/root', 1)[0]).json_get_value('all')
         self.uuid = self.conf["host_hostuuid"]
         self.host_release = os.uname()[2]
-        self.cloned_release = self.conf["cloned_release"]
         _release = self.conf["release"].rsplit("-", 1)[0]
         self.jail_release = _release if "-RELEASE" in _release else \
             self.conf["release"]
