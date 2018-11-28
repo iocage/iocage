@@ -414,7 +414,8 @@ class IOCCreate(object):
         # Just "touch" the fstab file, since it won't exist and write
         # /etc/hosts
         try:
-            etc_hosts_ip_addr = config["ip4_addr"].split("|", 1)[-1]
+            etc_hosts_ip_addr = config["ip4_addr"].split("|", 1)[-1].rsplit(
+                '/', 1)[0]
         except KeyError:
             # No ip4_addr specified during creation
             pass
@@ -427,7 +428,6 @@ class IOCCreate(object):
             # They supplied just a normal tag
             jail_uuid_short = jail_uuid
             jail_hostname = jail_uuid
-
 
         if self.empty:
             open(f"{location}/fstab", "wb").close()
@@ -841,7 +841,7 @@ class IOCCreate(object):
                     ['mount', '-F', f'{location}/fstab', '-a']).communicate()
 
             su.Popen(["sysrc", "-R", f"{location}/root",
-                      f"host_hostname={host_hostname}"],
+                      f"hostname={host_hostname}"],
                      stdout=su.PIPE).communicate()
 
             if basejail != 'no':
@@ -849,7 +849,7 @@ class IOCCreate(object):
                     ['umount', '-F', f'{location}/fstab', '-a']).communicate()
         else:
             rcconf = """\
-host_hostname="{hostname}"
+hostname="{hostname}"
 cron_flags="$cron_flags -J 15"
 
 # Disable Sendmail by default
