@@ -721,6 +721,7 @@ class IOCFetch(object):
                     total = file_size / chunk_size
                     start = time.time()
                     dl_progress = 0
+                    last_progress = 0
 
                     for i, chunk in enumerate(
                             r.iter_content(chunk_size=chunk_size), 1):
@@ -728,28 +729,48 @@ class IOCFetch(object):
                                 elapsed = time.time() - start
                                 dl_progress += len(chunk)
                                 txz.write(chunk)
-                                self.update_progress(
-                                    total, i, f"Downloading : {f}",
-                                    elapsed, chunk_size)
+
+                                progress = float(i) / float(total)
+                                if progress >= 1.:
+                                    progress = 1
+                                progress = round(progress * 100, 0)
+
+                                if progress != last_progress:
+                                    text = self.update_progress(
+                                        progress,
+                                        f'Downloading : {f}',
+                                        elapsed,
+                                        chunk_size
+                                    )
+
+                                    if progress % 10 == 0:
+                                        # Not for user output, but for callback
+                                        # heartbeats
+                                        iocage_lib.ioc_common.logit(
+                                            {
+                                                'level': 'INFO',
+                                                'message': text.rstrip()
+                                            },
+                                            _callback=self.callback,
+                                            silent=True)
+
+                                last_progress = progress
                                 start = time.time()
 
-    def update_progress(self, total, progress, display_text, elapsed,
-                        chunk_size):
+    def update_progress(self, progress, display_text, elapsed, chunk_size):
         """
         Displays or updates a console progress bar.
         Original source: https://stackoverflow.com/a/15860757/1391441
         """
         barLength, status = 20, ""
-        progress = float(progress) / float(total)
 
         current_time = chunk_size / elapsed
         current_time = round(current_time / 1000000, 1)
 
-        if progress >= 1.:
-            progress, status = 1, "\r\n"
+        block = int(round(barLength * (progress / 100)))
 
-        block = int(round(barLength * progress))
-        progress = round(progress * 100, 0)
+        if progress == 100:
+            status = "\r\n"
 
         if self.silent:
             return
@@ -760,7 +781,10 @@ class IOCFetch(object):
             progress, status, current_time)
 
         erase = '\x1b[2K'
+
         print(erase, text, end="\r")
+
+        return text
 
     def __fetch_check_members__(self, members):
         """Checks if the members are relative, if not, log a warning."""
