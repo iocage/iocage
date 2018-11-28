@@ -929,6 +929,19 @@ class IOCFetch(object):
             mount_root, self.release
         )
 
+        if self.release != new_release:
+            jails = iocage_lib.ioc_list.IOCList(
+                'uuid', hdr=False).list_datasets()
+
+            for jail, path in jails.items():
+                _json = iocage_lib.ioc_json.IOCJson(path)
+                props = _json.json_get_value('all')
+
+                if props.get('basejail', 'no') == 'yes':
+                    if props['release'] == self.release:
+                        props['release'] = new_release
+                        _json.json_write(props)
+
         return new_release
 
     def __fetch_extract_remove__(self, tar):
