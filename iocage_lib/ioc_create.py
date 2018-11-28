@@ -539,8 +539,9 @@ class IOCCreate(object):
                 silent=self.silent)
 
         if self.pkglist:
-            if config["ip4_addr"] == "none" and config["ip6_addr"] == "none" \
-                    and config["dhcp"] != "on":
+            if config.get('ip4_addr', 'none') == 'none' and \
+                config.get('ip6_addr', 'none') == 'none' and \
+                    config.get('dhcp', 'off') != 'on':
                 iocage_lib.ioc_common.logit({
                     "level": "WARNING",
                     "message": "You need an IP address for the jail to"
