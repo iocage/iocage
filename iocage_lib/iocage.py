@@ -90,8 +90,7 @@ class PoolAndDataset(object):
         Return:
                 string: with the iocroot name.
         """
-
-        return ioc_json.IOCJson(self.pool).json_get_value("iocroot")
+        return ioc_json.IOCJson().json_get_value("iocroot")
 
 
 class IOCage(object):
@@ -1456,7 +1455,7 @@ class IOCage(object):
             value = value.replace(" ", "")
 
         if self.jail == "default":
-            ioc_json.IOCJson().json_check_default_config()
+            ioc_json.IOCJson().check_default_config()
             default = True
         else:
             default = False
