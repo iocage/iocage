@@ -130,7 +130,7 @@ class IOCList(object):
 
             uuid = conf["host_hostuuid"]
             ip4 = conf.get('ip4_addr', 'none')
-            dhcp = conf.get('dhcp', 'off')
+            dhcp = conf.get('dhcp', 'off')  # Not using defaults for speed
             ip4 = ip4 if dhcp != 'on' else 'DHCP'
 
             if self.basejail_only and conf.get('basejail', 'no') != 'yes':
