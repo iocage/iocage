@@ -217,7 +217,6 @@ class IOCConfiguration(IOCZFS):
         pool = get_pool()
 
         def get_iocroot():
-            # Location in this case is actually the zpool.
             try:
                 loc = f"{pool}/iocage"
                 mount = self.zfs_get_property(loc, "mountpoint")
