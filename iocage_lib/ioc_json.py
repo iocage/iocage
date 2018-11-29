@@ -837,7 +837,7 @@ class IOCJson(object):
                     key = key.replace("_", ".")
 
                 if key in jail_params:
-                    if conf["vnet"] == "on" and key == "ip4.addr" or key == \
+                    if conf.get("vnet", "off") == "on" and key == "ip4.addr" or key == \
                             "ip6.addr":
 
                         return
@@ -1288,7 +1288,7 @@ class IOCJson(object):
         if key in zfs_props.keys():
             pool, _ = _get_pool_and_iocroot()
 
-            if conf["template"] == "yes":
+            if conf.get("template", "no") == "yes":
                 _type = "templates"
             else:
                 _type = "jails"
