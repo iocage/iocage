@@ -351,9 +351,9 @@ class IOCage(object):
     @staticmethod
     def __mount__(path, _type):
         if _type == "devfs":
-            cmd = ["mount", "-t", "devfs", "devfs", path]
+            cmd = ["/sbin/mount", "-t", "devfs", "devfs", path]
         else:
-            cmd = ["mount", "-a", "-F", path]
+            cmd = ["/sbin/mount", "-a", "-F", path]
 
         _, stderr = su.Popen(cmd, stdout=su.PIPE, stderr=su.PIPE).communicate()
 
@@ -362,9 +362,9 @@ class IOCage(object):
     @staticmethod
     def __umount__(path, _type):
         if _type == "devfs":
-            cmd = ["umount", path]
+            cmd = ["/sbin/umount", path]
         else:
-            cmd = ["umount", "-a", "-F", path]
+            cmd = ["/sbin/umount", "-a", "-F", path]
 
         _, stderr = su.Popen(cmd, stdout=su.PIPE, stderr=su.PIPE).communicate()
 
@@ -824,7 +824,7 @@ class IOCage(object):
             exec_fib = self.get('exec_fib')
             console_cmd = [
                 '/usr/sbin/setfib', exec_fib,
-                'jexec', f"ioc-{uuid.replace('.', '_')}",
+                '/usr/sbin/jexec', f"ioc-{uuid.replace('.', '_')}",
                 'login', '-p'] + login_flags
 
             su.Popen(console_cmd, env=su_env).communicate()
@@ -834,7 +834,7 @@ class IOCage(object):
             exec_fib = self.get('exec_fib')
             interactive_cmd = (
                 "/usr/sbin/setfib", exec_fib,
-                "jexec", f"ioc-{uuid.replace('.', '_')}"
+                "/usr/sbin/jexec", f"ioc-{uuid.replace('.', '_')}"
                 ) + command
 
             try:
@@ -1663,13 +1663,13 @@ class IOCage(object):
                 silent=self.silent)
 
             stop_cmd = [
-                "setfib", exec_fib, "jexec", f"ioc-{uuid.replace('.', '_')}"
+                "/usr/sbin/setfib", exec_fib, "/usr/sbin/jexec", f"ioc-{uuid.replace('.', '_')}"
             ] + exec_stop
             su.Popen(stop_cmd, stdout=su.PIPE, stderr=su.PIPE).communicate()
 
-            su.Popen(["pkill", "-j", jid]).communicate()
+            su.Popen(["/usr/bin/pkill", "-j", jid]).communicate()
             start_cmd = [
-                "setfib", exec_fib, "jexec", f"ioc-{uuid.replace('.', '_')}"
+                "/usr/sbin/setfib", exec_fib, "/usr/sbin/jexec", f"ioc-{uuid.replace('.', '_')}"
             ] + exec_start
             su.Popen(start_cmd, stdout=su.PIPE, stderr=su.PIPE).communicate()
             ioc_json.IOCJson(path, silent=True).json_set_value(

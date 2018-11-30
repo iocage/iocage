@@ -836,7 +836,7 @@ class IOCFetch(object):
         """This calls 'freebsd-update' to update the fetched RELEASE."""
         if cli:
             cmd = [
-                "mount", "-t", "devfs", "devfs",
+                "/sbin/mount", "-t", "devfs", "devfs",
                 f"{self.iocroot}/jails/{uuid}/root/dev"
             ]
             mount = f'{self.iocroot}/jails/{uuid}'
@@ -854,7 +854,7 @@ class IOCFetch(object):
                 silent=self.silent)
         else:
             cmd = [
-                "mount", "-t", "devfs", "devfs",
+                "/sbin/mount", "-t", "devfs", "devfs",
                 f"{self.iocroot}/releases/{self.release}/root/dev"
             ]
             mount = f'{self.iocroot}/releases/{self.release}'
@@ -947,7 +947,7 @@ class IOCFetch(object):
         except OSError:
             pass
 
-        su.Popen(["umount", f"{mount_root}/dev"]).communicate()
+        su.Popen(["/sbin/umount", f"{mount_root}/dev"]).communicate()
 
         new_release = iocage_lib.ioc_common.get_jail_freebsd_version(
             mount_root, self.release

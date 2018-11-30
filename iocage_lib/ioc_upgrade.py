@@ -235,7 +235,7 @@ class IOCUpgrade(object):
             self.__rollback_jail__()
 
             su.Popen([
-                "umount", "-f", f"{self.path}/iocage_upgrade"
+                "/sbin/umount", "-f", f"{self.path}/iocage_upgrade"
             ]).communicate()
 
             iocage_lib.ioc_common.logit(

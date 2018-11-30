@@ -48,16 +48,16 @@ class IOCDestroy(object):
     @staticmethod
     def __stop_jails__(datasets, path=None, root=False, clean=False):
         if clean:
-            jids, _ = su.Popen(["jls", "-n", "name", "jid",
+            jids, _ = su.Popen(["/usr/sbin/jls", "-n", "name", "jid",
                                 "--libxo=json"], stdout=su.PIPE).communicate()
-            jids = json.loads(jids)["jail-information"]["jail"]
+            jids = json.loads(jids)["jail-information"]["/usr/sbin/jail"]
 
             for j in jids:
                 name = j["name"]
                 jid = j["jid"]
 
                 if "ioc-" in name:
-                    su.Popen(["jail", "-r", jid]).communicate()
+                    su.Popen(["/usr/sbin/jail", "-r", jid]).communicate()
 
         for dataset in datasets.dependents:
             if "jails" not in dataset.name:
@@ -121,19 +121,19 @@ class IOCDestroy(object):
 
             # Dangling mounts are bad...mmkay?
             su.Popen(
-                ["umount", "-afF", f"{umount_path}/fstab"],
+                ["/sbin/umount", "-afF", f"{umount_path}/fstab"],
                 stderr=su.PIPE).communicate()
             su.Popen(
-                ["umount", "-f", f"{umount_path}/root/dev/fd"],
+                ["/sbin/umount", "-f", f"{umount_path}/root/dev/fd"],
                 stderr=su.PIPE).communicate()
             su.Popen(
-                ["umount", "-f", f"{umount_path}/root/dev"],
+                ["/sbin/umount", "-f", f"{umount_path}/root/dev"],
                 stderr=su.PIPE).communicate()
             su.Popen(
-                ["umount", "-f", f"{umount_path}/root/proc"],
+                ["/sbin/umount", "-f", f"{umount_path}/root/proc"],
                 stderr=su.PIPE).communicate()
             su.Popen(
-                ["umount", "-f", f"{umount_path}/root/compat/linux/proc"],
+                ["/sbin/umount", "-f", f"{umount_path}/root/compat/linux/proc"],
                 stderr=su.PIPE).communicate()
 
         if not snapshot and \

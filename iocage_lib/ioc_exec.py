@@ -94,7 +94,7 @@ class IOCExec(object):
                     user = self.host_user
 
                 self.cmd = [
-                    "/usr/sbin/setfib", exec_fib, "jexec", flag, user,
+                    "/usr/sbin/setfib", exec_fib, "/sbin/jexec", flag, user,
                     f"ioc-{self.uuid}"
                 ] + list(self.command)
 

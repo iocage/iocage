@@ -654,7 +654,7 @@ class IOCJson(object):
             uuid = conf["host_hostuuid"]
             status, jid = iocage_lib.ioc_list.IOCList().list_get_jid(uuid)
             conf[key] = value
-            sysctls_cmd = ["sysctl", "-d", "security.jail.param"]
+            sysctls_cmd = ["/sbin/sysctl", "-d", "security.jail.param"]
             jail_param_regex = re.compile("security.jail.param.")
             sysctls_list = su.Popen(
                 sysctls_cmd,

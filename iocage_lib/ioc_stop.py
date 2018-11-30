@@ -113,7 +113,7 @@ class IOCStop(object):
             exec_stop = self.conf["exec_stop"].split()
             with open(f"{self.iocroot}/log/{self.uuid}-console.log", "a") as f:
                 try:
-                    services = su.check_call(["setfib", exec_fib, "jexec",
+                    services = su.check_call(["/usr/sbin/setfib", exec_fib, "/usr/sbin/jexec",
                                               f"ioc-{self.uuid}"] + exec_stop,
                                              stdout=f, stderr=su.PIPE)
                 except su.CalledProcessError as err:
@@ -142,7 +142,7 @@ class IOCStop(object):
 
                     try:
                         children = iocage_lib.ioc_common.checkoutput(
-                            ["zfs", "list", "-H", "-r", "-o", "name",
+                            ["/sbin/zfs"g, "list", "-H", "-r", "-o", "name",
                              "-S", "name",
                              f"{self.pool}/{jdataset}"], stderr=su.STDOUT)
 
@@ -151,12 +151,12 @@ class IOCStop(object):
 
                             try:
                                 iocage_lib.ioc_common.checkoutput(
-                                    ["setfib", exec_fib, "jexec",
-                                     f"ioc-{self.uuid}", "zfs", "umount",
+                                    ["/usr/sbin/setfib", exec_fib, "/usr/sbin/jexec",
+                                     f"ioc-{self.uuid}", "/sbin/zfs"g, "/sbin/umount"g,
                                      child], stderr=su.STDOUT)
                             except su.CalledProcessError as err:
                                 mountpoint = iocage_lib.ioc_common.checkoutput(
-                                    ["zfs", "get", "-H", "-o", "value",
+                                    ["/sbin/zfs"g, "get", "-H", "-o", "value",
                                      "mountpoint", f"{self.pool}/{jdataset}"]
                                 ).strip()
 
@@ -170,7 +170,7 @@ class IOCStop(object):
 
                         try:
                             iocage_lib.ioc_common.checkoutput(
-                                ["zfs", "unjail", f"ioc-{self.uuid}",
+                                ["/sbin/zfs"g, "unjail", f"ioc-{self.uuid}",
                                  f"{self.pool}/{jdataset}"], stderr=su.STDOUT)
                         except su.CalledProcessError as err:
                             raise RuntimeError(
@@ -198,7 +198,7 @@ class IOCStop(object):
                     nic = nic.split(":")[0]
                     try:
                         iocage_lib.ioc_common.checkoutput(
-                            ["ifconfig", f"{nic}:{self.jid}", "destroy"],
+                            ["/sbin/ifconfig", f"{nic}:{self.jid}", "destroy"],
                             stderr=su.STDOUT)
                     except su.CalledProcessError as err:
                         vnet_err.append(err.output.decode().rstrip())
@@ -246,7 +246,7 @@ class IOCStop(object):
                             iface, addr = ip4.split("/")[0].split("|")
                             addr = addr.split()
                             iocage_lib.ioc_common.checkoutput(
-                                ["ifconfig", iface] + addr +
+                                ["/sbin/ifconfig", iface] + addr +
                                 ["-alias"],
                                 stderr=su.STDOUT)
                         except su.CalledProcessError as err:
@@ -272,7 +272,7 @@ class IOCStop(object):
                             iface, addr = ip6.split("/")[0].split("|")
                             addr = addr.split()
                             iocage_lib.ioc_common.checkoutput(
-                                ["ifconfig", iface, "inet6"] + addr +
+                                ["/sbin/ifconfig", iface, "inet6"] + addr +
                                 ["-alias"], stderr=su.STDOUT)
                         except su.CalledProcessError as err:
                             if "Can't assign requested address" in \
@@ -289,11 +289,11 @@ class IOCStop(object):
         # Clean up after our dynamic devfs rulesets
         ruleset = su.check_output(
             [
-                'jls', '-j', f'ioc-{self.uuid}', 'devfs_ruleset'
+                '/usr/sbin/jls', '-j', f'ioc-{self.uuid}', 'devfs_ruleset'
             ]
         ).decode().rstrip()
         devfs_rulesets = su.run(
-            ['devfs', 'rule', 'showsets'],
+            ['/sbin/devfs', 'rule', 'showsets'],
             stdout=su.PIPE, universal_newlines=True
         )
         ruleset_list = [int(i) for i in devfs_rulesets.stdout.splitlines()]
@@ -305,7 +305,7 @@ class IOCStop(object):
                                int(devfs_ruleset) not in ruleset_list):
             try:
                 su.run(
-                    ['devfs', 'rule', '-s', ruleset, 'delset'],
+                    ['/sbin/devfs', 'rule', '-s', ruleset, 'delset'],
                     stdout=su.PIPE
                 )
 
@@ -389,13 +389,13 @@ class IOCStop(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-        su.Popen(["umount", "-afF", f"{self.path}/fstab"],
+        su.Popen(["/sbin/umount", "-afF", f"{self.path}/fstab"],
                  stderr=su.PIPE).communicate()
-        su.Popen(["umount", "-f", f"{self.path}/root/dev/fd"],
+        su.Popen(["/sbin/umount", "-f", f"{self.path}/root/dev/fd"],
                  stderr=su.PIPE).communicate()
-        su.Popen(["umount", "-f", f"{self.path}/root/dev"],
+        su.Popen(["/sbin/umount", "-f", f"{self.path}/root/dev"],
                  stderr=su.PIPE).communicate()
-        su.Popen(["umount", "-f", f"{self.path}/root/proc"],
+        su.Popen(["/sbin/umount", "-f", f"{self.path}/root/proc"],
                  stderr=su.PIPE).communicate()
-        su.Popen(["umount", "-f", f"{self.path}/root/compat/linux/proc"],
+        su.Popen(["/sbin/umount", "-f", f"{self.path}/root/compat/linux/proc"],
                  stderr=su.PIPE).communicate()

@@ -197,13 +197,13 @@ class IOCCreate(object):
 
         if self.template:
             try:
-                su.check_call(["zfs", "snapshot",
+                su.check_call(["/sbin/zfs", "snapshot",
                                f"{self.pool}/iocage/templates/{self.release}/"
                                f"root@{jail_uuid}"], stderr=su.PIPE)
             except su.CalledProcessError:
                 raise RuntimeError(f"Template: {self.release} not found!")
 
-            su.Popen(["zfs", "clone", "-p",
+            su.Popen(["/sbin/zfs", "clone", "-p",
                       f"{self.pool}/iocage/templates/{self.release}/root@"
                       f"{jail_uuid}", jail], stdout=su.PIPE).communicate()
 
@@ -216,17 +216,17 @@ class IOCCreate(object):
                 "cloned_release")
         elif self.clone:
             try:
-                su.check_call(["zfs", "snapshot", "-r",
+                su.check_call(["/sbin/zfs", "snapshot", "-r",
                                f"{self.pool}/iocage/jails/{self.release}"
                                f"@{jail_uuid}"], stderr=su.PIPE)
             except su.CalledProcessError:
                 raise RuntimeError(f"Jail: {jail_uuid} not found!")
 
-            su.Popen(["zfs", "clone",
+            su.Popen(["/sbin/zfs", "clone",
                       f"{self.pool}/iocage/jails/{self.release}@"
                       f"{jail_uuid}", jail.replace("/root", "")],
                      stdout=su.PIPE).communicate()
-            su.Popen(["zfs", "clone",
+            su.Popen(["/sbin/zfs", "clone",
                       f"{self.pool}/iocage/jails/{self.release}/root@"
                       f"{jail_uuid}", jail], stdout=su.PIPE).communicate()
 
@@ -256,7 +256,7 @@ class IOCCreate(object):
                 dataset = f"{self.pool}/iocage/releases/{self.release}/" \
                     f"root@{jail_uuid}"
                 try:
-                    su.check_call(["zfs", "snapshot",
+                    su.check_call(["/sbin/zfs", "snapshot",
                                    f"{self.pool}/iocage/releases/"
                                    f"{self.release}/"
                                    f"root@{jail_uuid}"], stderr=su.PIPE)
@@ -278,30 +278,30 @@ class IOCCreate(object):
                             f"RELEASE: {self.release} not found!")
 
                 if not self.thickjail:
-                    su.Popen(["zfs", "clone", "-p",
+                    su.Popen(["/sbin/zfs", "clone", "-p",
                               f"{self.pool}/iocage/releases/"
                               f"{self.release}/root@"
                               f"{jail_uuid}",
                               jail], stdout=su.PIPE).communicate()
                 else:
                     try:
-                        su.Popen(["zfs", "create", "-p", jail],
+                        su.Popen(["/sbin/zfs", "create", "-p", jail],
                                   stdout=su.PIPE).communicate()
-                        zfs_send = su.Popen(["zfs", "send",
+                        zfs_send = su.Popen(["/sbin/zfs", "send",
                                              f"{self.pool}/iocage/releases/"
                                              f"{self.release}/root@"
                                              f"{jail_uuid}"], stdout=su.PIPE)
-                        su.check_call(["zfs", "receive", "-F", jail],
+                        su.check_call(["/sbin/zfs", "receive", "-F", jail],
                                       stdin=zfs_send.stdout)
                         su.check_call(['zfs', 'destroy',
                                        f'{self.pool}/iocage/releases/'
                                        f'{self.release}/root@'
                                        f'{jail_uuid}'], stdout=su.PIPE)
                     except su.CalledProcessError:
-                        su.Popen(["zfs", "destroy", "-rf",
+                        su.Popen(["/sbin/zfs", "destroy", "-rf",
                                   f"{self.pool}/iocage/jails/{jail_uuid}"],
                                   stdout=su.PIPE).communicate()
-                        su.Popen(["zfs", "destroy", "-r",
+                        su.Popen(["/sbin/zfs", "destroy", "-r",
                                   f"{self.pool}/iocage/releases/"
                                   f"{self.release}/root@"
                                   f"{jail_uuid}"],
@@ -316,7 +316,7 @@ class IOCCreate(object):
             else:
                 try:
                     iocage_lib.ioc_common.checkoutput(
-                        ["zfs", "create", "-p", jail],
+                        ["/sbin/zfs", "create", "-p", jail],
                         stderr=su.PIPE)
                 except su.CalledProcessError as err:
                     raise RuntimeError(err.output.decode("utf-8").rstrip())
@@ -520,7 +520,7 @@ class IOCCreate(object):
 
                 # This reduces the REFER of the basejail.
                 # Just much faster by almost a factor of 2 than the builtins.
-                su.Popen(["rm", "-r", "-f", destination]).communicate()
+                su.Popen(["/bin/rm", "-r", "-f", destination]).communicate()
                 os.mkdir(destination)
 
                 iocage_lib.ioc_fstab.IOCFstab(jail_uuid, "add", source,
@@ -846,7 +846,7 @@ class IOCCreate(object):
                 su.Popen(
                     ['mount', '-F', f'{location}/fstab', '-a']).communicate()
 
-            su.Popen(["sysrc", "-R", f"{location}/root",
+            su.Popen(["/usr/sbin/sysrc", "-R", f"{location}/root",
                       f"hostname={host_hostname}"],
                      stdout=su.PIPE).communicate()
 

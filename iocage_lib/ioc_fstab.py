@@ -155,7 +155,7 @@ class IOCFstab(object):
             return
 
         os.makedirs(self.dest, exist_ok=True)
-        proc = su.Popen(["mount", "-t", self.fstype, "-o", self.fsoptions,
+        proc = su.Popen(["/sbin/mount", "-t", self.fstype, "-o", self.fsoptions,
                          self.src, self.dest], stdout=su.PIPE, stderr=su.PIPE)
 
         stdout_data, stderr_data = proc.communicate()
@@ -174,7 +174,7 @@ class IOCFstab(object):
         if not status:
             return
 
-        proc = su.Popen(["umount", "-f", dest], stdout=su.PIPE, stderr=su.PIPE)
+        proc = su.Popen(["/sbin/umount", "-f", dest], stdout=su.PIPE, stderr=su.PIPE)
         stdout_data, stderr_data = proc.communicate()
 
         if stderr_data:

@@ -180,7 +180,7 @@ class IOCStart(object):
             self.__check_dhcp__()
 
         if mount_procfs == "1":
-            su.Popen(["mount", "-t", "procfs", "proc", self.path +
+            su.Popen(["/sbin/mount", "-t", "procfs", "proc", self.path +
                       "/root/proc"]).communicate()
 
         try:
@@ -190,7 +190,7 @@ class IOCStart(object):
                 if not os.path.isdir(f"{self.path}/root/compat/linux/proc"):
                     os.makedirs(f"{self.path}/root/compat/linux/proc", 0o755)
                 su.Popen(
-                    ["mount", "-t", "linprocfs", "linproc", self.path +
+                    ["/sbin/mount", "-t", "linprocfs", "linproc", self.path +
                      "/root/compat/linux/proc"]).communicate()
         except Exception:
             pass
@@ -205,12 +205,12 @@ class IOCStart(object):
                 jdataset = jdataset.strip()
 
                 try:
-                    su.check_call(["zfs", "get", "-H", "creation",
+                    su.check_call(["/sbin/zfs", "get", "-H", "creation",
                                    f"{self.pool}/{jdataset}"],
                                   stdout=su.PIPE, stderr=su.PIPE)
                 except su.CalledProcessError:
                     iocage_lib.ioc_common.checkoutput(
-                        ["zfs", "create", "-o",
+                        ["/sbin/zfs", "create", "-o",
                          "compression=lz4", "-o",
                          "mountpoint=none",
                          f"{self.pool}/{jdataset}"],
@@ -218,7 +218,7 @@ class IOCStart(object):
 
                 try:
                     iocage_lib.ioc_common.checkoutput(
-                        ["zfs", "set", "jailed=on",
+                        ["/sbin/zfs", "set", "jailed=on",
                          f"{self.pool}/{jdataset}"],
                         stderr=su.STDOUT)
                 except su.CalledProcessError as err:
@@ -336,7 +336,7 @@ class IOCStart(object):
                             includes=plugin_devfs_includes
                         )
 
-        start_cmd = [x for x in ["jail", "-c"] + net +
+        start_cmd = [x for x in ["/usr/sbin/jail", "-c"] + net +
                           [f"name=ioc-{self.uuid}",
                            f"host.domainname={host_domainname}",
                            f"host.hostname={host_hostname}",
@@ -447,7 +447,7 @@ class IOCStart(object):
 
                     # We'd like to use ifconfig -f inet:cidr here,
                     # but only FreeBSD 11.0 and newer support it...
-                    cmd = ["jexec", f"ioc-{self.uuid}", "ifconfig",
+                    cmd = ["/usr/sbin/jexec", f"ioc-{self.uuid}", "/sbin/ifconfig",
                            interface, "inet"]
                     out = su.check_output(cmd)
 
@@ -517,13 +517,13 @@ class IOCStart(object):
             for jdataset in self.conf["jail_zfs_dataset"].split():
                 jdataset = jdataset.strip()
                 children = iocage_lib.ioc_common.checkoutput(
-                    ["zfs", "list", "-H", "-r", "-o",
+                    ["/sbin/zfs", "list", "-H", "-r", "-o",
                      "name", "-s", "name",
                      f"{self.pool}/{jdataset}"])
 
                 try:
                     iocage_lib.ioc_common.checkoutput(
-                        ["zfs", "jail", "ioc-{}".format(self.uuid),
+                        ["/sbin/zfs", "jail", "ioc-{}".format(self.uuid),
                          "{}/{}".format(self.pool, jdataset)],
                         stderr=su.STDOUT)
                 except su.CalledProcessError as err:
@@ -535,14 +535,14 @@ class IOCStart(object):
 
                     try:
                         mountpoint = iocage_lib.ioc_common.checkoutput(
-                            ["zfs", "get", "-H",
+                            ["/sbin/zfs", "get", "-H",
                              "-o",
                              "value", "mountpoint",
                              f"{self.pool}/{jdataset}"]).strip()
 
                         if mountpoint != "none":
                             iocage_lib.ioc_common.checkoutput(
-                                ["setfib", self.exec_fib, "jexec",
+                                ["/usr/sbin/setfib", self.exec_fib, "/usr/sbin/jexec",
                                  f"ioc-{self.uuid}", "zfs",
                                  "mount", child], stderr=su.STDOUT)
                     except su.CalledProcessError as err:
@@ -561,7 +561,7 @@ class IOCStart(object):
 
         with open("{}/log/{}-console.log".format(self.iocroot,
                                                  self.uuid), "a") as f:
-            services = su.check_call(["setfib", self.exec_fib, "jexec",
+            services = su.check_call(["/usr/sbin/setfib", self.exec_fib, "/usr/sbin/jexec",
                                       f"ioc-{self.uuid}"] + exec_start,
                                      stdout=f, stderr=su.PIPE)
 
@@ -701,7 +701,7 @@ class IOCStart(object):
             vnet_default_interface = self.get_default_gateway()[1]
 
         mac_a, mac_b = self.__start_generate_vnet_mac__(nic)
-        epair_a_cmd = ["ifconfig", "epair", "create"]
+        epair_a_cmd = ["/sbin/ifconfig", "epair", "create"]
         epair_a = su.Popen(epair_a_cmd, stdout=su.PIPE).communicate()[0]
         epair_a = epair_a.strip()
         epair_b = re.sub(b"a$", b"b", epair_a)
@@ -716,17 +716,17 @@ class IOCStart(object):
             # Host
             iocage_lib.ioc_common.checkoutput(
                 [
-                    "ifconfig", epair_a, "name",
+                    "/sbin/ifconfig", epair_a, "name",
                     f"{nic}:{jid}", "mtu", mtu
                 ],
                 stderr=su.STDOUT
             )
             iocage_lib.ioc_common.checkoutput(
-                ["ifconfig", f"{nic}:{jid}", "link", mac_a],
+                ["/sbin/ifconfig", f"{nic}:{jid}", "link", mac_a],
                 stderr=su.STDOUT
             )
             iocage_lib.ioc_common.checkoutput(
-                ["ifconfig", f"{nic}:{jid}", "description",
+                ["/sbin/ifconfig", f"{nic}:{jid}", "description",
                  f"associated with jail: {self.uuid}"],
                 stderr=su.STDOUT
             )
@@ -741,7 +741,7 @@ class IOCStart(object):
             # Jail
             iocage_lib.ioc_common.checkoutput(
                 [
-                    "ifconfig", epair_b, "vnet",
+                    "/sbin/ifconfig", epair_b, "vnet",
                     f"ioc-{self.uuid}"
                 ],
                 stderr=su.STDOUT
@@ -751,16 +751,16 @@ class IOCStart(object):
                 # This occurs on default vnet0 ip4_addr's
                 iocage_lib.ioc_common.checkoutput(
                     [
-                        "setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
-                        "ifconfig", epair_b, "name", jail_nic, "mtu", mtu
+                        "/usr/sbin/setfib", self.exec_fib, "/usr/sbin/jexec", f"ioc-{self.uuid}",
+                        "/sbin/ifconfig", epair_b, "name", jail_nic, "mtu", mtu
                     ],
                     stderr=su.STDOUT
                 )
 
             iocage_lib.ioc_common.checkoutput(
                 [
-                    "setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
-                    "ifconfig", jail_nic, "link", mac_b
+                    "/usr/sbin/setfib", self.exec_fib, "/usr/sbin/jexec", f"ioc-{self.uuid}",
+                    "/sbin/ifconfig", jail_nic, "link", mac_b
                 ],
                 stderr=su.STDOUT
             )
@@ -769,7 +769,7 @@ class IOCStart(object):
                 # Host interface as supplied by user also needs to be on the bridge
                 if vnet_default_interface != 'none':
                     iocage_lib.ioc_common.checkoutput(
-                        ["ifconfig", bridge, "addm", vnet_default_interface],
+                        ["/sbin/ifconfig", bridge, "addm", vnet_default_interface],
                         stderr=su.STDOUT
                     )
             except su.CalledProcessError:
@@ -777,11 +777,11 @@ class IOCStart(object):
                 pass
 
             iocage_lib.ioc_common.checkoutput(
-                ["ifconfig", bridge, "addm", f"{nic}:{jid}", "up"],
+                ["/sbin/ifconfig", bridge, "addm", f"{nic}:{jid}", "up"],
                 stderr=su.STDOUT
             )
             iocage_lib.ioc_common.checkoutput(
-                ["ifconfig", f"{nic}:{jid}", "up"],
+                ["/sbin/ifconfig", f"{nic}:{jid}", "up"],
                 stderr=su.STDOUT
             )
         except su.CalledProcessError as err:
@@ -816,10 +816,10 @@ class IOCStart(object):
             if dhcp == "off" and ip != 'accept_rtadv':
                 # Jail side
                 iocage_lib.ioc_common.checkoutput(
-                    ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
-                     "ifconfig"] + ifconfig, stderr=su.STDOUT)
+                    ["/usr/sbin/setfib", self.exec_fib, "/usr/sbin/jexec", f"ioc-{self.uuid}",
+                     "/sbin/ifconfig"] + ifconfig, stderr=su.STDOUT)
                 iocage_lib.ioc_common.checkoutput(
-                    ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
+                    ["/usr/sbin/setfib", self.exec_fib, "/usr/sbin/jexec", f"ioc-{self.uuid}",
                      "route"] + route, stderr=su.STDOUT)
             else:
                 if ipv6:
@@ -831,7 +831,7 @@ class IOCStart(object):
                              'onestart'], stderr=su.STDOUT)
                 else:
                     iocage_lib.ioc_common.checkoutput(
-                        ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
+                        ["/usr/sbin/setfib", self.exec_fib, "/usr/sbin/jexec", f"ioc-{self.uuid}",
                          "service", "dhclient", "start", iface],
                         stderr=su.STDOUT)
         except su.CalledProcessError as err:
@@ -954,7 +954,7 @@ class IOCStart(object):
         return [
             x.split()[1] for x in
             iocage_lib.ioc_common.checkoutput(
-                ["ifconfig", bridge]
+                ["/sbin/ifconfig", bridge]
             ).splitlines()
             if x.strip().startswith("member")
         ]
@@ -974,12 +974,12 @@ class IOCStart(object):
 
                 if default_if != 'none':
                     bridge_cmd = [
-                        "ifconfig", bridge, "create", "addm", default_if
+                        "/sbin/ifconfig", bridge, "create", "addm", default_if
                     ]
                     su.check_call(bridge_cmd, stdout=su.PIPE, stderr=su.PIPE)
 
             else:
-                bridge_cmd = ["ifconfig", bridge, "create", "addm"]
+                bridge_cmd = ["/sbin/ifconfig", bridge, "create", "addm"]
                 su.check_call(bridge_cmd, stdout=su.PIPE, stderr=su.PIPE)
         except su.CalledProcessError:
             # The bridge already exists, this is just best effort.
@@ -990,7 +990,7 @@ class IOCStart(object):
             return '1500'
 
         membermtu = iocage_lib.ioc_common.checkoutput(
-            ["ifconfig", memberif[0]]
+            ["/sbin/ifconfig", memberif[0]]
         ).split()
 
         return membermtu[5]

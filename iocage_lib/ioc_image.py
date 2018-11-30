@@ -58,7 +58,7 @@ class IOCImage(object):
 
         try:
             iocage_lib.ioc_common.checkoutput(
-                ["zfs", "snapshot", "-r", target], stderr=su.STDOUT)
+                ["/sbin/zfs", "snapshot", "-r", target], stderr=su.STDOUT)
         except su.CalledProcessError as err:
             msg = err.output.decode('utf-8').rstrip()
             iocage_lib.ioc_common.logit(
@@ -70,7 +70,7 @@ class IOCImage(object):
                 silent=self.silent)
 
         datasets = su.Popen(
-            ["zfs", "list", "-H", "-r", "-o", "name", image_path],
+            ["/sbin/zfs", "list", "-H", "-r", "-o", "name", image_path],
             stdout=su.PIPE,
             stderr=su.PIPE).communicate()[0].decode("utf-8").split()
 
@@ -98,7 +98,7 @@ class IOCImage(object):
                         self.callback,
                         silent=self.silent)
 
-                    su.check_call(["zfs", "send", target], stdout=export)
+                    su.check_call(["/sbin/zfs", "send", target], stdout=export)
             except su.CalledProcessError as err:
                 iocage_lib.ioc_common.logit(
                     {
@@ -148,7 +148,7 @@ class IOCImage(object):
         try:
             target = f"{self.pool}/iocage/jails/{uuid}@ioc-export-{self.date}"
             iocage_lib.ioc_common.checkoutput(
-                ["zfs", "destroy", "-r", target], stderr=su.STDOUT)
+                ["/sbin/zfs", "destroy", "-r", target], stderr=su.STDOUT)
 
             for jail in jail_list:
                 os.remove(jail)
@@ -217,7 +217,7 @@ class IOCImage(object):
                     f"{uuid}/{z_dataset_type.replace('_', '/')}".rstrip('/')
 
             cmd = [
-                "zfs", "recv", "-F",
+                "/sbin/zfs", "recv", "-F",
                 f"{self.pool}/iocage/jails/{z_dataset_type}"
             ]
 
@@ -243,7 +243,7 @@ class IOCImage(object):
             target = f"{self.pool}/iocage/jails/{uuid}@ioc-export-{date}"
 
             iocage_lib.ioc_common.checkoutput(
-                ["zfs", "destroy", "-r", target], stderr=su.STDOUT)
+                ["/sbin/zfs", "destroy", "-r", target], stderr=su.STDOUT)
         except su.CalledProcessError as err:
             msg = err.output.decode('utf-8').rstrip()
             iocage_lib.ioc_common.logit(
