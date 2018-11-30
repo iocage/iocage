@@ -71,6 +71,7 @@ class IOCPlugin(object):
         self.silent = silent
         self.callback = callback
         self.keep_jail_on_failure = keep_jail_on_failure
+        self.thickconfig = kwargs.pop('thickconfig', False)
 
         if self.branch is None and not self.hardened:
             freebsd_version = su.run(['freebsd-version'],
@@ -346,6 +347,7 @@ class IOCPlugin(object):
                 basejail=True,
                 uuid=uuid,
                 plugin=True,
+                thickconfig=self.thickconfig,
                 callback=self.callback
         ).create_jail()
 

@@ -51,7 +51,7 @@ class IOCCreate(object):
     def __init__(self, release, props, num, pkglist=None, plugin=False,
                  migrate=False, config=None, silent=False, template=False,
                  short=False, basejail=False, thickjail=False, empty=False,
-                 uuid=None, clone=False, callback=None):
+                 uuid=None, clone=False, thickconfig=False, callback=None):
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage_lib.ioc_json.IOCJson(self.pool).json_get_value(
             "iocroot")
@@ -72,6 +72,7 @@ class IOCCreate(object):
         self.silent = silent
         self.callback = callback
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
+        self.thickconfig = thickconfig
 
     def create_jail(self):
         """Helper to catch SIGINT"""
@@ -570,8 +571,8 @@ class IOCCreate(object):
 
     def create_config(self, jail_uuid, release):
         """
-        Loads default props and sets the user properties, along with some mild
-        sanity checking
+        Create the jail configuration with the minimal needed defaults.
+        If self.thickconfig is True, it will create a jail with all properties.
         """
         # Unique jail properties, they will be overridden by user supplied
         # values.
@@ -582,6 +583,11 @@ class IOCCreate(object):
             'cloned_release': self.release,
             'jail_zfs_dataset': f'iocage/jails/{jail_uuid}/data'
         }
+
+        if self.thickconfig:
+            d_conf = iocage_lib.ioc_json.IOCJson().check_default_config()
+            jail_props.update(d_conf)
+            jail_props['CONFIG_TYPE'] = 'THICK'
 
         return jail_props
 
