@@ -97,6 +97,8 @@ def validate_count(ctx, param, value):
               help="Lists only official plugins.")
 @click.option("--branch", default=None,
               help="Select a different plugin branch (for development)")
+@click.option("--thickconfig", "-C", default=False, is_flag=True,
+              help="Do not use inheritable configuration with plugins")
 def cli(**kwargs):
     """CLI command that calls fetch_release()"""
     release = kwargs.get("release", None)

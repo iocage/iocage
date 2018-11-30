@@ -297,11 +297,12 @@ class IOCConfiguration(IOCZFS):
         """
         iocage_conf_version = self.json_version
         current_conf_version = conf.get('CONFIG_VERSION', None)
+        thickconfig = conf.get('CONFIG_TYPE', 'THIN')
 
         if current_conf_version == iocage_conf_version:
             return conf, False
 
-        if current_conf_version is None:
+        if current_conf_version is None and thickconfig != 'THICK':
             # New style thin configuration jails won't have this. Only their
             # defaults will
             return conf, False

@@ -504,7 +504,8 @@ class IOCage(object):
                thickjail=False,
                empty=False,
                clone=None,
-               skip_batch=False):
+               skip_batch=False,
+               thickconfig=False):
         """Creates the jail dataset"""
         count = 0 if count == 1 and not skip_batch else count
 
@@ -595,7 +596,8 @@ class IOCage(object):
                         thickjail=thickjail,
                         empty=empty,
                         clone=clone,
-                        skip_batch=True)
+                        skip_batch=True,
+                        thickconfig=thickconfig)
             else:
                 ioc_create.IOCCreate(
                     release,
@@ -610,6 +612,7 @@ class IOCage(object):
                     empty=empty,
                     uuid=_uuid,
                     clone=clone,
+                    thickconfig=thickconfig
                 ).create_jail()
         except RuntimeError:
             raise
