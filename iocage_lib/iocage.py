@@ -948,6 +948,7 @@ class IOCage(object):
         official = kwargs.pop("official", False)
         branch = kwargs.pop("branch", None)
         keep_jail_on_failure = kwargs.pop("keep_jail_on_failure", False)
+        thick_config = kwargs.pop("thickconfig", False)
 
         freebsd_version = ioc_common.checkoutput(["freebsd-version"])
         arch = os.uname()[4]
@@ -978,7 +979,9 @@ class IOCage(object):
 
             if _list:
                 rel_list = ioc_plugin.IOCPlugin(
-                    branch=branch).fetch_plugin_index(
+                    branch=branch,
+                    thickconfig=thick_config
+                ).fetch_plugin_index(
                         "", _list=True, list_header=header, list_long=_long,
                     icon=True, official=official)
 
@@ -1002,6 +1005,7 @@ class IOCage(object):
                     release=release,
                     plugin=name,
                     branch=branch,
+                    thickconfig=thick_config,
                     **kwargs).fetch_plugin_index(
                         props, accept_license=accept, official=official)
 
@@ -1012,7 +1016,8 @@ class IOCage(object):
                     release=release, branch=branch,
                     silent=self.silent,
                     keep_jail_on_failure=keep_jail_on_failure,
-                    callback=self.callback, **kwargs
+                    callback=self.callback, **kwargs,
+                    thickconfig=thick_config,
                 ).fetch_plugin(name, props, 0, accept)
             else:
                 for j in range(1, count + 1):
@@ -1020,6 +1025,7 @@ class IOCage(object):
                         release=release, branch=branch,
                         silent=self.silent,
                         keep_jail_on_failure=keep_jail_on_failure,
+                        thickconfig=thick_config,
                         callback=self.callback, **kwargs
                     ).fetch_plugin(name, props, j, accept)
         else:
