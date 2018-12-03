@@ -1244,17 +1244,7 @@ class IOCJson(IOCConfiguration):
                             silent=self.silent)
                         self.lgr.disabled = True
 
-            if key[:8] == "jail_zfs":
-                if status:
-                    iocage_lib.ioc_common.logit(
-                        {
-                            "level": "EXCEPTION",
-                            "message":
-                            f"{uuid} is running.\nPlease stop it first!"
-                        },
-                        _callback=self.callback,
-                        silent=self.silent)
-            elif key == "dhcp":
+            if key[:8] == "jail_zfs" or key == 'dhcp':
                 if status:
                     iocage_lib.ioc_common.logit(
                         {
