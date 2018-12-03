@@ -1099,9 +1099,6 @@ class IOCJson(IOCConfiguration):
                 except KeyError:
                     return self.default_config[prop]
 
-            if write:
-                self.json_write(conf)
-
     def json_set_value(self, prop, _import=False, default=False):
         """Set a property for the specified jail."""
         key, _, value = prop.partition("=")
@@ -1293,8 +1290,8 @@ class IOCJson(IOCConfiguration):
                     key = key.replace("_", ".")
 
                 if key in jail_params:
-                    if full_conf["vnet"] == "on" and key == "ip4.addr" or \
-                            key == "ip6.addr":
+                    if full_conf["vnet"] == "on" and [key == "ip4.addr" or
+                                                      key == "ip6.addr"]:
                         return
 
                     try:
