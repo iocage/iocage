@@ -1290,8 +1290,8 @@ class IOCJson(IOCConfiguration):
                     key = key.replace("_", ".")
 
                 if key in jail_params:
-                    if full_conf["vnet"] == "on" and [key == "ip4.addr" or
-                                                      key == "ip6.addr"]:
+                    if full_conf["vnet"] == "on" and (key == "ip4.addr" or
+                                                      key == "ip6.addr"):
                         return
 
                     try:
