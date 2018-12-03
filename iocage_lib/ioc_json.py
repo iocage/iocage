@@ -734,7 +734,6 @@ class IOCJson(IOCConfiguration):
             force_env = "TRUE"
 
         self.force = True if force_env == "TRUE" else False
-        self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
 
     def get_full_config(self):
         d_conf = self.default_config
