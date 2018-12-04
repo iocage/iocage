@@ -25,6 +25,7 @@
 import json
 import os
 import re
+import uuid
 
 import click
 import iocage_lib.ioc_common as ioc_common
@@ -81,11 +82,24 @@ def validate_count(ctx, param, value):
 @click.option("--short", "-s", is_flag=True, default=False,
               help="Use a short UUID of 8 characters instead of the default"
                    " 36.")
-@click.option("--force", "-f", is_flag=True, default=False,
-              help="Skip the interactive question.")
 @click.argument("props", nargs=-1)
 def cli(release, template, count, props, pkglist, basejail, thickjail, empty,
-        short, name, _uuid, force, thickconfig):
+        short, name, _uuid, thickconfig):
+
+    if _uuid:
+        try:
+            uuid.UUID(_uuid, version=4)
+        except ValueError:
+            ioc_common.logit({
+                "level": "EXCEPTION",
+                "message": "Please provide a valid UUID"
+            })
+        else:
+            if count > 1:
+                ioc_common.logit({
+                    "level": "EXCEPTION",
+                    "message": "Flag --count cannot be used with --uuid"
+                })
 
     if name:
         # noinspection Annotator
