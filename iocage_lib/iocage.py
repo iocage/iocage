@@ -27,7 +27,6 @@ import json
 import operator
 import os
 import subprocess as su
-import uuid
 
 import iocage_lib.ioc_clean as ioc_clean
 import iocage_lib.ioc_common as ioc_common
@@ -574,15 +573,6 @@ class IOCage(object):
         try:
             if count > 1 and not skip_batch:
                 for j in range(1, count + 1):
-                    try:
-                        if _uuid is not None:
-                            uuid.UUID(_uuid, version=4)
-
-                        count_uuid = _uuid  # Is a UUID
-                    except ValueError:
-                        # This will allow named jails to use count
-                        # This can probably be smarter
-                        count_uuid = f"{_uuid}_{j}"
 
                     self.create(
                         release,
@@ -591,7 +581,7 @@ class IOCage(object):
                         pkglist=pkglist,
                         template=template,
                         short=short,
-                        _uuid=count_uuid,
+                        _uuid=f"{_uuid}_{j}" if _uuid else None,
                         basejail=basejail,
                         thickjail=thickjail,
                         empty=empty,
