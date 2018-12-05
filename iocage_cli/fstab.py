@@ -60,8 +60,8 @@ def cli(action, fstab_string, jail, header, replace):
 
     if not fstab_string and action != "edit" and action != "list":
         ioc_common.logit({
-            "level": "EXCEPTION",
-            "message": "Please supply a fstab entry or jail!"
+            'level': 'EXCEPTION',
+            'message': 'Please supply an fstab entry or jail!'
         })
 
     # The user will expect to supply a string, the API would prefer these
