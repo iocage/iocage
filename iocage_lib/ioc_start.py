@@ -459,14 +459,13 @@ class IOCStart(object):
                     maskcidr = sum([bin(int(hexmask, 16)).count("1")])
 
                     addr = f"{ip4_addr}/{maskcidr}"
-                except su.CalledProcessError:
-                    failed_dhcp = True
-                    addr = "ERROR, check jail logs"
 
                     if "0.0.0.0" in addr:
                         failed_dhcp = True
-                except su.CalledProcessError:
+
+                except (su.CalledProcessError, IndexError):
                     failed_dhcp = True
+                    addr = "ERROR, check jail logs"
 
                 if failed_dhcp:
                     iocage_lib.ioc_stop.IOCStop(self.uuid, self.path,
