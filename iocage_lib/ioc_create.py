@@ -42,6 +42,7 @@ import libzfs
 import itertools
 import dns.resolver
 import dns.exception
+import shutil
 
 
 class IOCCreate(object):
@@ -839,33 +840,28 @@ class IOCCreate(object):
         if self.plugin and pkg_err_list:
             return ','.join(pkg_err_list)
 
-    @staticmethod
-    def create_rc(location, host_hostname, basejail='no'):
+    def create_rc(self, location, host_hostname, basejail='no'):
         """
         Writes a boilerplate rc.conf file for a jail if it doesn't exist,
          otherwise changes the hostname.
         """
-        rc_conf = pathlib.Path(f"{location}/root/etc/rc.conf")
+        rc_conf = pathlib.Path(f"{self.iocroot}/default_rc.conf")
+        # Template created jails will have this file.
+        jail_rc_conf = pathlib.Path(f"{location}/root/etc/rc.conf")
 
-        if rc_conf.is_file():
-            if basejail != 'no':
-                su.Popen(
-                    ['mount', '-F', f'{location}/fstab', '-a']).communicate()
-
-            su.Popen(["sysrc", "-R", f"{location}/root",
-                      f"hostname={host_hostname}"],
-                     stdout=su.PIPE).communicate()
-
-            if basejail != 'no':
-                su.Popen(
-                    ['umount', '-F', f'{location}/fstab', '-a']).communicate()
-        else:
+        if not rc_conf.is_file():
+            iocage_lib.ioc_common.logit({
+                'level': 'NOTICE',
+                'message': 'Missing default rc.conf, creating it'
+            },
+                _callback=self.callback,
+                silent=self.silent)
+            # Create a sane default for default rc.conf
             rcconf = """\
-hostname="{hostname}"
 cron_flags="$cron_flags -J 15"
 
 # Disable Sendmail by default
-sendmail_enable="NONE"
+sendmail_enable="NO"
 sendmail_submit_enable="NO"
 sendmail_outbound_enable="NO"
 sendmail_msp_queue_enable="NO"
@@ -876,4 +872,18 @@ syslogd_flags="-c -ss"
 # Enable IPv6
 ipv6_activate_all_interfaces=\"YES\"
 """
-            rc_conf.write_text(rcconf.format(hostname=host_hostname))
+            rc_conf.write_text(rcconf)
+            if not jail_rc_conf.is_file():
+                shutil.copy(str(rc_conf), str(jail_rc_conf))
+
+        if basejail != 'no':
+            su.Popen(
+                ['mount', '-F', f'{location}/fstab', '-a']).communicate()
+
+        su.Popen(["sysrc", "-R", f"{location}/root",
+                  f"hostname={host_hostname}"],
+                 stdout=su.PIPE).communicate()
+
+        if basejail != 'no':
+            su.Popen(
+                ['umount', '-F', f'{location}/fstab', '-a']).communicate()
