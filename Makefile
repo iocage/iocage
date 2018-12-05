@@ -8,7 +8,7 @@ install:
 	test -d .git && git submodule init py-libzfs && git submodule update py-libzfs || true
 	python3 -m ensurepip
 	export FREEBSD_SRC=$(SRC_BASE) && cd py-libzfs && ./configure && python3 setup.py build && python3 setup.py install
-	python3 -m pip install -U .
+	python3 -m pip install -Ur requirements.txt .
 uninstall:
 	python3 -m pip uninstall -y iocage-lib iocage-cli
 test:
