@@ -873,8 +873,9 @@ syslogd_flags="-c -ss"
 ipv6_activate_all_interfaces=\"YES\"
 """
             rc_conf.write_text(rcconf)
-            if not jail_rc_conf.is_file():
-                shutil.copy(str(rc_conf), str(jail_rc_conf))
+
+        if not jail_rc_conf.is_file():
+            shutil.copy(str(rc_conf), str(jail_rc_conf))
 
         if basejail != 'no':
             su.Popen(
