@@ -1548,9 +1548,8 @@ class IOCJson(IOCConfiguration):
                         # Let's standardise the value to none in case
                         # vnetX_mac is not provided
                         value = 'none'
-                elif key == 'vnet_default_interface' and (
-                    value != 'none' and value != 'auto'
-                ):
+                elif key == 'vnet_default_interface' and value not in (
+                        'none', 'auto'):
                     if value not in netifaces.interfaces():
                         iocage_lib.ioc_common.logit(
                             {
