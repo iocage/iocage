@@ -84,7 +84,7 @@ class IOCLogger(object):
         self.log_file = os.environ.get("IOCAGE_LOGFILE", "/var/log/iocage.log")
         self.colorize = os.environ.get("IOCAGE_COLOR", "FALSE")
         logger = logging.getLogger("iocage")
-        
+
         if logger.hasHandlers():
             # If we're imported multiple times (like tests) this will prevent
             # a large duplicate flood of text.
