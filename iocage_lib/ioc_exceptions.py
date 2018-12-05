@@ -60,3 +60,7 @@ class JailCorruptConfiguration(JailMisconfigured):
 
 class JailMissingConfiguration(JailMisconfigured):
     pass
+
+
+class ValidationFailed(ExceptionWithMsg):
+    pass

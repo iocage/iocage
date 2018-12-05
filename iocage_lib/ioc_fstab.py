@@ -27,10 +27,12 @@ import os
 import shutil
 import subprocess as su
 import tempfile
+import pathlib
 
 import iocage_lib.ioc_common
 import iocage_lib.ioc_json
 import iocage_lib.ioc_list
+import iocage_lib.ioc_exceptions
 import texttable
 
 
@@ -61,6 +63,8 @@ class IOCFstab(object):
         self.callback = callback
 
         if action != "list":
+            self.fstab = list(self.__read_fstab__())
+            self.dests = self.__validate_fstab__(self.fstab, 'all')
             self.__fstab_parse__()
 
     def __fstab_parse__(self):
@@ -68,34 +72,146 @@ class IOCFstab(object):
         Checks which action the user is asking for and calls the
         appropriate methods.
         """
+        actions = ['add', 'remove', 'edit', 'replace']
+
+        if self.action not in actions:
+            raise RuntimeError("Type of operation not specified!")
 
         if self.action == "add":
+            self.__validate_fstab__([self.mount])
             self.__fstab_add__()
-            self.__fstab_mount__()
+
+            try:
+                self.__fstab_mount__()
+            except RuntimeError:
+                iocage_lib.ioc_common.logit({
+                    'level': 'WARNING',
+                    'message': 'Mounting entry failed, check \'mount\''
+                },
+                    _callback=self.callback,
+                    silent=self.silent
+                )
         elif self.action == "remove":
             dest = self.__fstab_remove__()
-            self.__fstab_umount__(dest)
+
+            try:
+                self.__fstab_umount__(dest)
+            except RuntimeError:
+                iocage_lib.ioc_common.logit({
+                    'level': 'WARNING',
+                    'message': 'Unmounting entry failed, check \'mount\''
+                },
+                    _callback=self.callback,
+                    silent=self.silent
+                )
         elif self.action == "edit":
             self.__fstab_edit__()
         elif self.action == "replace":
+            self.__validate_fstab__([self.mount])
             self.__fstab_edit__(_string=True)
             self.__fstab_mount__()
-        else:
-            raise RuntimeError("Type of operation not specified!")
+
+    def __read_fstab__(self):
+        with open(f"{self.iocroot}/jails/{self.uuid}/fstab", "r") as f:
+            for line in f:
+                yield line.rstrip()
+
+    def __get_fstab_dests_(self):
+        dests = []
+
+        for line in self.fstab:
+            source, destination, fstype, options, \
+                dump, _pass = line.split()[0:6]
+            dests.append(destination)
+
+        return dests
+
+    def __validate_fstab__(self, fstab, mode='single'):
+        dests = []
+        verrors = []
+        jail_root = f'{self.iocroot}/jails/{self.uuid}/root'
+
+        for line in fstab:
+            source, destination, fstype, options, \
+                dump, _pass = line.split()[0:6]
+            source = pathlib.Path(source)
+            missing_root = False
+            dest = pathlib.Path(destination)
+
+            if mode != 'all' and (
+                self.action == 'add' or self.action == 'replace'
+            ):
+                if destination in self.dests:
+                    verrors.append(f'Destination: {self.dest} already exists!')
+                    break
+
+                if jail_root not in self.dest:
+                    verrors.append(
+                        f'Destination: {self.dest} must include '
+                        f'jail\'s mountpoint! ({jail_root})'
+                    )
+                    break
+            else:
+                if jail_root not in destination:
+                    verrors.append(
+                        f'Destination: {destination} does not include '
+                        f'jail\'s mountpoint! ({jail_root})'
+                    )
+                    missing_root = True
+
+            if not source.is_dir():
+                verrors.append(f'Source: {source} does not exist!')
+            if not source.is_absolute():
+                verrors.append(f'Source: {source} must use an absolute path!')
+
+            if not missing_root:
+                if not dest.is_dir():
+                    verrors.append(f'Destination: {dest} does not exist!')
+                if not dest.is_absolute():
+                    verrors.append(
+                        f'Destination: {dest} must use an absolute path!'
+                    )
+
+            if not dump.isdecimal():
+                verrors.append(
+                    f'Dump: {dump} must be a digit!'
+                )
+            if len(dump) > 1:
+                verrors.append(
+                    f'Dump: {dump} must be one digit long!'
+                )
+            if not _pass.isdecimal():
+                verrors.append(
+                    f'Pass: {_pass} must be a digit!'
+                )
+            if len(_pass) > 1:
+                verrors.append(
+                    f'Pass: {_pass} must be one digit long!'
+                )
+            dests.append(destination)
+
+        if verrors:
+            iocage_lib.ioc_common.logit({
+                'level': 'EXCEPTION',
+                'message': verrors
+            },
+                _callback=self.callback,
+                exception=iocage_lib.ioc_exceptions.ValidationFailed
+            )
+
+        return dests
 
     def __fstab_add__(self):
         """Adds a users mount to the jails fstab"""
-        with open(f"{self.iocroot}/jails/{self.uuid}/fstab", "r") as fstab:
-            with iocage_lib.ioc_common.open_atomic(
-                    f"{self.iocroot}/jails/{self.uuid}/fstab",
-                    "w") as _fstab:
-                # open_atomic will empty the file, we need these still.
+        with iocage_lib.ioc_common.open_atomic(
+                f'{self.iocroot}/jails/{self.uuid}/fstab',
+                'w'
+        ) as fstab:
+            for line in self.fstab:
+                fstab.write(f'{line}\n')
 
-                for line in fstab.readlines():
-                    _fstab.write(line)
-
-                date = datetime.datetime.utcnow().strftime("%F %T")
-                _fstab.write(f"{self.mount} # Added by iocage on {date}\n")
+            date = datetime.datetime.utcnow().strftime("%F %T")
+            fstab.write(f"{self.mount} # Added by iocage on {date}\n")
 
         iocage_lib.ioc_common.logit({
             "level": "INFO",
@@ -113,21 +229,19 @@ class IOCFstab(object):
         removed = False
         index = 0
 
-        with open(f"{self.iocroot}/jails/{self.uuid}/fstab", "r") as fstab:
-            with iocage_lib.ioc_common.open_atomic(
-                    f"{self.iocroot}/jails/{self.uuid}/fstab",
-                    "w") as _fstab:
+        with iocage_lib.ioc_common.open_atomic(
+                f"{self.iocroot}/jails/{self.uuid}/fstab",
+                "w") as fstab:
+            for line in self.fstab:
+                if line.rsplit("#")[0].rstrip() == self.mount or index \
+                        == self.index and not removed:
+                    removed = True
+                    dest = line.split()[1]
 
-                for line in fstab.readlines():
-                    if line.rsplit("#")[0].rstrip() == self.mount or index \
-                            == self.index and not removed:
-                        removed = True
-                        dest = line.split()[1]
+                    continue
 
-                        continue
-
-                    _fstab.write(line)
-                    index += 1
+                fstab.write(line)
+                index += 1
 
         if removed:
             iocage_lib.ioc_common.logit({
@@ -191,26 +305,24 @@ class IOCFstab(object):
 
         if _string:
             matched = False
+            with iocage_lib.ioc_common.open_atomic(
+                    jail_fstab, "w") as fstab:
 
-            with open(jail_fstab, "r") as fstab:
-                with iocage_lib.ioc_common.open_atomic(
-                        jail_fstab, "w") as _fstab:
+                for i, line in enumerate(self.fstab):
+                    if i == self.index:
+                        date = datetime.datetime.utcnow().strftime("%F %T")
+                        fstab.write(
+                            f"{self.mount} # Added by iocage on {date}\n")
+                        matched = True
 
-                    for i, line in enumerate(fstab.readlines()):
-                        if i == self.index:
-                            date = datetime.datetime.utcnow().strftime("%F %T")
-                            _fstab.write(
-                                f"{self.mount} # Added by iocage on {date}\n")
-                            matched = True
-
-                            iocage_lib.ioc_common.logit({
-                                "level": "INFO",
-                                "message": f"Index {self.index} replaced."
-                            },
-                                _callback=self.callback,
-                                silent=self.silent)
-                        else:
-                            _fstab.write(line)
+                        iocage_lib.ioc_common.logit({
+                            "level": "INFO",
+                            "message": f"Index {self.index} replaced."
+                        },
+                            _callback=self.callback,
+                            silent=self.silent)
+                    else:
+                        fstab.write(line)
 
             if not matched:
                 iocage_lib.ioc_common.logit({
