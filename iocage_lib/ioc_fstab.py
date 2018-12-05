@@ -116,16 +116,6 @@ class IOCFstab(object):
             for line in f:
                 yield line.rstrip()
 
-    def __get_fstab_dests_(self):
-        dests = []
-
-        for line in self.fstab:
-            source, destination, fstype, options, \
-                dump, _pass = line.split()[0:6]
-            dests.append(destination)
-
-        return dests
-
     def __validate_fstab__(self, fstab, mode='single'):
         dests = []
         verrors = []
