@@ -122,8 +122,13 @@ class IOCFstab(object):
         jail_root = f'{self.iocroot}/jails/{self.uuid}/root'
 
         for line in fstab:
-            source, destination, fstype, options, \
-                dump, _pass = line.split()[0:6]
+            try:
+                source, destination, fstype, options, \
+                    dump, _pass = line.split()[0:6]
+            except ValueError:
+                verrors.append(f'Malformed fstab line: {line}')
+                continue
+
             source = pathlib.Path(source)
             missing_root = False
             dest = pathlib.Path(destination)
