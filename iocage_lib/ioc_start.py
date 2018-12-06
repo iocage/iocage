@@ -142,25 +142,35 @@ class IOCStart(object):
         vnet_interfaces = self.conf["vnet_interfaces"]
         ip6_addr = self.conf["ip6_addr"]
         prop_missing = False
+        prop_missing_msgs = []
 
         if dhcp == "on":
             if bpf != "yes":
-                msg = f"{self.uuid}: dhcp requires bpf=yes!"
+                prop_missing_msgs.append(
+                    f"{self.uuid}: dhcp requires bpf=yes!"
+                )
                 prop_missing = True
             elif self.conf["vnet"] != "on":
                 # We are already setting a vnet variable below.
-                msg = f"{self.uuid}: dhcp requires vnet=on!"
+                prop_missing_msgs.append(
+                    f"{self.uuid}: dhcp requires vnet=on!"
+                )
                 prop_missing = True
 
-        if 'accept_rtadv' in ip6_addr:
-            if self.conf['vnet'] != 'on':
-                msg = f'{self.uuid}: accept_rtadv requires vnet=on!'
-                prop_missing = True
+        if 'accept_rtadv' in ip6_addr and self.conf['vnet'] != 'on':
+            prop_missing_msgs.append(
+                f'{self.uuid}: accept_rtadv requires vnet=on!'
+            )
+            prop_missing = True
+
+        if bpf == 'yes' and self.conf['vnet'] != 'on':
+            prop_missing_msgs.append(f'{self.uuid}: bpf requires vnet=on!')
+            prop_missing = True
 
         if prop_missing:
             iocage_lib.ioc_common.logit({
                 "level": "EXCEPTION",
-                "message": msg
+                "message": '\n'.join(prop_missing_msgs)
             }, _callback=self.callback,
                 silent=self.silent)
 
