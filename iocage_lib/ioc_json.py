@@ -375,8 +375,8 @@ class IOCConfiguration(IOCZFS):
         else:
             # Catch all users migrating from old prop value of none, which
             # meant auto
-            if current_conf_version == '13' and \
-                    conf['vnet_default_interface'] == 'none':
+            if (current_conf_version == '13' or current_conf_version == '12') \
+                    and conf['vnet_default_interface'] == 'none':
                 conf['vnet_default_interface'] = 'auto'
 
         # Version 14 keys
