@@ -423,9 +423,40 @@ class IOCJson(object):
 
     def json_write(self, data, _file="/config.json"):
         """Write a JSON file at the location given with supplied data."""
+        # Templates need to be set r/w and then back to r/o
+        template = True if data['template'] != 'no' else False
+        jail_dataset = self.zfs.get_dataset_by_path(self.location).name \
+            if template else None
+
+        if template:
+            try:
+                su.check_call(['zfs', 'set', 'readonly=off', jail_dataset])
+            except su.CalledProcessError:
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'EXCEPTION',
+                        'message': 'Setting template to read/write failed!'
+                    },
+                    _callback=self.callback,
+                    exception=ioc_exceptions.CommandFailed
+                )
+
         with iocage_lib.ioc_common.open_atomic(self.location + _file,
                                                'w') as out:
             json.dump(data, out, sort_keys=True, indent=4, ensure_ascii=False)
+
+        if template:
+            try:
+                su.check_call(['zfs', 'set', 'readonly=on', jail_dataset])
+            except su.CalledProcessError:
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'EXCEPTION',
+                        'message': 'Setting template to readonly failed!'
+                    },
+                    _callback=self.callback,
+                    exception=ioc_exceptions.CommandFailed
+                )
 
     def _upgrade_pool(self, pool):
         if os.geteuid() != 0:
