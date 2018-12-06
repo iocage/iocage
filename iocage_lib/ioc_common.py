@@ -78,7 +78,10 @@ def callback(_log, callback_exception):
 
 def logit(content, _callback=None, silent=False, exception=RuntimeError):
     """Helper to check callable status of callback or call ours."""
-    if silent and content['level'] != "EXCEPTION":
+    if silent and callable(_callback) and content['level'] != 'EXCEPTION':
+        # Send these through for completeness to library consumers
+        _callback(content, exception)
+    elif silent and content['level'] != "EXCEPTION":
         # They need to see these errors, too bad!
         return
 
