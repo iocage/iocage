@@ -63,6 +63,12 @@ def callback(_log, callback_exception):
             if not os.isatty(sys.stdout.fileno()):
                 raise callback_exception(message)
             else:
+                if not isinstance(message, str) and isinstance(
+                    message,
+                    collections.Iterable
+                ):
+                    message = '\n'.join(message)
+
                 log.error(message)
                 raise SystemExit(1)
         except AttributeError:

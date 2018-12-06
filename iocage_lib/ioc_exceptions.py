@@ -24,6 +24,19 @@
 """Exception classes for iocage"""
 
 
+class ExceptionWithMsg(Exception):
+    """message attribute will be an iterable if a message is supplied"""
+    def __init__(self, message):
+        if not isinstance(message, str) and not isinstance(
+            message,
+            collections.Iterable
+        ):
+            message = [message]
+
+        self.message = message
+        super().__init__(message)
+
+
 class PoolNotActivated(Exception):
     pass
 
@@ -32,24 +45,12 @@ class JailRunning(Exception):
     pass
 
 
-class CommandFailed(Exception):
-    """message attribute will be an iterable if a message is supplied"""
-    def __init__(self, message):
-        if not isinstance(message, collections.Iterable):
-            message = [message]
-
-        self.message = message
-        super().__init__(message)
+class CommandFailed(ExceptionWithMsg):
+    pass
 
 
-class JailMisconfigured(Exception):
-    """message attribute will be a string if a message is supplied"""
-    def __init__(self, message):
-        if not isinstance(message, str):
-            message = str(message)
-
-        self.message = message
-        super().__init__(message)
+class JailMisconfigured(ExceptionWithMsg):
+    pass
 
 
 class JailCorruptConfiguration(JailMisconfigured):
@@ -57,4 +58,8 @@ class JailCorruptConfiguration(JailMisconfigured):
 
 
 class JailMissingConfiguration(JailMisconfigured):
+    pass
+
+
+class ValidationFailed(ExceptionWithMsg):
     pass
