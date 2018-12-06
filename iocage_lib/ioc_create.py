@@ -298,6 +298,10 @@ class IOCCreate(object):
                                              f"{jail_uuid}"], stdout=su.PIPE)
                         su.check_call(["zfs", "receive", "-F", jail],
                                       stdin=zfs_send.stdout)
+                        su.check_call(['zfs', 'destroy',
+                                       f'{self.pool}/iocage/releases/'
+                                       f'{self.release}/root@'
+                                       f'{jail_uuid}'], stdout=su.PIPE)
                     except su.CalledProcessError:
                         su.Popen(["zfs", "destroy", "-rf",
                                   f"{self.pool}/iocage/jails/{jail_uuid}"],
