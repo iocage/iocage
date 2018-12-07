@@ -1306,7 +1306,12 @@ class IOCage(object):
                     self.__soft_restart__()
         else:
             if not soft:
+                # __rc__ will set this to false for each, we want to preserve
+                # it
+                _rc = self.rc
                 self.stop()
+
+                self.rc = _rc
                 self.start()
             else:
                 self.__soft_restart__()
