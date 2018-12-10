@@ -188,104 +188,107 @@ class IOCStop(object):
                                 "{}".format(
                                     err.output.decode("utf-8").rstrip()))
 
-            # They haven't set an IP address, this interface won't exist
-            destroy_nic = True if dhcp == "on" or ip4_addr != "none" or \
-                ip6_addr != "none" else False
+        # We should still try to destroy the relevant networking
+        # related resources if force is true, though we won't raise an exception
+        # in that case
+        # They haven't set an IP address, this interface won't exist
+        destroy_nic = True if dhcp == "on" or ip4_addr != "none" or \
+            ip6_addr != "none" else False
 
-            if vnet == "on" and destroy_nic:
-                vnet_err = []
+        if vnet == "on" and destroy_nic:
+            vnet_err = []
 
-                for nic in self.nics.split(","):
-                    nic = nic.split(":")[0]
+            for nic in self.nics.split(","):
+                nic = nic.split(":")[0]
+                try:
+                    iocage_lib.ioc_common.checkoutput(
+                        ["ifconfig", f"{nic}:{self.jid}", "destroy"],
+                        stderr=su.STDOUT)
+                except su.CalledProcessError as err:
+                    vnet_err.append(err.output.decode().rstrip())
+
+            if not vnet_err:
+                iocage_lib.ioc_common.logit({
+                    "level": "INFO",
+                    "message": "  + Tearing down VNET OK"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+            elif vnet_err and not self.force:
+                iocage_lib.ioc_common.logit({
+                    "level": "INFO",
+                    "message": "  + Tearing down VNET FAILED"
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+
+                for v_err in vnet_err:
+                    iocage_lib.ioc_common.logit({
+                        "level": "WARNING",
+                        "message": f"  {v_err}"
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
+
+        if ip4_addr != "inherit" and vnet == "off":
+            if ip4_addr != "none":
+                gws = netifaces.gateways()
+
+                for ip4 in ip4_addr.split(","):
+                    # Don't try to remove an alias if there's no interface.
+
+                    if "|" not in ip4:
+                        try:
+                            def_iface = gws[
+                                "default"][netifaces.AF_INET][1]
+                            ip4 = f'{def_iface}|{ip4}'
+                        except KeyError:
+                            # Best effort for default interface
+                            continue
+
                     try:
+                        iface, addr = ip4.split("/")[0].split("|")
+                        addr = addr.split()
                         iocage_lib.ioc_common.checkoutput(
-                            ["ifconfig", f"{nic}:{self.jid}", "destroy"],
+                            ["ifconfig", iface] + addr +
+                            ["-alias"],
                             stderr=su.STDOUT)
                     except su.CalledProcessError as err:
-                        vnet_err.append(err.output.decode().rstrip())
+                        if "Can't assign requested address" in \
+                                err.output.decode("utf-8"):
+                            # They may have a new address that somehow
+                            # didn't set correctly. We shouldn't bail on
+                            # that.
+                            pass
+                        elif not self.force:
+                            raise RuntimeError(
+                                "{}".format(
+                                    err.output.decode("utf-8").strip()))
 
-                if not vnet_err:
-                    iocage_lib.ioc_common.logit({
-                        "level": "INFO",
-                        "message": "  + Tearing down VNET OK"
-                    },
-                        _callback=self.callback,
-                        silent=self.silent)
-                elif vnet_err:
-                    iocage_lib.ioc_common.logit({
-                        "level": "INFO",
-                        "message": "  + Tearing down VNET FAILED"
-                    },
-                        _callback=self.callback,
-                        silent=self.silent)
+        if ip6_addr != "inherit" and vnet == "off":
+            if ip6_addr != "none":
+                for ip6 in ip6_addr.split(","):
+                    # Don't try to remove an alias if there's no interface.
 
-                    for v_err in vnet_err:
-                        iocage_lib.ioc_common.logit({
-                            "level": "WARNING",
-                            "message": f"  {v_err}"
-                        },
-                            _callback=self.callback,
-                            silent=self.silent)
-
-            if ip4_addr != "inherit" and vnet == "off":
-                if ip4_addr != "none":
-                    gws = netifaces.gateways()
-
-                    for ip4 in ip4_addr.split(","):
-                        # Don't try to remove an alias if there's no interface.
-
-                        if "|" not in ip4:
-                            try:
-                                def_iface = gws[
-                                    "default"][netifaces.AF_INET][1]
-                                ip4 = f'{def_iface}|{ip4}'
-                            except KeyError:
-                                # Best effort for default interface
-                                continue
-
-                        try:
-                            iface, addr = ip4.split("/")[0].split("|")
-                            addr = addr.split()
-                            iocage_lib.ioc_common.checkoutput(
-                                ["ifconfig", iface] + addr +
-                                ["-alias"],
-                                stderr=su.STDOUT)
-                        except su.CalledProcessError as err:
-                            if "Can't assign requested address" in \
-                                    err.output.decode("utf-8"):
-                                # They may have a new address that somehow
-                                # didn't set correctly. We shouldn't bail on
-                                # that.
-                                pass
-                            else:
-                                raise RuntimeError(
-                                    "{}".format(
-                                        err.output.decode("utf-8").strip()))
-
-            if ip6_addr != "inherit" and vnet == "off":
-                if ip6_addr != "none":
-                    for ip6 in ip6_addr.split(","):
-                        # Don't try to remove an alias if there's no interface.
-
-                        if "|" not in ip6:
-                            continue
-                        try:
-                            iface, addr = ip6.split("/")[0].split("|")
-                            addr = addr.split()
-                            iocage_lib.ioc_common.checkoutput(
-                                ["ifconfig", iface, "inet6"] + addr +
-                                ["-alias"], stderr=su.STDOUT)
-                        except su.CalledProcessError as err:
-                            if "Can't assign requested address" in \
-                                    err.output.decode("utf-8"):
-                                # They may have a new address that somehow
-                                # didn't set correctly. We shouldn't bail on
-                                # that.
-                                pass
-                            else:
-                                raise RuntimeError(
-                                    "{}".format(
-                                        err.output.decode("utf-8").strip()))
+                    if "|" not in ip6:
+                        continue
+                    try:
+                        iface, addr = ip6.split("/")[0].split("|")
+                        addr = addr.split()
+                        iocage_lib.ioc_common.checkoutput(
+                            ["ifconfig", iface, "inet6"] + addr +
+                            ["-alias"], stderr=su.STDOUT)
+                    except su.CalledProcessError as err:
+                        if "Can't assign requested address" in \
+                                err.output.decode("utf-8"):
+                            # They may have a new address that somehow
+                            # didn't set correctly. We shouldn't bail on
+                            # that.
+                            pass
+                        elif not self.force:
+                            raise RuntimeError(
+                                "{}".format(
+                                    err.output.decode("utf-8").strip()))
 
         # Clean up after our dynamic devfs rulesets
         ruleset = su.check_output(

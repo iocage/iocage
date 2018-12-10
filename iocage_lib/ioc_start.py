@@ -446,9 +446,9 @@ class IOCStart(object):
                     failed_dhcp = True
 
                 if failed_dhcp:
-                    iocage_lib.ioc_stop.IOCStop(self.uuid, self.path,
-                                                self.conf, force=True,
-                                                silent=True)
+                    iocage_lib.ioc_stop.IOCStop(
+                        self.uuid, self.path, self.conf, force=True, silent=True
+                    )
 
                     iocage_lib.ioc_common.logit({
                         "level": "EXCEPTION",
