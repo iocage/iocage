@@ -75,7 +75,7 @@ class IOCZFS(object):
 
 
 class IOCConfiguration(IOCZFS):
-    def __init__(self, location, silent, callback):
+    def __init__(self, location, checking_datasets, silent, callback):
         super().__init__()
         self.location = location
         self.silent = silent
@@ -83,7 +83,9 @@ class IOCConfiguration(IOCZFS):
         self.json_version = self.get_version()
         self.mac_prefix = self.get_mac_prefix()
         self.pool, self.iocroot = self.get_pool_and_iocroot()
-        self.default_config = self.check_default_config()
+
+        if not checking_datasets:
+            self.default_config = self.check_default_config()
 
     @staticmethod
     def get_version():
@@ -742,11 +744,12 @@ class IOCJson(IOCConfiguration):
                  silent=False,
                  cli=False,
                  stop=False,
+                 checking_datasets=False,
                  callback=None):
         self.lgr = logging.getLogger('ioc_json')
         self.cli = cli
         self.stop = stop
-        super().__init__(location, silent, callback)
+        super().__init__(location, checking_datasets, silent, callback)
 
         try:
             force_env = os.environ["IOCAGE_FORCE"]
