@@ -882,6 +882,7 @@ class IOCJson(object):
         new keys with their default values if missing.
         """
         _, iocroot = _get_pool_and_iocroot()
+        current_conf_version = conf.get('CONFIG_VERSION', None)
         renamed = False
 
         if os.geteuid() != 0:
@@ -1087,7 +1088,13 @@ class IOCJson(object):
 
         # Version 12 keys
         if not conf.get('vnet_default_interface'):
-            conf['vnet_default_interface'] = 'none'
+            conf['vnet_default_interface'] = 'auto'
+        else:
+            # Catch all users migrating from old prop value of none, which
+            # meant auto
+            if current_conf_version in ('12', '13') \
+                    and conf['vnet_default_interface'] == 'none':
+                conf['vnet_default_interface'] = 'auto'
 
         # Version 13 keys
         try:
@@ -1352,7 +1359,8 @@ class IOCJson(object):
                         # Let's standardise the value to none in case
                         # vnetX_mac is not provided
                         value = 'none'
-                elif key == 'vnet_default_interface' and value != 'none':
+                elif key == 'vnet_default_interface' and value not in (
+                        'none', 'auto'):
                     if value not in netifaces.interfaces():
                         iocage_lib.ioc_common.logit(
                             {
@@ -1779,7 +1787,7 @@ class IOCJson(object):
             "vnet1_mac": "none",
             "vnet2_mac": "none",
             "vnet3_mac": "none",
-            "vnet_default_interface": "none",
+            "vnet_default_interface": "auto",
             "devfs_ruleset": "4",
             "exec_start": "/bin/sh /etc/rc",
             "exec_stop": "/bin/sh /etc/rc.shutdown",
