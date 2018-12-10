@@ -416,6 +416,8 @@ class IOCCreate(object):
                 exit(1)
 
         if not self.plugin:
+            # TODO: Should we probably only write once and maybe at the end
+            # of the function ?
             iocjson.json_write(config)
 
         # Just "touch" the fstab file, since it won't exist and write
@@ -435,6 +437,12 @@ class IOCCreate(object):
             # They supplied just a normal tag
             jail_uuid_short = jail_uuid
             jail_hostname = jail_uuid
+
+        # If jail is template, the dataset would be readonly at this point
+        if is_template:
+            iocjson.zfs_set_property(
+                f"{self.pool}/iocage/templates/{jail_uuid}", "readonly", "off"
+            )
 
         if self.empty:
             open(f"{location}/fstab", "wb").close()
