@@ -35,8 +35,10 @@ class IOCCheck(object):
     """Checks if the required iocage datasets are present"""
 
     def __init__(self, silent=False, callback=None):
-        self.pool = iocage_lib.ioc_json.IOCJson(silent=silent).json_get_value(
-            "pool")
+        self.pool = iocage_lib.ioc_json.IOCJson(
+            silent=silent,
+            checking_datasets=True
+        ).json_get_value("pool")
         self.callback = callback
         self.silent = silent
 
