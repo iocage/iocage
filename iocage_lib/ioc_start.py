@@ -468,8 +468,8 @@ class IOCStart(object):
                     addr = "ERROR, check jail logs"
 
                 if failed_dhcp:
-                    iocage_lib.ioc_stop.IOCStop(self.uuid, self.path,
-                                                force=True, silent=True
+                    iocage_lib.ioc_stop.IOCStop(
+                        self.uuid, self.path, force=True, silent=True
                     )
 
                     iocage_lib.ioc_common.logit({
