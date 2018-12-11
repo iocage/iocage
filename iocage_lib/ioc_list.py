@@ -95,10 +95,6 @@ class IOCList(object):
             bases = self.list_bases(ds)
 
             return bases
-        elif self.list_type == "template":
-            templates = self.list_all(ds)
-
-            return templates
 
     def list_all_quick(self, jails):
         """Returns a table of jails with minimal processing"""
