@@ -585,6 +585,17 @@ class IOCFetch(object):
                         col = line.split("\t")
                         hashes[col[0]] = col[1]
             except FileNotFoundError:
+                m_files = ''.join([f"-F {x} " for x in self.files])
+                m = f'iocage fetch -r {self.release} -s {self.server}' \
+                    f' -F MANIFEST {m_files}'
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'EXCEPTION',
+                        'message': 'MANIFEST missing, refusing to continue!\n'
+                                   f'EXAMPLE COMMAND: {m}'
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
                 missing.append("MANIFEST")
 
             for f in self.files:
