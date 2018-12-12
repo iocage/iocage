@@ -558,6 +558,13 @@ class IOCFetch(object):
             for _, _, files in os.walk("."):
                 if "MANIFEST" not in files:
                     if self.server == "https://download.freebsd.org":
+                        iocage_lib.ioc_common.logit(
+                            {
+                                'level': 'INFO',
+                                'message': 'MANIFEST missing, downloading one'
+                            },
+                            _callback=self.callback,
+                            silent=self.silent)
                         r = requests.get(
                             f"{self.server}/{self.root_dir}/"
                             f"{self.release}/MANIFEST",
@@ -624,7 +631,7 @@ class IOCFetch(object):
                                         },
                                         _callback=self.callback,
                                         silent=self.silent)
-                    except (FileNotFoundError, KeyError) as err:
+                    except FileNotFoundError:
                         if not _missing:
                             iocage_lib.ioc_common.logit(
                                 {
@@ -644,8 +651,18 @@ class IOCFetch(object):
                                 },
                                 _callback=self.callback,
                                 silent=self.silent)
+                    except KeyError:
+                        iocage_lib.ioc_common.logit(
+                            {
+                                'level': 'WARNING',
+                                'message': f'{f} missing from MANIFEST,'
+                                           ' refusing to extract!'
+                            },
+                            _callback=self.callback,
+                            silent=self.silent)
+                        continue
 
-                if not missing:
+                if not missing and f in _list:
                     iocage_lib.ioc_common.logit(
                         {
                             "level": "INFO",
