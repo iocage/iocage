@@ -716,16 +716,16 @@ class IOCStart(object):
             iocage_lib.ioc_common.checkoutput(
                 [
                     "ifconfig", epair_a, "name",
-                    f"{nic}:{jid}", "mtu", mtu
+                    f"{nic}.{jid}", "mtu", mtu
                 ],
                 stderr=su.STDOUT
             )
             iocage_lib.ioc_common.checkoutput(
-                ["ifconfig", f"{nic}:{jid}", "link", mac_a],
+                ["ifconfig", f"{nic}.{jid}", "link", mac_a],
                 stderr=su.STDOUT
             )
             iocage_lib.ioc_common.checkoutput(
-                ["ifconfig", f"{nic}:{jid}", "description",
+                ["ifconfig", f"{nic}.{jid}", "description",
                  f"associated with jail: {self.uuid}"],
                 stderr=su.STDOUT
             )
@@ -733,7 +733,7 @@ class IOCStart(object):
             if 'accept_rtadv' in self.get('ip6_addr'):
                 # Set linklocal for IP6 + rtsold
                 iocage_lib.ioc_common.checkoutput(
-                    ['ifconfig', f'{nic}:{jid}', 'inet6', 'auto_linklocal',
+                    ['ifconfig', f'{nic}.{jid}', 'inet6', 'auto_linklocal',
                      'accept_rtadv', 'autoconf'],
                     stderr=su.STDOUT)
 
@@ -776,11 +776,11 @@ class IOCStart(object):
                 pass
 
             iocage_lib.ioc_common.checkoutput(
-                ["ifconfig", bridge, "addm", f"{nic}:{jid}", "up"],
+                ["ifconfig", bridge, "addm", f"{nic}.{jid}", "up"],
                 stderr=su.STDOUT
             )
             iocage_lib.ioc_common.checkoutput(
-                ["ifconfig", f"{nic}:{jid}", "up"],
+                ["ifconfig", f"{nic}.{jid}", "up"],
                 stderr=su.STDOUT
             )
         except su.CalledProcessError as err:
