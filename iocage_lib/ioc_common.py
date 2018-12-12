@@ -358,7 +358,7 @@ def sort_template(template):
     return sort_name(_template) + get_name_sortkey(template[1])
 
 
-def sort_release(releases, split=False):
+def sort_release(releases, split=False, fetch_releases=False):
     """
     Sort the list by RELEASE, if split is true it's expecting full
     datasets.
@@ -373,7 +373,9 @@ def sort_release(releases, split=False):
 
         length = len(releases)
 
-        if length == 9 or length == 10:
+        if fetch_releases:
+            pass
+        elif length == 9 or length == 10:
             # Attempt to split off the -p* stuff.
             try:
                 _release, _patch = releases[5].rsplit("-p", 1)
