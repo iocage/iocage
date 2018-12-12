@@ -201,7 +201,7 @@ class IOCStop(object):
                 nic = nic.split(":")[0]
                 try:
                     iocage_lib.ioc_common.checkoutput(
-                        ["ifconfig", f"{nic}:{self.jid}", "destroy"],
+                        ["ifconfig", f"{nic}.{self.jid}", "destroy"],
                         stderr=su.STDOUT)
                 except su.CalledProcessError as err:
                     vnet_err.append(err.output.decode().rstrip())
