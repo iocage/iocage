@@ -946,11 +946,10 @@ class IOCage(object):
         if not _list:
             if not kwargs["files"]:
                 if arch == "arm64":
-                    kwargs["files"] = ("MANIFEST", "base.txz", "doc.txz",
-                                       "src.txz")
+                    kwargs["files"] = ("MANIFEST", "base.txz", "src.txz")
                 else:
                     kwargs["files"] = ("MANIFEST", "base.txz", "lib32.txz",
-                                       "doc.txz", "src.txz")
+                                       "src.txz")
 
             if "HBSD" in freebsd_version:
                 if kwargs["server"] == "download.freebsd.org":

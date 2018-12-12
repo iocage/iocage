@@ -61,8 +61,7 @@ class IOCFetch(object):
                  hardened=False,
                  update=True,
                  eol=True,
-                 files=("MANIFEST", "base.txz", "lib32.txz", "doc.txz",
-                        "src.txz"),
+                 files=('MANIFEST', 'base.txz', 'lib32.txz', 'src.txz'),
                  silent=False,
                  callback=None):
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
