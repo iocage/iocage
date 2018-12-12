@@ -21,96 +21,176 @@
 # STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+
 import os
+import re
+import subprocess
 
 import pytest
 
-from iocage_lib.ioc_common import checkoutput
+import iocage_lib.ioc_common
+from .data_classes import ZFS, Jail, ResourceSelector, Row
 
 
 def pytest_addoption(parser):
-    parser.addoption("--zpool", action="store", default=None,
-                     help="Specify a zpool to use.")
-    parser.addoption("--release", action="store", default="11.2-RELEASE",
-                     help="Specify a RELEASE to use.")
-    parser.addoption("--server", action="store", default="ftp.freebsd.org",
-                     help="FTP server to login to.")
-    parser.addoption("--user", action="store", default="anonymous",
-                     help="The user to use for fetching.")
-    parser.addoption("--password", action="store", default="anonymous@",
-                     help="The password to use for fetching.")
-    parser.addoption("--http", action="store_true",
-                     help="Have --server define a HTTP server instead.")
-    parser.addoption("--noupdate", action="store_true",
-                     help="Decide whether or not to update the fetch to the"
-                          " latest patch level.")
-    parser.addoption("--auth", action="store", default=None,
-                     help="Authentication method for HTTP fetching. Valid"
-                          " values: basic, digest")
-    parser.addoption("--file", action="store_true",
-                     help="Use a local file directory for root-dir instead of "
-                          "FTP or HTTP.")
     parser.addoption(
-        "--root-dir", action="store",
-        help="Root directory containing all the RELEASEs for fetching.")
+        '--zpool', action='store', default=None,
+        help='Specify a zpool to use.'
+    )
+    parser.addoption(
+        '--release', action='store', default='11.2-RELEASE',
+        help='Specify a RELEASE to use.'
+    )
+    parser.addoption(
+        '--server', action='store', default='download.freebsd.org',
+        help='FTP server to login to.'
+    )
+    parser.addoption(
+        '--user', action='store', default='anonymous',
+        help='The user to use for fetching.'
+    )
+    parser.addoption(
+        '--password', action='store', default='anonymous@',
+        help='The password to use for fetching.'
+    )
+    parser.addoption(
+        '--http', action='store_true',
+        help='Have --server define a HTTP server instead.'
+    )
+    parser.addoption(
+        '--noupdate', action='store_true',
+        help='Decide whether or not to update the fetch to the latest '
+             'patch level.'
+    )
+    parser.addoption(
+        '--auth', action='store', default=None,
+        help='Authentication method for HTTP fetching. Valid'
+        ' values: basic, digest'
+    )
+    parser.addoption(
+        '--file', action='store_true',
+        help='Use a local file directory for root-dir instead of '
+        'FTP or HTTP.'
+    )
+    parser.addoption(
+        '--root-dir', action='store',
+        help='Root directory containing all the RELEASEs for fetching.'
+    )
+    parser.addoption(
+        '--jail_ip', action='store', default=None,
+        help='Static IP to use creating jails'
+    )
+    parser.addoption(
+        '--dhcp', action='store_true', default=False,
+        help='Use DHCP for creating jails'
+    )
 
 
 def pytest_runtest_setup(item):
     if 'require_root' in item.keywords and not os.getuid() == 0:
-        pytest.skip("Need to be root to run")
+        pytest.skip('Need to be root to run')
 
-    if 'require_zpool' in item.keywords and not item.config.getvalue("zpool"):
-        pytest.skip("Need --zpool option to run")
+    if 'require_zpool' in item.keywords and not item.config.getvalue('zpool'):
+        pytest.skip('Need --zpool option to run')
+
+    if 'require_dhcp' in item.keywords and not item.config.getvalue('dhcp'):
+        pytest.skip('Need --dhcp option to run')
+
+    if (
+        'require_jail_ip' in item.keywords
+        and not item.config.getvalue('jail_ip')
+    ):
+        pytest.skip('Need --jail_ip option to run')
+
+    if (
+        'require_networking' in item.keywords
+        and all(
+            not v for v in (
+                    item.config.getvalue('--dhcp'),
+                    item.config.getvalue('--jail_ip')
+            )
+        )
+    ):
+        pytest.skip('Need either --dhcp or --jail_ip option to run')
+
+    if (
+        'require_networking' in item.keywords and all(
+            v for v in (
+                item.config.getvalue('--dhcp'),
+                item.config.getvalue('--jail_ip')
+            )
+        )
+    ):
+        pytest.skip('Need either --dhcp or --jail_ip option to run, not both')
 
 
 @pytest.fixture
 def zpool(request):
     """Specify a zpool to use."""
-    return request.config.getoption("--zpool")
+    return request.config.getoption('--zpool')
 
 
 @pytest.fixture
-def release(request):
+def jail_ip(request):
+    """Specify a jail ip to use."""
+    return request.config.getoption('--jail_ip')
+
+
+@pytest.fixture
+def dhcp(request):
+    """Specify if dhcp is to be used."""
+    return request.config.getoption('--dhcp')
+
+
+@pytest.fixture
+def release(request, hardened):
     """Specify a RELEASE to use."""
-    return request.config.getoption("--release")
+    release = request.config.getoption('--release')
+    if hardened:
+        release = release.replace('-RELEASE', '-STABLE')
+        release = re.sub(r'\W\w.', '-', release)
+    return release
 
 
 @pytest.fixture
 def server(request):
     """FTP server to login to."""
-    return request.config.getoption("--server")
+    return request.config.getoption('--server')
 
 
 @pytest.fixture
 def user(request):
     """The user to use for fetching."""
-    return request.config.getoption("--user")
+    return request.config.getoption('--user')
 
 
 @pytest.fixture
 def password(request):
     """The password to use for fetching."""
-    return request.config.getoption("--password")
+    return request.config.getoption('--password')
 
 
 @pytest.fixture
 def root_dir(request):
     """Root directory containing all the RELEASEs for fetching."""
-    return request.config.getoption("--root-dir")
+    return request.config.getoption('--root-dir')
 
 
 @pytest.fixture
 def http(request):
     """Have --server define a HTTP server instead."""
-    return request.config.getoption("--http")
+    return request.config.getoption('--http')
 
 
 @pytest.fixture
 def hardened(request):
     """Have fetch expect the default HardeneBSD layout instead."""
-    freebsd_version = checkoutput(["freebsd-version"])
+    # TODO: This isn't probably being used anywhere except for
+    # in release fixture, let's move it there and remove this
 
-    if "HBSD" in freebsd_version:
+    freebsd_version = iocage_lib.ioc_common.checkoutput(['freebsd-version'])
+
+    if 'HBSD' in freebsd_version:
         _hardened = True
     else:
         _hardened = False
@@ -121,16 +201,108 @@ def hardened(request):
 @pytest.fixture
 def _file(request):
     """Use a local file directory for root-dir instead of FTP or HTTP."""
-    return request.config.getoption("--file")
+    return request.config.getoption('--file')
 
 
 @pytest.fixture
 def auth(request):
     """Authentication method for HTTP fetching. Valid values: basic, digest"""
-    return request.config.getoption("--auth")
+    return request.config.getoption('--auth')
 
 
 @pytest.fixture
 def noupdate(request):
     """ Decide whether or not to update the fetch to the latest patch level."""
-    return request.config.getoption("--noupdate")
+    return request.config.getoption('--noupdate')
+
+
+@pytest.fixture
+def invoke_cli():
+    def invoke(cmd, reason=None, assert_returncode=True):
+        cmd.insert(0, 'iocage')
+        cmd = [str(c) for c in cmd]
+
+        result = subprocess.run(cmd, stdout=subprocess.PIPE)
+        reason = f'{reason}: {result.stderr}' if reason else result.stderr
+
+        if assert_returncode:
+            assert result.returncode == 0, reason
+
+        result.output = result.stdout.decode('utf-8')
+
+        return result
+
+    return invoke
+
+
+@pytest.fixture
+def write_file():
+    def write_to_file(location, data):
+        with iocage_lib.ioc_common.open_atomic(location, 'w') as f:
+            f.write(data)
+
+    return write_to_file
+
+
+@pytest.fixture
+def remove_file():
+    def remove(path):
+        if os.path.exists(path):
+            os.remove(path)
+
+    return remove
+
+
+@pytest.fixture
+def zfs():
+    return ZFS()
+
+
+@pytest.fixture
+def jail():
+    return Jail
+
+
+@pytest.fixture
+def resource_selector():
+    return ResourceSelector()
+
+
+@pytest.fixture
+def skip_test():
+    def skip(condition, reason=''):
+        # if condition evaluates to True, let's skip the test
+        if condition:
+            pytest.skip(reason)
+
+    return skip
+
+
+@pytest.fixture
+def freebsd_download_server():
+    return f'http://download.freebsd.org/ftp/releases/{os.uname()[4]}'
+
+
+@pytest.fixture
+def parse_rows_output():
+    def _output_list(data, type):
+        rows = []
+        for index, line in enumerate(data.split('\n')):
+            if all(
+                    s not in line for s in ('----', '====')
+            ) and line and index != 1:
+                rows.append(Row(line, type))
+        return rows
+
+    return _output_list
+
+
+@pytest.fixture
+def jails_as_rows():
+    def _default_jails(resources, **kwargs):
+        return [
+            resource.convert_to_row(**kwargs)
+            for resource in resources
+        ]
+
+    return _default_jails
