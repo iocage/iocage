@@ -21,22 +21,72 @@
 # STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-import pytest
-from click.testing import CliRunner
 
-import iocage_cli as ioc
+import pytest
+
 
 require_root = pytest.mark.require_root
 require_zpool = pytest.mark.require_zpool
 
 
+# Let's perform testing first on different types of jails
+# Then we can move on to setting some specific properties and seeing
+# do the props work as intended
+
+
+# TODO: Plugin test left
+
+
+def _set_and_test_note_prop(invoke_cli, value, jail):
+    invoke_cli(
+        ['set', f'notes={value}', jail.name]
+    )
+
+    assert jail.config.get('notes') == value, \
+        f'Failed to set note value to {value}'
+
+
 @require_root
 @require_zpool
-def test_set():
-    jails = ["771ec0cf-afdd-455d-9245-4a890e228325", "dfb013e5"]
-    runner = CliRunner()
+def test_01_set_prop_on_jail(resource_selector, invoke_cli, skip_test):
+    jails = resource_selector.jails
+    skip_test(not jails)
 
-    for jail in jails:
-        result = runner.invoke(ioc.cli, ["set", f"notes={jail}", jail])
+    _set_and_test_note_prop(
+        invoke_cli, 'foo \"bar\"', jails[0]
+    )
 
-        assert result.exit_code == 0
+
+@require_root
+@require_zpool
+def test_02_set_prop_on_thickconfig_jail(
+        resource_selector, invoke_cli, skip_test
+):
+    thickconfig_jails = resource_selector.thickconfig_jails
+    skip_test(not thickconfig_jails)
+
+    _set_and_test_note_prop(
+        invoke_cli, 'foo \"bar\"', thickconfig_jails[0]
+    )
+
+
+@require_root
+@require_zpool
+def test_03_set_prop_on_basejail(resource_selector, invoke_cli, skip_test):
+    basejails = resource_selector.basejails
+    skip_test(not basejails)
+
+    _set_and_test_note_prop(
+        invoke_cli, 'foo \"bar\"', basejails[0]
+    )
+
+
+@require_root
+@require_zpool
+def test_04_set_prop_on_template_jail(resource_selector, invoke_cli, skip_test):
+    template_jails = resource_selector.template_jails
+    skip_test(not template_jails)
+
+    _set_and_test_note_prop(
+        invoke_cli, 'foo \"bar\"', template_jails[0]
+    )
