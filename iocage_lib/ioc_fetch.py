@@ -596,7 +596,6 @@ class IOCFetch(object):
                     },
                     _callback=self.callback,
                     silent=self.silent)
-                missing.append("MANIFEST")
 
             for f in self.files:
                 if f == "MANIFEST":
