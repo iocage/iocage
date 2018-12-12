@@ -336,47 +336,47 @@ class IOCStart(object):
                             includes=plugin_devfs_includes
                         )
 
+        parameters = [
+            _sysvmsg, _sysvsem, _sysvshm, fdescfs, _allow_mlock, tmpfs,
+            _allow_mount_fusefs, f"allow.set_hostname={allow_set_hostname}",
+            f"mount.devfs={mount_devfs}",
+            f"allow.raw_sockets={allow_raw_sockets}",
+            f"allow.sysvipc={allow_sysvipc}",
+            f"allow.quotas={allow_quotas}",
+            f"allow.socket_af={allow_socket_af}",
+            f"allow.chflags={allow_chflags}",
+            f"allow.mount={allow_mount}",
+            f"allow.mount.devfs={allow_mount_devfs}",
+            f"allow.mount.nullfs={allow_mount_nullfs}",
+            f"allow.mount.procfs={allow_mount_procfs}",
+            f"allow.mount.zfs={allow_mount_zfs}"
+        ]
+
         start_cmd = [x for x in ["jail", "-c"] + net +
-                          [f"name=ioc-{self.uuid}",
-                           f"host.domainname={host_domainname}",
-                           f"host.hostname={host_hostname}",
-                           f"path={self.path}/root",
-                           f"securelevel={securelevel}",
-                           f"host.hostuuid={self.uuid}",
-                           f"devfs_ruleset={devfs_ruleset}",
-                           f"enforce_statfs={enforce_statfs}",
-                           f"children.max={children_max}",
-                           f"allow.set_hostname={allow_set_hostname}",
-                           f"allow.sysvipc={allow_sysvipc}",
-                           _sysvmsg,
-                           _sysvsem,
-                           _sysvshm,
-                           f"allow.raw_sockets={allow_raw_sockets}",
-                           f"allow.chflags={allow_chflags}",
-                           _allow_mlock,
-                           f"allow.mount={allow_mount}",
-                           f"allow.mount.devfs={allow_mount_devfs}",
-                           _allow_mount_fusefs,
-                           f"allow.mount.nullfs={allow_mount_nullfs}",
-                           f"allow.mount.procfs={allow_mount_procfs}",
-                           tmpfs,
-                           f"allow.mount.zfs={allow_mount_zfs}",
-                           f"allow.quotas={allow_quotas}",
-                           f"allow.socket_af={allow_socket_af}",
-                           f"exec.prestart={exec_prestart}",
-                           f"exec.poststart={exec_poststart}",
-                           f"exec.prestop={exec_prestop}",
-                           f"exec.stop={exec_stop}",
-                           f"exec.clean={exec_clean}",
-                           f"exec.timeout={exec_timeout}",
-                           f"stop.timeout={stop_timeout}",
-                           f"mount.fstab={self.path}/fstab",
-                           f"mount.devfs={mount_devfs}",
-                           fdescfs,
-                           "allow.dying",
-                           f"exec.consolelog={self.iocroot}/log/ioc-"
-                           f"{self.uuid}-console.log",
-                           "persist"] if x != '']
+                     [x for x in parameters if '1' in x] +
+                     [
+                         f'name=ioc-{self.uuid}',
+                         f'host.domainname={host_domainname}',
+                         f'host.hostname={host_hostname}',
+                         f'path={self.path}/root',
+                         f'securelevel={securelevel}',
+                         f'host.hostuuid={self.uuid}',
+                         f'devfs_ruleset={devfs_ruleset}',
+                         f'enforce_statfs={enforce_statfs}',
+                         f'children.max={children_max}',
+                         f'exec.prestart={exec_prestart}',
+                         f'exec.poststart={exec_poststart}',
+                         f'exec.prestop={exec_prestop}',
+                         f'exec.stop={exec_stop}',
+                         f'exec.clean={exec_clean}',
+                         f'exec.timeout={exec_timeout}',
+                         f'stop.timeout={stop_timeout}',
+                         f'mount.fstab={self.path}/fstab',
+                         'allow.dying',
+                         f'exec.consolelog={self.iocroot}/log/ioc-'
+                         f'{self.uuid}-console.log',
+                         'persist'
+                     ] if x != '']
 
         start_env = {
             **os.environ,
