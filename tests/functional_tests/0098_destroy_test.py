@@ -21,10 +21,9 @@
 # STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-import pytest
-from click.testing import CliRunner
 
-import iocage_cli as ioc
+import pytest
+
 
 require_root = pytest.mark.require_root
 require_zpool = pytest.mark.require_zpool
@@ -32,11 +31,35 @@ require_zpool = pytest.mark.require_zpool
 
 @require_root
 @require_zpool
-def test_destroy():
-    jails = ["newtest", "newtest_short"]
-    runner = CliRunner()
+def test_01_destroy_jail(invoke_cli, resource_selector, skip_test):
+    jails = resource_selector.all_jails
+    skip_test(not jails)
 
-    for jail in jails:
-        result = runner.invoke(ioc.cli, ["destroy", jail])
+    jail = jails[0]
+    invoke_cli(
+        ['destroy', '-f', jail.name]
+    )
 
-        assert result.exit_code == 0
+    assert jail.exists is False
+
+
+@require_root
+@require_zpool
+def test_02_destroy_jails(invoke_cli, resource_selector, skip_test):
+    jails = resource_selector.all_jails
+    skip_test(not jails)
+
+    # Let's destroy 50% of jails - in case of only one jail, let's skip
+    up = int(len(jails) / 2)
+    skip_test(up == 0)
+
+    destroy_jails = jails[:up]
+    invoke_cli(
+        ['destroy', '-f', *[j.name for j in destroy_jails]]
+    )
+
+    for jail in destroy_jails:
+        assert jail.exists is False
+
+
+# TODO: Add tests for release and download later - fetching is time consuming :P
