@@ -84,6 +84,7 @@ class IOCFetch(object):
         self.verify = verify
         self.hardened = hardened
         self.files = files
+        self.files_left = list(files).copy()
         self.update = update
         self.eol = eol
         self.silent = silent
@@ -506,10 +507,32 @@ class IOCFetch(object):
             silent=self.silent)
         self.fetch_download(self.files)
         missing = self.__fetch_check__(self.files)
+        missing_attempt = 0
 
-        if missing:
-            self.fetch_download(missing, missing=True)
-            self.__fetch_check__(missing, _missing=True)
+        while True:
+            if not self.files_left:
+                break
+
+            if missing_attempt == 4:
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'EXCEPTION',
+                        'message': 'Max retries exceeded, too many failed'
+                                   ' verifications!'
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
+
+            _missing = True if missing else False
+
+            if not _missing:
+                missing = self.files_left
+
+            self.fetch_download(missing, missing=_missing)
+            missing = self.__fetch_check__(missing, _missing=_missing)
+
+            if missing:
+                missing_attempt += 1
 
         if not self.hardened and self.update:
             self.fetch_update()
@@ -551,6 +574,7 @@ class IOCFetch(object):
         """
         hashes = {}
         missing = []
+        files_left = self.files_left.copy()
 
         if os.path.isdir(f"{self.iocroot}/download/{self.release}"):
             os.chdir(f"{self.iocroot}/download/{self.release}")
@@ -565,19 +589,7 @@ class IOCFetch(object):
                             },
                             _callback=self.callback,
                             silent=self.silent)
-                        r = requests.get(
-                            f"{self.server}/{self.root_dir}/"
-                            f"{self.release}/MANIFEST",
-                            verify=self.verify,
-                            stream=True)
-
-                        status = r.status_code == requests.codes.ok
-
-                        if not status:
-                            r.raise_for_status()
-
-                        with open("MANIFEST", "wb") as txz:
-                            shutil.copyfileobj(r.raw, txz)
+                        self.fetch_download(['MANIFEST'], missing=True)
 
             try:
                 with open("MANIFEST", "r") as _manifest:
@@ -585,20 +597,29 @@ class IOCFetch(object):
                         col = line.split("\t")
                         hashes[col[0]] = col[1]
             except FileNotFoundError:
-                m_files = ''.join([f"-F {x} " for x in self.files])
-                m = f'iocage fetch -r {self.release} -s {self.server}' \
-                    f' -F MANIFEST {m_files}'
-                iocage_lib.ioc_common.logit(
-                    {
-                        'level': 'EXCEPTION',
-                        'message': 'MANIFEST missing, refusing to continue!\n'
-                                   f'EXAMPLE COMMAND: {m}'
-                    },
-                    _callback=self.callback,
-                    silent=self.silent)
+                if 'MANIFEST' not in self.files:
+                    m_files = ''.join([f"-F {x} " for x in self.files])
+                    m = f'iocage fetch -r {self.release} -s {self.server}' \
+                        f' -F MANIFEST {m_files}'
+                    iocage_lib.ioc_common.logit(
+                        {
+                            'level': 'EXCEPTION',
+                            'message': 'MANIFEST missing, refusing to continue'
+                                       f'!\nEXAMPLE COMMAND: {m}'
+                        },
+                        _callback=self.callback,
+                        silent=self.silent)
 
-            for f in self.files:
+                self.fetch_download(['MANIFEST'], missing=True)
+                with open("MANIFEST", "r") as _manifest:
+                    for line in _manifest:
+                        col = line.split("\t")
+                        hashes[col[0]] = col[1]
+
+            for f in files_left:
                 if f == "MANIFEST":
+                    if f in self.files_left:
+                        self.files_left.remove(f)
                     continue
 
                 if self.hardened and f == "lib32.txz":
@@ -630,17 +651,6 @@ class IOCFetch(object):
                                         _callback=self.callback,
                                         silent=self.silent)
                                     missing.append(f)
-                                else:
-                                    iocage_lib.ioc_common.logit(
-                                        {
-                                            "level":
-                                            "EXCEPTION",
-                                            "message":
-                                            "Too many failed"
-                                            " verifications!"
-                                        },
-                                        _callback=self.callback,
-                                        silent=self.silent)
                     except FileNotFoundError:
                         if not _missing:
                             iocage_lib.ioc_common.logit(
@@ -685,6 +695,9 @@ class IOCFetch(object):
                         self.fetch_extract(f)
                     except Exception:
                         raise
+
+                    if f in self.files_left:
+                        self.files_left.remove(f)
 
             return missing
 
