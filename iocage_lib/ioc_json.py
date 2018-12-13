@@ -46,6 +46,7 @@ import pathlib
 
 
 class IOCZFS(object):
+    # TODO: We should use a context manager for libzfs
     def __init__(self):
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
 
@@ -96,6 +97,13 @@ class IOCZFS(object):
             ds = None
 
         return ds
+
+    def zfs_get_snapshot(self, snap_id):
+        # If snapshot exists, return snap object else None
+        try:
+            return self.zfs.get_snapshot(snap_id)
+        except libzfs.ZFSException:
+            pass
 
 
 class IOCConfiguration(IOCZFS):

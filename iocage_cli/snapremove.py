@@ -47,7 +47,7 @@ def cli(jail, name):
         uuid, path = next(iter(_jail.items()))
     elif len(_jail) > 1:
         ioc_common.logit({
-            "level"  : "ERROR",
+            "level": "ERROR",
             "message": f"Multiple jails found for {jail}:"
         })
         for u, p in sorted(_jail.items()):
@@ -58,7 +58,7 @@ def cli(jail, name):
         exit(1)
     else:
         ioc_common.logit({
-            "level"  : "EXCEPTION",
+            "level": "EXCEPTION",
             "message": f"{jail} not found!"
         })
 
@@ -70,15 +70,14 @@ def cli(jail, name):
     else:
         target = f"{pool}/iocage/jails/{uuid}@{name}"
 
-    try:
-        su.check_call(["zfs", "destroy", "-r", "-f", target])
+    # Let's verify target exists and then destroy it, else log it
+
+    ioc_zfs = ioc_json.IOCZFS()
+    snapshot = ioc_zfs.zfs_get_snapshot(target)
+    if not snapshot:
         ioc_common.logit({
-            "level"  : "INFO",
-            "message": f"Snapshot: {target} destroyed."
+            "level": "EXCEPTION",
+            "message": f"{target} not found!"
         })
-    except su.CalledProcessError as err:
-        ioc_common.logit({
-            "level"  : "EXCEPTION",
-            "message": f"{err}"
-        })
-        exit(1)
+    else:
+        snapshot.delete(recursive=True)
