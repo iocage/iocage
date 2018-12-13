@@ -779,7 +779,7 @@ class IOCFetch(object):
                                 if progress != last_progress:
                                     text = self.update_progress(
                                         progress,
-                                        f'Downloading : {f}',
+                                        f'Downloading: {f}',
                                         elapsed,
                                         chunk_size
                                     )
