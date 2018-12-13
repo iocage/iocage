@@ -84,7 +84,7 @@ class IOCFetch(object):
         self.verify = verify
         self.hardened = hardened
         self.files = files
-        self.files_left = list(files).copy()
+        self.files_left = list(files)
         self.update = update
         self.eol = eol
         self.silent = silent
@@ -506,7 +506,7 @@ class IOCFetch(object):
             _callback=self.callback,
             silent=self.silent)
         self.fetch_download(self.files)
-        missing = self.__fetch_check__(self.files)
+        missing_files = self.__fetch_check__(self.files)
         missing_attempt = 0
 
         while True:
@@ -517,21 +517,22 @@ class IOCFetch(object):
                 iocage_lib.ioc_common.logit(
                     {
                         'level': 'EXCEPTION',
-                        'message': 'Max retries exceeded, too many failed'
-                                   ' verifications!'
+                        'message': 'Max retries exceeded, one or more files'
+                                   f' ({", ".join(missing_files)})'
+                                   ' failed checksum verification!'
                     },
                     _callback=self.callback,
                     silent=self.silent)
 
-            _missing = True if missing else False
+            if not missing_files:
+                missing_files = self.files_left
 
-            if not _missing:
-                missing = self.files_left
+            self.fetch_download(missing_files, missing=bool(missing_files))
+            missing_files = self.__fetch_check__(
+                missing_files, _missing=bool(missing_files)
+            )
 
-            self.fetch_download(missing, missing=_missing)
-            missing = self.__fetch_check__(missing, _missing=_missing)
-
-            if missing:
+            if missing_files:
                 missing_attempt += 1
 
         if not self.hardened and self.update:
@@ -598,7 +599,7 @@ class IOCFetch(object):
                         hashes[col[0]] = col[1]
             except FileNotFoundError:
                 if 'MANIFEST' not in self.files:
-                    m_files = ''.join([f"-F {x} " for x in self.files])
+                    m_files = ' '.join([f'-F {x}' for x in self.files])
                     m = f'iocage fetch -r {self.release} -s {self.server}' \
                         f' -F MANIFEST {m_files}'
                     iocage_lib.ioc_common.logit(
