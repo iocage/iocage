@@ -73,6 +73,17 @@ class IOCZFS(object):
         else:
             ds[key].value = value
 
+    def zfs_get_dataset_name(self, name, type='name'):
+        try:
+            if type == 'name':
+                ds = self.zfs.get_dataset(name).name
+            else:
+                ds = self.zfs.get_dataset_by_path(name).name
+        except Exception:
+            ds = None
+
+        return ds
+
 
 class IOCConfiguration(IOCZFS):
     def __init__(self, location, checking_datasets, silent, callback):
