@@ -678,8 +678,8 @@ class IOCStart(object):
         mac_a, mac_b = self.__start_generate_vnet_mac__(nic)
         epair_a_cmd = ["ifconfig", "epair", "create"]
         epair_a = su.Popen(epair_a_cmd, stdout=su.PIPE).communicate()[0]
-        epair_a = epair_a.strip()
-        epair_b = re.sub(b"a$", b"b", epair_a)
+        epair_a = epair_a.decode().strip()
+        epair_b = re.sub("a$", "b", epair_a)
 
         if 'vnet' in nic:
             # Inside jails they are epairN
@@ -721,13 +721,20 @@ class IOCStart(object):
                 ],
                 stderr=su.STDOUT
             )
+            iocage_lib.ioc_common.checkoutput(
+                [
+                    'jexec', f'ioc-{self.uuid}', 'ifconfig', epair_b,
+                    'mtu', mtu
+                ],
+                stderr=su.STDOUT
+            )
 
-            if epair_b.decode() != jail_nic:
+            if epair_b != jail_nic:
                 # This occurs on default vnet0 ip4_addr's
                 iocage_lib.ioc_common.checkoutput(
                     [
                         "setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
-                        "ifconfig", epair_b, "name", jail_nic, "mtu", mtu
+                        "ifconfig", epair_b, "name", jail_nic
                     ],
                     stderr=su.STDOUT
                 )
