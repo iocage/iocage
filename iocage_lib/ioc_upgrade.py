@@ -79,6 +79,18 @@ class IOCUpgrade(object):
         self.callback = callback
 
     def upgrade_jail(self):
+        tmp_dataset = self.zfs_get_dataset_name('/tmp', type='path')
+        tmp_val = self.zfs_get_property(tmp_dataset, 'exec')
+
+        if tmp_val == 'off':
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message': f'{tmp_dataset} needs exec=on!'
+                },
+                _callback=self.callback,
+                silent=self.silent)
+
         if "HBSD" in self.freebsd_version:
             su.Popen(["hbsd-upgrade", "-j", self.jid]).communicate()
 
