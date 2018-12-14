@@ -701,7 +701,7 @@ class IOCStart(object):
                 stderr=su.STDOUT
             )
             iocage_lib.ioc_common.checkoutput(
-                ["ifconfig", f"{nic}.{jid}", "description",
+                ["ifconfig", f"{nic}:{jid}", "description",
                  f"associated with jail: {self.uuid} as nic: {jail_nic}"],
                 stderr=su.STDOUT
             )
