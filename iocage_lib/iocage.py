@@ -946,23 +946,18 @@ class IOCage(object):
         if not _list:
             if not kwargs['files']:
                 if arch == 'arm64':
-                    kwargs['files'] = ('MANIFEST', 'base.txz', 'src.txz')
+                    kwargs['files'] = ['MANIFEST', 'base.txz', 'src.txz']
                 else:
-                    kwargs['files'] = ('MANIFEST', 'base.txz', 'lib32.txz',
-                                       'src.txz')
+                    kwargs['files'] = ['MANIFEST', 'base.txz', 'lib32.txz',
+                                       'src.txz']
 
                     try:
                         if int(release.rsplit('-')[0].rsplit('.')[0]) < 12:
                             # doc.txz has relevance here still
-                            kwargs['files'] = (
-                                'MANIFEST', 'base.txz', 'doc.txz',
-                                'lib32.txz', 'src.txz'
-                            )
+                            kwargs['files'].append('doc.txz')
                     except ValueError:
                         # Non-standard naming scheme, assuming it's current
-                        kwargs['files'] = (
-                            'MANIFEST', 'base.txz', 'lib32.txz', 'src.txz'
-                        )
+                        pass
 
             if "HBSD" in freebsd_version:
                 if kwargs["server"] == "download.freebsd.org":
