@@ -395,7 +395,8 @@ class IOCFetch(object):
                         _callback=self.callback,
                         silent=self.silent)
 
-                releases = iocage_lib.ioc_common.sort_release(releases)
+                releases = iocage_lib.ioc_common.sort_release(
+                    releases, fetch_releases=True)
 
                 for r in releases:
                     iocage_lib.ioc_common.logit(
@@ -462,10 +463,11 @@ class IOCFetch(object):
                         _callback=self.callback,
                         silent=self.silent)
 
+                releases = iocage_lib.ioc_common.sort_release(
+                    releases, fetch_releases=True)
+
                 if _list:
                     return releases
-
-                releases = iocage_lib.ioc_common.sort_release(releases)
 
                 for r in releases:
                     if r in eol:
