@@ -44,7 +44,7 @@ import iocage_lib.ioc_start
 import libzfs
 
 
-class IOCFetch(object):
+class IOCFetch(iocage_lib.ioc_json.IOCZFS):
 
     """Fetch a RELEASE for use as a jail base."""
 
@@ -64,6 +64,7 @@ class IOCFetch(object):
                  files=('MANIFEST', 'base.txz', 'lib32.txz', 'src.txz'),
                  silent=False,
                  callback=None):
+        super().__init__()
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")
@@ -89,8 +90,6 @@ class IOCFetch(object):
         self.eol = eol
         self.silent = silent
         self.callback = callback
-
-        self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.zpool = self.zfs.get(self.pool)
 
         if hardened:
@@ -876,6 +875,18 @@ class IOCFetch(object):
 
     def fetch_update(self, cli=False, uuid=None):
         """This calls 'freebsd-update' to update the fetched RELEASE."""
+        tmp_dataset = self.zfs_get_dataset_name('/tmp', type='path')
+        tmp_val = self.zfs_get_property(tmp_dataset, 'exec')
+
+        if tmp_val == 'off':
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message': f'{tmp_dataset} needs exec=on!'
+                },
+                _callback=self.callback,
+                silent=self.silent)
+
         if cli:
             cmd = [
                 "mount", "-t", "devfs", "devfs",
