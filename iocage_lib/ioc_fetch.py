@@ -73,7 +73,7 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
         self.password = password
         self.auth = auth
 
-        if release:
+        if release and (not _file and server == 'download.freebsd.org'):
             self.release = release.upper()
         else:
             self.release = release
