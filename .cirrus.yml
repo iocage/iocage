@@ -1,0 +1,12 @@
+freebsd_instance:
+  image: freebsd-11-2-release-amd64
+
+test_task:
+ 
+  install_script: dd if=/dev/zero of=/root/poolfile bs=1G count=5 && zpool create pool /root/poolfile && pkg install -y git python3
+  pip_cache:
+    folder: ~/.cache/pip
+    fingerprint_script: echo $PYTHON_VERSION && cat requirements.txt
+    populate_script: python3 -m ensurepip && python3 -m pip install -Ur requirements.txt pytest pytest-cov pytest-pep8 pytest-mock mock cython
+  test_script: make install && pytest --zpool=pool
+
