@@ -944,7 +944,7 @@ class IOCage(object):
         arch = os.uname()[4]
 
         if not _list:
-            if not kwargs['files']:
+            if not kwargs.get('files', None):
                 if arch == 'arm64':
                     kwargs['files'] = ['MANIFEST', 'base.txz', 'src.txz']
                 else:
@@ -955,7 +955,7 @@ class IOCage(object):
                         if int(release.rsplit('-')[0].rsplit('.')[0]) < 12:
                             # doc.txz has relevance here still
                             kwargs['files'].append('doc.txz')
-                    except ValueError:
+                    except (AttributeError, ValueError):
                         # Non-standard naming scheme, assuming it's current
                         pass
 
