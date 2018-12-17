@@ -884,8 +884,8 @@ class IOCage(object):
         arch = os.uname()[4]
 
         if not _list:
-            if not kwargs["files"]:
-                if arch == "arm64":
+            if not kwargs.get('files', None):
+                if arch == 'arm64':
                     kwargs["files"] = ("MANIFEST", "base.txz", "doc.txz",
                                        "src.txz")
                 else:
