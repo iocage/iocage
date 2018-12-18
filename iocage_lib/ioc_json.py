@@ -452,8 +452,8 @@ class IOCConfiguration(IOCZFS):
                 else:
                     temp_uuid = self.location.rsplit('/', 1)[-1]
                     freebsd_version = pathlib.Path(
-                        f'{self.iocroot}/jails/{temp_uuid}' \
-                        '/root/bin/freebsd-version'
+                        f'{self.iocroot}/jails/{temp_uuid}/root/bin/'
+                        'freebsd-version'
                     )
                 if not freebsd_version.is_file():
                     iocage_lib.ioc_common.logit(
@@ -870,7 +870,7 @@ class IOCJson(IOCConfiguration):
                 self.zfs_set_property(f"{dataset}/data", jail_zfs_prop,
                                       f"iocage/jails/{uuid}/data")
                 self.zfs_set_property(f"{dataset}/data", "jailed", "on")
-            except libzfs.ZFSException as err:
+            except libzfs.ZFSException:
                 # The jailed dataset doesn't exist, which is OK.
                 pass
 
@@ -1330,8 +1330,9 @@ class IOCJson(IOCConfiguration):
                     key = key.replace("_", ".")
 
                 if key in jail_params:
-                    if full_conf["vnet"] == "on" and (key == "ip4.addr" or
-                                                      key == "ip6.addr"):
+                    if full_conf["vnet"] == "on" and (
+                        key == "ip4.addr" or key == "ip6.addr"
+                    ):
                         return
 
                     try:
@@ -1564,10 +1565,12 @@ class IOCJson(IOCConfiguration):
                                     rx,
                                     v.lower()
                                 ) for v in value.split()
-                            ) or
-                            len(value.split()) != 2 or
-                            any(value.split().count(v) > 1 for v in
-                                value.split())
+                            ) or len(
+                                value.split()
+                            ) != 2 or any(
+                                value.split().count(v) > 1 for v in
+                                value.split()
+                            )
                         ):
                             iocage_lib.ioc_common.logit(
                                 {

@@ -782,8 +782,8 @@ class IOCage(object):
         exec_clean = self.get('exec_clean')
 
         if exec_clean == '1':
-            env_path = '/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:'\
-                   '/usr/local/bin:/root/bin'
+            env_path = '/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:' \
+                '/usr/local/bin:/root/bin'
             env_lang = os.environ.get('LANG', 'en_US.UTF-8')
             su_env = {
                 'PATH': env_path,
@@ -792,7 +792,7 @@ class IOCage(object):
                 'TERM': 'xterm-256color',
                 'LANG': env_lang,
                 'LC_ALL': env_lang
-                }
+            }
         else:
             su_env = os.environ.copy()
 
@@ -843,7 +843,7 @@ class IOCage(object):
             interactive_cmd = (
                 "/usr/sbin/setfib", exec_fib,
                 "jexec", f"ioc-{uuid.replace('.', '_')}"
-                ) + command
+            ) + command
 
             try:
                 _started = False
@@ -868,8 +868,8 @@ class IOCage(object):
                     raise ioc_exceptions.CommandFailed(
                         f'Command: {command}, stdout: {stdout},'
                         f' stderr: {stderr}'
-                        )
-            except Exception as e:
+                    )
+            except Exception:
                 raise
             return
 
@@ -995,8 +995,9 @@ class IOCage(object):
                     branch=branch,
                     thickconfig=thick_config
                 ).fetch_plugin_index(
-                        "", _list=True, list_header=header, list_long=_long,
-                    icon=True, official=official)
+                    "", _list=True, list_header=header, list_long=_long,
+                    icon=True, official=official
+                )
 
                 return rel_list
 
@@ -2004,11 +2005,13 @@ Remove the snapshot: ioc_upgrade_{_date} if everything is OK
             msg = f"\n{uuid} successfully upgraded from" \
                 f" {jail_release} to {new_release}!"
 
-        ioc_common.logit({
-            "level": "INFO",
-            "message": msg
-        },
-                _callback=self.callback)
+        ioc_common.logit(
+            {
+                'level': 'INFO',
+                'message': msg
+            },
+            _callback=self.callback
+        )
 
     def debug(self, directory):
         if directory is None:

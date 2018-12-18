@@ -143,9 +143,8 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
             # Quick list validation
             try:
                 releases.index(self.release)
-            except ValueError as err:
+            except ValueError:
                 # Time to print the list again
-
                 for r in releases:
                     iocage_lib.ioc_common.logit(
                         {
@@ -936,7 +935,7 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
             'PWD': '/',
             'HOME': '/',
             'TERM': 'xterm-256color'
-            }
+        }
 
         if os.path.isfile(f"{mount_root}/etc/freebsd-update.conf"):
             if self.verify:
@@ -970,9 +969,9 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
                     _exec, callback=self.callback)
 
             fetch_install_cmd = [
-                    fetch_name, "-b", mount_root, "-d",
-                    f"{mount_root}/var/db/freebsd-update/", "-f",
-                    f"{mount_root}/etc/freebsd-update.conf", "install"
+                fetch_name, "-b", mount_root, "-d",
+                f"{mount_root}/var/db/freebsd-update/", "-f",
+                f"{mount_root}/etc/freebsd-update.conf", "install"
             ]
             with iocage_lib.ioc_exec.IOCExec(
                 fetch_install_cmd,

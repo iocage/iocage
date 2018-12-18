@@ -180,8 +180,11 @@ class IOCStart(object):
             self.__check_dhcp__()
 
         if mount_procfs == "1":
-            su.Popen(["mount", "-t", "procfs", "proc", self.path +
-                      "/root/proc"]).communicate()
+            su.Popen(
+                [
+                    'mount', '-t', 'procfs', 'proc', f'{self.path}/root/proc'
+                ]
+            ).communicate()
 
         try:
             mount_linprocfs = self.conf["mount_linprocfs"]
@@ -190,8 +193,11 @@ class IOCStart(object):
                 if not os.path.isdir(f"{self.path}/root/compat/linux/proc"):
                     os.makedirs(f"{self.path}/root/compat/linux/proc", 0o755)
                 su.Popen(
-                    ["mount", "-t", "linprocfs", "linproc", self.path +
-                     "/root/compat/linux/proc"]).communicate()
+                    [
+                        'mount', '-t', 'linprocfs', 'linproc',
+                        f'{self.path}/root/compat/linux/proc'
+                    ]
+                ).communicate()
         except Exception:
             pass
 
@@ -352,31 +358,30 @@ class IOCStart(object):
             f"allow.mount.zfs={allow_mount_zfs}"
         ]
 
-        start_cmd = [x for x in ["jail", "-c"] + net +
-                     [x for x in parameters if '1' in x] +
-                     [
-                         f'name=ioc-{self.uuid}',
-                         f'host.domainname={host_domainname}',
-                         f'host.hostname={host_hostname}',
-                         f'path={self.path}/root',
-                         f'securelevel={securelevel}',
-                         f'host.hostuuid={self.uuid}',
-                         f'devfs_ruleset={devfs_ruleset}',
-                         f'enforce_statfs={enforce_statfs}',
-                         f'children.max={children_max}',
-                         f'exec.prestart={exec_prestart}',
-                         f'exec.poststart={exec_poststart}',
-                         f'exec.prestop={exec_prestop}',
-                         f'exec.stop={exec_stop}',
-                         f'exec.clean={exec_clean}',
-                         f'exec.timeout={exec_timeout}',
-                         f'stop.timeout={stop_timeout}',
-                         f'mount.fstab={self.path}/fstab',
-                         'allow.dying',
-                         f'exec.consolelog={self.iocroot}/log/ioc-'
-                         f'{self.uuid}-console.log',
-                         'persist'
-                     ] if x != '']
+        start_cmd = [x for x in ["jail", "-c"] + net + [
+            x for x in parameters if '1' in x] + [
+                f'name=ioc-{self.uuid}',
+                f'host.domainname={host_domainname}',
+                f'host.hostname={host_hostname}',
+                f'path={self.path}/root',
+                f'securelevel={securelevel}',
+                f'host.hostuuid={self.uuid}',
+                f'devfs_ruleset={devfs_ruleset}',
+                f'enforce_statfs={enforce_statfs}',
+                f'children.max={children_max}',
+                f'exec.prestart={exec_prestart}',
+                f'exec.poststart={exec_poststart}',
+                f'exec.prestop={exec_prestop}',
+                f'exec.stop={exec_stop}',
+                f'exec.clean={exec_clean}',
+                f'exec.timeout={exec_timeout}',
+                f'stop.timeout={stop_timeout}',
+                f'mount.fstab={self.path}/fstab',
+                'allow.dying',
+                f'exec.consolelog={self.iocroot}/log/ioc-'
+                f'{self.uuid}-console.log',
+                'persist'
+        ] if x != '']
 
         start_env = {
             **os.environ,
@@ -502,8 +507,8 @@ class IOCStart(object):
                     _callback=self.callback,
                     silent=self.silent)
 
-            iocage_lib.ioc_stop.IOCStop(self.uuid, self.path, force=True,
-                                        silent=True
+            iocage_lib.ioc_stop.IOCStop(
+                self.uuid, self.path, force=True, silent=True
             )
 
             iocage_lib.ioc_common.logit({
@@ -605,9 +610,9 @@ class IOCStart(object):
 
         vnet_default_interface = self.get('vnet_default_interface')
         if (
-                vnet_default_interface != 'auto' and
-                vnet_default_interface != 'none' and
-                vnet_default_interface not in netifaces.interfaces()
+                vnet_default_interface != 'auto'
+                and vnet_default_interface != 'none'
+                and vnet_default_interface not in netifaces.interfaces()
         ):
             # Let's not go into starting a vnet at all if the default
             # interface is supplied incorrectly
@@ -916,7 +921,7 @@ class IOCStart(object):
         else:
             try:
                 mac_a, mac_b = mac.replace(',', ' ').split()
-            except Exception as e:
+            except Exception:
                 iocage_lib.ioc_common.logit({
                     "level": "EXCEPTION",
                     "message": f'Please correct mac addresses format for {nic}'

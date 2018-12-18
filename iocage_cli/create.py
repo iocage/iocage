@@ -103,7 +103,7 @@ def cli(release, template, count, props, pkglist, basejail, thickjail, empty,
 
     if name:
         # noinspection Annotator
-        valid = True if re.match("^[a-zA-Z0-9\._-]+$", name) else False
+        valid = True if re.match(r"^[a-zA-Z0-9\._-]+$", name) else False
 
         if not valid:
             ioc_common.logit({

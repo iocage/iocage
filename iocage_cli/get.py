@@ -35,7 +35,7 @@ import iocage_lib.iocage as ioc
 @click.argument("jail", required=True, default="")
 @click.option("--header", "-h", "-H", is_flag=True, default=True,
               help="For scripting, use tabs for separators.")
-@click.option("--recursive", "-r", help="Get the specified property for all " +
+@click.option("--recursive", "-r", help="Get the specified property for all "
                                         "jails.", flag_value="recursive")
 @click.option("--plugin", "-P",
               help="Get the specified key for a plugin jail, if accessing a"

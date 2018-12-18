@@ -74,7 +74,7 @@ class IOCUpgrade(object):
             'PWD': '/',
             'HOME': '/',
             'TERM': 'xterm-256color'
-            }
+        }
 
         self.callback = callback
 
@@ -113,11 +113,11 @@ class IOCUpgrade(object):
             os.chmod(tmp.name, 0o755)
 
             fetch_cmd = [
-                    tmp.name, "-b", self.path, "-d",
-                    f"{self.path}/var/db/freebsd-update/", "-f",
-                    f"{self.path}/etc/freebsd-update.conf",
-                    "--not-running-from-cron", "--currently-running "
-                    f"{self.jail_release}", "-r", self.new_release, "upgrade"
+                tmp.name, "-b", self.path, "-d",
+                f"{self.path}/var/db/freebsd-update/", "-f",
+                f"{self.path}/etc/freebsd-update.conf",
+                "--not-running-from-cron", "--currently-running "
+                f"{self.jail_release}", "-r", self.new_release, "upgrade"
             ]
             with iocage_lib.ioc_exec.IOCExec(
                 fetch_cmd,
@@ -293,10 +293,10 @@ class IOCUpgrade(object):
     def __upgrade_install__(self, name):
         """Installs the upgrade and returns the exit code."""
         install_cmd = [
-                name, "-b", self.path, "-d",
-                f"{self.path}/var/db/freebsd-update/", "-f",
-                f"{self.path}/etc/freebsd-update.conf", "-r", self.new_release,
-                "install"
+            name, "-b", self.path, "-d",
+            f"{self.path}/var/db/freebsd-update/", "-f",
+            f"{self.path}/etc/freebsd-update.conf", "-r", self.new_release,
+            "install"
         ]
 
         with iocage_lib.ioc_exec.IOCExec(
