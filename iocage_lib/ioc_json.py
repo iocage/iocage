@@ -67,7 +67,7 @@ class IOCZFS(object):
             try:
                 p, v = prop.split()
             except ValueError:
-                v = '-'
+                p, v = prop.strip(), '-'
 
             p_dict[p] = v
 
@@ -80,18 +80,11 @@ class IOCZFS(object):
             return '-'
 
     def zfs_set_property(self, identifier, key, value):
-        if ":" in key:
-            su.run(
-                [
-                    'zfs', 'set', f'{key}={value}', identifier
-                ], stdout=su.PIPE
-            )
-        else:
-            su.run(
-                [
-                    'zpool', 'set', f'{key}={value}', identifier
-                ], stdout=su.PIPE
-            )
+        su.run(
+            [
+                'zfs', 'set', f'{key}={value}', identifier
+            ], stdout=su.PIPE, stderr=su.PIPE
+        )
 
     def zfs_get_dataset_name(self, name):
         try:

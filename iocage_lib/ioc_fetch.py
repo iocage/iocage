@@ -31,7 +31,6 @@ import tarfile
 import tempfile
 import time
 import urllib.request
-import sys
 
 import requests
 import requests.auth
