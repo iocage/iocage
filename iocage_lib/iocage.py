@@ -545,9 +545,25 @@ class IOCage(object):
             else:
                 hardened = False
 
+            arch = os.uname()[4]
+
+            if arch == 'arm64':
+                files = ['MANIFEST', 'base.txz', 'src.txz']
+            else:
+                files = ['MANIFEST', 'base.txz', 'lib32.txz', 'src.txz']
+
+            try:
+                if int(release.rsplit('-')[0].rsplit('.')[0]) < 12:
+                    # doc.txz has relevance here still
+                    files.append('doc.txz')
+            except (AttributeError, ValueError):
+                # Non-standard naming scheme, assuming it's current
+                pass
+
             ioc_fetch.IOCFetch(
                 release,
                 hardened=hardened,
+                files=files,
                 silent=self.silent
             ).fetch_release()
 
