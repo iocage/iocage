@@ -79,7 +79,7 @@ class IOCUpgrade(object):
         self.callback = callback
 
     def upgrade_jail(self):
-        tmp_dataset = self.zfs_get_dataset_name('/tmp', type='path')
+        tmp_dataset = self.zfs_get_dataset_name('/tmp')
         tmp_val = self.zfs_get_property(tmp_dataset, 'exec')
 
         if tmp_val == 'off':
