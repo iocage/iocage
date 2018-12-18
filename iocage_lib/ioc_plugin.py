@@ -246,8 +246,8 @@ class IOCPlugin(object):
                     {
                         "level": "WARNING",
                         "message":
-                         "  This plugin requires accepting a license "
-                        "to proceed:"
+                            "  This plugin requires accepting a license "
+                            "to proceed:"
                     },
                     _callback=self.callback,
                     silent=self.silent)
@@ -340,15 +340,15 @@ class IOCPlugin(object):
     def __fetch_plugin_create__(self, create_props, uuid):
         """Creates the plugin with the provided properties"""
         uuid = iocage_lib.ioc_create.IOCCreate(
-                self.release,
-                create_props,
-                0,
-                silent=True,
-                basejail=True,
-                uuid=uuid,
-                plugin=True,
-                thickconfig=self.thickconfig,
-                callback=self.callback
+            self.release,
+            create_props,
+            0,
+            silent=True,
+            basejail=True,
+            uuid=uuid,
+            plugin=True,
+            thickconfig=self.thickconfig,
+            callback=self.callback
         ).create_jail()
 
         jaildir = f"{self.iocroot}/jails/{uuid}"
@@ -622,7 +622,7 @@ fingerprint: {fingerprint}
                                     iocage_lib.ioc_json.IOCJson(
                                         jaildir).json_plugin_get_value(
                                         prop.split("."))
-                                    )
+                                )
                         except KeyError:
                             pass
 
@@ -977,12 +977,12 @@ fingerprint: {fingerprint}
                 silent=self.silent)
 
             err = iocage_lib.ioc_create.IOCCreate(
-                    self.release,
-                    "",
-                    0,
-                    pkglist=["ca_root_nss"],
-                    silent=True, callback=self.callback
-                ).create_install_packages(self.plugin, path)
+                self.release,
+                "",
+                0,
+                pkglist=["ca_root_nss"],
+                silent=True, callback=self.callback
+            ).create_install_packages(self.plugin, path)
 
             if err:
                 self.__rollback_jail__(name="update")

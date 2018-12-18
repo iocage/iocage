@@ -304,7 +304,7 @@ class IOCList(object):
                                     iocage_lib.ioc_json.IOCJson(
                                         mountpoint).json_plugin_get_value(
                                         prop.split("."))
-                                    )
+                                )
                         except KeyError:
                             pass
                         except iocage_lib.ioc_exceptions.CommandFailed as e:
