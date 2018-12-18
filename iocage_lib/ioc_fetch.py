@@ -31,6 +31,7 @@ import tarfile
 import tempfile
 import time
 import urllib.request
+import sys
 
 import requests
 import requests.auth
@@ -875,7 +876,7 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
 
     def fetch_update(self, cli=False, uuid=None):
         """This calls 'freebsd-update' to update the fetched RELEASE."""
-        tmp_dataset = self.zfs_get_dataset_name('/tmp', type='path')
+        tmp_dataset = self.zfs_get_dataset_name('/tmp')
         tmp_val = self.zfs_get_property(tmp_dataset, 'exec')
 
         if tmp_val == 'off':

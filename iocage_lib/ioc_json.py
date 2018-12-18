@@ -50,36 +50,56 @@ class IOCZFS(object):
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
 
     def _zfs_get_properties(self, identifier):
-        if "/" in identifier:
-            dataset = self.zfs.get_dataset(identifier)
+        p_dict = {}
 
-            return dataset.properties
-        else:
-            pool = self.zfs.get(identifier)
+        props = su.run(
+            [
+                'zfs',
+                'get',
+                '-pHo',
+                'property, value',
+                'all',
+                identifier
+            ], stdout=su.PIPE, stderr=su.PIPE
+        ).stdout.decode().splitlines()
 
-            return pool.root_dataset.properties
+        for prop in props:
+            try:
+                p, v = prop.split()
+            except ValueError:
+                v = '-'
+
+            p_dict[p] = v
+
+        return p_dict
 
     def zfs_get_property(self, identifier, key):
         try:
-            return self._zfs_get_properties(identifier)[key].value
+            return self._zfs_get_properties(identifier)[key]
         except Exception:
-            return "-"
+            return '-'
 
     def zfs_set_property(self, identifier, key, value):
-        ds = self._zfs_get_properties(identifier)
-
         if ":" in key:
-            ds[key] = libzfs.ZFSUserProperty(value)
+            su.run(
+                [
+                    'zfs', 'set', f'{key}={value}', identifier
+                ], stdout=su.PIPE
+            )
         else:
-            ds[key].value = value
+            su.run(
+                [
+                    'zpool', 'set', f'{key}={value}', identifier
+                ], stdout=su.PIPE
+            )
 
-    def zfs_get_dataset_name(self, name, type='name'):
+    def zfs_get_dataset_name(self, name):
         try:
-            if type == 'name':
-                ds = self.zfs.get_dataset(name).name
-            else:
-                ds = self.zfs.get_dataset_by_path(name).name
-        except Exception:
+            ds = su.run(
+                ['zfs', 'get', '-pHo', 'name', 'mountpoint', name],
+                stdout=su.PIPE, stderr=su.PIPE
+            ).stdout.decode()
+        except su.CalledProcessError:
             ds = None
 
         return ds
@@ -216,7 +236,7 @@ class IOCConfiguration(IOCZFS):
                             "INFO",
                             "message":
                             f"Setting up zpool [{zpool}] for"
-                            " iocage usage\n If you wish to change"
+                            " iocage usage\nIf you wish to change"
                             " please use \"iocage activate\""
                         },
                         _callback=self.callback,
