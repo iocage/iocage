@@ -141,12 +141,15 @@ class IOCStart(object):
         sysvshm = self.conf["sysvshm"]
         bpf = self.conf["bpf"]
         dhcp = self.conf["dhcp"]
+        rtsold = self.conf['rtsold']
+        wants_dhcp = True if dhcp == 'on' or 'DHCP' in self.conf[
+            'ip4_addr'].upper() else False
         vnet_interfaces = self.conf["vnet_interfaces"]
         ip6_addr = self.conf["ip6_addr"]
         prop_missing = False
         prop_missing_msgs = []
 
-        if dhcp == "on":
+        if wants_dhcp:
             if bpf != "yes":
                 prop_missing_msgs.append(
                     f"{self.uuid}: dhcp requires bpf=yes!"
@@ -176,8 +179,11 @@ class IOCStart(object):
             }, _callback=self.callback,
                 silent=self.silent)
 
-        if dhcp == 'on':
+        if wants_dhcp:
             self.__check_dhcp__()
+
+        if rtsold == 'on':
+            self.__check_rtsold__()
 
         if mount_procfs == "1":
             su.Popen(
@@ -310,8 +316,8 @@ class IOCStart(object):
             _callback=self.callback,
             silent=self.silent)
 
-        if dhcp == 'on' and self.conf["type"] != "pluginv2" \
-                and self.conf['devfs_ruleset'] != "4":
+        if wants_dhcp and self.conf['type'] != 'pluginv2' \
+                and self.conf['devfs_ruleset'] != '4':
             iocage_lib.ioc_common.logit({
                 "level": "WARNING",
                 "message": f"  {self.uuid} is not using the devfs_ruleset"
@@ -439,58 +445,6 @@ class IOCStart(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-            if dhcp == "on":
-                failed_dhcp = False
-
-                try:
-                    interface = self.conf["interfaces"].split(",")[0].split(
-                        ":")[0]
-
-                    if 'vnet' in interface:
-                        # Jails default is epairNb
-                        interface = f"{interface.replace('vnet', 'epair')}b"
-
-                    # We'd like to use ifconfig -f inet:cidr here,
-                    # but only FreeBSD 11.0 and newer support it...
-                    cmd = ["jexec", f"ioc-{self.uuid}", "ifconfig",
-                           interface, "inet"]
-                    out = su.check_output(cmd)
-
-                    # ...so we extract the ip4 address and mask,
-                    # and calculate cidr manually
-                    addr_split = out.splitlines()[2].split()
-                    ip4_addr = addr_split[1].decode()
-                    hexmask = addr_split[3].decode()
-                    maskcidr = sum([bin(int(hexmask, 16)).count("1")])
-
-                    addr = f"{ip4_addr}/{maskcidr}"
-
-                    if "0.0.0.0" in addr:
-                        failed_dhcp = True
-
-                except (su.CalledProcessError, IndexError):
-                    failed_dhcp = True
-                    addr = "ERROR, check jail logs"
-
-                if failed_dhcp:
-                    iocage_lib.ioc_stop.IOCStop(
-                        self.uuid, self.path, force=True, silent=True
-                    )
-
-                    iocage_lib.ioc_common.logit({
-                        "level": "EXCEPTION",
-                        "message": "  + Acquiring DHCP address: FAILED,"
-                        f" address received: {addr}\n"
-                        f"\nStopped {self.uuid} due to DHCP failure"
-                    },
-                        _callback=self.callback)
-
-                iocage_lib.ioc_common.logit({
-                    "level": "INFO",
-                    "message": f"  + DHCP Address: {addr}"
-                },
-                    _callback=self.callback,
-                    silent=self.silent)
         elif vnet_err and vnet:
             iocage_lib.ioc_common.logit({
                 "level": "ERROR",
@@ -586,6 +540,59 @@ class IOCStart(object):
                 _callback=self.callback,
                 silent=self.silent)
 
+            if not vnet_err and vnet and wants_dhcp:
+                failed_dhcp = False
+
+                try:
+                    interface = self.conf['interfaces'].split(',')[0].split(
+                        ':')[0]
+
+                    if 'vnet' in interface:
+                        # Jails default is epairNb
+                        interface = f'{interface.replace("vnet", "epair")}b'
+
+                    # We'd like to use ifconfig -f inet:cidr here,
+                    # but only FreeBSD 11.0 and newer support it...
+                    cmd = ['jexec', f'ioc-{self.uuid}', 'ifconfig',
+                           interface, 'inet']
+                    out = su.check_output(cmd)
+
+                    # ...so we extract the ip4 address and mask,
+                    # and calculate cidr manually
+                    addr_split = out.splitlines()[2].split()
+                    ip4_addr = addr_split[1].decode()
+                    hexmask = addr_split[3].decode()
+                    maskcidr = sum([bin(int(hexmask, 16)).count('1')])
+
+                    addr = f'{ip4_addr}/{maskcidr}'
+
+                    if '0.0.0.0' in addr:
+                        failed_dhcp = True
+
+                except (su.CalledProcessError, IndexError):
+                    failed_dhcp = True
+                    addr = 'ERROR, check jail logs'
+
+                if failed_dhcp:
+                    iocage_lib.ioc_stop.IOCStop(
+                        self.uuid, self.path, force=True, silent=True
+                    )
+
+                    iocage_lib.ioc_common.logit({
+                        'level': 'EXCEPTION',
+                        'message': '  + Acquiring DHCP address: FAILED,'
+                        f' address received: {addr}\n'
+                        f'\nStopped {self.uuid} due to DHCP failure'
+                    },
+                        _callback=self.callback)
+
+                iocage_lib.ioc_common.logit({
+                    'level': 'INFO',
+                    'message': f'  + DHCP Address: {addr}'
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+
         self.set(
             "last_started={}".format(datetime.datetime.utcnow().strftime(
                 "%F %T")))
@@ -654,7 +661,9 @@ class IOCStart(object):
                 ifaces = []
 
                 for addrs, gw, ipv6 in net_configs:
-                    if dhcp == "on" and 'accept_rtadv' not in addrs:
+                    if (
+                        dhcp == "on" or 'DHCP' in self.get('ip4_addr').upper()
+                    ) and 'accept_rtadv' not in addrs:
                         # Spoofing IP address, it doesn't matter with DHCP
                         addrs = f"{nic}|''"
 
@@ -808,6 +817,8 @@ class IOCStart(object):
         :return: If an error occurs it returns the error. Otherwise, it's None
         """
         dhcp = self.get('dhcp')
+        wants_dhcp = True if dhcp == 'on' or 'DHCP' in self.get(
+            'ip4_addr').upper() else False
 
         if 'vnet' in iface:
             # Inside jails they are epairNb
@@ -829,7 +840,7 @@ class IOCStart(object):
                 route = 'none'
 
         try:
-            if dhcp == 'off' and ip != 'accept_rtadv':
+            if not wants_dhcp and ip != 'accept_rtadv':
                 # Jail side
                 iocage_lib.ioc_common.checkoutput(
                     ['setfib', self.exec_fib, 'jexec', f'ioc-{self.uuid}',
@@ -839,19 +850,6 @@ class IOCStart(object):
                     iocage_lib.ioc_common.checkoutput(
                         ['setfib', self.exec_fib, 'jexec', f'ioc-{self.uuid}',
                          'route'] + route, stderr=su.STDOUT)
-            else:
-                if ipv6:
-                    if ip == 'accept_rtadv':
-                        # rtsold support
-                        iocage_lib.ioc_common.checkoutput(
-                            ['setfib', self.exec_fib, 'jexec',
-                             f'ioc-{self.uuid}', 'service', 'rtsold',
-                             'onestart'], stderr=su.STDOUT)
-                else:
-                    iocage_lib.ioc_common.checkoutput(
-                        ['setfib', self.exec_fib, 'jexec', f'ioc-{self.uuid}',
-                         'service', 'dhclient', 'start', iface],
-                        stderr=su.STDOUT)
         except su.CalledProcessError as err:
             return f'{err.output.decode("utf-8")}'.rstrip()
         else:
@@ -930,29 +928,50 @@ class IOCStart(object):
         return mac_a, mac_b
 
     def __check_dhcp__(self):
-        nic_list = self.get("interfaces").split(",")
-        nics = list(map(lambda x: x.split(":")[0], nic_list))
-        _rc = open(f"{self.path}/root/etc/rc.conf").readlines()
+        # legacy behavior to enable it on every NIC
+        if self.conf['dhcp'] == 'on':
+            nic_list = self.get('interfaces').split(',')
+            nics = list(map(lambda x: x.split(':')[0], nic_list))
+        else:
+            nics = []
+            for ip4 in self.conf['ip4_addr'].split(','):
+                nic, addr = ip4.rsplit('/', 1)[0].split('|')
+
+                if addr.upper() == 'DHCP':
+                    nics.append(nic)
 
         for nic in nics:
             if 'vnet' in nic:
                 # Inside jails they are epairNb
                 nic = f"{nic.replace('vnet', 'epair')}b"
-            replaced = False
 
-            for no, line in enumerate(_rc):
-                if f"ifconfig_{nic}" in line:
-                    _rc[no] = f'ifconfig_{nic}="DHCP"\n'
-                    replaced = True
+            su.run(
+                [
+                    'sysrc', '-f', f'{self.path}/root/etc/rc.conf',
+                    f'ifconfig_{nic}=SYNCDHCP'
+                ],
+                stdout=su.PIPE
+            )
 
-            if not replaced:
-                # They didn't have any interface in their rc.conf,
-                # fresh jail perhaps?
-                _rc.insert(0, f'ifconfig_{nic}="DHCP"\n')
+    def __check_rtsold__(self):
+        if 'accept_rtadv' not in self.conf['ip6_addr']:
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message':
+                        'Must set at least one ip6_addr to accept_rtadv!'
+                },
+                _callback=self.callback,
+                silent=self.silent
+            )
 
-            with open(f"{self.path}/root/etc/rc.conf", "w") as rc:
-                for line in _rc:
-                    rc.write(line)
+        su.run(
+            [
+                'sysrc', '-f', f'{self.path}/root/etc/rc.conf',
+                f'rtsold_enable=YES'
+            ],
+            stdout=su.PIPE
+        )
 
     def get_default_gateway(self):
         # e.g response - ('192.168.122.1', 'lagg0')
@@ -980,11 +999,14 @@ class IOCStart(object):
     def find_bridge_mtu(self, bridge):
         if self.unit_test:
             dhcp = 'off'
+            wants_dhcp = False
         else:
             dhcp = self.get("dhcp")
+            wants_dhcp = True if dhcp == 'on' or 'DHCP' in self.get(
+                'ip4_addr').upper() else False
 
         try:
-            if dhcp == "on":
+            if wants_dhcp:
                 # Let's get the default vnet interface
                 default_if = self.get('vnet_default_interface')
                 if default_if == 'auto':
