@@ -156,11 +156,14 @@ class IOCPlugin(object):
             self.__fetch_plugin_post_install__(conf, _conf, jaildir, jail_name)
         except Exception as e:
             if not self.keep_jail_on_failure:
+                msg = f'{jail_name}\'s post_install.sh had a failure\n' \
+                      f'Exception: {e.__class__.__name__} ' \
+                      f'Message: {str(e)}\n' \
+                      'Partial plugin destroyed'
                 iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(location)
                 iocage_lib.ioc_common.logit({
                     'level': 'EXCEPTION',
-                    'message': f'Exception: {e.__class__.__name__}:{str(e)}'
-                               f' occured, destroyed {jail_name}.'
+                    'message': msg
                 },
                     _callback=self.callback,
                     silent=self.silent)
@@ -584,10 +587,11 @@ fingerprint: {fingerprint}
                             callback=self.callback
                         )
                 except iocage_lib.ioc_exceptions.CommandFailed as e:
+                    message = b' '.join(e.message[-10:]).decode().rstrip()
                     iocage_lib.ioc_common.logit(
                         {
-                            "level": "EXCEPTION",
-                            "message": e.message[-1].decode().rstrip()
+                            'level': 'EXCEPTION',
+                            'message': f'Last 10 lines:\n{message}'
                         }, _callback=self.callback)
 
                 ui_json = f"{jaildir}/plugin/ui.json"
