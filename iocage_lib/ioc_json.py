@@ -45,7 +45,99 @@ import random
 import pathlib
 
 
+class IOCSnapshot(object):
+    # FIXME: Please move me to another file and let's see how we can build
+    # our hierarchy for the whole ZFS related section - plus consider
+    # keeping me updated on every func call perhaps ?
+    def __init__(self, data=None, snap_id=None):
+        self.data = data
+        self.snap_id = snap_id
+
+        assert any(v is not None for v in (data, snap_id))
+
+        self.attr_list = [
+            'name', 'used', 'available', 'referred', 'mountpoint'
+        ]
+        for attr in self.attr_list:
+            setattr(self, attr, None)
+
+        self.normalize_data(data)
+
+    @property
+    def exists(self):
+        return self.raw_data is not None
+
+    @property
+    def raw_data(self):
+        with ioc_exceptions.ignore_exceptions(su.CalledProcessError):
+            return su.run(
+                ['zfs', 'list', '-t', 'snapshot', self.snap_id or self.name],
+                stdout=su.PIPE
+            ).stdout.decode().splitlines()[1]
+
+    def normalize_data(self, data=None):
+        # Expected format
+        # ['NAME', 'USED', 'AVAIL', 'REFER', 'MOUNTPOINT']
+        if not data:
+            data = self.raw_data
+
+        self.__dict__.update({
+            k: v for k, v in zip(self.attr_list, data.split())
+        })
+
+    def delete(self, recursive=True):
+        with ioc_exceptions.ignore_exceptions(
+            su.CalledProcessError, return_value=False
+        ):
+            return su.run(
+                ['zfs', 'destroy', '-r' if recursive else '', '-f', self.name],
+                stdout=su.PIPE
+            ).returncode == 0
+
+    def __eq__(self, other):
+        return self.name == other.name
+
+    def __bool__(self):
+        return self.exists is True
+
+    def __hash__(self):
+        return hash(self.name)
+
+    def __repr__(self):
+        return self.name
+
+
+class IOCSnapshots(object):
+    def __init__(self):
+        self.snapshots = []
+        self.normalize_data()
+
+    @property
+    def raw_data(self):
+        with ioc_exceptions.ignore_exceptions(
+            su.CalledProcessError, return_value=''
+        ):
+            return su.run(
+                ['zfs', 'list', '-t', 'snapshot'],
+                stdout=su.PIPE
+            ).stdout.decode()
+
+    def normalize_data(self):
+        for line in self.raw_data.splitlines()[1:]:
+            self.snapshots.append(IOCSnapshot(line))
+
+    def __iter__(self):
+        for snap in self.snapshots:
+            # FIXME: I will still hold old snapshot data, let's change this pls
+            yield snap
+
+    def get_snap(self, snap_id):
+        result = list(filter(lambda s: s.name == snap_id, self))
+        return result[0] if result else None
+
+
 class IOCZFS(object):
+    # TODO: We should use a context manager for libzfs
     def __init__(self):
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
 
@@ -74,10 +166,8 @@ class IOCZFS(object):
         return p_dict
 
     def zfs_get_property(self, identifier, key):
-        try:
+        with ioc_exceptions.ignore_exceptions(Exception, return_value='-'):
             return self._zfs_get_properties(identifier)[key]
-        except Exception:
-            return '-'
 
     def zfs_set_property(self, identifier, key, value):
         su.run(
@@ -87,15 +177,16 @@ class IOCZFS(object):
         )
 
     def zfs_get_dataset_name(self, name):
-        try:
-            ds = su.run(
+        with ioc_exceptions.ignore_exceptions(su.CalledProcessError):
+            return su.run(
                 ['zfs', 'get', '-pHo', 'name', 'mountpoint', name],
                 stdout=su.PIPE, stderr=su.PIPE
             ).stdout.decode()
-        except su.CalledProcessError:
-            ds = None
 
-        return ds
+    def zfs_get_snapshot(self, snap_id):
+        # If snapshot exists, return snap object else None
+        # Snap_id expected value - vol/iocage/jails/jail1@snaptest
+        return IOCSnapshot(snap_id=snap_id) or None
 
 
 class IOCConfiguration(IOCZFS):
