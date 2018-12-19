@@ -45,7 +45,7 @@ import random
 import pathlib
 
 
-class IOCSnapshot:
+class IOCSnapshot(object):
     # FIXME: Please move me to another file and let's see how we can build
     # our hierarchy for the whole ZFS related section - plus consider
     # keeping me updated on every func call perhaps ?
@@ -107,7 +107,7 @@ class IOCSnapshot:
         return self.name
 
 
-class IOCSnapshots:
+class IOCSnapshots(object):
     def __init__(self):
         self.snapshots = []
         self.normalize_data()
