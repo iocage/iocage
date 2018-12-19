@@ -523,7 +523,7 @@ fingerprint: {fingerprint}
         if '|' in ip6:
             ip6 = ip6.split("|")[1].rsplit("/")[0]
 
-        if ip4 != "none":
+        if ip4 != "none" and 'DHCP' not in ip4.upper():
             ip = ip4
         elif ip6 != "none":
             # If they had an IP4 address and an IP6 one,

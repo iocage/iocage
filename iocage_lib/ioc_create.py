@@ -374,7 +374,9 @@ class IOCCreate(object):
                         config['vnet'] = 'on'
 
                     rtsold_enable = 'YES'
-            elif key == 'dhcp' and value == 'on':
+            elif (key == 'dhcp' and value == 'on') or (
+                key == 'ip4_addr' and 'DHCP' in value.upper()
+            ):
                 if 'vnet=on' not in self.props:
                     iocage_lib.ioc_common.logit({
                         'level': 'WARNING',
@@ -889,8 +891,8 @@ ipv6_activate_all_interfaces=\"YES\"
             su.Popen(
                 ['mount', '-F', f'{location}/fstab', '-a']).communicate()
 
-        su.Popen(["sysrc", "-R", f"{location}/root",
-                  f"hostname={host_hostname}"],
+        su.Popen(['sysrc', '-f', f'{location}/root/etc/rc.conf',
+                  f'hostname={host_hostname}'],
                  stdout=su.PIPE).communicate()
 
         if basejail != 'no':
