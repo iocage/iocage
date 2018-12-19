@@ -375,7 +375,7 @@ class IOCCreate(object):
 
                     rtsold_enable = 'YES'
             elif (key == 'dhcp' and value == 'on') or (
-                key == 'ip4_addr' and 'DHCP' in value
+                key == 'ip4_addr' and 'DHCP' in value.upper()
             ):
                 if 'vnet=on' not in self.props:
                     iocage_lib.ioc_common.logit({

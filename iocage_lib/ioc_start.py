@@ -143,7 +143,7 @@ class IOCStart(object):
         dhcp = self.conf["dhcp"]
         rtsold = self.conf['rtsold']
         wants_dhcp = True if dhcp == 'on' or 'DHCP' in self.conf[
-            'ip4_addr'] else False
+            'ip4_addr'].upper() else False
         vnet_interfaces = self.conf["vnet_interfaces"]
         ip6_addr = self.conf["ip6_addr"]
         prop_missing = False
@@ -316,8 +316,8 @@ class IOCStart(object):
             _callback=self.callback,
             silent=self.silent)
 
-        if wants_dhcp and self.conf["type"] != "pluginv2" \
-                and self.conf['devfs_ruleset'] != "4":
+        if wants_dhcp and self.conf['type'] != 'pluginv2' \
+                and self.conf['devfs_ruleset'] != '4':
             iocage_lib.ioc_common.logit({
                 "level": "WARNING",
                 "message": f"  {self.uuid} is not using the devfs_ruleset"
@@ -544,17 +544,17 @@ class IOCStart(object):
                 failed_dhcp = False
 
                 try:
-                    interface = self.conf["interfaces"].split(",")[0].split(
-                        ":")[0]
+                    interface = self.conf['interfaces'].split(',')[0].split(
+                        ':')[0]
 
                     if 'vnet' in interface:
                         # Jails default is epairNb
-                        interface = f"{interface.replace('vnet', 'epair')}b"
+                        interface = f'{interface.replace("vnet", "epair")}b'
 
                     # We'd like to use ifconfig -f inet:cidr here,
                     # but only FreeBSD 11.0 and newer support it...
-                    cmd = ["jexec", f"ioc-{self.uuid}", "ifconfig",
-                           interface, "inet"]
+                    cmd = ['jexec', f'ioc-{self.uuid}', 'ifconfig',
+                           interface, 'inet']
                     out = su.check_output(cmd)
 
                     # ...so we extract the ip4 address and mask,
@@ -562,16 +562,16 @@ class IOCStart(object):
                     addr_split = out.splitlines()[2].split()
                     ip4_addr = addr_split[1].decode()
                     hexmask = addr_split[3].decode()
-                    maskcidr = sum([bin(int(hexmask, 16)).count("1")])
+                    maskcidr = sum([bin(int(hexmask, 16)).count('1')])
 
-                    addr = f"{ip4_addr}/{maskcidr}"
+                    addr = f'{ip4_addr}/{maskcidr}'
 
-                    if "0.0.0.0" in addr:
+                    if '0.0.0.0' in addr:
                         failed_dhcp = True
 
                 except (su.CalledProcessError, IndexError):
                     failed_dhcp = True
-                    addr = "ERROR, check jail logs"
+                    addr = 'ERROR, check jail logs'
 
                 if failed_dhcp:
                     iocage_lib.ioc_stop.IOCStop(
@@ -579,16 +579,16 @@ class IOCStart(object):
                     )
 
                     iocage_lib.ioc_common.logit({
-                        "level": "EXCEPTION",
-                        "message": "  + Acquiring DHCP address: FAILED,"
-                        f" address received: {addr}\n"
-                        f"\nStopped {self.uuid} due to DHCP failure"
+                        'level': 'EXCEPTION',
+                        'message': '  + Acquiring DHCP address: FAILED,'
+                        f' address received: {addr}\n'
+                        f'\nStopped {self.uuid} due to DHCP failure'
                     },
                         _callback=self.callback)
 
                 iocage_lib.ioc_common.logit({
-                    "level": "INFO",
-                    "message": f"  + DHCP Address: {addr}"
+                    'level': 'INFO',
+                    'message': f'  + DHCP Address: {addr}'
                 },
                     _callback=self.callback,
                     silent=self.silent)
@@ -662,7 +662,7 @@ class IOCStart(object):
 
                 for addrs, gw, ipv6 in net_configs:
                     if (
-                        dhcp == "on" or 'DHCP' in self.get('ip4_addr')
+                        dhcp == "on" or 'DHCP' in self.get('ip4_addr').upper()
                     ) and 'accept_rtadv' not in addrs:
                         # Spoofing IP address, it doesn't matter with DHCP
                         addrs = f"{nic}|''"
@@ -818,7 +818,7 @@ class IOCStart(object):
         """
         dhcp = self.get('dhcp')
         wants_dhcp = True if dhcp == 'on' or 'DHCP' in self.get(
-            'ip4_addr') else False
+            'ip4_addr').upper() else False
 
         if 'vnet' in iface:
             # Inside jails they are epairNb
@@ -930,14 +930,14 @@ class IOCStart(object):
     def __check_dhcp__(self):
         # legacy behavior to enable it on every NIC
         if self.conf['dhcp'] == 'on':
-            nic_list = self.get("interfaces").split(",")
-            nics = list(map(lambda x: x.split(":")[0], nic_list))
+            nic_list = self.get('interfaces').split(',')
+            nics = list(map(lambda x: x.split(':')[0], nic_list))
         else:
             nics = []
             for ip4 in self.conf['ip4_addr'].split(','):
                 nic, addr = ip4.rsplit('/', 1)[0].split('|')
 
-                if addr == 'DHCP':
+                if addr.upper() == 'DHCP':
                     nics.append(nic)
 
         for nic in nics:
@@ -998,10 +998,11 @@ class IOCStart(object):
     def find_bridge_mtu(self, bridge):
         if self.unit_test:
             dhcp = 'off'
+            wants_dhcp = False
         else:
             dhcp = self.get("dhcp")
             wants_dhcp = True if dhcp == 'on' or 'DHCP' in self.get(
-                'ip4_addr') else False
+                'ip4_addr').upper() else False
 
         try:
             if wants_dhcp:
