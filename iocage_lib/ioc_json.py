@@ -205,7 +205,7 @@ class IOCConfiguration(IOCZFS):
     @staticmethod
     def get_version():
         """Sets the iocage configuration version."""
-        version = '15'
+        version = '16'
 
         return version
 
@@ -502,6 +502,10 @@ class IOCConfiguration(IOCZFS):
         # Version 15 keys
         if not conf.get('allow_mount_fusefs'):
             conf['allow_mount_fusefs'] = '0'
+
+        # Version 16 keys
+        if not conf.get('rtsold'):
+            conf['rtsold'] = 'off'
 
         if not default:
             conf.update(jail_conf)
@@ -811,7 +815,8 @@ class IOCConfiguration(IOCZFS):
             'dedup': 'off',
             'reservation': 'none',
             'depends': 'none',
-            'vnet_interfaces': 'none'
+            'vnet_interfaces': 'none',
+            'rtsold': 'off'
         }
 
         try:
@@ -1583,7 +1588,8 @@ class IOCJson(IOCConfiguration):
             "comment": ("string", ),
             "host_time": ("no", "yes"),
             "depends": ("string", ),
-            "allow_tun": ("0", "1")
+            "allow_tun": ("0", "1"),
+            'rtsold': ('off', 'on')
         }
 
         zfs_props = {
