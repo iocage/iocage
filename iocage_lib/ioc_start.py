@@ -180,8 +180,11 @@ class IOCStart(object):
             self.__check_dhcp__()
 
         if mount_procfs == "1":
-            su.Popen(["mount", "-t", "procfs", "proc", self.path +
-                      "/root/proc"]).communicate()
+            su.Popen(
+                [
+                    'mount', '-t', 'procfs', 'proc', f'{self.path}/root/proc'
+                ]
+            ).communicate()
 
         try:
             mount_linprocfs = self.conf["mount_linprocfs"]
@@ -190,8 +193,11 @@ class IOCStart(object):
                 if not os.path.isdir(f"{self.path}/root/compat/linux/proc"):
                     os.makedirs(f"{self.path}/root/compat/linux/proc", 0o755)
                 su.Popen(
-                    ["mount", "-t", "linprocfs", "linproc", self.path +
-                     "/root/compat/linux/proc"]).communicate()
+                    [
+                        'mount', '-t', 'linprocfs', 'linproc',
+                        f'{self.path}/root/compat/linux/proc'
+                    ]
+                ).communicate()
         except Exception:
             pass
 
@@ -352,31 +358,30 @@ class IOCStart(object):
             f"allow.mount.zfs={allow_mount_zfs}"
         ]
 
-        start_cmd = [x for x in ["jail", "-c"] + net +
-                     [x for x in parameters if '1' in x] +
-                     [
-                         f'name=ioc-{self.uuid}',
-                         f'host.domainname={host_domainname}',
-                         f'host.hostname={host_hostname}',
-                         f'path={self.path}/root',
-                         f'securelevel={securelevel}',
-                         f'host.hostuuid={self.uuid}',
-                         f'devfs_ruleset={devfs_ruleset}',
-                         f'enforce_statfs={enforce_statfs}',
-                         f'children.max={children_max}',
-                         f'exec.prestart={exec_prestart}',
-                         f'exec.poststart={exec_poststart}',
-                         f'exec.prestop={exec_prestop}',
-                         f'exec.stop={exec_stop}',
-                         f'exec.clean={exec_clean}',
-                         f'exec.timeout={exec_timeout}',
-                         f'stop.timeout={stop_timeout}',
-                         f'mount.fstab={self.path}/fstab',
-                         'allow.dying',
-                         f'exec.consolelog={self.iocroot}/log/ioc-'
-                         f'{self.uuid}-console.log',
-                         'persist'
-                     ] if x != '']
+        start_cmd = [x for x in ["jail", "-c"] + net + [
+            x for x in parameters if '1' in x] + [
+                f'name=ioc-{self.uuid}',
+                f'host.domainname={host_domainname}',
+                f'host.hostname={host_hostname}',
+                f'path={self.path}/root',
+                f'securelevel={securelevel}',
+                f'host.hostuuid={self.uuid}',
+                f'devfs_ruleset={devfs_ruleset}',
+                f'enforce_statfs={enforce_statfs}',
+                f'children.max={children_max}',
+                f'exec.prestart={exec_prestart}',
+                f'exec.poststart={exec_poststart}',
+                f'exec.prestop={exec_prestop}',
+                f'exec.stop={exec_stop}',
+                f'exec.clean={exec_clean}',
+                f'exec.timeout={exec_timeout}',
+                f'stop.timeout={stop_timeout}',
+                f'mount.fstab={self.path}/fstab',
+                'allow.dying',
+                f'exec.consolelog={self.iocroot}/log/ioc-'
+                f'{self.uuid}-console.log',
+                'persist'
+        ] if x != '']
 
         start_env = {
             **os.environ,
@@ -441,7 +446,7 @@ class IOCStart(object):
                     interface = self.conf["interfaces"].split(",")[0].split(
                         ":")[0]
 
-                    if interface == "vnet0":
+                    if 'vnet' in interface:
                         # Jails default is epairNb
                         interface = f"{interface.replace('vnet', 'epair')}b"
 
@@ -502,8 +507,8 @@ class IOCStart(object):
                     _callback=self.callback,
                     silent=self.silent)
 
-            iocage_lib.ioc_stop.IOCStop(self.uuid, self.path, force=True,
-                                        silent=True
+            iocage_lib.ioc_stop.IOCStop(
+                self.uuid, self.path, force=True, silent=True
             )
 
             iocage_lib.ioc_common.logit({
@@ -605,9 +610,9 @@ class IOCStart(object):
 
         vnet_default_interface = self.get('vnet_default_interface')
         if (
-                vnet_default_interface != 'auto' and
-                vnet_default_interface != 'none' and
-                vnet_default_interface not in netifaces.interfaces()
+                vnet_default_interface != 'auto'
+                and vnet_default_interface != 'none'
+                and vnet_default_interface not in netifaces.interfaces()
         ):
             # Let's not go into starting a vnet at all if the default
             # interface is supplied incorrectly
@@ -661,7 +666,6 @@ class IOCStart(object):
                             iface, ip = addr.split("|")
                         except ValueError:
                             # They didn't supply an interface, assuming default
-
                             iface, ip = "vnet0", addr
 
                         if iface not in nics:
@@ -702,10 +706,10 @@ class IOCStart(object):
         mac_a, mac_b = self.__start_generate_vnet_mac__(nic)
         epair_a_cmd = ["ifconfig", "epair", "create"]
         epair_a = su.Popen(epair_a_cmd, stdout=su.PIPE).communicate()[0]
-        epair_a = epair_a.strip()
-        epair_b = re.sub(b"a$", b"b", epair_a)
+        epair_a = epair_a.decode().strip()
+        epair_b = re.sub("a$", "b", epair_a)
 
-        if nic == "vnet0":
+        if 'vnet' in nic:
             # Inside jails they are epairN
             jail_nic = f"{nic.replace('vnet', 'epair')}b"
         else:
@@ -726,7 +730,7 @@ class IOCStart(object):
             )
             iocage_lib.ioc_common.checkoutput(
                 ["ifconfig", f"{nic}.{jid}", "description",
-                 f"associated with jail: {self.uuid}"],
+                 f"associated with jail: {self.uuid} as nic: {jail_nic}"],
                 stderr=su.STDOUT
             )
 
@@ -745,13 +749,20 @@ class IOCStart(object):
                 ],
                 stderr=su.STDOUT
             )
+            iocage_lib.ioc_common.checkoutput(
+                [
+                    'jexec', f'ioc-{self.uuid}', 'ifconfig', epair_b,
+                    'mtu', mtu
+                ],
+                stderr=su.STDOUT
+            )
 
-            if epair_b.decode() != jail_nic:
+            if epair_b != jail_nic:
                 # This occurs on default vnet0 ip4_addr's
                 iocage_lib.ioc_common.checkoutput(
                     [
                         "setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
-                        "ifconfig", epair_b, "name", jail_nic, "mtu", mtu
+                        "ifconfig", epair_b, "name", jail_nic
                     ],
                     stderr=su.STDOUT
                 )
@@ -765,7 +776,8 @@ class IOCStart(object):
             )
 
             try:
-                # Host interface as supplied by user also needs to be on the bridge
+                # Host interface as supplied by user also needs to be on the
+                # bridge
                 if vnet_default_interface != 'none':
                     iocage_lib.ioc_common.checkoutput(
                         ["ifconfig", bridge, "addm", vnet_default_interface],
@@ -795,31 +807,38 @@ class IOCStart(object):
         :param defaultgw: The gateway IP to assign to the nic
         :return: If an error occurs it returns the error. Otherwise, it's None
         """
-        dhcp = self.get("dhcp")
+        dhcp = self.get('dhcp')
 
-        if iface == "vnet0":
+        if 'vnet' in iface:
             # Inside jails they are epairNb
-
-            iface = f"{iface.replace('vnet', 'epair')}b"
-
-        # Crude check to see if it's a IPv6 address
+            iface = f'{iface.replace("vnet", "epair")}b'
 
         if ipv6:
-            ifconfig = [iface, "inet6", ip, "up"]
-            route = ["add", "-6", "default", defaultgw]
+            ifconfig = [iface, 'inet6', ip, 'up']
+            # set route to none if this is not the first interface
+            if iface.rsplit('epair')[1][0] == '0':
+                route = ['add', '-6', 'default', defaultgw]
+            else:
+                route = 'none'
         else:
-            ifconfig = [iface, ip, "up"]
-            route = ["add", "default", defaultgw]
+            ifconfig = [iface, ip, 'up']
+            # set route to none if this is not the first interface
+            if iface.rsplit('epair')[1][0] == '0':
+                route = ['add', 'default', defaultgw]
+            else:
+                route = 'none'
 
         try:
-            if dhcp == "off" and ip != 'accept_rtadv':
+            if dhcp == 'off' and ip != 'accept_rtadv':
                 # Jail side
                 iocage_lib.ioc_common.checkoutput(
-                    ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
-                     "ifconfig"] + ifconfig, stderr=su.STDOUT)
-                iocage_lib.ioc_common.checkoutput(
-                    ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
-                     "route"] + route, stderr=su.STDOUT)
+                    ['setfib', self.exec_fib, 'jexec', f'ioc-{self.uuid}',
+                     'ifconfig'] + ifconfig, stderr=su.STDOUT)
+                # route has value of none if this is not the first interface
+                if route != 'none':
+                    iocage_lib.ioc_common.checkoutput(
+                        ['setfib', self.exec_fib, 'jexec', f'ioc-{self.uuid}',
+                         'route'] + route, stderr=su.STDOUT)
             else:
                 if ipv6:
                     if ip == 'accept_rtadv':
@@ -830,11 +849,11 @@ class IOCStart(object):
                              'onestart'], stderr=su.STDOUT)
                 else:
                     iocage_lib.ioc_common.checkoutput(
-                        ["setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
-                         "service", "dhclient", "start", iface],
+                        ['setfib', self.exec_fib, 'jexec', f'ioc-{self.uuid}',
+                         'service', 'dhclient', 'start', iface],
                         stderr=su.STDOUT)
         except su.CalledProcessError as err:
-            return f"{err.output.decode('utf-8')}".rstrip()
+            return f'{err.output.decode("utf-8")}'.rstrip()
         else:
             return
 
@@ -902,7 +921,7 @@ class IOCStart(object):
         else:
             try:
                 mac_a, mac_b = mac.replace(',', ' ').split()
-            except Exception as e:
+            except Exception:
                 iocage_lib.ioc_common.logit({
                     "level": "EXCEPTION",
                     "message": f'Please correct mac addresses format for {nic}'
@@ -916,7 +935,7 @@ class IOCStart(object):
         _rc = open(f"{self.path}/root/etc/rc.conf").readlines()
 
         for nic in nics:
-            if nic == "vnet0":
+            if 'vnet' in nic:
                 # Inside jails they are epairNb
                 nic = f"{nic.replace('vnet', 'epair')}b"
             replaced = False

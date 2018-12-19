@@ -393,10 +393,16 @@ def sort_release(releases, split=False, fetch_releases=False):
 
     if split:
         for i, rel in enumerate(releases):
-            rel, r_type = rel.properties["mountpoint"].value.rsplit("/")[
-                -1].split("-", 1)
+            try:
+                rel, r_type = rel.properties["mountpoint"].value.rsplit("/")[
+                    -1].split("-", 1)
+            except ValueError:
+                # Non-standard naming scheme
+                rel = rel.properties["mountpoint"].value.rsplit("/")[
+                    -1].split("-", 1)[0]
+                r_type = ''
 
-            if len(rel) > 2:
+            if len(rel) > 2 and r_type:
                 rel = float(rel)
 
             # enumeration ensures 11.2-LOCAL does not take the place of 11.2-R
@@ -430,7 +436,10 @@ def sort_release(releases, split=False, fetch_releases=False):
     for r, t in ordered_r_dict.items():
         if split:
             r = r.rsplit('_')[0]  # Remove the enumeration
-            release_list.insert(index, [f"{r}-{t}"])
+            if t:
+                release_list.insert(index, [f"{r}-{t}"])
+            else:
+                release_list.insert(index, [r])
             index += 1
         else:
             release_list.insert(index, f"{r}-{t}")
@@ -662,8 +671,8 @@ def check_release_newer(release, callback=None, silent=False):
     if host_release == "Not a RELEASE":
         return
 
-    h_float = float(str(host_release).rsplit("-", 1)[0])
-    r_float = float(str(release).rsplit("-", 1)[0])
+    h_float = float(str(host_release).rsplit("-")[0])
+    r_float = float(str(release).rsplit("-")[0])
 
     if h_float < r_float:
         logit(

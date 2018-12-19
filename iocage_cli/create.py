@@ -103,7 +103,7 @@ def cli(release, template, count, props, pkglist, basejail, thickjail, empty,
 
     if name:
         # noinspection Annotator
-        valid = True if re.match("^[a-zA-Z0-9\._-]+$", name) else False
+        valid = True if re.match(r"^[a-zA-Z0-9\._-]+$", name) else False
 
         if not valid:
             ioc_common.logit({
@@ -123,8 +123,20 @@ def cli(release, template, count, props, pkglist, basejail, thickjail, empty,
         release = ioc_common.parse_latest_release()
 
     if release:
-        release = release.upper()
-        ioc_common.check_release_newer(release)
+        try:
+            ioc_common.check_release_newer(release)
+        except ValueError:
+            # We're assuming they understand the implications of a custom
+            # scheme
+            iocroot = ioc.PoolAndDataset().get_iocroot()
+            path = f'{iocroot}/releases/{release}/root'
+            _release = ioc_common.get_jail_freebsd_version(path, release)
+
+            try:
+                ioc_common.check_release_newer(_release)
+            except ValueError:
+                # We tried
+                pass
 
     # We don't really care it's not a RELEASE at this point.
     release = template if template else release

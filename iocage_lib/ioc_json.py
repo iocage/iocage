@@ -50,28 +50,52 @@ class IOCZFS(object):
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
 
     def _zfs_get_properties(self, identifier):
-        if "/" in identifier:
-            dataset = self.zfs.get_dataset(identifier)
+        p_dict = {}
 
-            return dataset.properties
-        else:
-            pool = self.zfs.get(identifier)
+        props = su.run(
+            [
+                'zfs',
+                'get',
+                '-pHo',
+                'property, value',
+                'all',
+                identifier
+            ], stdout=su.PIPE, stderr=su.PIPE
+        ).stdout.decode().splitlines()
 
-            return pool.root_dataset.properties
+        for prop in props:
+            try:
+                p, v = prop.split()
+            except ValueError:
+                p, v = prop.strip(), '-'
+
+            p_dict[p] = v
+
+        return p_dict
 
     def zfs_get_property(self, identifier, key):
         try:
-            return self._zfs_get_properties(identifier)[key].value
+            return self._zfs_get_properties(identifier)[key]
         except Exception:
-            return "-"
+            return '-'
 
     def zfs_set_property(self, identifier, key, value):
-        ds = self._zfs_get_properties(identifier)
+        su.run(
+            [
+                'zfs', 'set', f'{key}={value}', identifier
+            ], stdout=su.PIPE, stderr=su.PIPE
+        )
 
-        if ":" in key:
-            ds[key] = libzfs.ZFSUserProperty(value)
-        else:
-            ds[key].value = value
+    def zfs_get_dataset_name(self, name):
+        try:
+            ds = su.run(
+                ['zfs', 'get', '-pHo', 'name', 'mountpoint', name],
+                stdout=su.PIPE, stderr=su.PIPE
+            ).stdout.decode()
+        except su.CalledProcessError:
+            ds = None
+
+        return ds
 
 
 class IOCConfiguration(IOCZFS):
@@ -205,7 +229,7 @@ class IOCConfiguration(IOCZFS):
                             "INFO",
                             "message":
                             f"Setting up zpool [{zpool}] for"
-                            " iocage usage\n If you wish to change"
+                            " iocage usage\nIf you wish to change"
                             " please use \"iocage activate\""
                         },
                         _callback=self.callback,
@@ -428,8 +452,8 @@ class IOCConfiguration(IOCZFS):
                 else:
                     temp_uuid = self.location.rsplit('/', 1)[-1]
                     freebsd_version = pathlib.Path(
-                        f'{self.iocroot}/jails/{temp_uuid}' \
-                        '/root/bin/freebsd-version'
+                        f'{self.iocroot}/jails/{temp_uuid}/root/bin/'
+                        'freebsd-version'
                     )
                 if not freebsd_version.is_file():
                     iocage_lib.ioc_common.logit(
@@ -846,7 +870,7 @@ class IOCJson(IOCConfiguration):
                 self.zfs_set_property(f"{dataset}/data", jail_zfs_prop,
                                       f"iocage/jails/{uuid}/data")
                 self.zfs_set_property(f"{dataset}/data", "jailed", "on")
-            except libzfs.ZFSException as err:
+            except libzfs.ZFSException:
                 # The jailed dataset doesn't exist, which is OK.
                 pass
 
@@ -1306,8 +1330,9 @@ class IOCJson(IOCConfiguration):
                     key = key.replace("_", ".")
 
                 if key in jail_params:
-                    if full_conf["vnet"] == "on" and (key == "ip4.addr" or
-                                                      key == "ip6.addr"):
+                    if full_conf["vnet"] == "on" and (
+                        key == "ip4.addr" or key == "ip6.addr"
+                    ):
                         return
 
                     try:
@@ -1540,10 +1565,12 @@ class IOCJson(IOCConfiguration):
                                     rx,
                                     v.lower()
                                 ) for v in value.split()
-                            ) or
-                            len(value.split()) != 2 or
-                            any(value.split().count(v) > 1 for v in
-                                value.split())
+                            ) or len(
+                                value.split()
+                            ) != 2 or any(
+                                value.split().count(v) > 1 for v in
+                                value.split()
+                            )
                         ):
                             iocage_lib.ioc_common.logit(
                                 {

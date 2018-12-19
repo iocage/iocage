@@ -74,11 +74,23 @@ class IOCUpgrade(object):
             'PWD': '/',
             'HOME': '/',
             'TERM': 'xterm-256color'
-            }
+        }
 
         self.callback = callback
 
     def upgrade_jail(self):
+        tmp_dataset = self.zfs_get_dataset_name('/tmp')
+        tmp_val = self.zfs_get_property(tmp_dataset, 'exec')
+
+        if tmp_val == 'off':
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message': f'{tmp_dataset} needs exec=on!'
+                },
+                _callback=self.callback,
+                silent=self.silent)
+
         if "HBSD" in self.freebsd_version:
             su.Popen(["hbsd-upgrade", "-j", self.jid]).communicate()
 
@@ -101,11 +113,11 @@ class IOCUpgrade(object):
             os.chmod(tmp.name, 0o755)
 
             fetch_cmd = [
-                    tmp.name, "-b", self.path, "-d",
-                    f"{self.path}/var/db/freebsd-update/", "-f",
-                    f"{self.path}/etc/freebsd-update.conf",
-                    "--not-running-from-cron", "--currently-running "
-                    f"{self.jail_release}", "-r", self.new_release, "upgrade"
+                tmp.name, "-b", self.path, "-d",
+                f"{self.path}/var/db/freebsd-update/", "-f",
+                f"{self.path}/etc/freebsd-update.conf",
+                "--not-running-from-cron", "--currently-running "
+                f"{self.jail_release}", "-r", self.new_release, "upgrade"
             ]
             with iocage_lib.ioc_exec.IOCExec(
                 fetch_cmd,
@@ -281,10 +293,10 @@ class IOCUpgrade(object):
     def __upgrade_install__(self, name):
         """Installs the upgrade and returns the exit code."""
         install_cmd = [
-                name, "-b", self.path, "-d",
-                f"{self.path}/var/db/freebsd-update/", "-f",
-                f"{self.path}/etc/freebsd-update.conf", "-r", self.new_release,
-                "install"
+            name, "-b", self.path, "-d",
+            f"{self.path}/var/db/freebsd-update/", "-f",
+            f"{self.path}/etc/freebsd-update.conf", "-r", self.new_release,
+            "install"
         ]
 
         with iocage_lib.ioc_exec.IOCExec(

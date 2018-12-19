@@ -759,9 +759,9 @@ class IOCCreate(object):
                 cmd, jail_uuid, location, plugin=self.plugin, su_env=pkg_env
             ) as _exec:
                 iocage_lib.ioc_common.consume_and_log(
-                     _exec,
-                     callback=self.callback,
-                     log=not(self.silent)
+                    _exec,
+                    callback=self.callback,
+                    log=not(self.silent)
                 )
         except iocage_lib.ioc_exceptions.CommandFailed as e:
             iocage_lib.ioc_stop.IOCStop(jail_uuid, location, force=True,
