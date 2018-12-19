@@ -958,7 +958,8 @@ class IOCStart(object):
             iocage_lib.ioc_common.logit(
                 {
                     'level': 'EXCEPTION',
-                    'message': 'Must set atleast one ip6_addr to accept_rtadv!'
+                    'message':
+                        'Must set at least one ip6_addr to accept_rtadv!'
                 },
                 _callback=self.callback,
                 silent=self.silent
