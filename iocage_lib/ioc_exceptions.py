@@ -68,10 +68,7 @@ class ValidationFailed(ExceptionWithMsg):
 
 
 @contextmanager
-def ignore_exceptions(
-        *exceptions, action=None, action_args=None,
-        action_kwargs=None, suppress_exception=True
-):
+def ignore_exceptions(*exceptions, return_value=None, suppress_exception=True):
     try:
         yield
     except exceptions as e:
@@ -80,10 +77,7 @@ def ignore_exceptions(
             # exceptions
             raise e
 
-        if callable(action):
-            action(
-                *(action_args or []),
-                **(action_kwargs or {})
-            )
+        if callable(return_value):
+            return return_value()
         else:
-            return action
+            return return_value

@@ -49,33 +49,56 @@ class IOCSnapshot:
     # FIXME: Please move me to another file and let's see how we can build
     # our hierarchy for the whole ZFS related section - plus consider
     # keeping me updated on every func call perhaps ?
-    def __init__(self, data):
-        self.raw_data = data
+    def __init__(self, data=None, snap_id=None):
+        self.data = data
+        self.snap_id = snap_id
+
+        assert any(v is not None for v in (data, snap_id))
+
         self.attr_list = [
             'name', 'used', 'available', 'referred', 'mountpoint'
         ]
         for attr in self.attr_list:
             setattr(self, attr, None)
-        self.normalize_data()
 
-    def normalize_data(self):
-        if self.raw_data:
-            # Expected format
-            # ['NAME', 'USED', 'AVAIL', 'REFER', 'MOUNTPOINT']
-            self.__dict__.update({
-                k: v for k, v in zip(self.attr_list, self.raw_data.split())
-            })
+        self.normalize_data(data)
+
+    @property
+    def exists(self):
+        return self.raw_data is not None
+
+    @property
+    def raw_data(self):
+        with ioc_exceptions.ignore_exceptions(su.CalledProcessError):
+            return su.run(
+                ['zfs', 'list', '-t', 'snapshot', self.snap_id or self.name],
+                stdout=su.PIPE
+            ).stdout.decode().splitlines()[1]
+
+    def normalize_data(self, data=None):
+        # Expected format
+        # ['NAME', 'USED', 'AVAIL', 'REFER', 'MOUNTPOINT']
+        if not data:
+            data = self.raw_data
+
+        self.__dict__.update({
+            k: v for k, v in zip(self.attr_list, data.split())
+        })
 
     def delete(self, recursive=True):
         with ioc_exceptions.ignore_exceptions(
-                su.CalledProcessError, action=False
+            su.CalledProcessError, return_value=False
         ):
             return su.run(
-                ['zfs', 'destroy', '-r' if recursive else '', '-f', self.name]
+                ['zfs', 'destroy', '-r' if recursive else '', '-f', self.name],
+                stdout=su.PIPE
             ).returncode == 0
 
     def __eq__(self, other):
         return self.name == other.name
+
+    def __bool__(self):
+        return self.exists is True
 
     def __hash__(self):
         return hash(self.name)
@@ -92,7 +115,7 @@ class IOCSnapshots:
     @property
     def raw_data(self):
         with ioc_exceptions.ignore_exceptions(
-                su.CalledProcessError, action=''
+            su.CalledProcessError, return_value=''
         ):
             return su.run(
                 ['zfs', 'list', '-t', 'snapshot'],
@@ -143,7 +166,7 @@ class IOCZFS(object):
         return p_dict
 
     def zfs_get_property(self, identifier, key):
-        with ioc_exceptions.ignore_exceptions(Exception, action='-'):
+        with ioc_exceptions.ignore_exceptions(Exception, return_value='-'):
             return self._zfs_get_properties(identifier)[key]
 
     def zfs_set_property(self, identifier, key, value):
@@ -162,7 +185,8 @@ class IOCZFS(object):
 
     def zfs_get_snapshot(self, snap_id):
         # If snapshot exists, return snap object else None
-        return IOCSnapshots().get_snap(snap_id)
+        # Snap_id expected value - vol/iocage/jails/jail1@snaptest
+        return IOCSnapshot(snap_id=snap_id) or None
 
 
 class IOCConfiguration(IOCZFS):
