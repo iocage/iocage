@@ -21,12 +21,8 @@
 # STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-import re
 
 import pytest
-from click.testing import CliRunner
-
-import iocage_cli as ioc
 
 require_root = pytest.mark.require_root
 require_zpool = pytest.mark.require_zpool
@@ -34,24 +30,21 @@ require_zpool = pytest.mark.require_zpool
 
 @require_root
 @require_zpool
-def test_fetch(release, server, user, password, auth, root_dir, http, _file,
-               noupdate, hardened):
-    if hardened:
-        release = release.replace("-RELEASE", "-STABLE")
-        release = re.sub(r"\W\w.", "-", release)
+def test_fetch(
+        release, server, user, password, auth,
+        root_dir, http, _file, noupdate, invoke_cli
+):
 
-    # Type Errors are bad mmmkay
-    command = ["fetch", "-r", release, "-F", "base.txz"]
-    command += ["-s", server] if server else []
-    command += ["-h"] if http else []
-    command += ["-f", _file] if _file else []
-    command += ["-u", user] if user else []
-    command += ["-p", password] if password else []
-    command += ["-a", auth] if auth else []
-    command += ["-d", root_dir] if root_dir else []
-    command += ["-NU"] if noupdate else []
+    command = ['fetch', '-r', release, '-F', 'base.txz', '-F', 'MANIFEST']
+    command += ['-s', server] if server else []
+    command += ['-h'] if http else []
+    command += ['-f', _file] if _file else []
+    command += ['-u', user] if user else []
+    command += ['-p', password] if password else []
+    command += ['-a', auth] if auth else []
+    command += ['-d', root_dir] if root_dir else []
+    command += ['-NU'] if noupdate else []
 
-    runner = CliRunner()
-    result = runner.invoke(ioc.cli, command)
-
-    assert result.exit_code == 0
+    invoke_cli(
+        command
+    )
