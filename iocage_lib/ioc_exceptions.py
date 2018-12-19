@@ -23,6 +23,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Exception classes for iocage"""
 import collections
+from contextlib import contextmanager
 
 
 class ExceptionWithMsg(Exception):
@@ -64,3 +65,25 @@ class JailMissingConfiguration(JailMisconfigured):
 
 class ValidationFailed(ExceptionWithMsg):
     pass
+
+
+@contextmanager
+def ignore_exceptions(
+        *exceptions, action=None, action_args=None,
+        action_kwargs=None, suppress_exception=True
+):
+    try:
+        yield
+    except exceptions as e:
+        if not suppress_exception:
+            # For cases where this block is used dynamically to suppress
+            # exceptions
+            raise e
+
+        if callable(action):
+            action(
+                *(action_args or []),
+                **(action_kwargs or {})
+            )
+        else:
+            return action

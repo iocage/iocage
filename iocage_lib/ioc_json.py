@@ -45,6 +45,70 @@ import random
 import pathlib
 
 
+class IOCSnapshot:
+    # FIXME: Please move me to another file and let's see how we can build
+    # our hierarchy for the whole ZFS related section - plus consider
+    # keeping me updated on every func call perhaps ?
+    def __init__(self, data):
+        self.raw_data = data
+        self.attr_list = ['name', 'used', 'available', 'referred', 'mountpoint']
+        for attr in self.attr_list:
+            setattr(self, attr, None)
+        self.normalize_data()
+
+    def normalize_data(self):
+        if self.raw_data:
+            # Expected format
+            # ['NAME', 'USED', 'AVAIL', 'REFER', 'MOUNTPOINT']
+            self.__dict__.update({
+                k: v for k, v in zip(self.attr_list, self.raw_data.split())
+            })
+
+    def delete(self, recursive=True):
+        with ioc_exceptions.ignore_exceptions(
+                su.CalledProcessError, action=False
+        ):
+            return su.run(
+                ['zfs', 'destroy', '-r' if recursive else '', '-f', self.name]
+            ).returncode == 0
+
+    def __eq__(self, other):
+        return self.name == other.name
+
+    def __hash__(self):
+        return hash(self.name)
+
+    def __repr__(self):
+        return self.name
+
+
+class IOCSnapshots:
+    def __init__(self):
+        self.snapshots = []
+        self.normalize_data()
+
+    @property
+    def raw_data(self):
+        with ioc_exceptions.ignore_exceptions(su.CalledProcessError, action=''):
+            return su.run(
+                ['zfs', 'list', '-t', 'snapshot'],
+                stdout=su.PIPE
+            ).stdout.decode()
+
+    def normalize_data(self):
+        for line in self.raw_data.splitlines()[1:]:
+            self.snapshots.append(IOCSnapshot(line))
+
+    def __iter__(self):
+        for snap in self.snapshots:
+            # FIXME: I will still hold old snapshot data, let's change this pls
+            yield snap
+
+    def get_snap(self, snap_id):
+        result = list(filter(lambda s: s.name == snap_id, self))
+        return result[0] if result else None
+
+
 class IOCZFS(object):
     # TODO: We should use a context manager for libzfs
     def __init__(self):
@@ -75,10 +139,8 @@ class IOCZFS(object):
         return p_dict
 
     def zfs_get_property(self, identifier, key):
-        try:
+        with ioc_exceptions.ignore_exceptions(Exception, action='-'):
             return self._zfs_get_properties(identifier)[key]
-        except Exception:
-            return '-'
 
     def zfs_set_property(self, identifier, key, value):
         su.run(
@@ -88,22 +150,15 @@ class IOCZFS(object):
         )
 
     def zfs_get_dataset_name(self, name):
-        try:
-            ds = su.run(
+        with ioc_exceptions.ignore_exceptions(su.CalledProcessError):
+            return su.run(
                 ['zfs', 'get', '-pHo', 'name', 'mountpoint', name],
                 stdout=su.PIPE, stderr=su.PIPE
             ).stdout.decode()
-        except su.CalledProcessError:
-            ds = None
-
-        return ds
 
     def zfs_get_snapshot(self, snap_id):
         # If snapshot exists, return snap object else None
-        try:
-            return self.zfs.get_snapshot(snap_id)
-        except libzfs.ZFSException:
-            pass
+        return IOCSnapshots().get_snap(snap_id)
 
 
 class IOCConfiguration(IOCZFS):

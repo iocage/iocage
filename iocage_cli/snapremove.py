@@ -52,7 +52,7 @@ def cli(jail, name):
         })
         for u, p in sorted(_jail.items()):
             ioc_common.logit({
-                "level"  : "ERROR",
+                "level": "ERROR",
                 "message": f"  {u} ({p})"
             })
         exit(1)
