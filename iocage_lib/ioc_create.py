@@ -234,7 +234,7 @@ class IOCCreate(object):
                     ['zfs', 'clone', '-p', f'{source.split("@"[1])}/root'
                      f'@{jail_uuid}', jail],
                     stdout=su.PIPE
-                 ).communicate()
+                ).communicate()
             else:
                 self.create_thickjail(jail_uuid, source.split('@')[0])
                 del config['cloned_release']
