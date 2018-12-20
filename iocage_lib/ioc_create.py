@@ -134,13 +134,21 @@ class IOCCreate(object):
                     temp_path = f"{self.iocroot}/{_type}/{self.release}"
                     template_config = iocage_lib.ioc_json.IOCJson(
                         temp_path).json_get_value
-                    cloned_release = template_config("cloned_release")
+                    try:
+                        cloned_release = template_config('cloned_release')
+                    except KeyError:
+                        # Thick jails won't have this
+                        cloned_release = None
                 elif self.clone:
                     _type = "jails"
                     clone_path = f"{self.iocroot}/{_type}/{self.release}"
                     clone_config = iocage_lib.ioc_json.IOCJson(
                         clone_path).json_get_value
-                    cloned_release = clone_config("cloned_release")
+                    try:
+                        cloned_release = clone_config('cloned_release')
+                    except KeyError:
+                        # Thick jails won't have this
+                        cloned_release = None
                     clone_uuid = clone_config("host_hostuuid")
                 else:
                     _type = "releases"
@@ -188,6 +196,9 @@ class IOCCreate(object):
                         silent=self.silent)
 
             if not self.clone:
+                if cloned_release is None:
+                    cloned_release = self.release
+
                 config = self.create_config(jail_uuid, cloned_release)
             else:
                 clone_config = f"{self.iocroot}/jails/{jail_uuid}/config.json"
@@ -213,9 +224,13 @@ class IOCCreate(object):
             config["release"] = iocage_lib.ioc_json.IOCJson(
                 f"{self.iocroot}/templates/{self.release}").json_get_value(
                 "release")
-            config["cloned_release"] = iocage_lib.ioc_json.IOCJson(
-                f"{self.iocroot}/templates/{self.release}").json_get_value(
-                "cloned_release")
+            try:
+                config["cloned_release"] = iocage_lib.ioc_json.IOCJson(
+                    f"{self.iocroot}/templates/{self.release}").json_get_value(
+                    "cloned_release")
+            except KeyError:
+                # Thick jails won't have this
+                pass
         elif self.clone:
             try:
                 su.check_call(["zfs", "snapshot", "-r",
@@ -239,9 +254,13 @@ class IOCCreate(object):
             config["release"] = iocage_lib.ioc_json.IOCJson(
                 f"{self.iocroot}/jails/{self.release}").json_get_value(
                 "release")
-            config["cloned_release"] = iocage_lib.ioc_json.IOCJson(
-                f"{self.iocroot}/jails/{self.release}").json_get_value(
-                "cloned_release")
+            try:
+                config["cloned_release"] = iocage_lib.ioc_json.IOCJson(
+                    f"{self.iocroot}/jails/{self.release}").json_get_value(
+                    "cloned_release")
+            except KeyError:
+                # Thick jails won't have this
+                pass
 
             # Clones are expected to be as identical as possible.
 

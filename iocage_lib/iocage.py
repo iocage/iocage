@@ -2046,4 +2046,4 @@ Remove the snapshot: ioc_upgrade_{_date} if everything is OK
                     'message': f'Snapshot: {target} destroyed'
                 },
                 _callback=self.callback, silent=self.silent
-             )
+            )
