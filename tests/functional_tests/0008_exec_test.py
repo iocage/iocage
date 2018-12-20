@@ -23,7 +23,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
-import shutil
 
 import pytest
 
@@ -34,20 +33,17 @@ require_zpool = pytest.mark.require_zpool
 
 @require_root
 @require_zpool
-def test_clean(invoke_cli, zfs):
-    iocage_dataset = zfs.iocage_dataset
+def test_01_exec_on_jail(resource_selector, skip_test, invoke_cli):
+    jails = resource_selector.startable_jails_and_not_running
+    skip_test(not jails)
 
-    for d in ('debug', 'debug2'):
-        p = os.path.join(iocage_dataset['mountpoint'], d)
-        if os.path.exists(p):
-            shutil.rmtree(p)
+    jail = jails[0]
+    invoke_cli(
+        ['exec', jail.name, 'touch', '/tmp/testing_file']
+    )
 
-    # Unless we change directory (not sure why) this will crash pytest.
-    os.chdir('/')
-    actions = [['-j', '-f'], ['-t', '-f'], ['-a', '-f']]
+    assert jail.running is False
 
-    for action in actions:
-        command = ['clean'] + action
-        invoke_cli(
-            command
-        )
+    assert os.path.exists(
+        os.path.join(jail.absolute_path, 'root/tmp/testing_file')
+    ) is True

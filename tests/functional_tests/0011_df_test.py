@@ -21,10 +21,9 @@
 # STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-import pytest
-from click.testing import CliRunner
 
-import iocage_cli as ioc
+import pytest
+
 
 require_root = pytest.mark.require_root
 require_zpool = pytest.mark.require_zpool
@@ -32,11 +31,40 @@ require_zpool = pytest.mark.require_zpool
 
 @require_root
 @require_zpool
-def test_destroy():
-    jails = ["newtest", "newtest_short"]
-    runner = CliRunner()
+def test_01_df(
+        invoke_cli, resource_selector, jails_as_rows, parse_rows_output
+):
+    result = invoke_cli(
+        ['df']
+    )
 
-    for jail in jails:
-        result = runner.invoke(ioc.cli, ["destroy", jail])
+    # With no flag specified, iocage should sort wrt name
+    orig_list = parse_rows_output(result.output, 'df')
+    verify_list = jails_as_rows(
+        resource_selector.all_jails, short_name=False
+    )
 
-        assert result.exit_code == 0
+    verify_list.sort(key=lambda r: r.sort_flag('name'))
+
+    assert verify_list == orig_list
+
+
+@require_root
+@require_zpool
+def test_02_df_sort_flag(
+        invoke_cli, resource_selector, jails_as_rows, parse_rows_output
+):
+    flags = ['name', 'crt', 'res', 'qta', 'use', 'ava']
+    verify_list = jails_as_rows(
+        resource_selector.all_jails, short_name=False
+    )
+
+    for flag in flags:
+        result = invoke_cli(
+            ['df', '-s', flag]
+        )
+
+        orig_list = parse_rows_output(result.output, 'df')
+        verify_list.sort(key=lambda r: r.sort_flag(flag))
+
+        assert verify_list == orig_list, f'Mismatched df output for flag {flag}'

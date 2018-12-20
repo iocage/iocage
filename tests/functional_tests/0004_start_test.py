@@ -21,10 +21,9 @@
 # STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-import pytest
-from click.testing import CliRunner
 
-import iocage_cli as ioc
+import pytest
+
 
 require_root = pytest.mark.require_root
 require_zpool = pytest.mark.require_zpool
@@ -32,11 +31,26 @@ require_zpool = pytest.mark.require_zpool
 
 @require_root
 @require_zpool
-def test_start():
-    jails = ["771ec0cf-afdd-455d-9245-4a890e228325", "dfb013e5"]
-    runner = CliRunner()
+def test_01_start(resource_selector, invoke_cli):
+    for jail in resource_selector.startable_jails:
+        if not jail.is_rcjail:
+            invoke_cli(
+                ['start', jail.name],
+                f'Jail {jail} failed to start'
+            )
 
-    for jail in jails:
-        result = runner.invoke(ioc.cli, ["start", jail])
+            assert jail.running is True, f'Failed to start {jail.name}'
 
-        assert result.exit_code == 0
+
+@require_root
+@require_zpool
+def test_02_start_rc_jail(invoke_cli, resource_selector):
+    invoke_cli(
+        ['start', '--rc'],
+        'Failed to start --rc jails'
+    )
+
+    for jail in resource_selector.rcjails:
+        assert jail.running is True, f'{jail.name} not running'
+
+# TODO: Let's also start jails in a single command to test that out

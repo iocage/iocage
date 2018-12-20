@@ -21,10 +21,11 @@
 # STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-import pytest
-from click.testing import CliRunner
 
-import iocage_cli as ioc
+import os
+
+import pytest
+
 
 require_root = pytest.mark.require_root
 require_zpool = pytest.mark.require_zpool
@@ -32,11 +33,69 @@ require_zpool = pytest.mark.require_zpool
 
 @require_root
 @require_zpool
-def test_stop():
-    jails = ["771ec0cf-afdd-455d-9245-4a890e228325", "dfb013e5"]
-    runner = CliRunner()
+def test_01_stop_rc_jails(invoke_cli, resource_selector):
+    invoke_cli(
+        ['stop', '--rc'],
+        'Failed to stop --rc jails'
+    )
 
-    for jail in jails:
-        result = runner.invoke(ioc.cli, ["stop", jail])
+    for jail in resource_selector.rcjails:
+        assert jail.running is False, f'Failed to stop {jail}'
 
-        assert result.exit_code == 0
+
+@require_root
+@require_zpool
+def test_02_stop(resource_selector, invoke_cli, skip_test):
+    running_jails = resource_selector.running_jails
+    skip_test(not running_jails)
+
+    for jail in running_jails:
+        invoke_cli(
+            ['stop', jail.name],
+            f'Failed to stop {jail}'
+        )
+
+        assert jail.running is False, f'Failed to stop {jail}'
+
+
+@require_root
+@require_zpool
+def test_03_test_force_flag_stopping_jail(
+        release, jail, invoke_cli, write_file, remove_file
+):
+    # Let's create our script file first
+    script_file = '/tmp/test_stop_force_flag_test'
+    test_file = '/tmp/test_stop_force_flag_file'
+    write_file(
+        script_file,
+        f'#!/bin/sh\ntouch {test_file}'
+    )
+
+    os.chmod(script_file, 0o100)
+
+    try:
+        invoke_cli([
+            'create', '-r', release, '-n', 'stop_force_flag_test',
+            f'exec_prestop="{script_file}"'
+        ])
+
+        jail = jail('stop_force_flag_test')
+        assert jail.exists is True
+
+        invoke_cli(
+            ['start', 'stop_force_flag_test'],
+            'Failed to start stop_force_flag_test'
+        )
+        assert jail.running is True
+
+        invoke_cli(
+            ['stop', '-f', 'stop_force_flag_test'],
+            'Failed to stop Jail'
+        )
+        assert jail.running is False
+        assert not os.path.exists(test_file),\
+            f'Pre-stop services being executed'
+
+    finally:
+        remove_file(script_file)
+        remove_file(test_file)

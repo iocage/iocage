@@ -22,9 +22,6 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import os
-import shutil
-
 import pytest
 
 
@@ -32,22 +29,31 @@ require_root = pytest.mark.require_root
 require_zpool = pytest.mark.require_zpool
 
 
+def _common(invoke_cli, orig_jail, jail):
+    renamed = orig_jail.name + '_renamed'
+    invoke_cli(
+        ['rename', orig_jail.name, renamed]
+    )
+
+    assert orig_jail.exists is False
+    assert jail(renamed).exists is True
+
+
 @require_root
 @require_zpool
-def test_clean(invoke_cli, zfs):
-    iocage_dataset = zfs.iocage_dataset
+def test_01_rename_jail(invoke_cli, resource_selector, skip_test, jail):
+    jails = resource_selector.jails
+    skip_test(not jails)
 
-    for d in ('debug', 'debug2'):
-        p = os.path.join(iocage_dataset['mountpoint'], d)
-        if os.path.exists(p):
-            shutil.rmtree(p)
+    orig_jail = jails[0]
+    _common(invoke_cli, orig_jail, jail)
 
-    # Unless we change directory (not sure why) this will crash pytest.
-    os.chdir('/')
-    actions = [['-j', '-f'], ['-t', '-f'], ['-a', '-f']]
 
-    for action in actions:
-        command = ['clean'] + action
-        invoke_cli(
-            command
-        )
+@require_root
+@require_zpool
+def test_02_rename_template_jail(invoke_cli, resource_selector, skip_test, jail):
+    jails = resource_selector.template_jails
+    skip_test(not jails)
+
+    orig_jail = jails[0]
+    _common(invoke_cli, orig_jail, jail)
