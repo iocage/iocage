@@ -47,13 +47,11 @@ import pathlib
 
 class IOCSnapshot(object):
     # FIXME: Please move me to another file and let's see how we can build
-    # our hierarchy for the whole ZFS related section - plus consider
-    # keeping me updated on every func call perhaps ?
-    def __init__(self, data=None, snap_id=None):
-        self.data = data
+    # our hierarchy for the whole ZFS related section
+    # TODO: Update this object via some fashion(after delete, so forth)
+    def __init__(self, snap_id):
+        self.data = None
         self.snap_id = snap_id
-
-        assert any(v is not None for v in (data, snap_id))
 
         self.attr_list = [
             'name', 'used', 'available', 'referred', 'mountpoint'
@@ -61,28 +59,28 @@ class IOCSnapshot(object):
         for attr in self.attr_list:
             setattr(self, attr, None)
 
-        self.normalize_data(data)
+        self.normalize_data()
 
     @property
     def exists(self):
-        return self.raw_data is not None
+        return bool(self.data is not None and self.data)
 
     @property
     def raw_data(self):
         with ioc_exceptions.ignore_exceptions(su.CalledProcessError):
             return su.run(
-                ['zfs', 'list', '-t', 'snapshot', self.snap_id or self.name],
-                stdout=su.PIPE
-            ).stdout.decode().splitlines()[1]
+                ['zfs', 'list', '-Ht', 'snapshot', self.snap_id or self.name],
+                stdout=su.PIPE, stderr=su.PIPE
+            ).stdout.decode()
 
-    def normalize_data(self, data=None):
+    def normalize_data(self):
         # Expected format
         # ['NAME', 'USED', 'AVAIL', 'REFER', 'MOUNTPOINT']
-        if not data:
-            data = self.raw_data
+        if not self.data:
+            self.data = self.raw_data
 
         self.__dict__.update({
-            k: v for k, v in zip(self.attr_list, data.split())
+            k: v for k, v in zip(self.attr_list, self.data.split())
         })
 
     def delete(self, recursive=True):
@@ -91,7 +89,7 @@ class IOCSnapshot(object):
         ):
             return su.run(
                 ['zfs', 'destroy', '-r' if recursive else '', '-f', self.name],
-                stdout=su.PIPE
+                stdout=su.PIPE, stderr=su.PIPE
             ).returncode == 0
 
     def __eq__(self, other):
@@ -105,35 +103,6 @@ class IOCSnapshot(object):
 
     def __repr__(self):
         return self.name
-
-
-class IOCSnapshots(object):
-    def __init__(self):
-        self.snapshots = []
-        self.normalize_data()
-
-    @property
-    def raw_data(self):
-        with ioc_exceptions.ignore_exceptions(
-            su.CalledProcessError, return_value=''
-        ):
-            return su.run(
-                ['zfs', 'list', '-t', 'snapshot'],
-                stdout=su.PIPE
-            ).stdout.decode()
-
-    def normalize_data(self):
-        for line in self.raw_data.splitlines()[1:]:
-            self.snapshots.append(IOCSnapshot(line))
-
-    def __iter__(self):
-        for snap in self.snapshots:
-            # FIXME: I will still hold old snapshot data, let's change this pls
-            yield snap
-
-    def get_snap(self, snap_id):
-        result = list(filter(lambda s: s.name == snap_id, self))
-        return result[0] if result else None
 
 
 class IOCZFS(object):
@@ -186,7 +155,7 @@ class IOCZFS(object):
     def zfs_get_snapshot(self, snap_id):
         # If snapshot exists, return snap object else None
         # Snap_id expected value - vol/iocage/jails/jail1@snaptest
-        return IOCSnapshot(snap_id=snap_id) or None
+        return IOCSnapshot(snap_id)
 
 
 class IOCConfiguration(IOCZFS):
