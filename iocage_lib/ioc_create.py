@@ -112,7 +112,10 @@ class IOCCreate(object):
 
         if iocage_lib.ioc_common.match_to_dir(self.iocroot, jail_uuid):
             if not self.plugin:
-                raise RuntimeError(f"Jail: {jail_uuid} already exists!")
+                iocage_lib.ioc_common.logit({
+                    'level': 'EXCEPTION',
+                    'message': f'Jail: {jail_uuid} already exists!'
+                })
 
             for i in itertools.count(start=2, step=1):
                 if iocage_lib.ioc_common.match_to_dir(self.iocroot,
@@ -231,7 +234,7 @@ class IOCCreate(object):
 
             if not self.thickjail:
                 su.Popen(
-                    ['zfs', 'clone', '-p', f'{source.split("@"[1])}/root'
+                    ['zfs', 'clone', '-p', f'{source.split("@")[0]}/root'
                      f'@{jail_uuid}', jail],
                     stdout=su.PIPE
                 ).communicate()
