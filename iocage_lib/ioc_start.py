@@ -84,6 +84,7 @@ class IOCStart(object):
 
         # If the jail is not running, let's do this thing.
 
+        status = True
         if status:
             msg = f"{self.uuid} is already running!"
             iocage_lib.ioc_common.logit({
