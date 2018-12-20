@@ -34,35 +34,39 @@ def validate_count(ctx, param, value):
     """Takes a string, removes the commas and returns an int."""
     if isinstance(value, str):
         try:
-            value = value.replace(",", "")
+            value = value.replace(',', '')
 
             return int(value)
         except ValueError:
             ioc_common.logit({
-                "level"  : "EXCEPTION",
-                "message": f"({value} is not a valid  integer."
+                'level': 'EXCEPTION',
+                'message': f'({value} is not a valid  integer.'
             })
     else:
         return int(value)
 
 
-@click.command(name="clone", help="Clone a jail.")
-@click.argument("source", nargs=1)
-@click.argument("props", nargs=-1)
-@click.option("--count", "-c", callback=validate_count, default="1")
-@click.option("--name", "-n", default=None,
-              help="Provide a specific name instead of an UUID for this jail")
-@click.option("--uuid", "-u", "_uuid", default=None,
-              help="Provide a specific UUID for this jail")
-def cli(source, props, count, name, _uuid):
+@click.command(name='clone', help='Clone a jail.')
+@click.argument('source', nargs=1)
+@click.argument('props', nargs=-1)
+@click.option('--count', '-c', callback=validate_count, default='1')
+@click.option('--name', '-n', default=None,
+              help='Provide a specific name instead of an UUID for this jail')
+@click.option('--uuid', '-u', '_uuid', default=None,
+              help='Provide a specific UUID for this jail')
+@click.option('--thickjail', '-T', is_flag=True, default=False,
+              help='Set the new jail type to a thickjail. Thickjails'
+                   ' are copied (not cloned) from the specified target.')
+def cli(source, props, count, name, _uuid, thickjail):
     # At this point we don't care
     _uuid = name if name else _uuid
 
-    err, msg = ioc.IOCage(jail=source).create(source, props, count,
-                                              _uuid=_uuid, clone=True)
+    err, msg = ioc.IOCage(jail=source).create(
+        source, props, count, _uuid=_uuid, thickjail=thickjail, clone=True
+    )
 
     if err:
         ioc_common.logit({
-            "level"  : "EXCEPTION",
-            "message": msg
+            'level': 'EXCEPTION',
+            'message': msg
         })
