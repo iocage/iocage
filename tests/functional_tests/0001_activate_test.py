@@ -21,10 +21,9 @@
 # STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-import pytest
-from click.testing import CliRunner
 
-import iocage_cli as ioc
+import pytest
+
 
 require_root = pytest.mark.require_root
 require_zpool = pytest.mark.require_zpool
@@ -32,8 +31,11 @@ require_zpool = pytest.mark.require_zpool
 
 @require_root
 @require_zpool
-def test_activate(zpool):
-    runner = CliRunner()
-    result = runner.invoke(ioc.cli, ['activate', zpool])
+def test_activate(zpool, invoke_cli, zfs):
+    invoke_cli(
+        ['activate', zpool]
+    )
 
-    assert result.exit_code == 0
+    zfs.set_pool()
+
+    assert zfs.pool == zpool, f'Failed to activate {zpool}'

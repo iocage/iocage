@@ -22,9 +22,6 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import os
-import shutil
-
 import pytest
 
 
@@ -34,20 +31,17 @@ require_zpool = pytest.mark.require_zpool
 
 @require_root
 @require_zpool
-def test_clean(invoke_cli, zfs):
-    iocage_dataset = zfs.iocage_dataset
+def test_01_remove_snapshot(invoke_cli, resource_selector, skip_test):
+    jails = resource_selector.all_jails_having_snapshots
+    skip_test(not jails)
 
-    for d in ('debug', 'debug2'):
-        p = os.path.join(iocage_dataset['mountpoint'], d)
-        if os.path.exists(p):
-            shutil.rmtree(p)
+    jail = jails[0]
+    snap = jail.recursive_snapshots[0]
 
-    # Unless we change directory (not sure why) this will crash pytest.
-    os.chdir('/')
-    actions = [['-j', '-f'], ['-t', '-f'], ['-a', '-f']]
+    assert snap.exists is True
 
-    for action in actions:
-        command = ['clean'] + action
-        invoke_cli(
-            command
-        )
+    invoke_cli(
+        ['snapremove', '-n', snap.id.split('@')[1], jail.name]
+    )
+
+    assert snap.exists is False

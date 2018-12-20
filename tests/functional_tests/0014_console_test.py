@@ -23,9 +23,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
-import shutil
-
 import pytest
+import subprocess
 
 
 require_root = pytest.mark.require_root
@@ -34,20 +33,37 @@ require_zpool = pytest.mark.require_zpool
 
 @require_root
 @require_zpool
-def test_clean(invoke_cli, zfs):
-    iocage_dataset = zfs.iocage_dataset
+def test_01_jail_console(invoke_cli, resource_selector, skip_test):
+    jails = resource_selector.startable_jails
+    skip_test(not jails)
 
-    for d in ('debug', 'debug2'):
-        p = os.path.join(iocage_dataset['mountpoint'], d)
-        if os.path.exists(p):
-            shutil.rmtree(p)
-
-    # Unless we change directory (not sure why) this will crash pytest.
-    os.chdir('/')
-    actions = [['-j', '-f'], ['-t', '-f'], ['-a', '-f']]
-
-    for action in actions:
-        command = ['clean'] + action
+    jail = jails[0]
+    if not jail.running:
         invoke_cli(
-            command
+            ['start', jail.name]
         )
+
+    assert jail.running is True
+
+    failed = False
+    try:
+        console = subprocess.Popen(
+            ['iocage', 'console', jail.name],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE
+        )
+        console.communicate('touch console_test_file'.encode())
+    except subprocess.CalledProcessError as e:
+        failed = str(e)
+
+    invoke_cli(
+        ['stop', jail.name],
+        f'Failed to stop {jail.name}'
+    )
+
+    assert jail.running is False
+    assert failed is False, f'Failed console test: {failed}'
+
+    # Let's verify if the file exists
+    assert os.path.exists(
+        os.path.join(jail.absolute_path, 'root/root/console_test_file')
+    ) is True, f'Failed console test, file not created'

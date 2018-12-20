@@ -23,7 +23,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
-import shutil
 
 import pytest
 
@@ -34,20 +33,34 @@ require_zpool = pytest.mark.require_zpool
 
 @require_root
 @require_zpool
-def test_clean(invoke_cli, zfs):
+def test_01_debug(invoke_cli):
+    invoke_cli(
+        ['debug']
+    )
+
+
+@require_root
+@require_zpool
+def test_02_debug_with_directory_flag(invoke_cli, zfs):
     iocage_dataset = zfs.iocage_dataset
 
-    for d in ('debug', 'debug2'):
-        p = os.path.join(iocage_dataset['mountpoint'], d)
-        if os.path.exists(p):
-            shutil.rmtree(p)
+    invoke_cli(
+        ['debug', '-d', os.path.join(iocage_dataset['mountpoint'], 'debug2')]
+    )
 
-    # Unless we change directory (not sure why) this will crash pytest.
-    os.chdir('/')
-    actions = [['-j', '-f'], ['-t', '-f'], ['-a', '-f']]
 
-    for action in actions:
-        command = ['clean'] + action
-        invoke_cli(
-            command
-        )
+@require_root
+@require_zpool
+def test03_verify_debug_directories(resource_selector, zfs):
+    iocage_dataset = zfs.iocage_dataset
+    directories = [
+        os.path.join(iocage_dataset['mountpoint'], d)
+        for d in ('debug', 'debug2')
+    ]
+
+    files_check = [f'{j}.txt' for j in resource_selector.all_jails] + ['host.txt']
+
+    for directory in directories:
+        assert os.path.exists(directory) is True
+        assert os.path.isdir(directory) is True
+        assert set(os.listdir(directory)) == set(files_check)

@@ -22,9 +22,6 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import os
-import shutil
-
 import pytest
 
 
@@ -34,20 +31,35 @@ require_zpool = pytest.mark.require_zpool
 
 @require_root
 @require_zpool
-def test_clean(invoke_cli, zfs):
-    iocage_dataset = zfs.iocage_dataset
+def test_01_destroy_jail(invoke_cli, resource_selector, skip_test):
+    jails = resource_selector.all_jails
+    skip_test(not jails)
 
-    for d in ('debug', 'debug2'):
-        p = os.path.join(iocage_dataset['mountpoint'], d)
-        if os.path.exists(p):
-            shutil.rmtree(p)
+    jail = jails[0]
+    invoke_cli(
+        ['destroy', '-f', jail.name]
+    )
 
-    # Unless we change directory (not sure why) this will crash pytest.
-    os.chdir('/')
-    actions = [['-j', '-f'], ['-t', '-f'], ['-a', '-f']]
+    assert jail.exists is False
 
-    for action in actions:
-        command = ['clean'] + action
-        invoke_cli(
-            command
-        )
+
+@require_root
+@require_zpool
+def test_02_destroy_jails(invoke_cli, resource_selector, skip_test):
+    jails = resource_selector.not_cloned_jails
+    skip_test(not jails)
+
+    # Let's destroy 50% of jails - in case of only one jail, let's skip
+    up = int(len(jails) / 2)
+    skip_test(up == 0)
+
+    destroy_jails = jails[:up]
+    invoke_cli(
+        ['destroy', '-f', *[j.name for j in destroy_jails]]
+    )
+
+    for jail in destroy_jails:
+        assert jail.exists is False
+
+
+# TODO: Add tests for release and download later - fetching is time consuming :P

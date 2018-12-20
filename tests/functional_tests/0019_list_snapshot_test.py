@@ -29,64 +29,63 @@ require_root = pytest.mark.require_root
 require_zpool = pytest.mark.require_zpool
 
 
-# Let's perform testing first on different types of jails
-# Then we can move on to setting some specific properties and seeing
-# do the props work as intended
+SORTING_FLAGS = ['name', 'created', 'rsize', 'used']
 
 
-# TODO: Plugin test left
+def common_function(
+        invoke_cli, jail, parse_rows_output,
+        jails_as_rows, full=False
+):
+    for flag in SORTING_FLAGS:
+        command = ['snaplist', jail.name, '-s', flag]
+        if full:
+            command.append('-l')
 
+        result = invoke_cli(
+            command
+        )
 
-def _set_and_test_note_prop(invoke_cli, value, jail):
-    invoke_cli(
-        ['set', f'notes={value}', jail.name]
-    )
+        orig_list = parse_rows_output(result.output, 'snapshot')
+        verify_list = jails_as_rows(jail.recursive_snapshots, full=full)
 
-    assert jail.config.get('notes') == value, \
-        f'Failed to set note value to {value}'
+        verify_list.sort(key=lambda r: r.sort_flag(flag))
+
+        assert verify_list == orig_list
 
 
 @require_root
 @require_zpool
-def test_01_set_prop_on_jail(resource_selector, invoke_cli, skip_test):
-    jails = resource_selector.jails
+def test_01_list_snapshots_of_jail(
+        invoke_cli, resource_selector, skip_test,
+        parse_rows_output, jails_as_rows
+):
+    jails = resource_selector.jails_having_snapshots
     skip_test(not jails)
 
-    _set_and_test_note_prop(
-        invoke_cli, 'foo \"bar\"', jails[0]
-    )
+    common_function(invoke_cli, jails[0], parse_rows_output, jails_as_rows)
 
 
 @require_root
 @require_zpool
-def test_02_set_prop_on_thickconfig_jail(
-        resource_selector, invoke_cli, skip_test
+def test_02_list_snapshots_of_template_jail(
+        invoke_cli, resource_selector, skip_test,
+        parse_rows_output, jails_as_rows
 ):
-    thickconfig_jails = resource_selector.thickconfig_jails
-    skip_test(not thickconfig_jails)
+    jails = resource_selector.templates_having_snapshots
+    skip_test(not jails)
 
-    _set_and_test_note_prop(
-        invoke_cli, 'foo \"bar\"', thickconfig_jails[0]
-    )
+    common_function(invoke_cli, jails[0], parse_rows_output, jails_as_rows)
 
 
 @require_root
 @require_zpool
-def test_03_set_prop_on_basejail(resource_selector, invoke_cli, skip_test):
-    basejails = resource_selector.basejails
-    skip_test(not basejails)
+def test_03_list_snapshots_of_jail_with_long_flag(
+        invoke_cli, resource_selector, skip_test,
+        parse_rows_output, jails_as_rows
+):
+    jails = resource_selector.all_jails_having_snapshots
+    skip_test(not jails)
 
-    _set_and_test_note_prop(
-        invoke_cli, 'foo \"bar\"', basejails[0]
-    )
-
-
-@require_root
-@require_zpool
-def test_04_set_prop_on_template_jail(resource_selector, invoke_cli, skip_test):
-    template_jails = resource_selector.template_jails
-    skip_test(not template_jails)
-
-    _set_and_test_note_prop(
-        invoke_cli, 'foo \"bar\"', template_jails[0]
+    common_function(
+        invoke_cli, jails[0], parse_rows_output, jails_as_rows, True
     )

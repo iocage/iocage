@@ -22,9 +22,6 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import os
-import shutil
-
 import pytest
 
 
@@ -32,22 +29,29 @@ require_root = pytest.mark.require_root
 require_zpool = pytest.mark.require_zpool
 
 
+SNAP_NAME = 'snaptest'
+
+
+def common_function(invoke_cli, jails, skip_test):
+    skip_test(not jails)
+
+    jail = jails[0]
+    invoke_cli(
+        ['snapshot', jail.name, '-n', SNAP_NAME]
+    )
+
+    # We use count because of template jails
+    for snap in jail.recursive_snapshots:
+        assert SNAP_NAME == snap.id.split('@')[1]
+
+
 @require_root
 @require_zpool
-def test_clean(invoke_cli, zfs):
-    iocage_dataset = zfs.iocage_dataset
+def test_01_snapshot_of_jail(invoke_cli, resource_selector, skip_test):
+    common_function(invoke_cli, resource_selector.jails, skip_test)
 
-    for d in ('debug', 'debug2'):
-        p = os.path.join(iocage_dataset['mountpoint'], d)
-        if os.path.exists(p):
-            shutil.rmtree(p)
 
-    # Unless we change directory (not sure why) this will crash pytest.
-    os.chdir('/')
-    actions = [['-j', '-f'], ['-t', '-f'], ['-a', '-f']]
-
-    for action in actions:
-        command = ['clean'] + action
-        invoke_cli(
-            command
-        )
+@require_root
+@require_zpool
+def test_02_snapshot_of_template_jail(invoke_cli, resource_selector, skip_test):
+    common_function(invoke_cli, resource_selector.template_jails, skip_test)
