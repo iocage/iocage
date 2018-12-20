@@ -47,11 +47,11 @@ import iocage_lib.ioc_exceptions as ioc_exceptions
 import libzfs
 
 
-class PoolAndDataset(object):
+class PoolAndDataset(ioc_json.IOCZFS):
 
     def __init__(self):
+        super().__init__()
         self.pool = ioc_json.IOCJson().json_get_value("pool")
-        self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
 
     def get_pool(self):
         """
@@ -92,7 +92,7 @@ class PoolAndDataset(object):
         return ioc_json.IOCJson().json_get_value("iocroot")
 
 
-class IOCage(object):
+class IOCage(ioc_json.IOCZFS):
 
     def __init__(self,
                  jail=None,
@@ -102,7 +102,7 @@ class IOCage(object):
                  activate=False,
                  skip_jails=False,
                  ):
-        self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
+        super().__init__()
         self.rc = rc
 
         # FreeNAS won't be entering through the CLI, so we set sane defaults
@@ -2018,3 +2018,32 @@ Remove the snapshot: ioc_upgrade_{_date} if everything is OK
             directory = f'{self.iocroot}/debug'
 
         ioc_debug.IOCDebug(directory).run_debug()
+
+    def snap_remove(self, snapshot):
+        """Removes user supplied snapshot from jail"""
+        uuid, path = self.__check_jail_existence__()
+        conf = ioc_json.IOCJson(path, silent=self.silent).json_get_value('all')
+
+        if conf['template'] == 'yes':
+            target = f'{self.pool}/iocage/templates/{uuid}@{snapshot}'
+        else:
+            target = f'{self.pool}/iocage/jails/{uuid}@{snapshot}'
+
+        # Let's verify target exists and then destroy it, else log it
+        snapshot = self.zfs_get_snapshot(target)
+
+        if not snapshot:
+            ioc_common.logit({
+                'level': 'EXCEPTION',
+                'message': f'Snapshot: {target} not found!'
+            })
+        else:
+            snapshot.delete(recursive=True)
+
+            ioc_common.logit(
+                {
+                    'level': 'INFO',
+                    'message': f'Snapshot: {target} destroyed'
+                },
+                _callback=self.callback, silent=self.silent
+             )

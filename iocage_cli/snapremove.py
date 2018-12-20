@@ -25,9 +25,7 @@
 
 import click
 
-import iocage_lib.ioc_common as ioc_common
-import iocage_lib.ioc_json as ioc_json
-import iocage_lib.ioc_list as ioc_list
+import iocage_lib.iocage as ioc
 
 
 @click.command(name="snapremove", help="Remove specified snapshot of a jail.")
@@ -36,47 +34,4 @@ import iocage_lib.ioc_list as ioc_list
                                    " after @", required=True)
 def cli(jail, name):
     """Removes a snapshot from a user supplied jail."""
-    # TODO: Move to API
-    jails = ioc_list.IOCList("uuid").list_datasets()
-    pool = ioc_json.IOCJson().json_get_value("pool")
-    _jail = {uuid: path for (uuid, path) in jails.items() if
-             uuid.startswith(jail)}
-
-    if len(_jail) == 1:
-        uuid, path = next(iter(_jail.items()))
-    elif len(_jail) > 1:
-        ioc_common.logit({
-            "level": "ERROR",
-            "message": f"Multiple jails found for {jail}:"
-        })
-        for u, p in sorted(_jail.items()):
-            ioc_common.logit({
-                "level": "ERROR",
-                "message": f"  {u} ({p})"
-            })
-        exit(1)
-    else:
-        ioc_common.logit({
-            "level": "EXCEPTION",
-            "message": f"{jail} not found!"
-        })
-
-    # Looks like foo/iocage/jails/df0ef69a-57b6-4480-b1f8-88f7b6febbdf@BAR
-    conf = ioc_json.IOCJson(path).json_get_value('all')
-
-    if conf["template"] == "yes":
-        target = f"{pool}/iocage/templates/{uuid}@{name}"
-    else:
-        target = f"{pool}/iocage/jails/{uuid}@{name}"
-
-    # Let's verify target exists and then destroy it, else log it
-
-    ioc_zfs = ioc_json.IOCZFS()
-    snapshot = ioc_zfs.zfs_get_snapshot(target)
-    if not snapshot:
-        ioc_common.logit({
-            "level": "EXCEPTION",
-            "message": f"{target} not found!"
-        })
-    else:
-        snapshot.delete(recursive=True)
+    ioc.IOCage(jail=jail).snap_remove(name)
