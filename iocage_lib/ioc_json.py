@@ -48,6 +48,7 @@ import pathlib
 class IOCSnapshot(object):
     # FIXME: Please move me to another file and let's see how we can build
     # our hierarchy for the whole ZFS related section
+    # TODO: Update this object via some fashion(after delete, so forth)
     def __init__(self, snap_id):
         self.data = None
         self.snap_id = snap_id
