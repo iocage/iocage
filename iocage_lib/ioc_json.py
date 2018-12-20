@@ -48,11 +48,9 @@ import pathlib
 class IOCSnapshot(object):
     # FIXME: Please move me to another file and let's see how we can build
     # our hierarchy for the whole ZFS related section
-    def __init__(self, data=None, snap_id=None):
-        self.data = data
+    def __init__(self, snap_id):
+        self.data = None
         self.snap_id = snap_id
-
-        assert any(v is not None for v in (data, snap_id))
 
         self.attr_list = [
             'name', 'used', 'available', 'referred', 'mountpoint'
@@ -60,11 +58,11 @@ class IOCSnapshot(object):
         for attr in self.attr_list:
             setattr(self, attr, None)
 
-        self.normalize_data(data)
+        self.normalize_data()
 
     @property
     def exists(self):
-        return bool(self.raw_data is not None and self.raw_data)
+        return bool(self.data is not None and self.data)
 
     @property
     def raw_data(self):
@@ -74,14 +72,14 @@ class IOCSnapshot(object):
                 stdout=su.PIPE, stderr=su.PIPE
             ).stdout.decode()
 
-    def normalize_data(self, data=None):
+    def normalize_data(self):
         # Expected format
         # ['NAME', 'USED', 'AVAIL', 'REFER', 'MOUNTPOINT']
-        if not data:
-            data = self.raw_data
+        if not self.data:
+            self.data = self.raw_data
 
         self.__dict__.update({
-            k: v for k, v in zip(self.attr_list, data.split())
+            k: v for k, v in zip(self.attr_list, self.data.split())
         })
 
     def delete(self, recursive=True):
@@ -156,7 +154,7 @@ class IOCZFS(object):
     def zfs_get_snapshot(self, snap_id):
         # If snapshot exists, return snap object else None
         # Snap_id expected value - vol/iocage/jails/jail1@snaptest
-        return IOCSnapshot(snap_id=snap_id) or None
+        return IOCSnapshot(snap_id)
 
 
 class IOCConfiguration(IOCZFS):
