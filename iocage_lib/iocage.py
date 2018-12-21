@@ -568,7 +568,11 @@ class IOCage(ioc_json.IOCZFS):
             ).fetch_release()
 
         if clone:
-            clone_uuid, _ = self.__check_jail_existence__()
+            clone_uuid, path = self.__check_jail_existence__()
+
+            if 'templates' in path:
+                template = True
+
             status, _ = self.list("jid", uuid=clone_uuid)
 
             if status:
@@ -2046,4 +2050,4 @@ Remove the snapshot: ioc_upgrade_{_date} if everything is OK
                     'message': f'Snapshot: {target} destroyed'
                 },
                 _callback=self.callback, silent=self.silent
-             )
+            )

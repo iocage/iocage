@@ -112,7 +112,10 @@ class IOCCreate(object):
 
         if iocage_lib.ioc_common.match_to_dir(self.iocroot, jail_uuid):
             if not self.plugin:
-                raise RuntimeError(f"Jail: {jail_uuid} already exists!")
+                iocage_lib.ioc_common.logit({
+                    'level': 'EXCEPTION',
+                    'message': f'Jail: {jail_uuid} already exists!'
+                })
 
             for i in itertools.count(start=2, step=1):
                 if iocage_lib.ioc_common.match_to_dir(self.iocroot,
@@ -129,18 +132,34 @@ class IOCCreate(object):
             config = self.config
         else:
             try:
-                if self.template:
+                if self.clone and self.template:
+                    iocage_lib.ioc_common.logit({
+                        'level': 'EXCEPTION',
+                        'message': 'You cannot clone a template, '
+                                   'use create -t instead.'
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
+                elif self.template:
                     _type = "templates"
                     temp_path = f"{self.iocroot}/{_type}/{self.release}"
                     template_config = iocage_lib.ioc_json.IOCJson(
                         temp_path).json_get_value
-                    cloned_release = template_config("cloned_release")
+                    try:
+                        cloned_release = template_config('cloned_release')
+                    except KeyError:
+                        # Thick jails won't have this
+                        cloned_release = None
                 elif self.clone:
                     _type = "jails"
                     clone_path = f"{self.iocroot}/{_type}/{self.release}"
                     clone_config = iocage_lib.ioc_json.IOCJson(
                         clone_path).json_get_value
-                    cloned_release = clone_config("cloned_release")
+                    try:
+                        cloned_release = clone_config('cloned_release')
+                    except KeyError:
+                        # Thick jails won't have this
+                        cloned_release = None
                     clone_uuid = clone_config("host_hostuuid")
                 else:
                     _type = "releases"
@@ -188,6 +207,9 @@ class IOCCreate(object):
                         silent=self.silent)
 
             if not self.clone:
+                if cloned_release is None:
+                    cloned_release = self.release
+
                 config = self.create_config(jail_uuid, cloned_release)
             else:
                 clone_config = f"{self.iocroot}/jails/{jail_uuid}/config.json"
@@ -198,130 +220,136 @@ class IOCCreate(object):
         jail = f"{self.pool}/iocage/jails/{jail_uuid}/root"
 
         if self.template:
-            try:
-                su.check_call(["zfs", "snapshot",
-                               f"{self.pool}/iocage/templates/{self.release}/"
-                               f"root@{jail_uuid}"], stderr=su.PIPE)
-            except su.CalledProcessError:
-                raise RuntimeError(f"Template: {self.release} not found!")
+            source = f'{self.pool}/iocage/templates/{self.release}@{jail_uuid}'
+            snap_cmd = ['zfs', 'snapshot', '-r', source]
 
-            su.Popen(["zfs", "clone", "-p",
-                      f"{self.pool}/iocage/templates/{self.release}/root@"
-                      f"{jail_uuid}", jail], stdout=su.PIPE).communicate()
+            if self.thickjail:
+                source = f'{source.split("@")[0]}/root@{jail_uuid}'
+                snap_cmd = ['zfs', 'snapshot', source]
+
+            try:
+                su.check_call(snap_cmd, stderr=su.PIPE)
+            except su.CalledProcessError:
+                raise RuntimeError(f'Template: {jail_uuid} not found!')
+
+            if not self.thickjail:
+                su.Popen(
+                    ['zfs', 'clone', '-p', f'{source.split("@")[0]}/root'
+                     f'@{jail_uuid}', jail],
+                    stdout=su.PIPE
+                ).communicate()
+            else:
+                self.create_thickjail(jail_uuid, source.split('@')[0])
+                del config['cloned_release']
 
             # self.release is actually the templates name
-            config["release"] = iocage_lib.ioc_json.IOCJson(
-                f"{self.iocroot}/templates/{self.release}").json_get_value(
-                "release")
-            config["cloned_release"] = iocage_lib.ioc_json.IOCJson(
-                f"{self.iocroot}/templates/{self.release}").json_get_value(
-                "cloned_release")
-        elif self.clone:
+            config['release'] = iocage_lib.ioc_json.IOCJson(
+                f'{self.iocroot}/templates/{self.release}').json_get_value(
+                'release')
             try:
-                su.check_call(["zfs", "snapshot", "-r",
-                               f"{self.pool}/iocage/jails/{self.release}"
-                               f"@{jail_uuid}"], stderr=su.PIPE)
+                config['cloned_release'] = iocage_lib.ioc_json.IOCJson(
+                    f'{self.iocroot}/templates/{self.release}').json_get_value(
+                    'cloned_release')
+            except KeyError:
+                # Thick jails won't have this
+                pass
+        elif self.clone:
+            source = f'{self.pool}/iocage/jails/{self.release}@{jail_uuid}'
+            snap_cmd = ['zfs', 'snapshot', '-r', source]
+
+            if self.thickjail:
+                source = f'{source.split("@")[0]}/root@{jail_uuid}'
+                snap_cmd = ['zfs', 'snapshot', source]
+
+            try:
+                su.check_call(snap_cmd, stderr=su.PIPE)
             except su.CalledProcessError:
-                raise RuntimeError(f"Jail: {jail_uuid} not found!")
+                raise RuntimeError(f'Jail: {jail_uuid} not found!')
 
-            su.Popen(["zfs", "clone",
-                      f"{self.pool}/iocage/jails/{self.release}@"
-                      f"{jail_uuid}", jail.replace("/root", "")],
-                     stdout=su.PIPE).communicate()
-            su.Popen(["zfs", "clone",
-                      f"{self.pool}/iocage/jails/{self.release}/root@"
-                      f"{jail_uuid}", jail], stdout=su.PIPE).communicate()
+            if not self.thickjail:
+                su.Popen(
+                    ['zfs', 'clone', source, jail.replace('/root', '')],
+                    stdout=su.PIPE
+                ).communicate()
+                su.Popen(
+                    ['zfs', 'clone', f'{source.split("@")[0]}/root@'
+                     f'{jail_uuid}', jail],
+                    stdout=su.PIPE
+                ).communicate()
+            else:
+                self.create_thickjail(jail_uuid, source.split('@')[0])
+                shutil.copyfile(
+                    f'{self.iocroot}/jails/{self.release}/config.json',
+                    f'{self.iocroot}/jails/{jail_uuid}/config.json'
+                )
+                shutil.copyfile(
+                    f'{self.iocroot}/jails/{self.release}/fstab',
+                    f'{self.iocroot}/jails/{jail_uuid}/fstab'
+                )
 
-            with open(clone_config, "r") as _clone_config:
+            with open(clone_config, 'r') as _clone_config:
                 config = json.load(_clone_config)
 
             # self.release is actually the clones name
-            config["release"] = iocage_lib.ioc_json.IOCJson(
-                f"{self.iocroot}/jails/{self.release}").json_get_value(
-                "release")
-            config["cloned_release"] = iocage_lib.ioc_json.IOCJson(
-                f"{self.iocroot}/jails/{self.release}").json_get_value(
-                "cloned_release")
+            config['release'] = iocage_lib.ioc_json.IOCJson(
+                f'{self.iocroot}/jails/{self.release}').json_get_value(
+                'release')
+            try:
+                config['cloned_release'] = iocage_lib.ioc_json.IOCJson(
+                    f'{self.iocroot}/jails/{self.release}').json_get_value(
+                    'cloned_release')
+            except KeyError:
+                # Thick jails won't have this
+                pass
 
             # Clones are expected to be as identical as possible.
 
             for k, v in config.items():
                 v = v.replace(clone_uuid, jail_uuid)
 
-                if "_mac" in k:
+                if '_mac' in k:
                     # They want a unique mac on start
-                    config[k] = "none"
+                    config[k] = 'none'
 
                 config[k] = v
         else:
             if not self.empty:
-                dataset = f"{self.pool}/iocage/releases/{self.release}/" \
-                    f"root@{jail_uuid}"
+                dataset = f'{self.pool}/iocage/releases/{self.release}/' \
+                    f'root@{jail_uuid}'
                 try:
-                    su.check_call(["zfs", "snapshot",
-                                   f"{self.pool}/iocage/releases/"
-                                   f"{self.release}/"
-                                   f"root@{jail_uuid}"], stderr=su.PIPE)
+                    su.check_call(['zfs', 'snapshot', dataset], stderr=su.PIPE)
                 except su.CalledProcessError:
                     try:
                         snapshot = self.zfs.get_snapshot(dataset)
                         iocage_lib.ioc_common.logit({
-                            "level": "EXCEPTION",
-                            "message": f"Snapshot: {snapshot.name} exists!\n"
-                                       "Please manually run zfs destroy"
-                                       f" {snapshot.name} if you wish to "
-                                       "destroy it."
+                            'level': 'EXCEPTION',
+                            'message': f'Snapshot: {snapshot.name} exists!\n'
+                                       'Please manually run zfs destroy'
+                                       f' {snapshot.name} if you wish to '
+                                       'destroy it.'
                         },
                             _callback=self.callback,
                             silent=self.silent)
 
                     except libzfs.ZFSException:
                         raise RuntimeError(
-                            f"RELEASE: {self.release} not found!")
+                            f'RELEASE: {self.release} not found!')
 
                 if not self.thickjail:
-                    su.Popen(["zfs", "clone", "-p",
-                              f"{self.pool}/iocage/releases/"
-                              f"{self.release}/root@"
-                              f"{jail_uuid}",
-                              jail], stdout=su.PIPE).communicate()
+                    su.Popen(
+                        ['zfs', 'clone', '-p', dataset, jail],
+                        stdout=su.PIPE
+                    ).communicate()
                 else:
-                    try:
-                        su.Popen(["zfs", "create", "-p", jail],
-                                  stdout=su.PIPE).communicate()
-                        zfs_send = su.Popen(["zfs", "send",
-                                             f"{self.pool}/iocage/releases/"
-                                             f"{self.release}/root@"
-                                             f"{jail_uuid}"], stdout=su.PIPE)
-                        su.check_call(["zfs", "receive", "-F", jail],
-                                      stdin=zfs_send.stdout)
-                        su.check_call(['zfs', 'destroy',
-                                       f'{self.pool}/iocage/releases/'
-                                       f'{self.release}/root@'
-                                       f'{jail_uuid}'], stdout=su.PIPE)
-                    except su.CalledProcessError:
-                        su.Popen(["zfs", "destroy", "-rf",
-                                  f"{self.pool}/iocage/jails/{jail_uuid}"],
-                                  stdout=su.PIPE).communicate()
-                        su.Popen(["zfs", "destroy", "-r",
-                                  f"{self.pool}/iocage/releases/"
-                                  f"{self.release}/root@"
-                                  f"{jail_uuid}"],
-                                  stdout=su.PIPE).communicate()
-                        iocage_lib.ioc_common.logit({
-                            "level": "EXCEPTION",
-                            "message": "Can't copy release!"
-                        },
-                            _callback=self.callback,
-                            silent=self.silent)
+                    self.create_thickjail(jail_uuid, dataset.split('@')[0])
                     del config['cloned_release']
             else:
                 try:
                     iocage_lib.ioc_common.checkoutput(
-                        ["zfs", "create", "-p", jail],
+                        ['zfs', 'create', '-p', jail],
                         stderr=su.PIPE)
                 except su.CalledProcessError as err:
-                    raise RuntimeError(err.output.decode("utf-8").rstrip())
+                    raise RuntimeError(err.output.decode('utf-8').rstrip())
 
         iocjson = iocage_lib.ioc_json.IOCJson(location, silent=True)
 
@@ -898,3 +926,38 @@ ipv6_activate_all_interfaces=\"YES\"
         if basejail != 'no':
             su.Popen(
                 ['umount', '-F', f'{location}/fstab', '-a']).communicate()
+
+    def create_thickjail(self, jail_uuid, source):
+        jail = f"{self.pool}/iocage/jails/{jail_uuid}"
+
+        try:
+            su.Popen(['zfs', 'create', '-p', jail],
+                     stdout=su.PIPE).communicate()
+            zfs_send = su.Popen(
+                ['zfs', 'send', f'{source}@{jail_uuid}'],
+                stdout=su.PIPE
+            )
+            su.check_call(
+                ['zfs', 'receive', '-F', f'{jail}/root'],
+                stdin=zfs_send.stdout
+            )
+            su.check_call(
+                ['zfs', 'destroy', f'{source}@{jail_uuid}'],
+                stdout=su.PIPE
+            )
+        except su.CalledProcessError:
+            su.Popen(
+                ['zfs', 'destroy', '-rf', jail],
+                stdout=su.PIPE
+            ).communicate()
+            su.Popen(
+                ['zfs', 'destroy', '-r', f'{source}@{jail_uuid}'],
+                stdout=su.PIPE
+            ).communicate()
+
+            iocage_lib.ioc_common.logit({
+                'level': 'EXCEPTION',
+                'message': f'Can\'t create thick jail from {source}!'
+            },
+                _callback=self.callback,
+                silent=self.silent)
