@@ -616,7 +616,7 @@ class IOCCreate(object):
         # Unique jail properties, they will be overridden by user supplied
         # values.
         jail_props = {
-            'host_hostname': jail_uuid,
+            'host_hostname': jail_uuid.replace('_', '-'),
             'host_hostuuid': jail_uuid,
             'release': release,
             'cloned_release': self.release,
@@ -920,7 +920,7 @@ ipv6_activate_all_interfaces=\"YES\"
                 ['mount', '-F', f'{location}/fstab', '-a']).communicate()
 
         su.Popen(['sysrc', '-f', f'{location}/root/etc/rc.conf',
-                  f'hostname={host_hostname}'],
+                  f'hostname={host_hostname.replace("_", "-")}'],
                  stdout=su.PIPE).communicate()
 
         if basejail != 'no':
