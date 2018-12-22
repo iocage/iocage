@@ -35,6 +35,5 @@ __rootcmd__ = True
 @click.argument("jail", required=True)
 def cli(jail):
     """Update the supplied jail to the latest patchset"""
-    iocage = ioc.IOCage(jail=jail)
-
-    iocage.update()
+    skip_jails = bool(jail != 'ALL')
+    ioc.IOCage(jail=jail, skip_jails=skip_jails).update()
