@@ -1791,8 +1791,18 @@ class IOCage(ioc_json.IOCZFS):
             uuid, path = self.__check_jail_existence__()
             ioc_stop.IOCStop(uuid, path, silent=self.silent, force=force)
 
+    def update_all(self):
+        """Runs update for all jails"""
+        self._all = False
+        for jail in self.jails:
+            self.jail = jail
+            self.update()
+
     def update(self):
         """Updates a jail to the latest patchset."""
+        if self._all:
+            self.update_all()
+
         uuid, path = self.__check_jail_existence__()
         conf = ioc_json.IOCJson(
             path, silent=self.silent, stop=True).json_get_value('all')
@@ -1881,7 +1891,17 @@ class IOCage(ioc_json.IOCZFS):
                 _callback=self.callback,
                 silent=self.silent)
 
+    def upgrade_all(self, release):
+        """Runs upgrade for all jails"""
+        self._all = False
+        for jail in self.jails:
+            self.jail = jail
+            self.upgrade(release)
+
     def upgrade(self, release):
+        if self._all:
+            self.upgrade_all(release)
+
         if release is not None:
             host_release = float(os.uname()[2].rsplit("-", 1)[0].rsplit(
                 "-", 1)[0])

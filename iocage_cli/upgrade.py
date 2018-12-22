@@ -36,4 +36,5 @@ __rootcmd__ = True
 @click.option("--release", "-r", required=False, help="RELEASE to upgrade to")
 def cli(jail, release):
     """Runs upgrade with the command given inside the specified jail."""
-    ioc.IOCage(jail=jail, skip_jails=True).upgrade(release)
+    skip_jails = bool(jail != 'ALL')
+    ioc.IOCage(jail=jail, skip_jails=skip_jails).upgrade(release)
