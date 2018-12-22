@@ -139,7 +139,7 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
         host_release = iocage_lib.ioc_common.get_host_release()
         for r in releases:
             message = f'[{releases.index(r)}] {r}'
-            if r in eol or []:
+            if eol is not None and (r in eol or []):
                 message += ' (EOL)'
             iocage_lib.ioc_common.logit(
                 {
