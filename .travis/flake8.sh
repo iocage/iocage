@@ -15,8 +15,7 @@ echo "Comparing with last stable release: ${last_release}"
 git checkout ${last_release}
 
 tmpbefore=$(mktemp)
-# TODO: Set this to the above after release of 1.0
-find ./iocage/cli ./iocage/lib -name \*.py -exec flake8 --ignore=E127,E203,W503,F811 {} + > ${tmpbefore}
+find ./iocage_cli ./iocage_lib -name \*.py -exec flake8 --ignore=E127,E203,W503,F811 {} + > ${tmpbefore}
 num_errors_before=`cat ${tmpbefore} | wc -l`
 echo "${last_release}'s Error Count: ${num_errors_before}"
 
