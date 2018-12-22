@@ -1802,6 +1802,7 @@ class IOCage(ioc_json.IOCZFS):
         """Updates a jail to the latest patchset."""
         if self._all:
             self.update_all()
+            return
 
         uuid, path = self.__check_jail_existence__()
         conf = ioc_json.IOCJson(
@@ -1901,6 +1902,7 @@ class IOCage(ioc_json.IOCZFS):
     def upgrade(self, release):
         if self._all:
             self.upgrade_all(release)
+            return
 
         if release is not None:
             host_release = float(os.uname()[2].rsplit("-", 1)[0].rsplit(
