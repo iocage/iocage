@@ -26,7 +26,7 @@ class Row:
         for attr in [
             'name', 'jid', 'state', 'release', 'ip4', 'ip6', 'orig_release',
             'boot', 'type', 'template', 'basejail', 'crt', 'res', 'qta',
-            'use', 'ava', 'created', 'rsize', 'used'
+            'use', 'ava', 'created', 'rsize', 'used', 'orig_name'
         ]:
             setattr(self, attr, None)
 
@@ -42,6 +42,8 @@ class Row:
 
             getattr(self, f'{r_type}_parse')()
 
+        self.orig_name = self.name
+
         self.normalize_values()
 
     # Helper parsing function
@@ -50,21 +52,41 @@ class Row:
 
     # Some magic method overrides
     def __repr__(self):
-        if not self.name:
+        if not self.orig_name:
             return self.orig_release
         else:
-            return self.name
+            return self.orig_name
 
     def __eq__(self, other):
-        if not self.name:
+        if not self.orig_name:
             return other.orig_release == self.orig_release
         else:
-            return other.name == self.name
+            return other.orig_name == self.orig_name
 
     def __hash__(self):
-        return hash(self.name) if self.name else hash(self.orig_release)
+        return hash(self.orig_name) if self.orig_name else hash(
+            self.orig_release
+        )
 
     # Some common normalization functions for class attributes
+    def normalize_name(self):
+        # Logic copied from iocage to be consistent with the tests
+        if self.name:
+            _sort = self.name.strip().rsplit('_', 1)
+
+            if len(_sort) > 1:
+                _numb = _sort[1].rsplit('/', 1)
+                _path = _numb[1] if len(_numb) > 1 else ''
+
+                try:
+                    natural_sort = 10, int(_numb[0])
+                except ValueError:
+                    natural_sort = 20, _numb[0]
+
+                self.name = (_sort[0],) + natural_sort + (_path,)
+            else:
+                self.name = self.name, 0
+
     def normalize_created(self):
         self.created = datetime.strptime(self.created, '%a %b %d %H:%M %Y')
 
@@ -108,8 +130,15 @@ class Row:
         self.state = 1 if self.state == 'down' else 0
 
     def normalize_ip4(self):
+
+        ip = self.ip4.split('|')
+        if len(ip) > 1:
+            ip = ip[1].split('/')[0]
+        else:
+            ip = ip[0]
+
         try:
-            ip = tuple(int(c) for c in self.ip4.split('.'))
+            ip = tuple(int(c) for c in ip.split('.'))
         except ValueError:
             ip = (300, self.ip4)
 
@@ -119,9 +148,9 @@ class Row:
         self.boot = 0 if self.boot == 'on' else 1
 
     def normalize_jid(self):
-        if self.jid.isnumeric():
+        if str(self.jid).isnumeric():
             self.jid = int(self.jid)
-        elif self.jid == '-':
+        elif str(self.jid) == '-' or not self.jid:
             self.jid = 99999999
 
     def normalize_size_values(self, value):
@@ -151,13 +180,22 @@ class Row:
         value += (self.name,)
         return value
 
+    def ip_jails_parse_correctly(self, values, max, low, high):
+        # Standard parse will conflict with jails which have DHCP on or
+        # ip assigned ones
+        if len(values) > max:
+            # This means we have a dhcp based jail or ip assigned one
+            values[low:high] = ['|'.join(values[low:high])]
+
+        return values
+
     # PARSING FUNCTIONS
     def full_parse(self):
         # 10 columns - JID, NAME, BOOT, STATE, TYPE, RELEASE,
         # IP4, IP6, TEMPLATE, BASEJAIL
         self.jid, self.name, self.boot, self.state, self.type, \
         self.release, self.ip4, self.ip6, self.template, self.basejail = \
-            self.standard_parse()
+            self.ip_jails_parse_correctly(self.standard_parse(), 10, 6, 8)
 
     def all_parse(self):
         # 4 columns - JID, NAME, STATE, RELEASE, IP4
@@ -175,7 +213,9 @@ class Row:
         if len(data) == 1:
             self.release = data[0]
         else:
-            self.name, self.ip4 = data
+            self.name, self.ip4 = self.ip_jails_parse_correctly(
+                self.standard_parse(), 2, 1, 3
+            )
 
     def df_parse(self):
         self.name, self.crt, self.res, self.qta, self.use, self.ava = \
@@ -341,15 +381,21 @@ class Jail(Resource):
     def convert_to_row(self, **kwargs):
         short_name = kwargs.get('short_name', True)
         full = kwargs.get('full', False)
+        all = kwargs.get('all', True)
 
         props = self.jail_dataset['properties']
 
         ip4 = self.config.get('ip4_addr', 'none')
         if self.config.get('dhcp', 'off') == 'on':
-            ip4 = 'DHCP'
-
-        if ip4 == 'none':
+            if full and self.running:
+                ip4 = f'epair0b|{self.ip}'
+            else:
+                ip4 = 'DHCP'
+        elif ip4 == 'none' or not ip4:
             ip4 = '-'
+        elif all and ip4:
+            assert len(ip4.split()) == 1, f'Unrecognized ip format: {ip4}'
+            ip4 = ip4.split('|')[1].split('/')[0]
 
         if full:
             release = self.release
@@ -370,7 +416,7 @@ class Jail(Resource):
 
         return Row({
             'name': self.short_name if short_name else self.name,
-            'jid': self.jid,
+            'jid': self.jid or 9999999,
             'state': 'up' if self.running else 'down',
             'boot': self.config.get('boot', 'off'),
             'type': 'jail' if not self.is_template else 'template',
@@ -521,14 +567,29 @@ class Jail(Resource):
 
     @property
     def ip(self):
-        assert self.running is True
         try:
-            # TODO: we should probably load interface from config and
-            # make changes if necessary to it's value then
-            # TODO: Discuss with Brandon about support for older releases
-            return subprocess.check_output(
-                ['jexec', f'ioc-{self.name}', 'ifconfig', 'epair0b', 'inet']
-            ).decode().splitlines()[2].split()[1]
+            config = self.config
+            if config.get('dhcp', 'off') == 'on':
+                interface = 'epair0b'
+            else:
+                interface = config.get('ip4_addr', '').split('|')[0]
+
+            return self.run_command(
+                ['ifconfig', interface, 'inet']
+            )[0].splitlines()[2].split()[1]
+
+        except subprocess.CalledProcessError:
+            pass
+
+    def run_command(self, command):
+        # Returns a tuple - stdout, stderr
+        assert self.running is True
+        command = ['jexec', f'ioc-{self.name}'] + command
+        try:
+            stdout, stderr = subprocess.Popen(
+                command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            ).communicate()
+            return stdout.decode(), stderr.decode()
         except subprocess.CalledProcessError:
             pass
 

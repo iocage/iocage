@@ -33,12 +33,7 @@ import pytest
 require_root = pytest.mark.require_root
 require_zpool = pytest.mark.require_zpool
 require_dhcp = pytest.mark.require_dhcp
-require_networking = pytest.mark.require_networking
-
-# LIST OF FLAGS in create TO TEST
-# [c, C , r, t, p, n, u, b, T, e, s, f]
-
-# TODO: Test different jail props as well
+require_jail_ip = pytest.mark.require_jail_ip
 
 
 @require_root
@@ -140,7 +135,7 @@ def test_08_create_thickjail(release, jail, invoke_cli):
 @require_root
 @require_zpool
 @require_dhcp
-def test_09_test_dhcp_connectivity_in_jail(release, jail, invoke_cli):
+def test_09_dhcp_connectivity_in_jail(release, jail, invoke_cli):
     invoke_cli(
         ['create', '-r', release, '-n', 'dhcp_jail', 'dhcp=on'],
         'Failed to create DHCP Jail'
@@ -161,27 +156,46 @@ def test_09_test_dhcp_connectivity_in_jail(release, jail, invoke_cli):
     ip = jail.ip
     assert ip is not None and '0.0.0.0' not in ip
 
+    # Let's test if we can ping 8.8.8.8 from inside the jail
+
+    stdout, stderr = jail.run_command(['ping', '-c', '5', '8.8.8.8'])
+
+    assert bool(stderr) is False, f'ping returned an error: {stderr}'
+
 
 @require_root
 @require_zpool
-@require_networking
-def test_10_create_jail_and_install_packages(release, jail, invoke_cli):
-    # FIXME: Test to ensure the packages were installed
+@require_dhcp
+def test_10_create_jail_and_install_packages(release, jail, invoke_cli, skip_test):
 
+    pkg_jail = 'pkg_jail'
+    install_pkgs = ['nano']
     fd, path = tempfile.mkstemp()
+
     try:
         with os.fdopen(fd, 'w') as tmp:
             tmp.write(json.dumps({
-                'pkgs': ['nginx']
+                'pkgs': install_pkgs
             }))
 
         invoke_cli(
-            ['create', '-r', release, '-n', 'pkg_jail', '-p', path]
+            ['create', '-r', release, '-n', pkg_jail, '-p', path, 'dhcp=on']
         )
+
     finally:
         os.remove(path)
 
-    assert jail('pkg_jail').exists is True
+    jail = jail(pkg_jail)
+
+    assert jail.exists is True
+
+    invoke_cli(
+        ['start', pkg_jail]
+    )
+
+    for pkg in install_pkgs:
+        stdout, stderr = jail.run_command(['pkg', 'info', pkg])
+        assert bool(stderr) is False, f'{pkg} did not install'
 
 
 @require_root
@@ -243,3 +257,22 @@ def test_14_create_rc_jail(release, jail, invoke_cli):
     )
 
     assert jail.running is False, 'Failed to stop rc_jail'
+
+
+@require_root
+@require_zpool
+@require_jail_ip
+def test_15_create_jail_with_assigned_ip(release, jail, invoke_cli, jail_ip):
+    jail = jail('assigned_ip_jail')
+
+    invoke_cli([
+        'create', '-r', release, '-n', jail.name, f'ip4_addr=vtnet0|{jail_ip}'
+    ])
+
+    assert jail.exists is True
+
+    invoke_cli(
+        ['start', jail.name]
+    )
+
+    assert jail_ip.strip('/')[0] in jail.ip

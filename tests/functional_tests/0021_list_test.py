@@ -42,7 +42,7 @@ ALL_FLAGS = [
 def _short_flag_common(
         invoke_cli, command, jails, jails_as_rows, parse_rows_output
 ):
-    verify_list = jails_as_rows(jails)
+    verify_list = jails_as_rows(jails, all=True)
 
     for flag in SHORT_FLAGS:
         cmd = command.copy()
@@ -68,7 +68,7 @@ def test_01_list_default(
 
     # With no flag specified, iocage should sort wrt name
     orig_list = parse_rows_output(result.output, 'all')
-    verify_list = jails_as_rows(resource_selector.jails)
+    verify_list = jails_as_rows(resource_selector.jails, all=True)
 
     verify_list.sort(key=lambda r: r.sort_flag('name'))
 
