@@ -653,3 +653,7 @@ class ResourceSelector:
     @property
     def not_cloned_jails(self):
         return [j for j in self.all_jails if not j.is_cloned]
+
+    @property
+    def cloned_jails(self):
+        return [j for j in self.all_jails if j.is_cloned]

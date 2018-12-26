@@ -35,7 +35,7 @@ def test_fetch(
         root_dir, http, _file, noupdate, invoke_cli
 ):
 
-    command = ['fetch', '-r', release, '-F', 'base.txz', '-F', 'MANIFEST']
+    command = ['fetch', '-r', release]
     command += ['-s', server] if server else []
     command += ['-h'] if http else []
     command += ['-f', _file] if _file else []
