@@ -106,8 +106,8 @@ def pytest_runtest_setup(item):
         'require_networking' in item.keywords
         and all(
             not v for v in (
-                    item.config.getvalue('--dhcp'),
-                    item.config.getvalue('--jail_ip')
+                item.config.getvalue('--dhcp'),
+                item.config.getvalue('--jail_ip')
             )
         )
     ):

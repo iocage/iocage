@@ -409,8 +409,8 @@ class Jail(Resource):
                 '/root@', 1
             )[0].rsplit('/', 1)[-1]
             if any(
-                    v in template.lower()
-                    for v in ('release', 'stable')
+                v in template.lower()
+                for v in ('release', 'stable')
             ):
                 template = '-'
 
@@ -437,7 +437,7 @@ class Jail(Resource):
     def path(self):
         # Jail can be either under `jails` or `templates` datasets
         if self.zfs.get_dataset(
-                f'{self.zfs.pool}/iocage/jails/{self.name}'
+            f'{self.zfs.pool}/iocage/jails/{self.name}'
         ):
             dataset = 'jails'
         else:
@@ -500,7 +500,7 @@ class Jail(Resource):
         # TODO: Let's add validation for props as well in future
         config = None
         if os.path.exists(os.path.join(
-                self.absolute_path, self.DEFAULT_JSON_FILE
+            self.absolute_path, self.DEFAULT_JSON_FILE
         )):
             with open(
                 os.path.join(self.absolute_path, self.DEFAULT_JSON_FILE), 'r'

@@ -40,7 +40,7 @@ def test_01_remove_snapshot(invoke_cli, resource_selector, skip_test):
     snap_jail = None
     for jail in jails:
         if not jail.is_template and not jail.is_cloned and any(
-                SNAP_NAME in snap.id for snap in jail.recursive_snapshots
+            SNAP_NAME in snap.id for snap in jail.recursive_snapshots
         ):
             snap_jail = jail
             break

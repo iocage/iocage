@@ -33,8 +33,8 @@ SORTING_FLAGS = ['name', 'created', 'rsize', 'used']
 
 
 def common_function(
-        invoke_cli, jail, parse_rows_output,
-        jails_as_rows, full=False
+    invoke_cli, jail, parse_rows_output,
+    jails_as_rows, full=False
 ):
     for flag in SORTING_FLAGS:
         command = ['snaplist', jail.name, '-s', flag]
@@ -56,8 +56,8 @@ def common_function(
 @require_root
 @require_zpool
 def test_01_list_snapshots_of_jail(
-        invoke_cli, resource_selector, skip_test,
-        parse_rows_output, jails_as_rows
+    invoke_cli, resource_selector, skip_test,
+    parse_rows_output, jails_as_rows
 ):
     jails = resource_selector.jails_having_snapshots
     skip_test(not jails)
@@ -68,8 +68,8 @@ def test_01_list_snapshots_of_jail(
 @require_root
 @require_zpool
 def test_02_list_snapshots_of_template_jail(
-        invoke_cli, resource_selector, skip_test,
-        parse_rows_output, jails_as_rows
+    invoke_cli, resource_selector, skip_test,
+    parse_rows_output, jails_as_rows
 ):
     jails = resource_selector.templates_having_snapshots
     skip_test(not jails)
@@ -80,8 +80,8 @@ def test_02_list_snapshots_of_template_jail(
 @require_root
 @require_zpool
 def test_03_list_snapshots_of_jail_with_long_flag(
-        invoke_cli, resource_selector, skip_test,
-        parse_rows_output, jails_as_rows
+    invoke_cli, resource_selector, skip_test,
+    parse_rows_output, jails_as_rows
 ):
     jails = resource_selector.all_jails_having_snapshots
     skip_test(not jails)
