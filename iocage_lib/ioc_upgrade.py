@@ -35,7 +35,7 @@ import iocage_lib.ioc_json
 import iocage_lib.ioc_list
 
 
-class IOCUpgrade(object):
+class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
 
     """Will upgrade a jail to the specified RELEASE."""
 
@@ -45,6 +45,7 @@ class IOCUpgrade(object):
                  silent=False,
                  callback=None,
                  ):
+        super().__init__()
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")
