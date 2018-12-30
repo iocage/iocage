@@ -174,7 +174,7 @@ class IOCConfiguration(IOCZFS):
     @staticmethod
     def get_version():
         """Sets the iocage configuration version."""
-        version = '16'
+        version = '17'
 
         return version
 
@@ -476,6 +476,10 @@ class IOCConfiguration(IOCZFS):
         if not conf.get('rtsold'):
             conf['rtsold'] = 'off'
 
+        # Version 17 keys
+        if not conf.get('allow_vmm'):
+            conf['allow_vmm'] = '0'
+
         if not default:
             conf.update(jail_conf)
 
@@ -729,6 +733,7 @@ class IOCConfiguration(IOCZFS):
             'allow_quotas': '0',
             'allow_socket_af': '0',
             'allow_tun': '0',
+            'allow_vmm': '0',
             'cpuset': 'off',
             'rlimits': 'off',
             'memoryuse': 'off',
@@ -1513,6 +1518,7 @@ class IOCJson(IOCConfiguration):
             "allow_mount_zfs": ("0", "1"),
             "allow_quotas": ("0", "1"),
             "allow_socket_af": ("0", "1"),
+            "allow_vmm": ("0", "1"),
             "vnet_interfaces": ("string", ),
             # RCTL limits
             "cpuset": ("off", "on"),
