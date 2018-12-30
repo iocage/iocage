@@ -56,6 +56,7 @@ class IOCStop(object):
         dhcp = self.conf["dhcp"]
         exec_fib = self.conf["exec_fib"]
         devfs_ruleset = self.conf['devfs_ruleset']
+        legacy_networking = self.conf['legacy_networking_behaviour']
 
         if not self.status:
             msg = f"{self.uuid} is not running!"
@@ -229,66 +230,69 @@ class IOCStop(object):
                         _callback=self.callback,
                         silent=self.silent)
 
-        if ip4_addr != "inherit" and vnet == "off":
-            if ip4_addr != "none":
-                gws = netifaces.gateways()
+        destroy_ip4_alias = True if ip4_addr not in ("inherit", "none") \
+                and vnet == "off" and legacy_networking == "on" \
+                else False
 
-                for ip4 in ip4_addr.split(","):
-                    # Don't try to remove an alias if there's no interface.
+        if destroy_ip4_alias
+            gws = netifaces.gateways()
 
-                    if "|" not in ip4:
-                        try:
-                            def_iface = gws[
-                                "default"][netifaces.AF_INET][1]
-                            ip4 = f'{def_iface}|{ip4}'
-                        except KeyError:
-                            # Best effort for default interface
-                            continue
+            for ip4 in ip4_addr.split(","):
+                # Don't try to remove an alias if there's no interface.
 
+                if "|" not in ip4:
                     try:
-                        iface, addr = ip4.split("/")[0].split("|")
-                        addr = addr.split()
-                        iocage_lib.ioc_common.checkoutput(
-                            ['ifconfig', iface] + addr + ['-alias'],
-                            stderr=su.STDOUT
-                        )
-                    except su.CalledProcessError as err:
-                        if "Can't assign requested address" in \
-                                err.output.decode("utf-8"):
-                            # They may have a new address that somehow
-                            # didn't set correctly. We shouldn't bail on
-                            # that.
-                            pass
-                        elif not self.force:
-                            raise RuntimeError(
-                                "{}".format(
-                                    err.output.decode("utf-8").strip()))
-
-        if ip6_addr != "inherit" and vnet == "off":
-            if ip6_addr != "none":
-                for ip6 in ip6_addr.split(","):
-                    # Don't try to remove an alias if there's no interface.
-
-                    if "|" not in ip6:
+                        def_iface = gws["default"][netifaces.AF_INET][1]
+                        ip4 = f'{def_iface}|{ip4}'
+                    except KeyError:
+                        # Best effort for default interface
                         continue
-                    try:
-                        iface, addr = ip6.split("/")[0].split("|")
-                        addr = addr.split()
-                        iocage_lib.ioc_common.checkoutput(
-                            ["ifconfig", iface, "inet6"] + addr + ["-alias"],
-                            stderr=su.STDOUT
-                        )
-                    except su.CalledProcessError as err:
-                        if "Can't assign requested address" in \
-                                err.output.decode("utf-8"):
-                            # They may have a new address that somehow
-                            # didn't set correctly. We shouldn't bail on
-                            # that.
-                            pass
-                        elif not self.force:
-                            raise RuntimeError(
-                                "{}".format(
-                                    err.output.decode("utf-8").strip()))
+
+                try:
+                    iface, addr = ip4.split("/")[0].split("|")
+                    addr = addr.split()
+                    iocage_lib.ioc_common.checkoutput(
+                        ['ifconfig', iface] + addr + ['-alias'],
+                        stderr=su.STDOUT
+                    )
+                except su.CalledProcessError as err:
+                    if "Can't assign requested address" in \
+                            err.output.decode("utf-8"):
+                        # They may have a new address that somehow
+                        # didn't set correctly. We shouldn't bail on
+                        # that.
+                        pass
+                    elif not self.force:
+                        raise RuntimeError(
+                            "{}".format(
+                                err.output.decode("utf-8").strip()))
+
+        destroy_ip6_alias = True if ip6_addr not in ("inherit", "none") and \
+                vnet == "off" and legacy_networking == "on" else False
+
+        if destroy_ip6_alias:
+            for ip6 in ip6_addr.split(","):
+                # Don't try to remove an alias if there's no interface.
+
+                if "|" not in ip6:
+                    continue
+                try:
+                    iface, addr = ip6.split("/")[0].split("|")
+                    addr = addr.split()
+                    iocage_lib.ioc_common.checkoutput(
+                        ["ifconfig", iface, "inet6"] + addr + ["-alias"],
+                        stderr=su.STDOUT
+                    )
+                except su.CalledProcessError as err:
+                    if "Can't assign requested address" in \
+                            err.output.decode("utf-8"):
+                        # They may have a new address that somehow
+                        # didn't set correctly. We shouldn't bail on
+                        # that.
+                        pass
+                    elif not self.force:
+                        raise RuntimeError(
+                            "{}".format(err.output.decode("utf-8").strip()))
 
         # Clean up after our dynamic devfs rulesets
         ruleset = su.check_output(
