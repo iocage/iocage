@@ -174,7 +174,7 @@ class IOCConfiguration(IOCZFS):
     @staticmethod
     def get_version():
         """Sets the iocage configuration version."""
-        version = '16'
+        version = '17'
 
         return version
 
@@ -475,6 +475,10 @@ class IOCConfiguration(IOCZFS):
         # Version 16 keys
         if not conf.get('rtsold'):
             conf['rtsold'] = 'off'
+
+        # Version 17 keys
+        if not conf.get('legacy_networking_behaviour'):
+            config['legacy_networking_behaviour'] = 'off'
 
         if not default:
             conf.update(jail_conf)
@@ -785,7 +789,8 @@ class IOCConfiguration(IOCZFS):
             'reservation': 'none',
             'depends': 'none',
             'vnet_interfaces': 'none',
-            'rtsold': 'off'
+            'rtsold': 'off',
+            'legacy_networking_behaviour': 'off'
         }
 
         try:
