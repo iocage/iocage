@@ -369,8 +369,8 @@ class IOCStart(object):
             f"allow.mount.zfs={allow_mount_zfs}"
         ]
 
-        start_cmd = [x for x in ["jail", "-c"] + net + [
-            x for x in parameters if '1' in x] + [
+        start_parameters = [x for x in [
+            net + [x for x in parameters if '1' in x] + [
                 f'name=ioc-{self.uuid}',
                 f'host.domainname={host_domainname}',
                 f'host.hostname={host_hostname}',
@@ -392,7 +392,10 @@ class IOCStart(object):
                 f'exec.consolelog={self.iocroot}/log/ioc-'
                 f'{self.uuid}-console.log',
                 'persist'
+            ]
         ] if x != '']
+
+        start_cmd = ["jail", "-c"] + start_parameters
 
         start_env = {
             **os.environ,
