@@ -277,6 +277,7 @@ class IOCStart(object):
 
             if ip4_addr != "none":
                 gws = netifaces.gateways()
+                ip4_addrs = []
 
                 for _ip4_addr in ip4_addr.split(","):
                     if "|" not in _ip4_addr and legacy_networking == "on":
@@ -287,7 +288,10 @@ class IOCStart(object):
                             # Best effort for default interface
                             pass
 
-                    net.append(f"ip4.addr={_ip4_addr}")
+                    ip4_addrs.append(f"{_ip4_addr}")
+
+                ip4_addrs_str = ",".join(ip4_addrs)
+                net.append(f"ip4.addr={ip4_addrs_str}")
 
             if ip6_addr != "none":
                 net.append(f"ip6.addr={ip6_addr}")
