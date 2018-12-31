@@ -234,7 +234,7 @@ class IOCStop(object):
                 and vnet == "off" and legacy_networking == "on" \
                 else False
 
-        if destroy_ip4_alias
+        if destroy_ip4_alias:
             gws = netifaces.gateways()
 
             for ip4 in ip4_addr.split(","):
