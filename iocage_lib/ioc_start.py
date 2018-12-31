@@ -369,8 +369,9 @@ class IOCStart(object):
             f"allow.mount.zfs={allow_mount_zfs}"
         ]
 
-        start_parameters = [x for x in [
-            net + [x for x in parameters if '1' in x] + [
+        start_parameters = [x for x in net +
+            [x for x in parameters if '1' in x] +
+            [
                 f'name=ioc-{self.uuid}',
                 f'host.domainname={host_domainname}',
                 f'host.hostname={host_hostname}',
@@ -392,8 +393,7 @@ class IOCStart(object):
                 f'exec.consolelog={self.iocroot}/log/ioc-'
                 f'{self.uuid}-console.log',
                 'persist'
-            ]
-        ] if x != '']
+            ] if x != '']
 
         start_cmd = ["jail", "-c"] + start_parameters
 
@@ -424,6 +424,45 @@ class IOCStart(object):
             }, _callback=self.callback,
                 silent=self.silent)
         else:
+            # Write out the jail config.
+            def fix_param(p):
+                # If the param is an assignable variable, check if we have to
+                # treat it specially.
+                if "=" in p:
+                    key, value = p.split("=", 1)
+
+                    # name is specified at the start of the jail config block.
+                    # The None will be filtered out before writing the config.
+                    if key == "name":
+                        return None
+
+                    # IP addr lists are special and use +=
+                    if key == "ip4.addr" or key == "ip6.addr":
+                        lines = []
+                        for addr in value.split(","):
+                            lines.append(f"{key} += \"{addr}\";")
+
+                        return "\n\t".join(lines)
+
+                    return f"{key} = \"{value}\";"
+
+                # Just a boolean parameter
+                return f"{p};"
+
+            # Generate list of parameters to write to config, excluding "name"
+            # parameter, which is specified outside of the config block.
+            config_parameters = "\n\t".join(
+                [x for x in map(lambda x: fix_param(x), start_parameters)
+                 if x is not None
+                ]
+            )
+
+            with open(f"/var/run/jail.ioc-{self.uuid}.conf", 'w') as jconf:
+                jconf.write(f"ioc-{self.uuid} ")
+                jconf.write("{\n\t")
+                jconf.write(f"{config_parameters}")
+                jconf.write("\n}")
+
             iocage_lib.ioc_common.logit({
                 "level": "INFO",
                 "message": "  + Started OK"
