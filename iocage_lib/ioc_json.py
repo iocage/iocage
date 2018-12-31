@@ -478,7 +478,7 @@ class IOCConfiguration(IOCZFS):
 
         # Version 17 keys
         if not conf.get('legacy_networking_behaviour'):
-            config['legacy_networking_behaviour'] = 'off'
+            conf['legacy_networking_behaviour'] = 'off'
 
         if not default:
             conf.update(jail_conf)
