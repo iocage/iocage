@@ -1615,17 +1615,18 @@ class IOCJson(IOCConfiguration):
 
             if props[key][0] == "string":
                 if key == "ip4_addr":
-                    try:
-                        interface, ip = value.split("|")
+                    if props["legacy_networking_behaviour"] == "on":
+                        try:
+                            interface, ip = value.split("|")
 
-                        if interface == "DEFAULT":
-                            gws = netifaces.gateways()
-                            def_iface = gws["default"][netifaces.AF_INET][1]
+                            if interface == "DEFAULT":
+                                gws = netifaces.gateways()
+                                def_iface = gws["default"][netifaces.AF_INET][1]
 
-                            value = f"{def_iface}|{ip}"
-                            conf[key] = value
-                    except ValueError:
-                        pass
+                                value = f"{def_iface}|{ip}"
+                                conf[key] = value
+                        except ValueError:
+                            pass
                 elif key in [f'vnet{i}_mac' for i in range(0, 4)]:
                     if value and value != 'none':
                         value = value.replace(',', ' ')
