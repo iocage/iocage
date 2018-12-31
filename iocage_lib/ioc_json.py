@@ -1481,6 +1481,7 @@ class IOCJson(IOCConfiguration):
             "vnet1_mac": ("string", ),
             "vnet2_mac": ("string", ),
             "vnet3_mac": ("string", ),
+            "legacy_networking_behaviour": ("off", "on"),
             # Jail Properties
             "devfs_ruleset": ("string", ),
             "exec_start": ("string", ),
