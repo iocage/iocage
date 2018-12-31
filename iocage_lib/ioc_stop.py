@@ -343,8 +343,18 @@ class IOCStop(object):
                 silent=self.silent)
 
         try:
-            stop = su.check_call(["jail", "-r", f"ioc-{self.uuid}"],
-                                 stderr=su.PIPE)
+            # Build up a jail stop command.
+            from pathlib import Path
+            cmd = ["jail"]
+
+            jail_config_file = Path(f"/var/run/jail.ioc-{self.uuid}.conf")
+            jail_config_arg = ""
+            if jail_config_file.is_file():
+                cmd.extend(["-f", f"{jail_config_file}"])
+
+            cmd.extend(["-r", f"ioc-{self.uuid}"])
+
+            stop = su.check_call(cmd, stderr=su.PIPE)
         except su.CalledProcessError as err:
             stop = err.returncode
 
