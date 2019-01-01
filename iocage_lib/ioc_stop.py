@@ -29,6 +29,7 @@ import iocage_lib.ioc_common
 import iocage_lib.ioc_json
 import iocage_lib.ioc_list
 
+from pathlib import Path
 
 class IOCStop(object):
     """Stops a jail and unmounts the jails mountpoints."""
@@ -344,13 +345,14 @@ class IOCStop(object):
 
         try:
             # Build up a jail stop command.
-            from pathlib import Path
             cmd = ["jail"]
 
-            jail_config_file = Path(f"/var/run/jail.ioc-{self.uuid}.conf")
-            jail_config_arg = ""
-            if jail_config_file.is_file():
-                cmd.extend(["-f", f"{jail_config_file}"])
+            # We check for the existence of the jail.conf here as on iocage
+            # upgrade people likely will not have these files. These files
+            # will be written on the next jail start/restart.
+            jail_conf_file = Path(f"/var/run/jail.ioc-{self.uuid}.conf")
+            if jail_conf_file.is_file():
+                cmd.extend(["-f", f"{jail_conf_file}"])
 
             cmd.extend(["-r", f"ioc-{self.uuid}"])
 
