@@ -273,21 +273,11 @@ class IOCStart(object):
             ip6_saddrsel = self.conf["ip6_saddrsel"]
             ip6 = self.conf["ip6"]
             net = []
-            legacy_networking = self.conf['legacy_networking_behaviour']
 
             if ip4_addr != "none":
-                gws = netifaces.gateways()
                 ip4_addrs = []
 
                 for _ip4_addr in ip4_addr.split(","):
-                    if "|" not in _ip4_addr and legacy_networking == "on":
-                        try:
-                            def_iface = gws["default"][netifaces.AF_INET][1]
-                            _ip4_addr = f'{def_iface}|{_ip4_addr}'
-                        except KeyError:
-                            # Best effort for default interface
-                            pass
-
                     ip4_addrs.append(f"{_ip4_addr}")
 
                 ip4_addrs_str = ",".join(ip4_addrs)

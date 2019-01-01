@@ -174,7 +174,7 @@ class IOCConfiguration(IOCZFS):
     @staticmethod
     def get_version():
         """Sets the iocage configuration version."""
-        version = '17'
+        version = '16'
 
         return version
 
@@ -475,10 +475,6 @@ class IOCConfiguration(IOCZFS):
         # Version 16 keys
         if not conf.get('rtsold'):
             conf['rtsold'] = 'off'
-
-        # Version 17 keys
-        if not conf.get('legacy_networking_behaviour'):
-            conf['legacy_networking_behaviour'] = 'off'
 
         if not default:
             conf.update(jail_conf)
@@ -789,8 +785,7 @@ class IOCConfiguration(IOCZFS):
             'reservation': 'none',
             'depends': 'none',
             'vnet_interfaces': 'none',
-            'rtsold': 'off',
-            'legacy_networking_behaviour': 'off'
+            'rtsold': 'off'
         }
 
         try:
@@ -1481,7 +1476,6 @@ class IOCJson(IOCConfiguration):
             "vnet1_mac": ("string", ),
             "vnet2_mac": ("string", ),
             "vnet3_mac": ("string", ),
-            "legacy_networking_behaviour": ("off", "on"),
             # Jail Properties
             "devfs_ruleset": ("string", ),
             "exec_start": ("string", ),
@@ -1615,18 +1609,17 @@ class IOCJson(IOCConfiguration):
 
             if props[key][0] == "string":
                 if key == "ip4_addr":
-                    if props["legacy_networking_behaviour"] == "on":
-                        try:
-                            interface, ip = value.split("|")
+                    try:
+                        interface, ip = value.split("|")
 
-                            if interface == "DEFAULT":
-                                gws = netifaces.gateways()
-                                def_iface = gws["default"][netifaces.AF_INET][1]
+                        if interface == "DEFAULT":
+                            gws = netifaces.gateways()
+                            def_iface = gws["default"][netifaces.AF_INET][1]
 
-                                value = f"{def_iface}|{ip}"
-                                conf[key] = value
-                        except ValueError:
-                            pass
+                            value = f"{def_iface}|{ip}"
+                            conf[key] = value
+                    except ValueError:
+                        pass
                 elif key in [f'vnet{i}_mac' for i in range(0, 4)]:
                     if value and value != 'none':
                         value = value.replace(',', ' ')
