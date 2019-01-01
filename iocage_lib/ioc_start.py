@@ -395,7 +395,21 @@ class IOCStart(object):
                 'persist'
             ] if x != '']
 
-        start_cmd = ["jail", "-c"] + start_parameters
+        # Write the config out to a file. We'll be starting the jail using this
+        # config and it is required for stopping the jail too.
+        try:
+            self.__write_jail_conf__(start_parameters)
+        except OSError as err:
+            msg = f"Error while writing jail config {err.filename}: " \
+                   + "{err.strerror}"
+            iocage_lib.ioc_common.logit({
+                "level": "EXCEPTION",
+                "message": msg
+            },
+                _callback=self.callback,
+                silent=self.silent)
+
+        start_cmd = ["jail", "-f", f"/var/run/jail.ioc-{self.uuid}.conf", "-c"]
 
         start_env = {
             **os.environ,
@@ -424,45 +438,6 @@ class IOCStart(object):
             }, _callback=self.callback,
                 silent=self.silent)
         else:
-            # Write out the jail config.
-            def fix_param(p):
-                # If the param is an assignable variable, check if we have to
-                # treat it specially.
-                if "=" in p:
-                    key, value = p.split("=", 1)
-
-                    # name is specified at the start of the jail config block.
-                    # The None will be filtered out before writing the config.
-                    if key == "name":
-                        return None
-
-                    # IP addr lists are special and use +=
-                    if key == "ip4.addr" or key == "ip6.addr":
-                        lines = []
-                        for addr in value.split(","):
-                            lines.append(f"{key} += \"{addr}\";")
-
-                        return "\n\t".join(lines)
-
-                    return f"{key} = \"{value}\";"
-
-                # Just a boolean parameter
-                return f"{p};"
-
-            # Generate list of parameters to write to config, excluding "name"
-            # parameter, which is specified outside of the config block.
-            config_parameters = "\n\t".join(
-                [x for x in map(lambda x: fix_param(x), start_parameters)
-                 if x is not None
-                ]
-            )
-
-            with open(f"/var/run/jail.ioc-{self.uuid}.conf", 'w') as jconf:
-                jconf.write(f"ioc-{self.uuid} ")
-                jconf.write("{\n\t")
-                jconf.write(f"{config_parameters}")
-                jconf.write("\n}")
-
             iocage_lib.ioc_common.logit({
                 "level": "INFO",
                 "message": "  + Started OK"
@@ -1081,3 +1056,43 @@ class IOCStart(object):
         ).split()
 
         return membermtu[5]
+
+    def __write_jail_conf__(self, parameters):
+        # This function is used in the lambda below.
+        def fix_param(p):
+            # If the param is an assignable variable, check if we have to
+            # treat it specially.
+            if "=" in p:
+                key, value = p.split("=", 1)
+
+                # name is specified at the start of the jail config block.
+                # The None will be filtered out before writing the config.
+                if key == "name":
+                    return None
+
+                # IP addr lists are special and use +=
+                if key == "ip4.addr" or key == "ip6.addr":
+                    lines = []
+                    for addr in value.split(","):
+                        lines.append(f"{key} += \"{addr}\";")
+
+                    return "\n\t".join(lines)
+
+                return f"{key} = \"{value}\";"
+
+            # Just a boolean parameter
+            return f"{p};"
+
+        # Generate our parameter string to write to the config.
+        config_parameters = "\n\t".join(
+            [x for x in map(lambda x: fix_param(x), parameters)
+             if x is not None
+            ]
+        )
+
+        # Write out the jail config.
+        with open(f"/var/run/jail.ioc-{self.uuid}.conf", 'w') as jail_conf:
+            jail_conf.write(f"ioc-{self.uuid} ")
+            jail_conf.write("{\n\t")
+            jail_conf.write(f"{config_parameters}")
+            jail_conf.write("\n}")
