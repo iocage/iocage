@@ -280,7 +280,7 @@ class IOCStop(object):
 
         try:
             # Build up a jail stop command.
-            cmd = ["jail"]
+            cmd = ["jail", "-q"]
 
             # We check for the existence of the jail.conf here as on iocage
             # upgrade people likely will not have these files. These files
