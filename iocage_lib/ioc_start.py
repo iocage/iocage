@@ -1095,4 +1095,4 @@ class IOCStart(object):
             jail_conf.write(f"ioc-{self.uuid} ")
             jail_conf.write("{\n\t")
             jail_conf.write(f"{config_parameters}")
-            jail_conf.write("\n}")
+            jail_conf.write("\n}\n")
