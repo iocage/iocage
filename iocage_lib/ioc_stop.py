@@ -286,6 +286,7 @@ class IOCStop(object):
             # upgrade people likely will not have these files. These files
             # will be written on the next jail start/restart.
             jail_conf_file = Path(f"/var/run/jail.ioc-{self.uuid}.conf")
+
             if jail_conf_file.is_file():
                 cmd.extend(["-f", f"{jail_conf_file}"])
 
