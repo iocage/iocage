@@ -392,7 +392,7 @@ class IOCStart(object):
             self.__write_jail_conf__(start_parameters)
         except OSError as err:
             msg = f"Error while writing jail config {err.filename}: " \
-                   + "{err.strerror}"
+                  + "{err.strerror}"
 
             iocage_lib.ioc_common.logit({
                 "level": "EXCEPTION",
