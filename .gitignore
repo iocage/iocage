@@ -14,5 +14,6 @@ build/
 venv-*/
 .python-version
 .pytest_cache/
+*~
 
 nvim\.core
