@@ -23,11 +23,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """This stops jails."""
 import subprocess as su
-import netifaces
 
 import iocage_lib.ioc_common
 import iocage_lib.ioc_json
 import iocage_lib.ioc_list
+
+from pathlib import Path
 
 
 class IOCStop(object):
@@ -229,67 +230,6 @@ class IOCStop(object):
                         _callback=self.callback,
                         silent=self.silent)
 
-        if ip4_addr != "inherit" and vnet == "off":
-            if ip4_addr != "none":
-                gws = netifaces.gateways()
-
-                for ip4 in ip4_addr.split(","):
-                    # Don't try to remove an alias if there's no interface.
-
-                    if "|" not in ip4:
-                        try:
-                            def_iface = gws[
-                                "default"][netifaces.AF_INET][1]
-                            ip4 = f'{def_iface}|{ip4}'
-                        except KeyError:
-                            # Best effort for default interface
-                            continue
-
-                    try:
-                        iface, addr = ip4.split("/")[0].split("|")
-                        addr = addr.split()
-                        iocage_lib.ioc_common.checkoutput(
-                            ['ifconfig', iface] + addr + ['-alias'],
-                            stderr=su.STDOUT
-                        )
-                    except su.CalledProcessError as err:
-                        if "Can't assign requested address" in \
-                                err.output.decode("utf-8"):
-                            # They may have a new address that somehow
-                            # didn't set correctly. We shouldn't bail on
-                            # that.
-                            pass
-                        elif not self.force:
-                            raise RuntimeError(
-                                "{}".format(
-                                    err.output.decode("utf-8").strip()))
-
-        if ip6_addr != "inherit" and vnet == "off":
-            if ip6_addr != "none":
-                for ip6 in ip6_addr.split(","):
-                    # Don't try to remove an alias if there's no interface.
-
-                    if "|" not in ip6:
-                        continue
-                    try:
-                        iface, addr = ip6.split("/")[0].split("|")
-                        addr = addr.split()
-                        iocage_lib.ioc_common.checkoutput(
-                            ["ifconfig", iface, "inet6"] + addr + ["-alias"],
-                            stderr=su.STDOUT
-                        )
-                    except su.CalledProcessError as err:
-                        if "Can't assign requested address" in \
-                                err.output.decode("utf-8"):
-                            # They may have a new address that somehow
-                            # didn't set correctly. We shouldn't bail on
-                            # that.
-                            pass
-                        elif not self.force:
-                            raise RuntimeError(
-                                "{}".format(
-                                    err.output.decode("utf-8").strip()))
-
         # Clean up after our dynamic devfs rulesets
         ruleset = su.check_output(
             [
@@ -339,8 +279,20 @@ class IOCStop(object):
                 silent=self.silent)
 
         try:
-            stop = su.check_call(["jail", "-r", f"ioc-{self.uuid}"],
-                                 stderr=su.PIPE)
+            # Build up a jail stop command.
+            cmd = ["jail", "-q"]
+
+            # We check for the existence of the jail.conf here as on iocage
+            # upgrade people likely will not have these files. These files
+            # will be written on the next jail start/restart.
+            jail_conf_file = Path(f"/var/run/jail.ioc-{self.uuid}.conf")
+
+            if jail_conf_file.is_file():
+                cmd.extend(["-f", f"{jail_conf_file}"])
+
+            cmd.extend(["-r", f"ioc-{self.uuid}"])
+
+            stop = su.check_call(cmd, stderr=su.PIPE)
         except su.CalledProcessError as err:
             stop = err.returncode
 
@@ -360,6 +312,14 @@ class IOCStop(object):
             },
                 _callback=self.callback,
                 silent=self.silent)
+
+            # If we have issues unlinking, don't let that get in the way. The
+            # jail is already stopped so we're happy.
+            if jail_conf_file.is_file():
+                try:
+                    jail_conf_file.unlink()
+                except OSError:
+                    pass
 
         poststop, poststop_err = iocage_lib.ioc_common.runscript(
             self.conf["exec_poststop"])

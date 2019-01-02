@@ -275,18 +275,7 @@ class IOCStart(object):
             net = []
 
             if ip4_addr != "none":
-                gws = netifaces.gateways()
-
-                for _ip4_addr in ip4_addr.split(","):
-                    if "|" not in _ip4_addr:
-                        try:
-                            def_iface = gws["default"][netifaces.AF_INET][1]
-                            _ip4_addr = f'{def_iface}|{_ip4_addr}'
-                        except KeyError:
-                            # Best effort for default interface
-                            pass
-
-                    net.append(f"ip4.addr={_ip4_addr}")
+                net.append(f"ip4.addr={ip4_addr}")
 
             if ip6_addr != "none":
                 net.append(f"ip6.addr={ip6_addr}")
@@ -364,8 +353,10 @@ class IOCStart(object):
             f"allow.mount.zfs={allow_mount_zfs}"
         ]
 
-        start_cmd = [x for x in ["jail", "-c"] + net + [
-            x for x in parameters if '1' in x] + [
+        start_parameters = [
+            x for x in net
+            + [x for x in parameters if '1' in x]
+            + [
                 f'name=ioc-{self.uuid}',
                 f'host.domainname={host_domainname}',
                 f'host.hostname={host_hostname}',
@@ -387,7 +378,24 @@ class IOCStart(object):
                 f'exec.consolelog={self.iocroot}/log/ioc-'
                 f'{self.uuid}-console.log',
                 'persist'
-        ] if x != '']
+            ] if x != '']
+
+        # Write the config out to a file. We'll be starting the jail using this
+        # config and it is required for stopping the jail too.
+        try:
+            self.__write_jail_conf__(start_parameters)
+        except OSError as err:
+            msg = f"Error while writing jail config {err.filename}: " \
+                  + "{err.strerror}"
+
+            iocage_lib.ioc_common.logit({
+                "level": "EXCEPTION",
+                "message": msg
+            },
+                _callback=self.callback,
+                silent=self.silent)
+
+        start_cmd = ["jail", "-f", f"/var/run/jail.ioc-{self.uuid}.conf", "-c"]
 
         start_env = {
             **os.environ,
@@ -1034,3 +1042,43 @@ class IOCStart(object):
         ).split()
 
         return membermtu[5]
+
+    def __write_jail_conf__(self, parameters):
+        # This function is used in the lambda below.
+        def fix_param(p):
+            # If the param is an assignable variable, check if we have to
+            # treat it specially.
+            if "=" in p:
+                key, value = p.split("=", 1)
+
+                # name is specified at the start of the jail config block.
+                # The None will be filtered out before writing the config.
+                if key == "name":
+                    return None
+
+                # IP addr lists are special and use +=
+                if key == "ip4.addr" or key == "ip6.addr":
+                    lines = []
+                    for addr in value.split(","):
+                        lines.append(f"{key} += \"{addr}\";")
+
+                    return "\n\t".join(lines)
+
+                return f"{key} = \"{value}\";"
+
+            # Just a boolean parameter
+            return f"{p};"
+
+        # Generate our parameter string to write to the config.
+        config_parameters = "\n\t".join(
+            [x for x in map(lambda x: fix_param(x), parameters)
+             if x is not None
+             ]
+        )
+
+        # Write out the jail config.
+        with open(f"/var/run/jail.ioc-{self.uuid}.conf", 'w') as jail_conf:
+            jail_conf.write(f"ioc-{self.uuid} ")
+            jail_conf.write("{\n\t")
+            jail_conf.write(f"{config_parameters}")
+            jail_conf.write("\n}\n")

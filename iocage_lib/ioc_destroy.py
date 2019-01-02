@@ -30,6 +30,8 @@ import iocage_lib.ioc_json
 import iocage_lib.ioc_stop
 import libzfs
 
+from pathlib import Path
+
 
 class IOCDestroy(object):
 
@@ -57,7 +59,25 @@ class IOCDestroy(object):
                 jid = j["jid"]
 
                 if "ioc-" in name:
-                    su.Popen(["jail", "-r", jid]).communicate()
+                    cmd = ["jail"]
+                    jail_conf_file = Path(f"/var/run/jail.{name}.conf")
+
+                    # The is_file checks here are part of the iocage upgrade
+                    # path. Users may not have a jail_conf_file yet.
+                    if jail_conf_file.is_file():
+                        cmd.extend(["-f", f"{jail_conf_file}"])
+
+                    cmd.extend(["-r", jid])
+
+                    su.Popen(cmd).communicate()
+
+                    # Don't let a failure to unlink the jail conf stop the
+                    # destruction process.
+                    if jail_conf_file.is_file():
+                        try:
+                            jail_conf_file.unlink()
+                        except OSError:
+                            pass
 
         for dataset in datasets.dependents:
             if "jails" not in dataset.name:
