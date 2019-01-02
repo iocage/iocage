@@ -313,6 +313,9 @@ class IOCStop(object):
                 _callback=self.callback,
                 silent=self.silent)
 
+            if jail_conf_file.is_file():
+                jail_conf_file.unlink()
+
         poststop, poststop_err = iocage_lib.ioc_common.runscript(
             self.conf["exec_poststop"])
 
