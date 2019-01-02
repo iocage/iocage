@@ -275,13 +275,7 @@ class IOCStart(object):
             net = []
 
             if ip4_addr != "none":
-                ip4_addrs = []
-
-                for _ip4_addr in ip4_addr.split(","):
-                    ip4_addrs.append(f"{_ip4_addr}")
-
-                ip4_addrs_str = ",".join(ip4_addrs)
-                net.append(f"ip4.addr={ip4_addrs_str}")
+                net.append(f"ip4.addr={ip4_addr}")
 
             if ip6_addr != "none":
                 net.append(f"ip6.addr={ip6_addr}")
