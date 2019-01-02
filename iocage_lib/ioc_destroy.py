@@ -71,8 +71,13 @@ class IOCDestroy(object):
 
                     su.Popen(cmd).communicate()
 
+                    # Don't let a failure to unlink the jail conf stop the
+                    # destruction process.
                     if jail_conf_file.is_file():
-                        jail_conf_file.unlink()
+                        try:
+                            jail_conf_file.unlink()
+                        except OSError:
+                            pass
 
         for dataset in datasets.dependents:
             if "jails" not in dataset.name:
