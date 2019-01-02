@@ -359,9 +359,10 @@ class IOCStart(object):
             f"allow.mount.zfs={allow_mount_zfs}"
         ]
 
-        start_parameters = [x for x in net +
-            [x for x in parameters if '1' in x] +
-            [
+        start_parameters = [
+            x for x in net
+            + [x for x in parameters if '1' in x]
+            + [
                 f'name=ioc-{self.uuid}',
                 f'host.domainname={host_domainname}',
                 f'host.hostname={host_hostname}',
@@ -1078,7 +1079,7 @@ class IOCStart(object):
         config_parameters = "\n\t".join(
             [x for x in map(lambda x: fix_param(x), parameters)
              if x is not None
-            ]
+             ]
         )
 
         # Write out the jail config.

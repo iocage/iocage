@@ -23,13 +23,13 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """This stops jails."""
 import subprocess as su
-import netifaces
 
 import iocage_lib.ioc_common
 import iocage_lib.ioc_json
 import iocage_lib.ioc_list
 
 from pathlib import Path
+
 
 class IOCStop(object):
     """Stops a jail and unmounts the jails mountpoints."""
