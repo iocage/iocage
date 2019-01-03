@@ -41,7 +41,7 @@ if os.path.isdir("/".join([sys.prefix, "share/zsh/site-functions/"])):
 if sys.version_info < (3, 6):
     exit("Only Python 3.6 and higher is supported.")
 
-VERSION = '1.0a1'
+VERSION = '1.1p'
 
 setup(
     name='iocage_lib',
@@ -54,7 +54,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'dulwich>=0.18.6',
-        'netifaces>=0.10.6',
+        'netifaces>=0.10.8',
         'dnspython>=1.15.0',
         'libzfs'
     ],
