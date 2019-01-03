@@ -1125,12 +1125,7 @@ fingerprint: {fingerprint}
             with open(_json, "r") as j:
                 _conf = json.load(j)
         except FileNotFoundError:
-            iocage_lib.ioc_common.logit(
-                {
-                    "level": "EXCEPTION",
-                    "message": f"{_json} was not found!"
-                },
-                _callback=self.callback)
+            _conf = self.__find_plugin_json(plugin_name)
         except json.decoder.JSONDecodeError:
             iocage_lib.ioc_common.logit(
                 {
@@ -1142,6 +1137,47 @@ fingerprint: {fingerprint}
                 _callback=self.callback)
 
         return _conf
+
+    def __find_plugin_json(self, plugin_name):
+        """Matches the name of the local plugin's json with the INDEX's"""
+        _json = f'{self.iocroot}/jails/{self.plugin}/{plugin_name}.json'
+
+        try:
+            with open(_json, 'r') as j:
+                p_conf = json.load(j)
+                p_name = p_conf['name']
+        except FileNotFoundError:
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message': f'{_json} was not found!'
+                },
+                _callback=self.callback)
+        except json.decoder.JSONDecodeError:
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message':
+                    'Invalid JSON file supplied, please supply a '
+                    'correctly formatted JSON file.'
+                },
+                _callback=self.callback)
+
+        jsons = pathlib.Path(f'{self.iocroot}/.plugin_index').glob('*.json')
+
+        for f in jsons:
+            _conf = json.loads(pathlib.Path(f).open('r').read())
+
+            if _conf['name'] == p_name:
+                return _conf
+
+        iocage_lib.ioc_common.logit(
+            {
+                'level': 'EXCEPTION',
+                'message': f'A plugin manifest matching {p_name} could not '
+                           'be found!'
+            },
+            _callback=self.callback)
 
     def __run_post_upgrade__(self):
         """Run the plugins post_postupgrade.sh"""
