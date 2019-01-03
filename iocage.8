@@ -1630,6 +1630,21 @@ Default: 0
 .Pp
 Source:
 .Xr mlock 2
+.It Pf allow_vmm= Op 0 | 1
+Allow access to
+.Xr vmm 4
+inside the jail. The
+.Xr vmm 4
+kernel module must be loaded for this to take effect.
+.Pp
+Note: This requires
+.Fx 12.0
+or later.
+.Pp
+Default: 0
+.Pp
+Source:
+.Xr jail 8
 .It host_hostuuid=UUID
 .Pp
 Default: UUID

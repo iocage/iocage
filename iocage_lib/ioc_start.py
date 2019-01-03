@@ -126,6 +126,7 @@ class IOCStart(object):
         allow_mount_zfs = self.conf["allow_mount_zfs"]
         allow_quotas = self.conf["allow_quotas"]
         allow_socket_af = self.conf["allow_socket_af"]
+        allow_vmm = self.conf["allow_vmm"]
         devfs_ruleset = iocage_lib.ioc_common.generate_devfs_ruleset(self.conf)
         exec_prestart = self.conf["exec_prestart"]
         exec_poststart = self.conf["exec_poststart"]
@@ -262,9 +263,11 @@ class IOCStart(object):
         if userland_version < 12.0:
             _allow_mlock = ""
             _allow_mount_fusefs = ""
+            _allow_vmm = ""
         else:
             _allow_mlock = f"allow.mlock={allow_mlock}"
             _allow_mount_fusefs = f"allow.mount.fusefs={allow_mount_fusefs}"
+            _allow_vmm = f"allow.vmm={allow_vmm}"
 
         if self.conf["vnet"] == "off":
             ip4_addr = self.conf["ip4_addr"]
@@ -339,7 +342,8 @@ class IOCStart(object):
 
         parameters = [
             _sysvmsg, _sysvsem, _sysvshm, fdescfs, _allow_mlock, tmpfs,
-            _allow_mount_fusefs, f"allow.set_hostname={allow_set_hostname}",
+            _allow_mount_fusefs, _allow_vmm,
+            f"allow.set_hostname={allow_set_hostname}",
             f"mount.devfs={mount_devfs}",
             f"allow.raw_sockets={allow_raw_sockets}",
             f"allow.sysvipc={allow_sysvipc}",
