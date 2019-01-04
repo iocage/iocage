@@ -136,7 +136,7 @@ class IOCage(ioc_json.IOCZFS):
         self.silent = silent
         self.is_depend = False
 
-    def __all__(self, jail_order, action):
+    def __all__(self, jail_order, action, ignore_exception=False):
         # So we can properly start these.
         self._all = False
 
@@ -147,10 +147,10 @@ class IOCage(ioc_json.IOCZFS):
             status, jid = self.list("jid", uuid=uuid)
 
             if action == 'stop':
-                self.stop(j)
+                self.stop(j, ignore_exception=ignore_exception)
             elif action == 'start':
                 if not status:
-                    err, msg = self.start(j)
+                    err, msg = self.start(j, ignore_exception=ignore_exception)
 
                     if err:
                         ioc_common.logit(
@@ -170,7 +170,7 @@ class IOCage(ioc_json.IOCZFS):
                         _callback=self.callback, silent=self.silent
                     )
 
-    def __jail_order__(self, action):
+    def __jail_order__(self, action, ignore_exception=False):
         """Helper to gather lists of all the jails by order and boot order."""
         jail_order = {}
         boot_order = {}
@@ -202,11 +202,11 @@ class IOCage(ioc_json.IOCZFS):
                     reverse=_reverse))
 
         if self.rc:
-            self.__rc__(boot_order, action)
+            self.__rc__(boot_order, action, ignore_exception)
         elif self._all:
-            self.__all__(jail_order, action)
+            self.__all__(jail_order, action, ignore_exception)
 
-    def __rc__(self, boot_order, action):
+    def __rc__(self, boot_order, action, ignore_exception=False):
         """Helper to start all jails with boot=on"""
         # So we can properly start these.
         self.rc = False
@@ -229,7 +229,7 @@ class IOCage(ioc_json.IOCZFS):
                         _callback=self.callback, silent=self.silent
                     )
 
-                    self.stop(j)
+                    self.stop(j, ignore_exception=ignore_exception)
                 else:
                     message = f"{uuid} is not running!"
                     ioc_common.logit(
@@ -250,7 +250,7 @@ class IOCage(ioc_json.IOCZFS):
                         _callback=self.callback, silent=self.silent
                     )
 
-                    err, msg = self.start(j)
+                    err, msg = self.start(j, ignore_exception=ignore_exception)
 
                     if err:
                         ioc_common.logit(
@@ -1714,12 +1714,11 @@ class IOCage(ioc_json.IOCZFS):
                 _callback=self.callback,
                 silent=self.silent)
 
-    def start(self, jail=None):
+    def start(self, jail=None, ignore_exception=False):
         """Checks jails type and existence, then starts the jail"""
-
         if self.rc or self._all:
             if not jail:
-                self.__jail_order__("start")
+                self.__jail_order__("start", ignore_exception=ignore_exception)
         else:
             uuid, path = self.__check_jail_existence__()
             conf = ioc_json.IOCJson(path, silent=self.silent).json_get_value(
@@ -1764,7 +1763,8 @@ class IOCage(ioc_json.IOCZFS):
                     path,
                     silent=self.silent,
                     callback=self.callback,
-                    is_depend=self.is_depend
+                    is_depend=self.is_depend,
+                    suppress_exception=ignore_exception
                 )
 
                 return False, None
@@ -1781,15 +1781,18 @@ class IOCage(ioc_json.IOCZFS):
                     )
                     exit(1)
 
-    def stop(self, jail=None, force=False):
+    def stop(self, jail=None, force=False, ignore_exception=False):
         """Stops the jail."""
 
         if self.rc or self._all:
             if not jail:
-                self.__jail_order__("stop")
+                self.__jail_order__("stop", ignore_exception=ignore_exception)
         else:
             uuid, path = self.__check_jail_existence__()
-            ioc_stop.IOCStop(uuid, path, silent=self.silent, force=force)
+            ioc_stop.IOCStop(
+                uuid, path, silent=self.silent,
+                force=force, suppress_exception=ignore_exception
+            )
 
     def update_all(self):
         """Runs update for all jails"""
