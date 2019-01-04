@@ -53,7 +53,7 @@ class IOCStop(object):
 
         try:
             self.__stop_jail__()
-        except SystemExit as e:
+        except (Exception, SystemExit) as e:
             if not suppress_exception:
                 raise e
 

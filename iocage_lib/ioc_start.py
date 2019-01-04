@@ -70,7 +70,7 @@ class IOCStart(object):
             self.exec_fib = self.conf["exec_fib"]
             try:
                 self.__start_jail__()
-            except SystemExit as e:
+            except (Exception, SystemExit) as e:
                 if not suppress_exception:
                     raise e
 
