@@ -51,6 +51,10 @@ class CommandFailed(ExceptionWithMsg):
     pass
 
 
+class CommandNeedsRoot(ExceptionWithMsg):
+    pass
+
+
 class JailMisconfigured(ExceptionWithMsg):
     pass
 
