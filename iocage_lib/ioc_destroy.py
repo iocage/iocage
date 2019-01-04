@@ -69,7 +69,7 @@ class IOCDestroy(object):
 
                     cmd.extend(["-r", jid])
 
-                    su.Popen(cmd).communicate()
+                    su.Popen(cmd, stdout=su.PIPE, stderr=su.PIPE).communicate()
 
                     # Don't let a failure to unlink the jail conf stop the
                     # destruction process.
