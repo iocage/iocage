@@ -30,25 +30,31 @@ import iocage_lib.iocage as ioc
 __rootcmd__ = True
 
 
-@click.command(name="start", help="Starts the specified jails or ALL.")
-@click.option("--rc", default=False, is_flag=True,
-              help="Will start all jails with boot=on, in the specified"
-                   " order with smaller value for priority starting first.")
+@click.command(name='start', help='Starts the specified jails or ALL.')
+@click.option(
+    '--rc', default=False, is_flag=True,
+    help='Will start all jails with boot=on, in the specified order with '
+         'smaller value for priority starting first.'
+)
+@click.option(
+    '--ignore', '-i', default=False, is_flag=True,
+    help='Suppress exceptions for jails which fail to start'
+)
 @click.argument("jails", nargs=-1)
-def cli(rc, jails):
+def cli(rc, jails, ignore):
     """
     Looks for the jail supplied and passes the uuid, path and configuration
     location to start_jail.
     """
     if not jails and not rc:
         ioc_common.logit({
-            "level"  : "EXCEPTION",
-            "message": 'Usage: iocage start [OPTIONS] JAILS...\n'
+            'level': 'EXCEPTION',
+            'message': 'Usage: iocage start [OPTIONS] JAILS...\n'
                        '\nError: Missing argument "jails".'
         })
 
     if rc:
-        ioc.IOCage(rc=rc, silent=True).start()
+        ioc.IOCage(rc=rc, silent=True).start(ignore_exception=ignore)
     else:
         for jail in jails:
-            ioc.IOCage(jail=jail, rc=rc).start()
+            ioc.IOCage(jail=jail, rc=rc).start(ignore_exception=ignore)

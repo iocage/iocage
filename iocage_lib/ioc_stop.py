@@ -34,7 +34,10 @@ from pathlib import Path
 class IOCStop(object):
     """Stops a jail and unmounts the jails mountpoints."""
 
-    def __init__(self, uuid, path, silent=False, callback=None, force=False):
+    def __init__(
+        self, uuid, path, silent=False, callback=None,
+        force=False, suppress_exception=False
+    ):
         self.pool = iocage_lib.ioc_json.IOCJson(" ").json_get_value("pool")
         self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")
@@ -48,7 +51,11 @@ class IOCStop(object):
         self.callback = callback
         self.silent = silent
 
-        self.__stop_jail__()
+        try:
+            self.__stop_jail__()
+        except (Exception, SystemExit) as e:
+            if not suppress_exception:
+                raise e
 
     def __stop_jail__(self):
         ip4_addr = self.conf["ip4_addr"]

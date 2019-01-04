@@ -30,28 +30,40 @@ import iocage_lib.iocage as ioc
 __rootcmd__ = True
 
 
-@click.command(name="stop", help="Stops the specified jails or ALL.")
-@click.option("--rc", default=False, is_flag=True,
-              help="Will stop all jails with boot=on, in the specified"
-                   " order with higher value for priority stopping first.")
-@click.option("-f", "--force", default=False, is_flag=True,
-              help="Skips all pre-stop actions like stop services."
-                   "Gently shuts down and kills the jail process.")
+@click.command(name='stop', help='Stops the specified jails or ALL.')
+@click.option(
+    '--rc', default=False, is_flag=True,
+    help='Will stop all jails with boot=on, in the specified order with '
+         'higher value for priority stopping first.'
+)
+@click.option(
+    '-f', '--force', default=False, is_flag=True,
+    help='Skips all pre-stop actions like stop services. Gently shuts '
+         'down and kills the jail process.'
+)
+@click.option(
+    '--ignore', '-i', default=False, is_flag=True,
+    help='Suppress exceptions for jails which fail to stop'
+)
 @click.argument("jails", nargs=-1)
-def cli(rc, force, jails):
+def cli(rc, force, jails, ignore):
     """
     Looks for the jail supplied and passes the uuid, path and configuration
     location to stop_jail.
     """
     if not jails and not rc:
         ioc_common.logit({
-            "level"  : "EXCEPTION",
+            "level": "EXCEPTION",
             "message": 'Usage: iocage stop [OPTIONS] JAILS...\n'
                        '\nError: Missing argument "jails".'
         })
 
     if rc:
-        ioc.IOCage(rc=rc, silent=True).stop(force=force)
+        ioc.IOCage(rc=rc, silent=True).stop(
+            force=force, ignore_exception=ignore
+        )
     else:
         for jail in jails:
-            ioc.IOCage(jail=jail, rc=rc).stop(force=force)
+            ioc.IOCage(jail=jail, rc=rc).stop(
+                force=force, ignore_exception=ignore
+            )
