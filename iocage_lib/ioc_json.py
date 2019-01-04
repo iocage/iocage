@@ -223,7 +223,7 @@ class Release(Resource):
         # the release, let's normalize it
         # a name can't contain "/". If it's a path, we can make a split and
         # use the last name
-        super().__init__(name if '/' not in name else name.split('/')[1])
+        super().__init__(name if '/' not in name else name.rsplit('/', 1)[1])
 
     @property
     def path(self):
