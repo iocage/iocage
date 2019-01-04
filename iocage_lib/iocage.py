@@ -1158,9 +1158,18 @@ class IOCage(ioc_json.IOCZFS):
             if prop == "state":
                 return state
             elif plugin:
-                _prop = prop.split(".")
-                props = ioc_json.IOCJson(path).json_plugin_get_value(
-                    _prop)
+                try:
+                    _prop = prop.split(".")
+                    props = ioc_json.IOCJson(path).json_plugin_get_value(
+                        _prop)
+                except ioc_exceptions.CommandNeedsRoot as err:
+                    ioc_common.logit(
+                        {
+                            'level': 'EXCEPTION',
+                            'message': err.message
+                        },
+                        _callback=self.callback,
+                        silent=False)
 
                 if isinstance(props, dict):
                     return json.dumps(props, indent=4)

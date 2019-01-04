@@ -308,10 +308,10 @@ class IOCList(object):
                                 )
                         except KeyError:
                             pass
+                        except iocage_lib.ioc_exceptions.CommandNeedsRoot:
+                            admin_portal = "Admin Portal requires root"
                         except iocage_lib.ioc_exceptions.CommandFailed as e:
-                            admin_portal = b' '.join(
-                                e.message).decode() if os.geteuid() == 0 else \
-                                "Admin Portal requires root"
+                            admin_portal = b' '.join(e.message).decode()
 
                 except FileNotFoundError:
                     # They just didn't set a admin portal.
