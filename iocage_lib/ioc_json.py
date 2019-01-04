@@ -110,6 +110,34 @@ class IOCZFS(object):
     def __init__(self):
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
 
+    @property
+    def iocroot_path(self):
+        # For now we assume iocroot is set, however moving on we need to think
+        # how best to structure this
+        # We should give thought to how we handle
+        for pool in self.pools:
+            if self.zfs_get_property(
+                pool, 'org.freebsd.ioc:active'
+            ) == 'yes':
+                return self.zfs_get_property(
+                    os.path.join(pool, 'iocage'),
+                    'mountpoint'
+                )
+
+    @property
+    def pools(self):
+        # Returns list of pools. In case of failure, an empty list
+        with ioc_exceptions.ignore_exceptions(
+            su.CalledProcessError, return_value=[]
+        ):
+            pools = su.run(
+                [
+                    'zpool', 'list', '-H'
+                ],
+                stdout=su.PIPE, stderr=su.PIPE
+            ).stdout.decode().split('\n')
+            return [p.split()[0] for p in pools if p]
+
     def _zfs_get_properties(self, identifier):
         p_dict = {}
 
@@ -153,9 +181,55 @@ class IOCZFS(object):
             ).stdout.decode()
 
     def zfs_get_snapshot(self, snap_id):
-        # If snapshot exists, return snap object else None
+        # Let's return snapshot object from which additional information
+        # can be derived wrt snap_id in question
         # Snap_id expected value - vol/iocage/jails/jail1@snaptest
         return IOCSnapshot(snap_id)
+
+
+class Resource(IOCZFS):
+    # TODO: Let's also rethink how best we should handle this in the future
+    def __init__(self, name):
+        super().__init__()
+        self.name = name
+
+    def __bool__(self):
+        return self.exists
+
+    def __hash__(self):
+        return hash(self.path)
+
+    def __repr__(self):
+        return str(self.name)
+
+    def __str__(self):
+        return str(self.name)
+
+    def __eq__(self, other):
+        return other.path == self.path
+
+    @property
+    def path(self):
+        raise NotImplementedError
+
+    @property
+    def exists(self):
+        return os.path.exists(self.path)
+
+
+class Release(Resource):
+    def __init__(self, name):
+        # We can expect the name to be either a full path or just the name of
+        # the release, let's normalize it
+        # a name can't contain "/". If it's a path, we can make a split and
+        # use the last name
+        super().__init__(name if '/' not in name else name.split('/')[1])
+
+    @property
+    def path(self):
+        return os.path.join(
+            self.iocroot_path, 'releases', self.name
+        )
 
 
 class IOCConfiguration(IOCZFS):

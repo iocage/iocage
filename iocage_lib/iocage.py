@@ -21,6 +21,7 @@
 # STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+
 import collections
 import datetime
 import json
@@ -632,6 +633,14 @@ class IOCage(ioc_json.IOCZFS):
     def destroy_release(self, download=False):
         """Destroy supplied RELEASE and the download dataset if asked"""
         path = f"{self.pool}/iocage/releases/{self.jail}"
+
+        release = ioc_json.Release(self.jail)
+        # Let's make sure the release exists before we try to destroy it
+        if not release:
+            ioc_common.logit({
+                'level': 'EXCEPTION',
+                'message': f'Release: {self.jail} not found!'
+            })
 
         ioc_common.logit(
             {
