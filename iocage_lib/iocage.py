@@ -385,20 +385,19 @@ class IOCage(ioc_json.IOCZFS):
 
         for pool in pools:
             if pool.name == zpool:
-                if pool.status != "UNAVAIL":
+                if pool.status not in ('UNAVAIL', 'FAULTED', 'SPLIT'):
                     match = True
                 else:
                     ioc_common.logit(
                         {
-                            "level":
-                            "EXCEPTION",
-                            "message":
-                            f"ZFS pool '{zpool}' is UNAVAIL!\nPlease"
-                            f" check zpool status {zpool} for more"
-                            " information."
+                            'level': 'EXCEPTION',
+                            'message': f'ZFS pool "{zpool}" is '
+                            f'{pool.status}!\nPlease check zpool status '
+                            f'{zpool} for more information.'
                         },
                         _callback=self.callback,
-                        silent=self.silent)
+                        silent=self.silent
+                    )
 
         if not match:
             ioc_common.logit(
