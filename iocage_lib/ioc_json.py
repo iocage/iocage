@@ -402,10 +402,12 @@ class IOCConfiguration(IOCZFS):
                 {
                     'level': 'EXCEPTION',
                     'message': 'You need to be root to convert the'
-                               ' configurations to the new format!'
+                               ' configurations to the new format!',
+                    'force_raise': True
                 },
                 _callback=self.callback,
-                silent=self.silent)
+                silent=self.silent,
+                exception=ioc_exceptions.CommandNeedsRoot)
 
         if not default:
             jail_conf = self.check_jail_config(conf)
@@ -812,6 +814,15 @@ class IOCConfiguration(IOCZFS):
                     'level': 'ERROR',
                     'message': f'{default_json_location} corrupted'
                     ' (delete to recreate), using memory values.'
+                },
+                _callback=self.callback,
+                silent=False)
+            write = False
+        except ioc_exceptions.CommandNeedsRoot as err:
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'ERROR',
+                    'message': err.message
                 },
                 _callback=self.callback,
                 silent=False)
@@ -1731,6 +1742,11 @@ class IOCJson(IOCConfiguration):
         return settings
 
     def json_plugin_get_value(self, prop):
+
+        if os.geteuid() != 0:
+            raise ioc_exceptions.CommandNeedsRoot("You need to be root to"
+                                                  " read a plugin property")
+
         conf, write = self.json_load()
         uuid = conf["host_hostuuid"]
         _path = self.zfs_get_property(f"{self.pool}/iocage/jails/{uuid}",
