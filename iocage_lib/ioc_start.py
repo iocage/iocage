@@ -46,8 +46,10 @@ class IOCStart(object):
     for them. It also finds any scripts the user supplies for exec_*
     """
 
-    def __init__(self, uuid, path, silent=False, callback=None,
-                 is_depend=False, unit_test=False):
+    def __init__(
+        self, uuid, path, silent=False, callback=None,
+        is_depend=False, unit_test=False, suppress_exception=False
+    ):
         self.uuid = uuid.replace(".", "_")
         self.path = path
         self.callback = callback
@@ -66,7 +68,11 @@ class IOCStart(object):
                                                    silent=True).json_set_value
 
             self.exec_fib = self.conf["exec_fib"]
-            self.__start_jail__()
+            try:
+                self.__start_jail__()
+            except (Exception, SystemExit) as e:
+                if not suppress_exception:
+                    raise e
 
     def __start_jail__(self):
         """
