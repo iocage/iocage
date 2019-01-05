@@ -85,39 +85,7 @@ class IOCStop(object):
             silent=self.silent)
 
         if not self.force:
-            prestop, prestop_err = iocage_lib.ioc_common.runscript(
-                self.conf["exec_prestop"])
-
-            if prestop and prestop_err:
-                msg = f"  + Running prestop WARNING\n{prestop_err}"
-                iocage_lib.ioc_common.logit({
-                    "level": "WARNING",
-                    "message": msg
-                },
-                    _callback=self.callback,
-                    silent=self.silent)
-            elif prestop:
-                msg = "  + Running prestop OK"
-                iocage_lib.ioc_common.logit({
-                    "level": "INFO",
-                    "message": msg
-                },
-                    _callback=self.callback,
-                    silent=self.silent)
-            else:
-                if prestop_err:
-                    # They may just be exiting on 1, with no real message.
-                    msg = f"  + Running prestop FAILED\n{prestop_err}"
-                else:
-                    msg = f"  + Running prestop FAILED"
-
-                iocage_lib.ioc_common.logit({
-                    "level": "ERROR",
-                    "message": msg
-                },
-                    _callback=self.callback,
-                    silent=self.silent)
-
+            # TODO: Perhaps have jail(8) handle this ?
             exec_stop = self.conf["exec_stop"].split()
             with open(f"{self.iocroot}/log/{self.uuid}-console.log", "a") as f:
                 try:
@@ -194,6 +162,17 @@ class IOCStop(object):
                             raise RuntimeError(
                                 "{}".format(
                                     err.output.decode("utf-8").rstrip()))
+
+        else:
+            # We should remove all exec* keys from jail.conf and make sure
+            # we force stop the jail process
+            jail_conf = iocage_lib.ioc_json.JailConfiguration(self.uuid)
+            for r_key in [
+                k for k in jail_conf.data if str(k).startswith('exec')
+            ]:
+                jail_conf.remove(r_key)
+
+            jail_conf.sync_changes()
 
         # We should still try to destroy the relevant networking
         # related resources if force is true, though we won't raise an
@@ -285,32 +264,32 @@ class IOCStop(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-        try:
-            # Build up a jail stop command.
-            cmd = ["jail", "-q"]
+        # Build up a jail stop command.
+        cmd = ["jail", "-q"]
 
-            # We check for the existence of the jail.conf here as on iocage
-            # upgrade people likely will not have these files. These files
-            # will be written on the next jail start/restart.
-            jail_conf_file = Path(f"/var/run/jail.ioc-{self.uuid}.conf")
+        # We check for the existence of the jail.conf here as on iocage
+        # upgrade people likely will not have these files. These files
+        # will be written on the next jail start/restart.
+        jail_conf_file = Path(f"/var/run/jail.ioc-{self.uuid}.conf")
 
-            if jail_conf_file.is_file():
-                cmd.extend(["-f", f"{jail_conf_file}"])
+        if jail_conf_file.is_file():
+            cmd.extend(["-f", f"{jail_conf_file}"])
 
-            cmd.extend(["-r", f"ioc-{self.uuid}"])
+        cmd.extend(["-r", f"ioc-{self.uuid}"])
 
-            stop = su.check_call(cmd, stderr=su.PIPE)
-        except su.CalledProcessError as err:
-            stop = err.returncode
+        stop = su.Popen(cmd, stdout=su.PIPE, stderr=su.PIPE)
+        success, stop_err = stop.communicate()
 
-        if stop:
-            msg = "  + Removing jail process FAILED"
+        if stop_err:
+            msg = f'  + Removing jail process FAILED:\n' \
+                f'{stop_err.decode("utf-8")}'
             iocage_lib.ioc_common.logit({
-                "level": "ERROR",
-                "message": msg
+                'level': 'EXCEPTION',
+                'message': msg
             },
                 _callback=self.callback,
-                silent=self.silent)
+                silent=self.silent
+            )
         else:
             msg = "  + Removing jail process OK"
             iocage_lib.ioc_common.logit({

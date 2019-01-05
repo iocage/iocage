@@ -135,7 +135,7 @@ class JailConfiguration(object):
                 if k == 'name':
                     continue
                 if k in ('ip4.addr', 'ip6.addr'):
-                    v = ', '.join(v.split(','))
+                    v = ', '.join(map(str.strip, v.split(',')))
                 normalized_data[k] = v
             else:
                 # This is a boolean value
