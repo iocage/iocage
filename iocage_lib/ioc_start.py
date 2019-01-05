@@ -1098,40 +1098,5 @@ class IOCStart(object):
 
     def __write_jail_conf__(self, parameters):
         # This function is used in the lambda below.
-        def fix_param(p):
-            # If the param is an assignable variable, check if we have to
-            # treat it specially.
-            if "=" in p:
-                key, value = p.split("=", 1)
-
-                # name is specified at the start of the jail config block.
-                # The None will be filtered out before writing the config.
-                if key == "name":
-                    return None
-
-                # IP addr lists are special and use +=
-                if key == "ip4.addr" or key == "ip6.addr":
-                    lines = []
-                    for addr in value.split(","):
-                        lines.append(f"{key} += \"{addr}\";")
-
-                    return "\n\t".join(lines)
-
-                return f"{key} = \"{value}\";"
-
-            # Just a boolean parameter
-            return f"{p};"
-
-        # Generate our parameter string to write to the config.
-        config_parameters = "\n\t".join(
-            [x for x in map(lambda x: fix_param(x), parameters)
-             if x is not None
-             ]
-        )
-
-        # Write out the jail config.
-        with open(f"/var/run/jail.ioc-{self.uuid}.conf", 'w') as jail_conf:
-            jail_conf.write(f"ioc-{self.uuid} ")
-            jail_conf.write("{\n\t")
-            jail_conf.write(f"{config_parameters}")
-            jail_conf.write("\n}\n")
+        jail = iocage_lib.ioc_json.JailConfiguration(self.uuid, parameters)
+        jail.sync_changes()

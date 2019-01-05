@@ -45,6 +45,121 @@ import random
 import pathlib
 
 
+class JailConfiguration(object):
+    def __init__(self, jail_name, data=None):
+        # If data is provided, we make sure that this object reflects
+        # what data holds and not what the conf file already has etc
+        self.name = f'ioc-{jail_name}'
+        for k in ('data', 'read_data'):
+            setattr(self, k, {})
+
+        normalized_data = self.normalize_data(data)
+        if normalized_data:
+            self.data = normalized_data
+        else:
+            self.__read_file()
+            self.data = self.read_data.copy()
+
+    @property
+    def path(self):
+        return f'/var/run/jail.{self.name}.conf'
+
+    def set(self, key, value=None):
+        if isinstance(value, str):
+            value = value.strip()
+
+        self.data[str(key).strip()] = value
+
+    def remove(self, key):
+        # Should we care about raising an exception ?
+        self.data.pop(key, None)
+
+    def __read_file(self):
+        self.read_data = {}
+
+        if not os.path.exists(self.path):
+            return
+
+        with open(self.path, 'r') as f:
+            content = list(
+                filter(bool, map(str.strip, f.readlines()))
+            )[1: -1]
+
+        # Let's treat ip4.addr and ip6.addr differently keeping compatibility
+        # with current jail.conf files we have introduced
+        ip4 = []
+        ip6 = []
+        for data in content:
+            if '=' in data:
+                k, v = data.split('=', 1)
+                k = k.strip()
+                v = v.replace(';', '').strip()
+                if 'ip4.addr' in k:
+                    ip4.append(v)
+                elif 'ip6.addr' in k:
+                    ip6.append(v)
+                else:
+                    self.read_data[k] = v
+            else:
+                # None is special for self.data value as it indicates that
+                # the key is a boolean one, we will write a value of empty
+                # string as a key,value pair and it will NOT be treated as
+                # a boolean value
+                self.read_data[data.replace(';', '').strip()] = None
+
+        if ip4:
+            self.read_data['ip4.addr'] = ', '.join(ip4)
+        if ip6:
+            self.read_data['ip6.addr'] = ', '.join(ip6)
+
+    def sync_changes(self):
+        # We are going to write out the changes which are present in self.data
+        self.__read_file()
+        if len(
+            set(self.data.items()) ^ set((self.read_data or {}).items())
+        ) > 0:
+            self.__write_file()
+
+    def normalize_data(self, data):
+        normalized_data = {}
+        if data:
+            assert isinstance(data, list)
+        else:
+            return
+
+        for line in data:
+            if '=' in line:
+                k, v = line.split('=', 1)
+                k = k.strip()
+                v = v.strip()
+                if k == 'name':
+                    continue
+                if k in ('ip4.addr', 'ip6.addr'):
+                    v = ', '.join(v.split(','))
+                normalized_data[k] = v
+            else:
+                # This is a boolean value
+                normalized_data[line] = None
+        return normalized_data
+
+    def __write_file(self):
+        write_data = []
+        for key, value in self.data.items():
+            if key in ('ip4.addr', 'ip6.addr'):
+                for ips in value.split(','):
+                    write_data.append(f'{key} += "{ips.strip()}";')
+            elif value is None:
+                write_data.append(f'{key};')
+            else:
+                write_data.append(f'{key} = "{value}";')
+
+        config_params = '\n\t'.join(write_data)
+        with open(self.path, 'w') as f:
+            f.write(
+                f'{self.name} {{\n\t{config_params}\n}}\n'
+            )
+
+
 class IOCSnapshot(object):
     # FIXME: Please move me to another file and let's see how we can build
     # our hierarchy for the whole ZFS related section
