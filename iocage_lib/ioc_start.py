@@ -401,18 +401,10 @@ class IOCStart(object):
 
         # Write the config out to a file. We'll be starting the jail using this
         # config and it is required for stopping the jail too.
-        try:
-            self.__write_jail_conf__(start_parameters)
-        except OSError as err:
-            msg = f"Error while writing jail config {err.filename}: " \
-                  + "{err.strerror}"
-
-            iocage_lib.ioc_common.logit({
-                "level": "EXCEPTION",
-                "message": msg
-            },
-                _callback=self.callback,
-                silent=self.silent)
+        jail = iocage_lib.ioc_json.JailConfiguration(
+            self.uuid, start_parameters
+        )
+        jail.sync_changes()
 
         start_cmd = ["jail", "-f", f"/var/run/jail.ioc-{self.uuid}.conf", "-c"]
 
@@ -1095,8 +1087,3 @@ class IOCStart(object):
         ).split()
 
         return membermtu[5]
-
-    def __write_jail_conf__(self, parameters):
-        # This function is used in the lambda below.
-        jail = iocage_lib.ioc_json.JailConfiguration(self.uuid, parameters)
-        jail.sync_changes()
