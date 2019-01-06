@@ -88,6 +88,10 @@ def pytest_addoption(parser):
         '--upgrade', action='store_true', default=True,
         help='Decide whether or not to run upgrade tests'
     )
+    parser.addoption(
+        '--ping_ip', action='store', default='8.8.8.8',
+        help='Use --ping_ip for testing connectivity within a jail'
+    )
 
 
 def pytest_runtest_setup(item):
@@ -155,6 +159,12 @@ def dhcp(request):
 def upgrade(request):
     """Specify if upgrade test is to be executed."""
     return request.config.getoption('--upgrade')
+
+
+@pytest.fixture
+def ping_ip(request):
+    """Specify ip to be used to test connectivity within a jail"""
+    return request.config.getoption('--ping_ip')
 
 
 @pytest.fixture

@@ -34,6 +34,7 @@ require_root = pytest.mark.require_root
 require_zpool = pytest.mark.require_zpool
 require_dhcp = pytest.mark.require_dhcp
 require_jail_ip = pytest.mark.require_jail_ip
+require_networking = pytest.mark.require_networking
 
 
 @require_root
@@ -135,7 +136,7 @@ def test_08_create_thickjail(release, jail, invoke_cli):
 @require_root
 @require_zpool
 @require_dhcp
-def test_09_dhcp_connectivity_in_jail(release, jail, invoke_cli):
+def test_09_dhcp_connectivity_in_jail(release, jail, invoke_cli, ping_ip):
     invoke_cli(
         ['create', '-r', release, '-n', 'dhcp_jail', 'dhcp=on'],
         'Failed to create DHCP Jail'
@@ -156,18 +157,20 @@ def test_09_dhcp_connectivity_in_jail(release, jail, invoke_cli):
     ip = jail.ip
     assert ip is not None and '0.0.0.0' not in ip
 
-    # Let's test if we can ping 8.8.8.8 from inside the jail
+    # Let's test if we can ping ping_ip from inside the jail
 
-    stdout, stderr = jail.run_command(['ping', '-c', '5', '8.8.8.8'])
+    stdout, stderr = jail.run_command(['ping', '-c', '5', ping_ip])
 
     assert bool(stderr) is False, f'ping returned an error: {stderr}'
 
 
 @require_root
 @require_zpool
-@require_dhcp
-def test_10_create_jail_and_install_packages(release, jail, invoke_cli, skip_test):
-
+@require_networking
+def test_10_create_jail_and_install_packages(
+    release, jail, invoke_cli, jail_ip, dhcp
+):
+    # If both jail_ip and dhcp are specified, we can default to jail_ip
     pkg_jail = 'pkg_jail'
     install_pkgs = ['nano']
     fd, path = tempfile.mkstemp()
@@ -178,8 +181,14 @@ def test_10_create_jail_and_install_packages(release, jail, invoke_cli, skip_tes
                 'pkgs': install_pkgs
             }))
 
+        command = ['create', '-r', release, '-n', pkg_jail, '-p', path]
+        if (jail_ip and dhcp) or jail_ip:
+            command.append(f'ip4_addr={jail_ip}')
+        else:
+            command.append('dhcp=on')
+
         invoke_cli(
-            ['create', '-r', release, '-n', pkg_jail, '-p', path, 'dhcp=on']
+            command
         )
 
     finally:
