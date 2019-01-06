@@ -347,7 +347,7 @@ class IOCStart(object):
                         )
 
         parameters = [
-            _sysvmsg, _sysvsem, _sysvshm, fdescfs, _allow_mlock, tmpfs,
+            fdescfs, _allow_mlock, tmpfs,
             _allow_mount_fusefs, _allow_vmm,
             f"allow.set_hostname={allow_set_hostname}",
             f"mount.devfs={mount_devfs}",
@@ -367,6 +367,9 @@ class IOCStart(object):
             x for x in net
             + [x for x in parameters if '1' in x]
             + [
+                _sysvmsg,
+                _sysvsem,
+                _sysvshm,
                 f'name=ioc-{self.uuid}',
                 f'host.domainname={host_domainname}',
                 f'host.hostname={host_hostname}',
