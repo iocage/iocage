@@ -802,6 +802,7 @@ def runscript(script):
         return False, 'Script is not executable!'
 
     success, output = safe_checkoutput(script, stderr=su.STDOUT)
+
     return success, output.rstrip('\n')
 
 

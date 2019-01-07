@@ -84,7 +84,7 @@ class IOCStop(object):
             _callback=self.callback,
             silent=self.silent)
 
-        failed_message = 'Please use force flag to force stop jail'
+        failed_message = 'Please use --force flag to force stop jail'
         if not self.force:
             prestop_success, prestop_output = iocage_lib.ioc_common.runscript(
                 self.conf['exec_prestop']
@@ -343,8 +343,8 @@ class IOCStop(object):
             # This is the only exec case where we won't raise an exception
             # as jail has already stopped
             msg = f'  + Running poststop FAILED\n{poststop_output}\n\n' \
-                'Jail has been stopped but there might be leftovers ' \
-                'from poststop failure'
+                'Jail has been stopped but there may be leftovers ' \
+                'from exec_poststop failure'
             iocage_lib.ioc_common.logit({
                 'level': 'ERROR',
                 'message': msg

@@ -532,7 +532,7 @@ class IOCStart(object):
         exec_start = self.conf['exec_start'].split()
 
         with open(
-            os.path.join(self.iocroot, 'log', f'{self.uuid}-console.log'), 'a'
+            f'{self.iocroot}/log/{self.uuid}-console.log', 'a'
         ) as f:
             success, output = iocage_lib.ioc_common.safe_checkoutput(
                 ['setfib', self.exec_fib, 'jexec', f'ioc-{self.uuid}']
@@ -542,18 +542,19 @@ class IOCStart(object):
             f.write(output)
 
         if not success:
+
+            iocage_lib.ioc_stop.IOCStop(
+                self.uuid, self.path, force=True, silent=True
+            )
+
             msg = f'  + Starting services FAILED\nERROR:\n{output}\n\n' \
-                'exec_start failed to execute.\nJail failed to start'
+                f'Refusing to start {self.uuid}: exec_start failed'
             iocage_lib.ioc_common.logit({
                 'level': 'EXCEPTION',
                 'message': msg
             },
                 _callback=self.callback,
                 silent=self.silent
-            )
-
-            iocage_lib.ioc_stop.IOCStop(
-                self.uuid, self.path, force=True, silent=True
             )
 
         else:
@@ -573,18 +574,19 @@ class IOCStart(object):
                 )
 
             if not poststart_success:
-                iocage_lib.ioc_common.logit({
-                    'level': 'EXCEPTION',
-                    'message': '  + Executing exec_poststart FAILED\n'
-                    f'ERROR:\n{poststop_output}\n\nJail '
-                    f'failed to start'
-                },
-                    _callback=self.callback,
-                    silent=self.silent
-                )
 
                 iocage_lib.ioc_stop.IOCStop(
                     self.uuid, self.path, force=True, silent=True
+                )
+
+                iocage_lib.ioc_common.logit({
+                    'level': 'EXCEPTION',
+                    'message': '  + Running exec_poststart FAILED\n'
+                    f'ERROR:\n{poststop_output}\n\nRefusing to '
+                    f'start {self.uuid}: exec_poststart failed'
+                },
+                    _callback=self.callback,
+                    silent=self.silent
                 )
 
             else:
