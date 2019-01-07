@@ -284,9 +284,15 @@ class IOCStart(object):
             net = []
 
             if ip4_addr != "none":
+                if '|' not in ip4_addr:
+                    ip4_addr = self.check_aliases(ip4_addr)
+
                 net.append(f"ip4.addr={ip4_addr}")
 
             if ip6_addr != "none":
+                if '|' not in ip6_addr:
+                    ip6_addr = self.check_aliases(ip6_addr, mode='6')
+
                 net.append(f"ip6.addr={ip6_addr}")
 
             net += [f"ip4.saddrsel={ip4_saddrsel}",
@@ -614,6 +620,40 @@ class IOCStart(object):
         self.set(
             "last_started={}".format(datetime.datetime.utcnow().strftime(
                 "%F %T")))
+
+    def check_aliases(self, ip_addrs, mode='4'):
+        """
+        Check if the alias already exists for given IP's, otherwise add
+        default interface to the ips and return the new list
+        """
+        inet_mode = netifaces.AF_INET if mode == '4' else netifaces.AF_INET6
+        gws = netifaces.gateways()
+
+        try:
+            def_iface = gws['default'][inet_mode][1]
+        except KeyError:
+            # They have no default gateway for mode 4|6
+            return ip_addrs
+
+        _ip_addrs = ip_addrs.split(',')
+        interfaces_to_skip = ('vnet', 'bridge', 'epair', 'pflog')
+        current_ips = []
+        new_ips = []
+
+        # We want to make sure they haven't already created
+        # this alias
+        for interface in netifaces.interfaces():
+            if interface.startswith(interfaces_to_skip):
+                continue
+
+            for address in netifaces.ifaddresses(interface)[inet_mode]:
+                current_ips.append(address['addr'])
+
+        for ip in _ip_addrs:
+            ip = ip if ip in current_ips else f'{def_iface}|{ip}'
+            new_ips.append(ip)
+
+        return ','.join(new_ips)
 
     def start_network(self, vnet):
         """
