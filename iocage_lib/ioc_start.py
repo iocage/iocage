@@ -630,32 +630,22 @@ class IOCStart(object):
             return ip_addrs
 
         _ip_addrs = ip_addrs.split(',')
-        interfaces_to_skip = ['vnet', 'bridge', 'epair']
+        interfaces_to_skip = ('vnet', 'bridge', 'epair')
+        current_ips = []
         new_ips = []
 
+        # We want to make sure they haven't already created
+        # this alias
+        for interface in netifaces.interfaces():
+            if interface.startswith(interfaces_to_skip):
+                continue
+
+            for address in netifaces.ifaddresses(interface)[inet_mode]:
+                current_ips.append(address['addr'])
+
         for ip in _ip_addrs:
-            aliased = False
-            # We want to make sure they haven't already created
-            # this alias
-            interfaces = netifaces.interfaces()
-
-            for interface in interfaces:
-                if aliased:
-                    continue
-
-                if any(i in interface for i in interfaces_to_skip):
-                    continue
-
-                addresses = netifaces.ifaddresses(
-                    interface)[inet_mode]
-
-                for address in addresses:
-                    if address['addr'] == ip:
-                        aliased = True
-                        break
-
-                new_ips.append(f'{def_iface}|{ip}')
-                aliased = True
+            ip = ip if ip in current_ips else f'{def_iface}|{ip}'
+            new_ips.append(ip)
 
         return ','.join(new_ips)
 
