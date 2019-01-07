@@ -630,7 +630,7 @@ class IOCStart(object):
             return ip_addrs
 
         _ip_addrs = ip_addrs.split(',')
-        interfaces_to_skip = ('vnet', 'bridge', 'epair')
+        interfaces_to_skip = ('vnet', 'bridge', 'epair', 'pflog')
         current_ips = []
         new_ips = []
 
