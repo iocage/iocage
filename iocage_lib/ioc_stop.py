@@ -84,33 +84,60 @@ class IOCStop(object):
             _callback=self.callback,
             silent=self.silent)
 
+        failed_message = 'Please use force flag to force stop jail'
         if not self.force:
-            # TODO: Perhaps have jail(8) handle this ?
-            exec_stop = self.conf["exec_stop"].split()
-            with open(f"{self.iocroot}/log/{self.uuid}-console.log", "a") as f:
-                try:
-                    services = su.check_call(["setfib", exec_fib, "jexec",
-                                              f"ioc-{self.uuid}"] + exec_stop,
-                                             stdout=f, stderr=su.PIPE)
-                except su.CalledProcessError as err:
-                    services = err.returncode
+            prestop_success, prestop_output = iocage_lib.ioc_common.runscript(
+                self.conf['exec_prestop']
+            )
+            if not prestop_success:
+                msg = f'  + Running prestop FAILED\n' \
+                    f'ERROR:\n{prestop_output}\n\n{failed_message}'
 
-            if services:
-                msg = "  + Stopping services FAILED"
                 iocage_lib.ioc_common.logit({
-                    "level": "ERROR",
-                    "message": msg
+                    'level': 'EXCEPTION',
+                    'message': msg
                 },
                     _callback=self.callback,
-                    silent=self.silent)
+                    silent=self.silent
+                )
             else:
-                msg = "  + Stopping services OK"
+                msg = '  + Running prestop OK'
                 iocage_lib.ioc_common.logit({
-                    "level": "INFO",
-                    "message": msg
+                    'level': 'INFO',
+                    'message': msg
                 },
                     _callback=self.callback,
-                    silent=self.silent)
+                    silent=self.silent
+                )
+
+            exec_stop = self.conf['exec_stop'].split()
+            with open(f'{self.iocroot}/log/{self.uuid}-console.log', 'a') as f:
+                success, output = iocage_lib.ioc_common.safe_checkoutput(
+                    ['setfib', exec_fib, 'jexec', f'ioc-{self.uuid}']
+                    + exec_stop, stderr=su.STDOUT
+                )
+
+                f.write(output)
+
+            if not success:
+                msg = '  + Stopping services FAILED\n' \
+                    f'ERROR:\n{output}\n\n{failed_message}'
+                iocage_lib.ioc_common.logit({
+                    'level': 'EXCEPTION',
+                    'message': msg
+                },
+                    _callback=self.callback,
+                    silent=self.silent
+                )
+            else:
+                msg = '  + Stopping services OK'
+                iocage_lib.ioc_common.logit({
+                    'level': 'INFO',
+                    'message': msg
+                },
+                    _callback=self.callback,
+                    silent=self.silent
+                )
 
             if self.conf["jail_zfs"] == "on":
                 for jdataset in self.conf["jail_zfs_dataset"].split():
@@ -265,7 +292,7 @@ class IOCStop(object):
                 silent=self.silent)
 
         # Build up a jail stop command.
-        cmd = ["jail", "-q"]
+        cmd = ['jail', '-q']
 
         # We check for the existence of the jail.conf here as on iocage
         # upgrade people likely will not have these files. These files
@@ -273,12 +300,12 @@ class IOCStop(object):
         jail_conf_file = Path(f"/var/run/jail.ioc-{self.uuid}.conf")
 
         if jail_conf_file.is_file():
-            cmd.extend(["-f", f"{jail_conf_file}"])
+            cmd.extend(['-f', str(jail_conf_file)])
 
-        cmd.extend(["-r", f"ioc-{self.uuid}"])
+        cmd.extend(['-r', f'ioc-{self.uuid}'])
 
         stop = su.Popen(cmd, stdout=su.PIPE, stderr=su.PIPE)
-        success, stop_err = stop.communicate()
+        _, stop_err = stop.communicate()
 
         if stop_err:
             msg = f'  + Removing jail process FAILED:\n' \
@@ -291,13 +318,14 @@ class IOCStop(object):
                 silent=self.silent
             )
         else:
-            msg = "  + Removing jail process OK"
+            msg = '  + Removing jail process OK'
             iocage_lib.ioc_common.logit({
-                "level": "INFO",
-                "message": msg
+                'level': 'INFO',
+                'message': msg
             },
                 _callback=self.callback,
-                silent=self.silent)
+                silent=self.silent
+            )
 
             # If we have issues unlinking, don't let that get in the way. The
             # jail is already stopped so we're happy.
@@ -307,46 +335,41 @@ class IOCStop(object):
                 except OSError:
                     pass
 
-        poststop, poststop_err = iocage_lib.ioc_common.runscript(
-            self.conf["exec_poststop"])
+        poststop_success, poststop_output = iocage_lib.ioc_common.runscript(
+            self.conf['exec_poststop']
+        )
 
-        if poststop and poststop_err:
-            msg = f"  + Running poststop WARNING\n{poststop_err}"
+        if not poststop_success:
+            # This is the only exec case where we won't raise an exception
+            # as jail has already stopped
+            msg = f'  + Running poststop FAILED\n{poststop_output}\n\n' \
+                'Jail has been stopped but there might be leftovers ' \
+                'from poststop failure'
             iocage_lib.ioc_common.logit({
-                "level": "WARNING",
-                "message": msg
+                'level': 'ERROR',
+                'message': msg
             },
                 _callback=self.callback,
-                silent=self.silent)
-        elif poststop:
-            msg = "  + Running poststop OK"
-            iocage_lib.ioc_common.logit({
-                "level": "INFO",
-                "message": msg
-            },
-                _callback=self.callback,
-                silent=self.silent)
+                silent=self.silent
+            )
         else:
-            if poststop_err:
-                # They may just be exiting on 1, with no real message.
-                msg = f"  + Running poststop FAILED\n{poststop_err}"
-            else:
-                msg = f"  + Running poststop FAILED"
-
+            msg = '  + Running poststop OK'
             iocage_lib.ioc_common.logit({
-                "level": "ERROR",
-                "message": msg
+                'level': 'INFO',
+                'message': msg
             },
                 _callback=self.callback,
-                silent=self.silent)
+                silent=self.silent
+            )
 
-        su.Popen(["umount", "-afF", f"{self.path}/fstab"],
-                 stderr=su.PIPE).communicate()
-        su.Popen(["umount", "-f", f"{self.path}/root/dev/fd"],
-                 stderr=su.PIPE).communicate()
-        su.Popen(["umount", "-f", f"{self.path}/root/dev"],
-                 stderr=su.PIPE).communicate()
-        su.Popen(["umount", "-f", f"{self.path}/root/proc"],
-                 stderr=su.PIPE).communicate()
-        su.Popen(["umount", "-f", f"{self.path}/root/compat/linux/proc"],
-                 stderr=su.PIPE).communicate()
+        for command in [
+            ['umount', '-afF', f'{self.path}/fstab'],
+            ['umount', '-f', f'{self.path}/root/dev/fd'],
+            ['umount', '-f', f'{self.path}/root/dev'],
+            ['umount', '-f', f'{self.path}/root/proc'],
+            ['umount', '-f', f'{self.path}/root/compat/linux/proc']
+        ]:
+            su.Popen(
+                command,
+                stderr=su.PIPE
+            ).communicate()

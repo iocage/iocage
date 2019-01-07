@@ -136,8 +136,6 @@ class IOCStart(object):
         devfs_ruleset = iocage_lib.ioc_common.generate_devfs_ruleset(self.conf)
         exec_prestart = self.conf["exec_prestart"]
         exec_poststart = self.conf["exec_poststart"]
-        exec_prestop = self.conf["exec_prestop"]
-        exec_stop = self.conf["exec_stop"]
         exec_clean = self.conf["exec_clean"]
         exec_timeout = self.conf["exec_timeout"]
         stop_timeout = self.conf["stop_timeout"]
@@ -386,9 +384,6 @@ class IOCStart(object):
                 f'enforce_statfs={enforce_statfs}',
                 f'children.max={children_max}',
                 f'exec.prestart={exec_prestart}',
-                f'exec.poststart={exec_poststart}',
-                f'exec.prestop={exec_prestop}',
-                f'exec.stop={exec_stop}',
                 f'exec.clean={exec_clean}',
                 f'exec.timeout={exec_timeout}',
                 f'stop.timeout={stop_timeout}',
@@ -534,30 +529,66 @@ class IOCStart(object):
         self.start_generate_resolv()
         self.start_copy_localtime()
         # This needs to be a list.
-        exec_start = self.conf["exec_start"].split()
+        exec_start = self.conf['exec_start'].split()
 
-        with open("{}/log/{}-console.log".format(self.iocroot,
-                                                 self.uuid), "a") as f:
-            services = su.check_call(["setfib", self.exec_fib, "jexec",
-                                      f"ioc-{self.uuid}"] + exec_start,
-                                     stdout=f, stderr=su.PIPE)
+        with open(
+            os.path.join(self.iocroot, 'log', f'{self.uuid}-console.log'), 'a'
+        ) as f:
+            success, output = iocage_lib.ioc_common.safe_checkoutput(
+                ['setfib', self.exec_fib, 'jexec', f'ioc-{self.uuid}']
+                + exec_start, stderr=su.STDOUT
+            )
 
-        if services:
-            msg = "  + Starting services FAILED"
+            f.write(output)
+
+        if not success:
+            msg = f'  + Starting services FAILED\nERROR:\n{output}\n\n' \
+                'exec_start failed to execute.\nJail failed to start'
             iocage_lib.ioc_common.logit({
-                "level": "ERROR",
-                "message": msg
+                'level': 'EXCEPTION',
+                'message': msg
             },
                 _callback=self.callback,
-                silent=self.silent)
+                silent=self.silent
+            )
+
+            iocage_lib.ioc_stop.IOCStop(
+                self.uuid, self.path, force=True, silent=True
+            )
+
         else:
-            msg = "  + Starting services OK"
+            msg = '  + Starting services OK'
             iocage_lib.ioc_common.logit({
-                "level": "INFO",
-                "message": msg
+                'level': 'INFO',
+                'message': msg
             },
                 _callback=self.callback,
-                silent=self.silent)
+                silent=self.silent
+            )
+
+            # Running exec_poststart now
+            poststart_success, poststop_output = iocage_lib.ioc_common.runscript(
+                exec_poststart
+            )
+
+            if not poststart_success:
+                iocage_lib.ioc_common.logit({
+                    'level': 'EXCEPTION',
+                    'message': '  + Executing exec_poststart FAILED\n'
+                    f'ERROR:\n{poststop_output}\n\nJail '
+                    f'failed to start'
+                },
+                    _callback=self.callback,
+                    silent=self.silent
+                )
+            else:
+                iocage_lib.ioc_common.logit({
+                    'level': 'INFO',
+                    'message': '  + Running poststop OK'
+                },
+                    _callback=self.callback,
+                    silent=self.silent
+                )
 
             if not vnet_err and vnet and wants_dhcp:
                 failed_dhcp = False

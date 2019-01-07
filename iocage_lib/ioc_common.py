@@ -566,11 +566,27 @@ def checkoutput(*args, **kwargs):
     try:
         out = su.check_output(*args, **kwargs)
 
-        out = out.decode("utf-8")
+        out = out.decode('utf-8')
     except su.CalledProcessError:
         raise
 
     return out
+
+
+def safe_checkoutput(*args, **kwargs):
+    """
+    Returns a tuple, first value stating the success of the call returning
+    True on success and False otherwise. The second value the stderr/stdout
+    if any
+    """
+    success = False
+    try:
+        out = checkoutput(*args, **kwargs)
+        success = True
+    except su.CalledProcessError as e:
+        out = e.output.decode('utf-8')
+
+    return success, out
 
 
 def set_rcconf(jail_path, key, value):
@@ -771,29 +787,26 @@ def generate_devfs_ruleset(conf, paths=None, includes=None, callback=None,
 
 def runscript(script):
     """
-    Runs the users provided script, otherwise returns a tuple with
-    True/False and the error.
+    Runs the script provided and return a tuple with first value determining
+    success of the script and last showing stderr/stdout if any
     """
     script = shlex.split(script)
 
     if len(script) > 1:
         # We may be getting ';', '&&' and so forth. Adding the shell for
         # safety.
-        script = ["/bin/sh", "-c", " ".join(script)]
+        script = ['/bin/sh', '-c', ' '.join(script)]
     elif os.access(script[0], os.X_OK):
         script = script[0]
     else:
-        return True, "Script is not executable!"
+        return False, 'Script is not executable!'
 
     try:
         out = checkoutput(script, stderr=su.STDOUT)
     except su.CalledProcessError as err:
-        return False, err.output.decode().rstrip("\n")
+        return False, err.output.decode().rstrip('\n')
 
-    if out:
-        return True, out.rstrip("\n")
-
-    return True, None
+    return True, out.rstrip('\n')
 
 
 def match_to_dir(iocroot, uuid, old_uuid=None):

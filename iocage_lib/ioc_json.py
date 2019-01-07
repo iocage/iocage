@@ -94,6 +94,7 @@ class JailConfiguration(object):
                 k, v = data.split('=', 1)
                 k = k.strip()
                 v = v.replace(';', '').strip()
+
                 if 'ip4.addr' in k:
                     ip4.append(v)
                 elif 'ip6.addr' in k:
@@ -108,9 +109,9 @@ class JailConfiguration(object):
                 self.read_data[data.replace(';', '').strip()] = None
 
         if ip4:
-            self.read_data['ip4.addr'] = ', '.join(ip4)
+            self.read_data['ip4.addr'] = ','.join(ip4)
         if ip6:
-            self.read_data['ip6.addr'] = ', '.join(ip6)
+            self.read_data['ip6.addr'] = ','.join(ip6)
 
     def sync_changes(self):
         # We are going to write out the changes which are present in self.data
@@ -135,7 +136,7 @@ class JailConfiguration(object):
                 if k == 'name':
                     continue
                 if k in ('ip4.addr', 'ip6.addr'):
-                    v = ', '.join(map(str.strip, v.split(',')))
+                    v = ','.join(map(str.strip, v.split(',')))
                 normalized_data[k] = v
             else:
                 # This is a boolean value
