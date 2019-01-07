@@ -207,7 +207,7 @@ To configure both IPv4 and IPv6:
 
 To enable DHCP:
 
-:samp:`# iocage set vnet=on dhcp=on bpf=yes examplejail`
+:samp:`# iocage set dhcp=on examplejail`
 
 .. index:: Tips for configuring VNET
 .. _Tips for Configuring VNET:
