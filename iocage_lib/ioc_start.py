@@ -396,7 +396,7 @@ class IOCStart(object):
 
         # Write the config out to a file. We'll be starting the jail using this
         # config and it is required for stopping the jail too.
-        jail = iocage_lib.ioc_json.JailConfiguration(
+        jail = iocage_lib.ioc_json.JailRuntimeConfiguration(
             self.uuid, start_parameters
         )
         jail.sync_changes()

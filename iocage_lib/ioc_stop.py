@@ -193,7 +193,7 @@ class IOCStop(object):
         else:
             # We should remove all exec* keys from jail.conf and make sure
             # we force stop the jail process
-            jail_conf = iocage_lib.ioc_json.JailConfiguration(self.uuid)
+            jail_conf = iocage_lib.ioc_json.JailRuntimeConfiguration(self.uuid)
             for r_key in [
                 k for k in jail_conf.data if str(k).startswith('exec')
             ]:

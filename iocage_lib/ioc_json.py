@@ -45,7 +45,7 @@ import random
 import pathlib
 
 
-class JailConfiguration(object):
+class JailRuntimeConfiguration(object):
     def __init__(self, jail_name, data=None):
         # If data is provided, we make sure that this object reflects
         # what data holds and not what the conf file already has etc
