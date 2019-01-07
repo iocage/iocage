@@ -801,12 +801,8 @@ def runscript(script):
     else:
         return False, 'Script is not executable!'
 
-    try:
-        out = checkoutput(script, stderr=su.STDOUT)
-    except su.CalledProcessError as err:
-        return False, err.output.decode().rstrip('\n')
-
-    return True, out.rstrip('\n')
+    success, output = safe_checkoutput(script, stderr=su.STDOUT)
+    return success, output.rstrip('\n')
 
 
 def match_to_dir(iocroot, uuid, old_uuid=None):
