@@ -581,10 +581,15 @@ class IOCStart(object):
                     _callback=self.callback,
                     silent=self.silent
                 )
+
+                iocage_lib.ioc_stop.IOCStop(
+                    self.uuid, self.path, force=True, silent=True
+                )
+
             else:
                 iocage_lib.ioc_common.logit({
                     'level': 'INFO',
-                    'message': '  + Running poststop OK'
+                    'message': '  + Running poststart OK'
                 },
                     _callback=self.callback,
                     silent=self.silent
