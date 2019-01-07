@@ -38,6 +38,8 @@ import re
 import shlex
 import glob
 
+import iocage_lib.ioc_exec
+
 
 def callback(_log, callback_exception):
     """Helper to call the appropriate logging level"""
@@ -573,22 +575,6 @@ def checkoutput(*args, **kwargs):
     return out
 
 
-def safe_checkoutput(*args, **kwargs):
-    """
-    Returns a tuple, first value stating the success of the call returning
-    True on success and False otherwise. The second value the stderr/stdout
-    if any
-    """
-    success = False
-    try:
-        out = checkoutput(*args, **kwargs)
-        success = True
-    except su.CalledProcessError as e:
-        out = e.output.decode('utf-8')
-
-    return success, out
-
-
 def set_rcconf(jail_path, key, value):
     conf_file = f"{jail_path}/root/etc/rc.conf"
 
@@ -787,8 +773,8 @@ def generate_devfs_ruleset(conf, paths=None, includes=None, callback=None,
 
 def runscript(script):
     """
-    Runs the script provided and return a tuple with first value determining
-    success of the script and last showing stderr/stdout if any
+    Runs the script provided and return a tuple with first value showing
+    stdout and last showing stderr
     """
     script = shlex.split(script)
 
@@ -801,9 +787,12 @@ def runscript(script):
     else:
         return False, 'Script is not executable!'
 
-    success, output = safe_checkoutput(script, stderr=su.STDOUT)
+    with iocage_lib.ioc_exec.IOCExec(
+        script, None, None, unjailed=True, decode=True
+    ) as _exec:
+        success, error = list(_exec)[0]
 
-    return success, output.rstrip('\n')
+    return success.rstrip('\n'), error.rstrip('\n')
 
 
 def match_to_dir(iocroot, uuid, old_uuid=None):

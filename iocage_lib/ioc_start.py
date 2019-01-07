@@ -32,6 +32,7 @@ import subprocess as su
 import netifaces
 
 import iocage_lib.ioc_common
+import iocage_lib.ioc_exec
 import iocage_lib.ioc_json
 import iocage_lib.ioc_list
 import iocage_lib.ioc_stop
@@ -534,12 +535,13 @@ class IOCStart(object):
         with open(
             f'{self.iocroot}/log/{self.uuid}-console.log', 'a'
         ) as f:
-            success, output = iocage_lib.ioc_common.safe_checkoutput(
+            with iocage_lib.ioc_exec.IOCExec(
                 ['setfib', self.exec_fib, 'jexec', f'ioc-{self.uuid}']
-                + exec_start, stderr=su.STDOUT
-            )
+                + exec_start, None, None, unjailed=True, decode=True
+            ) as _exec:
+                success, error = list(_exec)[0]
 
-            f.write(output)
+            f.write(success or error)
 
         if not success:
 
@@ -547,7 +549,7 @@ class IOCStart(object):
                 self.uuid, self.path, force=True, silent=True
             )
 
-            msg = f'  + Starting services FAILED\nERROR:\n{output}\n\n' \
+            msg = f'  + Starting services FAILED\nERROR:\n{error}\n\n' \
                 f'Refusing to start {self.uuid}: exec_start failed'
             iocage_lib.ioc_common.logit({
                 'level': 'EXCEPTION',
@@ -568,12 +570,12 @@ class IOCStart(object):
             )
 
             # Running exec_poststart now
-            poststart_success, poststop_output = \
+            poststart_success, poststart_error = \
                 iocage_lib.ioc_common.runscript(
                     exec_poststart
                 )
 
-            if not poststart_success:
+            if poststart_error:
 
                 iocage_lib.ioc_stop.IOCStop(
                     self.uuid, self.path, force=True, silent=True
@@ -582,7 +584,7 @@ class IOCStart(object):
                 iocage_lib.ioc_common.logit({
                     'level': 'EXCEPTION',
                     'message': '  + Running exec_poststart FAILED\n'
-                    f'ERROR:\n{poststop_output}\n\nRefusing to '
+                    f'ERROR:\n{poststart_error}\n\nRefusing to '
                     f'start {self.uuid}: exec_poststart failed'
                 },
                     _callback=self.callback,

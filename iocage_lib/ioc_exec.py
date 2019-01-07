@@ -38,20 +38,23 @@ import collections
 
 class IOCExec(object):
     """Run jexec with a user inside the specified jail."""
-    def __init__(self,
-                 command,
-                 path,
-                 # None is special for RELEASE updating to work around
-                 # freebsd-update weirdness
-                 uuid='',
-                 host_user="root",
-                 jail_user=None,
-                 plugin=False,
-                 unjailed=False,
-                 skip=False,
-                 stdin_bytestring=None,
-                 su_env=None,
-                 callback=None):
+    def __init__(
+        self,
+        command,
+        path,
+        # None is special for RELEASE updating to work around
+        # freebsd-update weirdness
+        uuid='',
+        host_user='root',
+        jail_user=None,
+        plugin=False,
+        unjailed=False,
+        skip=False,
+        stdin_bytestring=None,
+        su_env=None,
+        decode=False,
+        callback=None
+    ):
         self.command = command
         self.uuid = uuid.replace(".", "_") if uuid is not None else uuid
         self.path = path
@@ -61,6 +64,7 @@ class IOCExec(object):
         self.unjailed = unjailed
         self.skip = skip
         self.stdin_bytestring = stdin_bytestring
+        self.decode = decode
         self.stdin = su.PIPE if self.stdin_bytestring is not None else None
 
         path = '/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:'\
@@ -231,7 +235,12 @@ class IOCExec(object):
                     rtrn_stderr = self.proc.stderr.read()
                     stderr_queue.append(rtrn_stderr)
 
-                yield rtrn_stdout, rtrn_stderr
+                if not self.decode:
+                    yield rtrn_stdout, rtrn_stderr
+                else:
+                    yield rtrn_stdout.decode('utf-8'), rtrn_stderr.decode(
+                        'utf-8'
+                    )
 
         error = True if self.proc.returncode != 0 else False
 

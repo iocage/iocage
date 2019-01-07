@@ -25,6 +25,7 @@
 import subprocess as su
 
 import iocage_lib.ioc_common
+import iocage_lib.ioc_exec
 import iocage_lib.ioc_json
 import iocage_lib.ioc_list
 
@@ -86,12 +87,12 @@ class IOCStop(object):
 
         failed_message = 'Please use --force flag to force stop jail'
         if not self.force:
-            prestop_success, prestop_output = iocage_lib.ioc_common.runscript(
+            prestop_success, prestop_error = iocage_lib.ioc_common.runscript(
                 self.conf['exec_prestop']
             )
-            if not prestop_success:
+            if prestop_error:
                 msg = f'  + Running prestop FAILED\n' \
-                    f'ERROR:\n{prestop_output}\n\n{failed_message}'
+                    f'ERROR:\n{prestop_error}\n\n{failed_message}'
 
                 iocage_lib.ioc_common.logit({
                     'level': 'EXCEPTION',
@@ -112,16 +113,17 @@ class IOCStop(object):
 
             exec_stop = self.conf['exec_stop'].split()
             with open(f'{self.iocroot}/log/{self.uuid}-console.log', 'a') as f:
-                success, output = iocage_lib.ioc_common.safe_checkoutput(
+                with iocage_lib.ioc_exec.IOCExec(
                     ['setfib', exec_fib, 'jexec', f'ioc-{self.uuid}']
-                    + exec_stop, stderr=su.STDOUT
-                )
+                    + exec_stop, None, None, unjailed=True, decode=True
+                ) as _exec:
+                    success, error = list(_exec)[0]
 
-                f.write(output)
+                f.write(success or error)
 
-            if not success:
+            if error:
                 msg = '  + Stopping services FAILED\n' \
-                    f'ERROR:\n{output}\n\n{failed_message}'
+                    f'ERROR:\n{error}\n\n{failed_message}'
                 iocage_lib.ioc_common.logit({
                     'level': 'EXCEPTION',
                     'message': msg
@@ -335,14 +337,14 @@ class IOCStop(object):
                 except OSError:
                     pass
 
-        poststop_success, poststop_output = iocage_lib.ioc_common.runscript(
+        poststop_success, poststop_error = iocage_lib.ioc_common.runscript(
             self.conf['exec_poststop']
         )
 
-        if not poststop_success:
+        if poststop_error:
             # This is the only exec case where we won't raise an exception
             # as jail has already stopped
-            msg = f'  + Running poststop FAILED\n{poststop_output}\n\n' \
+            msg = f'  + Running poststop FAILED\n{poststop_error}\n\n' \
                 'Jail has been stopped but there may be leftovers ' \
                 'from exec_poststop failure'
             iocage_lib.ioc_common.logit({
