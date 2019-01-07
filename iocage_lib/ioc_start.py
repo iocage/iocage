@@ -567,9 +567,10 @@ class IOCStart(object):
             )
 
             # Running exec_poststart now
-            poststart_success, poststop_output = iocage_lib.ioc_common.runscript(
-                exec_poststart
-            )
+            poststart_success, poststop_output = \
+                iocage_lib.ioc_common.runscript(
+                    exec_poststart
+                )
 
             if not poststart_success:
                 iocage_lib.ioc_common.logit({
