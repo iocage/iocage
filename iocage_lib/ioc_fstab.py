@@ -222,39 +222,37 @@ class IOCFstab(object):
         :return: The destination of the specified mount
         """
         removed = False
-        index = 0
 
         with iocage_lib.ioc_common.open_atomic(
-                f"{self.iocroot}/jails/{self.uuid}/fstab",
-                "w") as fstab:
-            for line in self.fstab:
+                f'{self.iocroot}/jails/{self.uuid}/fstab', 'w'
+        ) as fstab:
+            for index, line in enumerate(self.fstab):
                 if line.rsplit("#")[0].rstrip() == self.mount or index \
-                        == self.index and not removed:
+                        == self.index:
                     removed = True
                     dest = line.split()[1]
 
                     continue
 
-                fstab.write(line)
-                index += 1
+                fstab.write(f'{line}\n')
 
-        if removed:
+        if not removed:
             iocage_lib.ioc_common.logit({
-                "level": "INFO",
-                "message": f"Successfully removed mount from {self.uuid}"
-                           "'s fstab"
+                'level': 'EXCEPTION',
+                'message': 'No matching fstab entry.'
             },
                 _callback=self.callback,
+                exception=iocage_lib.ioc_exceptions.ValueNotFound,
                 silent=self.silent)
 
-            return dest  # Needed for umounting, otherwise we lack context.
-
         iocage_lib.ioc_common.logit({
-            "level": "EXCEPTION",
-            "message": "No matching fstab entry."
+            'level': 'INFO',
+            'message': f'Successfully removed mount from {self.uuid}\'s fstab'
         },
             _callback=self.callback,
             silent=self.silent)
+
+        return dest  # Needed for umounting, otherwise we lack context.
 
     def __fstab_mount__(self):
         """Mounts the users mount if the jail is running."""
