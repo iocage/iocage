@@ -202,9 +202,15 @@ def test_10_create_jail_and_install_packages(
         ['start', pkg_jail]
     )
 
-    for pkg in install_pkgs:
-        stdout, stderr = jail.run_command(['pkg', 'info', pkg])
-        assert bool(stderr) is False, f'{pkg} did not install'
+    try:
+        for pkg in install_pkgs:
+            stdout, stderr = jail.run_command(['pkg', 'info', pkg])
+            assert bool(stderr) is False, f'{pkg} did not install'
+    finally:
+        invoke_cli(
+            ['destroy', '-f', jail.name]
+        )
+        assert jail.exists is False, f'Failed to destroy {pkg_jail}'
 
 
 @require_root
@@ -275,7 +281,7 @@ def test_15_create_jail_with_assigned_ip(release, jail, invoke_cli, jail_ip):
     jail = jail('assigned_ip_jail')
 
     invoke_cli([
-        'create', '-r', release, '-n', jail.name, f'ip4_addr=vtnet0|{jail_ip}'
+        'create', '-r', release, '-n', jail.name, f'ip4_addr={jail_ip}'
     ])
 
     assert jail.exists is True
@@ -284,4 +290,5 @@ def test_15_create_jail_with_assigned_ip(release, jail, invoke_cli, jail_ip):
         ['start', jail.name]
     )
 
-    assert jail_ip.strip('/')[0] in jail.ip
+    # It is possible that multiple jail_ip were provided, let's test them all
+    assert set(jail.ips) == set(jail_ip.split(','))

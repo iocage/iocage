@@ -72,7 +72,7 @@ class Row:
     def normalize_name(self):
         # Logic copied from iocage to be consistent with the tests
         if self.name:
-            _sort = self.name.strip().rsplit('_', 1)
+            _sort = str(self.name).strip().rsplit('_', 1)
 
             if len(_sort) > 1:
                 _numb = _sort[1].rsplit('/', 1)
@@ -131,7 +131,7 @@ class Row:
 
     def normalize_ip4(self):
 
-        ip = self.ip4.split('|')
+        ip = str(self.ip4).split('|')
         if len(ip) > 1:
             ip = ip[1].split('/')[0]
         else:
@@ -150,7 +150,7 @@ class Row:
     def normalize_jid(self):
         if str(self.jid).isnumeric():
             self.jid = int(self.jid)
-        elif str(self.jid) == '-' or not self.jid:
+        else:
             self.jid = 99999999
 
     def normalize_size_values(self, value):
@@ -177,7 +177,7 @@ class Row:
             value = (value,)
 
         # Default to sorting to name always
-        value += (self.name,)
+        value += (self.orig_name,)
         return value
 
     def ip_jails_parse_correctly(self, values, max, low, high):
@@ -394,8 +394,7 @@ class Jail(Resource):
         elif ip4 == 'none' or not ip4:
             ip4 = '-'
         elif all and ip4:
-            assert len(ip4.split()) == 1, f'Unrecognized ip format: {ip4}'
-            ip4 = ip4.split('|')[1].split('/')[0]
+            ip4 = ','.join([i.split('/')[0] for i in ip4.split(',')])
 
         if full:
             release = self.release
@@ -566,20 +565,36 @@ class Jail(Resource):
         )
 
     @property
-    def ip(self):
+    def ips(self):
         try:
-            config = self.config
-            if config.get('dhcp', 'off') == 'on':
-                interface = 'epair0b'
-            else:
-                interface = config.get('ip4_addr', '').split('|')[0]
+            output = self.run_command(['ifconfig'])[0].split('\n')
+            ips = list(
+                map(
+                    lambda x: x.strip().split()[1],
+                    filter(
+                        lambda x:
+                        x.strip().startswith('inet') and 'inet6' not in x,
+                        output
+                    )
+                )
+            )
 
-            return self.run_command(
-                ['ifconfig', interface, 'inet']
-            )[0].splitlines()[2].split()[1]
+        except Exception:
+            return []
+        else:
+            skip_ips = ['127.0.0.1']
+            return [
+                ip for ip in ips if ip not in skip_ips
+            ]
 
-        except subprocess.CalledProcessError:
-            pass
+    @property
+    def ip(self):
+        # Let's get the first ip only in this case
+        ips = self.ips
+        if ips:
+            return ips[0]
+        else:
+            return None
 
     def run_command(self, command):
         # Returns a tuple - stdout, stderr

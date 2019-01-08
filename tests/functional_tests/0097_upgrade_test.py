@@ -33,15 +33,16 @@ from distutils.version import StrictVersion
 require_root = pytest.mark.require_root
 require_zpool = pytest.mark.require_zpool
 require_upgrade = pytest.mark.require_upgrade
-require_dhcp = pytest.mark.require_dhcp
+require_networking = pytest.mark.require_networking
 
 
 @require_upgrade
-@require_dhcp
+@require_networking
 @require_root
 @require_zpool
 def test_01_upgrade_jail(
-    invoke_cli, jail, skip_test, release, freebsd_download_server
+    invoke_cli, jail, skip_test, release,
+    freebsd_download_server, dhcp, jail_ip
 ):
     # This scenario should work in most cases
     # We can take the value of release specified, go down one version
@@ -65,11 +66,16 @@ def test_01_upgrade_jail(
 
     jail = jail('upgrade_test')
     # Let's create a jail now of version releases.index(release) - 1
+    if (jail_ip and dhcp) or jail_ip:
+        networking = [f'ip4_addr={jail_ip}']
+    else:
+        networking = ['dhcp=on']
+
     invoke_cli(
         [
-            'create', '-r', releases[releases.index(release) - 1],
-            '-n', jail.name, 'dhcp=on'
-        ]
+            'create', '-r', f'{releases[releases.index(release) - 1]}-RELEASE',
+            '-n', jail.name
+        ] + networking
     )
 
     assert jail.exists is True

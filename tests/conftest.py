@@ -22,6 +22,7 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import ipaddress
 import os
 import re
 import subprocess
@@ -85,7 +86,7 @@ def pytest_addoption(parser):
         help='Use DHCP for creating jails'
     )
     parser.addoption(
-        '--upgrade', action='store_true', default=True,
+        '--upgrade', action='store_true', default=False,
         help='Decide whether or not to run upgrade tests'
     )
     parser.addoption(
@@ -105,7 +106,7 @@ def pytest_runtest_setup(item):
         pytest.skip('Need --dhcp option to run')
 
     if 'require_upgrade' in item.keywords and not item.config.getvalue(
-            'upgrade'
+        'upgrade'
     ):
         pytest.skip('Need --upgrade option to run')
 
@@ -124,16 +125,6 @@ def pytest_runtest_setup(item):
             )
         )
     ):
-        pytest.skip('Need either --dhcp or --jail_ip option to run')
-
-    if (
-        'require_networking' in item.keywords and all(
-            v for v in (
-                item.config.getvalue('--dhcp'),
-                item.config.getvalue('--jail_ip')
-            )
-        )
-    ):
         pytest.skip('Need either --dhcp or --jail_ip option to run, not both')
 
 
@@ -146,7 +137,19 @@ def zpool(request):
 @pytest.fixture
 def jail_ip(request):
     """Specify a jail ip to use."""
-    return request.config.getoption('--jail_ip')
+    # For tests we only support ip list in the form
+    # "192.168.1.2, 192.168.1.3"
+    ip = request.config.getoption('--jail_ip') or ''
+    ips = []
+    for check_ip in filter(bool, map(str.strip, ip.split(','))):
+        try:
+            ipaddress.IPv4Address(check_ip)
+        except ValueError:
+            pass
+        else:
+            ips.append(check_ip)
+
+    return ','.join(ips) or None
 
 
 @pytest.fixture
