@@ -388,13 +388,26 @@ class Jail(Resource):
         ip4 = self.config.get('ip4_addr', 'none')
         if self.config.get('dhcp', 'off') == 'on':
             if full and self.running:
-                ip4 = f'epair0b|{self.ip}'
+                ip4 = f'epair0b|{self.ips[0]}'
             else:
                 ip4 = 'DHCP'
         elif ip4 == 'none' or not ip4:
             ip4 = '-'
-        elif all and ip4:
-            ip4 = ','.join([i.split('/')[0] for i in ip4.split(',')])
+        elif ip4:
+            if full:
+                ips = ip4.split(',')
+            else:
+                ips = [
+                    i if '|' not in i else i.split('|')[1]
+                    for i in ip4.split(',')
+                ]
+
+            ip4 = ','.join(
+                map(
+                    lambda x: x.split('/')[0],
+                    ips
+                )
+            )
 
         if full:
             release = self.release
@@ -587,15 +600,6 @@ class Jail(Resource):
                 ip for ip in ips if ip not in skip_ips
             ]
 
-    @property
-    def ip(self):
-        # Let's get the first ip only in this case
-        ips = self.ips
-        if ips:
-            return ips[0]
-        else:
-            return None
-
     def run_command(self, command):
         # Returns a tuple - stdout, stderr
         assert self.running is True
@@ -733,3 +737,8 @@ class ResourceSelector:
     @property
     def cloned_jails(self):
         return [j for j in self.all_jails if j.is_cloned]
+
+    def jails_with_prop(self, key, value):
+        return [
+            j for j in self.all_jails if j.config(key, None) == value
+        ]

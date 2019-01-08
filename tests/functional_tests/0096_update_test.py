@@ -31,27 +31,20 @@ require_networking = pytest.mark.require_networking
 
 
 @require_upgrade
-@require_networking
 @require_root
 @require_zpool
+@require_networking
 def test_01_upgrade_jail(
-    invoke_cli, jail, release, dhcp, jail_ip
+    invoke_cli, jail_ip, resource_selector, skip_test
 ):
 
-    jail = jail('update_test')
-    # Let's create a jail now
-    if (jail_ip and dhcp) or jail_ip:
-        networking = [f'ip4_addr={jail_ip}']
-    else:
-        networking = ['dhcp=on']
+    jails = resource_selector.jails_with_prop('ip4_addr', jail_ip)
+    if not jails:
+        jails = resource_selector.jails_with_prop('dhcp', 'on')
 
-    invoke_cli(
-        [
-            'create', '-r', release, '-n', jail.name
-        ] + networking
-    )
+    skip_test(not jails)
 
-    assert jail.exists is True
+    jail = jails[0]
 
     invoke_cli(
         ['update', jail.name]

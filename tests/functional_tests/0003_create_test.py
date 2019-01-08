@@ -154,8 +154,8 @@ def test_09_dhcp_connectivity_in_jail(release, jail, invoke_cli, ping_ip):
         'Failed to start DHCP Jail'
     )
 
-    ip = jail.ip
-    assert ip is not None and '0.0.0.0' not in ip
+    ips = jail.ips
+    assert ips and '0.0.0.0' not in ips
 
     # Let's test if we can ping ping_ip from inside the jail
 
@@ -168,7 +168,7 @@ def test_09_dhcp_connectivity_in_jail(release, jail, invoke_cli, ping_ip):
 @require_zpool
 @require_networking
 def test_10_create_jail_and_install_packages(
-    release, jail, invoke_cli, jail_ip, dhcp
+    release, jail, invoke_cli, jail_ip
 ):
     # If both jail_ip and dhcp are specified, we can default to jail_ip
     pkg_jail = 'pkg_jail'
@@ -182,7 +182,7 @@ def test_10_create_jail_and_install_packages(
             }))
 
         command = ['create', '-r', release, '-n', pkg_jail, '-p', path]
-        if (jail_ip and dhcp) or jail_ip:
+        if jail_ip:
             command.append(f'ip4_addr={jail_ip}')
         else:
             command.append('dhcp=on')
@@ -291,4 +291,12 @@ def test_15_create_jail_with_assigned_ip(release, jail, invoke_cli, jail_ip):
     )
 
     # It is possible that multiple jail_ip were provided, let's test them all
-    assert set(jail.ips) == set(jail_ip.split(','))
+    assert set(jail.ips) == set(
+        map(
+            lambda x: x.split('/')[0],
+            [
+                i if '|' not in i else i.split('|')[1]
+                for i in jail_ip.split(',')
+            ]
+        )
+    )

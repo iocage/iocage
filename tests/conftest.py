@@ -137,19 +137,7 @@ def zpool(request):
 @pytest.fixture
 def jail_ip(request):
     """Specify a jail ip to use."""
-    # For tests we only support ip list in the form
-    # "192.168.1.2, 192.168.1.3"
-    ip = request.config.getoption('--jail_ip') or ''
-    ips = []
-    for check_ip in filter(bool, map(str.strip, ip.split(','))):
-        try:
-            ipaddress.IPv4Address(check_ip)
-        except ValueError:
-            pass
-        else:
-            ips.append(check_ip)
-
-    return ','.join(ips) or None
+    return request.config.getoption('--jail_ip')
 
 
 @pytest.fixture

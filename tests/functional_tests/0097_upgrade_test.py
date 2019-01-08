@@ -42,7 +42,7 @@ require_networking = pytest.mark.require_networking
 @require_zpool
 def test_01_upgrade_jail(
     invoke_cli, jail, skip_test, release,
-    freebsd_download_server, dhcp, jail_ip
+    freebsd_download_server, dhcp, jail_ip, resource_selector
 ):
     # This scenario should work in most cases
     # We can take the value of release specified, go down one version
@@ -64,21 +64,11 @@ def test_01_upgrade_jail(
 
     skip_test(releases.index(release) == 0, f'Cannot execute upgrade test')
 
-    jail = jail('upgrade_test')
-    # Let's create a jail now of version releases.index(release) - 1
-    if (jail_ip and dhcp) or jail_ip:
-        networking = [f'ip4_addr={jail_ip}']
-    else:
-        networking = ['dhcp=on']
+    jails = resource_selector.jails_with_prop('ip4_addr', jail_ip)
+    if not jails:
+        jails = resource_selector.jails_with_prop('dhcp', 'on')
 
-    invoke_cli(
-        [
-            'create', '-r', f'{releases[releases.index(release) - 1]}-RELEASE',
-            '-n', jail.name
-        ] + networking
-    )
-
-    assert jail.exists is True
+    skip_test(not jails)
 
     invoke_cli(
         ['upgrade', jail.name, '-r', release]
