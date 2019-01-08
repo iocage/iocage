@@ -71,6 +71,10 @@ class ValidationFailed(ExceptionWithMsg):
     pass
 
 
+class ValueNotFound(Exception):
+    pass
+
+
 @contextmanager
 def ignore_exceptions(*exceptions, return_value=None, suppress_exception=True):
     try:
