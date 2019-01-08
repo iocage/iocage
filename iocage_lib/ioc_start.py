@@ -367,13 +367,10 @@ class IOCStart(object):
             x for x in net
             + [x for x in parameters if '1' in x]
             + [
+                f'name=ioc-{self.uuid}',
                 _sysvmsg,
                 _sysvsem,
                 _sysvshm,
-                 f'name=ioc-{self.uuid}',
-                 _sysvmsg,
-                 _sysvsem,
-                 _sysvshm,
                 f'host.domainname={host_domainname}',
                 f'host.hostname={host_hostname}',
                 f'path={self.path}/root',
