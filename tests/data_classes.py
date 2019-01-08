@@ -177,7 +177,7 @@ class Row:
             value = (value,)
 
         # Default to sorting to name always
-        value += (self.orig_name,)
+        value += (self.name,)
         return value
 
     def ip_jails_parse_correctly(self, values, max, low, high):
