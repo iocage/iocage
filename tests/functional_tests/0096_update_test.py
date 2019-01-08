@@ -26,15 +26,13 @@ import pytest
 
 require_root = pytest.mark.require_root
 require_zpool = pytest.mark.require_zpool
-require_upgrade = pytest.mark.require_upgrade
 require_networking = pytest.mark.require_networking
 
 
-@require_upgrade
 @require_root
 @require_zpool
 @require_networking
-def test_01_upgrade_jail(
+def test_01_update_jail(
     invoke_cli, jail_ip, resource_selector, skip_test
 ):
 
