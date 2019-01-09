@@ -1844,8 +1844,8 @@ class IOCJson(IOCConfiguration):
                 else:
                     with iocage_lib.ioc_exec.IOCExec(
                         prop_cmd,
-                        uuid,
                         _path,
+                        uuid=uuid,
                         plugin=True
                     ) as _exec:
                         prop_out = iocage_lib.ioc_common.consume_and_log(
@@ -1925,7 +1925,7 @@ class IOCJson(IOCConfiguration):
                     _callback=self.callback,
                     silent=self.silent)
             with iocage_lib.ioc_exec.IOCExec(
-                prop_cmd, uuid, _path
+                prop_cmd, _path, uuid=uuid
             ) as _exec:
                 iocage_lib.ioc_common.consume_and_log(
                     _exec,
@@ -1949,8 +1949,8 @@ class IOCJson(IOCConfiguration):
                     silent=self.silent)
                 with iocage_lib.ioc_exec.IOCExec(
                     servicerestart,
-                    uuid,
-                    _path
+                    _path,
+                    uuid=uuid
                 ) as _exec:
                     iocage_lib.ioc_common.consume_and_log(
                         _exec,

@@ -786,7 +786,8 @@ class IOCCreate(object):
         cmd = ("/usr/local/sbin/pkg-static", "upgrade", "-f", "-q", "-y")
         try:
             with iocage_lib.ioc_exec.IOCExec(
-                cmd, jail_uuid, location, plugin=self.plugin, su_env=pkg_env
+                cmd, location, uuid=jail_uuid, plugin=self.plugin,
+                su_env=pkg_env
             ) as _exec:
                 iocage_lib.ioc_common.consume_and_log(
                     _exec,
@@ -830,7 +831,7 @@ class IOCCreate(object):
 
                 try:
                     with iocage_lib.ioc_exec.IOCExec(
-                        cmd, jail_uuid, location, plugin=self.plugin,
+                        cmd, location, uuid=jail_uuid, plugin=self.plugin,
                         su_env=pkg_env
                     ) as _exec:
                         iocage_lib.ioc_common.consume_and_log(

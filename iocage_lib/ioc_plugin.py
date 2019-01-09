@@ -578,7 +578,7 @@ fingerprint: {fingerprint}
                 command = ["/root/post_install.sh"]
                 try:
                     with iocage_lib.ioc_exec.IOCExec(
-                        command, uuid, jaildir, plugin=True,
+                        command, jaildir, uuid=uuid, plugin=True,
                         skip=True, callback=self.callback,
                         su_env=plugin_env
                     ) as _exec:
@@ -932,8 +932,8 @@ fingerprint: {fingerprint}
         try:
             with iocage_lib.ioc_exec.IOCExec(
                 command=["pkg", "delete", "-a", "-f", "-y"],
-                uuid=self.plugin,
                 path=f"{self.iocroot}/jails/{self.plugin}",
+                uuid=self.plugin,
                 callback=self.callback
             ) as _exec:
                 iocage_lib.ioc_common.consume_and_log(
@@ -1198,8 +1198,8 @@ fingerprint: {fingerprint}
         try:
             with iocage_lib.ioc_exec.IOCExec(
                 command,
-                self.plugin,
                 path,
+                uuid=self.plugin,
                 plugin=True,
                 skip=True,
                 callback=self.callback

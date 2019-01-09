@@ -122,8 +122,8 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
             ]
             with iocage_lib.ioc_exec.IOCExec(
                 fetch_cmd,
-                self.uuid,
                 self.path.replace('/root', ''),
+                uuid=self.uuid,
                 unjailed=True,
                 stdin_bytestring=b'y\n',
                 callback=self.callback,
@@ -302,8 +302,8 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
 
         with iocage_lib.ioc_exec.IOCExec(
             install_cmd,
-            self.uuid,
             self.path.replace('/root', ''),
+            uuid=self.uuid,
             unjailed=True,
             callback=self.callback,
         ) as _exec:

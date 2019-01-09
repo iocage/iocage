@@ -888,10 +888,10 @@ class IOCage(ioc_json.IOCZFS):
         try:
             with ioc_exec.IOCExec(
                 command,
-                uuid,
                 path,
-                host_user,
-                jail_user,
+                uuid=uuid,
+                host_user=host_user,
+                jail_user=jail_user,
                 unjailed=pkg,
                 su_env=su_env
             ) as _exec:
