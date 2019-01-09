@@ -40,8 +40,10 @@ class IOCExec(object):
     """Run jexec with a user inside the specified jail."""
     def __init__(self,
                  command,
-                 uuid,
                  path,
+                 # None is special for RELEASE updating to work around
+                 # freebsd-update weirdness
+                 uuid='',
                  host_user="root",
                  jail_user=None,
                  plugin=False,
@@ -76,7 +78,7 @@ class IOCExec(object):
         self.callback = callback
         self.cmd = self.command
 
-        if self.uuid is not None:
+        if self.uuid is not None and self.uuid:
             self.status, _ = iocage_lib.ioc_list.IOCList().list_get_jid(
                 self.uuid)
             self.conf = iocage_lib.ioc_json.IOCJson(self.path).json_get_value(

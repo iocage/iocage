@@ -901,8 +901,8 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
             ]
             with iocage_lib.ioc_exec.IOCExec(
                 fetch_cmd,
-                uuid,
                 f"{self.iocroot}/jails/{uuid}",
+                uuid=uuid,
                 unjailed=True,
                 callback=self.callback,
                 su_env=fetch_env
@@ -917,8 +917,8 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
             ]
             with iocage_lib.ioc_exec.IOCExec(
                 fetch_install_cmd,
-                uuid,
                 f"{self.iocroot}/jails/{uuid}",
+                uuid=uuid,
                 unjailed=True,
                 callback=self.callback,
                 su_env=fetch_env
