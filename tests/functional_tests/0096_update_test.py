@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2019, iocage
+# Copyright (c) 2014-2018, iocage
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,24 +26,24 @@ import pytest
 
 require_root = pytest.mark.require_root
 require_zpool = pytest.mark.require_zpool
+require_networking = pytest.mark.require_networking
 
 
 @require_root
 @require_zpool
-def test_fetch(
-    release, server, user, password, auth,
-    root_dir, http, _file, noupdate, invoke_cli
+@require_networking
+def test_01_update_jail(
+    invoke_cli, jail_ip, resource_selector, skip_test
 ):
-    command = ['fetch', '-r', release]
-    command += ['-s', server] if server else []
-    command += ['-h'] if http else []
-    command += ['-f', _file] if _file else []
-    command += ['-u', user] if user else []
-    command += ['-p', password] if password else []
-    command += ['-a', auth] if auth else []
-    command += ['-d', root_dir] if root_dir else []
-    command += ['-NU'] if noupdate else []
+
+    jails = resource_selector.jails_with_prop('ip4_addr', jail_ip)
+    if not jails:
+        jails = resource_selector.jails_with_prop('dhcp', 'on')
+
+    skip_test(not jails)
+
+    jail = jails[0]
 
     invoke_cli(
-        command
+        ['update', jail.name]
     )

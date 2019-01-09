@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2019, iocage
+# Copyright (c) 2014-2018, iocage
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -22,28 +22,54 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import re
+
 import pytest
+import requests
+
+from distutils.version import StrictVersion
+
 
 require_root = pytest.mark.require_root
 require_zpool = pytest.mark.require_zpool
+require_upgrade = pytest.mark.require_upgrade
+require_networking = pytest.mark.require_networking
 
 
+@require_upgrade
+@require_networking
 @require_root
 @require_zpool
-def test_fetch(
-    release, server, user, password, auth,
-    root_dir, http, _file, noupdate, invoke_cli
+def test_01_upgrade_jail(
+    invoke_cli, jail, skip_test, release,
+    freebsd_download_server, dhcp, jail_ip, resource_selector
 ):
-    command = ['fetch', '-r', release]
-    command += ['-s', server] if server else []
-    command += ['-h'] if http else []
-    command += ['-f', _file] if _file else []
-    command += ['-u', user] if user else []
-    command += ['-p', password] if password else []
-    command += ['-a', auth] if auth else []
-    command += ['-d', root_dir] if root_dir else []
-    command += ['-NU'] if noupdate else []
+    # This scenario should work in most cases
+    # We can take the value of release specified, go down one version
+    # Create a jail for this version and then upgrade to release
+    # If it passes as desired, we can mark this as resolved
+
+    req = requests.get(freebsd_download_server)
+    assert req.status_code == 200
+
+    releases = [
+        StrictVersion(r) for r in re.findall(
+            r'href="(\d.*)-RELEASE/"', req.content.decode('utf-8')
+        )
+    ]
+    releases.sort()
+    release = StrictVersion(release.split('-')[0])
+
+    skip_test(release not in releases, f'{releases} does contain {release}')
+
+    skip_test(releases.index(release) == 0, f'Cannot execute upgrade test')
+
+    jails = resource_selector.jails_with_prop('ip4_addr', jail_ip)
+    if not jails:
+        jails = resource_selector.jails_with_prop('dhcp', 'on')
+
+    skip_test(not jails)
 
     invoke_cli(
-        command
+        ['upgrade', jail.name, '-r', release]
     )

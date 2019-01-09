@@ -40,18 +40,29 @@ def common_function(invoke_cli, jails, skip_test):
         ['snapshot', jail.name, '-n', SNAP_NAME]
     )
 
-    # We use count because of template jails
-    for snap in jail.recursive_snapshots:
-        assert SNAP_NAME == snap.id.split('@')[1]
+    # We use count because of template and cloned jails
+    assert [
+        s.id.split('@')[1] for s in jail.recursive_snapshots
+    ].count(SNAP_NAME) >= 2
 
 
 @require_root
 @require_zpool
 def test_01_snapshot_of_jail(invoke_cli, resource_selector, skip_test):
-    common_function(invoke_cli, resource_selector.jails, skip_test)
+    common_function(invoke_cli, resource_selector.not_cloned_jails, skip_test)
 
 
 @require_root
 @require_zpool
 def test_02_snapshot_of_template_jail(invoke_cli, resource_selector, skip_test):
-    common_function(invoke_cli, resource_selector.template_jails, skip_test)
+    common_function(
+        invoke_cli, [
+            j for j in resource_selector.template_jails if not j.is_cloned
+        ], skip_test
+    )
+
+
+@require_root
+@require_zpool
+def test_03_snapshot_of_cloned_jail(invoke_cli, resource_selector, skip_test):
+    common_function(invoke_cli, resource_selector.cloned_jails, skip_test)

@@ -61,7 +61,7 @@ def test_02_stop(resource_selector, invoke_cli, skip_test):
 @require_root
 @require_zpool
 def test_03_test_force_flag_stopping_jail(
-        release, jail, invoke_cli, write_file, remove_file
+    release, jail, invoke_cli, write_file, remove_file
 ):
     # Let's create our script file first
     script_file = '/tmp/test_stop_force_flag_test'
@@ -83,15 +83,19 @@ def test_03_test_force_flag_stopping_jail(
         assert jail.exists is True
 
         invoke_cli(
-            ['start', 'stop_force_flag_test'],
+            ['start', jail.name],
             'Failed to start stop_force_flag_test'
         )
         assert jail.running is True
 
         invoke_cli(
-            ['stop', '-f', 'stop_force_flag_test'],
+            ['stop', '-f', jail.name],
             'Failed to stop Jail'
         )
+        invoke_cli(
+            ['set', 'exec_prestop="/usr/bin/true"', jail.name]
+        )
+
         assert jail.running is False
         assert not os.path.exists(test_file),\
             f'Pre-stop services being executed'
