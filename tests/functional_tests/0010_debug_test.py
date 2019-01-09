@@ -58,7 +58,9 @@ def test03_verify_debug_directories(resource_selector, zfs):
         for d in ('debug', 'debug2')
     ]
 
-    files_check = [f'{j}.txt' for j in resource_selector.all_jails] + ['host.txt']
+    files_check = [f'{j}.txt' for j in resource_selector.all_jails] + [
+        'host.txt'
+    ]
 
     for directory in directories:
         assert os.path.exists(directory) is True

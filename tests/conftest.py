@@ -22,6 +22,7 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import ipaddress
 import os
 import re
 import subprocess
@@ -84,6 +85,14 @@ def pytest_addoption(parser):
         '--dhcp', action='store_true', default=False,
         help='Use DHCP for creating jails'
     )
+    parser.addoption(
+        '--upgrade', action='store_true', default=False,
+        help='Decide whether or not to run upgrade tests'
+    )
+    parser.addoption(
+        '--ping_ip', action='store', default='8.8.8.8',
+        help='Use --ping_ip for testing connectivity within a jail'
+    )
 
 
 def pytest_runtest_setup(item):
@@ -96,6 +105,11 @@ def pytest_runtest_setup(item):
     if 'require_dhcp' in item.keywords and not item.config.getvalue('dhcp'):
         pytest.skip('Need --dhcp option to run')
 
+    if 'require_upgrade' in item.keywords and not item.config.getvalue(
+        'upgrade'
+    ):
+        pytest.skip('Need --upgrade option to run')
+
     if (
         'require_jail_ip' in item.keywords
         and not item.config.getvalue('jail_ip')
@@ -106,16 +120,6 @@ def pytest_runtest_setup(item):
         'require_networking' in item.keywords
         and all(
             not v for v in (
-                    item.config.getvalue('--dhcp'),
-                    item.config.getvalue('--jail_ip')
-            )
-        )
-    ):
-        pytest.skip('Need either --dhcp or --jail_ip option to run')
-
-    if (
-        'require_networking' in item.keywords and all(
-            v for v in (
                 item.config.getvalue('--dhcp'),
                 item.config.getvalue('--jail_ip')
             )
@@ -140,6 +144,18 @@ def jail_ip(request):
 def dhcp(request):
     """Specify if dhcp is to be used."""
     return request.config.getoption('--dhcp')
+
+
+@pytest.fixture
+def upgrade(request):
+    """Specify if upgrade test is to be executed."""
+    return request.config.getoption('--upgrade')
+
+
+@pytest.fixture
+def ping_ip(request):
+    """Specify ip to be used to test connectivity within a jail"""
+    return request.config.getoption('--ping_ip')
 
 
 @pytest.fixture

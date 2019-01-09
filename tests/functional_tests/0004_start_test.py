@@ -32,7 +32,7 @@ require_zpool = pytest.mark.require_zpool
 @require_root
 @require_zpool
 def test_01_start(resource_selector, invoke_cli):
-    for jail in resource_selector.startable_jails:
+    for jail in resource_selector.startable_jails_and_not_running:
         if not jail.is_rcjail:
             invoke_cli(
                 ['start', jail.name],
