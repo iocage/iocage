@@ -214,8 +214,8 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
         try:
             iocage_lib.ioc_exec.SilentExec(
                 mount_cmd,
-                self.uuid,
                 self.path.replace('/root', ''),
+                uuid=self.uuid,
                 unjailed=True
             )
         except iocage_lib.ioc_exceptions.CommandFailed:
@@ -237,8 +237,8 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
         try:
             iocage_lib.ioc_exec.SilentExec(
                 etcupdate_cmd,
-                self.uuid,
                 self.path.replace('/root', ''),
+                uuid=self.uuid,
                 unjailed=True
             )
         except iocage_lib.ioc_exceptions.CommandFailed:
@@ -275,8 +275,8 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
 
         iocage_lib.ioc_exec.SilentExec(
             ['newaliases'],
-            self.uuid,
             self.path.replace('/root', ''),
+            uuid=self.uuid
         )
 
         umount_command = [
@@ -284,8 +284,8 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
         ]
         iocage_lib.ioc_exec.SilentExec(
             umount_command,
-            self.uuid,
             self.path.replace('/root', ''),
+            uuid=self.uuid,
             unjailed=True
         )
 

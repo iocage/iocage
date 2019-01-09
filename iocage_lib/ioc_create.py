@@ -687,7 +687,7 @@ class IOCCreate(object):
 
         try:
             iocage_lib.ioc_exec.SilentExec(
-                srv_connect_cmd, jail_uuid, location, plugin=self.plugin
+                srv_connect_cmd, location, uuid=jail_uuid, plugin=self.plugin
             )
         except iocage_lib.ioc_exceptions.CommandFailed:
             # This shouldn't be fatal since SRV records are not required
@@ -707,7 +707,8 @@ class IOCCreate(object):
             silent=False)
         try:
             iocage_lib.ioc_exec.SilentExec(
-                dnssec_connect_cmd, jail_uuid, location, plugin=self.plugin,
+                dnssec_connect_cmd, location, uuid=jail_uuid,
+                plugin=self.plugin,
             )
         except iocage_lib.ioc_exceptions.CommandFailed:
             # Not fatal, they may not be using DNSSEC
@@ -727,7 +728,8 @@ class IOCCreate(object):
 
             try:
                 iocage_lib.ioc_exec.SilentExec(
-                    dns_connect_cmd, jail_uuid, location, plugin=self.plugin,
+                    dns_connect_cmd, location, uuid=jail_uuid,
+                    plugin=self.plugin,
                 )
             except iocage_lib.ioc_exceptions.CommandFailed:
                 iocage_lib.ioc_common.logit({

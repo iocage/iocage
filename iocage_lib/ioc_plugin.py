@@ -1243,16 +1243,16 @@ fingerprint: {fingerprint}
     def __stop_rc__(self):
         iocage_lib.ioc_exec.SilentExec(
             command=["/bin/sh", "/etc/rc.shutdown"],
-            uuid=self.plugin,
             path=f"{self.iocroot}/jails/{self.plugin}",
+            uuid=self.plugin,
             callback=self.callback
         )
 
     def __start_rc__(self):
         iocage_lib.ioc_exec.SilentExec(
             command=["/bin/sh", "/etc/rc"],
-            uuid=self.plugin,
             path=f"{self.iocroot}/jails/{self.plugin}",
+            uuid=self.plugin,
             callback=self.callback
         )
 
