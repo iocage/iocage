@@ -1554,10 +1554,10 @@ class IOCJson(IOCConfiguration):
             "ip4_saddrsel": (
                 "0",
                 "1", ),
-            "ip4": ("new", "inherit", "none"),
+            "ip4": ("new", "inherit", "disable"),
             "ip6_addr": ("string", ),
             "ip6_saddrsel": ("0", "1"),
-            "ip6": ("new", "inherit", "none"),
+            "ip6": ("new", "inherit", "disable"),
             "defaultrouter": ("string", ),
             "defaultrouter6": ("string", ),
             "resolver": ("string", ),
