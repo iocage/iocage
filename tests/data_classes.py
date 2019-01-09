@@ -185,7 +185,9 @@ class Row:
         # ip assigned ones
         if len(values) > max:
             # This means we have a dhcp based jail or ip assigned one
-            values[low:high] = ['|'.join(values[low:high])]
+            values[low: len(values) - (max - high + 1)] = [
+                '|'.join(values[low: len(values) - (max - high + 1)])
+            ]
 
         return values
 
@@ -740,5 +742,5 @@ class ResourceSelector:
 
     def jails_with_prop(self, key, value):
         return [
-            j for j in self.all_jails if j.config(key, None) == value
+            j for j in self.all_jails if j.config.get(key, None) == value
         ]
