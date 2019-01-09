@@ -38,6 +38,7 @@ import re
 import shlex
 import glob
 
+import iocage_lib.ioc_exceptions
 import iocage_lib.ioc_exec
 
 
@@ -787,12 +788,15 @@ def runscript(script):
     else:
         return False, 'Script is not executable!'
 
-    with iocage_lib.ioc_exec.IOCExec(
-        script, None, None, unjailed=True, decode=True
-    ) as _exec:
-        success, error = list(_exec)[0]
-
-    return success.rstrip('\n'), error.rstrip('\n')
+    try:
+        with iocage_lib.ioc_exec.IOCExec(
+            script, None, uuid='', unjailed=True, decode=True
+        ) as _exec:
+            success, error = list(_exec)[0]
+    except iocage_lib.ioc_exceptions.CommandFailed as e:
+        return '', f'Script returned non-zero status: {e}'
+    else:
+        return success.rstrip('\n'), error.rstrip('\n')
 
 
 def match_to_dir(iocroot, uuid, old_uuid=None):

@@ -238,9 +238,7 @@ class IOCExec(object):
                 if not self.decode:
                     yield rtrn_stdout, rtrn_stderr
                 else:
-                    yield rtrn_stdout.decode('utf-8'), rtrn_stderr.decode(
-                        'utf-8'
-                    )
+                    yield rtrn_stdout.decode(), rtrn_stderr.decode()
 
         error = True if self.proc.returncode != 0 else False
 
@@ -257,7 +255,8 @@ class IOCExec(object):
 
             if error:
                 raise iocage_lib.ioc_exceptions.CommandFailed(
-                    list(stderr_queue))
+                    list(stderr_queue)
+                )
 
 
 class SilentExec(object):

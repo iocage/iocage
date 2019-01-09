@@ -91,7 +91,7 @@ class IOCStop(object):
                 self.conf['exec_prestop']
             )
             if prestop_error:
-                msg = f'  + Running prestop FAILED\n' \
+                msg = f'  + Executing prestop FAILED\n' \
                     f'ERROR:\n{prestop_error}\n\n{failed_message}'
 
                 iocage_lib.ioc_common.logit({
@@ -102,7 +102,7 @@ class IOCStop(object):
                     silent=self.silent
                 )
             else:
-                msg = '  + Running prestop OK'
+                msg = '  + Executing prestop OK'
                 iocage_lib.ioc_common.logit({
                     'level': 'INFO',
                     'message': msg
@@ -115,7 +115,7 @@ class IOCStop(object):
             with open(f'{self.iocroot}/log/{self.uuid}-console.log', 'a') as f:
                 with iocage_lib.ioc_exec.IOCExec(
                     ['setfib', exec_fib, 'jexec', f'ioc-{self.uuid}']
-                    + exec_stop, None, None, unjailed=True, decode=True
+                    + exec_stop, None, uuid='', unjailed=True, decode=True
                 ) as _exec:
                     success, error = list(_exec)[0]
 
@@ -344,7 +344,7 @@ class IOCStop(object):
         if poststop_error:
             # This is the only exec case where we won't raise an exception
             # as jail has already stopped
-            msg = f'  + Running poststop FAILED\n{poststop_error}\n\n' \
+            msg = f'  + Executing poststop FAILED\n{poststop_error}\n\n' \
                 'Jail has been stopped but there may be leftovers ' \
                 'from exec_poststop failure'
             iocage_lib.ioc_common.logit({
@@ -355,7 +355,7 @@ class IOCStop(object):
                 silent=self.silent
             )
         else:
-            msg = '  + Running poststop OK'
+            msg = '  + Executing poststop OK'
             iocage_lib.ioc_common.logit({
                 'level': 'INFO',
                 'message': msg

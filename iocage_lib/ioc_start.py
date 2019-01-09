@@ -537,7 +537,7 @@ class IOCStart(object):
         ) as f:
             with iocage_lib.ioc_exec.IOCExec(
                 ['setfib', self.exec_fib, 'jexec', f'ioc-{self.uuid}']
-                + exec_start, None, None, unjailed=True, decode=True
+                + exec_start, None, uuid='', unjailed=True, decode=True
             ) as _exec:
                 success, error = list(_exec)[0]
 
@@ -583,7 +583,7 @@ class IOCStart(object):
 
                 iocage_lib.ioc_common.logit({
                     'level': 'EXCEPTION',
-                    'message': '  + Running exec_poststart FAILED\n'
+                    'message': '  + Executing exec_poststart FAILED\n'
                     f'ERROR:\n{poststart_error}\n\nRefusing to '
                     f'start {self.uuid}: exec_poststart failed'
                 },
@@ -594,7 +594,7 @@ class IOCStart(object):
             else:
                 iocage_lib.ioc_common.logit({
                     'level': 'INFO',
-                    'message': '  + Running poststart OK'
+                    'message': '  + Executing poststart OK'
                 },
                     _callback=self.callback,
                     silent=self.silent
