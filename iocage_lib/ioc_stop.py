@@ -25,6 +25,7 @@
 import subprocess as su
 
 import iocage_lib.ioc_common
+import iocage_lib.ioc_exceptions
 import iocage_lib.ioc_exec
 import iocage_lib.ioc_json
 import iocage_lib.ioc_list
@@ -113,34 +114,38 @@ class IOCStop(object):
 
             exec_stop = self.conf['exec_stop'].split()
             with open(f'{self.iocroot}/log/{self.uuid}-console.log', 'a') as f:
-                output = iocage_lib.ioc_exec.SilentExec(
-                    ['setfib', exec_fib, 'jexec', f'ioc-{self.uuid}']
-                    + exec_stop, None, unjailed=True, decode=True
-                )
+                success, error = '', ''
+                try:
+                    output = iocage_lib.ioc_exec.SilentExec(
+                        ['setfib', exec_fib, 'jexec', f'ioc-{self.uuid}']
+                        + exec_stop, None, unjailed=True, decode=True
+                    )
+                except iocage_lib.ioc_exceptions.CommandFailed as e:
 
-                success = output.stdout
-                error = output.stderr
-                f.write(success or error)
+                    error = str(e)
+                    msg = '  + Stopping services FAILED\n' \
+                        f'ERROR:\n{e}\n\n{failed_message}'
+                    iocage_lib.ioc_common.logit({
+                        'level': 'EXCEPTION',
+                        'message': msg
+                    },
+                        _callback=self.callback,
+                        silent=self.silent
+                    )
 
-            if error:
-                msg = '  + Stopping services FAILED\n' \
-                    f'ERROR:\n{error}\n\n{failed_message}'
-                iocage_lib.ioc_common.logit({
-                    'level': 'EXCEPTION',
-                    'message': msg
-                },
-                    _callback=self.callback,
-                    silent=self.silent
-                )
-            else:
-                msg = '  + Stopping services OK'
-                iocage_lib.ioc_common.logit({
-                    'level': 'INFO',
-                    'message': msg
-                },
-                    _callback=self.callback,
-                    silent=self.silent
-                )
+                else:
+                    success = output.stdout
+                    msg = '  + Stopping services OK'
+                    iocage_lib.ioc_common.logit({
+                        'level': 'INFO',
+                        'message': msg
+                    },
+                        _callback=self.callback,
+                        silent=self.silent
+                    )
+
+                finally:
+                    f.write(success or error)
 
             if self.conf["jail_zfs"] == "on":
                 for jdataset in self.conf["jail_zfs_dataset"].split():

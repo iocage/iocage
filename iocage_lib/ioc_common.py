@@ -793,9 +793,9 @@ def runscript(script):
             script, None, unjailed=True, decode=True
         )
     except iocage_lib.ioc_exceptions.CommandFailed as e:
-        return '', f'Script returned non-zero status: {e}'
+        return False, f'Script returned non-zero status: {e}'
     else:
-        return output.stdout.rstrip('\n'), output.stderr.rstrip('\n')
+        return output.stdout.rstrip('\n'), False
 
 
 def match_to_dir(iocroot, uuid, old_uuid=None):
