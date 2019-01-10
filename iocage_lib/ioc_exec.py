@@ -262,4 +262,7 @@ class IOCExec(object):
 class SilentExec(object):
     def __init__(self, *args, **kwargs):
         with IOCExec(*args, **kwargs) as silent:  # noqa
-            pass
+            self.output = list(silent)
+
+        self.stdout = ''.join([i[0] for i in self.output])
+        self.stderr = ''.join([i[1] for i in self.output])

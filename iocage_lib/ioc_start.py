@@ -535,12 +535,13 @@ class IOCStart(object):
         with open(
             f'{self.iocroot}/log/{self.uuid}-console.log', 'a'
         ) as f:
-            with iocage_lib.ioc_exec.IOCExec(
+            output = iocage_lib.ioc_exec.SilentExec(
                 ['setfib', self.exec_fib, 'jexec', f'ioc-{self.uuid}']
-                + exec_start, None, uuid='', unjailed=True, decode=True
-            ) as _exec:
-                success, error = list(_exec)[0]
+                + exec_start, None, unjailed=True, decode=True
+            )
 
+            success = output.stdout
+            error = output.stderr
             f.write(success or error)
 
         if not success:

@@ -113,12 +113,13 @@ class IOCStop(object):
 
             exec_stop = self.conf['exec_stop'].split()
             with open(f'{self.iocroot}/log/{self.uuid}-console.log', 'a') as f:
-                with iocage_lib.ioc_exec.IOCExec(
+                output = iocage_lib.ioc_exec.SilentExec(
                     ['setfib', exec_fib, 'jexec', f'ioc-{self.uuid}']
-                    + exec_stop, None, uuid='', unjailed=True, decode=True
-                ) as _exec:
-                    success, error = list(_exec)[0]
+                    + exec_stop, None, unjailed=True, decode=True
+                )
 
+                success = output.stdout
+                error = output.stderr
                 f.write(success or error)
 
             if error:

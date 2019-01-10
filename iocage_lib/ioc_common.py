@@ -789,14 +789,13 @@ def runscript(script):
         return False, 'Script is not executable!'
 
     try:
-        with iocage_lib.ioc_exec.IOCExec(
-            script, None, uuid='', unjailed=True, decode=True
-        ) as _exec:
-            success, error = list(_exec)[0]
+        output = iocage_lib.ioc_exec.SilentExec(
+            script, None, unjailed=True, decode=True
+        )
     except iocage_lib.ioc_exceptions.CommandFailed as e:
         return '', f'Script returned non-zero status: {e}'
     else:
-        return success.rstrip('\n'), error.rstrip('\n')
+        return output.stdout.rstrip('\n'), output.stderr.rstrip('\n')
 
 
 def match_to_dir(iocroot, uuid, old_uuid=None):
