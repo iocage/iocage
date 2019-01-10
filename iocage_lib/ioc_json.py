@@ -1854,7 +1854,7 @@ class IOCJson(IOCConfiguration):
 
                         # Let's validate the ip address now
                         try:
-                            ip_check(ip)
+                            ip_check(ip, strict=False)
                         except ValueError as e:
                             iocage_lib.ioc_common.logit(
                                 {
