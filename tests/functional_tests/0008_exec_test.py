@@ -47,3 +47,43 @@ def test_01_exec_on_jail(resource_selector, skip_test, invoke_cli):
     assert os.path.exists(
         os.path.join(jail.absolute_path, 'root/tmp/testing_file')
     ) is True
+
+
+@require_root
+@require_zpool
+def test_02_exec_jail_user_on_jail(resource_selector, skip_test, invoke_cli):
+    jails = resource_selector.startable_jails_and_not_running
+    skip_test(not jails)
+
+    jail = jails[0]
+    invoke_cli(
+        [
+            'exec', jail.name, 'pw', 'useradd', '-n', 'foo', '-s', '/bin/sh',
+            '-m'
+        ]
+    )
+
+    result = invoke_cli(['exec', '-U', 'foo', jail.name, 'whoami'])
+    assert jail.running is False
+
+    output = result.output.rstrip()
+
+    assert output == 'foo', f'Jail user "foo" does not match output: {output}'
+
+
+@require_root
+@require_zpool
+def test_03_exec_host_user_on_jail(resource_selector, skip_test, invoke_cli):
+    jails = resource_selector.startable_jails_and_not_running
+    skip_test(not jails)
+
+    jail = jails[0]
+    result = invoke_cli(
+        ['exec', '-u', 'nobody', jail.name, 'whoami']
+    )
+    assert jail.running is False
+
+    output = result.output.rstrip()
+
+    assert output == 'nobody', \
+        f'Host user "nobody" does not match output: {output}'

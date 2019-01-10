@@ -33,26 +33,28 @@ $ pytest --fixtures
 ```
 Extract:
 ```
-zpool 
+zpool
     Specify a zpool to use.
-release 
+release
     Specify a RELEASE to use.
-server 
+server
     FTP server to login to.
-user 
+user
     The user to use for fetching.
-password 
+password
     The password to use for fetching.
-root_dir 
+root_dir
     Root directory containing all the RELEASEs for fetching.
-http 
+http
     Have --server define a HTTP server instead.
-hardened 
+hardened
     Have fetch expect the default HardeneBSD layout instead.
-_file 
+_file
     Use a local file directory for root-dir instead of FTP or HTTP.
-auth 
+auth
     Authentication method for HTTP fetching. Valid values: basic, digest
+noupdate
+    Decide whether or not to update the fetch to the latest patch level.
 ```
 
 
