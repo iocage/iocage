@@ -778,17 +778,16 @@ class IOCage(ioc_json.IOCZFS):
         """Executes a command in the jail as the supplied users."""
         pkg = unjailed
 
-        if host_user and jail_user:
+        if host_user and jail_user is not None:
             ioc_common.logit(
                 {
-                    "level":
-                    "EXCEPTION",
-                    "message":
-                    "Please only specify either host_user or"
-                    " jail_user, not both!"
+                    'level': 'EXCEPTION',
+                    'message': 'Please only specify either host_user or'
+                    ' jail_user, not both!'
                 },
                 _callback=self.callback,
                 silent=self.silent)
+        u = ('-U', jail_user) if jail_user is not None else ('-u', host_user)
 
         uuid, path = self.__check_jail_existence__()
         exec_clean = self.get('exec_clean')
@@ -853,9 +852,8 @@ class IOCage(ioc_json.IOCZFS):
         if interactive:
             exec_fib = self.get('exec_fib')
             interactive_cmd = (
-                "/usr/sbin/setfib", exec_fib,
-                "jexec", f"ioc-{uuid.replace('.', '_')}"
-            ) + command
+                '/usr/sbin/setfib', exec_fib, 'jexec'
+            ) + u + (f'ioc-{uuid.replace(".", "_")}',) + command
 
             try:
                 _started = False
