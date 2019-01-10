@@ -38,6 +38,9 @@ import re
 import shlex
 import glob
 
+import iocage_lib.ioc_exceptions
+import iocage_lib.ioc_exec
+
 
 def callback(_log, callback_exception):
     """Helper to call the appropriate logging level"""
@@ -566,7 +569,7 @@ def checkoutput(*args, **kwargs):
     try:
         out = su.check_output(*args, **kwargs)
 
-        out = out.decode("utf-8")
+        out = out.decode('utf-8')
     except su.CalledProcessError:
         raise
 
@@ -771,29 +774,28 @@ def generate_devfs_ruleset(conf, paths=None, includes=None, callback=None,
 
 def runscript(script):
     """
-    Runs the users provided script, otherwise returns a tuple with
-    True/False and the error.
+    Runs the script provided and return a tuple with first value showing
+    stdout and last showing stderr
     """
     script = shlex.split(script)
 
     if len(script) > 1:
         # We may be getting ';', '&&' and so forth. Adding the shell for
         # safety.
-        script = ["/bin/sh", "-c", " ".join(script)]
+        script = ['/bin/sh', '-c', ' '.join(script)]
     elif os.access(script[0], os.X_OK):
         script = script[0]
     else:
-        return True, "Script is not executable!"
+        return False, 'Script is not executable!'
 
     try:
-        out = checkoutput(script, stderr=su.STDOUT)
-    except su.CalledProcessError as err:
-        return False, err.output.decode().rstrip("\n")
-
-    if out:
-        return True, out.rstrip("\n")
-
-    return True, None
+        output = iocage_lib.ioc_exec.SilentExec(
+            script, None, unjailed=True, decode=True
+        )
+    except iocage_lib.ioc_exceptions.CommandFailed as e:
+        return '', f'Script returned non-zero status: {e}'
+    else:
+        return output.stdout.rstrip('\n'), output.stderr.rstrip('\n')
 
 
 def match_to_dir(iocroot, uuid, old_uuid=None):

@@ -32,6 +32,7 @@ import subprocess as su
 import netifaces
 
 import iocage_lib.ioc_common
+import iocage_lib.ioc_exec
 import iocage_lib.ioc_json
 import iocage_lib.ioc_list
 import iocage_lib.ioc_stop
@@ -136,8 +137,6 @@ class IOCStart(object):
         devfs_ruleset = iocage_lib.ioc_common.generate_devfs_ruleset(self.conf)
         exec_prestart = self.conf["exec_prestart"]
         exec_poststart = self.conf["exec_poststart"]
-        exec_prestop = self.conf["exec_prestop"]
-        exec_stop = self.conf["exec_stop"]
         exec_clean = self.conf["exec_clean"]
         exec_timeout = self.conf["exec_timeout"]
         stop_timeout = self.conf["stop_timeout"]
@@ -386,9 +385,6 @@ class IOCStart(object):
                 f'enforce_statfs={enforce_statfs}',
                 f'children.max={children_max}',
                 f'exec.prestart={exec_prestart}',
-                f'exec.poststart={exec_poststart}',
-                f'exec.prestop={exec_prestop}',
-                f'exec.stop={exec_stop}',
                 f'exec.clean={exec_clean}',
                 f'exec.timeout={exec_timeout}',
                 f'stop.timeout={stop_timeout}',
@@ -401,18 +397,10 @@ class IOCStart(object):
 
         # Write the config out to a file. We'll be starting the jail using this
         # config and it is required for stopping the jail too.
-        try:
-            self.__write_jail_conf__(start_parameters)
-        except OSError as err:
-            msg = f"Error while writing jail config {err.filename}: " \
-                  + "{err.strerror}"
-
-            iocage_lib.ioc_common.logit({
-                "level": "EXCEPTION",
-                "message": msg
-            },
-                _callback=self.callback,
-                silent=self.silent)
+        jail = iocage_lib.ioc_json.JailRuntimeConfiguration(
+            self.uuid, start_parameters
+        )
+        jail.sync_changes()
 
         start_cmd = ["jail", "-f", f"/var/run/jail.ioc-{self.uuid}.conf", "-c"]
 
@@ -542,30 +530,76 @@ class IOCStart(object):
         self.start_generate_resolv()
         self.start_copy_localtime()
         # This needs to be a list.
-        exec_start = self.conf["exec_start"].split()
+        exec_start = self.conf['exec_start'].split()
 
-        with open("{}/log/{}-console.log".format(self.iocroot,
-                                                 self.uuid), "a") as f:
-            services = su.check_call(["setfib", self.exec_fib, "jexec",
-                                      f"ioc-{self.uuid}"] + exec_start,
-                                     stdout=f, stderr=su.PIPE)
+        with open(
+            f'{self.iocroot}/log/{self.uuid}-console.log', 'a'
+        ) as f:
+            output = iocage_lib.ioc_exec.SilentExec(
+                ['setfib', self.exec_fib, 'jexec', f'ioc-{self.uuid}']
+                + exec_start, None, unjailed=True, decode=True
+            )
 
-        if services:
-            msg = "  + Starting services FAILED"
+            success = output.stdout
+            error = output.stderr
+            f.write(success or error)
+
+        if not success:
+
+            iocage_lib.ioc_stop.IOCStop(
+                self.uuid, self.path, force=True, silent=True
+            )
+
+            msg = f'  + Starting services FAILED\nERROR:\n{error}\n\n' \
+                f'Refusing to start {self.uuid}: exec_start failed'
             iocage_lib.ioc_common.logit({
-                "level": "ERROR",
-                "message": msg
+                'level': 'EXCEPTION',
+                'message': msg
             },
                 _callback=self.callback,
-                silent=self.silent)
+                silent=self.silent
+            )
+
         else:
-            msg = "  + Starting services OK"
+            msg = '  + Starting services OK'
             iocage_lib.ioc_common.logit({
-                "level": "INFO",
-                "message": msg
+                'level': 'INFO',
+                'message': msg
             },
                 _callback=self.callback,
-                silent=self.silent)
+                silent=self.silent
+            )
+
+            # Running exec_poststart now
+            poststart_success, poststart_error = \
+                iocage_lib.ioc_common.runscript(
+                    exec_poststart
+                )
+
+            if poststart_error:
+
+                iocage_lib.ioc_stop.IOCStop(
+                    self.uuid, self.path, force=True, silent=True
+                )
+
+                iocage_lib.ioc_common.logit({
+                    'level': 'EXCEPTION',
+                    'message': '  + Executing exec_poststart FAILED\n'
+                    f'ERROR:\n{poststart_error}\n\nRefusing to '
+                    f'start {self.uuid}: exec_poststart failed'
+                },
+                    _callback=self.callback,
+                    silent=self.silent
+                )
+
+            else:
+                iocage_lib.ioc_common.logit({
+                    'level': 'INFO',
+                    'message': '  + Executing poststart OK'
+                },
+                    _callback=self.callback,
+                    silent=self.silent
+                )
 
             if not vnet_err and vnet and wants_dhcp:
                 failed_dhcp = False
@@ -1095,43 +1129,3 @@ class IOCStart(object):
         ).split()
 
         return membermtu[5]
-
-    def __write_jail_conf__(self, parameters):
-        # This function is used in the lambda below.
-        def fix_param(p):
-            # If the param is an assignable variable, check if we have to
-            # treat it specially.
-            if "=" in p:
-                key, value = p.split("=", 1)
-
-                # name is specified at the start of the jail config block.
-                # The None will be filtered out before writing the config.
-                if key == "name":
-                    return None
-
-                # IP addr lists are special and use +=
-                if key == "ip4.addr" or key == "ip6.addr":
-                    lines = []
-                    for addr in value.split(","):
-                        lines.append(f"{key} += \"{addr}\";")
-
-                    return "\n\t".join(lines)
-
-                return f"{key} = \"{value}\";"
-
-            # Just a boolean parameter
-            return f"{p};"
-
-        # Generate our parameter string to write to the config.
-        config_parameters = "\n\t".join(
-            [x for x in map(lambda x: fix_param(x), parameters)
-             if x is not None
-             ]
-        )
-
-        # Write out the jail config.
-        with open(f"/var/run/jail.ioc-{self.uuid}.conf", 'w') as jail_conf:
-            jail_conf.write(f"ioc-{self.uuid} ")
-            jail_conf.write("{\n\t")
-            jail_conf.write(f"{config_parameters}")
-            jail_conf.write("\n}\n")
