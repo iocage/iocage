@@ -786,16 +786,16 @@ def runscript(script):
     elif os.access(script[0], os.X_OK):
         script = script[0]
     else:
-        return False, 'Script is not executable!'
+        return None, 'Script is not executable!'
 
     try:
         output = iocage_lib.ioc_exec.SilentExec(
             script, None, unjailed=True, decode=True
         )
     except iocage_lib.ioc_exceptions.CommandFailed as e:
-        return '', f'Script returned non-zero status: {e}'
+        return None, f'Script returned non-zero status: {e}'
     else:
-        return output.stdout.rstrip('\n'), output.stderr.rstrip('\n')
+        return output.stdout.rstrip('\n'), None
 
 
 def match_to_dir(iocroot, uuid, old_uuid=None):

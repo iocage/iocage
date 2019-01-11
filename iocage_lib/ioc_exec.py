@@ -261,8 +261,10 @@ class IOCExec(object):
 
 class SilentExec(object):
     def __init__(self, *args, **kwargs):
+        decode = kwargs.get('decode', False)
         with IOCExec(*args, **kwargs) as silent:  # noqa
             self.output = list(silent)
 
-        self.stdout = ''.join([i[0] for i in self.output])
-        self.stderr = ''.join([i[1] for i in self.output])
+        join_str = b'' if not decode else ''
+        self.stdout = join_str.join([i[0] for i in self.output])
+        self.stderr = join_str.join([i[1] for i in self.output])
