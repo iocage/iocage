@@ -143,7 +143,12 @@ class IOCDestroy(iocage_lib.ioc_json.IOCZFS):
                 su.run(command, stderr=su.PIPE)
 
         if self.j_conf is not None:
-            release = self.j_conf['cloned_release']
+            try:
+                release = self.j_conf['cloned_release']
+            except KeyError:
+                # Thick jails
+                release = self.j_conf['release']
+
             release_snap = self.zfs_get_snapshot(
                 f'{self.pool}/iocage/releases/{release}/root@{uuid}'
             )
