@@ -1849,6 +1849,11 @@ Default network interface used for the VNET bridge interface in the jail.
 Only takes effect when VNET is set.
 .Pp
 Default: none
+.It hostid_strict_check
+Check the hostid property of the jail.
+If not the same as the host, do not start the jail.
+.Pp
+Default: off
 .El
 .Sh EXAMPLES
 Set up
