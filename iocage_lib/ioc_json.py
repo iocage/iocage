@@ -262,6 +262,18 @@ class IOCZFS(object):
         return self.zfs_get_dataset_and_dependents(self.iocroot_path)
         # Returns a list of all datasets
 
+    @property
+    def release_snapshots(self):
+        # Returns all jail snapshots on the RELEASE
+        rel_dir = pathlib.Path(f'{self.iocroot_path}/releases')
+        snaps = []
+
+        # Quicker than asking zfs and parsing
+        for snap in rel_dir.glob('**/root/.zfs/snapshot/*'):
+            snaps.append(snap.name)
+
+        return snaps
+
     def _zfs_get_properties(self, identifier):
         p_dict = {}
 

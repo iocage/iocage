@@ -175,6 +175,22 @@ class IOCDestroy(iocage_lib.ioc_json.IOCZFS):
         """Destroys the given datasets and snapshots."""
         self.zfs_destroy_dataset(dataset, recursive=True, force=True)
 
+        if dataset.endswith('jails'):
+            # We need to make sure we remove the snapshots from the RELEASES
+            # We are purposely not using -R as those will hit templates
+            # and we are not using IOCSnapshot for perfomance
+            for dataset in self.release_snapshots:
+                print(dataset)
+                su.run(
+                    [
+                        'zfs',
+                        'destroy',
+                        '-r',
+                        f'{self.pool}/iocage/releases@{dataset}'
+                    ],
+                    capture_output=True
+                )
+
     def __destroy_parse_datasets__(self, path, clean=False, stop=True):
         """
         Parses the datasets before calling __destroy_dataset__ with each
@@ -215,9 +231,11 @@ class IOCDestroy(iocage_lib.ioc_json.IOCZFS):
 
                     try:
                         self.j_conf = iocage_lib.ioc_json.IOCJson(
-                            self.path).json_get_value('all')
-                    except ValueError:
-                        # Isn't a jail
+                            self.path, suppress_log=True
+                        ).json_get_value('all')
+                    except BaseException:
+                        # Isn't a jail, iocage will throw a variety of
+                        # exceptions or SystemExit
                         pass
 
                     self.__destroy_dataset__(dataset)
