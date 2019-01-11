@@ -44,7 +44,8 @@ __rootcmd__ = True
 @click.option('--images', '-i', 'dataset_type', flag_value='images',
               help='Destroy all exports created.')
 @click.option('--debug', '-d', 'dataset_type', flag_value='debug',
-              help='Destroy all debugs created.')
+              help='Destroy all debugs created in the default debug directory.'
+              )
 def cli(force, dataset_type):
     """Calls the correct destroy function."""
     if dataset_type == 'jails':
@@ -79,7 +80,7 @@ def cli(force, dataset_type):
     elif dataset_type == 'debug':
         msg = {
             'level': 'WARNING',
-            'message': 'This will destroy ALL debugs created!'
+            'message': 'This will destroy ALL debugs created at iocage/debug!'
         }
     else:
         ioc_common.logit({
