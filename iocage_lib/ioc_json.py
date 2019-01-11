@@ -257,6 +257,11 @@ class IOCZFS(object):
 
         return []
 
+    @property
+    def iocroot_datasets(self):
+        return self.zfs_get_dataset_and_dependents(self.iocroot_path)
+        # Returns a list of all datasets
+
     def _zfs_get_properties(self, identifier):
         p_dict = {}
 
@@ -284,6 +289,8 @@ class IOCZFS(object):
     def zfs_get_property(self, identifier, key):
         with ioc_exceptions.ignore_exceptions(Exception):
             return self._zfs_get_properties(identifier)[key]
+        except Exception:
+            return '-'
 
         return '-'
 

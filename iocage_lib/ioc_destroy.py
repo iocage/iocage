@@ -45,6 +45,8 @@ class IOCDestroy(iocage_lib.ioc_json.IOCZFS):
         self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value('iocroot')
         self.callback = callback
+        self.path = None
+        self.j_conf = None
 
     def __stop_jails__(self, datasets, path=None, root=False, clean=False):
         if clean:
@@ -111,19 +113,20 @@ class IOCDestroy(iocage_lib.ioc_json.IOCZFS):
     def __destroy_leftovers__(self, dataset, clean=False):
         """Removes parent datasets and logs."""
         uuid = dataset.rsplit('/root')[0].split('/')[-1]
-        path = self.zfs_get_property(dataset, 'mountpoint')
 
-        if path is not None and path.endswith('/root'):
-            umount_path = path.rsplit('/root', 1)[0]
+        if self.path is not None and self.path.endswith('/root'):
+            umount_path = self.path.rsplit('/root', 1)[0]
         else:
-            umount_path = path
+            umount_path = self.path
 
-        if path == '-' or self.zfs_get_property(dataset, 'type') == 'snapshot':
+        if self.path == '-' or self.zfs_get_property(
+            dataset, 'type'
+        ) == 'snapshot':
             # This is either not mounted or doesn't exist anymore,
             # we don't care either way.
-            path = None
+            self.path = None
 
-        if path:
+        if self.path is not None:
             try:
                 os.remove(f'{self.iocroot}/log/{uuid}-console.log')
             except FileNotFoundError:
@@ -138,6 +141,35 @@ class IOCDestroy(iocage_lib.ioc_json.IOCZFS):
                 ['umount', '-f', f'{umount_path}/root/compat/linux/proc']
             ]:
                 su.run(command, stderr=su.PIPE)
+
+        if self.j_conf is not None:
+            release = self.j_conf['cloned_release']
+            release_snap = self.zfs_get_snapshot(
+                f'{self.pool}/iocage/releases/{release}/root@{uuid}'
+            )
+
+            if release_snap.exists:
+                release_snap.delete()
+            else:
+                try:
+                    temp = self.j_conf['source_template']
+                    temp_snap = self.zfs_get_snapshot(
+                        f'{self.pool}/iocage/templates/{temp}@{uuid}'
+                    )
+
+                    if temp_snap.exists:
+                        temp_snap.delete()
+                except KeyError:
+                    # Not all jails have this, using slow way of finding this
+                    for dataset in self.iocroot_datasets:
+                        if 'templates' in dataset:
+                            temp_snap = self.zfs_get_snapshot(
+                                f'{dataset}@{uuid}'
+                            )
+
+                            if temp_snap.exists:
+                                temp_snap.delete()
+                                break
 
     def __destroy_dataset__(self, dataset):
         """Destroys the given datasets and snapshots."""
@@ -179,6 +211,15 @@ class IOCDestroy(iocage_lib.ioc_json.IOCZFS):
 
             for dataset in datasets:
                 try:
+                    self.path = self.zfs_get_property(dataset, 'mountpoint')
+
+                    try:
+                        self.j_conf = iocage_lib.ioc_json.IOCJson(
+                            self.path).json_get_value('all')
+                    except ValueError:
+                        # Isn't a jail
+                        pass
+
                     self.__destroy_dataset__(dataset)
                     self.__destroy_leftovers__(dataset, clean=clean)
                 except libzfs.ZFSException as err:
