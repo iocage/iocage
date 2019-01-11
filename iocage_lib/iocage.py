@@ -441,44 +441,59 @@ class IOCage(ioc_json.IOCZFS):
 
     def clean(self, d_type):
         """Destroys all of a specified dataset types."""
-
-        if d_type == "jails":
+        if d_type == 'jails':
             ioc_clean.IOCClean(silent=self.silent).clean_jails()
             ioc_common.logit(
                 {
-                    "level": "INFO",
-                    "message": "All iocage jail datasets have been destroyed."
+                    'level': 'INFO',
+                    'message': 'All iocage jail datasets have been destroyed.'
                 },
                 _callback=self.callback,
                 silent=self.silent)
-        elif d_type == "all":
+        elif d_type == 'all':
             ioc_clean.IOCClean(silent=self.silent).clean_all()
             ioc_common.logit(
                 {
-                    "level": "INFO",
-                    "message": "All iocage datasets have been destroyed."
+                    'level': 'INFO',
+                    'message': 'All iocage datasets have been destroyed.'
                 },
                 _callback=self.callback,
                 silent=self.silent)
-        elif d_type == "release":
+        elif d_type == 'release':
             ioc_clean.IOCClean(silent=self.silent).clean_releases()
             ioc_common.logit(
                 {
-                    "level":
-                    "INFO",
-                    "message":
-                    "All iocage RELEASE and jail datasets have been"
-                    " destroyed."
+                    'level': 'INFO',
+                    'message': 'All iocage RELEASE and jail datasets have been'
+                               ' destroyed.'
                 },
                 _callback=self.callback,
                 silent=self.silent)
-        elif d_type == "template":
+        elif d_type == 'template':
             ioc_clean.IOCClean(silent=self.silent).clean_templates()
             ioc_common.logit(
                 {
-                    "level": "INFO",
-                    "message":
-                    "All iocage template datasets have been destroyed."
+                    'level': 'INFO',
+                    'message':
+                    'All iocage template datasets have been destroyed.'
+                },
+                _callback=self.callback,
+                silent=self.silent)
+        elif d_type == 'images':
+            ioc_clean.IOCClean(silent=self.silent).clean_images()
+            ioc_common.logit(
+                {
+                    'level': 'INFO',
+                    'message': 'The iocage images dataset has been destroyed.'
+                },
+                _callback=self.callback,
+                silent=self.silent)
+        elif d_type == 'debug':
+            ioc_clean.IOCClean(silent=self.silent).clean_debug()
+            ioc_common.logit(
+                {
+                    'level': 'INFO',
+                    'message': 'All iocage debugs have been destroyed.'
                 },
                 _callback=self.callback,
                 silent=self.silent)

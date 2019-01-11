@@ -30,25 +30,23 @@ import iocage_lib.ioc_json
 import iocage_lib.ioc_stop
 import libzfs
 
+from contextlib import suppress
 from pathlib import Path
 
 
-class IOCDestroy(object):
-
+class IOCDestroy(iocage_lib.ioc_json.IOCZFS):
     """
     Destroy a jail's datasets and then if they have a RELEASE snapshot,
     destroy that as well.
     """
-
-    def __init__(self):
-        self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
+    def __init__(self, callback=None):
+        super().__init__()
+        self.pool = iocage_lib.ioc_json.IOCJson().json_get_value('pool')
         self.iocroot = iocage_lib.ioc_json.IOCJson(
-            self.pool).json_get_value("iocroot")
-        self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
-        self.ds = self.zfs.get_dataset
+            self.pool).json_get_value('iocroot')
+        self.callback = callback
 
-    @staticmethod
-    def __stop_jails__(datasets, path=None, root=False, clean=False):
+    def __stop_jails__(self, datasets, path=None, root=False, clean=False):
         if clean:
             jids, _ = su.Popen(["jls", "-n", "name", "jid",
                                 "--libxo=json"], stdout=su.PIPE).communicate()
@@ -79,128 +77,71 @@ class IOCDestroy(object):
                         except OSError:
                             pass
 
-        for dataset in datasets.dependents:
-            if "jails" not in dataset.name:
+        for dataset in datasets:
+            if 'jails' not in dataset:
                 continue
 
-            if dataset.type != libzfs.DatasetType.FILESYSTEM:
+            if self.zfs_get_property(dataset, 'type') != 'filesystem':
                 continue
 
-            if dataset.properties["mountpoint"].value == 'legacy':
+            mountpoint = self.zfs_get_property(dataset, 'mountpoint')
+            if mountpoint == 'legacy':
                 continue
 
             # This is just to setup a replacement.
-            path = path.replace("templates", "jails")
+            path = path.replace('templates', 'jails')
 
             try:
-                uuid = dataset.name.partition(
-                    f"{path}")[1].rsplit("/", 1)[1]
+                uuid = dataset.partition(
+                    f'{path}')[1].rsplit('/', 1)[1]
             except IndexError:
                 # A RELEASE dataset
                 return
 
             # We want the real path now.
-            _path = dataset.properties["mountpoint"].value.replace("/root", "")
-            # It gives us a string that says "none", not terribly
-            # useful, fixing that.
-            _path = _path if _path != "none" else None
+            _path = mountpoint.replace('/root', '')
 
-            if (dataset.name.endswith(uuid) or root) and _path is not None:
-                iocage_lib.ioc_stop.IOCStop(uuid, _path, silent=True)
+            if (dataset.endswith(uuid) or root) and _path is not None:
+                with suppress(BaseException):
+                    # Can be missing/corrupt/whatever configuration
+                    # Since it's being nuked anyways, we don't care.
+                    iocage_lib.ioc_stop.IOCStop(uuid, _path, silent=True,
+                                                suppress_exception=True)
 
     def __destroy_leftovers__(self, dataset, clean=False):
         """Removes parent datasets and logs."""
-        uuid = dataset.name.rsplit("/root")[0].split("/")[-1]
-        snapshot = False
+        uuid = dataset.rsplit('/root')[0].split('/')[-1]
+        path = self.zfs_get_property(dataset, 'mountpoint')
 
-        try:
-            path = dataset.properties["mountpoint"].value
+        if path is not None and path.endswith('/root'):
+            umount_path = path.rsplit('/root', 1)[0]
+        else:
+            umount_path = path
 
-            if path.endswith("/root"):
-                umount_path = path.rsplit("/root", 1)[0]
-            else:
-                umount_path = path
-
-        except libzfs.ZFSException as err:
+        if path == '-' or self.zfs_get_property(dataset, 'type') == 'snapshot':
             # This is either not mounted or doesn't exist anymore,
             # we don't care either way.
-
-            if err.code != libzfs.Error.NOENT:
-                raise
             path = None
-        except KeyError:
-            # This is a snapshot
-            path = None
-            snapshot = True
 
         if path:
             try:
-                os.remove(f"{self.iocroot}/log/{uuid}-console.log")
+                os.remove(f'{self.iocroot}/log/{uuid}-console.log')
             except FileNotFoundError:
                 pass
 
             # Dangling mounts are bad...mmkay?
-            su.Popen(
-                ["umount", "-afF", f"{umount_path}/fstab"],
-                stderr=su.PIPE).communicate()
-            su.Popen(
-                ["umount", "-f", f"{umount_path}/root/dev/fd"],
-                stderr=su.PIPE).communicate()
-            su.Popen(
-                ["umount", "-f", f"{umount_path}/root/dev"],
-                stderr=su.PIPE).communicate()
-            su.Popen(
-                ["umount", "-f", f"{umount_path}/root/proc"],
-                stderr=su.PIPE).communicate()
-            su.Popen(
-                ["umount", "-f", f"{umount_path}/root/compat/linux/proc"],
-                stderr=su.PIPE).communicate()
-
-        if not snapshot and \
-                any(_type in dataset.name for _type
-                    in ("jails", "templates", "releases")):
-            # The jails parent won't show in the list.
-            j_parent = self.ds(f"{dataset.name.replace('/root','')}")
-            origin = j_parent.properties["origin"].value.rsplit("@", 1)[0]
-
-            if origin != "":
-                j_origin_snaps = self.ds(origin).snapshots_recursive
-            else:
-                j_origin_snaps = []
-
-            j_dependents = j_parent.dependents
-
-            for j_dependent in j_dependents:
-
-                if j_dependent.type == libzfs.DatasetType.FILESYSTEM:
-                    j_dependent.umount(force=True)
-
-                j_dependent.delete()
-
-            j_parent.umount(force=True)
-            j_parent.delete()
-
-            for snap in j_origin_snaps:
-                p, n = snap.name.split("@")
-
-                if n == uuid:
-                    snap.delete()
+            for command in [
+                ['umount', '-afF', f'{umount_path}/fstab'],
+                ['umount', '-f', f'{umount_path}/root/dev/fd'],
+                ['umount', '-f', f'{umount_path}/root/dev'],
+                ['umount', '-f', f'{umount_path}/root/proc'],
+                ['umount', '-f', f'{umount_path}/root/compat/linux/proc']
+            ]:
+                su.run(command, stderr=su.PIPE)
 
     def __destroy_dataset__(self, dataset):
         """Destroys the given datasets and snapshots."""
-
-        if dataset.type == libzfs.DatasetType.FILESYSTEM:
-            origin = dataset.properties["origin"].value
-
-            try:
-                snap_dataset, snap = origin.split("@")
-                self.ds(snap_dataset).destroy_snapshot(snap)
-            except ValueError:
-                pass  # This means we don't have an origin.
-
-            dataset.umount(force=True)
-
-        dataset.delete()
+        self.zfs_destroy_dataset(dataset, recursive=True, force=True)
 
     def __destroy_parse_datasets__(self, path, clean=False, stop=True):
         """
@@ -208,18 +149,16 @@ class IOCDestroy(object):
         entry.
         """
         try:
-            datasets = self.ds(path)
-        except libzfs.ZFSException:
+            datasets = self.zfs_get_dataset_and_dependents(path)
+        except (Exception, SystemExit):
             # Dataset can't be found, we don't care
-
             return
 
-        single = True if len(list(datasets.dependents)) == 0 else False
-        dependents = datasets.dependents
+        single = True if len(datasets) == 1 else False
 
         if single:
             # Is actually a single dataset.
-            self.__destroy_dataset__(datasets)
+            self.__destroy_dataset__(datasets[0])
         else:
             if "templates" in path or "release" in path:
                 # This will tell __stop_jails__ to actually try stopping on
@@ -238,7 +177,7 @@ class IOCDestroy(object):
                     # get in the way.
                     pass
 
-            for dataset in dependents:
+            for dataset in datasets:
                 try:
                     self.__destroy_dataset__(dataset)
                     self.__destroy_leftovers__(dataset, clean=clean)

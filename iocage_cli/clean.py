@@ -30,52 +30,66 @@ import iocage_lib.iocage as ioc
 __rootcmd__ = True
 
 
-@click.command(name="clean", help="Destroy specified dataset types.")
-@click.option("--force", "-f", default=False, is_flag=True,
-              help="Runs the command with no further user interaction.")
-@click.option("--all", "-a", "dataset_type", flag_value="all",
-              help="Destroy all iocage data that has been created.")
-@click.option("--jails", "-j", "dataset_type", flag_value="jails",
-              help="Destroy all jails created.")
-@click.option("--base", "-r", "-b", "dataset_type", flag_value="release",
-              help="Destroy all RELEASEs fetched.")
-@click.option("--template", "-t", "dataset_type", flag_value="template",
-              help="Destroy all templates.")
+@click.command(name='clean', help='Destroy specified dataset types.')
+@click.option('--force', '-f', default=False, is_flag=True,
+              help='Runs the command with no further user interaction.')
+@click.option('--all', '-a', 'dataset_type', flag_value='all',
+              help='Destroy all iocage data that has been created.')
+@click.option('--jails', '-j', 'dataset_type', flag_value='jails',
+              help='Destroy all jails created.')
+@click.option('--base', '-r', '-b', 'dataset_type', flag_value='release',
+              help='Destroy all RELEASEs fetched.')
+@click.option('--template', '-t', 'dataset_type', flag_value='template',
+              help='Destroy all templates.')
+@click.option('--images', '-i', 'dataset_type', flag_value='images',
+              help='Destroy all exports created.')
+@click.option('--debug', '-d', 'dataset_type', flag_value='debug',
+              help='Destroy all debugs created.')
 def cli(force, dataset_type):
     """Calls the correct destroy function."""
-    if dataset_type == "jails":
+    if dataset_type == 'jails':
         msg = {
-            "level"  : "WARNING",
-            "message": "\nThis will destroy ALL jails and any "
-                       "snapshots on a RELEASE,"
-                       "including templates!"
+            'level': 'WARNING',
+            'message': '\nThis will destroy ALL jails and any '
+                       'snapshots on a RELEASE,'
+                       'including templates!'
         }
-    elif dataset_type == "all":
+    elif dataset_type == 'all':
         msg = {
-            "level"  : "WARNING",
-            "message": "\nThis will destroy ALL iocage data!"
+            'level': 'WARNING',
+            'message': '\nThis will destroy ALL iocage data!'
         }
-    elif dataset_type == "release":
+    elif dataset_type == 'release':
         msg = {
-            "level"  : "WARNING",
-            "message": "\nThis will destroy ALL fetched RELEASES and"
-                       " jails/templates created from them!"
+            'level': 'WARNING',
+            'message': '\nThis will destroy ALL fetched RELEASES and'
+                       ' jails/templates created from them!'
         }
-    elif dataset_type == "template":
+    elif dataset_type == 'template':
         msg = {
-            "level"  : "WARNING",
-            "message": "This will destroy ALL templates and jails"
-                       " created from them!"
+            'level': 'WARNING',
+            'message': 'This will destroy ALL templates and jails'
+                       ' created from them!'
+        }
+    elif dataset_type == 'images':
+        msg = {
+            'level': 'WARNING',
+            'message': 'This will destroy ALL exports created!'
+        }
+    elif dataset_type == 'debug':
+        msg = {
+            'level': 'WARNING',
+            'message': 'This will destroy ALL debugs created!'
         }
     else:
         ioc_common.logit({
-            "level"  : "EXCEPTION",
-            "message": "Please specify a dataset type to clean!"
+            'level': 'EXCEPTION',
+            'message': 'Please specify a dataset type to clean!'
         })
 
     if not force:
         ioc_common.logit(msg)
-        if not click.confirm("\nAre you sure?"):
+        if not click.confirm('\nAre you sure?'):
             exit()
 
     ioc.IOCage(skip_jails=True).clean(dataset_type)

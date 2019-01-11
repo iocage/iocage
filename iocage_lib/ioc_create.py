@@ -30,7 +30,6 @@ import subprocess as su
 import uuid
 
 import iocage_lib.ioc_common
-import iocage_lib.ioc_destroy
 import iocage_lib.ioc_exec
 import iocage_lib.ioc_fstab
 import iocage_lib.ioc_json
@@ -77,6 +76,7 @@ class IOCCreate(object):
 
     def create_jail(self):
         """Helper to catch SIGINT"""
+        import iocage_lib.ioc_destroy  # Circular dep
 
         if self.uuid:
             jail_uuid = self.uuid
@@ -106,6 +106,7 @@ class IOCCreate(object):
         jail from that. The user can also specify properties to override the
         defaults.
         """
+        import iocage_lib.ioc_destroy  # Circular dep
         start = False
         is_template = False
         rtsold_enable = 'NO'
