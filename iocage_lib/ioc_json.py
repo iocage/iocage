@@ -25,6 +25,7 @@
 import collections
 import datetime
 import fileinput
+import ipaddress
 import json
 import logging
 import os
@@ -1814,19 +1815,64 @@ class IOCJson(IOCConfiguration):
                 if k in value:
                     return value, conf
 
-            if props[key][0] == "string":
-                if key == "ip4_addr":
-                    try:
-                        interface, ip = value.split("|")
+            if props[key][0] == 'string':
+                if key in ('ip4_addr', 'ip6_addr') and value != 'none':
+                    # There are three possible formats here
+                    # 1 - interface|ip/subnet
+                    # 2 - interface|ip
+                    # 3 - ip
+                    # All the while of course assuming that we can
+                    # have more then one ip
+                    if key == 'ip4_addr':
+                        ip_check = ipaddress.IPv4Network
+                    else:
+                        ip_check = ipaddress.IPv6Network
 
-                        if interface == "DEFAULT":
-                            gws = netifaces.gateways()
-                            def_iface = gws["default"][netifaces.AF_INET][1]
+                    final_value = []
+                    for ip_str in value.split(','):
+                        if '|' in ip_str:
+                            interface, ip = map(
+                                str.strip,
+                                ip_str.split('|')
+                            )
+                        else:
+                            interface, ip = None, ip_str
+                        if interface == '':
+                            iocage_lib.ioc_common.logit(
+                                {
+                                    'level': 'EXCEPTION',
+                                    'message': 'Please provide a valid '
+                                               'interface'
+                                },
+                                _callback=self.callback,
+                                silent=self.silent
+                            )
+                        elif interface == 'DEFAULT':
+                            # When starting the jail, if interface is not
+                            # present, we add default interface automatically
+                            interface = None
 
-                            value = f"{def_iface}|{ip}"
-                            conf[key] = value
-                    except ValueError:
-                        pass
+                        # Let's validate the ip address now
+                        try:
+                            ip_check(ip, strict=False)
+                        except ValueError as e:
+                            iocage_lib.ioc_common.logit(
+                                {
+                                    'level': 'EXCEPTION',
+                                    'message': 'Please provide a valid '
+                                    f'ip: {e}'
+                                },
+                                _callback=self.callback,
+                                silent=self.silent
+                            )
+                        else:
+                            if interface is not None:
+                                iface = f'{interface}|'
+                            else:
+                                iface = ''
+                            final_value.append(f'{iface}{ip}')
+
+                    conf[key] = ','.join(final_value)
                 elif key in [f'vnet{i}_mac' for i in range(0, 4)]:
                     if value and value != 'none':
                         value = value.replace(',', ' ')

@@ -535,124 +535,124 @@ class IOCStart(object):
         with open(
             f'{self.iocroot}/log/{self.uuid}-console.log', 'a'
         ) as f:
-            output = iocage_lib.ioc_exec.SilentExec(
-                ['setfib', self.exec_fib, 'jexec', f'ioc-{self.uuid}']
-                + exec_start, None, unjailed=True, decode=True
+            success, error = '', ''
+            try:
+                output = iocage_lib.ioc_exec.SilentExec(
+                    ['setfib', self.exec_fib, 'jexec', f'ioc-{self.uuid}']
+                    + exec_start, None, unjailed=True, decode=True
+                )
+            except ioc_exceptions.CommandFailed as e:
+
+                error = str(e)
+                iocage_lib.ioc_stop.IOCStop(
+                    self.uuid, self.path, force=True, silent=True
+                )
+
+                msg = f'  + Starting services FAILED\nERROR:\n{error}\n\n' \
+                    f'Refusing to start {self.uuid}: exec_start failed'
+                iocage_lib.ioc_common.logit({
+                    'level': 'EXCEPTION',
+                    'message': msg
+                },
+                    _callback=self.callback,
+                    silent=self.silent
+                )
+            else:
+                success = output.stdout
+                msg = '  + Starting services OK'
+                iocage_lib.ioc_common.logit({
+                    'level': 'INFO',
+                    'message': msg
+                },
+                    _callback=self.callback,
+                    silent=self.silent
+                )
+            finally:
+                f.write(f'{success}\n{error}')
+
+        # Running exec_poststart now
+        poststart_success, poststart_error = \
+            iocage_lib.ioc_common.runscript(
+                exec_poststart
             )
 
-            success = output.stdout
-            error = output.stderr
-            f.write(success or error)
-
-        if not success:
+        if poststart_error:
 
             iocage_lib.ioc_stop.IOCStop(
                 self.uuid, self.path, force=True, silent=True
             )
 
-            msg = f'  + Starting services FAILED\nERROR:\n{error}\n\n' \
-                f'Refusing to start {self.uuid}: exec_start failed'
             iocage_lib.ioc_common.logit({
                 'level': 'EXCEPTION',
-                'message': msg
+                'message': '  + Executing exec_poststart FAILED\n'
+                f'ERROR:\n{poststart_error}\n\nRefusing to '
+                f'start {self.uuid}: exec_poststart failed'
             },
                 _callback=self.callback,
                 silent=self.silent
             )
 
         else:
-            msg = '  + Starting services OK'
             iocage_lib.ioc_common.logit({
                 'level': 'INFO',
-                'message': msg
+                'message': '  + Executing poststart OK'
             },
                 _callback=self.callback,
                 silent=self.silent
             )
 
-            # Running exec_poststart now
-            poststart_success, poststart_error = \
-                iocage_lib.ioc_common.runscript(
-                    exec_poststart
-                )
+        if not vnet_err and vnet and wants_dhcp:
+            failed_dhcp = False
 
-            if poststart_error:
+            try:
+                interface = self.conf['interfaces'].split(',')[0].split(
+                    ':')[0]
 
+                if 'vnet' in interface:
+                    # Jails default is epairNb
+                    interface = f'{interface.replace("vnet", "epair")}b'
+
+                # We'd like to use ifconfig -f inet:cidr here,
+                # but only FreeBSD 11.0 and newer support it...
+                cmd = ['jexec', f'ioc-{self.uuid}', 'ifconfig',
+                       interface, 'inet']
+                out = su.check_output(cmd)
+
+                # ...so we extract the ip4 address and mask,
+                # and calculate cidr manually
+                addr_split = out.splitlines()[2].split()
+                ip4_addr = addr_split[1].decode()
+                hexmask = addr_split[3].decode()
+                maskcidr = sum([bin(int(hexmask, 16)).count('1')])
+
+                addr = f'{ip4_addr}/{maskcidr}'
+
+                if '0.0.0.0' in addr:
+                    failed_dhcp = True
+
+            except (su.CalledProcessError, IndexError):
+                failed_dhcp = True
+                addr = 'ERROR, check jail logs'
+
+            if failed_dhcp:
                 iocage_lib.ioc_stop.IOCStop(
                     self.uuid, self.path, force=True, silent=True
                 )
 
                 iocage_lib.ioc_common.logit({
                     'level': 'EXCEPTION',
-                    'message': '  + Executing exec_poststart FAILED\n'
-                    f'ERROR:\n{poststart_error}\n\nRefusing to '
-                    f'start {self.uuid}: exec_poststart failed'
+                    'message': '  + Acquiring DHCP address: FAILED,'
+                    f' address received: {addr}\n'
+                    f'\nStopped {self.uuid} due to DHCP failure'
                 },
-                    _callback=self.callback,
-                    silent=self.silent
-                )
+                    _callback=self.callback)
 
-            else:
-                iocage_lib.ioc_common.logit({
-                    'level': 'INFO',
-                    'message': '  + Executing poststart OK'
-                },
-                    _callback=self.callback,
-                    silent=self.silent
-                )
-
-            if not vnet_err and vnet and wants_dhcp:
-                failed_dhcp = False
-
-                try:
-                    interface = self.conf['interfaces'].split(',')[0].split(
-                        ':')[0]
-
-                    if 'vnet' in interface:
-                        # Jails default is epairNb
-                        interface = f'{interface.replace("vnet", "epair")}b'
-
-                    # We'd like to use ifconfig -f inet:cidr here,
-                    # but only FreeBSD 11.0 and newer support it...
-                    cmd = ['jexec', f'ioc-{self.uuid}', 'ifconfig',
-                           interface, 'inet']
-                    out = su.check_output(cmd)
-
-                    # ...so we extract the ip4 address and mask,
-                    # and calculate cidr manually
-                    addr_split = out.splitlines()[2].split()
-                    ip4_addr = addr_split[1].decode()
-                    hexmask = addr_split[3].decode()
-                    maskcidr = sum([bin(int(hexmask, 16)).count('1')])
-
-                    addr = f'{ip4_addr}/{maskcidr}'
-
-                    if '0.0.0.0' in addr:
-                        failed_dhcp = True
-
-                except (su.CalledProcessError, IndexError):
-                    failed_dhcp = True
-                    addr = 'ERROR, check jail logs'
-
-                if failed_dhcp:
-                    iocage_lib.ioc_stop.IOCStop(
-                        self.uuid, self.path, force=True, silent=True
-                    )
-
-                    iocage_lib.ioc_common.logit({
-                        'level': 'EXCEPTION',
-                        'message': '  + Acquiring DHCP address: FAILED,'
-                        f' address received: {addr}\n'
-                        f'\nStopped {self.uuid} due to DHCP failure'
-                    },
-                        _callback=self.callback)
-
-                iocage_lib.ioc_common.logit({
-                    'level': 'INFO',
-                    'message': f'  + DHCP Address: {addr}'
-                },
-                    _callback=self.callback,
-                    silent=self.silent)
+            iocage_lib.ioc_common.logit({
+                'level': 'INFO',
+                'message': f'  + DHCP Address: {addr}'
+            },
+                _callback=self.callback,
+                silent=self.silent)
 
         self.set(
             "last_started={}".format(datetime.datetime.utcnow().strftime(
