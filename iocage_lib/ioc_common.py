@@ -266,6 +266,7 @@ def sort_ip(sort_row, version='4'):
     2) interface|ip
     3) interface|dhcp
     4) ip
+    5) ip|accept_rtadv
 
     All the while obviously not forgetting that there can be multiple
     ips specified by ',' delimiter
@@ -314,7 +315,7 @@ def sort_ip(sort_row, version='4'):
             if version != '4':
                 ip = (0,) + ip
         else:
-            ip = (300, ip)
+            ip = (9999, ip)
 
         ip = ip + get_name_sortkey(sort_row[1])
 

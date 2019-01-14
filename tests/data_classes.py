@@ -149,6 +149,7 @@ class Row:
         2) interface|ip
         3) interface|dhcp
         4) ip
+        5) ip|accept_rtadv
 
         All the while obviously not forgetting that there can be multiple
         ips specified by ',' delimiter
@@ -178,7 +179,7 @@ class Row:
                 for c in str(ip_list[0]).split('/')[0].split('.')
             )
         else:
-            ip = (300, ip)
+            ip = (9999, ip)
 
         self.ip4 = ip
 
