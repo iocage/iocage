@@ -274,30 +274,30 @@ class IOCStart(object):
             _allow_mount_fusefs = f"allow.mount.fusefs={allow_mount_fusefs}"
             _allow_vmm = f"allow.vmm={allow_vmm}"
 
-        if self.conf["vnet"] == "off":
-            ip4_addr = self.conf["ip4_addr"]
-            ip4_saddrsel = self.conf["ip4_saddrsel"]
-            ip4 = self.conf["ip4"]
-            ip6_saddrsel = self.conf["ip6_saddrsel"]
-            ip6 = self.conf["ip6"]
+        if self.conf['vnet'] == 'off':
+            ip4_addr = self.conf['ip4_addr']
+            ip4_saddrsel = self.conf['ip4_saddrsel']
+            ip4 = self.conf['ip4']
+            ip6_saddrsel = self.conf['ip6_saddrsel']
+            ip6 = self.conf['ip6']
             net = []
 
-            if ip4_addr != "none":
-                if '|' not in ip4_addr:
-                    ip4_addr = self.check_aliases(ip4_addr)
+            if ip4_addr != 'none':
+                ip4_addr = self.check_aliases(ip4_addr, '4')
 
-                net.append(f"ip4.addr={ip4_addr}")
+                net.append(f'ip4.addr={ip4_addr}')
 
-            if ip6_addr != "none":
-                if '|' not in ip6_addr:
-                    ip6_addr = self.check_aliases(ip6_addr, mode='6')
+            if ip6_addr != 'none':
+                ip6_addr = self.check_aliases(ip6_addr, '6')
 
-                net.append(f"ip6.addr={ip6_addr}")
+                net.append(f'ip6.addr={ip6_addr}')
 
-            net += [f"ip4.saddrsel={ip4_saddrsel}",
-                    f"ip4={ip4}",
-                    f"ip6.saddrsel={ip6_saddrsel}",
-                    f"ip6={ip6}"]
+            net += [
+                f'ip4.saddrsel={ip4_saddrsel}',
+                f'ip4={ip4}',
+                f'ip6.saddrsel={ip6_saddrsel}',
+                f'ip6={ip6}'
+            ]
 
             vnet = False
         else:
@@ -663,6 +663,7 @@ class IOCStart(object):
         Check if the alias already exists for given IP's, otherwise add
         default interface to the ips and return the new list
         """
+
         inet_mode = netifaces.AF_INET if mode == '4' else netifaces.AF_INET6
         gws = netifaces.gateways()
 
@@ -687,7 +688,9 @@ class IOCStart(object):
                 current_ips.append(address['addr'])
 
         for ip in _ip_addrs:
-            ip = ip if ip in current_ips else f'{def_iface}|{ip}'
+            if '|' not in ip:
+                ip = ip if ip in current_ips else f'{def_iface}|{ip}'
+
             new_ips.append(ip)
 
         return ','.join(new_ips)
