@@ -192,7 +192,7 @@ class IOCDestroy(iocage_lib.ioc_json.IOCZFS):
                         '-r',
                         f'{self.pool}/iocage/releases@{dataset}'
                     ],
-                    capture_output=True
+                    stdout=su.PIPE, stderr=su.PIPE
                 )
 
     def __destroy_parse_datasets__(self, path, clean=False, stop=True):

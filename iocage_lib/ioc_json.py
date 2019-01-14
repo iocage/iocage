@@ -337,7 +337,7 @@ class IOCZFS(object):
 
         try:
             su.run(
-                cmd + [identifier], check=True, capture_output=True
+                cmd + [identifier], check=True, stdout=su.PIPE, stderr=su.PIPE
             )
         except su.CalledProcessError as e:
             if force:
@@ -357,7 +357,7 @@ class IOCZFS(object):
         try:
             datasets = list(su.run(
                 ['zfs', 'list', '-rHo', 'name', identifier],
-                check=True, capture_output=True
+                check=True, stdout=su.PIPE, stderr=su.PIPE
             ).stdout.decode().split())
         except su.CalledProcessError as e:
             iocage_lib.ioc_common.logit(
