@@ -1,4 +1,5 @@
 import itertools
+import ipaddress
 import os
 import json
 import subprocess
@@ -68,6 +69,17 @@ class Row:
             self.orig_release
         )
 
+    # Some helper functions
+    @staticmethod
+    def try_convert(value, default, *types):
+        for t in types:
+            try:
+                return t(value)
+            except (ValueError, TypeError):
+                continue
+
+        return default
+
     # Some common normalization functions for class attributes
     def normalize_name(self):
         # Logic copied from iocage to be consistent with the tests
@@ -130,17 +142,43 @@ class Row:
         self.state = 1 if self.state == 'down' else 0
 
     def normalize_ip4(self):
+        """
+        Sort the list by IP address
+        We expect the following values for ip sorting
+        1) interface|ip/subnet
+        2) interface|ip
+        3) interface|dhcp
+        4) ip
 
-        ip = str(self.ip4).split('|')
-        if len(ip) > 1:
-            ip = ip[1].split('/')[0]
+        All the while obviously not forgetting that there can be multiple
+        ips specified by ',' delimiter
+        """
+
+        ip = str(self.ip4)
+        # Let's normalize the ip list first
+        ip_list = list(
+            map(
+                lambda v: ipaddress.IPv4Network(v),
+                filter(
+                    lambda v: self.try_convert(v, None, ipaddress.IPv4Network),
+                    map(
+                        lambda v: v.split('|')[1].split('/')[0].strip()
+                        if '|' in v else
+                        v.split('/')[0].strip(),
+                        ip.split(',')
+                    )
+                )
+            )
+        )
+
+        if ip_list:
+            ip_list.sort()
+            ip = tuple(
+                int(c)
+                for c in str(ip_list[0]).split('/')[0].split('.')
+            )
         else:
-            ip = ip[0]
-
-        try:
-            ip = tuple(int(c) for c in ip.split('.'))
-        except ValueError:
-            ip = (300, self.ip4)
+            ip = (300, ip)
 
         self.ip4 = ip
 
@@ -200,9 +238,11 @@ class Row:
             self.ip_jails_parse_correctly(self.standard_parse(), 10, 6, 8)
 
     def all_parse(self):
-        # 4 columns - JID, NAME, STATE, RELEASE, IP4
+        # 5 columns - JID, NAME, STATE, RELEASE, IP4
         self.jid, self.name, self.state, self.release, self.ip4 = \
-            self.standard_parse()
+            self.ip_jails_parse_correctly(
+                self.standard_parse(), 5, 4, 6
+            )
 
     def releases_only_parse(self):
         # 1 column - Bases Fetched
