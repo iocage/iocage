@@ -5,17 +5,18 @@ iocage_tests_task:
   create_pool_script:
     - truncate -s 20G /root/poolfile
     - zpool create pool /root/poolfile
-  install_pkgs_script: pkg install -y git python3
+  install_pkgs_script:
+    - sed -i '' 's/quarterly/latest/g' /etc/pkg/FreeBSD.conf
+    - pkg install -y git python3
   configure_python_script:
     - python3 -m ensurepip
   pip_cache:
     folder: ~/.cache/pip
     populate_script: python3 -m pip install -U pytest pytest-cov pytest-pep8 pytest-mock mock cython
   env_setup_script:
-    - python3 -m pip install -U pytest pytest-cov pytest-pep8 pytest-mock mock cython
+    - python3 -m pip install -U pytest pytest-cov pytest-pep8 pytest-mock mock
     - mount -t fdescfs null /dev/fd
-    - git clone https://github.com/freenas/py-libzfs.git /tmp/py-libzfs
-    - cd /tmp/py-libzfs && ./configure && python3 setup.py install
+    - pkg install -y devel/py-libzfs
   install_iocage_script:
     - python3 setup.py install
   test_script: pytest --zpool=pool
