@@ -300,9 +300,21 @@ class IOCZFS(object):
 
     def zfs_get_property(self, identifier, key):
         with ioc_exceptions.ignore_exceptions(Exception):
+            if key == 'mountpoint':
+                mountpoint = su.run(
+                    [
+                        'zfs',
+                        'get',
+                        '-pHo',
+                        'value',
+                        key,
+                        identifier
+                    ], stdout=su.PIPE, stderr=su.PIPE
+                ).stdout.decode().rstrip()
+
+                return mountpoint
+
             return self._zfs_get_properties(identifier)[key]
-        except Exception:
-            return '-'
 
         return '-'
 
@@ -1244,8 +1256,10 @@ class IOCJson(IOCConfiguration):
                         _callback=self.callback,
                         silent=self.silent)
 
-                jail_dataset = self.zfs.get_dataset_by_path(self.location)
-                full_uuid = jail_dataset.name.rsplit("/")[-1]
+                jail_dataset = self.zfs_get_property(
+                    self.location, 'mountpoint'
+                )
+                full_uuid = jail_dataset.rsplit('/')[-1]
                 legacy_short = True
             else:
                 raise()

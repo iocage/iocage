@@ -112,11 +112,13 @@ class IOCDestroy(iocage_lib.ioc_json.IOCZFS):
             _path = mountpoint.replace('/root', '', 1)
 
             if (dataset.endswith(uuid) or root) and _path is not None:
-                with suppress(BaseException):
+                with iocage_lib.ioc_exceptions.ignore_exceptions(
+                        BaseException):
                     # Can be missing/corrupt/whatever configuration
                     # Since it's being nuked anyways, we don't care.
-                    iocage_lib.ioc_stop.IOCStop(uuid, _path, silent=True,
-                                                suppress_exception=True)
+                    iocage_lib.ioc_stop.IOCStop(
+                        uuid, _path, silent=True, suppress_exception=True
+                    )
 
     def __destroy_leftovers__(self, dataset, clean=False):
         """Removes parent datasets and logs."""
@@ -202,6 +204,30 @@ class IOCDestroy(iocage_lib.ioc_json.IOCZFS):
                     ],
                     stdout=su.PIPE, stderr=su.PIPE
                 )
+        if 'templates' in dataset:
+            if dataset.endswith('/root/root'):
+                # They named their jail root...
+                uuid = 'root'
+            else:
+                uuid = dataset.rsplit('/', 1)[1]
+
+            jail_datasets = self.zfs_get_dataset_and_dependents(
+                f'{self.pool}/iocage/jails'
+            )
+            for jail in jail_datasets:
+                with iocage_lib.ioc_exceptions.ignore_exceptions(
+                        BaseException):
+                    j_conf = iocage_lib.ioc_json.IOCJson(
+                        self.path, suppress_log=True
+                    ).json_get_value('all')
+
+                    source_template = j_conf['source_template']
+
+                    if source_template == uuid:
+                        self.__destroy_parse_datasets__(
+                            f'{self.pool}/iocage/jails/{jail}',
+                            clean=True
+                        )
 
     def __destroy_parse_datasets__(self, path, clean=False, stop=True):
         """
@@ -220,6 +246,8 @@ class IOCDestroy(iocage_lib.ioc_json.IOCZFS):
             # Is actually a single dataset.
             self.__destroy_dataset__(datasets[0])
         else:
+            datasets.reverse()
+
             if "templates" in path or "release" in path:
                 # This will tell __stop_jails__ to actually try stopping on
                 # a /root
