@@ -84,7 +84,9 @@ def ignore_exceptions(*exceptions, clean=None, suppress_exception=True):
     try:
         yield
     except exceptions as e:
-        if callable(clean):
+        if clean is not None:
+            assert callable(clean) is True
+
             return clean()
 
         if not suppress_exception:
