@@ -202,7 +202,7 @@ class IOCSnapshot(object):
 
     def delete(self, recursive=True):
         with ioc_exceptions.ignore_exceptions(
-            su.CalledProcessError, return_value=False
+            su.CalledProcessError
         ):
             return su.run(
                 ['zfs', 'destroy', '-r' if recursive else '', '-f', self.name],
@@ -245,15 +245,17 @@ class IOCZFS(object):
     def pools(self):
         # Returns list of pools. In case of failure, an empty list
         with ioc_exceptions.ignore_exceptions(
-            su.CalledProcessError, return_value=[]
+            su.CalledProcessError
         ):
             pools = su.run(
                 [
-                    'zpool', 'list', '-H'
+                    'zpool', 'list', '-H',
                 ],
                 stdout=su.PIPE, stderr=su.PIPE
             ).stdout.decode().split('\n')
             return [p.split()[0] for p in pools if p]
+
+        return []
 
     def _zfs_get_properties(self, identifier):
         p_dict = {}
@@ -280,8 +282,10 @@ class IOCZFS(object):
         return p_dict
 
     def zfs_get_property(self, identifier, key):
-        with ioc_exceptions.ignore_exceptions(Exception, return_value='-'):
+        with ioc_exceptions.ignore_exceptions(Exception):
             return self._zfs_get_properties(identifier)[key]
+
+        return '-'
 
     def zfs_set_property(self, identifier, key, value):
         su.run(
