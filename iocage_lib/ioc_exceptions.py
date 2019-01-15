@@ -76,16 +76,20 @@ class ValueNotFound(Exception):
 
 
 @contextmanager
-def ignore_exceptions(*exceptions, return_value=None, suppress_exception=True):
+def ignore_exceptions(*exceptions, clean=None, suppress_exception=True):
+    """
+    Ignore any exceptions specified by `exceptions` and make sure that
+    we clean any resources specified by callable `clean`
+    """
     try:
         yield
     except exceptions as e:
+        if clean is not None:
+            assert callable(clean) is True
+
+            return clean()
+
         if not suppress_exception:
             # For cases where this block is used dynamically to suppress
             # exceptions
             raise e
-
-        if callable(return_value):
-            return return_value()
-        else:
-            return return_value
