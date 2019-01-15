@@ -53,7 +53,7 @@ def cli(force, dataset_type):
             'level': 'WARNING',
             'message': '\nThis will destroy ALL jails and any '
                        'snapshots on a RELEASE,'
-                       'including templates!'
+                       ' including templates!'
         }
     elif dataset_type == 'all':
         msg = {

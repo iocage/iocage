@@ -94,14 +94,22 @@ class IOCDestroy(iocage_lib.ioc_json.IOCZFS):
             path = path.replace('templates', 'jails')
 
             try:
-                uuid = dataset.partition(
-                    f'{path}')[1].rsplit('/', 1)[1]
+                uuid = dataset.partition(path)[2]
+                if not uuid:
+                    # jails dataset
+                    # This will trigger a false IndexError if we don't continue
+                    continue
+                if uuid.endswith('/root/root'):
+                    # They named their jail root...
+                    uuid = 'root'
+                elif uuid.endswith('/root'):
+                    uuid = uuid.rsplit('/root', 1)[0]
             except IndexError:
                 # A RELEASE dataset
                 return
 
             # We want the real path now.
-            _path = mountpoint.replace('/root', '')
+            _path = mountpoint.replace('/root', '', 1)
 
             if (dataset.endswith(uuid) or root) and _path is not None:
                 with suppress(BaseException):
@@ -112,7 +120,7 @@ class IOCDestroy(iocage_lib.ioc_json.IOCZFS):
 
     def __destroy_leftovers__(self, dataset, clean=False):
         """Removes parent datasets and logs."""
-        uuid = dataset.rsplit('/root')[0].split('/')[-1]
+        uuid = dataset.rsplit('/root', 1)[0].rsplit('/')[-1]
 
         if self.path is not None and self.path.endswith('/root'):
             umount_path = self.path.rsplit('/root', 1)[0]
