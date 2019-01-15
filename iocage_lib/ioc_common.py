@@ -102,6 +102,16 @@ def logit(content, _callback=None, silent=False, exception=RuntimeError):
     _callback(content, exception)
 
 
+def try_convert(value, default, *types):
+    for t in types:
+        try:
+            return t(value)
+        except (ValueError, TypeError):
+            continue
+
+    return default
+
+
 def raise_sort_error(sort_list):
     msg = "Invalid sort type specified, use one of:\n"
 
@@ -248,45 +258,68 @@ def sort_ip6(ip):
     return sort_ip(ip, version="6")
 
 
-def sort_ip(ip, version="4"):
-    """Sort the list by IP address."""
-    list_length = len(ip)
+def sort_ip(sort_row, version='4'):
+    """
+    Sort the list by IP address
+    We expect the following values for ip sorting
+    1) interface|ip/subnet
+    2) interface|ip
+    3) interface|dhcp
+    4) ip
+    5) ip|accept_rtadv
+
+    All the while obviously not forgetting that there can be multiple
+    ips specified by ',' delimiter
+    """
+    list_length = len(sort_row)
 
     # Length 9 is list -l, 10 is list -P
     # Length 5 is list
-
-    if list_length == 9 or list_length == 10:
-        try:
-            _ip = ip[6] if version == "4" else ip[7]
-            _ip = str(ipaddress.ip_address(_ip.rsplit("|")[1].split("/")[0]))
-            if version == "4":
-                _ip = tuple(int(c) for c in _ip.split("."))
-            else:
-                _ip = (0,) + tuple(c for c in _ip.split(":"))
-
-        except (ValueError, IndexError):
-            # Lame hack to have "-" or invalid/undetermined IPs last.
-            _ip = 300, _ip
-
-        # Tack on the NAME as secondary sort criterion
-        _ip = _ip + get_name_sortkey(ip[1])
-
-    elif list_length == 5:
-        try:
-            _ip = str(ipaddress.ip_address(ip[4]))
-            _ip = tuple(int(c) for c in _ip.split("."))
-
-        except ValueError:
-            # Lame hack to have "-" or invalid/undetermined IPs last.
-            _ip = 300, ip[4]
-
-        # Tack on the NAME as as secondary sort criterion
-        _ip = _ip + get_name_sortkey(ip[1])
-
+    if version == '4':
+        ip_check = ipaddress.IPv4Network
     else:
-        _ip = ip
+        ip_check = ipaddress.IPv6Network
 
-    return _ip
+    if list_length in (9, 10):
+        ip = sort_row[6] if version == '4' else sort_row[7]
+    elif list_length == 5:
+        ip = sort_row[4]
+    else:
+        ip = sort_row
+
+    if not isinstance(ip, list):
+        # Let's normalize the ip list first
+        ip_list = list(
+            map(
+                lambda v: ip_check(v),
+                filter(
+                    lambda v: try_convert(v, None, ip_check),
+                    map(
+                        lambda v: v.split('|')[1].split('/')[0].strip()
+                        if '|' in v else
+                        v.split('/')[0].strip(),
+                        ip.split(',')
+                    )
+                )
+            )
+        )
+
+        if ip_list:
+            ip_list.sort()
+            ip = tuple(
+                int(c)
+                for c in str(ip_list[0]).split('/')[0].split(
+                    '.' if version == '4' else ':'
+                )
+            )
+            if version != '4':
+                ip = (0,) + ip
+        else:
+            ip = (9999, ip)
+
+        ip = ip + get_name_sortkey(sort_row[1])
+
+    return ip
 
 
 def sort_type(jail_type):
