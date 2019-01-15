@@ -684,8 +684,9 @@ class IOCStart(object):
             if interface.startswith(interfaces_to_skip):
                 continue
 
-            for address in netifaces.ifaddresses(interface)[inet_mode]:
-                current_ips.append(address['addr'])
+            with ioc_exceptions.ignore_exceptions(KeyError):
+                for address in netifaces.ifaddresses(interface)[inet_mode]:
+                    current_ips.append(address['addr'])
 
         for ip in _ip_addrs:
             if '|' not in ip:
