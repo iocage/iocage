@@ -30,7 +30,6 @@ import iocage_lib.ioc_json
 import iocage_lib.ioc_stop
 import libzfs
 
-from contextlib import suppress
 from pathlib import Path
 
 
