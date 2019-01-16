@@ -39,7 +39,7 @@ class IOCDestroy(iocage_lib.ioc_json.IOCZFS):
     destroy that as well.
     """
     def __init__(self, callback=None):
-        super().__init__()
+        super().__init__(callback)
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value('pool')
         self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value('iocroot')

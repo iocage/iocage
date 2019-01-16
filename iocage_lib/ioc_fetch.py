@@ -64,7 +64,7 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
                  files=('MANIFEST', 'base.txz', 'lib32.txz', 'src.txz'),
                  silent=False,
                  callback=None):
-        super().__init__()
+        super().__init__(callback)
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")

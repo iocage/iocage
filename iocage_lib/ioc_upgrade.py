@@ -45,7 +45,7 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
                  silent=False,
                  callback=None,
                  ):
-        super().__init__()
+        super().__init__(callback)
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")

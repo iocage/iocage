@@ -224,8 +224,9 @@ class IOCSnapshot(object):
 
 class IOCZFS(object):
     # TODO: We should use a context manager for libzfs
-    def __init__(self):
+    def __init__(self, callback=None):
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
+        self.callback = callback
 
     @property
     def iocroot_path(self):
@@ -433,7 +434,7 @@ class Release(Resource):
 
 class IOCConfiguration(IOCZFS):
     def __init__(self, location, checking_datasets, silent, callback):
-        super().__init__()
+        super().__init__(callback)
         self.location = location
         self.silent = silent
         self.callback = callback

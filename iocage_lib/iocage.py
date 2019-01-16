@@ -51,7 +51,7 @@ import libzfs
 class PoolAndDataset(ioc_json.IOCZFS):
 
     def __init__(self):
-        super().__init__()
+        super().__init__(callback)
         self.pool = ioc_json.IOCJson().json_get_value("pool")
 
     def get_pool(self):
@@ -103,7 +103,7 @@ class IOCage(ioc_json.IOCZFS):
                  activate=False,
                  skip_jails=False,
                  ):
-        super().__init__()
+        super().__init__(callback)
         self.rc = rc
 
         # FreeNAS won't be entering through the CLI, so we set sane defaults
