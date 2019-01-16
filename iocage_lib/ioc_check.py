@@ -61,6 +61,13 @@ class IOCCheck(object):
             zfs_dataset_name = f"{self.pool}/{dataset}"
             try:
                 ds = zfs.get_dataset(zfs_dataset_name)
+
+                if ds.mountpoint is None:
+                    iocage_lib.ioc_common.logit({
+                        "level": "EXCEPTION",
+                        "message": f'Please set a mountpoint on {ds.name}'
+                    },
+                        _callback=self.callback)
             except libzfs.ZFSException:
                 # Doesn't exist
 
