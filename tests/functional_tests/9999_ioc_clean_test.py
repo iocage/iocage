@@ -23,7 +23,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
-import shutil
 
 import pytest
 
@@ -35,13 +34,6 @@ require_zpool = pytest.mark.require_zpool
 @require_root
 @require_zpool
 def test_clean(invoke_cli, zfs):
-    iocage_dataset = zfs.iocage_dataset
-
-    for d in ('debug', 'debug2'):
-        p = os.path.join(iocage_dataset['mountpoint'], d)
-        if os.path.exists(p):
-            shutil.rmtree(p)
-
     # Unless we change directory (not sure why) this will crash pytest.
     os.chdir('/')
     actions = [['-j', '-f'], ['-t', '-f'], ['-a', '-f']]

@@ -44,10 +44,11 @@ import iocage_lib.ioc_exec
 
 def callback(_log, callback_exception):
     """Helper to call the appropriate logging level"""
-    log = logging.getLogger("iocage")
-    level = _log["level"]
-    message = _log["message"]
-    force_raise = _log.get("force_raise")
+    log = logging.getLogger('iocage')
+    level = _log['level']
+    message = _log['message']
+    force_raise = _log.get('force_raise')
+    suppress_log = _log.get('suppress_log')
 
     if level == 'CRITICAL':
         log.critical(message)
@@ -74,7 +75,8 @@ def callback(_log, callback_exception):
                 ):
                     message = '\n'.join(message)
 
-                log.error(message)
+                if not suppress_log:
+                    log.error(message)
 
                 if force_raise:
                     raise callback_exception(message)

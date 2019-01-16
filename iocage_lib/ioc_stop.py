@@ -45,15 +45,16 @@ class IOCStop(object):
             self.pool).json_get_value("iocroot")
         self.uuid = uuid.replace(".", "_")
         self.path = path
-        self.conf = iocage_lib.ioc_json.IOCJson(path).json_get_value('all')
         self.force = force
-        self.status, self.jid = iocage_lib.ioc_list.IOCList().list_get_jid(
-            uuid)
-        self.nics = self.conf["interfaces"]
         self.callback = callback
         self.silent = silent
 
         try:
+            self.conf = iocage_lib.ioc_json.IOCJson(
+                path, suppress_log=True).json_get_value('all')
+            self.status, self.jid = iocage_lib.ioc_list.IOCList().list_get_jid(
+                uuid)
+            self.nics = self.conf['interfaces']
             self.__stop_jail__()
         except (Exception, SystemExit) as e:
             if not suppress_exception:

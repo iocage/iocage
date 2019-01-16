@@ -26,13 +26,17 @@
 import iocage_lib.ioc_common
 import iocage_lib.ioc_destroy
 import iocage_lib.ioc_json
+import shutil
 
 
-class IOCClean(object):
+class IOCClean(iocage_lib.ioc_json.IOCZFS):
     """Cleans datasets and snapshots of a given type."""
 
     def __init__(self, callback=None, silent=False):
-        self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
+        super().__init__(callback)
+        self.pool = iocage_lib.ioc_json.IOCJson().json_get_value('pool')
+        self.iocroot = iocage_lib.ioc_json.IOCJson(self.pool).json_get_value(
+            'iocroot')
 
         self.callback = callback
         self.silent = silent
@@ -40,61 +44,63 @@ class IOCClean(object):
     def clean_jails(self):
         """Cleans all jails and their respective snapshots."""
         iocage_lib.ioc_common.logit({
-            "level"  : "INFO",
-            "message": "Cleaning iocage/jails"
+            'level': 'INFO',
+            'message': 'Cleaning iocage/jails'
         },
             _callback=self.callback,
             silent=self.silent)
 
         iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(
-            f"{self.pool}/iocage/jails",
-            clean=True)
+            f'{self.pool}/iocage/jails',
+            clean=True
+        )
 
     def clean_releases(self):
         """Cleans all releases and the jails created from them."""
         iocage_lib.ioc_common.logit({
-            "level"  : "INFO",
-            "message": "Cleaning iocage/download"
+            'level': 'INFO',
+            'message': 'Cleaning iocage/download'
         },
             _callback=self.callback,
             silent=self.silent)
 
         iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(
-            f"{self.pool}/iocage/download",
-            clean=True)
+            f'{self.pool}/iocage/download',
+            clean=True
+        )
 
         iocage_lib.ioc_common.logit({
-            "level"  : "INFO",
-            "message": "Cleaning iocage/releases"
+            'level': 'INFO',
+            'message': 'Cleaning iocage/releases'
         },
             _callback=self.callback,
             silent=self.silent)
 
         iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(
-            f"{self.pool}/iocage/releases",
+            f'{self.pool}/iocage/releases',
             clean=True)
 
     def clean_all(self):
         """Cleans everything related to iocage."""
-        datasets = ("iocage", "iocage/download", "iocage/images",
-                    "iocage/jails", "iocage/log", "iocage/releases",
-                    "iocage/templates")
+        datasets = ('iocage', 'iocage/download', 'iocage/images',
+                    'iocage/jails', 'iocage/log', 'iocage/releases',
+                    'iocage/templates')
 
         for dataset in reversed(datasets):
             iocage_lib.ioc_common.logit({
-                "level"  : "INFO",
-                "message": f"Cleaning {dataset}"
+                'level': 'INFO',
+                'message': f'Cleaning {dataset}'
             },
                 _callback=self.callback,
                 silent=self.silent)
 
             iocage_lib.ioc_destroy.IOCDestroy().__destroy_parse_datasets__(
-                f"{self.pool}/{dataset}", clean=True)
+                f'{self.pool}/{dataset}', clean=True)
 
     def clean_templates(self):
         """Cleans all templates and their respective children."""
         iocage_lib.ioc_common.logit({
-            "level"  : "INFO",
+            "level": "INFO",
             "message": "Cleaning iocage/templates"
         },
             _callback=self.callback,
@@ -103,3 +109,29 @@ class IOCClean(object):
         iocage_lib.ioc_destroy.IOCDestroy().__destroy_parse_datasets__(
             f"{self.pool}/iocage/templates",
             clean=True)
+
+    def clean_images(self):
+        """Destroys the images dataset"""
+        iocage_lib.ioc_common.logit({
+            'level': 'INFO',
+            'message': 'Cleaning iocage/images'
+        },
+            _callback=self.callback,
+            silent=self.silent)
+
+        self.zfs_destroy_dataset(f'{self.pool}/iocage/images', force=True)
+
+    def clean_debug(self):
+        """Removes the debug directory"""
+        iocage_lib.ioc_common.logit({
+            'level': 'INFO',
+            'message': 'Cleaning iocage/debug'
+        },
+            _callback=self.callback,
+            silent=self.silent)
+
+        try:
+            shutil.rmtree(f'{self.iocroot}/debug')
+        except Exception:
+            # Doesn't exist, we don't care
+            pass

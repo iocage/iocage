@@ -224,8 +224,9 @@ class IOCSnapshot(object):
 
 class IOCZFS(object):
     # TODO: We should use a context manager for libzfs
-    def __init__(self):
+    def __init__(self, callback=None):
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
+        self.callback = callback
 
     @property
     def iocroot_path(self):
@@ -257,6 +258,23 @@ class IOCZFS(object):
 
         return []
 
+    @property
+    def iocroot_datasets(self):
+        return self.zfs_get_dataset_and_dependents(self.iocroot_path)
+        # Returns a list of all datasets
+
+    @property
+    def release_snapshots(self):
+        # Returns all jail snapshots on the RELEASE
+        rel_dir = pathlib.Path(f'{self.iocroot_path}/releases')
+        snaps = []
+
+        # Quicker than asking zfs and parsing
+        for snap in rel_dir.glob('**/root/.zfs/snapshot/*'):
+            snaps.append(snap.name)
+
+        return snaps
+
     def _zfs_get_properties(self, identifier):
         p_dict = {}
 
@@ -283,6 +301,20 @@ class IOCZFS(object):
 
     def zfs_get_property(self, identifier, key):
         with ioc_exceptions.ignore_exceptions(Exception):
+            if key == 'mountpoint':
+                mountpoint = su.run(
+                    [
+                        'zfs',
+                        'get',
+                        '-pHo',
+                        'value',
+                        key,
+                        identifier
+                    ], stdout=su.PIPE, stderr=su.PIPE
+                ).stdout.decode().rstrip()
+
+                return mountpoint
+
             return self._zfs_get_properties(identifier)[key]
 
         return '-'
@@ -306,6 +338,53 @@ class IOCZFS(object):
         # can be derived wrt snap_id in question
         # Snap_id expected value - vol/iocage/jails/jail1@snaptest
         return IOCSnapshot(snap_id)
+
+    def zfs_destroy_dataset(self, identifier, recursive=False, force=False):
+        cmd = ['zfs', 'destroy']
+
+        if recursive:
+            cmd += ['-r']
+
+        if force:
+            cmd += ['-Rf']
+
+        try:
+            su.run(
+                cmd + [identifier], check=True, stdout=su.PIPE, stderr=su.PIPE
+            )
+        except su.CalledProcessError as e:
+            if force:
+                return
+
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message': f'Destroying {identifier} failed!\n'
+                               f'Reason: {e.stderr.decode()}'
+                },
+                _callback=self.callback,
+                exception=ioc_exceptions.CommandFailed
+            )
+
+    def zfs_get_dataset_and_dependents(self, identifier):
+        try:
+            datasets = list(su.run(
+                ['zfs', 'list', '-rHo', 'name', identifier],
+                check=True, stdout=su.PIPE, stderr=su.PIPE
+            ).stdout.decode().split())
+        except su.CalledProcessError as e:
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message': 'Getting dataset and dependents for '
+                               f'{identifier} failed!\n'
+                               f'Reason: {e.stderr.decode()}'
+                },
+                _callback=self.callback,
+                exception=ioc_exceptions.CommandFailed
+            )
+
+        return datasets
 
 
 class Resource(IOCZFS):
@@ -355,7 +434,7 @@ class Release(Resource):
 
 class IOCConfiguration(IOCZFS):
     def __init__(self, location, checking_datasets, silent, callback):
-        super().__init__()
+        super().__init__(callback)
         self.location = location
         self.silent = silent
         self.callback = callback
@@ -1045,10 +1124,12 @@ class IOCJson(IOCConfiguration):
                  cli=False,
                  stop=False,
                  checking_datasets=False,
+                 suppress_log=False,
                  callback=None):
         self.lgr = logging.getLogger('ioc_json')
         self.cli = cli
         self.stop = stop
+        self.suppress_log = suppress_log
         super().__init__(location, checking_datasets, silent, callback)
 
         try:
@@ -1176,8 +1257,10 @@ class IOCJson(IOCConfiguration):
                         _callback=self.callback,
                         silent=self.silent)
 
-                jail_dataset = self.zfs.get_dataset_by_path(self.location)
-                full_uuid = jail_dataset.name.rsplit("/")[-1]
+                jail_dataset = self.zfs_get_property(
+                    self.location, 'mountpoint'
+                )
+                full_uuid = jail_dataset.rsplit('/')[-1]
                 legacy_short = True
             else:
                 raise()
@@ -1221,11 +1304,11 @@ class IOCJson(IOCConfiguration):
                 else:
                     iocage_lib.ioc_common.logit(
                         {
-                            "level":
-                            "EXCEPTION",
-                            "message":
-                            f"{jail_uuid} is missing it's configuration,"
-                            " please destroy this jail and recreate it."
+                            'level': 'EXCEPTION',
+                            'message': f'{jail_uuid} is missing it\'s'
+                            ' configuration, please destroy this jail and'
+                            ' recreate it.',
+                            'suppress_log': self.suppress_log
                         },
                         _callback=self.callback,
                         silent=self.silent,
