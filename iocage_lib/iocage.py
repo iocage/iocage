@@ -51,7 +51,7 @@ import libzfs
 class PoolAndDataset(ioc_json.IOCZFS):
 
     def __init__(self):
-        super().__init__(callback)
+        super().__init__()
         self.pool = ioc_json.IOCJson().json_get_value("pool")
 
     def get_pool(self):
