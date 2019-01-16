@@ -30,7 +30,6 @@ import subprocess as su
 import uuid
 
 import iocage_lib.ioc_common
-import iocage_lib.ioc_destroy
 import iocage_lib.ioc_exec
 import iocage_lib.ioc_fstab
 import iocage_lib.ioc_json
@@ -77,6 +76,7 @@ class IOCCreate(object):
 
     def create_jail(self):
         """Helper to catch SIGINT"""
+        import iocage_lib.ioc_destroy  # Circular dep
 
         if self.uuid:
             jail_uuid = self.uuid
@@ -106,8 +106,10 @@ class IOCCreate(object):
         jail from that. The user can also specify properties to override the
         defaults.
         """
+        import iocage_lib.ioc_destroy  # Circular dep
         start = False
         is_template = False
+        source_template = None
         rtsold_enable = 'NO'
 
         if iocage_lib.ioc_common.match_to_dir(self.iocroot, jail_uuid):
@@ -150,6 +152,7 @@ class IOCCreate(object):
                     except KeyError:
                         # Thick jails won't have this
                         cloned_release = None
+                    source_template = self.release
                 elif self.clone:
                     _type = "jails"
                     clone_path = f"{self.iocroot}/{_type}/{self.release}"
@@ -210,7 +213,9 @@ class IOCCreate(object):
                 if cloned_release is None:
                     cloned_release = self.release
 
-                config = self.create_config(jail_uuid, cloned_release)
+                config = self.create_config(
+                    jail_uuid, cloned_release, source_template
+                )
             else:
                 clone_config = f"{self.iocroot}/jails/{jail_uuid}/config.json"
                 clone_fstab = f"{self.iocroot}/jails/{jail_uuid}/fstab"
@@ -608,7 +613,7 @@ class IOCCreate(object):
 
         return jail_uuid
 
-    def create_config(self, jail_uuid, release):
+    def create_config(self, jail_uuid, release, source_template):
         """
         Create the jail configuration with the minimal needed defaults.
         If self.thickconfig is True, it will create a jail with all properties.
@@ -627,6 +632,9 @@ class IOCCreate(object):
             d_conf = iocage_lib.ioc_json.IOCJson().check_default_config()
             jail_props.update(d_conf)
             jail_props['CONFIG_TYPE'] = 'THICK'
+
+        if source_template is not None:
+            jail_props['source_template'] = source_template
 
         return jail_props
 

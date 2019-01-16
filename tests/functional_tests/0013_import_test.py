@@ -61,10 +61,3 @@ def test_01_import_jail(invoke_cli, jail, skip_test, remove_file, zfs):
     )
 
     assert jail.exists is True, f'{exported_jail} jail did not import'
-
-    # Let's do a clean up on the exported files
-    for file in os.listdir(images_dataset_path):
-        remove_file(os.path.join(images_dataset_path, file))
-
-    assert not os.listdir(images_dataset_path) is True, \
-        f'Failed to clean {images_dataset_path}'
