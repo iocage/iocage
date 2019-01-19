@@ -268,3 +268,50 @@ class SilentExec(object):
         join_str = b'' if not decode else ''
         self.stdout = join_str.join([i[0] for i in self.output])
         self.stderr = join_str.join([i[1] for i in self.output])
+
+
+class InteractiveExec(IOCExec):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if not self.unjailed:
+            if not self.uuid or self.uuid is None:
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'EXCEPTION',
+                        'message': 'UUID is required'
+                    },
+                    exception=iocage_lib.ioc_exceptions.ValueNotFound,
+                    _callback=self.callback)
+
+            if not self.path or self.path is None:
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'EXCEPTION',
+                        'message': 'Path is required'
+                    },
+                    exception=iocage_lib.ioc_exceptions.ValueNotFound,
+                    _callback=self.callback)
+
+            if not self.status:
+                iocage_lib.ioc_start.IOCStart(
+                    self.uuid, self.path, silent=True
+                )
+                self.status, _ = iocage_lib.ioc_list.IOClist(
+                    'jid', uuid=self.uuid
+                )
+
+        try:
+            su.run(
+                self.cmd, check=True, env=self.su_env
+            )
+        except su.CalledProcessError:
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message': f'Command: {" ".join(self.command)} failed!'
+                },
+                exception=iocage_lib.ioc_exceptions.CommandFailed,
+                _callback=self.callback)
+        except Exception:
+            raise

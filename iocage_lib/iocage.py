@@ -848,54 +848,14 @@ class IOCage(ioc_json.IOCZFS):
             command = ["pkg", "-j", jid] + list(command)
 
         if console:
-            status, jid = self.list("jid", uuid=uuid)
-
-            if not status:
-                self.start()
-                status, jid = self.list("jid", uuid=uuid)
-
             login_flags = self.get('login_flags').split()
-            exec_fib = self.get('exec_fib')
-            console_cmd = [
-                '/usr/sbin/setfib', exec_fib,
-                'jexec', f"ioc-{uuid.replace('.', '_')}",
-                'login', '-p'] + login_flags
+            console_cmd = ['login', '-p'] + login_flags
 
-            su.Popen(console_cmd, env=su_env).communicate()
+            ioc_exec.InteractiveExec(console_cmd, path, uuid=uuid)
             return
 
         if interactive:
-            exec_fib = self.get('exec_fib')
-            interactive_cmd = (
-                '/usr/sbin/setfib', exec_fib, 'jexec'
-            ) + u + (f'ioc-{uuid.replace(".", "_")}',) + command
-
-            try:
-                _started = False
-                _silent = self.silent
-                _status, _ = self.list("jid", uuid=uuid)
-
-                if not _status:
-                    self.silent = True
-                    self.start()
-                    _started = True
-                    self.silent = _silent
-
-                su_command = su.Popen(interactive_cmd, env=su_env)
-                stdout, stderr = su_command.communicate()
-
-                if _started:
-                    self.silent = True
-                    self.stop()
-                    self.silent = _silent
-
-                if su_command.returncode != 0:
-                    raise ioc_exceptions.CommandFailed(
-                        f'Command: {command}, stdout: {stdout},'
-                        f' stderr: {stderr}'
-                    )
-            except Exception:
-                raise
+            ioc_exec.InteractiveExec(command, path, uuid=uuid)
             return
 
         try:
