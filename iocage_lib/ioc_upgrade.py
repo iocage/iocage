@@ -161,7 +161,6 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
                         silent=self.silent
                     )
 
-
             if not self.interactive:
                 while not self.__upgrade_install__(tmp.name):
                     pass
