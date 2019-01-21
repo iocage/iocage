@@ -802,7 +802,6 @@ class IOCage(ioc_json.IOCZFS):
                 },
                 _callback=self.callback,
                 silent=self.silent)
-        u = ('-U', jail_user) if jail_user is not None else ('-u', host_user)
 
         uuid, path = self.__check_jail_existence__()
         exec_clean = self.get('exec_clean')
@@ -855,7 +854,14 @@ class IOCage(ioc_json.IOCZFS):
             return
 
         if interactive:
-            ioc_exec.InteractiveExec(command, path, uuid=uuid)
+            ioc_exec.InteractiveExec(
+                command,
+                path,
+                uuid=uuid,
+                host_user=host_user,
+                jail_user=jail_user,
+                skip=True
+            )
             return
 
         try:

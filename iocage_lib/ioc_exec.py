@@ -100,8 +100,8 @@ class IOCExec(object):
                     user = self.host_user
 
                 self.cmd = [
-                    "/usr/sbin/setfib", exec_fib, "jexec", flag, user,
-                    f"ioc-{self.uuid}"
+                    '/usr/sbin/setfib', exec_fib, 'jexec', flag, user,
+                    f'ioc-{self.uuid.replace(".", "_")}'
                 ] + list(self.command)
 
     def __enter__(self):
@@ -156,6 +156,7 @@ class IOCExec(object):
                     "jail", "plugin", "pluginv2", "clonejail"):
                 iocage_lib.ioc_start.IOCStart(self.uuid, self.path,
                                               silent=True)
+                self.status = True
             elif self.conf["type"] == "basejail":
                 iocage_lib.ioc_common.logit(
                     {
@@ -186,12 +187,13 @@ class IOCExec(object):
                     },
                     _callback=self.callback)
 
-            iocage_lib.ioc_common.logit(
-                {
-                    "level": "INFO",
-                    "message": "\nCommand output:"
-                },
-                _callback=self.callback)
+            if not self.skip:
+                iocage_lib.ioc_common.logit(
+                    {
+                        "level": "INFO",
+                        "message": "\nCommand output:"
+                    },
+                    _callback=self.callback)
 
     def exec_jail(self):
         # Courtesy of @william-gr
