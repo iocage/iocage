@@ -51,7 +51,7 @@ def test_02_debug_with_directory_flag(invoke_cli, zfs):
 
 @require_root
 @require_zpool
-def test03_verify_debug_directories(resource_selector, zfs):
+def test_03_verify_debug_directories(resource_selector, zfs):
     iocage_dataset = zfs.iocage_dataset
     directories = [
         os.path.join(iocage_dataset['mountpoint'], d)
