@@ -42,7 +42,7 @@ def test_01_exec_on_jail(resource_selector, skip_test, invoke_cli):
         ['exec', jail.name, 'touch', '/tmp/testing_file']
     )
 
-    assert jail.running is False
+    assert jail.running is True
 
     assert os.path.exists(
         os.path.join(jail.absolute_path, 'root/tmp/testing_file')
@@ -64,7 +64,7 @@ def test_02_exec_jail_user_on_jail(resource_selector, skip_test, invoke_cli):
     )
 
     result = invoke_cli(['exec', '-U', 'foo', jail.name, 'whoami'])
-    assert jail.running is False
+    assert jail.running is True
 
     output = result.output.rstrip()
 
@@ -81,7 +81,7 @@ def test_03_exec_host_user_on_jail(resource_selector, skip_test, invoke_cli):
     result = invoke_cli(
         ['exec', '-u', 'nobody', jail.name, 'whoami']
     )
-    assert jail.running is False
+    assert jail.running is True
 
     output = result.output.rstrip()
 
