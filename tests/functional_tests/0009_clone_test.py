@@ -38,6 +38,11 @@ def test_01_cloning_thickconfig_jail(
     skip_test(not jails)
 
     thickconfig_jail = jails[0]
+    invoke_cli(['stop', '-f', thickconfig_jail.name])
+
+    assert thickconfig_jail.running is False, \
+        f'Failed to stop {thickconfig_jail.name}'
+
     invoke_cli(
         ['clone', thickconfig_jail.name, '-n', 'cloned_jail']
     )
@@ -70,6 +75,12 @@ def test_02_cloning_thickconfig_jail_setting_props(
     skip_test(not jails)
 
     thickconfig_jail = jails[0]
+
+    invoke_cli(['stop', '-f', thickconfig_jail.name])
+
+    assert thickconfig_jail.running is False, \
+        f'Failed to stop {thickconfig_jail.name}'
+
     invoke_cli([
         'clone', thickconfig_jail.name, '-n',
         'cloned_jail2', 'notes=check_cloned_note'
@@ -91,6 +102,11 @@ def test_03_cloning_jail_using_count_flag(
 
     count = 3
     clone_jail = jails[0]
+
+    invoke_cli(['stop', '-f', clone_jail.name])
+
+    assert clone_jail.running is False, f'Failed to stop {clone_jail.name}'
+
     invoke_cli([
         'clone', clone_jail.name, '-n',
         'cloned_jail_count_test', '-c', count,
