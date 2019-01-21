@@ -1,13 +1,16 @@
 ZPOOL=""
 SERVER=""
-PYTHON?=/usr/local/bin/python3
+PYTHON?=/usr/local/bin/python3.6
 
-install:
-	@test -s ${PYTHON} || (echo "Python binary ${PYTHON} not found, please enter a valid one"; exit 1)
-	@(pkg -vv | grep -e "url.*/latest") > /dev/null 2>&1 || (echo "Please ensure pkg url is using \"latest\" instead of \"quarterly\" in /etc/pkg/FreeBSD.conf before proceeding with installation"; exit 1)
+depends:
+	@(pkg -vv | grep -e "url.*/latest") > /dev/null 2>&1 || (echo "It is advised pkg url is using \"latest\" instead of \"quarterly\" in /etc/pkg/FreeBSD.conf.";)
+	@test -s ${PYTHON} || (echo "Python binary ${PYTHON} not found, iocage will install python36"; pkg install -q -y python36)
+	pkg install -q -y py36-libzfs
 	${PYTHON} -m ensurepip
-	pkg install -y devel/py-libzfs
-	${PYTHON} -m pip install -Ur requirements.txt .
+	${PYTHON} -m pip install -Ur requirements.txt
+
+install: depends
+	${PYTHON} -m pip install -U .
 uninstall:
 	${PYTHON} -m pip uninstall -y iocage-lib iocage-cli
 test:
