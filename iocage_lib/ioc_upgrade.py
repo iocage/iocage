@@ -42,10 +42,11 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
     def __init__(self,
                  new_release,
                  path,
+                 interactive=True,
                  silent=False,
                  callback=None,
                  ):
-        super().__init__(callback)
+        super().__init__()
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")
@@ -65,6 +66,7 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
         self._freebsd_version = f"{self.iocroot}/jails/" \
             f"{self.uuid}/root/bin/freebsd-version"
         self.date = datetime.datetime.utcnow().strftime("%F")
+        self.interactive = interactive
         self.silent = silent
 
         path = '/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:'\
@@ -78,6 +80,8 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
         }
 
         self.callback = callback
+        # Work around for https://github.com/freebsd/freebsd/commit/bffa924f
+        os.environ['UNAME_r'] = self.jail_release
 
     def upgrade_jail(self):
         tmp_dataset = self.zfs_get_dataset_name('/tmp')
@@ -102,8 +106,9 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
 
         self.__upgrade_check_conf__()
 
-        f = "https://raw.githubusercontent.com/freebsd/freebsd" \
-            "/master/usr.sbin/freebsd-update/freebsd-update.sh"
+        f_rel = f'{self.new_release.rsplit("-RELEASE")[0]}.0'
+        f = 'https://raw.githubusercontent.com/freebsd/freebsd' \
+            f'/release/{f_rel}/usr.sbin/freebsd-update/freebsd-update.sh'
 
         tmp = None
         try:
@@ -120,21 +125,61 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
                 "--not-running-from-cron", "--currently-running "
                 f"{self.jail_release}", "-r", self.new_release, "upgrade"
             ]
-            with iocage_lib.ioc_exec.IOCExec(
-                fetch_cmd,
-                self.path.replace('/root', ''),
-                uuid=self.uuid,
-                unjailed=True,
-                stdin_bytestring=b'y\n',
-                callback=self.callback,
-            ) as _exec:
-                iocage_lib.ioc_common.consume_and_log(
-                    _exec,
-                    callback=self.callback
-                )
 
-            while not self.__upgrade_install__(tmp.name):
-                pass
+            # FreeNAS MW/Others, this is a best effort as things may require
+            # stdin input, in which case dropping to a tty is the best solution
+            if not self.interactive:
+                with iocage_lib.ioc_exec.IOCExec(
+                    fetch_cmd,
+                    self.path.replace('/root', ''),
+                    uuid=self.uuid,
+                    unjailed=True,
+                    stdin_bytestring=b'y\n',
+                    callback=self.callback,
+                ) as _exec:
+                    iocage_lib.ioc_common.consume_and_log(
+                        _exec,
+                        callback=self.callback
+                    )
+            else:
+                try:
+                    iocage_lib.ioc_exec.InteractiveExec(
+                        fetch_cmd,
+                        self.path.replace('/root', ''),
+                        uuid=self.uuid,
+                        unjailed=True
+                    )
+                except iocage_lib.ioc_exceptions.CommandFailed:
+                    self.__rollback_jail__()
+                    msg = f'Upgrade failed! Rolling back jail'
+                    iocage_lib.ioc_common.logit(
+                        {
+                            "level": "EXCEPTION",
+                            "message": msg
+                        },
+                        _callback=self.callback,
+                        silent=self.silent
+                    )
+
+            if not self.interactive:
+                while not self.__upgrade_install__(tmp.name):
+                    pass
+            else:
+                # FreeBSD update loops 3 times
+                for _ in range(3):
+                    try:
+                        self.__upgrade_install__(tmp.name)
+                    except iocage_lib.ioc_exceptions.CommandFailed:
+                        self.__rollback_jail__()
+                        msg = f'Upgrade failed! Rolling back jail'
+                        iocage_lib.ioc_common.logit(
+                            {
+                                'level': 'EXCEPTION',
+                                'message': msg
+                            },
+                            _callback=self.callback,
+                            silent=self.silent
+                        )
 
             new_release = iocage_lib.ioc_common.get_jail_freebsd_version(
                 self.path,
@@ -300,23 +345,31 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
             "install"
         ]
 
-        with iocage_lib.ioc_exec.IOCExec(
-            install_cmd,
-            self.path.replace('/root', ''),
-            uuid=self.uuid,
-            unjailed=True,
-            callback=self.callback,
-        ) as _exec:
-            update_output = iocage_lib.ioc_common.consume_and_log(
-                _exec,
-                callback=self.callback
+        if not self.interactive:
+            with iocage_lib.ioc_exec.IOCExec(
+                install_cmd,
+                self.path.replace('/root', ''),
+                uuid=self.uuid,
+                unjailed=True,
+                callback=self.callback,
+            ) as _exec:
+                update_output = iocage_lib.ioc_common.consume_and_log(
+                    _exec,
+                    callback=self.callback
+                )
+
+            for i in update_output:
+                if i == 'No updates are available to install.':
+                    return True
+
+            return False
+        else:
+            iocage_lib.ioc_exec.InteractiveExec(
+                install_cmd,
+                self.path.replace('/root', ''),
+                uuid=self.uuid,
+                unjailed=True
             )
-
-        for i in update_output:
-            if i == 'No updates are available to install.':
-                return True
-
-        return False
 
     def __upgrade_check_conf__(self):
         """
