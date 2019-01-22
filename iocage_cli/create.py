@@ -30,6 +30,7 @@ import uuid
 import click
 import iocage_lib.ioc_common as ioc_common
 import iocage_lib.iocage as ioc
+import iocage_lib.ioc_exceptions as ioc_exceptions
 
 __rootcmd__ = True
 
@@ -179,20 +180,23 @@ def cli(release, template, count, props, pkglist, basejail, thickjail, empty,
                       template=template, short=short, _uuid=_uuid,
                       basejail=basejail, thickjail=thickjail, empty=empty,
                       thickconfig=thickconfig)
-    except RuntimeError as err:
-        if template and "Dataset" in str(err):
+    except (RuntimeError, ioc_exceptions.JailMissingConfiguration) as err:
+        if template and "Dataset" in str(err) or str(
+                err).startswith('Template'):
             # We want to list the available templates first
             ioc_common.logit({
                 "level": "ERROR",
                 "message": f"Template: {release} not found!"
             })
-            templates = ioc.IOCage().list("template")
-
+            templates = ioc.IOCage(silent=True).list('template')
+            template_names = ''
             for temp in templates:
-                ioc_common.logit({
-                    "level": "EXCEPTION",
-                    "message": f"Created Templates:\n  {temp[1]}"
-                })
+                template_names += '\n  ' + temp[1]
+
+            ioc_common.logit({
+                'level': 'EXCEPTION',
+                'message': f'Created Templates:{template_names}'
+            })
             exit(1)
         else:
             # Standard errors
