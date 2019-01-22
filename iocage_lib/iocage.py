@@ -105,6 +105,7 @@ class IOCage(ioc_json.IOCZFS):
                  ):
         super().__init__(callback)
         self.rc = rc
+        self.silent = silent
 
         # FreeNAS won't be entering through the CLI, so we set sane defaults
         os.environ.get("IOCAGE_SKIP", "FALSE")
@@ -134,7 +135,6 @@ class IOCage(ioc_json.IOCZFS):
         self.jail = jail
         self._all = True if self.jail and 'ALL' in self.jail else False
         self.callback = callback
-        self.silent = silent
         self.is_depend = False
 
     def __all__(self, jail_order, action, ignore_exception=False):
@@ -1268,7 +1268,8 @@ class IOCage(ioc_json.IOCZFS):
             long,
             sort,
             plugin=plugin,
-            quick=quick
+            quick=quick,
+            silent=self.silent
         ).list_datasets()
 
     def rename(self, new_name):
