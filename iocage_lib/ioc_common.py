@@ -441,7 +441,11 @@ def sort_release(releases, split=False, fetch_releases=False):
                 r_type = ''
 
             if len(rel) > 2 and r_type:
-                rel = float(rel)
+                try:
+                    rel = float(rel)
+                except ValueError:
+                    # Non-standard naming scheme
+                    pass
 
             # enumeration ensures 11.2-LOCAL does not take the place of 11.2-R
             r_dict[f'{rel}_{i}'] = r_type
