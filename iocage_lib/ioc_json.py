@@ -1257,11 +1257,18 @@ class IOCJson(IOCConfiguration):
                         _callback=self.callback,
                         silent=self.silent)
 
-                jail_dataset = self.zfs_get_property(
-                    self.location, 'mountpoint'
-                )
-                full_uuid = jail_dataset.rsplit('/')[-1]
-                legacy_short = True
+                    jail_dataset = self.zfs_get_property(
+                        self.location, 'mountpoint'
+                    )
+                    full_uuid = jail_dataset.rsplit('/')[-1]
+                    legacy_short = True
+
+                else:
+                    raise ioc_exceptions.JailMissingConfiguration(
+                        f'{jail_type.rstrip("s").capitalize()}:'
+                        f' {jail_uuid} has a missing configuration, please'
+                        ' check that the dataset is mounted.'
+                    )
             else:
                 raise()
 
