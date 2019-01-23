@@ -654,6 +654,24 @@ class IOCConfiguration(IOCZFS):
                     exception=ioc_exceptions.CommandFailed
                 )
 
+    def fix_properties(self, conf):
+        """
+        Takes a conf file and makes sure any property that has a bad value
+        that was previously allowed is fixed to the correct equivalent, but
+        aren't a CONFIG_VERSION bump
+
+        Returns a bool if it updated anything and it needs writing
+        """
+        original_conf = conf.copy()
+
+        if conf.get('ip4') == 'none':
+            conf['ip4'] = 'disable'
+
+        if conf.get('ip6') == 'none':
+            conf['ip6'] = 'disable'
+
+        return True if original_conf != conf else False
+
     def check_config(self, conf, default=False):
         """
         Takes JSON as input and checks to see what is missing and adds the
@@ -666,9 +684,9 @@ class IOCConfiguration(IOCZFS):
         if current_conf_version == iocage_conf_version:
             return conf, False
 
+        # New style thin configuration jails won't have this. Only their
+        # defaults will
         if current_conf_version is None and thickconfig != 'THICK':
-            # New style thin configuration jails won't have this. Only their
-            # defaults will
             return conf, False
 
         if os.geteuid() != 0:
@@ -1145,6 +1163,7 @@ class IOCJson(IOCConfiguration):
     def get_full_config(self):
         d_conf = self.default_config
         conf, write = self.json_load()
+        write = self.fix_properties(conf)
 
         if write:
             self.json_write(conf)
