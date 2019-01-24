@@ -1331,29 +1331,19 @@ class IOCage(ioc_json.IOCZFS):
                 # Danger, Will Robinson!
                 raise
 
+        for release_snap, rel_path in self.release_snapshots.items():
+            if uuid == release_snap:
+                rel_ds = self.zfs_get_dataset_name(rel_path)
+                su.check_call([
+                    'zfs', 'rename', '-r', f'{rel_ds}@{uuid}', f'@{new_name}'
+                ])
+
         try:
             self.zfs.get_dataset(path).rename(new_path, False, True)
         except libzfs.ZFSException:
             raise
 
-        # Easier.
-        su.check_call([
-            "zfs", "rename", "-r", f"{self.pool}/iocage@{uuid}", f"@{new_name}"
-        ])
-
-        ioc_common.logit(
-            {
-                "level": "INFO",
-                "message": f"Jail: {uuid} renamed to {new_name}"
-            },
-            _callback=self.callback,
-            silent=self.silent)
-
         self.jail = new_name
-
-        # Templates are readonly
-        if _template:
-            self.set("readonly=off", zfs=True, zfs_dataset=new_path)
 
         self.silent = True
         self.set(f"host_hostuuid={new_name}", rename=True)
@@ -1369,6 +1359,11 @@ class IOCage(ioc_json.IOCZFS):
 
         self.silent = _silent
 
+        # Templates are readonly
+        if _template:
+            # All self.set's set this back to on, this must be last
+            self.set('readonly=off', zfs=True, zfs_dataset=new_path)
+
         # Adjust mountpoints in fstab
         jail_fstab = f"{new_mountpoint}/fstab"
 
@@ -1383,7 +1378,30 @@ class IOCage(ioc_json.IOCZFS):
             pass
 
         if _template:
+            for jail, path in self.jails.items():
+                # Stale list and isn't relevant for our loop anyways
+                if jail == uuid:
+                    continue
+
+                _json = ioc_json.IOCJson(path, silent=True)
+
+                try:
+                    source_template = _json.json_get_value('source_template')
+                except KeyError:
+                    continue
+
+                if source_template == uuid:
+                    _json.json_set_value(f'source_template={new_name}')
+
             self.set("readonly=on", zfs=True, zfs_dataset=new_path)
+
+        ioc_common.logit(
+            {
+                "level": "INFO",
+                "message": f"Jail: {uuid} renamed to {new_name}"
+            },
+            _callback=self.callback,
+            silent=self.silent)
 
     def restart(self, soft=False):
         if self._all:
