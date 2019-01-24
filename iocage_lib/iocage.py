@@ -550,6 +550,11 @@ class IOCage(ioc_json.IOCZFS):
                 _callback=self.callback,
                 silent=self.silent)
 
+        if os.path.isdir(
+            f'{self.iocroot}/releases/{release.upper()}'
+        ) and not template and not empty and not clone:
+            release = release.upper() if release is not None else release
+
         if not os.path.isdir(
             f'{self.iocroot}/releases/{release}'
         ) and not template and not empty and not clone:
