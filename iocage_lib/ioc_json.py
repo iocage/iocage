@@ -265,13 +265,13 @@ class IOCZFS(object):
 
     @property
     def release_snapshots(self):
-        # Returns all jail snapshots on the RELEASE
+        # Returns all jail snapshots on each RELEASE dataset
         rel_dir = pathlib.Path(f'{self.iocroot_path}/releases')
-        snaps = []
+        snaps = {}
 
         # Quicker than asking zfs and parsing
         for snap in rel_dir.glob('**/root/.zfs/snapshot/*'):
-            snaps.append(snap.name)
+            snaps[snap.name] = str(snap).rsplit('/.zfs', 1)[0]
 
         return snaps
 
@@ -331,7 +331,7 @@ class IOCZFS(object):
             return su.run(
                 ['zfs', 'get', '-pHo', 'name', 'mountpoint', name],
                 stdout=su.PIPE, stderr=su.PIPE
-            ).stdout.decode()
+            ).stdout.decode().rstrip()
 
     def zfs_get_snapshot(self, snap_id):
         # Let's return snapshot object from which additional information

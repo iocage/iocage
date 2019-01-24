@@ -193,7 +193,7 @@ class IOCDestroy(iocage_lib.ioc_json.IOCZFS):
             # We need to make sure we remove the snapshots from the RELEASES
             # We are purposely not using -R as those will hit templates
             # and we are not using IOCSnapshot for perfomance
-            for dataset in self.release_snapshots:
+            for dataset in self.release_snapshots.keys():
                 su.run(
                     [
                         'zfs',
