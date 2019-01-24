@@ -551,8 +551,8 @@ class IOCage(ioc_json.IOCZFS):
                 silent=self.silent)
 
         if not os.path.isdir(
-                f"{self.iocroot}/releases/{release}") and not template and \
-                not empty and not clone:
+            f'{self.iocroot}/releases/{release}'
+        ) and not template and not empty and not clone:
             freebsd_version = ioc_common.checkoutput(["freebsd-version"])
 
             if "HBSD" in freebsd_version:

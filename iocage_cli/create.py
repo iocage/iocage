@@ -140,7 +140,7 @@ def cli(release, template, count, props, pkglist, basejail, thickjail, empty,
                 pass
 
     # We don't really care it's not a RELEASE at this point.
-    release = template if template else release
+    release = template if template else release.upper()
 
     if pkglist:
         _pkgformat = """
