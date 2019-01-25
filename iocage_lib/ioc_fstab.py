@@ -62,9 +62,12 @@ class IOCFstab(object):
         self.silent = silent
         self.callback = callback
 
-        if action != "list":
+        if action != 'list':
             self.fstab = list(self.__read_fstab__())
-            self.dests = self.__validate_fstab__(self.fstab, 'all')
+
+            if action != 'edit':
+                self.dests = self.__validate_fstab__(self.fstab, 'all')
+
             self.__fstab_parse__()
 
     def __fstab_parse__(self):
@@ -121,12 +124,14 @@ class IOCFstab(object):
         verrors = []
         jail_root = f'{self.iocroot}/jails/{self.uuid}/root'
 
-        for line in fstab:
+        for index, line in enumerate(fstab):
             try:
                 source, destination, fstype, options, \
                     dump, _pass = line.split()[0:6]
             except ValueError:
-                verrors.append(f'Malformed fstab line: {line}')
+                verrors.append(
+                    f'Malformed fstab at line {index}: {repr(line)}'
+                )
                 continue
 
             source = pathlib.Path(source)
