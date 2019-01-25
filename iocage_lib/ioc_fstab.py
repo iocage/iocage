@@ -117,7 +117,7 @@ class IOCFstab(object):
                 yield line.rstrip()
 
     def __validate_fstab__(self, fstab, mode='single'):
-        dests = []
+        dests = {}
         verrors = []
         jail_root = f'{self.iocroot}/jails/{self.uuid}/root'
 
@@ -136,9 +136,19 @@ class IOCFstab(object):
             if mode != 'all' and (
                 self.action == 'add' or self.action == 'replace'
             ):
-                if destination in self.dests:
-                    verrors.append(f'Destination: {self.dest} already exists!')
-                    break
+                if destination in self.dests.values():
+                    if str(source) in self.dests.keys():
+                        verrors.append(
+                            f'Destination: {self.dest} already exists!'
+                        )
+                        break
+                    else:
+                        # They replace with the same destination
+                        try:
+                            self.__fstab_umount__(destination)
+                        except RuntimeError:
+                            # It's not mounted
+                            pass
 
                 if jail_root not in self.dest:
                     verrors.append(
@@ -160,8 +170,6 @@ class IOCFstab(object):
                 verrors.append(f'Source: {source} must use an absolute path!')
 
             if not missing_root:
-                if not dest.is_dir():
-                    verrors.append(f'Destination: {dest} does not exist!')
                 if not dest.is_absolute():
                     verrors.append(
                         f'Destination: {dest} must use an absolute path!'
@@ -183,7 +191,7 @@ class IOCFstab(object):
                 verrors.append(
                     f'Pass: {_pass} must be one digit long!'
                 )
-            dests.append(destination)
+            dests[str(source)] = destination
 
         if verrors:
             iocage_lib.ioc_common.logit({
