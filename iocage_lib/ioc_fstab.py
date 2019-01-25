@@ -170,9 +170,13 @@ class IOCFstab(object):
                     missing_root = True
 
             if not source.is_dir():
-                verrors.append(f'Source: {source} does not exist!')
+                if fstype == 'nullfs':
+                    verrors.append(f'Source: {source} does not exist!')
             if not source.is_absolute():
-                verrors.append(f'Source: {source} must use an absolute path!')
+                if fstype == 'nullfs':
+                    verrors.append(
+                        f'Source: {source} must use an absolute path!'
+                    )
 
             if not missing_root:
                 if not dest.is_absolute():
