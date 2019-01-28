@@ -663,12 +663,18 @@ class IOCConfiguration(IOCZFS):
         Returns a bool if it updated anything and it needs writing
         """
         original_conf = conf.copy()
+        hostid_strict_check = conf.get('hostid_strict_check')
 
         if conf.get('ip4') == 'none':
             conf['ip4'] = 'disable'
 
         if conf.get('ip6') == 'none':
             conf['ip6'] = 'disable'
+
+        if hostid_strict_check == 'yes':
+            conf['hostid_strict_check'] = 'on'
+        elif hostid_strict_check == 'no':
+            conf['hostid_strict_check'] = 'off'
 
         return True if original_conf != conf else False
 
