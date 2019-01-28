@@ -112,6 +112,15 @@ def cli(force, release, download, jails, recursive):
 
     if jails and not release:
         for jail in jails:
+
+            iocage = ioc.IOCage(jail=jail, skip_jails=True)
+            if iocage.jail.running:
+                ioc_common.logit({
+                    "level"  : "EXCEPTION",
+                    "message": (f"Jail {jail} is still running, "
+                                f"cannot destroy running jail")})
+                return
+
             if not force:
                 ioc_common.logit({
                     "level": "WARNING",
@@ -123,11 +132,18 @@ def cli(force, release, download, jails, recursive):
 
             child_test(zfs, iocroot, jail, "jail", force=force,
                        recursive=recursive)
-
-            ioc.IOCage(jail=jail,
-                       skip_jails=True).destroy_jail()
+            iocage.destroy_jail()
     elif jails and release:
         for release in jails:
+
+            iocage = ioc.IOCage(jail=release, skip_jails=True)
+            if iocage.jail.running:
+                ioc_common.logit({
+                    "level": "EXCEPTION",
+                    "message": (f"Jail {release} is still running, "
+                                f"cannot destroy running jail")})
+                return
+
             if not force:
                 ioc_common.logit({
                     "level": "WARNING",
@@ -140,8 +156,7 @@ def cli(force, release, download, jails, recursive):
             child_test(zfs, iocroot, release, "release", force=force,
                        recursive=recursive)
 
-            ioc.IOCage(jail=release,
-                       skip_jails=True).destroy_release(download)
+            iocage.destroy_release(download)
     elif not jails and release:
         ioc_common.logit({
             "level": "EXCEPTION",
