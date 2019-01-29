@@ -26,6 +26,7 @@ import click
 
 import iocage_lib.ioc_common as ioc_common
 import iocage_lib.iocage as ioc
+import subprocess as su
 
 __rootcmd__ = True
 
@@ -52,21 +53,30 @@ def validate_count(ctx, param, value):
 @click.option('--count', '-c', callback=validate_count, default='1')
 @click.option('--name', '-n', default=None,
               help='Provide a specific name instead of an UUID for this jail')
+@click.option('--newmac', '-N', is_flag=True, default=False,
+              help='Regenerate the clones MAC address')
 @click.option('--uuid', '-u', '_uuid', default=None,
               help='Provide a specific UUID for this jail')
 @click.option('--thickjail', '-T', is_flag=True, default=False,
               help='Set the new jail type to a thickjail. Thickjails'
                    ' are copied (not cloned) from the specified target.')
-def cli(source, props, count, name, _uuid, thickjail):
+def cli(source, props, count, name, _uuid, thickjail, newmac):
     # At this point we don't care
     _uuid = name if name else _uuid
+    props = list(props)
 
-    err, msg = ioc.IOCage(jail=source).create(
-        source, props, count, _uuid=_uuid, thickjail=thickjail, clone=True
-    )
+    if newmac:
+        for p in ('vnet0', 'vnet1', 'vnet2', 'vnet3'):
+            props.append(f'{p}_mac=none')
 
-    if err:
-        ioc_common.logit({
-            'level': 'EXCEPTION',
-            'message': msg
-        })
+    try:
+        ioc.IOCage(jail=source, skip_jails=True).create(
+            source, props, count, _uuid=_uuid, thickjail=thickjail, clone=True
+        )
+    except BaseException:
+        # SystemExit or other friends, we don't care, just want to cleanup
+        pool = ioc.PoolAndDataset().get_pool()
+        su.run(
+            ['zfs', 'destroy', '-r', f'{pool}/iocage/jails/{source}@{_uuid}']
+         )
+        raise

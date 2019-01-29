@@ -2018,7 +2018,7 @@ class IOCJson(IOCConfiguration):
                                 {
                                     'level': 'EXCEPTION',
                                     'message':
-                                    'Please Enter two valid and different '
+                                    'Please enter two valid and different '
                                     'space/comma-delimited MAC addresses for '
                                     f'{key}.'
                                 },
