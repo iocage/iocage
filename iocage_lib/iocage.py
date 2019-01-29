@@ -1840,10 +1840,9 @@ class IOCage(ioc_json.IOCZFS):
         jail_type = conf["type"]
         updateable = True if jail_type in (
             "jail", "clonejail", "pluginv2") else False
-        date = datetime.datetime.utcnow().strftime('%F')
 
         if updateable:
-            self.snapshot(f'ioc_update_{date}')
+            self.snapshot(f'ioc_update_{conf["release"]}')
 
             if not status:
                 self.silent = True
