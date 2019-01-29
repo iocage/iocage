@@ -1654,16 +1654,6 @@ class IOCJson(IOCConfiguration):
                     self.json_check_prop(key, value, conf)
                     self.json_write(conf)
 
-                    iocage_lib.ioc_common.logit(
-                        {
-                            "level":
-                            "INFO",
-                            "message":
-                            f"Property: {key} has been updated to {value}"
-                        },
-                        _callback=self.callback,
-                        silent=self.silent)
-
                     self.zfs_set_property(new_location, "readonly", "on")
 
                     return
@@ -1683,7 +1673,8 @@ class IOCJson(IOCConfiguration):
                             },
                             _callback=self.callback,
                             silent=self.silent)
-                        self.lgr.disabled = True
+
+                    return
 
             if key[:8] == "jail_zfs" or key == 'dhcp':
                 if status:
@@ -1707,7 +1698,7 @@ class IOCJson(IOCConfiguration):
             iocage_lib.ioc_common.logit(
                 {
                     "level": "INFO",
-                    "message": f"Property: {key} has been updated to {value}"
+                    "message": f'{key}: {full_conf[key]} -> {value}'
                 },
                 _callback=self.callback,
                 silent=self.silent)
