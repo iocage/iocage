@@ -39,8 +39,8 @@ import iocage_lib.ioc_check as ioc_check
 from click import core
 
 core._verify_python3_env = lambda: None
-user_locale = os.environ.get("LANG", "en_US.UTF-8")
-locale.setlocale(locale.LC_ALL, user_locale)
+sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf8', buffering=1)
+sys.stderr = open(sys.stdout.fileno(), mode='w', encoding='utf8', buffering=1)
 
 # @formatter:off
 # Sometimes SIGINT won't be installed.
