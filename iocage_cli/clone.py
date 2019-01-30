@@ -69,14 +69,6 @@ def cli(source, props, count, name, _uuid, thickjail, newmac):
         for p in ('vnet0', 'vnet1', 'vnet2', 'vnet3'):
             props.append(f'{p}_mac=none')
 
-    try:
-        ioc.IOCage(jail=source, skip_jails=True).create(
-            source, props, count, _uuid=_uuid, thickjail=thickjail, clone=True
-        )
-    except BaseException:
-        # SystemExit or other friends, we don't care, just want to cleanup
-        pool = ioc.PoolAndDataset().get_pool()
-        su.run(
-            ['zfs', 'destroy', '-r', f'{pool}/iocage/jails/{source}@{_uuid}']
-         )
-        raise
+    ioc.IOCage(jail=source, skip_jails=True).create(
+        source, props, count, _uuid=_uuid, thickjail=thickjail, clone=True
+    )

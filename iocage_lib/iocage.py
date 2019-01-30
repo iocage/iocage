@@ -645,7 +645,14 @@ class IOCage(ioc_json.IOCZFS):
                     clone=clone,
                     thickconfig=thickconfig
                 ).create_jail()
-        except RuntimeError:
+        except BaseException:
+            if clone:
+                su.run(
+                    [
+                        'zfs', 'destroy', '-r',
+                        f'{self.pool}/iocage/jails/{clone}@{_uuid}'
+                     ]
+                 )
             raise
 
         return False, None
