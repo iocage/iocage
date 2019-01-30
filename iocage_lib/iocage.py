@@ -651,8 +651,8 @@ class IOCage(ioc_json.IOCZFS):
                     [
                         'zfs', 'destroy', '-r',
                         f'{self.pool}/iocage/jails/{clone}@{_uuid}'
-                     ]
-                 )
+                    ]
+                )
             raise
 
         return False, None

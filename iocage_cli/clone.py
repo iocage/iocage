@@ -26,7 +26,6 @@ import click
 
 import iocage_lib.ioc_common as ioc_common
 import iocage_lib.iocage as ioc
-import subprocess as su
 
 __rootcmd__ = True
 
