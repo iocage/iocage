@@ -52,21 +52,22 @@ def validate_count(ctx, param, value):
 @click.option('--count', '-c', callback=validate_count, default='1')
 @click.option('--name', '-n', default=None,
               help='Provide a specific name instead of an UUID for this jail')
+@click.option('--newmac', '-N', is_flag=True, default=False,
+              help='Regenerate the clones MAC address')
 @click.option('--uuid', '-u', '_uuid', default=None,
               help='Provide a specific UUID for this jail')
 @click.option('--thickjail', '-T', is_flag=True, default=False,
               help='Set the new jail type to a thickjail. Thickjails'
                    ' are copied (not cloned) from the specified target.')
-def cli(source, props, count, name, _uuid, thickjail):
+def cli(source, props, count, name, _uuid, thickjail, newmac):
     # At this point we don't care
     _uuid = name if name else _uuid
+    props = list(props)
 
-    err, msg = ioc.IOCage(jail=source).create(
+    if newmac:
+        for p in ('vnet0', 'vnet1', 'vnet2', 'vnet3'):
+            props.append(f'{p}_mac=none')
+
+    ioc.IOCage(jail=source, skip_jails=True).create(
         source, props, count, _uuid=_uuid, thickjail=thickjail, clone=True
     )
-
-    if err:
-        ioc_common.logit({
-            'level': 'EXCEPTION',
-            'message': msg
-        })
