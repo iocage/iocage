@@ -429,7 +429,7 @@ class Jail(Resource):
         props = self.jail_dataset['properties']
 
         ip4 = self.config.get('ip4_addr', 'none')
-        if self.config.get('dhcp', 'off') == 'on':
+        if self.config.get('dhcp', 0):
             if full and self.running:
                 ip4 = f'epair0b|{self.ips[0]}'
             else:
@@ -473,7 +473,7 @@ class Jail(Resource):
             'name': self.short_name if short_name else self.name,
             'jid': self.jid or 9999999,
             'state': 'up' if self.running else 'down',
-            'boot': self.config.get('boot', 'off'),
+            'boot': 'on' if self.config.get('boot', 0) else 'off',
             'type': 'jail' if not self.is_template else 'template',
             # TODO: Add support for plugins
             'ip6': '-',  # FIXME: Change when ip6 tests are added
@@ -596,7 +596,7 @@ class Jail(Resource):
 
     @property
     def is_basejail(self):
-        return self.config.get('basejail', 'no') == 'yes'
+        return self.config.get('basejail', 0)
 
     @property
     def is_empty(self):
@@ -610,7 +610,7 @@ class Jail(Resource):
 
     @property
     def is_rcjail(self):
-        return self.config.get('boot', 'off') == 'on'
+        return self.config.get('boot', 0)
 
     @property
     def is_cloned(self):

@@ -118,7 +118,7 @@ def test_07_create_basejail(release, jail, invoke_cli):
 
     jail = jail('basejail')
     assert jail.exists is True
-    assert jail.is_basejail is True
+    assert jail.is_basejail
 
 
 @require_root

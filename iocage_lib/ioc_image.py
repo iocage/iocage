@@ -260,7 +260,7 @@ class IOCImage(object):
             silent=True).json_set_value("type=jail")
         iocage_lib.ioc_json.IOCJson(
             f"{self.iocroot}/jails/{uuid}", silent=True).json_set_value(
-                "template=no", _import=True)
+                "template=0", _import=True)
 
         msg = f"\nImported: {uuid}"
         iocage_lib.ioc_common.logit(

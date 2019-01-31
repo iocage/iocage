@@ -148,7 +148,7 @@ class IOCStop(object):
                 finally:
                     f.write(success or error)
 
-            if self.conf["jail_zfs"] == "on":
+            if self.conf['jail_zfs']:
                 for jdataset in self.conf["jail_zfs_dataset"].split():
                     jdataset = jdataset.strip()
 
@@ -214,10 +214,10 @@ class IOCStop(object):
         # related resources if force is true, though we won't raise an
         # exception in that case
         # They haven't set an IP address, this interface won't exist
-        destroy_nic = True if dhcp == "on" or ip4_addr != "none" or \
-            ip6_addr != "none" else False
+        destroy_nic = True if dhcp or ip4_addr != 'none' or \
+            ip6_addr != 'none' else False
 
-        if vnet == "on" and destroy_nic:
+        if vnet and destroy_nic:
             vnet_err = []
 
             for nic in self.nics.split(","):

@@ -126,11 +126,13 @@ class IOCList(object):
 
             uuid = conf["host_hostuuid"]
             ip4 = conf.get('ip4_addr', 'none')
-            dhcp = True if conf.get('dhcp') == 'on' or 'DHCP' in \
-                ip4.upper() else False
+            dhcp = True if iocage_lib.ioc_common.check_truthy(
+                conf.get('dhcp', 0)) or 'DHCP' in ip4.upper() else False
             ip4 = ip4 if not dhcp else 'DHCP'
 
-            if self.basejail_only and conf.get('basejail', 'no') != 'yes':
+            if self.basejail_only and not iocage_lib.ioc_common.check_truthy(
+                conf.get('basejail', 0)
+            ):
                 continue
 
             jail_list.append([uuid, ip4])
@@ -183,7 +185,9 @@ class IOCList(object):
                 state = 'CORRUPT'
                 jid = '-'
 
-            if self.basejail_only and conf.get('basejail', 'no') != 'yes':
+            if self.basejail_only and not iocage_lib.ioc_common.check_truthy(
+                conf.get('basejail', 0)
+            ):
                 continue
 
             uuid_full = conf["host_hostuuid"]
@@ -209,10 +213,12 @@ class IOCList(object):
             except IndexError:
                 short_ip4 = full_ip4 if full_ip4 != "none" else "-"
 
-            boot = conf["boot"]
+            boot = 'on' if iocage_lib.ioc_common.check_truthy(
+                conf.get('boot', 0)) else 'off'
             jail_type = conf["type"]
             full_release = conf["release"]
-            basejail = conf.get('basejail', 'no')
+            basejail = 'yes' if iocage_lib.ioc_common.check_truthy(
+                conf.get('basejail', 0)) else 'no'
 
             if "HBSD" in full_release:
                 full_release = re.sub(r"\W\w.", "-", full_release)
@@ -253,7 +259,9 @@ class IOCList(object):
             if "release" in template.lower() or "stable" in template.lower():
                 template = "-"
 
-            if conf["dhcp"] == "on" and status and os.geteuid() == 0:
+            if iocage_lib.ioc_common.check_truthy(
+                conf['dhcp']
+            ) and status and os.geteuid() == 0:
                 interface = conf["interfaces"].split(",")[0].split(":")[0]
 
                 if interface == "vnet0":
@@ -273,10 +281,14 @@ class IOCList(object):
                         full_ip4 = f'DHCP - Network Issue: {e}'
                     else:
                         full_ip4 = f'DHCP - Failed Parsing: {e}'
-            elif conf["dhcp"] == "on" and not status:
+            elif iocage_lib.ioc_common.check_truthy(
+                conf['dhcp']
+            ) and not status:
                 short_ip4 = "DHCP"
                 full_ip4 = "DHCP (not running)"
-            elif conf["dhcp"] == "on" and os.geteuid() != 0:
+            elif iocage_lib.ioc_common.check_truthy(
+                conf['dhcp']
+            ) and os.geteuid() != 0:
                 short_ip4 = "DHCP"
                 full_ip4 = "DHCP (running -- address requires root)"
 
