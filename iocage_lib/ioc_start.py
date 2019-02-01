@@ -148,8 +148,8 @@ class IOCStart(object):
         bpf = self.conf["bpf"]
         dhcp = self.conf["dhcp"]
         rtsold = self.conf['rtsold']
-        wants_dhcp = True if dhcp or 'DHCP' in self.conf['ip4_addr'].upper(
-            ) else False
+        wants_dhcp = True if dhcp or 'DHCP' in self.conf[
+            'ip4_addr'].upper() else False
         vnet_interfaces = self.conf["vnet_interfaces"]
         ip6_addr = self.conf["ip6_addr"]
         prop_missing = False
