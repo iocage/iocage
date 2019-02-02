@@ -1135,15 +1135,17 @@ file from the host.
 A set of IPv6 options for the prison, the counterparts to ip4_addr,
 ip4_saddrsel and ip4 above.
 .It Pf interfaces= Op vnet0:bridge0,vnet1:bridge1 | vnet0:bridge0
-By default, there are two interfaces specified with their bridge
-association.
-Up to four interfaces are supported.
+By default, one interface is specified, associated with bridge0.
+Up to four interfaces are supported, vnet[0-3].
 Interface configurations are separated by commas.
-The format is interface:bridge, where the left value is the virtual
-VNET interface name and the right value is the bridge name where the
-virtual interface should be attached.
+The format is interface:bridge[:host_interface], where the first value
+is the virtual VNET interface name, the second value is the bridge
+name where the virtual interface should be attached, and the OPTIONAL
+third value is a host interface that will be attached to the bridge.
+If no third value is specified, the host interface to be attached to
+the bridge is determined using vnet_default_interface.
 .Pp
-Default: vnet0:bridge0,vnet1:bridge1
+Default: vnet0:bridge0
 .Pp
 Source: local
 .It host_domainname=
@@ -1848,7 +1850,7 @@ Default: none
 Source:
 .Xr jail(8)
 .It Pf vnet_default_interface= Op none | Ar INTERFACE
-Default network interface used for the VNET bridge interface in the jail.
+Default network interface used for a VNET bridge interface in the jail.
 Only takes effect when VNET is set.
 .Pp
 Default: none

@@ -817,11 +817,18 @@ class IOCStart(object):
 
         for nic_def in nic_defs:
 
-            nic, bridge = nic_def.split(":")
+            nic_def = nic_def.split(":")
+            nic = nic_def[0]
+            bridge = nic_def[1]
+            default_if = (nic_def[2] if len(nic_def) > 2
+                          else self.get('vnet_default_interface'))
 
             try:
-                membermtu = self.find_bridge_mtu(bridge)
-                dhcp = self.get('dhcp')
+                err = self.start_network_vnet_bridge(bridge, default_if)
+                if err:
+                    errors.append(err)
+
+                dhcp = self.get("dhcp")
 
                 ifaces = []
 
@@ -846,8 +853,8 @@ class IOCStart(object):
                             continue
 
                         if iface not in ifaces:
-                            err = self.start_network_vnet_iface(nic, bridge,
-                                                                membermtu, jid)
+                            err = self.start_network_vnet_iface(nic,
+                                                                bridge, jid)
                             if err:
                                 errors.append(err)
 
@@ -863,7 +870,38 @@ class IOCStart(object):
         if len(errors) != 0:
             return errors
 
-    def start_network_vnet_iface(self, nic, bridge, mtu, jid):
+    def start_network_vnet_bridge(self, bridge, default_if):
+        """
+        Create the bridge and add a default interface, if defined
+
+        :param bridge: The bridge to attach the VNET interface
+        :param default_if: The host network interface to attach to the bridge
+        :return: If an error occurs it returns the error. Otherwise, it's None
+        """
+        try:
+            if default_if == 'auto':
+                default_if = self.get_default_gateway()[1]
+
+            bridge_cmd = ["ifconfig", bridge, "create"]
+            if default_if != 'none':
+                if default_if not in netifaces.interfaces():
+                    iocage_lib.ioc_common.logit(
+                        {
+                            'level': 'EXCEPTION',
+                            'message':
+                            f'Interface {default_if} cannot be added '
+                            f'to {bridge} because it does not exist.'
+                        },
+                        _callback=self.callback,
+                        silent=self.silent
+                    )
+                bridge_cmd += ["addm", default_if]
+            su.check_call(bridge_cmd, stdout=su.PIPE, stderr=su.PIPE)
+        except su.CalledProcessError:
+            # The bridge already exists, this is just best effort.
+            pass
+
+    def start_network_vnet_iface(self, nic, bridge, jid):
         """
         The real meat and potatoes for starting a VNET interface.
 
@@ -890,6 +928,12 @@ class IOCStart(object):
             jail_nic = nic
 
         try:
+            # Only try to get the MTU from the first
+            # bridge interface after (maybe) adding the
+            # vnet_default_interface, but before adding
+            # this jail's interface
+            mtu = self.find_bridge_mtu(bridge)
+
             # Host
             iocage_lib.ioc_common.checkoutput(
                 [
@@ -992,14 +1036,14 @@ class IOCStart(object):
         if ipv6:
             ifconfig = [iface, 'inet6', ip, 'up']
             # set route to none if this is not the first interface
-            if iface.rsplit('epair')[1][0] == '0':
+            if iface.rsplit('epair')[1][0] == '0' and defaultgw != 'none':
                 route = ['add', '-6', 'default', defaultgw]
             else:
                 route = 'none'
         else:
             ifconfig = [iface, ip, 'up']
             # set route to none if this is not the first interface
-            if iface.rsplit('epair')[1][0] == '0':
+            if iface.rsplit('epair')[1][0] == '0' and defaultgw != 'none':
                 route = ['add', 'default', defaultgw]
             else:
                 route = 'none'
@@ -1162,34 +1206,6 @@ class IOCStart(object):
         ]
 
     def find_bridge_mtu(self, bridge):
-        if self.unit_test:
-            dhcp = 0
-            wants_dhcp = False
-        else:
-            dhcp = self.get('dhcp')
-            wants_dhcp = True if dhcp or 'DHCP' in self.get(
-                'ip4_addr').upper() else False
-
-        try:
-            if wants_dhcp:
-                # Let's get the default vnet interface
-                default_if = self.get('vnet_default_interface')
-                if default_if == 'auto':
-                    default_if = self.get_default_gateway()[1]
-
-                if default_if != 'none':
-                    bridge_cmd = [
-                        "ifconfig", bridge, "create", "addm", default_if
-                    ]
-                    su.check_call(bridge_cmd, stdout=su.PIPE, stderr=su.PIPE)
-
-            else:
-                bridge_cmd = ["ifconfig", bridge, "create", "addm"]
-                su.check_call(bridge_cmd, stdout=su.PIPE, stderr=su.PIPE)
-        except su.CalledProcessError:
-            # The bridge already exists, this is just best effort.
-            pass
-
         memberif = self.get_bridge_members(bridge)
         if not memberif:
             return '1500'

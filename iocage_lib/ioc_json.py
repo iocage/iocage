@@ -2135,7 +2135,7 @@ class IOCJson(IOCConfiguration):
 
         props = {
             # Network properties
-            "interfaces": (":", ","),
+            "interfaces": ("string", ),
             "host_domainname": ("string", ),
             "host_hostname": ("string", ),
             "exec_fib": ("string", ),
@@ -2410,6 +2410,37 @@ class IOCJson(IOCConfiguration):
                 elif key == 'cpuset':
                     IOCCpuset.validate_cpuset_prop(value)
 
+                elif key == 'interfaces':
+                    for iface in value.split(','):
+                        if ':' not in value:
+                            iocage_lib.ioc_common.logit(
+                                {
+                                    'level': 'EXCEPTION',
+                                    'message':
+                                    "Interfaces must be specified as a pair "
+                                    "or a triplet that includes a host "
+                                    "interface to be on the bridge.\n"
+                                    "EXAMPLE: vnet0:bridge0,vnet1:bridge1:em0"
+                                },
+                                _callback=self.callback,
+                                silent=self.silent
+                            )
+                        if (iface.count(':') == 2 and
+                                iface.split(':')[2]
+                                not in netifaces.interfaces()):
+                            iocage_lib.ioc_common.logit(
+                                {
+                                    'level': 'EXCEPTION',
+                                    'message':
+                                    f'Interface {iface.split(":")[2]} '
+                                    'does not exist. '
+                                    'Please provide a valid NIC to be added '
+                                    f'to {iface.split(":")[1]}'
+                                },
+                                _callback=self.callback,
+                                silent=self.silent
+                            )
+
                 return value, conf
             else:
                 err = f"{value} is not a valid value for {key}.\n"
@@ -2417,9 +2448,6 @@ class IOCJson(IOCConfiguration):
                 if key not in ("interfaces", "memoryuse"):
                     msg = f"Value must be {' or '.join(props[key])}"
 
-                elif key == "interfaces":
-                    msg = "Interfaces must be specified as a pair.\n" \
-                          "EXAMPLE: vnet0:bridge0, vnet1:bridge1"
                 elif key == "memoryuse":
                     msg = "memoryuse requires at minimum a pair.\nEXAMPLE: " \
                           "8g:log"

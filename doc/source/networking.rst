@@ -163,6 +163,16 @@ Be sure the default gateway knows the route back to the VNET subnets.
 If using VLAN interfaces for the jail host, add the VLAN interface AND
 parent interface of the VLAN as bridge members.
 
+**Jails on multiple physical interfaces**
+
+To have a jail that is multi-homed, it is possible to specify different
+host interfaces per VNET adapter:
+
+:samp:`iocage set interfaces="vnet0:bridge0:bge0,vnet1:bridge1:bge1" examplejail`
+
+:samp:`bridge0` and :samp:`bridge1` must still be created by adding them to
+:samp:`cloned_interfaces` in :file:`/etc/rc.conf`
+
 .. index:: Configure Network Interfaces
 .. _Configuring Network Interfaces:
 
