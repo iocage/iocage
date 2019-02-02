@@ -240,9 +240,14 @@ class IOCStop(object):
             for nic in self.nics.split(","):
                 nic = nic.split(":")[0]
                 try:
-                    iocage_lib.ioc_common.checkoutput(
-                        ["ifconfig", f"{nic}.{self.jid}", "destroy"],
-                        stderr=su.STDOUT)
+                    if self.conf['netgraph']:
+                        iocage_lib.ioc_common.checkoutput(
+                            ["ngctl", "shutdown", f"{nic}_{self.jid}:"],
+                            stderr=su.STDOUT)
+                    else:
+                        iocage_lib.ioc_common.checkoutput(
+                            ["ifconfig", f"{nic}.{self.jid}", "destroy"],
+                            stderr=su.STDOUT)
                 except su.CalledProcessError as err:
                     vnet_err.append(err.output.decode().rstrip())
 

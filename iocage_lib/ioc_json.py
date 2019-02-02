@@ -594,7 +594,7 @@ class IOCConfiguration(IOCZFS):
     @staticmethod
     def get_version():
         """Sets the iocage configuration version."""
-        version = '19'
+        version = '20'
 
         return version
 
@@ -934,6 +934,9 @@ class IOCConfiguration(IOCZFS):
         conf.update(
             {k: 'off' for k in IOCRCTL.types if not conf.get(k)}
         )
+        # Version 20 keys
+        if not conf.get('netgraph'):
+            conf['netgraph'] = 0
 
         if not default:
             conf.update(jail_conf)
@@ -1234,6 +1237,7 @@ class IOCConfiguration(IOCZFS):
             'mount_linprocfs': 0,
             'count': '1',
             'vnet': 0,
+            'netgraph': 0,
             'basejail': 0,
             'comment': 'none',
             'host_time': 1,
@@ -1324,6 +1328,7 @@ class IOCJson(IOCConfiguration):
             'basejail',
             'dhcp',
             'vnet',
+            'netgraph',
             'rtsold',
             'jail_zfs',
             'hostid_strict_check',
@@ -1987,12 +1992,12 @@ class IOCJson(IOCConfiguration):
                         if ip and value.lower() == "none":
                             return
 
-                        if key == "vnet":
-                            # We can't switch vnet dynamically
+                        if key in ("vnet", "netgraph",):
+                            # We can't switch vnet or netgraph dynamically
                             iocage_lib.ioc_common.logit(
                                 {
                                     'level': 'INFO',
-                                    'message': 'vnet changes require a jail'
+                                    'message': f'{key} changes require a jail'
                                                ' restart'
                                 },
                                 _callback=self.callback,
@@ -2141,6 +2146,7 @@ class IOCJson(IOCConfiguration):
             "mount_linprocfs": truth_variations,
             "vnet": truth_variations,
             "vnet_default_interface": ("string",),
+            "netgraph": truth_variations,
             "template": truth_variations,
             "comment": ("string", ),
             "host_time": truth_variations,
