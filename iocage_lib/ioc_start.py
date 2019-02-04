@@ -583,14 +583,15 @@ class IOCStart(object):
 
         vnet_default_interface = self.get('vnet_default_interface')
         if (
+                vnet_default_interface != 'auto' and
                 vnet_default_interface != 'none' and
                 vnet_default_interface not in netifaces.interfaces()
         ):
             # Let's not go into starting a vnet at all if the default
             # interface is supplied incorrectly
             return [
-                'Set property "vnet_default_interface" to "none" or a valid'
-                'interface e.g "lagg0"'
+                'Set property "vnet_default_interface" to "auto", "none" or a'
+                'valid interface e.g "lagg0"'
             ]
 
         for nic in nics:
@@ -672,7 +673,7 @@ class IOCStart(object):
         :return: If an error occurs it returns the error. Otherwise, it's None
         """
         vnet_default_interface = self.get('vnet_default_interface')
-        if vnet_default_interface == 'none':
+        if vnet_default_interface == 'auto':
             vnet_default_interface = self.get_default_gateway()[1]
 
         mac_a, mac_b = self.__start_generate_vnet_mac__(nic)
@@ -750,10 +751,11 @@ class IOCStart(object):
             try:
                 # Host
                 # Host interface as supplied by user also needs to be on the bridge
-                iocage_lib.ioc_common.checkoutput(
-                    ["ifconfig", bridge, "addm", vnet_default_interface],
-                    stderr=su.STDOUT
-                )
+                if vnet_default_interface != 'none':
+                    iocage_lib.ioc_common.checkoutput(
+                        ["ifconfig", bridge, "addm", vnet_default_interface],
+                        stderr=su.STDOUT
+                    )
             except su.CalledProcessError:
                 # Already exists
                 pass
@@ -959,12 +961,14 @@ class IOCStart(object):
             if dhcp == "on":
                 # Let's get the default vnet interface
                 default_if = self.get('vnet_default_interface')
-                if default_if == 'none':
+                if default_if == 'auto':
                     default_if = self.get_default_gateway()[1]
 
-                bridge_cmd = [
-                    "ifconfig", bridge, "create", "addm", default_if
-                ]
+                if default_if != 'none':
+                    bridge_cmd = [
+                        "ifconfig", bridge, "create", "addm", default_if
+                    ]
+
             else:
                 bridge_cmd = ["ifconfig", bridge, "create", "addm"]
 
