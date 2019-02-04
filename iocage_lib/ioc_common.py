@@ -353,7 +353,7 @@ def sort_boot(boot):
     """Sort the list by boot, then by name."""
     # Lame hack to get on above off.
     # 0 is on, 1 is off
-    _boot = 0 if boot[2] != "off" else 1
+    _boot = 0 if check_truthy(boot[2]) else 1
     return (_boot,) + get_name_sortkey(boot[1])
 
 
@@ -777,11 +777,11 @@ def generate_devfs_ruleset(conf, paths=None, includes=None, callback=None,
         devfs_dict.update(paths)
 
     # We may end up setting all of these.
-    if conf['allow_mount_fusefs'] == '1':
+    if check_truthy(conf['allow_mount_fusefs']):
         devfs_dict['fuse'] = None
-    if conf['bpf'] == 'yes':
+    if check_truthy(conf['bpf']):
         devfs_dict['bpf*'] = None
-    if conf['allow_tun'] == '1':
+    if check_truthy(conf['allow_tun']):
         devfs_dict['tun*'] = None
 
     for include in devfs_includes:
@@ -902,3 +902,19 @@ def get_jail_freebsd_version(path, release):
                         2].strip('"')
 
     return new_release
+
+
+def check_truthy(value):
+    """Checks if the given value is 'True'"""
+    if str(value) in ('1', 'on', 'yes', 'true'):
+        return 1
+
+    return 0
+
+
+def construct_truthy(item, inverse=False):
+    """Will return an iterable with all truthy variations"""
+    if inverse:
+        return (f'{item}=off', f'{item}=no', f'{item}=0', f'{item}=false')
+
+    return (f'{item}=on', f'{item}=yes', f'{item}=1', f'{item}=true')
