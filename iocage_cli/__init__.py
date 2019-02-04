@@ -22,6 +22,8 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """The main CLI for ioc."""
+
+import locale
 import logging
 import logging.config
 import logging.handlers
@@ -38,8 +40,7 @@ import iocage_lib.ioc_check as ioc_check
 from click import core
 
 core._verify_python3_env = lambda: None
-sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf8', buffering=1)
-sys.stderr = open(sys.stdout.fileno(), mode='w', encoding='utf8', buffering=1)
+locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
 
 # @formatter:off
 # Sometimes SIGINT won't be installed.
