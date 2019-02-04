@@ -136,7 +136,9 @@ class IOCPlugin(object):
                 for prop in props:
                     key, _, value = prop.partition("=")
 
-                    if key == "dhcp" and value == "on":
+                    if key == 'dhcp' and iocage_lib.ioc_common.check_truthy(
+                        value
+                    ):
                         if 'bpf*' not in plugin_devfs_paths:
                             plugin_devfs_paths["bpf*"] = None
 
@@ -363,7 +365,7 @@ class IOCPlugin(object):
         # fetch that bypasses the more naive check in cli/fetch
 
         if _conf["ip4_addr"] == "none" and _conf["ip6_addr"] == "none" and \
-           _conf["dhcp"] != "on":
+           not iocage_lib.ioc_common.check_truthy(_conf['dhcp']):
             iocage_lib.ioc_common.logit(
                 {
                     "level": "ERROR",

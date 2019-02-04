@@ -611,7 +611,7 @@ class IOCConfiguration(IOCZFS):
         """Write a JSON file at the location given with supplied data."""
         # Templates need to be set r/w and then back to r/o
         try:
-            template = True if data['template'] != 'no' else False
+            template = iocage_lib.ioc_common.check_truthy(data['template'])
             jail_dataset = self.zfs.get_dataset_by_path(self.location).name \
                 if template else None
         except KeyError:
@@ -663,7 +663,6 @@ class IOCConfiguration(IOCZFS):
         Returns a bool if it updated anything and it needs writing
         """
         original_conf = conf.copy()
-        hostid_strict_check = conf.get('hostid_strict_check')
 
         if conf.get('ip4') == 'none':
             conf['ip4'] = 'disable'
@@ -671,10 +670,10 @@ class IOCConfiguration(IOCZFS):
         if conf.get('ip6') == 'none':
             conf['ip6'] = 'disable'
 
-        if hostid_strict_check == 'yes':
-            conf['hostid_strict_check'] = 'on'
-        elif hostid_strict_check == 'no':
-            conf['hostid_strict_check'] = 'off'
+        for p, v in conf.items():
+            # We want these to rest on disk as 1/0
+            if p in self.truthy_props:
+                conf[p] = 1 if iocage_lib.ioc_common.check_truthy(v) else 0
 
         return True if original_conf != conf else False
 
@@ -722,7 +721,7 @@ class IOCConfiguration(IOCZFS):
 
         # Version 4 keys
         if not conf.get('basejail'):
-            conf['basejail'] = 'no'
+            conf['basejail'] = 0
 
         # Version 5 keys
         if not conf.get('comment'):
@@ -730,7 +729,7 @@ class IOCConfiguration(IOCZFS):
 
         # Version 6 keys
         if not conf.get('host_time'):
-            conf['host_time'] = 'yes'
+            conf['host_time'] = 1
 
         # Version 7 keys
         if not conf.get('depends'):
@@ -738,9 +737,9 @@ class IOCConfiguration(IOCZFS):
 
         # Version 9 keys
         if not conf.get('dhcp'):
-            conf['dhcp'] = 'off'
+            conf['dhcp'] = 0
         if not conf.get('bpf'):
-            conf['bpf'] = 'no'
+            conf['bpf'] = 0
 
         # Version 10 keys
         if not conf.get('vnet_interfaces'):
@@ -748,11 +747,11 @@ class IOCConfiguration(IOCZFS):
 
         # Version 11 keys
         if not conf.get('hostid_strict_check'):
-            conf['hostid_strict_check'] = 'off'
+            conf['hostid_strict_check'] = 0
 
         # Version 12 keys
         if not conf.get('allow_mlock'):
-            conf['allow_mlock'] = '0'
+            conf['allow_mlock'] = 0
 
         # Version 13 keys
         if not conf.get('vnet_default_interface'):
@@ -766,19 +765,19 @@ class IOCConfiguration(IOCZFS):
 
         # Version 14 keys
         if not conf.get('allow_tun'):
-            conf['allow_tun'] = '0'
+            conf['allow_tun'] = 0
 
         # Version 15 keys
         if not conf.get('allow_mount_fusefs'):
-            conf['allow_mount_fusefs'] = '0'
+            conf['allow_mount_fusefs'] = 0
 
         # Version 16 keys
         if not conf.get('rtsold'):
-            conf['rtsold'] = 'off'
+            conf['rtsold'] = 0
 
         # Version 17 keys
         if not conf.get('allow_vmm'):
-            conf['allow_vmm'] = '0'
+            conf['allow_vmm'] = 0
 
         if not default:
             conf.update(jail_conf)
@@ -790,7 +789,7 @@ class IOCConfiguration(IOCZFS):
         Checks the jails configuration and migrates anything needed
         """
         release = conf.get('release', None)
-        template = conf.get('template', 'no')
+        template = conf.get('template', 0)
         renamed = False
 
         if release is None:
@@ -812,7 +811,7 @@ class IOCConfiguration(IOCZFS):
         )
         if not freebsd_version.is_file():
             try:
-                if template == 'yes':
+                if iocage_lib.ioc_common.check_truthy(template):
                     freebsd_version = pathlib.Path(
                         f'{self.iocroot}/templates/'
                         f"{conf['host_hostuuid']}/root/bin/freebsd-version"
@@ -1003,14 +1002,14 @@ class IOCConfiguration(IOCZFS):
             'exec_poststart': '/usr/bin/true',
             'exec_prestop': '/usr/bin/true',
             'exec_poststop': '/usr/bin/true',
-            'exec_clean': '1',
+            'exec_clean': 1,
             'exec_timeout': '60',
             'stop_timeout': '30',
             'exec_jail_user': 'root',
             'exec_system_jail_user': '0',
             'exec_system_user': 'root',
-            'mount_devfs': '1',
-            'mount_fdescfs': '1',
+            'mount_devfs': 1,
+            'mount_fdescfs': 1,
             'enforce_statfs': '2',
             'children_max': '0',
             'login_flags': '-f root',
@@ -1018,22 +1017,22 @@ class IOCConfiguration(IOCZFS):
             'sysvmsg': 'new',
             'sysvsem': 'new',
             'sysvshm': 'new',
-            'allow_set_hostname': '1',
-            'allow_sysvipc': '0',
-            'allow_raw_sockets': '0',
-            'allow_chflags': '0',
-            'allow_mlock': '0',
-            'allow_mount': '0',
-            'allow_mount_devfs': '0',
-            'allow_mount_fusefs': '0',
-            'allow_mount_nullfs': '0',
-            'allow_mount_procfs': '0',
-            'allow_mount_tmpfs': '0',
-            'allow_mount_zfs': '0',
-            'allow_quotas': '0',
-            'allow_socket_af': '0',
-            'allow_tun': '0',
-            'allow_vmm': '0',
+            'allow_set_hostname': 1,
+            'allow_sysvipc': 0,
+            'allow_raw_sockets': 0,
+            'allow_chflags': 0,
+            'allow_mlock': 0,
+            'allow_mount': 0,
+            'allow_mount_devfs': 0,
+            'allow_mount_fusefs': 0,
+            'allow_mount_nullfs': 0,
+            'allow_mount_procfs': 0,
+            'allow_mount_tmpfs': 0,
+            'allow_mount_zfs': 0,
+            'allow_quotas': 0,
+            'allow_socket_af': 0,
+            'allow_tun': 0,
+            'allow_vmm': 0,
             'cpuset': 'off',
             'rlimits': 'off',
             'memoryuse': 'off',
@@ -1057,25 +1056,25 @@ class IOCConfiguration(IOCZFS):
             'shmsize': 'off',
             'wallclock': 'off',
             'type': 'jail',
-            'bpf': 'no',
-            'dhcp': 'off',
-            'boot': 'off',
+            'bpf': 0,
+            'dhcp': 0,
+            'boot': 0,
             'notes': 'none',
             'owner': 'root',
             'priority': '99',
             'last_started': 'none',
-            'template': 'no',
+            'template': 0,
             'hostid': hostid,
-            'hostid_strict_check': 'off',
-            'jail_zfs': 'off',
+            'hostid_strict_check': 0,
+            'jail_zfs': 0,
             'jail_zfs_mountpoint': 'none',
-            'mount_procfs': '0',
-            'mount_linprocfs': '0',
+            'mount_procfs': 0,
+            'mount_linprocfs': 0,
             'count': '1',
-            'vnet': 'off',
-            'basejail': 'no',
+            'vnet': 0,
+            'basejail': 0,
             'comment': 'none',
-            'host_time': 'yes',
+            'host_time': 1,
             'sync_state': 'none',
             'sync_target': 'none',
             'sync_tgt_zpool': 'none',
@@ -1090,7 +1089,7 @@ class IOCConfiguration(IOCZFS):
             'reservation': 'none',
             'depends': 'none',
             'vnet_interfaces': 'none',
-            'rtsold': 'off'
+            'rtsold': 0
         }
 
         try:
@@ -1154,6 +1153,41 @@ class IOCJson(IOCConfiguration):
         self.cli = cli
         self.stop = stop
         self.suppress_log = suppress_log
+        self.truthy_props = [
+            'bpf',
+            'template',
+            'host_time',
+            'basejail',
+            'dhcp',
+            'vnet',
+            'rtsold',
+            'jail_zfs',
+            'hostid_strict_check',
+            'boot',
+            'exec_clean',
+            'mount_linprocfs',
+            'mount_procfs',
+            'allow_vmm',
+            'allow_tun',
+            'allow_socket_af',
+            'allow_quotas',
+            'allow_mount_zfs',
+            'allow_mount_tmpfs',
+            'allow_mount_procfs',
+            'allow_mount_nullfs',
+            'allow_mount_fusefs',
+            'allow_mount_devfs',
+            'allow_mount',
+            'allow_mlock',
+            'allow_chflags',
+            'allow_raw_sockets',
+            'allow_sysvipc',
+            'allow_set_hostname',
+            'mount_fdescfs',
+            'mount_devfs',
+            'ip6_saddrsel',
+            'ip4_saddrsel'
+        ]
         super().__init__(location, checking_datasets, silent, callback)
 
         try:
@@ -1188,6 +1222,11 @@ class IOCJson(IOCConfiguration):
             conf['devfs_ruleset'] = ruleset
 
         d_conf.update(conf)
+
+        for p, v in d_conf.items():
+            # We want to make sure these are ints
+            if p in self.truthy_props:
+                d_conf[p] = iocage_lib.ioc_common.check_truthy(v)
 
         return d_conf
 
@@ -1240,7 +1279,7 @@ class IOCJson(IOCConfiguration):
                 if value == "basejail":
                     # These were just clones on master.
                     value = "jail"
-                    key_and_value["basejail"] = "yes"
+                    key_and_value["basejail"] = 1
             elif key == "hostname":
                 hostname = props[f'{prop_prefix}:host_hostname']
 
@@ -1619,7 +1658,7 @@ class IOCJson(IOCConfiguration):
                                 _callback=self.callback,
                                 silent=self.silent)
 
-                if value == "yes":
+                if iocage_lib.ioc_common.check_truthy(value):
                     try:
                         jail_zfs_dataset = f"{self.pool}/" \
                             f"{conf['jail_zfs_dataset']}"
@@ -1670,7 +1709,7 @@ class IOCJson(IOCConfiguration):
                     self.zfs_set_property(new_location, "readonly", "on")
 
                     return
-                elif value == "no":
+                elif not iocage_lib.ioc_common.check_truthy(value):
                     if not _import:
                         self.zfs.get_dataset(new_location).rename(
                             old_location, False, True)
@@ -1707,11 +1746,16 @@ class IOCJson(IOCConfiguration):
         if not default:
             full_conf = self.get_full_config()
             value, conf = self.json_check_prop(key, value, conf)
+            old_value = full_conf[key] if key not in self.truthy_props else \
+                iocage_lib.ioc_common.check_truthy(full_conf[key])
+            display_value = value if key not in self.truthy_props else \
+                iocage_lib.ioc_common.check_truthy(value)
             self.json_write(conf)
+
             iocage_lib.ioc_common.logit(
                 {
                     "level": "INFO",
-                    "message": f'{key}: {full_conf[key]} -> {value}'
+                    "message": f'{key}: {old_value} -> {display_value}'
                 },
                 _callback=self.callback,
                 silent=self.silent)
@@ -1725,7 +1769,7 @@ class IOCJson(IOCConfiguration):
                     key = key.replace("_", ".")
 
                 if key in jail_params:
-                    if full_conf["vnet"] == "on" and (
+                    if full_conf['vnet'] and (
                         key == "ip4.addr" or key == "ip6.addr"
                     ):
                         return
@@ -1784,6 +1828,10 @@ class IOCJson(IOCConfiguration):
         Checks if the property matches known good values, if it's the
         CLI, deny setting any properties not in this list.
         """
+        truth_variations = (
+            '0', '1', 'off', 'on', 'no', 'yes', 'false', 'true'
+        )
+
         props = {
             # Network properties
             "interfaces": (":", ","),
@@ -1791,12 +1839,10 @@ class IOCJson(IOCConfiguration):
             "host_hostname": ("string", ),
             "exec_fib": ("string", ),
             "ip4_addr": ("string", ),
-            "ip4_saddrsel": (
-                "0",
-                "1", ),
+            "ip4_saddrsel": truth_variations,
             "ip4": ("new", "inherit", "disable"),
             "ip6_addr": ("string", ),
-            "ip6_saddrsel": ("0", "1"),
+            "ip6_saddrsel": truth_variations,
             "ip6": ("new", "inherit", "disable"),
             "defaultrouter": ("string", ),
             "defaultrouter6": ("string", ),
@@ -1814,14 +1860,14 @@ class IOCJson(IOCConfiguration):
             "exec_poststart": ("string", ),
             "exec_prestop": ("string", ),
             "exec_poststop": ("string", ),
-            "exec_clean": ("0", "1"),
+            "exec_clean": truth_variations,
             "exec_timeout": ("string", ),
             "stop_timeout": ("string", ),
             "exec_jail_user": ("string", ),
             "exec_system_jail_user": ("string", ),
             "exec_system_user": ("string", ),
-            "mount_devfs": ("0", "1"),
-            "mount_fdescfs": ("0", "1"),
+            "mount_devfs": truth_variations,
+            "mount_fdescfs": truth_variations,
             "enforce_statfs": ("0", "1", "2"),
             "children_max": ("string", ),
             "login_flags": ("string", ),
@@ -1829,21 +1875,21 @@ class IOCJson(IOCConfiguration):
             "sysvmsg": ("new", "inherit", "disable"),
             "sysvsem": ("new", "inherit", "disable"),
             "sysvshm": ("new", "inherit", "disable"),
-            "allow_set_hostname": ("0", "1"),
-            "allow_sysvipc": ("0", "1"),
-            "allow_raw_sockets": ("0", "1"),
-            "allow_chflags": ("0", "1"),
-            "allow_mlock": ("0", "1"),
-            "allow_mount": ("0", "1"),
-            "allow_mount_devfs": ("0", "1"),
-            "allow_mount_fusefs": ("0", "1"),
-            "allow_mount_nullfs": ("0", "1"),
-            "allow_mount_procfs": ("0", "1"),
-            "allow_mount_tmpfs": ("0", "1"),
-            "allow_mount_zfs": ("0", "1"),
-            "allow_quotas": ("0", "1"),
-            "allow_socket_af": ("0", "1"),
-            "allow_vmm": ("0", "1"),
+            "allow_set_hostname": truth_variations,
+            "allow_sysvipc": truth_variations,
+            "allow_raw_sockets": truth_variations,
+            "allow_chflags": truth_variations,
+            "allow_mlock": truth_variations,
+            "allow_mount": truth_variations,
+            "allow_mount_devfs": truth_variations,
+            "allow_mount_fusefs": truth_variations,
+            "allow_mount_nullfs": truth_variations,
+            "allow_mount_procfs": truth_variations,
+            "allow_mount_tmpfs": truth_variations,
+            "allow_mount_zfs": truth_variations,
+            "allow_quotas": truth_variations,
+            "allow_socket_af": truth_variations,
+            "allow_vmm": truth_variations,
             "vnet_interfaces": ("string", ),
             # RCTL limits
             "cpuset": ("off", "on"),
@@ -1869,27 +1915,27 @@ class IOCJson(IOCConfiguration):
             "shmsize": ("off", "on"),
             "wallclock": ("off", "on"),
             # Custom properties
-            "bpf": ("no", "yes"),
-            "dhcp": ("off", "on"),
-            "boot": ("off", "on"),
+            "bpf": truth_variations,
+            "dhcp": truth_variations,
+            "boot": truth_variations,
             "notes": ("string", ),
             "owner": ("string", ),
             "priority": str(tuple(range(1, 100))),
             "hostid": ("string", ),
-            "hostid_strict_check": ("off", "on"),
-            "jail_zfs": ("off", "on"),
+            "hostid_strict_check": truth_variations,
+            "jail_zfs": truth_variations,
             "jail_zfs_dataset": ("string", ),
             "jail_zfs_mountpoint": ("string", ),
-            "mount_procfs": ("0", "1"),
-            "mount_linprocfs": ("0", "1"),
-            "vnet": ("off", "on"),
+            "mount_procfs": truth_variations,
+            "mount_linprocfs": truth_variations,
+            "vnet": truth_variations,
             "vnet_default_interface": ("string",),
-            "template": ("no", "yes"),
+            "template": truth_variations,
             "comment": ("string", ),
-            "host_time": ("no", "yes"),
+            "host_time": truth_variations,
             "depends": ("string", ),
-            "allow_tun": ("0", "1"),
-            'rtsold': ('off', 'on')
+            "allow_tun": truth_variations,
+            'rtsold': truth_variations
         }
 
         zfs_props = {
@@ -1906,7 +1952,9 @@ class IOCJson(IOCConfiguration):
         }
 
         if key in zfs_props.keys():
-            if conf.get("template", "no") == "yes":
+            if iocage_lib.ioc_common.check_truthy(
+                conf.get('template', '0')
+            ):
                 _type = "templates"
             else:
                 _type = "jails"
@@ -1939,11 +1987,18 @@ class IOCJson(IOCConfiguration):
                     return value, conf
 
             if props[key][0] == 'string':
-                if key in ('ip4_addr', 'ip6_addr') and value != 'none':
+                if key in (
+                    'ip4_addr', 'ip6_addr'
+                ) and (
+                    value != 'none' and 'DHCP' not in value.upper() and
+                    'accept_rtadv' not in value.lower()
+                ):
                     # There are three possible formats here
                     # 1 - interface|ip/subnet
                     # 2 - interface|ip
                     # 3 - ip
+                    # 4 - interface|DHCP
+                    # 5 - interface|accept_rtadv
                     # All the while of course assuming that we can
                     # have more then one ip
                     if key == 'ip4_addr':
@@ -2387,7 +2442,7 @@ class IOCJson(IOCConfiguration):
                             line.replace(f'hostname="{uuid}"',
                                          f'hostname="{tag}"').rstrip())
 
-                    if conf["basejail"] == "yes":
+                    if iocage_lib.ioc_common.check_truthy(conf["basejail"]):
                         for line in fileinput.input(
                                 f"{self.iocroot}/jails/{tag}/fstab",
                                 inplace=1):

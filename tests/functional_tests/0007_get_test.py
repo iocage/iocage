@@ -37,7 +37,7 @@ def _test_value_and_match_config(jail, key, invoke_cli):
         ['get', key, jail.name]
     )
 
-    value = jail.config.get(key)
+    value = str(jail.config.get(key))
     assert result.output.strip() == value, \
         f'{key}\'s value "{value}" does not match output: {result.output}'
 

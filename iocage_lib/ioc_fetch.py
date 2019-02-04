@@ -956,10 +956,9 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
                 _json = iocage_lib.ioc_json.IOCJson(path)
                 props = _json.json_get_value('all')
 
-                if props.get('basejail', 'no') == 'yes':
-                    if props['release'] == self.release:
-                        props['release'] = new_release
-                        _json.json_write(props)
+                if props['basejail'] and props['release'] == self.release:
+                    props['release'] = new_release
+                    _json.json_write(props)
 
         return new_release
 

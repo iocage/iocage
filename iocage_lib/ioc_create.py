@@ -310,11 +310,15 @@ class IOCCreate(object):
             # Clones are expected to be as identical as possible.
 
             for k, v in config.items():
-                v = v.replace(clone_uuid, jail_uuid)
+                try:
+                    v = v.replace(clone_uuid, jail_uuid)
 
-                if '_mac' in k:
-                    # They want a unique mac on start
-                    config[k] = 'none'
+                    if '_mac' in k:
+                        # They want a unique mac on start
+                        config[k] = 'none'
+                except AttributeError:
+                    # Bool props
+                    pass
 
                 config[k] = v
         else:
@@ -374,17 +378,18 @@ class IOCCreate(object):
 
         for prop in self.props:
             key, _, value = prop.partition("=")
+            is_true = iocage_lib.ioc_common.check_truthy(value)
 
-            if key == "boot" and value == "on" and not self.empty:
+            if key == "boot" and is_true and not self.empty:
                 start = True
             elif self.plugin and key == "type" and value == "pluginv2":
                 config["type"] = value
-            elif key == "template" and value == "yes":
+            elif key == 'template' and is_true:
                 iocjson.json_write(config)  # Set counts on this.
                 location = location.replace("/jails/", "/templates/")
 
                 iocjson.json_set_value("type=template")
-                iocjson.json_set_value("template=yes")
+                iocjson.json_set_value("template=1")
                 iocjson.zfs_set_property(f"{self.pool}/iocage/templates/"
                                          f"{jail_uuid}", "readonly", "off")
 
@@ -396,49 +401,56 @@ class IOCCreate(object):
                 is_template = True
             elif key == 'ip6_addr':
                 if 'accept_rtadv' in value:
-                    if 'vnet=on' not in self.props:
+                    if iocage_lib.ioc_common.construct_truthy(
+                        'vnet'
+                    ) not in self.props:
                         iocage_lib.ioc_common.logit({
                             'level': 'WARNING',
                             'message': 'accept_rtadv requires vnet,'
-                            ' setting to on!'
+                            ' enabling!'
                         },
                             _callback=self.callback,
                             silent=self.silent)
-                        config['vnet'] = 'on'
+                        config['vnet'] = 1
 
                     rtsold_enable = 'YES'
-            elif (key == 'dhcp' and value == 'on') or (
+            elif (key == 'dhcp' and is_true) or (
                 key == 'ip4_addr' and 'DHCP' in value.upper()
             ):
-                if 'vnet=on' not in self.props:
+                if iocage_lib.ioc_common.construct_truthy(
+                    'vnet'
+                ) not in self.props:
                     iocage_lib.ioc_common.logit({
                         'level': 'WARNING',
-                        'message': 'dhcp requires vnet, setting to on!'
+                        'message': 'dhcp requires vnet, enabling!'
                     },
                         _callback=self.callback,
                         silent=self.silent)
-                    config['vnet'] = 'on'
-                if 'bpf=yes' not in self.props:
+                    config['vnet'] = 1
+                if iocage_lib.ioc_common.construct_truthy(
+                    'bpf'
+                ) not in self.props:
                     iocage_lib.ioc_common.logit({
                         'level': 'WARNING',
-                        'message': 'dhcp requires bpf, setting to yes!'
+                        'message': 'dhcp requires bpf, enabling!'
                     },
                         _callback=self.callback,
                         silent=self.silent)
-                    config['bpf'] = 'yes'
-            elif key == 'bpf' and value == 'yes':
-                if 'vnet=on' not in self.props:
+                    config['bpf'] = 1
+            elif key == 'bpf' and is_true:
+                if iocage_lib.ioc_common.construct_truthy(
+                    'vnet'
+                ) not in self.props:
                     iocage_lib.ioc_common.logit({
                         'level': 'WARNING',
-                        'message': 'bpf requires vnet, setting to on!'
+                        'message': 'bpf requires vnet, enabling!'
                     },
                         _callback=self.callback,
                         silent=self.silent)
-                    config['vnet'] = 'on'
+                    config['vnet'] = 1
 
             try:
                 value, config = iocjson.json_check_prop(key, value, config)
-
                 config[key] = value
             except RuntimeError as err:
                 iocjson.json_write(config)  # Destroy counts on this.
@@ -450,6 +462,8 @@ class IOCCreate(object):
                 iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(location)
                 exit(1)
 
+        # We want these to represent reality on the FS
+        iocjson.fix_properties(config)
         if not self.plugin:
             # TODO: Should we probably only write once and maybe at the end
             # of the function ?
@@ -536,7 +550,7 @@ class IOCCreate(object):
             self.create_rc(
                 location,
                 config["host_hostname"],
-                config.get('basejail', 'no')
+                config.get('basejail', 0)
             )
 
             if rtsold_enable == 'YES':
@@ -571,7 +585,7 @@ class IOCCreate(object):
                 iocage_lib.ioc_fstab.IOCFstab(jail_uuid, "add", source,
                                               destination, "nullfs", "ro", "0",
                                               "0", silent=True)
-                config["basejail"] = "yes"
+                config["basejail"] = 1
 
             iocjson.json_write(config)
 
@@ -591,7 +605,9 @@ class IOCCreate(object):
         if self.pkglist:
             if config.get('ip4_addr', 'none') == 'none' and \
                 config.get('ip6_addr', 'none') == 'none' and \
-                    config.get('dhcp', 'off') != 'on':
+                    not iocage_lib.ioc_common.check_truthy(
+                        config.get('dhcp', 0)
+            ):
                 iocage_lib.ioc_common.logit({
                     "level": "WARNING",
                     "message": "You need an IP address for the jail to"
@@ -889,7 +905,7 @@ class IOCCreate(object):
         if self.plugin and pkg_err_list:
             return ','.join(pkg_err_list)
 
-    def create_rc(self, location, host_hostname, basejail='no'):
+    def create_rc(self, location, host_hostname, basejail=0):
         """
         Writes a boilerplate rc.conf file for a jail if it doesn't exist,
          otherwise changes the hostname.
@@ -926,7 +942,7 @@ ipv6_activate_all_interfaces=\"YES\"
         if not jail_rc_conf.is_file():
             shutil.copy(str(rc_conf), str(jail_rc_conf))
 
-        if basejail != 'no':
+        if basejail:
             su.Popen(
                 ['mount', '-F', f'{location}/fstab', '-a']).communicate()
 
@@ -934,7 +950,7 @@ ipv6_activate_all_interfaces=\"YES\"
                   f'hostname={host_hostname.replace("_", "-")}'],
                  stdout=su.PIPE).communicate()
 
-        if basejail != 'no':
+        if basejail:
             su.Popen(
                 ['umount', '-F', f'{location}/fstab', '-a']).communicate()
 
