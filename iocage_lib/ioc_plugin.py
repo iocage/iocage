@@ -361,11 +361,12 @@ class IOCPlugin(object):
         path = f"{self.pool}/iocage/jails/{uuid}"
         _conf = iocage_lib.ioc_json.IOCJson(jaildir).json_get_value('all')
 
-        # We do this test again as the user could supply a malformed IP to
+        # We do these tests again as the user could supply a malformed IP to
         # fetch that bypasses the more naive check in cli/fetch
+        dhcp_or_hostname = _conf['dhcp'] or _conf['ip_hostname']
 
         if _conf["ip4_addr"] == "none" and _conf["ip6_addr"] == "none" and \
-           not iocage_lib.ioc_common.check_truthy(_conf['dhcp']):
+           not dhcp_or_hostname:
             iocage_lib.ioc_common.logit(
                 {
                     "level": "ERROR",
