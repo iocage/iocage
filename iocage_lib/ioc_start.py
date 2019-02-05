@@ -762,10 +762,7 @@ class IOCStart(object):
             ]
 
         for nic in nics:
-            if self.get("netgraph"):
-                err = self.start_network_interface_ng(nic, net_configs, jid)
-            else:
-                err = self.start_network_interface_vnet(nic, net_configs, jid)
+            err = self.start_network_interface_vnet(nic, net_configs, jid)
 
             if err:
                 errors.extend(err)
@@ -785,14 +782,23 @@ class IOCStart(object):
 
         nic_defs = nic_defs.split(",")
         nics = list(map(lambda x: x.split(":")[0], nic_defs))
+        is_netgraph = self.get('netgraph')
+        default_if = self.get('vnet_default_interface')
 
         for nic_def in nic_defs:
 
             nic, bridge = nic_def.split(":")
 
             try:
-                membermtu = self.find_bridge_mtu(bridge)
-                dhcp = self.get('dhcp')
+                if is_netgraph:
+                    err = self.start_network_ng_bridge(bridge, default_if)
+                else:
+                    err = self.start_network_if_bridge(bridge, default_if)
+
+                if err:
+                    errors.append(err)
+
+                dhcp = self.get("dhcp")
 
                 ifaces = []
 
@@ -817,131 +823,63 @@ class IOCStart(object):
                             continue
 
                         if iface not in ifaces:
-                            err = self.start_network_vnet_iface(nic, bridge,
-                                                                membermtu, jid)
+                            err = self.start_network_vnet_iface(
+                                nic, bridge, jid
+                            )
                             if err:
                                 errors.append(err)
 
                             ifaces.append(iface)
 
-                        err = self.start_network_vnet_addr(iface, ip, gw, ipv6)
+                        if is_netgraph:
+                            jail_iface = f'{iface}.{jid}'
+                        elif 'vnet' in iface:
+                            jail_iface = f'{iface.replace("vnet", "epair")}b'
+                        else:
+                            jail_iface = iface
+
+                        err = self.start_network_vnet_addr(
+                            jail_iface, ip, gw, ipv6
+                        )
                         if err:
                             errors.append(err)
 
             except su.CalledProcessError as err:
-                errors.append(err.output.decode("utf-8").rstrip())
+                errors.append(f'{err.output}'.rstrip())
 
         if len(errors) != 0:
             return errors
 
-    def start_network_vnet_iface(self, nic, bridge, mtu, jid):
+    def start_network_if_bridge(self, bridge, default_if):
         """
-        The real meat and potatoes for starting a VNET interface.
+        Create the bridge and add a default interface, if defined
 
-        :param nic: The network interface to assign the IP in the jail
         :param bridge: The bridge to attach the VNET interface
-        :param mtu: The mtu of the VNET interface
-        :param jid: The jails ID
+        :param default_if: The host network interface to attach to the bridge
         :return: If an error occurs it returns the error. Otherwise, it's None
         """
-        vnet_default_interface = self.get('vnet_default_interface')
-        if vnet_default_interface == 'auto':
-            vnet_default_interface = self.get_default_gateway()[1]
-
-        mac_a, mac_b = self.__start_generate_vnet_mac__(nic)
-        epair_a_cmd = ["ifconfig", "epair", "create"]
-        epair_a = su.Popen(epair_a_cmd, stdout=su.PIPE).communicate()[0]
-        epair_a = epair_a.decode().strip()
-        epair_b = re.sub("a$", "b", epair_a)
-
-        if 'vnet' in nic:
-            # Inside jails they are epairN
-            jail_nic = f"{nic.replace('vnet', 'epair')}b"
-        else:
-            jail_nic = nic
-
         try:
-            # Host
-            iocage_lib.ioc_common.checkoutput(
-                [
-                    "ifconfig", epair_a, "name",
-                    f"{nic}.{jid}", "mtu", mtu
-                ],
-                stderr=su.STDOUT
-            )
-            iocage_lib.ioc_common.checkoutput(
-                ["ifconfig", f"{nic}.{jid}", "link", mac_a],
-                stderr=su.STDOUT
-            )
-            iocage_lib.ioc_common.checkoutput(
-                ["ifconfig", f"{nic}.{jid}", "description",
-                 f"associated with jail: {self.uuid} as nic: {jail_nic}"],
-                stderr=su.STDOUT
-            )
+            if default_if == 'auto':
+                default_if = self.get_default_gateway()[1]
 
-            if 'accept_rtadv' in self.get('ip6_addr'):
-                # Set linklocal for IP6 + rtsold
-                iocage_lib.ioc_common.checkoutput(
-                    ['ifconfig', f'{nic}.{jid}', 'inet6', 'auto_linklocal',
-                     'accept_rtadv', 'autoconf'],
-                    stderr=su.STDOUT)
-
-            # Jail
-            iocage_lib.ioc_common.checkoutput(
-                [
-                    "ifconfig", epair_b, "vnet",
-                    f"ioc-{self.uuid}"
-                ],
-                stderr=su.STDOUT
-            )
-            iocage_lib.ioc_common.checkoutput(
-                [
-                    'jexec', f'ioc-{self.uuid}', 'ifconfig', epair_b,
-                    'mtu', mtu
-                ],
-                stderr=su.STDOUT
-            )
-
-            if epair_b != jail_nic:
-                # This occurs on default vnet0 ip4_addr's
-                iocage_lib.ioc_common.checkoutput(
-                    [
-                        "setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
-                        "ifconfig", epair_b, "name", jail_nic
-                    ],
-                    stderr=su.STDOUT
-                )
-
-            iocage_lib.ioc_common.checkoutput(
-                [
-                    "setfib", self.exec_fib, "jexec", f"ioc-{self.uuid}",
-                    "ifconfig", jail_nic, "link", mac_b
-                ],
-                stderr=su.STDOUT
-            )
-
-            try:
-                # Host interface as supplied by user also needs to be on the
-                # bridge
-                if vnet_default_interface != 'none':
-                    iocage_lib.ioc_common.checkoutput(
-                        ["ifconfig", bridge, "addm", vnet_default_interface],
-                        stderr=su.STDOUT
+            bridge_cmd = ["ifconfig", bridge, "create"]
+            if default_if != 'none':
+                if default_if not in netifaces.interfaces():
+                    iocage_lib.ioc_common.logit(
+                        {
+                            'level': 'EXCEPTION',
+                            'message':
+                            f'Interface {default_if} cannot be added '
+                            f'to {bridge} because it does not exist.'
+                        },
+                        _callback=self.callback,
+                        silent=self.silent
                     )
-            except su.CalledProcessError:
-                # Already exists
-                pass
-
-            iocage_lib.ioc_common.checkoutput(
-                ["ifconfig", bridge, "addm", f"{nic}.{jid}", "up"],
-                stderr=su.STDOUT
-            )
-            iocage_lib.ioc_common.checkoutput(
-                ["ifconfig", f"{nic}.{jid}", "up"],
-                stderr=su.STDOUT
-            )
-        except su.CalledProcessError as err:
-            return f"{err.output.decode('utf-8')}".rstrip()
+                bridge_cmd += ["addm", default_if]
+            su.check_call(bridge_cmd, stdout=su.PIPE, stderr=su.PIPE)
+        except su.CalledProcessError:
+            # The bridge already exists, this is just best effort.
+            pass
 
     def start_network_vnet_addr(self, iface, ip, defaultgw, ipv6=False):
         """
@@ -955,22 +893,22 @@ class IOCStart(object):
         dhcp = self.get('dhcp')
         wants_dhcp = True if dhcp or 'DHCP' in self.get(
             'ip4_addr').upper() else False
-
-        if 'vnet' in iface:
-            # Inside jails they are epairNb
-            iface = f'{iface.replace("vnet", "epair")}b'
+        wants_defaultgw = (
+            re.search(r'\d+',iface)[0] == '0'
+            and defaultgw != 'none'
+        )
 
         if ipv6:
             ifconfig = [iface, 'inet6', ip, 'up']
             # set route to none if this is not the first interface
-            if iface.rsplit('epair')[1][0] == '0':
+            if wants_defaultgw:
                 route = ['add', '-6', 'default', defaultgw]
             else:
                 route = 'none'
         else:
             ifconfig = [iface, ip, 'up']
             # set route to none if this is not the first interface
-            if iface.rsplit('epair')[1][0] == '0':
+            if wants_defaultgw:
                 route = ['add', 'default', defaultgw]
             else:
                 route = 'none'
@@ -978,87 +916,22 @@ class IOCStart(object):
         try:
             if not wants_dhcp and ip != 'accept_rtadv':
                 # Jail side
-                iocage_lib.ioc_common.checkoutput(
-                    ['setfib', self.exec_fib, 'jexec', f'ioc-{self.uuid}',
-                     'ifconfig'] + ifconfig, stderr=su.STDOUT)
+                self.__ifconfig__(
+                    *ifconfig,
+                    fib=self.exec_fib,
+                    jail=f'ioc-{self.uuid}'
+                )
                 # route has value of none if this is not the first interface
                 if route != 'none':
-                    iocage_lib.ioc_common.checkoutput(
-                        ['setfib', self.exec_fib, 'jexec', f'ioc-{self.uuid}',
-                         'route'] + route, stderr=su.STDOUT)
+                    self.__route__(
+                        *route,
+                        fib=self.exec_fib,
+                        jail=f'ioc-{self.uuid}'
+                    )
         except su.CalledProcessError as err:
-            return f'{err.output.decode("utf-8")}'.rstrip()
+            return f'{err.output}'.rstrip()
         else:
             return
-
-    def start_network_interface_ng(self, nic_defs, net_configs, jid):
-        """
-        Start ng_eiface interface
-
-        :param nic_defs: comma separated interface definitions (nic, bridge)
-        :param net_configs: Tuple of IP address and router pairs
-        :param jid: The jails ID
-        """
-        errors = []
-
-        nic_defs = nic_defs.split(",")
-        nics = list(map(lambda x: x.split(":")[0], nic_defs))
-
-        for nic_def in nic_defs:
-
-            nic_def = nic_def.split(":")
-            nic = nic_def[0]
-            bridge = nic_def[1]
-            default_if = (nic_def[2] if len(nic_def) > 2
-                          else self.get('vnet_default_interface'))
-
-            try:
-                err = self.start_network_ng_bridge(bridge, default_if)
-
-                if err:
-                    errors.append(err)
-
-                dhcp = self.get("dhcp")
-
-                ifaces = []
-
-                for addrs, gw, ipv6 in net_configs:
-                    if (
-                        dhcp == "on" or 'DHCP' in self.get('ip4_addr').upper()
-                    ) and 'accept_rtadv' not in addrs:
-                        # Spoofing IP address, it doesn't matter with DHCP
-                        addrs = f"{nic}|''"
-
-                    if addrs == 'none':
-                        continue
-
-                    for addr in addrs.split(','):
-                        try:
-                            iface, ip = addr.split("|")
-                        except ValueError:
-                            # They didn't supply an interface, assuming default
-                            iface, ip = "vnet0", addr
-
-                        if iface not in nics:
-                            continue
-
-                        if iface not in ifaces:
-                            err = self.start_network_ng_iface(nic, bridge, jid)
-                            if err:
-                                errors.append(err)
-
-                            ifaces.append(iface)
-
-                        err = self.start_network_ng_addr(f"{iface}.{jid}",
-                                                         ip, gw, ipv6)
-                        if err:
-                            errors.append(err)
-
-            except su.CalledProcessError as err:
-                errors.append(err.output.decode("utf-8").rstrip())
-
-        if len(errors) != 0:
-            return errors
 
     def start_network_ng_bridge(self, bridge, default_if):
         """
@@ -1085,9 +958,9 @@ class IOCStart(object):
         except su.CalledProcessError as err:
             return f"{err.output}".rstrip()
 
-    def start_network_ng_iface(self, nic, bridge, jid):
+    def start_network_vnet_iface(self, nic, bridge, jid):
         """
-        The real meat and potatoes for starting a netgraph interface.
+        The real meat and potatoes for starting a vnet interface.
 
         :param nic: The network interface to assign the IP in the jail
         :param bridge: The bridge to attach the VNET interface
@@ -1095,93 +968,88 @@ class IOCStart(object):
         :return: If an error occurs it returns the error. Otherwise, it's None
         """
 
+        is_netgraph = self.get('netgraph')
         try:
-            self.__ngctl__('mkpeer', 'eiface', 'ether', 'ether')
+            # Create the interface, either ng_eiface or if_epair
+            if is_netgraph:
+                self.__ngctl__('mkpeer', 'eiface', 'ether', 'ether')
+                created_iface = \
+                    self.get_ng_nodes(nodetype='eiface')[-1]['iface']
+                # there is only one interface
+                jail_iface = created_iface
+                mtu = self.find_ng_bridge_mtu(bridge)
+            else:
+                created_iface = self.__ifconfig__('epair', 'create').strip()
+                jail_iface = re.sub("a$", "b", created_iface)
+                if 'vnet' in nic:
+                    # Inside jails they are epairN
+                    jail_desired_iface = f"{nic.replace('vnet', 'epair')}b"
+                else:
+                    jail_desired_iface = nic
+                mtu = self.find_if_bridge_mtu(bridge)
 
-            eiface = self.get_ng_nodes(nodetype='eiface')[-1]['iface']
-
-            self.__ngctl__("name", f"{eiface}:", f"{nic}_{jid}")
-            self.__ifconfig__(eiface, "name", f"{nic}.{jid}")
-
-            # new netgraph name
-            eiface = f"{nic}_{jid}"
-            # new ifconfig name
+            # Rename the interface
             iface = f"{nic}.{jid}"
+            self.__ifconfig__(created_iface, "name", iface)
+            if is_netgraph:
+                # there is only one interface, so make sure the inside
+                # and outside ifconfig names are the same
+                jail_iface = iface
+                # new netgraph name with underscores instead of periods
+                iface_ng_node = iface.replace('.', '_')
+                self.__ngctl__("name", f"{created_iface}:", iface_ng_node)
 
-            self.__ifconfig__(iface,
-                              "description",
-                              f"associated with jail: {self.uuid}")
-
-            # Only try to get the MTU from the first
-            # bridge interface after (maybe) adding the
-            # vnet_default_interface, but before adding
-            # this jail's interface
-            mtu = self.find_ng_bridge_mtu(bridge)
-            # Ignoring the second mac address
-            mac, _ = self.__start_generate_vnet_mac__(nic)
-            self.__ifconfig__(iface, "ether", mac, "mtu", f"{mtu}")
+            # Assign MAC address and MTU (discovered above)
+            mac_a, mac_b = self.__start_generate_vnet_mac__(nic)
+            self.__ifconfig__(iface, "link", mac_a, "mtu", f"{mtu}")
+            self.__ifconfig__(
+                iface,
+                "description",
+                f"associated with jail: {self.uuid}"
+            )
 
             if 'accept_rtadv' in self.get('ip6_addr'):
                 # Set linklocal for IP6 + rtsold
-                self.__ifconfig__(iface, 'inet6', 'auto_linklocal',
-                                  'accept_rtadv', 'autoconf')
+                self.__ifconfig__(
+                    iface, 'inet6', 'auto_linklocal',
+                    'accept_rtadv', 'autoconf'
+                )
 
-            # Jail
-            self.add_ng_bridge_member(bridge, eiface)
-            self.__ifconfig__(iface, "up")
-            self.__ifconfig__(iface, "vnet", f"ioc-{self.uuid}")
-
-        except su.CalledProcessError as err:
-            return f"{err.output}".rstrip()
-
-    def start_network_ng_addr(self, iface, ip, defaultgw, ipv6=False):
-        """
-        Add an IP address to a vnet interface inside the jail.
-
-        :param iface: The interface to use
-        :param ip:  The IP address to assign
-        :param defaultgw: The gateway IP to assign to the nic
-        :return: If an error occurs it returns the error. Otherwise, it's None
-        """
-        dhcp = self.get('dhcp')
-        wants_dhcp = True if dhcp == 'on' or 'DHCP' in self.get(
-            'ip4_addr').upper() else False
-
-        wants_defaultgw = (
-            iface.rsplit('vnet')[1][0] == '0'
-            and defaultgw != 'none'
-        )
-
-        if ipv6:
-            ifconfig = [iface, 'inet6', ip, 'up']
-            # set route to none if this is not the first interface
-            if wants_defaultgw:
-                route = ['add', '-6', 'default', defaultgw]
+            # Add the interface to an ng_bridge or if_bridge
+            if is_netgraph:
+                self.add_ng_bridge_member(bridge, iface_ng_node)
             else:
-                route = 'none'
-        else:
-            ifconfig = [iface, ip, 'up']
-            # set route to none if this is not the first interface
-            if wants_defaultgw:
-                route = ['add', 'default', defaultgw]
-            else:
-                route = 'none'
+                self.__ifconfig__(bridge, 'addm', iface)
 
-        try:
-            if not wants_dhcp and ip != 'accept_rtadv':
-                # Jail side
-                self.__ifconfig__(*ifconfig,
-                                  fib=self.exec_fib,
-                                  jail=f'ioc-{self.uuid}')
-                # route has value of none if this is not the first interface
-                if route != 'none':
-                    self.__route__(*route,
-                                   fib=self.exec_fib,
-                                   jail=f'ioc-{self.uuid}')
+            # Bring up the jail interface and VNET it into
+            # the jail
+            self.__ifconfig__(jail_iface, "up")
+            self.__ifconfig__(jail_iface, "vnet", f"ioc-{self.uuid}")
+
+            # Further configuration for if_epair interfaces,
+            # inside the jail
+            if not is_netgraph:
+                self.__ifconfig__(
+                    jail_iface, 'mtu', mtu,
+                    jail=f'ioc-{self.uuid}'
+                )
+                self.__ifconfig__(
+                    jail_iface, 'link', mac_b,
+                    fib=self.exec_fib,
+                    jail=f'ioc-{self.uuid}'
+                )
+                if jail_iface != jail_desired_iface:
+                    self.__ifconfig__(
+                        jail_iface, 'name', jail_desired_iface,
+                        fib=self.exec_fib,
+                        jail=f'ioc-{self.uuid}'
+                    )
+                    jail_iface = jail_desired_iface
+                # Finally, bring host epair up
+                self.__ifconfig__(iface, 'up')
+
         except su.CalledProcessError as err:
             return f'{err.output}'.rstrip()
-        else:
-            return
 
     def start_copy_localtime(self):
         host_time = self.get("host_time")
@@ -1324,35 +1192,7 @@ class IOCStart(object):
             if x.strip().startswith("member")
         ]
 
-    def find_bridge_mtu(self, bridge):
-        if self.unit_test:
-            dhcp = 0
-            wants_dhcp = False
-        else:
-            dhcp = self.get('dhcp')
-            wants_dhcp = True if dhcp or 'DHCP' in self.get(
-                'ip4_addr').upper() else False
-
-        try:
-            if wants_dhcp:
-                # Let's get the default vnet interface
-                default_if = self.get('vnet_default_interface')
-                if default_if == 'auto':
-                    default_if = self.get_default_gateway()[1]
-
-                if default_if != 'none':
-                    bridge_cmd = [
-                        "ifconfig", bridge, "create", "addm", default_if
-                    ]
-                    su.check_call(bridge_cmd, stdout=su.PIPE, stderr=su.PIPE)
-
-            else:
-                bridge_cmd = ["ifconfig", bridge, "create", "addm"]
-                su.check_call(bridge_cmd, stdout=su.PIPE, stderr=su.PIPE)
-        except su.CalledProcessError:
-            # The bridge already exists, this is just best effort.
-            pass
-
+    def find_if_bridge_mtu(self, bridge):
         memberif = self.get_bridge_members(bridge)
         if not memberif:
             return '1500'
@@ -1409,12 +1249,14 @@ class IOCStart(object):
     def get_ng_bridge_members(self, bridge):
         members = self.__ngctl__('show', f"{bridge}:").splitlines()
 
-        member_exp = re.compile(r'\s*'
-                                r'(?P<hook>link(?P<hookindex>\d+))\s+'
-                                r'(?P<node>\S+)\s+'
-                                r'(?P<nodetype>\S+)\s+'
-                                r'(?P<nodeid>\d+)\s+'
-                                r'(?P<nodehook>\S+)\s*$')
+        member_exp = re.compile(
+            r'\s*'
+            r'(?P<hook>link(?P<hookindex>\d+))\s+'
+            r'(?P<node>\S+)\s+'
+            r'(?P<nodetype>\S+)\s+'
+            r'(?P<nodeid>\d+)\s+'
+            r'(?P<nodehook>\S+)\s*$'
+        )
         members = [member.groupdict()
                     for member in map(member_exp.fullmatch, members)
                     if member is not None]
@@ -1454,11 +1296,13 @@ class IOCStart(object):
     def get_ng_nodes(self, nodetype=None):
         nodes = self.__ngctl__('list').splitlines()
 
-        node_exp = re.compile(r'\s*'
-                              r'Name:\s+(?P<iface>\S+)\s+'
-                              r'Type:\s+(?P<type>\S+)\s+'
-                              r'ID:\s+(?P<nodeid>\S+)\s+'
-                              r'Num hooks:\s+(?P<hooks>\d+)\s*$')
+        node_exp = re.compile(
+            r'\s*'
+            r'Name:\s+(?P<iface>\S+)\s+'
+            r'Type:\s+(?P<type>\S+)\s+'
+            r'ID:\s+(?P<nodeid>\S+)\s+'
+            r'Num hooks:\s+(?P<hooks>\d+)\s*$'
+        )
         nodes = [node.groupdict()
                  for node in map(node_exp.fullmatch, nodes)
                  if node is not None]
@@ -1475,11 +1319,13 @@ class IOCStart(object):
             return None
 
         # No exception == node exists
-        nodeinfo = re.fullmatch(r'\s*Name:\s+(?P<iface>\S+)\s+'
-                                r'Type:\s+(?P<type>\S+)\s+'
-                                r'ID:\s+(?P<nodeid>\S+)\s+'
-                                r'Num hooks:\s+(?P<hooks>\d+)\s*$',
-                                nodeinfo[0])
+        nodeinfo = re.fullmatch(
+            r'\s*Name:\s+(?P<iface>\S+)\s+'
+            r'Type:\s+(?P<type>\S+)\s+'
+            r'ID:\s+(?P<nodeid>\S+)\s+'
+            r'Num hooks:\s+(?P<hooks>\d+)\s*$',
+            nodeinfo[0]
+        )
         return nodeinfo['nodeid']
 
     def exists_ng_node(self, name):
@@ -1497,26 +1343,42 @@ class IOCStart(object):
             # Add iface as a member if not already on the bridge
             if not self.exists_ng_bridge_member(bridge, iface):
                 if nodetype == 'ether':
-                    self.__ngctl__('connect', f"{bridge}:",
-                                   f"{iface}:", f"link{link_index}", 'lower')
-                    link_index = self.get_ng_bridge_nextlink(bridge,
-                                                             link_index + 1)
-                    self.__ngctl__('connect', f"{bridge}:",
-                                   f"{iface}:", f"link{link_index}", 'upper')
+                    self.__ngctl__(
+                        'connect', f"{bridge}:",
+                        f"{iface}:", f"link{link_index}", 'lower'
+                    )
+                    link_index = self.get_ng_bridge_nextlink(
+                        bridge,
+                        link_index + 1
+                    )
+                    self.__ngctl__(
+                        'connect', f"{bridge}:",
+                        f"{iface}:", f"link{link_index}", 'upper'
+                    )
                 else:
-                    self.__ngctl__('connect', f"{bridge}:",
-                                   f"{iface}:", f"link{link_index}", 'ether')
+                    self.__ngctl__(
+                        'connect', f"{bridge}:",
+                        f"{iface}:", f"link{link_index}", 'ether'
+                    )
         else:
             # Create the bridge and add iface as the first member
             if nodetype == 'ether':
-                self.__ngctl__('mkpeer', f"{iface}:",
-                               "bridge", 'lower', f"link{link_index}")
-                link_index = self.get_ng_bridge_nextlink(bridge,
-                                                         link_index + 1)
-                self.__ngctl__('connect', f"{iface}:",
-                               f"{iface}:lower", 'upper', f"link{link_index}")
+                self.__ngctl__(
+                    'mkpeer', f"{iface}:",
+                    "bridge", 'lower', f"link{link_index}"
+                )
+                link_index = self.get_ng_bridge_nextlink(
+                    bridge,
+                    link_index + 1
+                )
+                self.__ngctl__(
+                    'connect', f"{iface}:",
+                    f"{iface}:lower", 'upper', f"link{link_index}"
+                )
                 self.__ngctl__('name', f"{iface}:lower", bridge)
             else:
-                self.__ngctl__('mkpeer', f"{iface}:",
-                               'bridge', 'ether', f"link{link_index}")
+                self.__ngctl__(
+                    'mkpeer', f"{iface}:",
+                    'bridge', 'ether', f"link{link_index}"
+                )
                 self.__ngctl__('name', f"{iface}:ether", bridge)
