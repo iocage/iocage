@@ -205,9 +205,13 @@ To configure both IPv4 and IPv6:
 
 .. note:: For VNET jails, a default route has to also be specified.
 
-To enable DHCP:
+To create a a jail with a DHCP interface add the `dhcp=on` property:
 
-:samp:`# iocage set vnet=on dhcp=on bpf=yes examplejail`
+:samp:`# iocage create -r 11.0-RELEASE --name myjail dhcp=on`
+
+The `dhcp=on` property implies creating a VNET virtual network stack and
+enabling the Berkley Packet Filter. DHCP cannot work without VNET.
+More information about VNET is available in the VNET(9) FreeBSD manual page.
 
 .. index:: Tips for configuring VNET
 .. _Tips for Configuring VNET:
