@@ -611,11 +611,7 @@ class IOCCreate(object):
                 silent=self.silent)
 
         if self.pkglist:
-            dhcp_or_hostname = iocage_lib.ioc_common.check_truthy(
-                config.get('dhcp', 0)
-            ) or iocage_lib.ioc_common.check_truthy(
-                config.get('ip_hostname', 0)
-            )
+            dhcp_or_hostname = config.get('dhcp') or config.get('ip_hostname')
 
             if config.get('ip4_addr', 'none') == "none" and \
                 config.get('ip6_addr', 'none') == "none" and \
