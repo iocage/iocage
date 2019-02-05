@@ -152,6 +152,7 @@ class IOCStart(object):
             'ip4_addr'].upper() else False
         vnet_interfaces = self.conf["vnet_interfaces"]
         ip6_addr = self.conf["ip6_addr"]
+        ip_hostname = self.conf['ip_hostname']
         prop_missing = False
         prop_missing_msgs = []
 
@@ -392,6 +393,7 @@ class IOCStart(object):
                 'allow.dying',
                 f'exec.consolelog={self.iocroot}/log/ioc-'
                 f'{self.uuid}-console.log',
+                f'ip_hostname={ip_hostname}' if ip_hostname else '',
                 'persist'
             ] if x != '']
 
