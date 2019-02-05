@@ -122,10 +122,10 @@ class IOCStop(object):
                         + exec_stop, None, unjailed=True, decode=True
                     )
                 except iocage_lib.ioc_exceptions.CommandFailed as e:
-
-                    error = str(e)
+                    error = b' '.join(e.message).decode()
                     msg = '  + Stopping services FAILED\n' \
-                        f'ERROR:\n{e}\n\n{failed_message}'
+                        f'ERROR:\n{error}\n\n{failed_message}'
+
                     iocage_lib.ioc_common.logit({
                         'level': 'EXCEPTION',
                         'message': msg

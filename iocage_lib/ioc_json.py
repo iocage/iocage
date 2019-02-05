@@ -448,7 +448,7 @@ class IOCConfiguration(IOCZFS):
     @staticmethod
     def get_version():
         """Sets the iocage configuration version."""
-        version = '17'
+        version = '18'
 
         return version
 
@@ -779,6 +779,10 @@ class IOCConfiguration(IOCZFS):
         if not conf.get('allow_vmm'):
             conf['allow_vmm'] = 0
 
+        # Version 18 keys
+        if not conf.get('ip_hostname'):
+            conf['ip_hostname'] = 0
+
         if not default:
             conf.update(jail_conf)
 
@@ -1089,7 +1093,8 @@ class IOCConfiguration(IOCZFS):
             'reservation': 'none',
             'depends': 'none',
             'vnet_interfaces': 'none',
-            'rtsold': 0
+            'rtsold': 0,
+            'ip_hostname': 0
         }
 
         try:
@@ -1186,7 +1191,8 @@ class IOCJson(IOCConfiguration):
             'mount_fdescfs',
             'mount_devfs',
             'ip6_saddrsel',
-            'ip4_saddrsel'
+            'ip4_saddrsel',
+            'ip_hostname'
         ]
         super().__init__(location, checking_datasets, silent, callback)
 
@@ -1935,7 +1941,8 @@ class IOCJson(IOCConfiguration):
             "host_time": truth_variations,
             "depends": ("string", ),
             "allow_tun": truth_variations,
-            'rtsold': truth_variations
+            'rtsold': truth_variations,
+            'ip_hostname': truth_variations
         }
 
         zfs_props = {
