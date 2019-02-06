@@ -87,6 +87,23 @@ class IOCStop(object):
             _callback=self.callback,
             silent=self.silent)
 
+        rctl_jail = iocage_lib.ioc_json.IOCRCTL(self.uuid)
+        if rctl_jail.rctl_rules_exist():
+            failed = rctl_jail.remove_rctl_rules()
+            if failed:
+                msg = 'Failed to remove'
+            else:
+                msg = 'Successfully removed'
+
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'ERROR' if failed else 'INFO',
+                    'message': f'  + {msg} RCTL rules for {self.uuid}'
+                },
+                _callback=self.callback,
+                silent=self.silent
+            )
+
         failed_message = 'Please use --force flag to force stop jail'
         if not self.force:
             prestop_success, prestop_error = iocage_lib.ioc_common.runscript(
