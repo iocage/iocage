@@ -270,44 +270,38 @@ class IOCStop(object):
                         silent=self.silent)
 
         # Clean up after our dynamic devfs rulesets
-        ruleset = su.check_output(
-            [
-                'jls', '-j', f'ioc-{self.uuid}', 'devfs_ruleset'
-            ]
-        ).decode().rstrip()
         devfs_rulesets = su.run(
             ['devfs', 'rule', 'showsets'],
             stdout=su.PIPE, universal_newlines=True
         )
         ruleset_list = [int(i) for i in devfs_rulesets.stdout.splitlines()]
 
-        if int(ruleset) in ruleset_list:
+        if int(devfs_ruleset) in ruleset_list:
             try:
                 su.run(
-                    ['devfs', 'rule', '-s', ruleset, 'delset'],
+                    ['devfs', 'rule', '-s', devfs_ruleset, 'delset'],
                     stdout=su.PIPE
                 )
 
-                msg = f'  + Removing devfs_ruleset: {ruleset} OK'
                 iocage_lib.ioc_common.logit({
                     "level": "INFO",
-                    "message": msg
+                    "message": '  + Removing devfs_ruleset: {devfs_ruleset} OK'
                 },
                     _callback=self.callback,
                     silent=self.silent)
             except su.CalledProcessError:
-                msg = f'  + Removing devfs_ruleset: {ruleset} FAILED'
                 iocage_lib.ioc_common.logit({
                     "level": 'ERROR',
-                    "message": msg
+                    "message": f'  + Removing devfs_ruleset: {devfs_ruleset}'
+                               ' FAILED'
                 },
                     _callback=self.callback,
                     silent=self.silent)
         else:
-            msg = f'  + Refusing to remove protected devfs_ruleset: {ruleset}'
             iocage_lib.ioc_common.logit({
                 "level": 'ERROR',
-                "message": msg
+                "message": '  + Refusing to remove protected devfs_ruleset:'
+                           f' {devfs_ruleset}'
             },
                 _callback=self.callback,
                 silent=self.silent)
