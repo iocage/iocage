@@ -162,6 +162,152 @@ class JailRuntimeConfiguration(object):
             )
 
 
+class IOCRCTL(object):
+
+    types = {
+        'cputime', 'datasize', 'stacksize', 'coredumpsize',
+        'memoryuse', 'memorylocked', 'maxproc', 'openfiles',
+        'vmemoryuse', 'pseudoterminals', 'swapuse', 'nthr',
+        'msgqqueued', 'msgqsize', 'nmsgq', 'nsem', 'nsemop',
+        'nshm', 'shmsize', 'wallclock', 'pcpu', 'readbps',
+        'writebps', 'readiops',  'writeiops'
+    }
+
+    def __init__(self, name):
+        self.jail_name = f'ioc-{name}'
+
+    def set_rctl_rules(self, props):
+        # We expect props to be a list of tuples or a tuple
+        if not isinstance(props, list):
+            props = [props]
+
+        failed = set()
+        for key, value in props:
+            try:
+                iocage_lib.ioc_exec.SilentExec(
+                    [
+                        'rctl', '-a',
+                        f'jail:{self.jail_name}:{key}:{value}'
+                    ],
+                    None, unjailed=True, decode=True
+                )
+            except ioc_exceptions.CommandFailed as e:
+                failed.add(key)
+
+        return failed
+
+    def remove_rctl_rules(self, props=None):
+        if not props:
+            props = ['']
+
+        failed = set()
+        for prop in props:
+            try:
+                iocage_lib.ioc_exec.SilentExec(
+                    ['rctl', '-r', f'jail:{self.jail_name}:{prop}'],
+                    None, unjailed=True, decode=True
+                )
+            except ioc_exceptions.CommandFailed:
+                failed.add(prop if prop else 'ALL')
+
+        return failed
+
+    def rctl_rules_exist(self, prop=None):
+        rctl_enabled = False
+        try:
+            output = iocage_lib.ioc_exec.SilentExec(
+                ['rctl'],
+                None, unjailed=True, decode=True
+            )
+        except iocage_lib.ioc_exceptions.CommandFailed:
+            pass
+        else:
+            if f'jail:{self.jail_name}{"" if not prop else f":{prop}"}' \
+                    in output.stdout:
+                rctl_enabled = True
+        finally:
+            return rctl_enabled
+
+    @staticmethod
+    def validate_rctl_tunable():
+        rctl_enable = False
+        try:
+            output = iocage_lib.ioc_exec.SilentExec(
+                ['sysctl', 'kern.racct.enable'],
+                None, unjailed=True, decode=True
+            )
+        except ioc_exceptions.CommandFailed:
+            pass
+        else:
+            if re.findall(r'.*:.*1', output.stdout):
+                rctl_enable = True
+        finally:
+            if not rctl_enable:
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'EXCEPTION',
+                        'message': 'Please set kern.racct.enable -> 1 '
+                                   'to set rctl rules'
+                    }
+                )
+
+    @staticmethod
+    def validate_rctl_props(prop, value):
+        if prop in IOCRCTL.types and value != 'off':
+            # prop can have the following values
+            # off
+            # action=amount
+
+            IOCRCTL.validate_rctl_tunable()
+
+            if not re.findall(
+                r'(?:deny|log|devctl|sig\w*|throttle)=\d+$', value
+            ):
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'EXCEPTION',
+                        'message': 'Please supply a valid value for rctl '
+                        f'property {prop} following format '
+                        '"action=amount" or "off" where valid '
+                        'actions are "deny|log|devctl|sig*|throttle"'
+                    }
+                )
+            else:
+                action = value.split('=')[0]
+                if action == 'deny' and prop in (
+                    'cputime', 'wallclock', 'readbps', 'writebps',
+                    'readiops', 'writeiops'
+                ):
+                    iocage_lib.ioc_common.logit(
+                        {
+                            'level': 'EXCEPTION',
+                            'message': 'Deny action is not supported with '
+                            f'prop {prop}'
+                        }
+                    )
+
+                if action == 'throttle' and prop not in (
+                    'readbps', 'writebps', 'readiops', 'writeiops'
+                ):
+                    iocage_lib.ioc_common.logit(
+                        {
+                            'level': 'EXCEPTION',
+                            'message': 'Throttle action is only supported with '
+                            'properties '
+                            '"readbps, writebps, readiops, writeiops"'
+                        }
+                    )
+
+                if prop == 'pcpu' and int(value.split('=')[1]) > 100:
+                    iocage_lib.ioc_common.logit(
+                        {
+                            'level': 'EXCEPTION',
+                            'message': 'pcpu property requires a valid '
+                                       'percentage'
+                        }
+                    )
+
+
 class IOCSnapshot(object):
     # FIXME: Please move me to another file and let's see how we can build
     # our hierarchy for the whole ZFS related section
@@ -448,7 +594,7 @@ class IOCConfiguration(IOCZFS):
     @staticmethod
     def get_version():
         """Sets the iocage configuration version."""
-        version = '18'
+        version = '19'
 
         return version
 
@@ -783,6 +929,12 @@ class IOCConfiguration(IOCZFS):
         if not conf.get('ip_hostname'):
             conf['ip_hostname'] = 0
 
+        # Version 19 keys
+        # RCTL Support added
+        conf.update(
+            {k: 'off' for k in IOCRCTL.types if not conf.get(k)}
+        )
+
         if not default:
             conf.update(jail_conf)
 
@@ -1055,10 +1207,15 @@ class IOCConfiguration(IOCZFS):
             'msgqqueued': 'off',
             'msgqsize': 'off',
             'nmsgq': 'off',
+            'nsem': 'off',
             'nsemop': 'off',
             'nshm': 'off',
             'shmsize': 'off',
             'wallclock': 'off',
+            'readbps': 'off',
+            'writebps': 'off',
+            'readiops': 'off',
+            'writeiops': 'off',
             'type': 'jail',
             'bpf': 0,
             'dhcp': 0,
@@ -1774,6 +1931,47 @@ class IOCJson(IOCConfiguration):
                 else:
                     key = key.replace("_", ".")
 
+                # Let's set a rctl rule for the prop if applicable
+                if key in IOCRCTL.types:
+                    rctl_jail = IOCRCTL(conf['host_hostuuid'])
+                    rctl_jail.validate_rctl_tunable()
+
+                    if value != 'off':
+                        failed = rctl_jail.set_rctl_rules(
+                            (key, value)
+                        )
+                        if failed:
+                            msg = f'Failed to set RCTL rule for {key}'
+                        else:
+                            msg = f'Successfully set RCTL rule for {key}'
+
+                        iocage_lib.ioc_common.logit(
+                            {
+                                'level': 'INFO',
+                                'message': msg
+                            },
+                            _callback=self.callback,
+                            silent=self.silent
+                        )
+                    else:
+                        if rctl_jail.rctl_rules_exist(key):
+                            failed = rctl_jail.remove_rctl_rules([key])
+                            if failed:
+                                msg = f'Failed to remove RCTL ' \
+                                    f'rule for {key}'
+                            else:
+                                msg = 'Successfully removed RCTL ' \
+                                    f'rule for {key}'
+
+                            iocage_lib.ioc_common.logit(
+                                {
+                                    'level': 'INFO',
+                                    'message': msg
+                                },
+                                _callback=self.callback,
+                                silent=self.silent
+                            )
+
                 if key in jail_params:
                     if full_conf['vnet'] and (
                         key == "ip4.addr" or key == "ip6.addr"
@@ -1900,26 +2098,31 @@ class IOCJson(IOCConfiguration):
             # RCTL limits
             "cpuset": ("off", "on"),
             "rlimits": ("off", "on"),
-            "memoryuse": ":",
-            "memorylocked": ("off", "on"),
-            "vmemoryuse": ("off", "on"),
-            "maxproc": ("off", "on"),
-            "cputime": ("off", "on"),
-            "pcpu": ":",
-            "datasize": ("off", "on"),
-            "stacksize": ("off", "on"),
-            "coredumpsize": ("off", "on"),
-            "openfiles": ("off", "on"),
-            "pseudoterminals": ("off", "on"),
-            "swapuse": ("off", "on"),
-            "nthr": ("off", "on"),
-            "msgqqueued": ("off", "on"),
-            "msgqsize": ("off", "on"),
-            "nmsgq": ("off", "on"),
-            "nsemop": ("off", "on"),
-            "nshm": ("off", "on"),
-            "shmsize": ("off", "on"),
-            "wallclock": ("off", "on"),
+            "memoryuse": ('string',),
+            "memorylocked": ('string',),
+            "vmemoryuse": ('string',),
+            "maxproc": ('string',),
+            "cputime": ('string',),
+            "pcpu": ('string',),
+            "datasize": ('string',),
+            "stacksize": ('string',),
+            "coredumpsize": ('string',),
+            "openfiles": ('string',),
+            "pseudoterminals": ('string',),
+            "swapuse": ('string',),
+            "nthr": ('string',),
+            "msgqqueued": ('string',),
+            "msgqsize": ('string',),
+            "nmsgq": ('string',),
+            "nsem": ('string',),
+            "nsemop": ('string',),
+            "nshm": ('string',),
+            "shmsize": ('string',),
+            "wallclock": ('string',),
+            "readbps": ('string',),
+            "writebps": ('string',),
+            "readiops": ('string',),
+            "writeiops": ('string',),
             # Custom properties
             "bpf": truth_variations,
             "dhcp": truth_variations,
@@ -2104,6 +2307,8 @@ class IOCJson(IOCConfiguration):
                             _callback=self.callback,
                             silent=self.silent
                         )
+                elif key in IOCRCTL.types:
+                    IOCRCTL.validate_rctl_props(key, value)
 
                 return value, conf
             else:
