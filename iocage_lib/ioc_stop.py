@@ -281,7 +281,7 @@ class IOCStop(object):
         )
         ruleset_list = [int(i) for i in devfs_rulesets.stdout.splitlines()]
 
-        if int(devfs_ruleset) in ruleset_list:
+        if int(ruleset) in ruleset_list:
             try:
                 su.run(
                     ['devfs', 'rule', '-s', ruleset, 'delset'],
