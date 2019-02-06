@@ -219,6 +219,7 @@ class IOCList(object):
                 ip6 = "-"
 
             # Will be set already by a corrupt jail
+            status = False
             if state != 'CORRUPT':
                 status, jid = self.list_get_jid(uuid_full)
 
@@ -255,12 +256,14 @@ class IOCList(object):
                                 interface, "inet"]
                 try:
                     out = su.check_output(full_ip4_cmd)
-                except su.CalledProcessError as e:
-                    short_ip4 += "(Network Issue)"
-                    full_ip4 = f"DHCP - Network Issue:{e}"
-                else:
-                    full_ip4 = f"{interface}|" \
-                        f"{out.splitlines()[2].split()[1].decode()}"
+                    full_ip4 = f'{interface}|' \
+                        f'{out.splitlines()[2].split()[1].decode()}'
+                except (su.CalledProcessError, IndexError) as e:
+                    short_ip4 += '(Network Issue)'
+                    if isinstance(e, su.CalledProcessError):
+                        full_ip4 = f'DHCP - Network Issue: {e}'
+                    else:
+                        full_ip4 = f'DHCP - Failed Parsing: {e}'
             elif conf["dhcp"] == "on" and not status:
                 short_ip4 = "DHCP"
                 full_ip4 = "DHCP (not running)"
