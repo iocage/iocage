@@ -656,6 +656,38 @@ class IOCStart(object):
                 _callback=self.callback,
                 silent=self.silent)
 
+        rctl_keys = set(
+            filter(
+                lambda k: self.conf.get(k, 'off') != 'off',
+                iocage_lib.ioc_json.IOCRCTL.types
+            )
+        )
+        if rctl_keys:
+
+            # We should remove any rules specified for this jail for just in
+            # case cases
+            rctl_jail = iocage_lib.ioc_json.IOCRCTL(self.uuid)
+            rctl_jail.validate_rctl_tunable()
+
+            rctl_jail.remove_rctl_rules()
+
+            # Let's set the specified rules
+            iocage_lib.ioc_common.logit({
+                'level': 'INFO',
+                'message': f'  + Setting RCTL props'
+            })
+
+            failed = rctl_jail.set_rctl_rules(
+                [(k, self.conf[k]) for k in rctl_keys]
+            )
+
+            if failed:
+                iocage_lib.ioc_common.logit({
+                    'level': 'INFO',
+                    'message': f'  + Failed to set {", ".join(failed)} '
+                    'RCTL props'
+                })
+
         self.set(
             "last_started={}".format(datetime.datetime.utcnow().strftime(
                 "%F %T")))
