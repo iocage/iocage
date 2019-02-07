@@ -894,7 +894,7 @@ class IOCStart(object):
         wants_dhcp = True if dhcp or 'DHCP' in self.get(
             'ip4_addr').upper() else False
         wants_defaultgw = (
-            re.search(r'\d+',iface)[0] == '0'
+            re.search(r'\d+', iface)[0] == '0'
             and defaultgw != 'none'
         )
 
@@ -1087,17 +1087,83 @@ class IOCStart(object):
         else:
             shutil.copy(resolver, f"{self.path}/root/etc/resolv.conf")
 
-    def __generate_mac_bytes(self, nic):
-        m = hashlib.md5()
-        m.update(self.uuid.encode("utf-8"))
-        m.update(nic.encode("utf-8"))
-        prefix = self.get("mac_prefix")
-
-        return f"{prefix}{m.hexdigest()[0:12-len(prefix)]}"
-
     def __generate_mac_address_pair(self, nic):
-        mac_a = self.__generate_mac_bytes(nic)
-        mac_b = hex(int(mac_a, 16) + 1)[2:].zfill(12)
+        """
+        Calculate MAC addresses derived from jail nic,
+        host's parent interface (if != 'none'), and a
+        hash of the jail's UUID.
+
+        The formula is ``NP:SS:SS:II:II:II'' where:
+         + N denotes 4 bits used as a counter to support branching
+           each parent interface up to 15 times under the same jail
+           name (see S below).
+         + P denotes the special nibble whose value, if one of
+           2, 6, A, or E (but usually 2) denotes a privately
+           administered MAC address (while remaining routable).
+         + S denotes 16 bits, taken from a SHAKE-128 hash of the jail UUID.
+         + I denotes bits that are inherited from parent interface,
+           or if the parent interface is 'none', an additional
+           24 bits of the SHAKE-128 hash of the jail UUID.
+
+        :param nic: The vnetX interface of the jail
+        :return: (mac_a, mac_b) A tuple of two mac addresses
+        """
+
+        # Which NIC of the jail is it: vnet(X)
+        nic_offset = int(re.search(r'\d+', nic)[0])
+
+        # Obtain 16 bits from a hash of the jail's uuid
+        shaker = hashlib.shake_128()
+        shaker.update(self.uuid.encode('utf-8'))
+        uuid_hash_bytes = list(shaker.digest(2))
+
+        # Find the parent NIC on the host
+        nic_parent = self.get('vnet_default_interface')
+        if nic_parent == 'auto':
+            nic_parent = self.get_default_gateway()[1]
+
+        if nic_parent == 'none':
+            # No parent, zero admin_nibble
+            nic_parent_admin_nibble = 0
+            # Get 24 more bits from a hash of the jail's UUID,
+            # since we can't get them from the host MAC.
+            # Skip the first two bytes of the digest here,
+            # because they are used above as uuid_hash_bytes.
+            nic_parent_devid_bytes = list(shaker.digest(5))[2:]
+        else:
+            # Get the last 24 bits of the parent MAC
+            nic_parent_linkaddr = \
+                netifaces.ifaddresses(nic_parent)[netifaces.AF_LINK]
+            nic_parent_ether = nic_parent_linkaddr[0]['addr'].split(':')
+            nic_parent_admin_nibble = int(nic_parent_ether[0][1], 16)
+            nic_parent_devid_bytes = [
+                int(byte, 16) for byte in nic_parent_ether[3:]
+            ]
+
+        # Assign locally-administrated bit values
+        # that don't overlap with the host interface
+        # parent_nibble XOR mask OR local_admin_bit AND four_bit_mask
+        # XOR mask ensures that mac A and mac B get different
+        #     leading bits than the parent
+        # OR local_admin_bit turns on the locally-administrated bit
+        #     whether the parent had it on or not
+        # AND four_bit_mask ensures the value is only ever four bits
+        #     long, as it will be combined with nic_offset to form
+        #     the first byte of the jail's MAC addresses
+        mac_a_admin_nibble = nic_parent_admin_nibble ^ 0b0100 | 0b0010 & 0b1111
+        mac_b_admin_nibble = nic_parent_admin_nibble ^ 0b1000 | 0b0010 & 0b1111
+
+        # Assemble the final mac addresses, which have
+        # mac_base in common as the last 5 bytes
+        mac_base = uuid_hash_bytes + nic_parent_devid_bytes
+        # nic_offset must be limited to 4 bits, or an
+        # invalid MAC will result. mac_a and mac_b differ
+        # ONLY by the admin nibble
+        nic_offset = nic_offset & 0b1111 << 4
+        mac_a_bytes = [nic_offset | mac_a_admin_nibble] + mac_base
+        mac_b_bytes = [nic_offset | mac_b_admin_nibble] + mac_base
+        mac_a = ''.join([f'{byte:02x}' for byte in mac_a_bytes])
+        mac_b = ''.join([f'{byte:02x}' for byte in mac_b_bytes])
 
         return mac_a, mac_b
 
