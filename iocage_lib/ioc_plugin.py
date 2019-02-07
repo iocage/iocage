@@ -457,6 +457,8 @@ FreeBSD: { enabled: no }
             repo = pkg_repos[repo]
             f_dir = f"{jaildir}/root/usr/local/etc/pkg/fingerprints/" \
                 f"{repo_name}/trusted"
+            r_dir = f"{jaildir}/root/usr/local/etc/pkg/fingerprints/" \
+                f"{repo_name}/revoked"
             repo_conf = """\
 {reponame}: {{
             url: "{packagesite}",
@@ -468,6 +470,7 @@ FreeBSD: { enabled: no }
 
             try:
                 os.makedirs(f_dir, 0o755)
+                os.makedirs(r_dir, 0o755)
             except OSError:
                 iocage_lib.ioc_common.logit(
                     {
@@ -820,7 +823,7 @@ fingerprint: {fingerprint}
 
         return plugin_list
 
-    def update(self):
+    def update(self, jid):
         iocage_lib.ioc_common.logit(
             {
                 "level": "INFO",
@@ -850,7 +853,7 @@ fingerprint: {fingerprint}
             },
             _callback=self.callback,
             silent=self.silent)
-        self.__update_pkg_remove__()
+        self.__update_pkg_remove__(jid)
 
         iocage_lib.ioc_common.logit(
             {
@@ -930,14 +933,15 @@ fingerprint: {fingerprint}
             # It just doesn't exist
             pass
 
-    def __update_pkg_remove__(self):
+    def __update_pkg_remove__(self, jid):
         """Remove all pkgs from the plugin"""
         try:
             with iocage_lib.ioc_exec.IOCExec(
-                command=["pkg", "delete", "-a", "-f", "-y"],
-                path=f"{self.iocroot}/jails/{self.plugin}",
+                command=['pkg', '-j', jid, 'delete', '-a', '-f', '-y'],
+                path=f'{self.iocroot}/jails/{self.plugin}',
                 uuid=self.plugin,
-                callback=self.callback
+                callback=self.callback,
+                unjailed=True
             ) as _exec:
                 iocage_lib.ioc_common.consume_and_log(
                     _exec,
@@ -1027,7 +1031,7 @@ fingerprint: {fingerprint}
         if write:
             self.json_write(conf)
 
-    def upgrade(self):
+    def upgrade(self, jid):
         iocage_lib.ioc_common.logit(
             {
                 "level": "INFO",
@@ -1089,7 +1093,7 @@ fingerprint: {fingerprint}
                 snapshot=False)
 
         self.silent = True
-        self.update()
+        self.update(jid)
 
         return new_release
 
