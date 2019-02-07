@@ -1124,6 +1124,7 @@ class IOCConfiguration(IOCZFS):
         """This sets up the default configuration for jails."""
         default_json_location = f'{self.iocroot}/defaults.json'
         write = True  # Write the defaults file
+        fix_write = False
 
         try:
             with open('/etc/hostid', 'r') as _file:
@@ -1259,7 +1260,7 @@ class IOCConfiguration(IOCZFS):
                 default_props = json.load(default_json)
                 default_props, write = self.check_config(
                     default_props, default=True)
-                write = self.fix_properties(default_props)
+                fix_write = self.fix_properties(default_props)
         except FileNotFoundError:
             iocage_lib.ioc_common.logit(
                 {
@@ -1290,7 +1291,7 @@ class IOCConfiguration(IOCZFS):
         finally:
             # They may have had new keys added to their default
             # configuration, or it never existed.
-            if write:
+            if write or fix_write:
                 self.json_write(default_props, default_json_location,
                                 defaults=True)
 
@@ -1367,9 +1368,9 @@ class IOCJson(IOCConfiguration):
     def get_full_config(self):
         d_conf = self.default_config
         conf, write = self.json_load()
-        write = self.fix_properties(conf)
+        fix_write = self.fix_properties(conf)
 
-        if write:
+        if write or fix_write:
             self.json_write(conf)
 
         state, _ = iocage_lib.ioc_list.IOCList().list_get_jid(
