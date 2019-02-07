@@ -1056,6 +1056,15 @@ Set to on if a fully virtualized per-jail network stack is required.
 Default: off
 .Pp
 Source: local
+.It Pf netgraph= Op on | off
+Only applies when vnet=on.
+.Pp
+Controls whether a jail with a VNET configuration uses netgraph
+nodes for its network interfaces (ng_eiface connected to ng_bridge).
+.Pp
+Default: off
+.Pp
+Source: local
 .It ip4_addr="interface|ip-address/netmask"
 The IPv4 address for VNET and shared IP jails.
 .Pp
@@ -1929,6 +1938,15 @@ net.link.bridge.pfil_bridge=0
 net.link.bridge.pfil_member=0
 .Ed
 .Pp
+Additionally, when using Netgraph, the following sysctls are available to tune performance and DoS mitigation:
+.Bd -literal -offset indent
+net.graph.recvspace: Maximum space for incoming Netgraph datagrams
+net.graph.maxdgram:  Maximum outgoing Netgraph datagram size
+net.graph.maxdata:   Maximum number of data queue items to allocate
+net.graph.maxalloc:  Maximum number of non-data queue items to allocate
+net.graph.threads:   Number of queue processing threads
+.Ed
+.Pp
 See
 .Lk https://github.com/iocage/iocage
 for more information.
@@ -1944,7 +1962,11 @@ for more information.
 .Xr sysctl 8 ,
 .Xr zfs 8 ,
 .Xr zpool 8 ,
-.Xr VNET 9
+.Xr VNET 9 ,
+.Xr netgraph 4 ,
+.Xr ng_bridge 4 ,
+.Xr ng_eiface 4 ,
+.Xr ngctl 8
 .Sh BUGS
 Please report bugs, issues, and feature requests to
 .Lk https://github.com/iocage/iocage/issues

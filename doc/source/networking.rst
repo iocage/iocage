@@ -170,7 +170,10 @@ Configuring Network Interfaces
 ------------------------------
 
 :command:`iocage` transparently handles network configuration for both
-*Shared IP* and *VNET* jails.
+*Shared IP* and *VNET* jails. A *VNET* jail can be configured using either
+:manpage:`if_bridge(4)` and :manpage:`if_epair(4)` interfaces, the default,
+or :manpage:`ng_bridge(4)` and :manpage:`ng_eiface(4)` interfaces, enabled
+with the ``netgraph`` jail parameter.
 
 .. index:: Configure Shared IP jail
 .. _Configuring a Shared IP Jail:
@@ -204,6 +207,33 @@ To configure both IPv4 and IPv6:
 :samp:`# iocage set defaultrouter6="2001:123:456:242::1" examplejail`
 
 .. note:: For VNET jails, a default route has to also be specified.
+
+Configuring a VNET Jail with Netgraph Interfaces
+++++++++++++++++++++++++++++++++++++++++++++++++
+
+:manpage:`netgraph(4)` provides a flexible, modular system for connecting
+network interfaces within the FreeBSD kernel. :command:`iocage` will create
+:manpage:`ng_eiface(4)` interfaces for a jail and attach them to a
+:manpage:`ng_bridge(4)` if the ``netgraph`` parameter is set on the jail:
+
+:samp:`# iocage set netgraph="on" examplejail`
+
+All of the *VNET* instructions apply to Netgraph-enabled jails, but jails
+attached to a :manpage:`ng_bridge(4)` can be placed on a host-only, routed
+network so that the host's firewall can monitor and filter traffic. At the
+present time, the host's :manpage:`ng_eiface(4)` must be manually created
+and added to the :manpage:`ng_bridge(4)`:
+
+.. note:: Assume same ``ip4_addr`` and ``ip6_addr`` settings as in
+          :ref:`Configuring a VNET Jail`
+
+:samp:`# ngctl mkpeer eiface ether ether`
+
+:samp:`# NGIFN=$(ngctl list | grep eiface | sort -k 6 | tail -n 1 | cut -d ' ' -f 4)`
+
+:samp:`# ifconfig ${NGIFN} inet 192.168.0.1/24 inet6 2001:123:456:242::1/64`
+
+:samp:`# iocage set netgraph="on" interfaces="vnet0:bridge0" vnet_default_interface="$NGIFN" examplejail`
 
 .. index:: Tips for configuring VNET
 .. _Tips for Configuring VNET:
