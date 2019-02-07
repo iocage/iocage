@@ -170,7 +170,7 @@ class IOCRCTL(object):
         'vmemoryuse', 'pseudoterminals', 'swapuse', 'nthr',
         'msgqqueued', 'msgqsize', 'nmsgq', 'nsem', 'nsemop',
         'nshm', 'shmsize', 'wallclock', 'pcpu', 'readbps',
-        'writebps', 'readiops',  'writeiops'
+        'writebps', 'readiops', 'writeiops'
     }
 
     def __init__(self, name):
@@ -191,7 +191,7 @@ class IOCRCTL(object):
                     ],
                     None, unjailed=True, decode=True
                 )
-            except ioc_exceptions.CommandFailed as e:
+            except ioc_exceptions.CommandFailed:
                 failed.add(key)
 
         return failed
@@ -292,8 +292,8 @@ class IOCRCTL(object):
                     iocage_lib.ioc_common.logit(
                         {
                             'level': 'EXCEPTION',
-                            'message': 'Throttle action is only supported with '
-                            'properties '
+                            'message': 'Throttle action is only supported with'
+                            ' properties '
                             '"readbps, writebps, readiops, writeiops"'
                         }
                     )

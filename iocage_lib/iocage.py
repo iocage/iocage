@@ -1903,7 +1903,7 @@ class IOCage(ioc_json.IOCZFS):
                 ioc_plugin.IOCPlugin(
                     plugin=uuid,
                     callback=self.callback
-                ).update()
+                ).update(jid)
             elif not ioc_common.check_truthy(conf['basejail']):
                 new_release = ioc_fetch.IOCFetch(
                     release,
@@ -2043,7 +2043,7 @@ class IOCage(ioc_json.IOCZFS):
             new_release = ioc_plugin.IOCPlugin(
                 plugin=uuid,
                 callback=self.callback
-            ).upgrade()
+            ).upgrade(jid)
             plugin = True
         else:
             ioc_common.logit(
