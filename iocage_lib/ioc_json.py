@@ -191,7 +191,7 @@ class IOCRCTL(object):
                     ],
                     None, unjailed=True, decode=True
                 )
-            except ioc_exceptions.CommandFailed as e:
+            except ioc_exceptions.CommandFailed:
                 failed.add(key)
 
         return failed
