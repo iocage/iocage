@@ -285,7 +285,8 @@ class IOCStop(object):
 
                 iocage_lib.ioc_common.logit({
                     "level": "INFO",
-                    "message": '  + Removing devfs_ruleset: {devfs_ruleset} OK'
+                    "message": f'  + Removing devfs_ruleset: {devfs_ruleset}'
+                               ' OK'
                 },
                     _callback=self.callback,
                     silent=self.silent)
