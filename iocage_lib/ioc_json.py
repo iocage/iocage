@@ -1259,6 +1259,7 @@ class IOCConfiguration(IOCZFS):
                 default_props = json.load(default_json)
                 default_props, write = self.check_config(
                     default_props, default=True)
+                write = self.fix_properties(default_props)
         except FileNotFoundError:
             iocage_lib.ioc_common.logit(
                 {
