@@ -2043,7 +2043,7 @@ class IOCage(ioc_json.IOCZFS):
             new_release = ioc_plugin.IOCPlugin(
                 plugin=uuid,
                 callback=self.callback
-            ).upgrade()
+            ).upgrade(jid)
             plugin = True
         else:
             ioc_common.logit(

@@ -1031,7 +1031,7 @@ fingerprint: {fingerprint}
         if write:
             self.json_write(conf)
 
-    def upgrade(self):
+    def upgrade(self, jid):
         iocage_lib.ioc_common.logit(
             {
                 "level": "INFO",
@@ -1093,7 +1093,7 @@ fingerprint: {fingerprint}
                 snapshot=False)
 
         self.silent = True
-        self.update()
+        self.update(jid)
 
         return new_release
 
