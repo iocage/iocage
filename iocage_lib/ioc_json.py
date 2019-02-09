@@ -585,7 +585,6 @@ class IOCConfiguration(IOCZFS):
         self.silent = silent
         self.callback = callback
         self.json_version = self.get_version()
-        self.mac_prefix = self.get_mac_prefix()
         self.pool, self.iocroot = self.get_pool_and_iocroot()
 
         if not checking_datasets:
@@ -735,23 +734,6 @@ class IOCConfiguration(IOCZFS):
                 raise RuntimeError(f"Please set a mountpoint on {loc}")
 
         return pool, get_iocroot()
-
-    @staticmethod
-    def get_mac_prefix():
-        try:
-            default_gw = netifaces.gateways()['default'][netifaces.AF_INET][1]
-            default_mac = netifaces.ifaddresses(default_gw)[netifaces.AF_LINK]
-
-            # Use the hosts prefix to start generation from.
-            # Helps avoid clashes with other systems in the network
-            mac_prefix = default_mac[0]['addr'].replace(':', '')[:6]
-
-            return mac_prefix
-        except KeyError:
-            # They don't have a default gateway, opting for generation of mac
-            mac = random.randint(0x00, 0xfffff)
-
-            return f'{mac:06x}'
 
     def json_write(self, data, _file="/config.json", defaults=False):
         """Write a JSON file at the location given with supplied data."""
@@ -947,6 +929,8 @@ class IOCConfiguration(IOCZFS):
         # Version 20 keys
         if not conf.get('netgraph'):
             conf['netgraph'] = 0
+        if default and 'mac_prefix' in conf:
+            deprecated_properties.append('mac_prefix')
 
         if not default:
             conf.update(jail_conf)
@@ -1173,7 +1157,6 @@ class IOCConfiguration(IOCZFS):
             'defaultrouter': 'none',
             'defaultrouter6': 'none',
             'resolver': '/etc/resolv.conf',
-            'mac_prefix': self.mac_prefix,
             'vnet0_mac': 'none',
             'vnet1_mac': 'none',
             'vnet2_mac': 'none',
@@ -2093,7 +2076,7 @@ class IOCJson(IOCConfiguration):
             "defaultrouter": ("string", ),
             "defaultrouter6": ("string", ),
             "resolver": ("string", ),
-            "mac_prefix": ("string", ),
+            "mac_prefix": ("string", DEPRECATED), # as of config version 20
             "vnet0_mac": ("string", ),
             "vnet1_mac": ("string", ),
             "vnet2_mac": ("string", ),
