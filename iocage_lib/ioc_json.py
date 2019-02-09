@@ -855,6 +855,16 @@ class IOCConfiguration(IOCZFS):
         if not default:
             jail_conf = self.check_jail_config(conf)
 
+        # Adding a property name to the deprecated_properties
+        # list will **remove** the property from the on-disk JSON
+        # and print a deprecation warning. You likely want to do
+        # this only when default == True to remove deprecated
+        # properties from defaults.json. THINK CAREFULLY before
+        # deleting property values from the user's config.json.
+        #
+        # See also: DEPRECATED value in IOCJson.json_check_prop()
+        deprecated_properties = []
+
         conf['CONFIG_VERSION'] = iocage_conf_version
 
         # Version 2 keys
@@ -940,6 +950,20 @@ class IOCConfiguration(IOCZFS):
 
         if not default:
             conf.update(jail_conf)
+
+        for prop in deprecated_properties:
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'WARNING',
+                    'message': f'DEPRECATION: `{prop}` has been deprecated. '
+                               'It has been removed from the '
+                               f'{"default" if default else "jail"} configuration. '
+                               f'Before removal, its value was "{conf[prop]}".'
+                },
+                _callback=self.callback,
+                silent=False
+            )
+            del conf[prop]
 
         return conf, True
 
@@ -2042,6 +2066,17 @@ class IOCJson(IOCConfiguration):
         truth_variations = (
             '0', '1', 'off', 'on', 'no', 'yes', 'false', 'true'
         )
+        # Adding the DEPRECATED value to a property's tuple will
+        # allow the property to be read from jails that have it
+        # in their config.json, but will prohibit setting the
+        # property on any jail. If the user tries to set the
+        # property on a jail that has it in config.json, a special
+        # deprecation warning is displayed.
+        #
+        # Also do: remove the property from default_props in
+        #          IOCConfiguration.check_default_config()
+        # See also: deprecated_properties in IOCConfiguration.check_config()
+        DEPRECATED = 0xDEADBEEF
 
         props = {
             # Network properties
@@ -2199,6 +2234,20 @@ class IOCJson(IOCConfiguration):
 
         elif key in props.keys():
             # Either it contains what we expect, or it's a string.
+
+            if DEPRECATED in props[key]:
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'EXCEPTION',
+                        'message': f'The `{key}` parameter is deprecated, is '
+                                   'no longer in use by iocage, and cannot '
+                                   f'be set. Jails created before `{key}` was '
+                                   f'deprecated retain the value of `{key}` '
+                                   'for reference only.'
+                    },
+                    _callback=self.callback,
+                    silent=self.silent
+                )
 
             for k in props[key]:
                 if k in value:
