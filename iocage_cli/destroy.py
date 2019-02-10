@@ -84,7 +84,7 @@ def child_test(zfs, iocroot, name, _type, force=False, recursive=False):
             })
             exit(1)
         else:
-            return
+            return _children
 
 
 @click.command(name="destroy", help="Destroy specified jail(s).")
@@ -137,8 +137,12 @@ def cli(force, release, download, jails, recursive):
                 if not click.confirm("\nAre you sure?"):
                     continue
 
-            child_test(zfs, iocroot, release, "release", force=force,
-                       recursive=recursive)
+            children = child_test(zfs, iocroot, release, "release", force=force,
+                                  recursive=recursive)
+
+            if children:
+                for child in children:
+                    ioc.IOCage(jail=child).destroy_jail(force)
 
             ioc.IOCage(jail=release,
                        skip_jails=True).destroy_release(download)
