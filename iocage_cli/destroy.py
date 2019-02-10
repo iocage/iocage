@@ -137,8 +137,8 @@ def cli(force, release, download, jails, recursive):
                 if not click.confirm("\nAre you sure?"):
                     continue
 
-            children = child_test(zfs, iocroot, release, "release", force=force,
-                                  recursive=recursive)
+            children = child_test(zfs, iocroot, release, "release",
+                                  force=force, recursive=recursive)
 
             if children:
                 for child in children:
