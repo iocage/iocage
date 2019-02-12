@@ -29,6 +29,7 @@ import iocage_lib.ioc_exceptions
 import iocage_lib.ioc_exec
 import iocage_lib.ioc_json
 import iocage_lib.ioc_list
+import os
 
 from pathlib import Path
 
@@ -67,6 +68,8 @@ class IOCStop(object):
         dhcp = self.conf["dhcp"]
         exec_fib = self.conf["exec_fib"]
         devfs_ruleset = self.conf['devfs_ruleset']
+        debug_mode = True if os.environ.get(
+            'IOCAGE_DEBUG', 'FALSE') == 'TRUE' else False
 
         if not self.status:
             msg = f"{self.uuid} is not running!"
@@ -310,6 +313,9 @@ class IOCStop(object):
         # Build up a jail stop command.
         cmd = ['jail', '-q']
 
+        if debug_mode:
+            cmd.append('-v')
+
         # We check for the existence of the jail.conf here as on iocage
         # upgrade people likely will not have these files. These files
         # will be written on the next jail start/restart.
@@ -320,7 +326,11 @@ class IOCStop(object):
 
         cmd.extend(['-r', f'ioc-{self.uuid}'])
 
-        stop = su.Popen(cmd, stdout=su.PIPE, stderr=su.PIPE)
+        stop = su.Popen(
+            cmd,
+            stdout=su.PIPE if not debug_mode else None,
+            stderr=su.PIPE if not debug_mode else None
+            )
         _, stop_err = stop.communicate()
 
         if stop_err:

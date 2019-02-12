@@ -215,8 +215,11 @@ class IOCageCLI(click.MultiCommand):
     help="Log debug output to the console.")
 def cli(version, force, debug):
     """A jail manager."""
+    os.environ['IOCAGE_DEBUG'] = 'FALSE'
     logger = IOCLogger()
+
     if debug:
+        os.environ['IOCAGE_DEBUG'] = 'TRUE'
         logger.setConsoleLogLevel(logging.DEBUG)
 
     skip_check = False

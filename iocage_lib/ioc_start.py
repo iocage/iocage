@@ -155,6 +155,8 @@ class IOCStart(object):
         ip_hostname = self.conf['ip_hostname']
         prop_missing = False
         prop_missing_msgs = []
+        debug_mode = True if os.environ.get(
+            'IOCAGE_DEBUG', 'FALSE') == 'TRUE' else False
 
         if wants_dhcp:
             if not bpf:
@@ -404,7 +406,12 @@ class IOCStart(object):
         )
         jail.sync_changes()
 
-        start_cmd = ["jail", "-f", f"/var/run/jail.ioc-{self.uuid}.conf", "-c"]
+        start_cmd = ['jail']
+
+        if debug_mode:
+            start_cmd.append('-v')
+
+        start_cmd += ['-f', f'/var/run/jail.ioc-{self.uuid}.conf', '-c']
 
         start_env = {
             **os.environ,
@@ -412,7 +419,8 @@ class IOCStart(object):
             "IOCAGE_NAME": f"ioc-{self.uuid}",
         }
 
-        start = su.Popen(start_cmd, stderr=su.PIPE, stdout=su.PIPE,
+        start = su.Popen(start_cmd, stderr=su.PIPE if not debug_mode else None,
+                         stdout=su.PIPE if not debug_mode else None,
                          env=start_env)
 
         stdout_data, stderr_data = start.communicate()
