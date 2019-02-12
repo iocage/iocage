@@ -162,6 +162,85 @@ class JailRuntimeConfiguration(object):
             )
 
 
+class IOCCpuset(object):
+
+    def __init__(self, name):
+        self.jail_name = f'ioc-{name}'
+
+    def set_cpuset(self, value=None):
+        if not value:
+            value = 'all'
+
+        failed = False
+        try:
+            iocage_lib.ioc_exec.SilentExec(
+                ['cpuset', '-l', value, '-j', self.jail_name],
+                None, unjailed=True, decode=True
+            )
+        except iocage_lib.ioc_exceptions.CommandFailed:
+            failed = True
+        finally:
+            return failed
+
+    @staticmethod
+    def retrieve_cpu_sets():
+        cpu_sets = -2
+        try:
+            output = iocage_lib.ioc_exec.SilentExec(
+                ['cpuset', '-g', '-s', '0'],
+                None, unjailed=True, decode=True
+            )
+        except iocage_lib.ioc_exceptions.CommandFailed:
+            pass
+        else:
+            result = re.findall(
+                r'.*mask:.*(\d+)$',
+                output.stdout.split('\n')[0]
+            )
+            if result:
+                cpu_sets = int(result[0])
+        finally:
+            return cpu_sets
+
+    @staticmethod
+    def validate_cpuset_prop(value, raise_error=True):
+        failed = False
+        cpu_sets = IOCCpuset.retrieve_cpu_sets() + 1
+
+        if not any(
+            cond for cond in (
+                re.findall(
+                    fr'^(?!.*(\b\d+\b).*\b\1\b)'
+                    fr'((?:{"|".join(map(str, range(cpu_sets)))})'
+                    fr'(,(?:{"|".join(map(str, range(cpu_sets)))}))*)?$',
+                    value
+                ),
+                value in ('off', 'all'),
+                re.findall(
+                    fr'^(?:{"|".join(map(str, range(cpu_sets - 1)))})-'
+                    fr'(?:{"|".join(map(str, range(cpu_sets)))})$',
+                    value
+                ) and int(value.split('-')[0]) < int(value.split('-')[1])
+            )
+        ):
+            failed = True
+
+        if failed and raise_error:
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message': 'Please specify a valid format for cpuset '
+                               'value.\nFollowing 4 formats are supported:\n'
+                               '1) comma delimited string i.e 0,1,2,3\n'
+                               '2) a range of values i.e 0-2\n'
+                               '3) "all" - all would mean using all cores\n'
+                               '4) off'
+                }
+            )
+        else:
+            return failed
+
+
 class IOCRCTL(object):
 
     types = {
@@ -1933,6 +2012,17 @@ class IOCJson(IOCConfiguration):
                 else:
                     key = key.replace("_", ".")
 
+                if key == 'cpuset':
+                    iocage_lib.ioc_common.logit(
+                        {
+                            'level': 'INFO',
+                            'message': 'cpuset changes '
+                                       'require a jail restart'
+                        },
+                        _callback=self.callback,
+                        silent=self.silent
+                    )
+
                 # Let's set a rctl rule for the prop if applicable
                 if key in IOCRCTL.types:
                     rctl_jail = IOCRCTL(conf['host_hostuuid'])
@@ -2098,7 +2188,7 @@ class IOCJson(IOCConfiguration):
             "allow_vmm": truth_variations,
             "vnet_interfaces": ("string", ),
             # RCTL limits
-            "cpuset": ("off", "on"),
+            "cpuset": ('string',),
             "rlimits": ("off", "on"),
             "memoryuse": ('string',),
             "memorylocked": ('string',),
@@ -2311,6 +2401,8 @@ class IOCJson(IOCConfiguration):
                         )
                 elif key in IOCRCTL.types:
                     IOCRCTL.validate_rctl_props(key, value)
+                elif key == 'cpuset':
+                    IOCCpuset.validate_cpuset_prop(value)
 
                 return value, conf
             else:
