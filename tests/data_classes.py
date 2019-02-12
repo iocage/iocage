@@ -609,6 +609,16 @@ class Jail(Resource):
         ].get('origin', {}).get('value')
 
     @property
+    def cpuset(self):
+        output = self.run_command(['cpuset', '-g'])[0].split('\n')[0]
+        return list(
+            map(
+                lambda v: int(v.strip()),
+                output.split(':')[1].strip().split(',')
+            )
+        )
+
+    @property
     def is_rcjail(self):
         return self.config.get('boot', 0)
 

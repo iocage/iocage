@@ -322,3 +322,15 @@ def jails_as_rows():
         ]
 
     return _default_jails
+
+
+@pytest.fixture
+def run_console():
+    def _run_console(cmd):
+        proc = subprocess.run(
+            cmd, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        return proc
+
+    return _run_console

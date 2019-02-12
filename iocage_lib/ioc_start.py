@@ -656,6 +656,12 @@ class IOCStart(object):
                 _callback=self.callback,
                 silent=self.silent)
 
+        self.set(
+            "last_started={}".format(
+                datetime.datetime.utcnow().strftime("%F %T")
+            )
+        )
+
         rctl_keys = set(
             filter(
                 lambda k: self.conf.get(k, 'off') != 'off',
@@ -683,14 +689,28 @@ class IOCStart(object):
 
             if failed:
                 iocage_lib.ioc_common.logit({
-                    'level': 'INFO',
+                    'level': 'ERROR',
                     'message': f'  + Failed to set {", ".join(failed)} '
                     'RCTL props'
                 })
 
-        self.set(
-            "last_started={}".format(datetime.datetime.utcnow().strftime(
-                "%F %T")))
+        cpuset = self.conf.get('cpuset', 'off')
+        if cpuset != 'off':
+            # Let's set the specified rules
+            iocage_lib.ioc_common.logit({
+                'level': 'INFO',
+                'message': f'  + Setting cpuset to: {cpuset}'
+            })
+
+            cpuset_jail = iocage_lib.ioc_json.IOCCpuset(self.uuid)
+            cpuset_jail.validate_cpuset_prop(cpuset)
+
+            failed = cpuset_jail.set_cpuset(cpuset)
+            if failed:
+                iocage_lib.ioc_common.logit({
+                    'level': 'ERROR',
+                    'message': f'  + Failed to set cpuset to: {cpuset}'
+                })
 
     def check_aliases(self, ip_addrs, mode='4'):
         """
