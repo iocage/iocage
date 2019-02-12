@@ -1252,7 +1252,8 @@ and after any exec_start commands have completed.
 .Pp
 Default: /usr/bin/true
 .Pp
-Source: jail 8
+Source:
+.Xr jail 8
 .It Pf exec_clean= Op 1 | 0
 Run commands in a clean environment.
 The environment is discarded except for HOME, SHELL, TERM and USER.
@@ -1357,6 +1358,7 @@ When set to 2 (default), the syscalls above can operate only on a
 mountpoint where the jail's chroot directory is located.
 .Pp
 Default: 2
+.Pp
 Source:
 .Xr jail 8
 .It Pf children_max= Op 0 | ..
@@ -1482,6 +1484,7 @@ Ignored in
 and earlier.
 .Pp
 Default: disable
+.Pp
 Source:
 .Xr jail 8
 .It Pf allow_raw_sockets= Op 0 | 1
