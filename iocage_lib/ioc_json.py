@@ -939,9 +939,9 @@ class IOCConfiguration(IOCZFS):
             iocage_lib.ioc_common.logit(
                 {
                     'level': 'WARNING',
-                    'message': f'DEPRECATION: `{prop}` has been deprecated. '
+                    'message': f'DEPRECATION: `{prop}` has been deprecated.\n'
                                'It has been removed from the '
-                               f'{"default" if default else "jail"} configuration. '
+                               f'{"default" if default else "jail"} configuration.\n'
                                f'Before removal, its value was "{conf[prop]}".'
                 },
                 _callback=self.callback,
@@ -2222,11 +2222,11 @@ class IOCJson(IOCConfiguration):
                 iocage_lib.ioc_common.logit(
                     {
                         'level': 'EXCEPTION',
-                        'message': f'The `{key}` parameter is deprecated, is '
-                                   'no longer in use by iocage, and cannot '
-                                   f'be set. Jails created before `{key}` was '
-                                   f'deprecated retain the value of `{key}` '
-                                   'for reference only.'
+                        'message': f'The `{key}` parameter is deprecated and '
+                                   'is no longer in use by iocage. It cannot '
+                                   f'be set.\nJails created before `{key}` '
+                                   'was deprecated retain the value of '
+                                   f'`{key}` for reference only.'
                     },
                     _callback=self.callback,
                     silent=self.silent
