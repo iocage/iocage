@@ -330,7 +330,7 @@ class IOCStop(object):
             cmd,
             stdout=su.PIPE if not debug_mode else None,
             stderr=su.PIPE if not debug_mode else None
-            )
+        )
         _, stop_err = stop.communicate()
 
         if stop_err:
