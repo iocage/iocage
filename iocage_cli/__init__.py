@@ -93,10 +93,10 @@ class IOCLogger(object):
             # a large duplicate flood of text.
             logger.handlers = []
 
-        logger.setLevel(logging.DEBUG)
         logging.addLevelName(5, "SPAM")
         logging.addLevelName(15, "VERBOSE")
         logging.addLevelName(25, "NOTICE")
+        logger.setLevel('VERBOSE')
 
         default_logging = {
             'version': 1,
@@ -151,6 +151,10 @@ class IOCLogger(object):
             level_styles=cli_colors))
         logger.addHandler(handler)
 
+    def setConsoleLogLevel(self, level):
+        logger = logging.getLogger("iocage")
+        logger.setLevel(level)
+
 
 cmd_folder = os.path.abspath(os.path.dirname(__file__))
 
@@ -204,9 +208,17 @@ class IOCageCLI(click.MultiCommand):
     "-f",
     is_flag=True,
     help="Allow iocage to rename datasets.")
-def cli(version, force):
+@click.option(
+    "--debug",
+    "-D",
+    is_flag=True,
+    help="Log debug output to the console.")
+def cli(version, force, debug):
     """A jail manager."""
-    IOCLogger()
+    logger = IOCLogger()
+    if debug:
+        logger.setConsoleLogLevel(logging.DEBUG)
+
     skip_check = False
     os.environ["IOCAGE_SKIP"] = "FALSE"
     skip_check_cmds = ["--help", "activate", "-v", "--version", "--rc"]
