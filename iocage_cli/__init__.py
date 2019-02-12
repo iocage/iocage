@@ -42,6 +42,9 @@ from click import core
 core._verify_python3_env = lambda: None
 locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
 
+sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf8', buffering=1)
+sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf8', buffering=1)
+
 # @formatter:off
 # Sometimes SIGINT won't be installed.
 # http://stackoverflow.com/questions/40775054/capturing-sigint-using-keyboardinterrupt-exception-works-in-terminal-not-in-scr/40785230#40785230
