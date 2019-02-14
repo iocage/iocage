@@ -519,7 +519,8 @@ class IOCage(ioc_json.IOCZFS):
                empty=False,
                clone=None,
                skip_batch=False,
-               thickconfig=False):
+               thickconfig=False,
+               clone_basejail=False):
         """Creates the jail dataset"""
         count = 0 if count == 1 and not skip_batch else count
 
@@ -628,7 +629,8 @@ class IOCage(ioc_json.IOCZFS):
                         empty=empty,
                         clone=clone,
                         skip_batch=True,
-                        thickconfig=thickconfig)
+                        thickconfig=thickconfig,
+                        clone_basejail=clone_basejail)
             else:
                 ioc_create.IOCCreate(
                     release,
@@ -643,7 +645,8 @@ class IOCage(ioc_json.IOCZFS):
                     empty=empty,
                     uuid=_uuid,
                     clone=clone,
-                    thickconfig=thickconfig
+                    thickconfig=thickconfig,
+                    clone_basejail=clone_basejail
                 ).create_jail()
         except BaseException:
             if clone:

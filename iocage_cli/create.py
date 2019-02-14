@@ -71,9 +71,14 @@ def validate_count(ctx, param, value):
 @click.option("--uuid", "-u", "_uuid", default=None,
               help="Provide a specific UUID for this jail.")
 @click.option("--basejail", "-b", is_flag=True, default=False,
-              help="Set the new jail type to a basejail. Basejails"
-                   " mount the specified RELEASE directories as nullfs"
-                   " mounts over the jail's directories.")
+              help="Set the new jail type to a basejail. Basejails are"
+                   " thick jails (unless specified) that mount the specified"
+                   " RELEASE directories as nullfs mounts over the jail's"
+                   " directories.")
+@click.option("--clone_basejail", "-B", is_flag=True, default=False,
+              help="Set the new jail type to a clonetype basejail. Basejails"
+                   " mount the specified RELEASE directories as nullfs mounts "
+                   " over the jail's directories.")
 @click.option("--thickjail", "-T", is_flag=True, default=False,
               help="Set the new jail type to a thickjail. Thickjails"
                    " are copied (not cloned) from specified RELEASE.")
@@ -84,8 +89,8 @@ def validate_count(ctx, param, value):
               help="Use a short UUID of 8 characters instead of the default"
                    " 36.")
 @click.argument("props", nargs=-1)
-def cli(release, template, count, props, pkglist, basejail, thickjail, empty,
-        short, name, _uuid, thickconfig):
+def cli(release, template, count, props, pkglist, basejail, clone_basejail,
+        thickjail, empty, short, name, _uuid, thickconfig):
 
     if _uuid:
         try:
@@ -179,7 +184,7 @@ def cli(release, template, count, props, pkglist, basejail, thickjail, empty,
         iocage.create(release, props, count, pkglist=pkglist,
                       template=template, short=short, _uuid=_uuid,
                       basejail=basejail, thickjail=thickjail, empty=empty,
-                      thickconfig=thickconfig)
+                      thickconfig=thickconfig, clone_basejail=clone_basejail)
     except (RuntimeError, ioc_exceptions.JailMissingConfiguration) as err:
         if template and "Dataset" in str(err) or str(
                 err).startswith('Template'):

@@ -51,7 +51,8 @@ class IOCCreate(object):
     def __init__(self, release, props, num, pkglist=None, plugin=False,
                  migrate=False, config=None, silent=False, template=False,
                  short=False, basejail=False, thickjail=False, empty=False,
-                 uuid=None, clone=False, thickconfig=False, callback=None):
+                 uuid=None, clone=False, thickconfig=False,
+                 clone_basejail=False, callback=None):
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage_lib.ioc_json.IOCJson(self.pool).json_get_value(
             "iocroot")
@@ -73,6 +74,10 @@ class IOCCreate(object):
         self.callback = callback
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.thickconfig = thickconfig
+
+        if basejail and not clone_basejail:
+            # We want these thick to remove any odd dependency chains later
+            self.thickjail = True
 
     def create_jail(self):
         """Helper to catch SIGINT"""
@@ -978,6 +983,10 @@ ipv6_activate_all_interfaces=\"YES\"
             )
             su.check_call(
                 ['zfs', 'destroy', f'{source}@{jail_uuid}'],
+                stdout=su.PIPE
+            )
+            su.check_call(
+                ['zfs', 'destroy', f'{jail}/root@{jail_uuid}'],
                 stdout=su.PIPE
             )
         except su.CalledProcessError:
