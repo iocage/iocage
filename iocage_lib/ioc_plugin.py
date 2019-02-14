@@ -522,7 +522,7 @@ fingerprint: {fingerprint}
 
     def __fetch_plugin_post_install__(self, conf, _conf, jaildir, uuid):
         """Fetches the users artifact and runs the post install"""
-        dhcp = False
+        iocage_lib.ioc_start.IOCStart(uuid, jaildir, silent=True)
 
         ip4 = _conf["ip4_addr"]
         if '|' in ip4:
@@ -539,8 +539,19 @@ fingerprint: {fingerprint}
             # we'll assume they prefer IP6.
             ip = ip6
         else:
-            dhcp = True
-            ip = ""
+            interface = _conf["interfaces"].split(",")[0].split(":")[0]
+
+            if interface == "vnet0":
+                # Jails use epairNb by default inside
+                interface = f"{interface.replace('vnet', 'epair')}b"
+
+            ip4_cmd = [
+                "jexec", f"ioc-{uuid.replace('.', '_')}",
+                "ifconfig", interface, "inet"
+            ]
+            out = su.check_output(ip4_cmd).decode()
+            ip = f"{out.splitlines()[2].split()[1]}"
+            os.environ["IOCAGE_PLUGIN_IP"] = ip
 
         plugin_env = {"IOCAGE_PLUGIN_IP": ip.rsplit(',')[0]}
 
@@ -601,21 +612,6 @@ fingerprint: {fingerprint}
                         }, _callback=self.callback)
 
                 ui_json = f"{jaildir}/plugin/ui.json"
-
-                if dhcp:
-                    interface = _conf["interfaces"].split(",")[0].split(":")[0]
-
-                    if interface == "vnet0":
-                        # Jails use epairNb by default inside
-                        interface = f"{interface.replace('vnet', 'epair')}b"
-
-                    ip4_cmd = [
-                        "jexec", f"ioc-{uuid.replace('.', '_')}",
-                        "ifconfig", interface, "inet"
-                    ]
-                    out = su.check_output(ip4_cmd).decode()
-                    ip = f"{out.splitlines()[2].split()[1]}"
-                    os.environ["IOCAGE_PLUGIN_IP"] = ip
 
                 try:
                     with open(ui_json, "r") as u:
