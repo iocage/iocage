@@ -50,7 +50,7 @@ setup(
     author='iocage Contributors',
     author_email='https://groups.google.com/forum/#!forum/iocage',
     url='https://github.com/iocage/iocage',
-    packages=find_packages(),
+    packages=find_packages(exclude=['tests']),
     include_package_data=True,
     install_requires=[
         'dulwich>=0.18.6',
@@ -71,7 +71,7 @@ setup(
     author='iocage Contributors',
     author_email='https://groups.google.com/forum/#!forum/iocage',
     url='https://github.com/iocage/iocage',
-    packages=find_packages(),
+    packages=find_packages(exclude=['tests']),
     include_package_data=True,
     install_requires=[
         'click>=6.7',
