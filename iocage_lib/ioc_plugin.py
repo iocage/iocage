@@ -920,17 +920,7 @@ fingerprint: {fingerprint}
 
         git_working_dir = f"{self.iocroot}/.plugin_index"
 
-        try:
-            with open("/dev/null", "wb") as devnull:
-                porcelain.pull(git_working_dir, git_server,
-                               outstream=devnull, errstream=devnull)
-        except Exception as err:
-            iocage_lib.ioc_common.logit(
-                {
-                    "level": "EXCEPTION",
-                    "message": err
-                },
-                _callback=self.callback)
+        self.__clone_repo(git_server, git_working_dir)
 
     def __update_pull_plugin_artifact__(self, plugin_conf):
         """Pull the latest artifact to be sure we're up to date"""
