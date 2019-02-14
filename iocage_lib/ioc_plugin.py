@@ -1338,7 +1338,7 @@ fingerprint: {fingerprint}
                 },
                 _callback=self.callback)
 
-        if f'origin/{self.branch}' not in repo.refs:
+        if f'origin/{ref}' not in repo.refs:
             ref = 'master'
             msgs = [
                 f'\nBranch {self.branch} does not exist at {repo_url}!',
