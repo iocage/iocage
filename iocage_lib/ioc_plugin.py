@@ -1237,15 +1237,20 @@ fingerprint: {fingerprint}
 
     def __remove_snapshot__(self, name):
         """Removes all matching plugin snapshots"""
-        name = f"ioc_plugin_{name}_{self.date}"
+        conf = iocage_lib.ioc_json.IOCJson(
+            f'{self.iocroot}/jails/{self.plugin}'
+        ).json_get_value('all')
+        release = conf['release']
+
+        names = [f'ioc_plugin_{name}_{self.date}', f'ioc_update_{release}']
         dataset = self.zfs.get_dataset(
-            f"{self.pool}/iocage/jails/{self.plugin}")
+            f'{self.pool}/iocage/jails/{self.plugin}')
         dataset_snaps = dataset.snapshots_recursive
 
         for snap in dataset_snaps:
             snap_name = snap.snapshot_name
 
-            if snap_name == name:
+            if snap_name in names:
                 snap.delete()
 
     def __stop_rc__(self):
