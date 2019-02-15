@@ -33,7 +33,7 @@ import shutil
 import subprocess as su
 
 import requests
-from dulwich import porcelain
+import git
 
 import iocage_lib.ioc_common
 import iocage_lib.ioc_create
@@ -44,7 +44,6 @@ import iocage_lib.ioc_upgrade
 import iocage_lib.ioc_exceptions
 import libzfs
 import texttable
-import dulwich.client
 
 
 class IOCPlugin(object):
@@ -620,31 +619,47 @@ fingerprint: {fingerprint}
                 try:
                     with open(ui_json, "r") as u:
                         ui_data = json.load(u)
-                        admin_portal = ui_data["adminportal"]
-                        admin_portal = admin_portal.replace("%%IP%%",
-                                                            ip.rsplit(',')[0])
+                        admin_portal = ui_data.get('adminportal', None)
+                        doc_url = ui_data.get('docurl', None)
 
-                        try:
-                            ph = ui_data["adminportal_placeholders"].items()
-                            for placeholder, prop in ph:
-                                admin_portal = admin_portal.replace(
-                                    placeholder,
-                                    iocage_lib.ioc_json.IOCJson(
-                                        jaildir).json_plugin_get_value(
-                                        prop.split("."))
-                                )
-                        except KeyError:
-                            pass
+                        if admin_portal is not None:
+                            admin_portal = admin_portal.replace(
+                                '%%IP%%', ip.rsplit(',')[0]
+                            )
 
-                        iocage_lib.ioc_common.logit(
-                            {
-                                "level": "INFO",
-                                "message": f"\nAdmin Portal:\n{admin_portal}"
-                            },
-                            _callback=self.callback,
-                            silent=self.silent)
+                            try:
+                                ph = ui_data[
+                                    'adminportal_placeholders'
+                                ].items()
+                                for placeholder, prop in ph:
+                                    admin_portal = admin_portal.replace(
+                                        placeholder,
+                                        iocage_lib.ioc_json.IOCJson(
+                                            jaildir).json_plugin_get_value(
+                                            prop.split('.'))
+                                    )
+                            except KeyError:
+                                pass
+
+                            iocage_lib.ioc_common.logit(
+                                {
+                                    'level': 'INFO',
+                                    'message': '\nAdmin Portal:\n'
+                                               f'{admin_portal}'
+                                },
+                                _callback=self.callback,
+                                silent=self.silent)
+
+                        if doc_url is not None:
+                            iocage_lib.ioc_common.logit(
+                                {
+                                    'level': 'INFO',
+                                    'message': f'\nDoc URL:\n{doc_url}'
+                                },
+                                _callback=self.callback,
+                                silent=self.silent)
                 except FileNotFoundError:
-                    # They just didn't set a admin portal.
+                    # They just didn't set a admin portal or doc url.
                     pass
             except FileNotFoundError:
                 pass
@@ -905,17 +920,7 @@ fingerprint: {fingerprint}
 
         git_working_dir = f"{self.iocroot}/.plugin_index"
 
-        try:
-            with open("/dev/null", "wb") as devnull:
-                porcelain.pull(git_working_dir, git_server,
-                               outstream=devnull, errstream=devnull)
-        except Exception as err:
-            iocage_lib.ioc_common.logit(
-                {
-                    "level": "EXCEPTION",
-                    "message": err
-                },
-                _callback=self.callback)
+        self.__clone_repo(git_server, git_working_dir)
 
     def __update_pull_plugin_artifact__(self, plugin_conf):
         """Pull the latest artifact to be sure we're up to date"""
@@ -1298,24 +1303,33 @@ fingerprint: {fingerprint}
         """
         This is to replicate the functionality of cloning/pulling a repo
         """
-        try:
-            with open('/dev/null', 'wb') as devnull:
-                porcelain.pull(destination, repo_url, outstream=devnull,
-                               errstream=devnull)
-                repo = porcelain.open_repo(destination)
-        except dulwich.errors.NotGitRepository:
-            with open('/dev/null', 'wb') as devnull:
-                repo = porcelain.clone(
-                    repo_url, destination, outstream=devnull, errstream=devnull
-                )
-
-        remote_refs = porcelain.fetch(repo, repo_url)
-        ref = f'refs/heads/{self.branch}'.encode()
+        ref = self.branch
+        os.makedirs(destination, exist_ok=True)
 
         try:
-            repo[ref] = remote_refs[ref]
-        except KeyError:
-            ref = b'refs/heads/master'
+            # "Pull"
+            repo = git.Repo(destination)
+            origin = repo.remotes.origin
+        except git.exc.InvalidGitRepositoryError:
+            # Clone
+            repo = git.Repo.init(destination)
+            origin = repo.create_remote('origin', repo_url)
+            origin.fetch()
+
+            repo.create_head('master', origin.refs.master)
+            repo.heads.master.set_tracking_branch(origin.refs.master)
+            repo.heads.master.checkout()
+
+        if not origin.exists():
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message': f'Origin: {origin.url} does not exist!'
+                },
+                _callback=self.callback)
+
+        if f'origin/{ref}' not in repo.refs:
+            ref = 'master'
             msgs = [
                 f'\nBranch {self.branch} does not exist at {repo_url}!',
                 'Using "master" branch for plugin, this may not work '
@@ -1330,10 +1344,6 @@ fingerprint: {fingerprint}
                     },
                     _callback=self.callback)
 
-            repo[ref] = remote_refs[ref]
-
-        tree = repo[ref].tree
-
-        # Let git reflect reality
-        repo.reset_index(tree)
-        repo.refs.set_symbolic_ref(b'HEAD', ref)
+        # Time to make this reality
+        repo.head.reference = f'origin/{ref}'
+        repo.head.reset(index=True, working_tree=True)
