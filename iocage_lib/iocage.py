@@ -1710,6 +1710,8 @@ class IOCage(object):
             "jail", "clonejail", "pluginv2") else False
 
         if updateable:
+            self.snapshot(f'ioc_update_{conf["release"]}')
+
             if not status:
                 self.silent = True
                 self.start()
