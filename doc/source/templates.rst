@@ -42,12 +42,50 @@ Done!
 
 **Customizing a template:**
 
-To make further customizations or just patch the template, there are two
-options:
+To make changes to the template, you will need to know whether any existing
+jails are based on the template. Since modifying the template will require
+converting it back into a jail, it cannot be the base for any jails.
 
-* Convert the template back to a jail with
-  :command:`iocage set template=no [UUID | NAME]`, then start the jail
-  with :command:`iocage start [UUID | NAME]`.
-* If network access is unnecessary to make the changes, use
-  :command:`iocage chroot [UUID | NAME] [Command ...]` to run the
-  needed commands inside the template.
+*** No jails based on the template ***
+
+1. Convert the template back into a jail:
+
+   :command:`iocage set template=no [UUID | NAME]`.
+
+2. Start the jail:
+
+   :command:`iocage start [UUID | NAME]`.
+
+3. Use any method you wish to connect to the jail and modify its contents.
+
+4. Stop the jail:
+
+   :command:`iocage stop [UUID | NAME]`.
+
+5. Convert the jail back into a template:
+
+   :command:`iocage set template=yes [UUID | NAME]`.
+
+*** Jails based on the template ***
+
+This process will create a new template, leaving the existing template
+and jails unaffected.
+
+1. Create a 'thick' jail from the template, so that it will be independent
+   from the template:
+
+   :command:`iocage create -T -t [UUID | NAME] -n newtemplate`.
+
+2. Start the jail:
+
+   :command:`iocage start newtemplate`.
+
+3. Use any method you wish to connect to the jail and modify its contents.
+
+4. Stop the jail:
+
+   :command:`iocage stop newtemplate`.
+
+5. Convert the jail into a template:
+
+   :command:`iocage set template=yes newtemplate`.
