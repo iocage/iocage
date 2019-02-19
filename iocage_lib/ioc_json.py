@@ -673,7 +673,7 @@ class IOCConfiguration(IOCZFS):
     @staticmethod
     def get_version():
         """Sets the iocage configuration version."""
-        version = '19'
+        version = '20'
 
         return version
 
@@ -1014,6 +1014,10 @@ class IOCConfiguration(IOCZFS):
             {k: 'off' for k in IOCRCTL.types if not conf.get(k)}
         )
 
+        # Version 20 keys
+        if not conf.get('exec_created'):
+            conf['exec_created'] = '/usr/bin/true'
+
         if not default:
             conf.update(jail_conf)
 
@@ -1238,6 +1242,7 @@ class IOCConfiguration(IOCZFS):
             'exec_poststart': '/usr/bin/true',
             'exec_prestop': '/usr/bin/true',
             'exec_poststop': '/usr/bin/true',
+            'exec_created': '/usr/bin/true',
             'exec_clean': 1,
             'exec_timeout': '60',
             'stop_timeout': '30',
@@ -2157,6 +2162,7 @@ class IOCJson(IOCConfiguration):
             "exec_prestop": ("string", ),
             "exec_poststop": ("string", ),
             "exec_clean": truth_variations,
+            "exec_created": ("string", ),
             "exec_timeout": ("string", ),
             "stop_timeout": ("string", ),
             "exec_jail_user": ("string", ),
