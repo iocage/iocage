@@ -138,6 +138,7 @@ class IOCStart(object):
         exec_prestart = self.conf["exec_prestart"]
         exec_poststart = self.conf["exec_poststart"]
         exec_clean = self.conf["exec_clean"]
+        exec_created = self.conf["exec_created"]
         exec_timeout = self.conf["exec_timeout"]
         stop_timeout = self.conf["stop_timeout"]
         mount_devfs = self.conf["mount_devfs"]
@@ -269,13 +270,15 @@ class IOCStart(object):
         # FreeBSD before 12.0 does not support this.
 
         if userland_version < 12.0:
-            _allow_mlock = ""
-            _allow_mount_fusefs = ""
-            _allow_vmm = ""
+            _allow_mlock = ''
+            _allow_mount_fusefs = ''
+            _allow_vmm = ''
+            _exec_created = ''
         else:
             _allow_mlock = f"allow.mlock={allow_mlock}"
             _allow_mount_fusefs = f"allow.mount.fusefs={allow_mount_fusefs}"
             _allow_vmm = f"allow.vmm={allow_vmm}"
+            _exec_created = f'exec.created={exec_created}'
 
         if not self.conf['vnet']:
             ip4_addr = self.conf['ip4_addr']
@@ -379,6 +382,7 @@ class IOCStart(object):
                 _sysvmsg,
                 _sysvsem,
                 _sysvshm,
+                _exec_created,
                 f'host.domainname={host_domainname}',
                 f'host.hostname={host_hostname}',
                 f'path={self.path}/root',
