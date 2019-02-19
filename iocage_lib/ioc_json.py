@@ -1258,7 +1258,7 @@ class IOCJson(object):
             "owner": ("string", ),
             "priority": str(tuple(range(1, 100))),
             "hostid": ("string", ),
-            "hostid_strict_check": ("no", "yes"),
+            "hostid_strict_check": ("off", "on"),
             "jail_zfs": ("off", "on"),
             "jail_zfs_dataset": ("string", ),
             "jail_zfs_mountpoint": ("string", ),
