@@ -65,10 +65,3 @@ This section provides some generic guidelines and tips for working with
 
   Remove unnecessary snapshots, especially from jails where data is
   constantly changing!
-
-**Use** :command:`iocage chroot`
-
-  When accessing or modifying files in a template or stopped jail, use
-  :command:`iocage chroot [UUID | NAME] [Command ...]`. This
-  way you don't need to spin up the jail or convert the template.
-  
