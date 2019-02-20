@@ -48,7 +48,7 @@ def test_01_jail_console(invoke_cli, resource_selector, skip_test):
     failed = False
     try:
         console = subprocess.Popen(
-            ['iocage', 'console', jail.name],
+            ['iocage', 'console', '-f', jail.name],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE
         )
         console.communicate('touch console_test_file'.encode())

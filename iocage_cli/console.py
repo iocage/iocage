@@ -30,12 +30,20 @@ import iocage_lib.iocage as ioc
 __rootcmd__ = True
 
 
-@click.command(name="console", help="Login to a jail.")
-@click.argument("jail")
-def cli(jail):
+@click.command(name='console', help='Login to a jail.')
+@click.argument('jail')
+@click.option('--force', '-f', default=False, is_flag=True,
+              help='Start the jail if it\'s not running.')
+def cli(jail, force):
     """
     Runs jexec to login into the specified jail.
     """
     # Command is empty since this command is hardcoded later on.
-    ioc.IOCage(jail=jail,
-               silent=True).exec("", console=True)
+    ioc.IOCage(
+        jail=jail,
+        silent=True
+    ).exec(
+        None,
+        console=True,
+        start_jail=force
+    )
