@@ -38,7 +38,9 @@ __rootcmd__ = True
 @click.option("--jail_user", "-U", help="The jail user to use.")
 @click.argument("jail", required=True, nargs=1)
 @click.argument("command", nargs=-1, type=click.UNPROCESSED)
-def cli(command, jail, host_user, jail_user):
+@click.option('--force', '-f', default=False, is_flag=True,
+              help='Start the jail if it\'s not running.')
+def cli(command, jail, host_user, jail_user, force):
     """Runs the command given inside the specified jail as the supplied
     user."""
     # We may be getting ';', '&&' and so forth. Adding the shell for safety.
@@ -60,7 +62,12 @@ def cli(command, jail, host_user, jail_user):
 
     try:
         ioc.IOCage(jail=jail).exec(
-            command, host_user, jail_user, interactive=True)
+            command,
+            host_user,
+            jail_user,
+            interactive=True,
+            start_jail=force
+        )
     except KeyboardInterrupt:
         pass
     except Exception as e:

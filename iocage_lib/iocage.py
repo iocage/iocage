@@ -28,6 +28,7 @@ import json
 import operator
 import os
 import subprocess as su
+import sys
 
 import iocage_lib.ioc_clean as ioc_clean
 import iocage_lib.ioc_common as ioc_common
@@ -803,6 +804,7 @@ class IOCage(ioc_json.IOCZFS):
              host_user="root",
              jail_user=None,
              console=False,
+             start_jail=False,
              interactive=False,
              unjailed=False,
              msg_return=False):
@@ -837,6 +839,31 @@ class IOCage(ioc_json.IOCZFS):
         else:
             su_env = os.environ.copy()
 
+        status, jid = self.list("jid", uuid=uuid)
+
+        if not status and not start_jail:
+            if not os.isatty(sys.stdout.fileno()):
+                ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": f'{self.jail} is not running! Please supply'
+                                   ' start_jail=True or start the jail'
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
+            else:
+                ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": f'{self.jail} is not running! Please supply'
+                                   ' --force (-f) or start the jail'
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
+        elif not status:
+            self.start()
+            status, jid = self.list("jid", uuid=uuid)
+
         if pkg:
             ip4_addr = self.get("ip4_addr")
             ip6_addr = self.get("ip6_addr")
@@ -853,12 +880,6 @@ class IOCage(ioc_json.IOCZFS):
                     },
                     _callback=self.callback,
                     silent=self.silent)
-
-            status, jid = self.list("jid", uuid=uuid)
-
-            if not status:
-                self.start()
-                status, jid = self.list("jid", uuid=uuid)
 
             command = ["pkg", "-j", jid] + list(command)
 
