@@ -750,8 +750,9 @@ class IOCage(ioc_json.IOCZFS):
                         "message": (f"Jail {uuid} is still running, "
                                     f"please stop the jail first "
                                     f"or destroy it with -f")
-                    }
-                )
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
             else:
                 ioc_common.logit(
                     {
