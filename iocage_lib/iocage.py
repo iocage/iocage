@@ -752,7 +752,6 @@ class IOCage(ioc_json.IOCZFS):
                                     f"or destroy it with -f")
                     }
                 )
-                return
             else:
                 ioc_common.logit(
                     {
