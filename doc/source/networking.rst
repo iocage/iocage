@@ -209,6 +209,14 @@ To configure both IPv4 and IPv6:
 
 .. note:: For VNET jails, a default route has to also be specified.
 
+To create a a jail with a DHCP interface add the `dhcp=on` property:
+
+:samp:`# iocage create -r 11.0-RELEASE --name myjail dhcp=on`
+
+The `dhcp=on` property implies creating a VNET virtual network stack and
+enabling the Berkley Packet Filter. DHCP cannot work without VNET.
+More information about VNET is available in the VNET(9) FreeBSD manual page.
+
 .. index:: Tips for configuring VNET
 .. _Tips for Configuring VNET:
 
@@ -222,3 +230,7 @@ properties:
 :samp:`# iocage set ip4_addr=none ip6_addr=none examplejail`
 
 :samp:`# iocage set defaultrouter=none defaultrouter6=none examplejail`
+
+Force iocage to regenerate the MAC and HW address (e.g.: after cloning a jail).  This will cause the MAC and HW addresses to be regenerated when the jail is next started.
+
+:samp:`# iocage set vnet0_mac=none examplejail`
