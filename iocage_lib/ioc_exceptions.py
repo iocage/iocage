@@ -63,3 +63,7 @@ class JailMissingConfiguration(JailMisconfigured):
 
 class ValidationFailed(ExceptionWithMsg):
     pass
+
+
+class ValueNotFound(Exception):
+    pass

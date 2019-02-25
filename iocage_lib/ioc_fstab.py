@@ -62,9 +62,12 @@ class IOCFstab(object):
         self.silent = silent
         self.callback = callback
 
-        if action != "list":
+        if action != 'list':
             self.fstab = list(self.__read_fstab__())
-            self.dests = self.__validate_fstab__(self.fstab, 'all')
+
+            if action != 'edit':
+                self.dests = self.__validate_fstab__(self.fstab, 'all')
+
             self.__fstab_parse__()
 
     def __fstab_parse__(self):
@@ -117,16 +120,18 @@ class IOCFstab(object):
                 yield line.rstrip()
 
     def __validate_fstab__(self, fstab, mode='single'):
-        dests = []
+        dests = {}
         verrors = []
         jail_root = f'{self.iocroot}/jails/{self.uuid}/root'
 
-        for line in fstab:
+        for index, line in enumerate(fstab):
             try:
                 source, destination, fstype, options, \
                     dump, _pass = line.split()[0:6]
             except ValueError:
-                verrors.append(f'Malformed fstab line: {line}')
+                verrors.append(
+                    f'Malformed fstab at line {index}: {repr(line)}'
+                )
                 continue
 
             source = pathlib.Path(source)
@@ -136,9 +141,19 @@ class IOCFstab(object):
             if mode != 'all' and (
                 self.action == 'add' or self.action == 'replace'
             ):
-                if destination in self.dests:
-                    verrors.append(f'Destination: {self.dest} already exists!')
-                    break
+                if destination in self.dests.values():
+                    if str(source) in self.dests.keys():
+                        verrors.append(
+                            f'Destination: {self.dest} already exists!'
+                        )
+                        break
+                    else:
+                        # They replace with the same destination
+                        try:
+                            self.__fstab_umount__(destination)
+                        except RuntimeError:
+                            # It's not mounted
+                            pass
 
                 if jail_root not in self.dest:
                     verrors.append(
@@ -155,13 +170,15 @@ class IOCFstab(object):
                     missing_root = True
 
             if not source.is_dir():
-                verrors.append(f'Source: {source} does not exist!')
+                if fstype == 'nullfs':
+                    verrors.append(f'Source: {source} does not exist!')
             if not source.is_absolute():
-                verrors.append(f'Source: {source} must use an absolute path!')
+                if fstype == 'nullfs':
+                    verrors.append(
+                        f'Source: {source} must use an absolute path!'
+                    )
 
             if not missing_root:
-                if not dest.is_dir():
-                    verrors.append(f'Destination: {dest} does not exist!')
                 if not dest.is_absolute():
                     verrors.append(
                         f'Destination: {dest} must use an absolute path!'
@@ -183,7 +200,7 @@ class IOCFstab(object):
                 verrors.append(
                     f'Pass: {_pass} must be one digit long!'
                 )
-            dests.append(destination)
+            dests[str(source)] = destination
 
         if verrors:
             iocage_lib.ioc_common.logit({
@@ -222,39 +239,37 @@ class IOCFstab(object):
         :return: The destination of the specified mount
         """
         removed = False
-        index = 0
 
         with iocage_lib.ioc_common.open_atomic(
-                f"{self.iocroot}/jails/{self.uuid}/fstab",
-                "w") as fstab:
-            for line in self.fstab:
+                f'{self.iocroot}/jails/{self.uuid}/fstab', 'w'
+        ) as fstab:
+            for index, line in enumerate(self.fstab):
                 if line.rsplit("#")[0].rstrip() == self.mount or index \
-                        == self.index and not removed:
+                        == self.index:
                     removed = True
                     dest = line.split()[1]
 
                     continue
 
-                fstab.write(line)
-                index += 1
+                fstab.write(f'{line}\n')
 
-        if removed:
+        if not removed:
             iocage_lib.ioc_common.logit({
-                "level": "INFO",
-                "message": f"Successfully removed mount from {self.uuid}"
-                           "'s fstab"
+                'level': 'EXCEPTION',
+                'message': 'No matching fstab entry.'
             },
                 _callback=self.callback,
+                exception=iocage_lib.ioc_exceptions.ValueNotFound,
                 silent=self.silent)
 
-            return dest  # Needed for umounting, otherwise we lack context.
-
         iocage_lib.ioc_common.logit({
-            "level": "INFO",
-            "message": "No matching fstab entry."
+            'level': 'INFO',
+            'message': f'Successfully removed mount from {self.uuid}\'s fstab'
         },
             _callback=self.callback,
             silent=self.silent)
+
+        return dest  # Needed for umounting, otherwise we lack context.
 
     def __fstab_mount__(self):
         """Mounts the users mount if the jail is running."""
