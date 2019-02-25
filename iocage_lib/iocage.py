@@ -697,7 +697,7 @@ class IOCage(ioc_json.IOCZFS):
             ioc_destroy.IOCDestroy().__destroy_parse_datasets__(path,
                                                                 stop=False)
 
-    def destroy_jail(self):
+    def destroy_jail(self, force):
         """
         Destroys the supplied jail, to reduce perfomance hit,
         call IOCage with skip_jails=True
@@ -754,13 +754,24 @@ class IOCage(ioc_json.IOCZFS):
         status, _ = self.list("jid", uuid=uuid)
 
         if status:
-            ioc_common.logit(
-                {
-                    "level": "INFO",
-                    "message": f"Stopping {uuid}"
-                },
-                _callback=self.callback,
-                silent=self.silent)
+            if not force:
+                ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": (f"Jail {uuid} is still running, "
+                                    f"please stop the jail first "
+                                    f"or destroy it with -f")
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
+            else:
+                ioc_common.logit(
+                    {
+                        "level": "INFO",
+                        "message": f"Stopping {uuid}"
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
 
         ioc_common.logit(
             {
