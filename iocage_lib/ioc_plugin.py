@@ -331,10 +331,7 @@ class IOCPlugin(object):
 
         # We set our properties that we need, and then iterate over the user
         # supplied properties replacing ours.
-        create_props = [
-            f"cloned_release={self.release}", f"release={release}",
-            "type=pluginv2", "boot=on"
-        ]
+        create_props = [f'release={release}', 'type=pluginv2', 'boot=on']
 
         create_props = [f"{k}={v}" for k, v in (p.split("=")
                                                 for p in props)] + create_props
