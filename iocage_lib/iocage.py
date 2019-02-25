@@ -697,7 +697,7 @@ class IOCage(ioc_json.IOCZFS):
             ioc_destroy.IOCDestroy().__destroy_parse_datasets__(path,
                                                                 stop=False)
 
-    def destroy_jail(self, force):
+    def destroy_jail(self, force=False):
         """
         Destroys the supplied jail, to reduce perfomance hit,
         call IOCage with skip_jails=True
