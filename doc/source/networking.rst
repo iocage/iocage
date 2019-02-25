@@ -126,6 +126,10 @@ Add these tunables to :file:`/etc/sysctl.conf`:
    net.link.bridge.pfil_bridge=0  # Packet filter on the bridge interface
    net.link.bridge.pfil_member=0  # Packet filter on the member interface
 
+**Enable vnet for the jail**
+
+:samp:`# iocage set vnet=on examplejail`
+
 **Configure jail's default gateway**
 
 :samp:`# iocage set defaultrouter=10.1.1.254 examplejail`
