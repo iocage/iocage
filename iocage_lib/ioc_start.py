@@ -968,11 +968,11 @@ class IOCStart(object):
                     bridge_cmd = [
                         "ifconfig", bridge, "create", "addm", default_if
                     ]
+                    su.check_call(bridge_cmd, stdout=su.PIPE, stderr=su.PIPE)
 
             else:
                 bridge_cmd = ["ifconfig", bridge, "create", "addm"]
-
-            su.check_call(bridge_cmd, stdout=su.PIPE, stderr=su.PIPE)
+                su.check_call(bridge_cmd, stdout=su.PIPE, stderr=su.PIPE)
         except su.CalledProcessError:
             # The bridge already exists, this is just best effort.
             pass
