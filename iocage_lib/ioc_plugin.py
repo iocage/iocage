@@ -1243,7 +1243,7 @@ fingerprint: {fingerprint}
 
     def __fetch_release__(self, release):
         """Will call fetch to get the new RELEASE the plugin will rely on"""
-        fetch_args = {'release': release}
+        fetch_args = {'release': release, 'eol': False}
         iocage_lib.iocage.IOCage(silent=self.silent).fetch(**fetch_args)
 
     def __clone_repo(self, repo_url, destination):
