@@ -1169,8 +1169,19 @@ class IOCage(ioc_json.IOCZFS):
                 index=index
             )
 
-    def get(self, prop, recursive=False, plugin=False, pool=False):
+    def get(
+        self, prop, recursive=False, plugin=False, pool=False, start_jail=False
+    ):
         """Get a jail property"""
+        if start_jail and not plugin:
+            ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message':
+                        '--force (-f) is only applicable with --plugin (-P)!'
+                },
+                _callback=self.callback,
+                silent=self.silent)
 
         if pool:
             return self.pool
@@ -1197,10 +1208,33 @@ class IOCage(ioc_json.IOCZFS):
             if prop == "state":
                 return state
             elif plugin:
+                if not status and not start_jail:
+                    if not os.isatty(sys.stdout.fileno()):
+                        ioc_common.logit(
+                            {
+                                "level": "EXCEPTION",
+                                "message": f'{self.jail} is not running!'
+                                           ' Please supply start_jail=True or'
+                                           ' start the jail'
+                            },
+                            _callback=self.callback,
+                            silent=self.silent)
+                    else:
+                        ioc_common.logit(
+                            {
+                                "level": "EXCEPTION",
+                                "message": f'{self.jail} is not running!'
+                                           ' Please supply --force (-f) or'
+                                           ' start the jail'
+                            },
+                            _callback=self.callback,
+                            silent=self.silent)
+
                 try:
                     _prop = prop.split(".")
                     props = ioc_json.IOCJson(path).json_plugin_get_value(
-                        _prop)
+                        _prop
+                    )
                 except ioc_exceptions.CommandNeedsRoot as err:
                     ioc_common.logit(
                         {
