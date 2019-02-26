@@ -853,7 +853,12 @@ class IOCage(ioc_json.IOCZFS):
         status, jid = self.list("jid", uuid=uuid)
 
         if not status and not start_jail:
-            if not os.isatty(sys.stdout.fileno()):
+            try:
+                is_tty = os.isatty(sys.stdout.fileno())
+            except ValueError:
+                is_tty = False
+
+            if not is_tty:
                 ioc_common.logit(
                     {
                         "level": "EXCEPTION",
@@ -1209,7 +1214,12 @@ class IOCage(ioc_json.IOCZFS):
                 return state
             elif plugin:
                 if not status and not start_jail:
-                    if not os.isatty(sys.stdout.fileno()):
+                    try:
+                        is_tty = os.isatty(sys.stdout.fileno())
+                    except ValueError:
+                        is_tty = False
+
+                    if not is_tty:
                         ioc_common.logit(
                             {
                                 "level": "EXCEPTION",
