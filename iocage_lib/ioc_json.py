@@ -340,7 +340,8 @@ class IOCRCTL(object):
             IOCRCTL.validate_rctl_tunable()
 
             if not re.findall(
-                r'(?:deny|log|devctl|sig\w*|throttle)=\d+$', value
+                r'(?:deny|log|devctl|sig\w*|throttle)=\d+(?:b|k|m|g|t|p|)$',
+                value
             ):
                 iocage_lib.ioc_common.logit(
                     {
@@ -352,6 +353,21 @@ class IOCRCTL(object):
                     }
                 )
             else:
+                if re.findall(
+                    r'(?:deny|log|devctl|sig\w*|throttle)=\d+(?:b|k|m|g|t|p)$',
+                    value
+                ) and prop in (
+                    'cputime', 'maxproc', 'openfiles', 'pseudoterminals',
+                    'nthr', 'msgqqueued', 'nmsgq', 'nsem', 'nsemop', 'nshm',
+                    'wallclock', 'pcpu'
+                ):
+                    iocage_lib.ioc_common.logit(
+                        {
+                            'level': 'EXCEPTION',
+                            'message': 'b, k, m, g, t, p suffixes are not '
+                                       f'allowed with {prop}'
+                        }
+                    )
                 action = value.split('=')[0]
                 if action == 'deny' and prop in (
                     'cputime', 'wallclock', 'readbps', 'writebps',
