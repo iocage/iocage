@@ -66,7 +66,7 @@ def callback(_log, callback_exception):
         log.log(25, message)
     elif level == 'EXCEPTION':
         try:
-            if not os.isatty(sys.stdout.fileno()):
+            if not is_tty():
                 raise callback_exception(message)
             else:
                 if not isinstance(message, str) and isinstance(
@@ -918,3 +918,13 @@ def construct_truthy(item, inverse=False):
         return (f'{item}=off', f'{item}=no', f'{item}=0', f'{item}=false')
 
     return (f'{item}=on', f'{item}=yes', f'{item}=1', f'{item}=true')
+
+
+def is_tty():
+    """Returns True or False if stdout is a tty"""
+    try:
+        is_tty = os.isatty(sys.stdout.fileno())
+    except ValueError:
+        is_tty = False
+
+    return is_tty

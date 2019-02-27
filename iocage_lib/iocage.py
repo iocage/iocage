@@ -28,7 +28,6 @@ import json
 import operator
 import os
 import subprocess as su
-import sys
 
 import iocage_lib.ioc_clean as ioc_clean
 import iocage_lib.ioc_common as ioc_common
@@ -853,7 +852,7 @@ class IOCage(ioc_json.IOCZFS):
         status, jid = self.list("jid", uuid=uuid)
 
         if not status and not start_jail:
-            if not os.isatty(sys.stdout.fileno()):
+            if not ioc_common.is_tty():
                 ioc_common.logit(
                     {
                         "level": "EXCEPTION",
@@ -1209,7 +1208,7 @@ class IOCage(ioc_json.IOCZFS):
                 return state
             elif plugin:
                 if not status and not start_jail:
-                    if not os.isatty(sys.stdout.fileno()):
+                    if not ioc_common.is_tty():
                         ioc_common.logit(
                             {
                                 "level": "EXCEPTION",
