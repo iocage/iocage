@@ -872,7 +872,7 @@ class IOCJson(object):
     @staticmethod
     def json_get_version():
         """Sets the iocage configuration version."""
-        version = "14"
+        version = "14.1"
 
         return version
 
