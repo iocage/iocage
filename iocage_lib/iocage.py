@@ -28,7 +28,6 @@ import json
 import operator
 import os
 import subprocess as su
-import sys
 
 import iocage_lib.ioc_clean as ioc_clean
 import iocage_lib.ioc_common as ioc_common
