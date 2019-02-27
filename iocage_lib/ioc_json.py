@@ -872,7 +872,7 @@ class IOCJson(object):
     @staticmethod
     def json_get_version():
         """Sets the iocage configuration version."""
-        version = "14"
+        version = "14.1"
 
         return version
 
@@ -1074,9 +1074,6 @@ class IOCJson(object):
         # Set all keys, even if it's the same value.
         conf["vnet_interfaces"] = vnet_interfaces
 
-        # Set all keys, even if it's the same value.
-        conf["CONFIG_VERSION"] = self.json_get_version()
-
         # Version 11 keys
         try:
             hostid_strict_check = conf["hostid_strict_check"]
@@ -1092,7 +1089,7 @@ class IOCJson(object):
         else:
             # Catch all users migrating from old prop value of none, which
             # meant auto
-            if current_conf_version in ('12', '13') \
+            if current_conf_version in ('12', '13', '14') \
                     and conf['vnet_default_interface'] == 'none':
                 conf['vnet_default_interface'] = 'auto'
 
@@ -1108,6 +1105,9 @@ class IOCJson(object):
         # Version 14 keys
         if not conf.get('allow_tun'):
             conf['allow_tun'] = '0'
+
+        # Set all keys, even if it's the same value.
+        conf["CONFIG_VERSION"] = self.json_get_version()
 
         if not default:
             try:
