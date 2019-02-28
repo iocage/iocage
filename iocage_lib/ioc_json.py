@@ -673,7 +673,7 @@ class IOCConfiguration(IOCZFS):
     @staticmethod
     def get_version():
         """Sets the iocage configuration version."""
-        version = '20'
+        version = '21'
 
         return version
 

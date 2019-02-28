@@ -906,7 +906,7 @@ def get_jail_freebsd_version(path, release):
 
 def check_truthy(value):
     """Checks if the given value is 'True'"""
-    if str(value).lower() in ('1', 'on', 'yes', 'true', 'True'):
+    if str(value).lower() in ('1', 'on', 'yes', 'true'):
         return 1
 
     return 0
@@ -928,3 +928,7 @@ def is_tty():
         is_tty = False
 
     return is_tty
+
+
+def lowercase_set(values):
+    return set([v.lower() for v in values])
