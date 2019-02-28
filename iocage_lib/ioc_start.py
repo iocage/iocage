@@ -295,16 +295,15 @@ class IOCStart(object):
                 if self.check_aliases('127.0.1.1', '4') != '127.0.1.1':
                     su.run(['ifconfig', 'lo0', 'alias', '127.0.1.1/32'])
 
+                if ip4_addr == 'none':
+                    ip4_addr = '127.0.1.1'
+                else:
+                    ip4_addr += ',127.0.1.1'
+
             if ip4_addr != 'none':
                 ip4_addr = self.check_aliases(ip4_addr, '4')
 
-                if assign_localhost:
-                    net.append(f'ip4.addr={ip4_addr},127.0.1.1')
-                else:
-                    net.append(f'ip4.addr={ip4_addr}')
-            else:
-                if assign_localhost:
-                    net.append(f'ip4.addr=127.0.1.1')
+                net.append(f'ip4.addr={ip4_addr}')
 
             if ip6_addr != 'none':
                 ip6_addr = self.check_aliases(ip6_addr, '6')
