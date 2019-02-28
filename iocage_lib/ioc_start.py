@@ -158,6 +158,7 @@ class IOCStart(object):
         prop_missing_msgs = []
         debug_mode = True if os.environ.get(
             'IOCAGE_DEBUG', 'FALSE') == 'TRUE' else False
+        assign_localhost = self.conf['assign_localhost']
 
         if wants_dhcp:
             if not bpf:
@@ -297,6 +298,14 @@ class IOCStart(object):
                 ip6_addr = self.check_aliases(ip6_addr, '6')
 
                 net.append(f'ip6.addr={ip6_addr}')
+
+            if assign_localhost:
+                # Make sure this exists, jail(8) will tear it down if we don't
+                # manually do this.
+                if self.check_aliases('127.0.1.1', '4') != '127.0.1.1':
+                    su.run(['ifconfig', 'lo0', 'alias', '127.0.1.1/32'])
+
+                net.append(f'ip4.addr=127.0.1.1')
 
             net += [
                 f'ip4.saddrsel={ip4_saddrsel}',

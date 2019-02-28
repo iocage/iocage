@@ -528,7 +528,12 @@ class IOCCreate(object):
 
                     for line in _etc_hosts.readlines():
                         if line.startswith("127.0.0.1"):
-                            line = f"{line.rstrip()} {jail_uuid_short}\n"
+                            if config.get('assign_localhost'):
+                                line = '127.0.1.1\t\tlocalhost' \
+                                       ' localhost.my.domain' \
+                                       f' {jail_uuid_short}\n'
+                            else:
+                                line = f'{line.rstrip()} {jail_uuid_short}\n'
 
                         etc_hosts.write(line)
                     else:

@@ -906,7 +906,7 @@ def get_jail_freebsd_version(path, release):
 
 def check_truthy(value):
     """Checks if the given value is 'True'"""
-    if str(value) in ('1', 'on', 'yes', 'true'):
+    if str(value).lower() in ('1', 'on', 'yes', 'true', 'True'):
         return 1
 
     return 0
