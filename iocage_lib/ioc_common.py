@@ -60,7 +60,7 @@ def callback(_log, callback_exception):
         log.log(25, message)
     elif level == 'EXCEPTION':
         try:
-            if not os.isatty(sys.stdout.fileno()):
+            if not is_tty():
                 raise callback_exception(message)
             else:
                 if not isinstance(message, str) and isinstance(
@@ -766,3 +766,13 @@ def runscript(script):
         return True, out.rstrip("\n")
 
     return True, None
+
+
+def is_tty():
+    """Returns True or False if stdout is a tty"""
+    try:
+        is_tty = os.isatty(sys.stdout.fileno())
+    except ValueError:
+        is_tty = False
+
+    return is_tty
