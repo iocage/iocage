@@ -406,11 +406,11 @@ class IOCCreate(object):
                 is_template = True
             elif key == 'ip6_addr':
                 if 'accept_rtadv' in value:
-                    if not set(
+                    if not iocage_lib.ioc_common.lowercase_set(
                         iocage_lib.ioc_common.construct_truthy(
                             'vnet'
                         )
-                    ) & set(self.props):
+                    ) & iocage_lib.ioc_common.lowercase_set(self.props):
                         iocage_lib.ioc_common.logit({
                             'level': 'WARNING',
                             'message': 'accept_rtadv requires vnet,'
@@ -424,11 +424,11 @@ class IOCCreate(object):
             elif (key == 'dhcp' and is_true) or (
                 key == 'ip4_addr' and 'DHCP' in value.upper()
             ):
-                if not set(
+                if not iocage_lib.ioc_common.lowercase_set(
                     iocage_lib.ioc_common.construct_truthy(
                         'vnet'
                     )
-                ) & set(self.props):
+                ) & iocage_lib.ioc_common.lowercase_set(self.props):
                     iocage_lib.ioc_common.logit({
                         'level': 'WARNING',
                         'message': 'dhcp requires vnet, enabling!'
@@ -436,11 +436,11 @@ class IOCCreate(object):
                         _callback=self.callback,
                         silent=self.silent)
                     config['vnet'] = 1
-                if not set(
+                if not iocage_lib.ioc_common.lowercase_set(
                     iocage_lib.ioc_common.construct_truthy(
                         'bpf'
                     )
-                ) & set(self.props):
+                ) & iocage_lib.ioc_common.lowercase_set(self.props):
                     iocage_lib.ioc_common.logit({
                         'level': 'WARNING',
                         'message': 'dhcp requires bpf, enabling!'
@@ -449,11 +449,11 @@ class IOCCreate(object):
                         silent=self.silent)
                     config['bpf'] = 1
             elif key == 'bpf' and is_true:
-                if not set(
+                if not iocage_lib.ioc_common.lowercase_set(
                     iocage_lib.ioc_common.construct_truthy(
                         'vnet'
                     )
-                ) & set(self.props):
+                ) & iocage_lib.ioc_common.lowercase_set(self.props):
                     iocage_lib.ioc_common.logit({
                         'level': 'WARNING',
                         'message': 'bpf requires vnet, enabling!'
@@ -528,7 +528,12 @@ class IOCCreate(object):
 
                     for line in _etc_hosts.readlines():
                         if line.startswith("127.0.0.1"):
-                            line = f"{line.rstrip()} {jail_uuid_short}\n"
+                            if config.get('assign_localhost'):
+                                line = '127.0.1.1\t\tlocalhost' \
+                                       ' localhost.my.domain' \
+                                       f' {jail_uuid_short}\n'
+                            else:
+                                line = f'{line.rstrip()} {jail_uuid_short}\n'
 
                         etc_hosts.write(line)
                     else:

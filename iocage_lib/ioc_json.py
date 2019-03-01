@@ -709,7 +709,7 @@ class IOCConfiguration(IOCZFS):
     @staticmethod
     def get_version():
         """Sets the iocage configuration version."""
-        version = '20'
+        version = '21'
 
         return version
 
@@ -1054,6 +1054,10 @@ class IOCConfiguration(IOCZFS):
         if not conf.get('exec_created'):
             conf['exec_created'] = '/usr/bin/true'
 
+        # Version 21 keys
+        if not conf.get('assign_localhost'):
+            conf['assign_localhost'] = 0
+
         if not default:
             conf.update(jail_conf)
 
@@ -1372,7 +1376,8 @@ class IOCConfiguration(IOCZFS):
             'depends': 'none',
             'vnet_interfaces': 'none',
             'rtsold': 0,
-            'ip_hostname': 0
+            'ip_hostname': 0,
+            'assign_localhost': 0
         }
 
         try:
@@ -1471,7 +1476,8 @@ class IOCJson(IOCConfiguration):
             'mount_devfs',
             'ip6_saddrsel',
             'ip4_saddrsel',
-            'ip_hostname'
+            'ip_hostname',
+            'assign_localhost'
         ]
         super().__init__(location, checking_datasets, silent, callback)
 
@@ -2279,7 +2285,8 @@ class IOCJson(IOCConfiguration):
             "depends": ("string", ),
             "allow_tun": truth_variations,
             'rtsold': truth_variations,
-            'ip_hostname': truth_variations
+            'ip_hostname': truth_variations,
+            'assign_localhost': truth_variations
         }
 
         zfs_props = {
@@ -2327,7 +2334,7 @@ class IOCJson(IOCConfiguration):
             # Either it contains what we expect, or it's a string.
 
             for k in props[key]:
-                if k in value:
+                if k in value.lower():
                     return value, conf
 
             if props[key][0] == 'string':
