@@ -37,6 +37,8 @@ import datetime as dt
 import re
 import shlex
 import glob
+import netifaces
+import ipaddress
 
 import iocage_lib.ioc_exceptions
 import iocage_lib.ioc_exec
@@ -932,3 +934,16 @@ def is_tty():
 
 def lowercase_set(values):
     return set([v.lower() for v in values])
+
+
+def generate_unused_ip(ip_prefix, interface='lo0'):
+    """Best effort to try to allocate an IP for a jail"""
+    interface_addrs = netifaces.ifaddresses(interface)
+    addresses = [ip['addr'] for ips in interface_addrs.values() for ip in ips
+                 if ip['addr'].startswith(ip_prefix)]
+
+    for ip in addresses:
+        ip = str(ipaddress.ip_address(ip) + 1)
+
+        if ip not in addresses:
+            return ip

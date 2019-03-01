@@ -381,6 +381,7 @@ class IOCCreate(object):
                 _callback=self.callback,
                 silent=self.silent)
 
+        disable_localhost = False
         for prop in self.props:
             key, _, value = prop.partition("=")
             is_true = iocage_lib.ioc_common.check_truthy(value)
@@ -461,6 +462,39 @@ class IOCCreate(object):
                         _callback=self.callback,
                         silent=self.silent)
                     config['vnet'] = 1
+            elif key == 'assign_localhost' and is_true:
+                if iocage_lib.ioc_common.lowercase_set(
+                    iocage_lib.ioc_common.construct_truthy(
+                        'vnet'
+                    )
+                ) & iocage_lib.ioc_common.lowercase_set(self.props):
+                    iocage_lib.ioc_common.logit({
+                        'level': 'WARNING',
+                        'message': 'assign_localhost only applies to shared'
+                                   ' IP jails, disabling!'
+                    },
+                        _callback=self.callback,
+                        silent=self.silent)
+                    disable_localhost = True
+
+            if disable_localhost:
+                self.props = [p for p in self.props if not p.startswith(
+                    'assign_localhost') and not p.startswith('localhost_ip')]
+                if not self.thickconfig:
+                    try:
+                        del config['assign_localhost']
+                    except KeyError:
+                        # They may not have specified this
+                        pass
+
+                    try:
+                        del config['localhost_ip']
+                    except KeyError:
+                        # They may not have specified this
+                        pass
+                else:
+                    config['assign_localhost'] = 0
+                    config['localhost_ip'] = 0
 
             try:
                 value, config = iocjson.json_check_prop(key, value, config)
@@ -528,8 +562,26 @@ class IOCCreate(object):
 
                     for line in _etc_hosts.readlines():
                         if line.startswith("127.0.0.1"):
-                            if config.get('assign_localhost'):
-                                line = '127.0.1.1\t\tlocalhost' \
+                            if config.get(
+                                'assign_localhost'
+                            ) and not config.get('vnet'):
+                                l_ip = config.get('localhost_ip', 'none')
+                                l_ip = l_ip if l_ip != 'none' else \
+                                    iocage_lib.ioc_common.generate_unused_ip(
+                                        '127.')
+                                config['localhost_ip'] = l_ip
+                                iocjson.json_write(config)
+
+                                # If they are creating multiple jails, we want
+                                # this aliased before starting the  jail
+                                su.run(
+                                    [
+                                        'ifconfig', 'lo0', 'alias',
+                                        f'{l_ip}/32'
+                                    ]
+                                )
+
+                                line = f'{l_ip}\t\tlocalhost' \
                                        ' localhost.my.domain' \
                                        f' {jail_uuid_short}\n'
                             else:
