@@ -1039,11 +1039,12 @@ class IOCage(ioc_json.IOCZFS):
 
                 return rel_list
 
-            if not ip and (not set(
+            if not ip and (not ioc_common.lowercase_set(
                 ioc_common.construct_truthy('dhcp')
-            ) & set(props) and not set(
-                ioc_common.construct_truthy('ip_hostname')
-            ) & set(props)):
+            ) & ioc_common.lowercase_set(
+                props) and not ioc_common.lowercase_set(
+                    ioc_common.construct_truthy('ip_hostname')
+            ) & ioc_common.lowercase_set(props)):
                 ioc_common.logit(
                     {
                         "level":
