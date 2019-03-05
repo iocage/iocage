@@ -1123,7 +1123,9 @@ class IOCConfiguration(IOCZFS):
             pass
         else:
             try:
-                with open(freebsd_version, 'r') as r:
+                with open(
+                    freebsd_version, mode='r', encoding='utf-8'
+                ) as r:
                     for line in r:
                         if line.startswith('USERLAND_VERSION'):
                             release = line.rstrip().partition('=')[2]

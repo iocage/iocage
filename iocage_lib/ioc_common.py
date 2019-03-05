@@ -896,7 +896,7 @@ def get_jail_freebsd_version(path, release):
         # 9.3-RELEASE and under don't actually have this binary
         new_release = release
     else:
-        with io.open(
+        with open(
             f'{path}/bin/freebsd-version', mode='r', encoding='utf-8'
         ) as r:
             for line in r:
