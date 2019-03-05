@@ -1761,11 +1761,13 @@ class IOCage(ioc_json.IOCZFS):
             if err.code == libzfs.Error.EXISTS:
                 ioc_common.logit(
                     {
-                        "level": "EXCEPTION",
-                        "message": "Snapshot already exists!"
+                        'level': 'EXCEPTION',
+                        'message': 'Snapshot already exists!',
+                        'force_raise': True
                     },
                     _callback=self.callback,
-                    silent=self.silent)
+                    silent=self.silent,
+                    exception=ioc_exceptions.Exists)
             else:
                 raise ()
 

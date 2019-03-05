@@ -1038,7 +1038,12 @@ fingerprint: {fingerprint}
             _callback=self.callback,
             silent=self.silent)
 
-        self.__snapshot_jail__(name="upgrade")
+        try:
+            self.__snapshot_jail__(name="upgrade")
+        except iocage_lib.ioc_exceptions.Exists:
+            # User may have run upgrade already (so clean) or they created this
+            # snapshot purposely, this is OK
+            pass
 
         iocage_lib.ioc_common.logit(
             {
