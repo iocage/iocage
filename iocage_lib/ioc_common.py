@@ -37,7 +37,6 @@ import datetime as dt
 import re
 import shlex
 import glob
-import io
 
 import iocage_lib.ioc_exceptions
 import iocage_lib.ioc_exec
