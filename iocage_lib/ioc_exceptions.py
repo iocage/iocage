@@ -75,6 +75,10 @@ class ValueNotFound(Exception):
     pass
 
 
+class Exists(ExceptionWithMsg):
+    pass
+
+
 @contextmanager
 def ignore_exceptions(*exceptions, clean=None, suppress_exception=True):
     """

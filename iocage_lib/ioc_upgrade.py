@@ -80,8 +80,6 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
         }
 
         self.callback = callback
-        # Work around for https://github.com/freebsd/freebsd/commit/bffa924f
-        os.environ['UNAME_r'] = self.jail_release
 
     def upgrade_jail(self):
         tmp_dataset = self.zfs_get_dataset_name('/tmp')
