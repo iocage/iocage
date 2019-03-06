@@ -936,29 +936,23 @@ def lowercase_set(values):
     return set([v.lower() for v in values])
 
 
-def generate_unused_ip(ip_prefix, interface='lo0'):
-    """Best effort to try to allocate a private IP for a jail"""
-    interface_addrs = netifaces.ifaddresses(interface)
-    addresses = [ip['addr'] for ips in interface_addrs.values() for ip in ips
-                 if ip['addr'].startswith(ip_prefix)]
+def gen_unused_lo_ip():
+    """Best effort to try to allocate a localhost IP for a jail"""
+    interface_addrs = netifaces.ifaddresses('lo0')
+    inuse = [ip['addr'] for ips in interface_addrs.values() for ip in ips
+             if ip['addr'].startswith('127.0')]
 
-    for ip in addresses:
+    for ip in ipaddress.IPv4Network('127.0.0.0/8'):
         ip = ipaddress.ip_address(ip) + 1
 
-        if 'lo' in interface and not ip.is_loopback:
-            continue
-        elif 'lo' in interface and not str(ip).startswith('127.'):
-            logit(
-                {
-                    'level': 'EXCEPTION',
-                    'message': f'IP: {ip} is not a loopback address.\n'
-                    'If you wish to use a non-RFC5735 compliant address,'
-                    ' please manually set the localhost_ip property.'
-                }
-            )
-        else:
-            if not ip.is_private:
-                continue
-
-        if str(ip) not in addresses:
+        if str(ip) not in inuse:
             return str(ip)
+
+    logit(
+        {
+            'level': 'EXCEPTION',
+            'message': 'An unused RFC5735 compliant localhost address could'
+            ' not be allocated.\nIf you wish to use a non-RFC5735 compliant'
+            ' address, please manually set the localhost_ip property.'
+        }
+    )

@@ -294,8 +294,7 @@ class IOCStart(object):
                 # Make sure this exists, jail(8) will tear it down if we don't
                 # manually do this.
                 if localhost_ip == 'none':
-                    localhost_ip = iocage_lib.ioc_common.generate_unused_ip(
-                        '127.')
+                    localhost_ip = iocage_lib.ioc_common.gen_unused_lo_ip()
                     self.conf['localhost_ip'] = localhost_ip
 
                 if self.check_aliases(localhost_ip, '4') != localhost_ip:

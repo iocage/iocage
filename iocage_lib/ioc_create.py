@@ -567,8 +567,7 @@ class IOCCreate(object):
                             ) and not config.get('vnet'):
                                 l_ip = config.get('localhost_ip', 'none')
                                 l_ip = l_ip if l_ip != 'none' else \
-                                    iocage_lib.ioc_common.generate_unused_ip(
-                                        '127.')
+                                    iocage_lib.ioc_common.gen_unused_lo_ip()
                                 config['localhost_ip'] = l_ip
                                 iocjson.json_write(config)
 
