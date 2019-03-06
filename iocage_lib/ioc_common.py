@@ -937,13 +937,28 @@ def lowercase_set(values):
 
 
 def generate_unused_ip(ip_prefix, interface='lo0'):
-    """Best effort to try to allocate an IP for a jail"""
+    """Best effort to try to allocate a private IP for a jail"""
     interface_addrs = netifaces.ifaddresses(interface)
     addresses = [ip['addr'] for ips in interface_addrs.values() for ip in ips
                  if ip['addr'].startswith(ip_prefix)]
 
     for ip in addresses:
-        ip = str(ipaddress.ip_address(ip) + 1)
+        ip = ipaddress.ip_address(ip) + 1
 
-        if ip not in addresses:
-            return ip
+        if 'lo' in interface and not ip.is_loopback:
+            continue
+        elif 'lo' in interface and not str(ip).startswith('127.'):
+            logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message': f'IP: {ip} is not a loopback address.\n'
+                    'If you wish to use a non-RFC5735 compliant address,'
+                    ' please manually set the localhost_ip property.'
+                }
+            )
+        else:
+            if not ip.is_private:
+                continue
+
+        if str(ip) not in addresses:
+            return str(ip)

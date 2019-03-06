@@ -306,7 +306,8 @@ class IOCStart(object):
                         capture_output=True
                     ).stdout)['jail-information']['jail']
                     active_jail_ips = [
-                        ip['ip4.addr'] for ip in active_jail_ips]
+                        ip.get('ip4.addr') for ip in active_jail_ips
+                    ]
 
                     if localhost_ip in active_jail_ips:
                         iocage_lib.ioc_common.logit({
