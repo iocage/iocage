@@ -159,6 +159,7 @@ class IOCStart(object):
         debug_mode = True if os.environ.get(
             'IOCAGE_DEBUG', 'FALSE') == 'TRUE' else False
         assign_localhost = self.conf['assign_localhost']
+        localhost_ip = self.conf['localhost_ip']
 
         if wants_dhcp:
             if not bpf:
@@ -292,13 +293,46 @@ class IOCStart(object):
             if assign_localhost:
                 # Make sure this exists, jail(8) will tear it down if we don't
                 # manually do this.
-                if self.check_aliases('127.0.1.1', '4') != '127.0.1.1':
-                    su.run(['ifconfig', 'lo0', 'alias', '127.0.1.1/32'])
+                if localhost_ip == 'none':
+                    localhost_ip = iocage_lib.ioc_common.gen_unused_lo_ip()
+                    self.set(f'localhost_ip={localhost_ip}')
+
+                with open(
+                        f'{self.path}/root/etc/hosts', 'r'
+                ) as _etc_hosts:
+                    with iocage_lib.ioc_common.open_atomic(
+                            f'{self.path}/root/etc/hosts', 'w') as etc_hosts:
+                        # open_atomic will empty the file, we need these still.
+                        for line in _etc_hosts.readlines():
+                            if line.startswith('127.0.0.1'):
+                                line = line.replace('127.0.0.1', localhost_ip)
+
+                            etc_hosts.write(line)
+
+                if self.check_aliases(localhost_ip, '4') != localhost_ip:
+                    su.run(['ifconfig', 'lo0', 'alias', f'{localhost_ip}/32'])
+                else:
+                    active_jail_ips = json.loads(su.run(
+                        ['jls', '-n', 'ip4.addr', '--libxo=json'],
+                        capture_output=True
+                    ).stdout)['jail-information']['jail']
+                    active_jail_ips = [
+                        ip.get('ip4.addr') for ip in active_jail_ips
+                    ]
+
+                    if localhost_ip in active_jail_ips:
+                        iocage_lib.ioc_common.logit({
+                            "level": "WARNING",
+                            "message": f'  {self.uuid} is reusing a localhost'
+                                       ' address, failure may occur!'
+                        },
+                            _callback=self.callback,
+                            silent=self.silent)
 
                 if ip4_addr == 'none':
-                    ip4_addr = '127.0.1.1'
+                    ip4_addr = localhost_ip
                 else:
-                    ip4_addr += ',127.0.1.1'
+                    ip4_addr += f',{localhost_ip}'
 
             if ip4_addr != 'none':
                 ip4_addr = self.check_aliases(ip4_addr, '4')
