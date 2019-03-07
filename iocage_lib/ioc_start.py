@@ -297,6 +297,18 @@ class IOCStart(object):
                     localhost_ip = iocage_lib.ioc_common.gen_unused_lo_ip()
                     self.set(f'localhost_ip={localhost_ip}')
 
+                with open(
+                        f'{self.path}/root/etc/hosts', 'r'
+                ) as _etc_hosts:
+                    with iocage_lib.ioc_common.open_atomic(
+                            f'{self.path}/root/etc/hosts', 'w') as etc_hosts:
+                        # open_atomic will empty the file, we need these still.
+                        for line in _etc_hosts.readlines():
+                            if line.startswith('127.0.0.1'):
+                                line = line.replace('127.0.0.1', localhost_ip)
+
+                            etc_hosts.write(line)
+
                 if self.check_aliases(localhost_ip, '4') != localhost_ip:
                     su.run(['ifconfig', 'lo0', 'alias', f'{localhost_ip}/32'])
                 else:
