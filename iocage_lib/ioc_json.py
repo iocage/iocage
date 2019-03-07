@@ -2459,17 +2459,18 @@ class IOCJson(IOCConfiguration):
                 elif key == 'cpuset':
                     IOCCpuset.validate_cpuset_prop(value)
                 elif key == 'localhost_ip':
-                    try:
-                        ipaddress.IPv4Address(value)
-                    except ipaddress.AddressValueError as e:
-                        iocage_lib.ioc_common.logit(
-                            {
-                                'level': 'EXCEPTION',
-                                'message': f'Invalid IPv4 address: {e}'
-                            },
-                            _callback=self.callback,
-                            silent=self.silent
-                        )
+                    if value != 'none':
+                        try:
+                            ipaddress.IPv4Address(value)
+                        except ipaddress.AddressValueError as e:
+                            iocage_lib.ioc_common.logit(
+                                {
+                                    'level': 'EXCEPTION',
+                                    'message': f'Invalid IPv4 address: {e}'
+                                },
+                                _callback=self.callback,
+                                silent=self.silent
+                            )
 
                 return value, conf
             else:
