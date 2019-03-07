@@ -940,10 +940,11 @@ def gen_unused_lo_ip():
     """Best effort to try to allocate a localhost IP for a jail"""
     interface_addrs = netifaces.ifaddresses('lo0')
     inuse = [ip['addr'] for ips in interface_addrs.values() for ip in ips
-             if ip['addr'].startswith('127.0')]
+             if ip['addr'].startswith('127')]
 
     for ip in ipaddress.IPv4Network('127.0.0.0/8'):
-        ip = ipaddress.ip_address(ip) + 1
+        if str(ip) == '127.0.0.0':
+            continue
 
         if str(ip) not in inuse:
             return str(ip)

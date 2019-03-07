@@ -295,7 +295,7 @@ class IOCStart(object):
                 # manually do this.
                 if localhost_ip == 'none':
                     localhost_ip = iocage_lib.ioc_common.gen_unused_lo_ip()
-                    self.conf['localhost_ip'] = localhost_ip
+                    self.set(f'localhost_ip={localhost_ip}')
 
                 if self.check_aliases(localhost_ip, '4') != localhost_ip:
                     su.run(['ifconfig', 'lo0', 'alias', f'{localhost_ip}/32'])
