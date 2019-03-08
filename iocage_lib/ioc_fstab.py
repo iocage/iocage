@@ -127,7 +127,8 @@ class IOCFstab(object):
         for index, line in enumerate(fstab):
             try:
                 source, destination, fstype, options, \
-                    dump, _pass = line.split()[0:6]
+                    dump, _pass = line.split('\t')[0:6]
+                _pass = _pass.split()[0]  # iocage comment can interfere
             except ValueError:
                 verrors.append(
                     f'Malformed fstab at line {index}: {repr(line)}'
@@ -247,7 +248,7 @@ class IOCFstab(object):
                 if line.rsplit("#")[0].rstrip() == self.mount or index \
                         == self.index:
                     removed = True
-                    dest = line.split()[1]
+                    dest = line.split('\t')[1]
 
                     continue
 
