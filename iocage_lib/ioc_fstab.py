@@ -361,18 +361,20 @@ class IOCFstab(object):
 
     def fstab_list(self):
         """Returns list of lists, or a table"""
-
         if not self.header:
             flat_fstab = [f for f in self._fstab_list]
 
             return flat_fstab
+        else:
+            flat_fstab = [(i, f[1].replace(
+                '\t', ' ')) for (i, f) in enumerate(self._fstab_list)]
 
         table = texttable.Texttable(max_width=0)
 
         # We get an infinite float otherwise.
         table.set_cols_dtype(["t", "t"])
-        self._fstab_list.insert(0, ["INDEX", "FSTAB ENTRY"])
+        flat_fstab.insert(0, ["INDEX", "FSTAB ENTRY"])
 
-        table.add_rows(self._fstab_list)
+        table.add_rows(flat_fstab)
 
         return table.draw()
