@@ -1005,7 +1005,7 @@ class IOCage(object):
             with open(f"{self.iocroot}/jails/{uuid}/fstab", "r") as _fstab:
                 for line in _fstab.readlines():
                     line = line.rsplit("#")[0].rstrip()
-                    _fstab_list.append([index, line.replace("\t", " ")])
+                    _fstab_list.append([index, line])
                     index += 1
 
         if action == "list":
