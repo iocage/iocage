@@ -127,7 +127,7 @@
 .Ar PROPERTY
 .Ar UUID | NAME
 .Op Fl H | h | -header
-.Op Fl P | -plugin
+.Op Fl P | -plugin Op Fl f | -force
 .Op Fl a | -all
 .Op Fl p | -pool
 .Op Fl r | -recursive
@@ -707,8 +707,14 @@ Options:
 .It Op Fl H | h | -header
 Used in scripting.
 Use tabs for separators.
-.It Op Fl P | -plugin
+.It Op Fl P | -plugin Op Fl f | -force
 Get the specified key for a plugin jail.
+The
+.Fl f | -force
+option starts the jail if it is not already running.
+.Fl f | -force
+only works with
+.Fl P | -plugin .
 .It Op Fl a | -all
 Get all properties for the specified jail.
 If accessing a nested key, use "." as a separator.
