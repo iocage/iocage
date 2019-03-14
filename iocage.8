@@ -5,6 +5,9 @@
 .Nm iocage
 .Nd jail manager using ZFS and VNET
 .Sh SYNOPSIS
+.\" == DEBUG ==
+.Nm
+.Op Fl D | -debug
 .\" == HELP ==
 .Nm
 .Op Fl -help | Ar SUBCOMMAND Fl -help
@@ -266,6 +269,11 @@ options         RCTL
 .Ed
 .Sh SUBCOMMANDS
 .Bl -tag -width ".Cm activate"
+.\" == Debug ==
+.It Fl D | -debug
+Log
+.Nm
+debug output to the console.
 .\" == Help ==
 .It Fl -help
 Display
