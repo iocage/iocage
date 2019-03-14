@@ -54,6 +54,7 @@
 .Op Fl r | -release Cm latest | Cm LATEST
 .Op Fl s | -short
 .Op Fl t | -template Ar TEXT
+.Op Fl B | -clone_basejail
 .Op Fl T | -thickjail
 .Op Fl u | -uuid | Ar TEXT
 .Op Ar PROPERTIES
@@ -376,11 +377,11 @@ The default can be overridden by specifying the RELEASE option.
 A fully independent jail set is created by default.
 .Pp
 Options:
-.Bl -tag -width "[-b | --basejail]"
+.Bl -tag -width "[-B | --clone_basejail]"
 .It Op Fl b | -basejail
 Create a new "basejail".
-This basejail mounts the designated RELEASE directory as a
-nullfs mount over the jail's directories.
+Basejails copy the RELEASE and mount the designated RELEASE
+directories as nullfs mounts over the jail directories.
 .It Op Fl c | -count Ar TEXT
 Designate the number of jails to create, all cloned from
 the desired
@@ -402,6 +403,10 @@ Creat a new jail with the latest release available.
 Use a short UUID of 8 characters instead of the default 36.
 .It Op Fl t | -template Ar TEXT
 Create a jail from the specified template.
+.It Op Fl B | -clone_basejail
+Create a new "clone basejail".
+Clone basejails clone the RELEASE with ZFS and mount the designated
+RELEASE directories as nullfs mounts over the jail directories.
 .It Op Fl T | -thickjail
 Thick jails are copies of the release, not clones.
 .It Op Fl u | -uuid Ar TEXT
