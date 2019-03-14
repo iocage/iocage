@@ -1815,7 +1815,7 @@ Can be set to any string if needed.
 Default: the host's release
 .Pp
 Source: local
-.It Pf compression= Op 1 | 0 Op lzjb | gzip | gzip-N | zle | lz4
+.It Pf compression= Op on | off Op lzjb | gzip | gzip-N | zle | lz4
 Controls the compression algorithm used for this dataset.
 The lzjb compression algorithm is optimized for performance while
 providing decent data compression.
@@ -1907,10 +1907,10 @@ Read-only.
 .Pp
 Source:
 .Xr zfs 8
-.It Pf dedup= Op 1 | 0 Op verify | sha256[,verify]
+.It Pf dedup= Op on | off Op verify | sha256[,verify]
 Deduplication for jail.
 .Pp
-Default: 0
+Default: off
 .Pp
 Source:
 .Xr zfs 8
