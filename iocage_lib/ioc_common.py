@@ -37,6 +37,8 @@ import datetime as dt
 import re
 import shlex
 import glob
+import netifaces
+import ipaddress
 
 import iocage_lib.ioc_exceptions
 import iocage_lib.ioc_exec
@@ -934,3 +936,26 @@ def is_tty():
 
 def lowercase_set(values):
     return set([v.lower() for v in values])
+
+
+def gen_unused_lo_ip():
+    """Best effort to try to allocate a localhost IP for a jail"""
+    interface_addrs = netifaces.ifaddresses('lo0')
+    inuse = [ip['addr'] for ips in interface_addrs.values() for ip in ips
+             if ip['addr'].startswith('127')]
+
+    for ip in ipaddress.IPv4Network('127.0.0.0/8'):
+        if str(ip) == '127.0.0.0':
+            continue
+
+        if str(ip) not in inuse:
+            return str(ip)
+
+    logit(
+        {
+            'level': 'EXCEPTION',
+            'message': 'An unused RFC5735 compliant localhost address could'
+            ' not be allocated.\nIf you wish to use a non-RFC5735 compliant'
+            ' address, please manually set the localhost_ip property.'
+        }
+    )

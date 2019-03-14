@@ -709,7 +709,7 @@ class IOCConfiguration(IOCZFS):
     @staticmethod
     def get_version():
         """Sets the iocage configuration version."""
-        version = '21'
+        version = '22'
 
         return version
 
@@ -1058,6 +1058,10 @@ class IOCConfiguration(IOCZFS):
         if not conf.get('assign_localhost'):
             conf['assign_localhost'] = 0
 
+        # Version 22 keys
+        if not conf.get('localhost_ip'):
+            conf['localhost_ip'] = 'none'
+
         if not default:
             conf.update(jail_conf)
 
@@ -1379,7 +1383,8 @@ class IOCConfiguration(IOCZFS):
             'vnet_interfaces': 'none',
             'rtsold': 0,
             'ip_hostname': 0,
-            'assign_localhost': 0
+            'assign_localhost': 0,
+            'localhost_ip': 'none'
         }
 
         try:
@@ -2288,7 +2293,8 @@ class IOCJson(IOCConfiguration):
             "allow_tun": truth_variations,
             'rtsold': truth_variations,
             'ip_hostname': truth_variations,
-            'assign_localhost': truth_variations
+            'assign_localhost': truth_variations,
+            'localhost_ip': ('string', )
         }
 
         zfs_props = {
@@ -2454,6 +2460,19 @@ class IOCJson(IOCConfiguration):
                     IOCRCTL.validate_rctl_props(key, value)
                 elif key == 'cpuset':
                     IOCCpuset.validate_cpuset_prop(value)
+                elif key == 'localhost_ip':
+                    if value != 'none':
+                        try:
+                            ipaddress.IPv4Address(value)
+                        except ipaddress.AddressValueError as e:
+                            iocage_lib.ioc_common.logit(
+                                {
+                                    'level': 'EXCEPTION',
+                                    'message': f'Invalid IPv4 address: {e}'
+                                },
+                                _callback=self.callback,
+                                silent=self.silent
+                            )
 
                 return value, conf
             else:
