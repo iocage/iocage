@@ -1045,35 +1045,47 @@ To upgrade, the release must be locally available.
 The Source listed with each property shows whether it is a local
 .Nm
 property or where more information can be located.
+Boolean properties are listed with
+.Op 1 | 0
+as the options, but
+.Nm
+also accepts
+.Op yes | no ,
+.Op true | false ,
+or
+.Op on | off .
 .Bl -tag -width "pkglist=none"
-.It Pf assign_localhost= Op 0 | 1
-Boolean option to add interface
-.Ql lo0
-assigned to
-.Ql 127.0.0.1 .
-Configured automatically when
-.Ql vnet=on.
+.It Pf assign_localhost= Op 1 | 0
+Boolean option to add interface lo0 and assign it the first available
+localhost address, starting with
+.Ql 127.0.0.2 .
+Only used when
+.Ql vnet=0 .
+Jails using VNET configure a localhost as part of their virtualized
+network stack.
 .Pp
-Default: 0
+Default:
+.Ql 0
 .Pp
 Source: local
-.It Pf localhost_ip= Ev Sq 123.456.7.8
+.It Pf localhost_ip= Dq 123.456.7.8
 Only applies when
-.Ql vnet=off
+.Ql vnet=0
 and
 .Ql assign_localhost=1 .
-Assign a custom IP address in place of
-.Ql 127.0.0.1
-as the jail localhost IP.
+Assign the jail localhost IP address to a custom IP address instead
+of the first available 
+.Dq 127.0.0.#
+address.
 .Nm
 checks for active jail IP addresses and warns when another jail is
 using the requested IP address.
 .Pp
 Source: local
-.It Pf bpf= Op on | off
+.It Pf bpf= Op 1 | 0
 Toggle starting the jail with Berkely Packet Filter devices enabled.
 .Pp
-Default: off
+Default: 0
 .Pp
 Source: local
 .It Pf depends= Dq none | foo bar
@@ -1082,15 +1094,16 @@ Space delimited.
 The option nests, resulting in dependent jails waiting in turn for
 their dependents, if specified, to start.
 .Pp
-Default: "none"
+Default:
+.Dq none
 .Pp
 Source: local
-.It Pf dhcp= Op on | off
+.It Pf dhcp= Op 1 | 0
 This controls starting the jail with the Dynamic Host Configuration
 Protocol enabled.
 To enable dhcp, vnet and bpf must also be enabled.
 .Pp
-Default: off
+Default: 0
 .Pp
 Source: local
 .It Pf pkglist= Op none | path-to-file
@@ -1103,19 +1116,21 @@ subcommand.
 Default: none
 .Pp
 Source: local
-.It Pf vnet= Op on | off
+.It Pf vnet= Op 1 | 0
 Controls whether the jail is started with a VNET or a shared IP
 configuration.
 Set to on if a fully virtualized per-jail network stack is required.
 .Pp
-Default: off
+Default: 0
 .Pp
 Source: local
-.It Pf ip_hostname= Op 0 | 1
+.It Pf ip_hostname= Op 1 | 0
 A boolean option for using DNS records during jail IP configuration.
 .Xr jail 8
 pulls the first IPv4 or IPv6 addresses from the resolver and applies
 them to the jail.
+.Pp
+Default: 0
 .Pp
 Source:
 .Xr jail 8
@@ -1154,7 +1169,7 @@ Default: none
 Source:
 .Xr jail 8
 .It Pf ip4_saddrsel= Op 1 | 0
-Only applies when vnet=off.
+Only applies when vnet=0.
 A boolean option to change the formerly mentioned behavior and
 disable IPv4 source address selection for the prison in favor of
 the primary IPv4 address of the jail.
@@ -1167,7 +1182,7 @@ Default: 1
 Source:
 .Xr jail 8
 .It Pf ip4= Op new | disable | inherit
-Only applies when vnet=off.
+Only applies when vnet=0.
 Control the availability of IPv4 addresses.
 Possible values are "inherit" to allow unrestricted access to all
 system addresses, "new" to restrict addresses via ip4_addr above,
@@ -1256,7 +1271,7 @@ Default: 4
 .Pp
 Source:
 .Xr jail 8
-.It Pf mount_devfs= Op 1 | 0
+.It Pf mount_devfs= Op  1 | 0
 Mount a
 .Xr devfs 5
 filesystem on the chrooted
@@ -1367,7 +1382,7 @@ Default: root
 .Pp
 Source:
 .Xr jail 8
-.It Pf exec_system_jail_user= Op 0 | 1
+.It Pf exec_system_jail_user= Op 1 | 0
 This boolean option looks for the
 .Dv exec_jail_user
 in the system
@@ -1399,7 +1414,7 @@ Default: 1
 .Pp
 Source:
 .Xr jail 8
-.It Pf mount_procfs= Op 0 | 1
+.It Pf mount_procfs= Op 1 | 0
 Mount a
 .Xr procfs 5
 filesystem in the jail's
@@ -1453,23 +1468,28 @@ Default: -f root
 .Pp
 Source:
 .Xr login 1
-.It Pf jail_zfs= Op on | off
+.It Pf jail_zfs= Op 1 | 0
 Enable automatic ZFS jailing inside the jail.
 The assigned ZFS dataset is fully controlled by the jail.
 .Pp
-NOTE: Setting this to on automatically enables allow_mount=1,
-enforce_statfs=1, and allow_mount_zfs=1!
+NOTE: Setting this to 1 automatically sets
+.Ql allow_mount=1 ,
+.Ql enforce_statfs=1 ,
+and
+.Ql allow_mount_zfs=1 !
 These are dependent options required for ZFS management inside a jail.
 .Pp
-Default: off
+Default: 0
 .Pp
 Source: local
 .It Pf jail_zfs_dataset= Op iocage/jails/UUID/root/data | zfs_filesystem
 The dataset to be jailed and fully handed over to a jail.
 Takes the ZFS filesystem name without pool name.
 .Pp
-NOTE: only valid if jail_zfs=on.
-By default, the mountpoint is set to none.
+NOTE: only valid when
+.Ql jail_zfs=1.
+By default, the mountpoint is set to
+.Pa none .
 To mount this dataset, set its mountpoint inside the jail.
 For example,
 .Bd -literal -offset indent
@@ -1477,7 +1497,8 @@ zfs set mountpoint=/data full-dataset-name
 mount -a
 .Ed
 .Pp
-Default: iocage/jails/UUID/root/data
+Default:
+.Pa iocage/jails/UUID/root/data
 .Pp
 Source: local
 .It Pf securelevel= Op 3 | 2 | 1 | 0 | -1
@@ -1501,7 +1522,7 @@ Default: 1
 .Pp
 Source:
 .Xr jail 8
-.It Pf allow_sysvipc= Op 0 | 1
+.It Pf allow_sysvipc= Op 1 | 0
 Set whether a process in the jail has access to System V IPC
 primitives.
 Prior to FreeBSD 11.0, System V primitives share a single namespace
@@ -1558,7 +1579,7 @@ Default: disable
 .Pp
 Source:
 .Xr jail 8
-.It Pf allow_raw_sockets= Op 0 | 1
+.It Pf allow_raw_sockets= Op 1 | 0
 The prison root is allowed to create raw sockets.
 Setting this parameter allows utilities like
 .Xr ping 8
@@ -1576,7 +1597,7 @@ Default: 0
 .Pp
 Source:
 .Xr jail 8
-.It Pf allow_chflags= Op 0 | 1
+.It Pf allow_chflags= Op 1 | 0
 Normally, privileged users inside a jail are treated as unprivileged
 by
 .Xr chflags 2 .
@@ -1588,7 +1609,7 @@ Default: 0
 .Pp
 Source:
 .Xr jail 8
-.It Pf allow_mount= Op 0 | 1
+.It Pf allow_mount= Op 1 | 0
 Allow privileged users inside the jail to mount and unmount filesystem
 types marked as jail-friendly.
 The
@@ -1602,7 +1623,7 @@ Default: 0
 .Pp
 Source:
 .Xr jail 8
-.It Pf allow_mount_devfs= Op 0 | 1
+.It Pf allow_mount_devfs= Op 1 | 0
 Allow privileged users inside the jail to mount and unmount the devfs
 file system.
 This permission is effective only together with allow.mount and if
@@ -1614,7 +1635,7 @@ Default: 0
 .Pp
 Source:
 .Xr jail 8
-.It Pf allow_mount_fusefs= Op 0 | 1
+.It Pf allow_mount_fusefs= Op 1 | 0
 Allow privileged users inside the jail to mount and unmount fusefs file
 systems.
 This permission is effective only together with allow_mount and if
@@ -1626,7 +1647,7 @@ Default: 0
 .Pp
 Source:
 .Xr jail 8
-.It Pf allow_mount_nullfs= Op 0 | 1
+.It Pf allow_mount_nullfs= Op 1 | 0
 Allow privileged users inside the jail to mount and unmount the nullfs
 file system.
 This permission is effective only together with allow_mount and if
@@ -1636,7 +1657,7 @@ Default: 0
 .Pp
 Source:
 .Xr jail 8
-.It Pf allow_mount_procfs= Op 0 | 1
+.It Pf allow_mount_procfs= Op 1 | 0
 Allow privileged users inside the jail to mount and unmount the procfs
 file system.
 This permission is effective only together with allow.mount and if
@@ -1646,7 +1667,7 @@ Default: 0
 .Pp
 Source:
 .Xr jail 8
-.It Pf allow_mount_tmpfs= Op 0 | 1
+.It Pf allow_mount_tmpfs= Op 1 | 0
 Allow privileged users inside the jail to mount and unmount the tmpfs
 file system.
 This permission is effective only together with allow.mount and if
@@ -1658,7 +1679,7 @@ Default: 0
 .Pp
 Source:
 .Xr jail 8
-.It Pf allow_mount_zfs= Op 0 | 1
+.It Pf allow_mount_zfs= Op 1 | 0
 Allow privileged users inside the jail to mount and unmount the ZFS
 filesystem.
 This permission is effective only together with allow.mount and if
@@ -1673,7 +1694,7 @@ Default: 0
 .Pp
 Source:
 .Xr jail 8
-.It Pf allow_quotas= Op 0 | 1
+.It Pf allow_quotas= Op 1 | 0
 The jail root can administer quotas on the jail's filesystems.
 This includes filesystems that the jail might share with other jails
 or with non-jailed parts of the system.
@@ -1682,7 +1703,7 @@ Default: 0
 .Pp
 Source:
 .Xr jail 8
-.It Pf allow_socket_af= Op 0 | 1
+.It Pf allow_socket_af= Op 1 | 0
 Sockets within a jail are normally restricted to IPv4, IPv6, local
 (UNIX), and route.
 This setting allows access to other protocol stacks that have not had
@@ -1692,19 +1713,21 @@ Default: 0
 .Pp
 Source:
 .Xr jail 8
-.It Pf allow_tun= Op 0 | 1
+.It Pf allow_tun= Op 1 | 0
 Unhides tun devices for the jail with an individual devfsruleset.
 Allows the creation of tuns in the jail.
 .Pp
 Default: 0
-.It Pf allow_mlock= Op 0 | 1
-Enables running services that require mlock() in a jail.
+.It Pf allow_mlock= Op 1 | 0
+Enables running services that require
+.Cm mlock
+in a jail.
 .Pp
 Default: 0
 .Pp
 Source:
 .Xr mlock 2
-.It Pf allow_vmm= Op 0 | 1
+.It Pf allow_vmm= Op 1 | 0
 Allow access to
 .Xr vmm 4
 inside the jail. The
@@ -1731,23 +1754,24 @@ Custom string for aliasing jails.
 Default: UUID
 .Pp
 Source: local
-.It Pf template= Op yes | no
+.It Pf template= Op 1 | 0
 This property controls whether the jail is a template.
 Templates are not started by iocage.
-Set to yes if this jail will be converted into a template.
+Set to 1 if this jail will be converted into a template.
 See the EXAMPLES section below.
 .Pp
-Default: no
+Default: 0
 .Pp
 Source: local
-.It Pf boot= Op on | off
-If set to "on", the jail is auto-started at boot time with
+.It Pf boot= Op 1 | 0
+If set to 1,
+the jail is auto-started at boot time with
 .Cm start --rc
 and stopped at shutdown time with
 .Cm stop --rc .
 Jails are started and stopped based on their priority value.
 .Pp
-Default: off
+Default: 0
 .Pp
 Source: local
 .It notes="any string"
@@ -1791,7 +1815,7 @@ Can be set to any string if needed.
 Default: the host's release
 .Pp
 Source: local
-.It Pf compression= Op on | off | lzjb | gzip | gzip-N | zle | lz4
+.It Pf compression= Op 1 | 0 Op lzjb | gzip | gzip-N | zle | lz4
 Controls the compression algorithm used for this dataset.
 The lzjb compression algorithm is optimized for performance while
 providing decent data compression.
@@ -1883,10 +1907,10 @@ Read-only.
 .Pp
 Source:
 .Xr zfs 8
-.It Pf dedup= Op on | off | verify | sha256[,verify]
+.It Pf dedup= Op 1 | 0 Op verify | sha256[,verify]
 Deduplication for jail.
 .Pp
-Default: off
+Default: 0
 .Pp
 Source:
 .Xr zfs 8
