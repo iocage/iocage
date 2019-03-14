@@ -40,6 +40,7 @@
 .\" == CONSOLE ==
 .Nm
 .Cm console
+.Op Fl f | -force
 .Ar UUID | NAME
 .\" == CREATE ==
 .Nm
@@ -75,6 +76,7 @@
 .\" == EXEC ==
 .Nm
 .Cm exec
+.Op Fl f | -force
 .Op Fl U | -jail_user Ar NAME
 .Op Fl u | -host_user Ar NAME
 .Ar UUID | NAME
@@ -366,9 +368,17 @@ Creates three jail clones of exampjail.
 .It Cm console
 Execute login to open a shell inside the jail.
 .Pp
-Example:
+Options:
+.Bl -tag -width "[-f | --force TEXT]"
+.It Op Fl f | -force
+Start the jail if it is not running.
+.El
+.Pp
+Examples:
 .Pp
 .Dl # iocage console cloneexample1
+.Pp
+.Dl # iocage console -f jail1
 .Pp
 .\" == CREATE ==
 .It Cm create
@@ -525,6 +535,8 @@ them.
 .Pp
 Options:
 .Bl -tag -width "[-u | --host_user NAME]"
+.It Op Fl f | -force
+Start the jail if it is not running.
 .It Op Fl U | -jail_user Ar NAME
 Specifies which jail user runs the command.
 .It Op Fl u | -host_user Ar NAME
@@ -533,9 +545,9 @@ Specify which host user runs the command.
 .Pp
 Examples:
 .Pp
-.Dl # iocage exec examplejail_1 ls /tmp
+.Dl # iocage exec -f examplejail_1 ls /tmp
 .Pp
-Lists the contents of the examplejail_1's
+Starts examplejail_1 and lists the contents of the
 .Pa /tmp
 directory.
 .Pp
