@@ -1,4 +1,4 @@
-.Dd May 10, 2018
+.Dd March 13, 2019
 .Dt IOCAGE 8
 .Os
 .Sh NAME
@@ -1056,6 +1056,14 @@ Set to on if a fully virtualized per-jail network stack is required.
 Default: off
 .Pp
 Source: local
+.It Pf ip_hostname= Op 0 | 1
+A boolean option for using DNS records during jail IP configuration.
+.Xr jail 8
+pulls the first IPv4 or IPv6 addresses from the resolver and applies
+them to the jail.
+.Pp
+Source:
+.Xr jail 8
 .It ip4_addr="interface|ip-address/netmask"
 The IPv4 address for VNET and shared IP jails.
 .Pp
