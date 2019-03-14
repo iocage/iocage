@@ -1227,6 +1227,14 @@ Default: 1
 .Pp
 Source:
 .Xr jail 8
+.It exec_created="/usr/bin/true"
+Commands to run in the system environment after creating a jail but
+before commands or services run inside that jail.
+.Pp
+Default: /usr/bin/true
+.Pp
+Source:
+.Xr jail 8
 .It exec_start="/bin/sh /etc/rc"
 Commands to run in the prison environment when a jail is created.
 A typical command to run is
