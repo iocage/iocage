@@ -1051,10 +1051,23 @@ Boolean option to add interface
 .Ql lo0
 assigned to
 .Ql 127.0.0.1 .
-Configured automatically with
+Configured automatically when
 .Ql vnet=on.
 .Pp
 Default: 0
+.Pp
+Source: local
+.It Pf localhost_ip= Ev Sq 123.456.7.8
+Only applies when
+.Ql vnet=off
+and
+.Ql assign_localhost=1 .
+Assign a custom IP address in place of
+.Ql 127.0.0.1
+as the jail localhost IP.
+.Nm
+checks for active jail IP addresses and warns when another jail is
+using the requested IP address.
 .Pp
 Source: local
 .It Pf bpf= Op on | off
