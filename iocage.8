@@ -1046,6 +1046,17 @@ The Source listed with each property shows whether it is a local
 .Nm
 property or where more information can be located.
 .Bl -tag -width "pkglist=none"
+.It Pf assign_localhost= Op 0 | 1
+Boolean option to add interface
+.Ql lo0
+assigned to
+.Ql 127.0.0.1 .
+Configured automatically with
+.Ql vnet=on.
+.Pp
+Default: 0
+.Pp
+Source: local
 .It Pf bpf= Op on | off
 Toggle starting the jail with Berkely Packet Filter devices enabled.
 .Pp
