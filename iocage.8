@@ -900,7 +900,7 @@ If accessing a nested key, use "." as a separator.
 .Pp
 Examples:
 .Pp
-.Dl # iocage set boot=on notes="Example note." testjail -P foo.bar.baz=VALUE PLUGIN
+.Dl # iocage set boot=1 notes="Example note." testjail -P foo.bar.baz=VALUE PLUGIN
 .Pp
 .\" == SNAPLIST ==
 .It Cm snaplist
@@ -981,7 +981,7 @@ to start all installed jails instead.
 Options:
 .Bl -tag -width "[--rc]"
 .It Op Fl -rc
-Start all jails with boot=on in a specific order.
+Start all jails with boot=1 in a specific order.
 Jails with lower priority start first.
 .El
 .Pp
@@ -1002,7 +1002,7 @@ to stop all active jails instead.
 Options:
 .Bl -tag -width "[--rc]"
 .It Op Fl -rc
-Stop all jails with boot=on in a specific order.
+Stop all jails with boot=1 in a specific order.
 Jails with higher priority values stop first.
 .El
 .Pp
@@ -1238,6 +1238,14 @@ Default: UUID
 .Pp
 Source:
 .Xr jail 8
+.It Pf host_time= Op 1 |0
+When active, copies the host
+.Pa /etc/localtime
+into the jail when the jail boots.
+.Pp
+Default: 1
+.Pp
+Source: local
 .It Pf exec_fib= Op 0 | 1 ..
 The FIB (routing table) to set when running commands inside the jail.
 .Pp
@@ -1947,11 +1955,11 @@ Default network interface used for the VNET bridge interface in the jail.
 Only takes effect when VNET is set.
 .Pp
 Default: none
-.It hostid_strict_check
+.It hostid_strict_check Op 1 | 0
 Check the hostid property of the jail.
 If not the same as the host, do not start the jail.
 .Pp
-Default: off
+Default: 0
 .El
 .Sh EXAMPLES
 Set up
