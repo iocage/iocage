@@ -80,7 +80,18 @@ class IOCList(object):
 
             for jail in ds:
                 uuid = jail.name.rsplit("/", 1)[-1]
-                jails[uuid] = jail.properties["mountpoint"].value
+                try:
+                    jails[uuid] = jail.properties["mountpoint"].value
+                except KeyError:
+                    iocage_lib.ioc_common.logit(
+                        {
+                            'level': 'ERROR',
+                            'message': f'{jail.name} mountpoint is '
+                            'misconfigured. Please correct this.'
+                        },
+                        _callback=self.callback,
+                        silent=self.silent
+                    )
 
             template_datasets = self.zfs.get_dataset(
                 f"{self.pool}/iocage/templates")
@@ -105,7 +116,19 @@ class IOCList(object):
         jail_list = []
 
         for jail in jails:
-            mountpoint = jail.properties["mountpoint"].value
+            try:
+                mountpoint = jail.properties["mountpoint"].value
+            except KeyError:
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'ERROR',
+                        'message': f'{jail.name} mountpoint is misconfigured. '
+                        'Please correct this.'
+                    },
+                    _callback=self.callback,
+                    silent=self.silent
+                )
+                continue
 
             try:
                 with open(f"{mountpoint}/config.json", "r") as loc:
@@ -157,7 +180,20 @@ class IOCList(object):
         jail_list = []
 
         for jail in jails:
-            mountpoint = jail.properties["mountpoint"].value
+            try:
+                mountpoint = jail.properties["mountpoint"].value
+            except KeyError:
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'ERROR',
+                        'message': f'{jail.name} mountpoint is misconfigured. '
+                        'Please correct this.'
+                    },
+                    _callback=self.callback,
+                    silent=self.silent
+                )
+                continue
+
             try:
                 conf = iocage_lib.ioc_json.IOCJson(mountpoint).json_load()
                 state = ''
