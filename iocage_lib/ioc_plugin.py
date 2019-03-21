@@ -305,7 +305,9 @@ class IOCPlugin(object):
                 self.release, self.callback, self.silent)
 
             try:
-                with open(freebsd_version, "r") as r:
+                with open(
+                    freebsd_version, mode='r', encoding='utf-8'
+                ) as r:
                     for line in r:
                         if line.startswith("USERLAND_VERSION"):
                             release = line.rstrip().partition("=")[2].strip(
@@ -323,7 +325,9 @@ class IOCPlugin(object):
                 self.__fetch_release__(self.release)
 
                 # We still want this.
-                with open(freebsd_version, "r") as r:
+                with open(
+                    freebsd_version, mode='r', encoding='utf-8'
+                ) as r:
                     for line in r:
                         if line.startswith("USERLAND_VERSION"):
                             release = line.rstrip().partition("=")[2].strip(
