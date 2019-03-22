@@ -314,13 +314,16 @@ class IOCList(object):
 
                         try:
                             ph = ui_data["adminportal_placeholders"].items()
-                            for placeholder, prop in ph:
-                                admin_portal = admin_portal.replace(
-                                    placeholder,
-                                    iocage_lib.ioc_json.IOCJson(
-                                        mountpoint).json_plugin_get_value(
-                                        prop.split("."))
-                                )
+                            if ph and not status:
+                                admin_portal = f"{uuid} is not running!"
+                            else:
+                                for placeholder, prop in ph:
+                                    admin_portal = admin_portal.replace(
+                                        placeholder,
+                                        iocage_lib.ioc_json.IOCJson(
+                                            mountpoint).json_plugin_get_value(
+                                            prop.split("."))
+                                    )
                         except KeyError:
                             pass
                         except iocage_lib.ioc_exceptions.CommandNeedsRoot:
