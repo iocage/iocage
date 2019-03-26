@@ -186,13 +186,13 @@ class IOCStart(object):
                 prop_missing = True
 
         if nat and nat_interface == 'none':
-                nat_interface = self.get_default_gateway()[1]
-                iocage_lib.ioc_common.logit({
-                    'level': 'WARNING',
-                    'message': f'{self.uuid}: nat requires nat_interface,'
-                               f' using {nat_interface}'
-                }, _callback=self.callback,
-                    silent=self.silent)
+            nat_interface = self.get_default_gateway()[1]
+            iocage_lib.ioc_common.logit({
+                'level': 'WARNING',
+                'message': f'{self.uuid}: nat requires nat_interface,'
+                           f' using {nat_interface}'
+            }, _callback=self.callback,
+                silent=self.silent)
 
         if 'accept_rtadv' in self.ip6_addr and not self.conf['vnet']:
             prop_missing_msgs.append(
@@ -1273,8 +1273,8 @@ class IOCStart(object):
             wants_dhcp = False
         else:
             dhcp = self.get('dhcp')
-            wants_dhcp = True if dhcp or 'DHCP' in self.ip4_addr.upper(
-                ) else False
+            wants_dhcp = True if dhcp or 'DHCP' in self.ip4_addr.upper() else \
+                False
 
         try:
             if wants_dhcp:
