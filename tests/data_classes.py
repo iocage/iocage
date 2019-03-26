@@ -39,7 +39,7 @@ class Row:
         else:
             assert r_type is not None
             if not hasattr(self, f'{r_type}_parse'):
-                raise NotImplemented
+                raise NotImplementedError
 
             getattr(self, f'{r_type}_parse')()
 

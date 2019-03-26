@@ -30,6 +30,7 @@ import shutil
 import json
 import subprocess as su
 import netifaces
+import ipaddress
 
 import iocage_lib.ioc_common
 import iocage_lib.ioc_exec
@@ -57,6 +58,10 @@ class IOCStart(object):
         self.silent = silent
         self.is_depend = is_depend
         self.unit_test = unit_test
+        self.ip4_addr = 'none'
+        self.ip6_addr = 'none'
+        self.defaultrouter = 'none'
+        self.defaultrouter6 = 'none'
 
         if not self.unit_test:
             self.conf = iocage_lib.ioc_json.IOCJson(path).json_get_value('all')
@@ -149,10 +154,14 @@ class IOCStart(object):
         bpf = self.conf["bpf"]
         dhcp = self.conf["dhcp"]
         rtsold = self.conf['rtsold']
-        wants_dhcp = True if dhcp or 'DHCP' in self.conf[
-            'ip4_addr'].upper() else False
+        self.ip4_addr = self.conf['ip4_addr']
+        self.ip6_addr = self.conf["ip6_addr"]
+        wants_dhcp = True if dhcp or 'DHCP' in self.ip4_addr.upper() else False
         vnet_interfaces = self.conf["vnet_interfaces"]
-        ip6_addr = self.conf["ip6_addr"]
+        nat = self.conf['nat']
+        nat_interface = self.conf['nat_interface']
+        nat_backend = self.conf['nat_backend']
+        nat_forwards = self.conf['nat_forwards']
         ip_hostname = self.conf['ip_hostname']
         prop_missing = False
         prop_missing_msgs = []
@@ -160,6 +169,8 @@ class IOCStart(object):
             'IOCAGE_DEBUG', 'FALSE') == 'TRUE' else False
         assign_localhost = self.conf['assign_localhost']
         localhost_ip = self.conf['localhost_ip']
+        self.defaultrouter = self.conf['defaultrouter']
+        self.defaultrouter6 = self.conf['defaultrouter6']
 
         if wants_dhcp:
             if not bpf:
@@ -174,7 +185,16 @@ class IOCStart(object):
                 )
                 prop_missing = True
 
-        if 'accept_rtadv' in ip6_addr and not self.conf['vnet']:
+        if nat and nat_interface == 'none':
+                nat_interface = self.get_default_gateway()[1]
+                iocage_lib.ioc_common.logit({
+                    'level': 'WARNING',
+                    'message': f'{self.uuid}: nat requires nat_interface,'
+                               f' using {nat_interface}'
+                }, _callback=self.callback,
+                    silent=self.silent)
+
+        if 'accept_rtadv' in self.ip6_addr and not self.conf['vnet']:
             prop_missing_msgs.append(
                 f'{self.uuid}: accept_rtadv requires vnet!'
             )
@@ -282,8 +302,23 @@ class IOCStart(object):
             _allow_vmm = f"allow.vmm={allow_vmm}"
             _exec_created = f'exec.created={exec_created}'
 
+        if nat:
+            self.__check_nat__(backend=nat_backend)
+
+            if not self.conf['vnet']:
+                ip4_addr, _ = iocage_lib.ioc_common.gen_nat_ip(
+                    self.conf['nat_prefix']
+                )
+                self.ip4_addr = f'{nat_interface}|{ip4_addr}'
+            else:
+                self.defaultrouter, ip4_addr = \
+                    iocage_lib.ioc_common.gen_nat_ip(
+                        self.conf['nat_prefix']
+                    )
+                self.ip4_addr = f'vnet0|{ip4_addr}/30'
+                nat = self.defaultrouter
+
         if not self.conf['vnet']:
-            ip4_addr = self.conf['ip4_addr']
             ip4_saddrsel = self.conf['ip4_saddrsel']
             ip4 = self.conf['ip4']
             ip6_saddrsel = self.conf['ip6_saddrsel']
@@ -329,20 +364,20 @@ class IOCStart(object):
                             _callback=self.callback,
                             silent=self.silent)
 
-                if ip4_addr == 'none':
-                    ip4_addr = localhost_ip
+                if self.ip4_addr == 'none':
+                    self.ip4_addr = localhost_ip
                 else:
-                    ip4_addr += f',{localhost_ip}'
+                    self.ip4_addr += f',{localhost_ip}'
 
-            if ip4_addr != 'none':
-                ip4_addr = self.check_aliases(ip4_addr, '4')
+            if self.ip4_addr != 'none':
+                self.ip4_addr = self.check_aliases(self.ip4_addr, '4')
 
-                net.append(f'ip4.addr={ip4_addr}')
+                net.append(f'ip4.addr={self.ip4_addr}')
 
-            if ip6_addr != 'none':
-                ip6_addr = self.check_aliases(ip6_addr, '6')
+            if self.ip6_addr != 'none':
+                self.ip6_addr = self.check_aliases(self.ip6_addr, '6')
 
-                net.append(f'ip6.addr={ip6_addr}')
+                net.append(f'ip6.addr={self.ip6_addr}')
 
             net += [
                 f'ip4.saddrsel={ip4_saddrsel}',
@@ -510,7 +545,7 @@ class IOCStart(object):
         if not os.path.isfile(os_path) and not os.path.islink(os_path):
             os.symlink("../var/run/log", os_path)
 
-        vnet_err = self.start_network(vnet)
+        vnet_err = self.start_network(vnet, nat)
 
         if not vnet_err and vnet:
             iocage_lib.ioc_common.logit({
@@ -545,6 +580,14 @@ class IOCStart(object):
                 "message": f"\nStopped {self.uuid} due to VNET failure"
             },
                 _callback=self.callback)
+
+        if net:
+            iocage_lib.ioc_common.logit({
+                'level': 'INFO',
+                'message': f'  + Using IP options: {" ".join(net)}'
+            },
+                _callback=self.callback,
+                silent=self.silent)
 
         if self.conf['jail_zfs']:
             for jdataset in self.conf["jail_zfs_dataset"].split():
@@ -589,6 +632,10 @@ class IOCStart(object):
 
         self.start_generate_resolv()
         self.start_copy_localtime()
+
+        if nat:
+            self.__add_nat__(nat_interface, nat_forwards, nat_backend)
+
         # This needs to be a list.
         exec_start = self.conf['exec_start'].split()
 
@@ -681,11 +728,11 @@ class IOCStart(object):
                 # ...so we extract the ip4 address and mask,
                 # and calculate cidr manually
                 addr_split = out.splitlines()[2].split()
-                ip4_addr = addr_split[1].decode()
+                self.ip4_addr = addr_split[1].decode()
                 hexmask = addr_split[3].decode()
                 maskcidr = sum([bin(int(hexmask, 16)).count('1')])
 
-                addr = f'{ip4_addr}/{maskcidr}'
+                addr = f'{self.ip4_addr}/{maskcidr}'
 
                 if '0.0.0.0' in addr:
                     failed_dhcp = True
@@ -808,7 +855,7 @@ class IOCStart(object):
 
         return ','.join(new_ips)
 
-    def start_network(self, vnet):
+    def start_network(self, vnet, nat=False):
         """
         This function is largely a check to see if VNET is true, and then to
         actually run the correct function, otherwise it passes.
@@ -822,8 +869,8 @@ class IOCStart(object):
 
         _, jid = iocage_lib.ioc_list.IOCList().list_get_jid(self.uuid)
         net_configs = (
-            (self.get("ip4_addr"), self.get("defaultrouter"), False),
-            (self.get("ip6_addr"), self.get("defaultrouter6"), True))
+            (self.ip4_addr, self.defaultrouter, False),
+            (self.ip6_addr, self.defaultrouter6, True))
         nics = self.get("interfaces").split(",")
 
         vnet_default_interface = self.get('vnet_default_interface')
@@ -840,7 +887,7 @@ class IOCStart(object):
             ]
 
         for nic in nics:
-            err = self.start_network_interface_vnet(nic, net_configs, jid)
+            err = self.start_network_interface_vnet(nic, net_configs, jid, nat)
 
             if err:
                 errors.extend(err)
@@ -848,7 +895,9 @@ class IOCStart(object):
         if len(errors) != 0:
             return errors
 
-    def start_network_interface_vnet(self, nic_defs, net_configs, jid):
+    def start_network_interface_vnet(
+        self, nic_defs, net_configs, jid, nat_addr=None
+    ):
         """
         Start VNET on interface
 
@@ -866,14 +915,18 @@ class IOCStart(object):
             nic, bridge = nic_def.split(":")
 
             try:
-                membermtu = self.find_bridge_mtu(bridge)
+                if nat_addr is None:
+                    membermtu = self.find_bridge_mtu(bridge)
+                else:
+                    membermtu = '1500'
+
                 dhcp = self.get('dhcp')
 
                 ifaces = []
 
                 for addrs, gw, ipv6 in net_configs:
                     if (
-                        dhcp or 'DHCP' in self.get('ip4_addr').upper()
+                        dhcp or 'DHCP' in self.ip4_addr.upper()
                     ) and 'accept_rtadv' not in addrs:
                         # Spoofing IP address, it doesn't matter with DHCP
                         addrs = f"{nic}|''"
@@ -892,8 +945,9 @@ class IOCStart(object):
                             continue
 
                         if iface not in ifaces:
-                            err = self.start_network_vnet_iface(nic, bridge,
-                                                                membermtu, jid)
+                            err = self.start_network_vnet_iface(
+                                nic, bridge, membermtu, jid, nat_addr
+                            )
                             if err:
                                 errors.append(err)
 
@@ -909,7 +963,7 @@ class IOCStart(object):
         if len(errors) != 0:
             return errors
 
-    def start_network_vnet_iface(self, nic, bridge, mtu, jid):
+    def start_network_vnet_iface(self, nic, bridge, mtu, jid, nat_addr=None):
         """
         The real meat and potatoes for starting a VNET interface.
 
@@ -954,7 +1008,7 @@ class IOCStart(object):
                 stderr=su.STDOUT
             )
 
-            if 'accept_rtadv' in self.get('ip6_addr'):
+            if 'accept_rtadv' in self.ip6_addr:
                 # Set linklocal for IP6 + rtsold
                 iocage_lib.ioc_common.checkoutput(
                     ['ifconfig', f'{nic}.{jid}', 'inet6', 'auto_linklocal',
@@ -995,24 +1049,31 @@ class IOCStart(object):
                 stderr=su.STDOUT
             )
 
-            try:
-                # Host interface as supplied by user also needs to be on the
-                # bridge
-                if vnet_default_interface != 'none':
-                    iocage_lib.ioc_common.checkoutput(
-                        ["ifconfig", bridge, "addm", vnet_default_interface],
-                        stderr=su.STDOUT
-                    )
-            except su.CalledProcessError:
-                # Already exists
-                pass
+            if nat_addr is None:
+                try:
+                    # Host interface as supplied by user also needs to be on
+                    # the bridge
+                    if vnet_default_interface != 'none':
+                        iocage_lib.ioc_common.checkoutput(
+                            ['ifconfig', bridge, 'addm',
+                             vnet_default_interface],
+                            stderr=su.STDOUT
+                        )
+                except su.CalledProcessError:
+                    # Already exists
+                    pass
 
+                iocage_lib.ioc_common.checkoutput(
+                    ['ifconfig', bridge, 'addm', f'{nic}.{jid}', 'up'],
+                    stderr=su.STDOUT
+                )
+            else:
+                iocage_lib.ioc_common.checkoutput(
+                    ['ifconfig', f'{nic}.{jid}', 'inet', f'{nat_addr}/30'],
+                    stderr=su.STDOUT
+                )
             iocage_lib.ioc_common.checkoutput(
-                ["ifconfig", bridge, "addm", f"{nic}.{jid}", "up"],
-                stderr=su.STDOUT
-            )
-            iocage_lib.ioc_common.checkoutput(
-                ["ifconfig", f"{nic}.{jid}", "up"],
+                ['ifconfig', f'{nic}.{jid}', 'up'],
                 stderr=su.STDOUT
             )
         except su.CalledProcessError as err:
@@ -1028,8 +1089,7 @@ class IOCStart(object):
         :return: If an error occurs it returns the error. Otherwise, it's None
         """
         dhcp = self.get('dhcp')
-        wants_dhcp = True if dhcp or 'DHCP' in self.get(
-            'ip4_addr').upper() else False
+        wants_dhcp = True if dhcp or 'DHCP' in self.ip4_addr.upper() else False
 
         if 'vnet' in iface:
             # Inside jails they are epairNb
@@ -1145,7 +1205,7 @@ class IOCStart(object):
             nics = list(map(lambda x: x.split(':')[0], nic_list))
         else:
             nics = []
-            for ip4 in self.conf['ip4_addr'].split(','):
+            for ip4 in self.ip4_addr.split(','):
                 nic, addr = ip4.rsplit('/', 1)[0].split('|')
 
                 if addr.upper() == 'DHCP':
@@ -1165,7 +1225,7 @@ class IOCStart(object):
             )
 
     def __check_rtsold__(self):
-        if 'accept_rtadv' not in self.conf['ip6_addr']:
+        if 'accept_rtadv' not in self.ip6_addr:
             iocage_lib.ioc_common.logit(
                 {
                     'level': 'EXCEPTION',
@@ -1213,8 +1273,8 @@ class IOCStart(object):
             wants_dhcp = False
         else:
             dhcp = self.get('dhcp')
-            wants_dhcp = True if dhcp or 'DHCP' in self.get(
-                'ip4_addr').upper() else False
+            wants_dhcp = True if dhcp or 'DHCP' in self.ip4_addr.upper(
+                ) else False
 
         try:
             if wants_dhcp:
@@ -1245,3 +1305,160 @@ class IOCStart(object):
         ).split()
 
         return membermtu[5]
+
+    def __check_nat__(self, backend='ipfw'):
+        su.run(
+            ['sysctl', '-q', 'net.inet.ip.forwarding=1'], capture_output=True
+        )
+
+        if backend == 'pf':
+            self.__check_nat_pf__()
+        else:
+            self.__check_nat_ipfw__()
+
+    def __check_nat_pf__(self):
+        su.run(['kldload', '-n', 'pf'])
+        pfctl = su.run(['pfctl', '-e'], capture_output=True)
+
+        if pfctl.returncode != 0:
+            if 'enabled' not in pfctl.stderr.decode():
+                iocage_lib.ioc_common.logit({
+                    'level': 'EXCEPTION',
+                    'message': pfctl.stderr.decode()
+                }, _callback=self.callback,
+                    silent=self.silent,
+                    exception=ioc_exceptions.CommandFailed)
+
+    def __check_nat_ipfw__(self):
+        su.run(
+            ['sysctl', '-q', 'net.inet.ip.fw.enable=1'], capture_output=True
+        )
+        su.run(['kldload', '-n', 'ipfw'])
+
+    def __add_nat__(self, nat_interface, forwards, backend='ipfw'):
+        if backend == 'pf':
+            self.__add_nat_pf__(nat_interface, forwards)
+            pf = su.run(
+                ['pfctl', '-f', '/tmp/iocage_nat_pf.conf'], capture_output=True
+            )
+
+            if pf.returncode != 0:
+                iocage_lib.ioc_common.logit({
+                    'level': 'EXCEPTION',
+                    'message': pf.stderr.decode()
+                }, _callback=self.callback,
+                    silent=self.silent,
+                    exception=ioc_exceptions.CommandFailed)
+
+        else:
+            su.run(['ifconfig', nat_interface, '-tso4', '-lro', '-vlanhwtso'])
+            self.__add_nat_ipfw__(nat_interface, forwards)
+            ipfw = su.run(
+                ['sh', '-c', '/tmp/iocage_nat_ipfw.conf'], capture_output=True
+            )
+
+            if ipfw.returncode != 0:
+                iocage_lib.ioc_common.logit({
+                    'level': 'EXCEPTION',
+                    'message': ipfw.stderr.decode()
+                }, _callback=self.callback,
+                    silent=self.silent,
+                    exception=ioc_exceptions.CommandFailed)
+
+    def __add_nat_pf__(self, nat_interface, forwards):
+        pf_conf = '/tmp/iocage_nat_pf.conf'
+        ip4_addr = self.ip4_addr.split('|')[1].rsplit('/')[0]
+        nat_network = str(
+            ipaddress.IPv4Network(f'{ip4_addr}/24', strict=False)
+        )
+        rules = [
+            f'nat on {nat_interface} from {nat_network} to any ->'
+            f' ({nat_interface}:0) static-port'
+        ]
+        rdrs = []
+
+        if forwards != 'none':
+            for proto, port, map in self.__parse_nat_fwds__(forwards):
+                # ipfw port ranges do not work with pf
+                port = port.replace('-', ':')
+                map = map.replace('-', ':')
+
+                rdrs.append(
+                    f'rdr pass on {nat_interface} inet proto {proto} from any'
+                    f' to ({nat_interface}:0) port {map} -> {ip4_addr}'
+                    f' port {port}\n'
+                )
+
+        with open(os.open(pf_conf, os.O_CREAT | os.O_RDWR), 'w+') as f:
+            for line in f.readlines():
+                line = line.rstrip()
+                if line.startswith('rdr') and ip4_addr not in line:
+                    rules.append(line)
+
+            f.seek(0)
+            for rule in rules:
+                f.write(f'{rule}\n')
+            for rdr in rdrs:
+                f.write(rdr)
+            f.truncate()
+
+        os.chmod(pf_conf, 0o755)
+
+    def __add_nat_ipfw__(self, nat_interface, forwards):
+        ipfw_conf = '/tmp/iocage_nat_ipfw.conf'
+        nat_rule = f'ipfw -q nat 462 config if {nat_interface} same_ports'
+        rdrs = ''
+        ip4_addr = self.ip4_addr.split('|')[1].rsplit('/')[0]
+        nat_network = str(
+            ipaddress.IPv4Network(f'{ip4_addr}/24', strict=False)
+        )
+        rules = [
+            'ipfw -q flush',
+            f'ipfw -q add 100 nat 462 ip4 from {nat_network} to any'
+            f' out via {nat_interface}',
+            'ipfw -q add 101 nat 462 ip4 from any to any in via'
+            f' {nat_interface}'
+        ]
+
+        if forwards != 'none':
+            for proto, port, map in self.__parse_nat_fwds__(forwards):
+                rdrs += f' redirect_port {proto} {ip4_addr}:{port} {map}'
+
+        with open(os.open(ipfw_conf, os.O_CREAT | os.O_RDWR), 'w+') as f:
+            for line in f.readlines():
+                line = line.rstrip()
+                if line not in rules and nat_rule in line:
+                    nat_line = line.split('redirect_port ')
+                    final_line = nat_rule
+
+                    for n in nat_line:
+                        if 'nat' in n:
+                            continue
+
+                        if ip4_addr not in n:
+                            final_line += f' redirect_port {n}'
+
+                    rules.insert(1, f'{final_line}{rdrs}')
+
+            if rules[1].endswith(nat_interface):
+                # They don't have any port-forwards
+                rules.insert(1, nat_rule)
+
+            f.seek(0)
+            for rule in rules:
+                f.write(f'{rule}\n')
+            f.truncate()
+
+        os.chmod(ipfw_conf, 0o755)
+
+    def __parse_nat_fwds__(self, forwards):
+        for fwd in forwards.split(','):
+            proto, port = fwd.split('(')
+            port = port.strip('()')
+
+            try:
+                port, map = port.rsplit(':', 1)
+            except ValueError:
+                map = port
+
+            yield proto, port, map

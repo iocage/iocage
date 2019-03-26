@@ -709,7 +709,7 @@ class IOCConfiguration(IOCZFS):
     @staticmethod
     def get_version():
         """Sets the iocage configuration version."""
-        version = '22'
+        version = '23'
 
         return version
 
@@ -1062,6 +1062,18 @@ class IOCConfiguration(IOCZFS):
         if not conf.get('localhost_ip'):
             conf['localhost_ip'] = 'none'
 
+        # Version 23 keys
+        if not conf.get('nat'):
+            conf['nat'] = 0
+        if not conf.get('nat_prefix'):
+            conf['nat_prefix'] = '172.16'
+        if not conf.get('nat_interface'):
+            conf['nat_interface'] = 'none'
+        if not conf.get('nat_backend'):
+            conf['nat_backend'] = 'ipfw'
+        if not conf.get('nat_forwards'):
+            conf['nat_forwards'] = 'none'
+
         if not default:
             conf.update(jail_conf)
 
@@ -1382,7 +1394,12 @@ class IOCConfiguration(IOCZFS):
             'rtsold': 0,
             'ip_hostname': 0,
             'assign_localhost': 0,
-            'localhost_ip': 'none'
+            'localhost_ip': 'none',
+            'nat': 0,
+            'nat_prefix': '172.16',
+            'nat_interface': 'none',
+            'nat_backend': 'ipfw',
+            'nat_forwards': 'none'
         }
 
         try:
@@ -1482,7 +1499,8 @@ class IOCJson(IOCConfiguration):
             'ip6_saddrsel',
             'ip4_saddrsel',
             'ip_hostname',
-            'assign_localhost'
+            'assign_localhost',
+            'nat'
         ]
         super().__init__(location, checking_datasets, silent, callback)
 
@@ -1999,7 +2017,7 @@ class IOCJson(IOCConfiguration):
                         silent=self.silent)
 
                     # Writing these now since the dataset will be readonly
-                    self.json_check_prop(key, value, conf)
+                    self.json_check_prop(key, value, conf, default)
                     self.json_write(conf)
 
                     self.zfs_set_property(new_location, "readonly", "on")
@@ -2171,7 +2189,7 @@ class IOCJson(IOCConfiguration):
                     _callback=self.callback,
                     silent=self.silent)
 
-    def json_check_prop(self, key, value, conf):
+    def json_check_prop(self, key, value, conf, default=False):
         """
         Checks if the property matches known good values, if it's the
         CLI, deny setting any properties not in this list.
@@ -2292,7 +2310,12 @@ class IOCJson(IOCConfiguration):
             'rtsold': truth_variations,
             'ip_hostname': truth_variations,
             'assign_localhost': truth_variations,
-            'localhost_ip': ('string', )
+            'localhost_ip': ('string', ),
+            'nat': truth_variations,
+            'nat_prefix': ('string', ),
+            'nat_interface': ('string', ),
+            'nat_backend': ('pf', 'ipfw'),
+            'nat_forwards': ('string', )
         }
 
         zfs_props = {
@@ -2307,6 +2330,17 @@ class IOCJson(IOCConfiguration):
             "dedup": "off",
             "reservation": "none",
         }
+
+        if key in (
+            'nat_prefix', 'nat_interface', 'nat_backend'
+        ) and not default:
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message': f'{key} can only be changed for defaults!'
+                },
+                _callback=self.callback,
+                silent=self.silent)
 
         if key in zfs_props.keys():
             if iocage_lib.ioc_common.check_truthy(
@@ -2458,7 +2492,7 @@ class IOCJson(IOCConfiguration):
                     IOCRCTL.validate_rctl_props(key, value)
                 elif key == 'cpuset':
                     IOCCpuset.validate_cpuset_prop(value)
-                elif key == 'localhost_ip':
+                elif key in ('localhost_ip'):
                     if value != 'none':
                         try:
                             ipaddress.IPv4Address(value)
@@ -2471,6 +2505,25 @@ class IOCJson(IOCConfiguration):
                                 _callback=self.callback,
                                 silent=self.silent
                             )
+                elif key == 'nat_forwards':
+                    if value != 'none':
+                        regex = re.compile(
+                            r'(^tcp|^udp|^tcp\/udp)\(\d{1,5}((:|-?)'
+                            r'(\d{1,5}))\)'
+                        )
+                        for fwd in value.split(','):
+                            match = regex.match(fwd)
+                            if not match or len(fwd) != match.span()[1]:
+                                iocage_lib.ioc_common.logit(
+                                    {
+                                        'level': 'EXCEPTION',
+                                        'message': f'Invalid nat_forwards'
+                                                   f' value: {value}'
+                                    },
+                                    _callback=self.callback,
+                                    silent=self.silent,
+                                    exception=ioc_exceptions.ValidationFailed
+                                )
 
                 return value, conf
             else:

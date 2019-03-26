@@ -1044,6 +1044,9 @@ class IOCage(ioc_json.IOCZFS):
             ) & ioc_common.lowercase_set(
                 props) and not ioc_common.lowercase_set(
                     ioc_common.construct_truthy('ip_hostname')
+            ) & ioc_common.lowercase_set(
+                props) and not ioc_common.lowercase_set(
+                    ioc_common.construct_truthy('nat')
             ) & ioc_common.lowercase_set(props)):
                 ioc_common.logit(
                     {

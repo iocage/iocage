@@ -38,7 +38,8 @@ import re
 import shlex
 import glob
 import netifaces
-import ipaddress
+import concurrent.futures
+import json
 
 import iocage_lib.ioc_exceptions
 import iocage_lib.ioc_exec
@@ -943,11 +944,13 @@ def gen_unused_lo_ip():
              if ip['addr'].startswith('127')]
 
     for ip in ipaddress.IPv4Network('127.0.0.0/8'):
-        if str(ip) == '127.0.0.0':
+        ip_exploded = ip.exploded
+
+        if ip_exploded == '127.0.0.0':
             continue
 
-        if str(ip) not in inuse:
-            return str(ip)
+        if ip_exploded not in inuse:
+            return ip_exploded
 
     logit(
         {
@@ -957,3 +960,62 @@ def gen_unused_lo_ip():
             ' address, please manually set the localhost_ip property.'
         }
     )
+
+
+def gen_nat_ip(ip_prefix):
+    """Best effort to try to allocate a private NAT IP for a jail"""
+    inuse = get_used_ips()
+
+    for i in range(256):
+        for l in range(1, 256, 4):
+            network = ipaddress.IPv4Network(
+                f'{ip_prefix}.{i}.{l}/30', strict=False
+            )
+            pair = [_ip.exploded for _ip in network.hosts()]
+
+            if any(x in pair for x in inuse):
+                continue
+
+            return pair
+
+    logit(
+        {
+            'level': 'EXCEPTION',
+            'message': 'An unused RFC1918 compliant address could'
+            ' not be allocated.\nPlease set an unused nat_prefix.'
+        }
+    )
+
+
+def get_used_ips():
+    """
+    Run ifconfig in every jail and return an iteratable of the inuse addresses
+    """
+    jails = json.loads(
+        su.run(['jls', 'jid', '--libxo', 'json'], capture_output=True).stdout
+    )['jail-information']['jail']
+    addresses = []
+
+    # Host
+    inuse = su.run(['ifconfig'], capture_output=True, universal_newlines=True)
+    for line in inuse.stdout.splitlines():
+        if line.strip().startswith('inet'):
+            address = line.split()[1]
+            addresses.append(address)
+
+    # Jails
+    with concurrent.futures.ThreadPoolExecutor() as exc:
+        futures = exc.map(
+            lambda jail: su.run(
+                ['jexec', jail['jid'], 'ifconfig'], capture_output=True,
+                universal_newlines=True
+            ), jails
+        )
+
+        for future in futures:
+            for line in future.stdout.splitlines():
+                if line.strip().startswith('inet'):
+                    address = line.split()[1]
+                    addresses.append(address)
+
+    return addresses

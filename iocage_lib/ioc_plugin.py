@@ -359,10 +359,10 @@ class IOCPlugin(object):
 
         # We do these tests again as the user could supply a malformed IP to
         # fetch that bypasses the more naive check in cli/fetch
-        dhcp_or_hostname = _conf['dhcp'] or _conf['ip_hostname']
+        auto_configs = _conf['dhcp'] or _conf['ip_hostname'] or _conf['nat']
 
         if _conf["ip4_addr"] == "none" and _conf["ip6_addr"] == "none" and \
-           not dhcp_or_hostname:
+           not auto_configs:
             iocage_lib.ioc_common.logit(
                 {
                     "level": "ERROR",

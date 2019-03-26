@@ -22,15 +22,12 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """iocage destroy module."""
-import json
 import os
 import subprocess as su
 
 import iocage_lib.ioc_json
 import iocage_lib.ioc_stop
 import libzfs
-
-from pathlib import Path
 
 
 class IOCDestroy(iocage_lib.ioc_json.IOCZFS):
@@ -47,37 +44,7 @@ class IOCDestroy(iocage_lib.ioc_json.IOCZFS):
         self.path = None
         self.j_conf = None
 
-    def __stop_jails__(self, datasets, path=None, root=False, clean=False):
-        if clean:
-            jids, _ = su.Popen(["jls", "-n", "name", "jid",
-                                "--libxo=json"], stdout=su.PIPE).communicate()
-            jids = json.loads(jids)["jail-information"]["jail"]
-
-            for j in jids:
-                name = j["name"]
-                jid = j["jid"]
-
-                if "ioc-" in name:
-                    cmd = ["jail"]
-                    jail_conf_file = Path(f"/var/run/jail.{name}.conf")
-
-                    # The is_file checks here are part of the iocage upgrade
-                    # path. Users may not have a jail_conf_file yet.
-                    if jail_conf_file.is_file():
-                        cmd.extend(["-f", f"{jail_conf_file}"])
-
-                    cmd.extend(["-r", jid])
-
-                    su.Popen(cmd, stdout=su.PIPE, stderr=su.PIPE).communicate()
-
-                    # Don't let a failure to unlink the jail conf stop the
-                    # destruction process.
-                    if jail_conf_file.is_file():
-                        try:
-                            jail_conf_file.unlink()
-                        except OSError:
-                            pass
-
+    def __stop_jails__(self, datasets, path=None, root=False):
         for dataset in datasets:
             if 'jails' not in dataset:
                 continue
@@ -93,7 +60,7 @@ class IOCDestroy(iocage_lib.ioc_json.IOCZFS):
             path = path.replace('templates', 'jails')
 
             try:
-                uuid = dataset.partition(path)[2]
+                uuid = dataset.partition(path)[2].lstrip('/')
                 if not uuid:
                     # jails dataset
                     # This will trigger a false IndexError if we don't continue
@@ -239,6 +206,23 @@ class IOCDestroy(iocage_lib.ioc_json.IOCZFS):
             # Dataset can't be found, we don't care
             return
 
+        if "templates" in path or "release" in path:
+            # This will tell __stop_jails__ to actually try stopping on
+            # a /root
+            root = True
+        else:
+            # Otherwise we only stop when the uuid is the last entry in
+            # the jails path.
+            root = False
+
+        if stop:
+            try:
+                self.__stop_jails__(datasets, path, root)
+            except (RuntimeError, FileNotFoundError, SystemExit):
+                # If a bad or missing configuration for a jail, this will
+                # get in the way.
+                pass
+
         single = True if len(datasets) == 1 else False
 
         if single:
@@ -246,23 +230,6 @@ class IOCDestroy(iocage_lib.ioc_json.IOCZFS):
             self.__destroy_dataset__(datasets[0])
         else:
             datasets.reverse()
-
-            if "templates" in path or "release" in path:
-                # This will tell __stop_jails__ to actually try stopping on
-                # a /root
-                root = True
-            else:
-                # Otherwise we only stop when the uuid is the last entry in
-                # the jails path.
-                root = False
-
-            if stop:
-                try:
-                    self.__stop_jails__(datasets, path, root, clean=clean)
-                except (RuntimeError, FileNotFoundError, SystemExit):
-                    # If a bad or missing configuration for a jail, this will
-                    # get in the way.
-                    pass
 
             for dataset in datasets:
                 try:
