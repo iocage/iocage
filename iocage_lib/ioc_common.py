@@ -992,12 +992,16 @@ def get_used_ips():
     Run ifconfig in every jail and return an iteratable of the inuse addresses
     """
     jails = json.loads(
-        su.run(['jls', 'jid', '--libxo', 'json'], capture_output=True).stdout
+        su.run(
+            ['jls', 'jid', '--libxo', 'json'], stdout=su.PIPE, stderr=su.PIPE
+        ).stdout
     )['jail-information']['jail']
     addresses = []
 
     # Host
-    inuse = su.run(['ifconfig'], capture_output=True, universal_newlines=True)
+    inuse = su.run(
+        ['ifconfig'], stdout=su.PIPE, stderr=su.PIPE, universal_newlines=True
+    )
     for line in inuse.stdout.splitlines():
         if line.strip().startswith('inet'):
             address = line.split()[1]
@@ -1007,8 +1011,8 @@ def get_used_ips():
     with concurrent.futures.ThreadPoolExecutor() as exc:
         futures = exc.map(
             lambda jail: su.run(
-                ['jexec', jail['jid'], 'ifconfig'], capture_output=True,
-                universal_newlines=True
+                ['jexec', jail['jid'], 'ifconfig'], stdout=su.PIPE,
+                stderr=su.PIPE, universal_newlines=True
             ), jails
         )
 

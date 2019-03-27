@@ -349,7 +349,7 @@ class IOCStart(object):
                 else:
                     active_jail_ips = json.loads(su.run(
                         ['jls', '-n', 'ip4.addr', '--libxo=json'],
-                        capture_output=True
+                        stdout=su.PIPE, stderr=su.PIPE
                     ).stdout)['jail-information']['jail']
                     active_jail_ips = [
                         ip.get('ip4.addr') for ip in active_jail_ips
@@ -1308,7 +1308,8 @@ class IOCStart(object):
 
     def __check_nat__(self, backend='ipfw'):
         su.run(
-            ['sysctl', '-q', 'net.inet.ip.forwarding=1'], capture_output=True
+            ['sysctl', '-q', 'net.inet.ip.forwarding=1'], stdout=su.PIPE,
+            stderr=su.PIPE
         )
 
         if backend == 'pf':
@@ -1318,7 +1319,7 @@ class IOCStart(object):
 
     def __check_nat_pf__(self):
         su.run(['kldload', '-n', 'pf'])
-        pfctl = su.run(['pfctl', '-e'], capture_output=True)
+        pfctl = su.run(['pfctl', '-e'], stdout=su.PIPE, stderr=su.PIPE)
 
         if pfctl.returncode != 0:
             if 'enabled' not in pfctl.stderr.decode():
@@ -1331,7 +1332,8 @@ class IOCStart(object):
 
     def __check_nat_ipfw__(self):
         su.run(
-            ['sysctl', '-q', 'net.inet.ip.fw.enable=1'], capture_output=True
+            ['sysctl', '-q', 'net.inet.ip.fw.enable=1'], stdout=su.PIPE,
+            stderr=su.PIPE
         )
         su.run(['kldload', '-n', 'ipfw'])
 
@@ -1339,7 +1341,7 @@ class IOCStart(object):
         if backend == 'pf':
             pf_conf = self.__add_nat_pf__(nat_interface, forwards)
             pf = su.run(
-                ['pfctl', '-f', pf_conf], capture_output=True
+                ['pfctl', '-f', pf_conf], stdout=su.PIPE, stderr=su.PIPE
             )
 
             if pf.returncode != 0:
@@ -1354,7 +1356,7 @@ class IOCStart(object):
             su.run(['ifconfig', nat_interface, '-tso4', '-lro', '-vlanhwtso'])
             ipfw_conf = self.__add_nat_ipfw__(nat_interface, forwards)
             ipfw = su.run(
-                ['sh', '-c', ipfw_conf], capture_output=True
+                ['sh', '-c', ipfw_conf], stdout=su.PIPE, stderr=su.PIPE
             )
 
             if ipfw.returncode != 0:
