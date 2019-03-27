@@ -253,7 +253,9 @@ def invoke_cli():
         cmd.insert(0, 'iocage')
         cmd = [str(c) for c in cmd]
 
-        result = subprocess.run(cmd, capture_output=True)
+        result = subprocess.run(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
         reason = f'{reason}: {result.stderr}' if reason else result.stderr
 
         if assert_returncode:
