@@ -1337,9 +1337,9 @@ class IOCStart(object):
 
     def __add_nat__(self, nat_interface, forwards, backend='ipfw'):
         if backend == 'pf':
-            self.__add_nat_pf__(nat_interface, forwards)
+            pf_conf = self.__add_nat_pf__(nat_interface, forwards)
             pf = su.run(
-                ['pfctl', '-f', '/tmp/iocage_nat_pf.conf'], capture_output=True
+                ['pfctl', '-f', pf_conf], capture_output=True
             )
 
             if pf.returncode != 0:
@@ -1352,9 +1352,9 @@ class IOCStart(object):
 
         else:
             su.run(['ifconfig', nat_interface, '-tso4', '-lro', '-vlanhwtso'])
-            self.__add_nat_ipfw__(nat_interface, forwards)
+            ipfw_conf = self.__add_nat_ipfw__(nat_interface, forwards)
             ipfw = su.run(
-                ['sh', '-c', '/tmp/iocage_nat_ipfw.conf'], capture_output=True
+                ['sh', '-c', ipfw_conf], capture_output=True
             )
 
             if ipfw.returncode != 0:
@@ -1404,6 +1404,8 @@ class IOCStart(object):
 
         os.chmod(pf_conf, 0o755)
 
+        return pf_conf
+
     def __add_nat_ipfw__(self, nat_interface, forwards):
         ipfw_conf = '/tmp/iocage_nat_ipfw.conf'
         nat_rule = f'ipfw -q nat 462 config if {nat_interface} same_ports'
@@ -1450,6 +1452,8 @@ class IOCStart(object):
             f.truncate()
 
         os.chmod(ipfw_conf, 0o755)
+
+        return ipfw_conf
 
     def __parse_nat_fwds__(self, forwards):
         for fwd in forwards.split(','):

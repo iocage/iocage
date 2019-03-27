@@ -2168,6 +2168,9 @@ class IOCJson(IOCConfiguration):
                             f"{err.output.decode('utf-8').rstrip()}")
         else:
             if key in conf:
+                value, conf = self.json_check_prop(
+                    key, value, conf, default=True
+                )
                 conf[key] = value
                 self.json_write(conf, "/defaults.json")
 
@@ -2492,7 +2495,7 @@ class IOCJson(IOCConfiguration):
                     IOCRCTL.validate_rctl_props(key, value)
                 elif key == 'cpuset':
                     IOCCpuset.validate_cpuset_prop(value)
-                elif key in ('localhost_ip'):
+                elif key == 'localhost_ip':
                     if value != 'none':
                         try:
                             ipaddress.IPv4Address(value)
@@ -2524,6 +2527,21 @@ class IOCJson(IOCConfiguration):
                                     silent=self.silent,
                                     exception=ioc_exceptions.ValidationFailed
                                 )
+                elif key == 'nat_prefix':
+                    if value != 'none':
+                        if not re.match(r'\d{1,3}\.\d{1,3}$', value):
+                            iocage_lib.ioc_common.logit(
+                                {
+                                    'level': 'EXCEPTION',
+                                    'message': f'Invalid nat_prefix value:'
+                                               f' {value}\n'
+                                               'Supply the first two octets'
+                                               ' only (XXX.XXX)'
+                                },
+                                _callback=self.callback,
+                                silent=self.silent,
+                                exception=ioc_exceptions.ValidationFailed
+                            )
 
                 return value, conf
             else:
