@@ -31,6 +31,7 @@ import json
 import subprocess as su
 import netifaces
 import ipaddress
+import logging
 
 import iocage_lib.ioc_common
 import iocage_lib.ioc_exec
@@ -62,6 +63,8 @@ class IOCStart(object):
         self.ip6_addr = 'none'
         self.defaultrouter = 'none'
         self.defaultrouter6 = 'none'
+        self.log = logging.getLogger('iocage')
+
 
         if not self.unit_test:
             self.conf = iocage_lib.ioc_json.IOCJson(path).json_get_value('all')
@@ -186,7 +189,10 @@ class IOCStart(object):
                 prop_missing = True
 
         if nat and nat_interface == 'none':
+            self.log.debug('Grabbing default route\'s interface')
             nat_interface = self.get_default_gateway()[1]
+            self.log.debug(f'Interface: {nat_interface}')
+
             iocage_lib.ioc_common.logit({
                 'level': 'WARNING',
                 'message': f'{self.uuid}: nat requires nat_interface,'
@@ -303,20 +309,33 @@ class IOCStart(object):
             _exec_created = f'exec.created={exec_created}'
 
         if nat:
+            self.log.debug(f'Checking NAT backend: {nat_backend}')
             self.__check_nat__(backend=nat_backend)
 
             if not self.conf['vnet']:
+                self.log.debug('VNET is False')
+                self.log.debug(
+                    f'Generating IP from nat_prefix: {self.conf["nat_prefix"]}'
+                )
                 ip4_addr, _ = iocage_lib.ioc_common.gen_nat_ip(
                     self.conf['nat_prefix']
                 )
                 self.ip4_addr = f'{nat_interface}|{ip4_addr}'
+                self.log.debug(f'Received ip4_addr: {self.ip4_addr}')
             else:
+                self.log.debug('VNET is True')
+                self.log.debug(
+                    f'Generating default_router and IP from nat_prefix:'
+                    f' {self.conf["nat_prefix"]}'
+                )
                 self.defaultrouter, ip4_addr = \
                     iocage_lib.ioc_common.gen_nat_ip(
                         self.conf['nat_prefix']
                     )
                 self.ip4_addr = f'vnet0|{ip4_addr}/30'
                 nat = self.defaultrouter
+                self.log.debug(f'Received default_router: {nat}')
+                self.log.debug(f'Received ip4_addr: {self.ip4_addr}')
 
         if not self.conf['vnet']:
             ip4_saddrsel = self.conf['ip4_saddrsel']
@@ -634,6 +653,10 @@ class IOCStart(object):
         self.start_copy_localtime()
 
         if nat:
+            self.log.debug(
+                f'Adding NAT: Interface - {nat_interface}'
+                f' Forwards - {nat_forwards} Backend - {nat_backend}'
+                )
             self.__add_nat__(nat_interface, nat_forwards, nat_backend)
 
         # This needs to be a list.
@@ -1311,6 +1334,7 @@ class IOCStart(object):
             ['sysctl', '-q', 'net.inet.ip.forwarding=1'], stdout=su.PIPE,
             stderr=su.PIPE
         )
+        self.log.debug('net.inet.ip.forwarding=1 set')
 
         if backend == 'pf':
             self.__check_nat_pf__()
@@ -1320,6 +1344,7 @@ class IOCStart(object):
     def __check_nat_pf__(self):
         su.run(['kldload', '-n', 'pf'])
         pfctl = su.run(['pfctl', '-e'], stdout=su.PIPE, stderr=su.PIPE)
+        self.log.debug('pf kernel module loaded and pf enabled')
 
         if pfctl.returncode != 0:
             if 'enabled' not in pfctl.stderr.decode():
@@ -1336,6 +1361,9 @@ class IOCStart(object):
             stderr=su.PIPE
         )
         su.run(['kldload', '-n', 'ipfw'])
+        self.log.debug(
+            'ipfw kernel module loaded and net.inet.ip.fw.enable=1 set'
+        )
 
     def __add_nat__(self, nat_interface, forwards, backend='ipfw'):
         if backend == 'pf':
@@ -1343,6 +1371,7 @@ class IOCStart(object):
             pf = su.run(
                 ['pfctl', '-f', pf_conf], stdout=su.PIPE, stderr=su.PIPE
             )
+            self.log.debug(f'pfctl -f {pf_conf} ran')
 
             if pf.returncode != 0:
                 iocage_lib.ioc_common.logit({
@@ -1354,10 +1383,12 @@ class IOCStart(object):
 
         else:
             su.run(['ifconfig', nat_interface, '-tso4', '-lro', '-vlanhwtso'])
+            self.log.debug(f'TSO, LRO, VLANHWTSO disabled on {nat_interface}')
             ipfw_conf = self.__add_nat_ipfw__(nat_interface, forwards)
             ipfw = su.run(
                 ['sh', '-c', ipfw_conf], stdout=su.PIPE, stderr=su.PIPE
             )
+            self.log.debug(f'{ipfw_conf} ran')
 
             if ipfw.returncode != 0:
                 iocage_lib.ioc_common.logit({
@@ -1377,6 +1408,7 @@ class IOCStart(object):
             f'nat on {nat_interface} from {nat_network} to any ->'
             f' ({nat_interface}:0) static-port'
         ]
+        self.log.debug(f'Initial Rule: {rules[0]}')
         rdrs = []
 
         if forwards != 'none':
@@ -1390,8 +1422,10 @@ class IOCStart(object):
                     f' to ({nat_interface}:0) port {map} -> {ip4_addr}'
                     f' port {port}\n'
                 )
+        self.log.debug(f'Forwards: {rdrs}')
 
         with open(os.open(pf_conf, os.O_CREAT | os.O_RDWR), 'w+') as f:
+            self.log.debug(f'{pf_conf} opened')
             for line in f.readlines():
                 line = line.rstrip()
                 if line.startswith('rdr') and ip4_addr not in line:
@@ -1400,8 +1434,10 @@ class IOCStart(object):
             f.seek(0)
             for rule in rules:
                 f.write(f'{rule}\n')
+                self.log.debug(f'Wrote: {rule}')
             for rdr in rdrs:
                 f.write(rdr)
+                self.log.debug(f'Wrote: {rdr}')
             f.truncate()
 
         os.chmod(pf_conf, 0o755)
@@ -1411,6 +1447,7 @@ class IOCStart(object):
     def __add_nat_ipfw__(self, nat_interface, forwards):
         ipfw_conf = '/tmp/iocage_nat_ipfw.conf'
         nat_rule = f'ipfw -q nat 462 config if {nat_interface} same_ports'
+        self.log.debug('Initial rule: {nat_rule}')
         rdrs = ''
         ip4_addr = self.ip4_addr.split('|')[1].rsplit('/')[0]
         nat_network = str(
@@ -1423,12 +1460,14 @@ class IOCStart(object):
             'ipfw -q add 101 nat 462 ip4 from any to any in via'
             f' {nat_interface}'
         ]
+        self.log.debug(f'Rules: {rules}')
 
         if forwards != 'none':
             for proto, port, map in self.__parse_nat_fwds__(forwards):
                 rdrs += f' redirect_port {proto} {ip4_addr}:{port} {map}'
 
         with open(os.open(ipfw_conf, os.O_CREAT | os.O_RDWR), 'w+') as f:
+            self.log.debug(f'{ipfw_conf} opened')
             for line in f.readlines():
                 line = line.rstrip()
                 if line not in rules and nat_rule in line:
@@ -1443,14 +1482,19 @@ class IOCStart(object):
                             final_line += f' redirect_port {n}'
 
                     rules.insert(1, f'{final_line}{rdrs}')
+                    self.log.debug(
+                        f' Inserted: {final_line}{rdrs} into rules at index 1'
+                    )
 
             if rules[1].endswith(nat_interface):
                 # They don't have any port-forwards
                 rules.insert(1, nat_rule)
+                self.log.debug(f' Inserted: {nat_rule} into rules at index 1')
 
             f.seek(0)
             for rule in rules:
                 f.write(f'{rule}\n')
+                self.log.debug(f'Wrote: {rule}')
             f.truncate()
 
         os.chmod(ipfw_conf, 0o755)
@@ -1458,13 +1502,17 @@ class IOCStart(object):
         return ipfw_conf
 
     def __parse_nat_fwds__(self, forwards):
+        self.log.debug(f'Parsing NAT forwards: {forwards}')
+
         for fwd in forwards.split(','):
             proto, port = fwd.split('(')
             port = port.strip('()')
 
+            self.log.debug(f'Proto: {proto} Port: {port}')
             try:
                 port, map = port.rsplit(':', 1)
             except ValueError:
                 map = port
+            self.log.debug(f'Mapping {port} to {map}')
 
             yield proto, port, map
