@@ -65,7 +65,6 @@ class IOCStart(object):
         self.defaultrouter6 = 'none'
         self.log = logging.getLogger('iocage')
 
-
         if not self.unit_test:
             self.conf = iocage_lib.ioc_json.IOCJson(path).json_get_value('all')
             self.pool = iocage_lib.ioc_json.IOCJson(" ").json_get_value("pool")
@@ -668,7 +667,7 @@ class IOCStart(object):
             self.log.debug(
                 f'Adding NAT: Interface - {nat_interface}'
                 f' Forwards - {nat_forwards} Backend - {nat_backend}'
-                )
+            )
             self.__add_nat__(nat_interface, nat_forwards, nat_backend)
 
         # This needs to be a list.
