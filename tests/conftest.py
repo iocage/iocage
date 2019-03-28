@@ -259,7 +259,10 @@ def invoke_cli():
         reason = f'{reason}: {result.stderr}' if reason else result.stderr
 
         if assert_returncode:
-            assert result.returncode == 0, reason
+            # Empty or Template jails that should not be started/stopped but
+            # sometimes make it in due to a race
+            if b'execvp: /bin/sh: No such' not in reason:
+                assert result.returncode == 0, reason
 
         result.output = result.stdout.decode('utf-8')
 
