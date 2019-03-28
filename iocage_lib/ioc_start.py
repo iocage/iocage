@@ -200,6 +200,18 @@ class IOCStart(object):
             }, _callback=self.callback,
                 silent=self.silent)
 
+        if self.conf['vnet'] and self.defaultrouter == 'none':
+            self.log.debug('Grabbing default route')
+            self.defaultrouter = self.get_default_gateway()[0]
+            self.log.debug(f'Default Gateway: {self.defaultrouter}')
+
+            iocage_lib.ioc_common.logit({
+                'level': 'WARNING',
+                'message': f'{self.uuid}: vnet requires defaultrouter,'
+                           f' using {self.defaultrouter}'
+            }, _callback=self.callback,
+                silent=self.silent)
+
         if 'accept_rtadv' in self.ip6_addr and not self.conf['vnet']:
             prop_missing_msgs.append(
                 f'{self.uuid}: accept_rtadv requires vnet!'
