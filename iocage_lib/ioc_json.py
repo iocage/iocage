@@ -2509,12 +2509,18 @@ class IOCJson(IOCConfiguration):
                                 silent=self.silent
                             )
                 elif key == 'nat_forwards':
+                    new_value = []
+
                     if value != 'none':
                         regex = re.compile(
                             r'(^tcp|^udp|^tcp\/udp)\(\d{1,5}((:|-?)'
                             r'(\d{1,5}))\)'
                         )
                         for fwd in value.split(','):
+                            # We assume TCP for simpler inputs
+                            fwd = f'tcp({fwd})'
+                            new_value.append(fwd)
+
                             match = regex.match(fwd)
                             if not match or len(fwd) != match.span()[1]:
                                 iocage_lib.ioc_common.logit(
@@ -2527,6 +2533,10 @@ class IOCJson(IOCConfiguration):
                                     silent=self.silent,
                                     exception=ioc_exceptions.ValidationFailed
                                 )
+
+                        if new_value:
+                            value = ','.join(new_value)
+                            conf[key] = value
                 elif key == 'nat_prefix':
                     if value != 'none':
                         if not re.match(r'\d{1,3}\.\d{1,3}$', value):
