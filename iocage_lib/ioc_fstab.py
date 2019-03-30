@@ -333,7 +333,7 @@ class IOCFstab(object):
                             _callback=self.callback,
                             silent=self.silent)
                     else:
-                        fstab.write(line)
+                        fstab.write(f'{line}\n')
 
             if not matched:
                 iocage_lib.ioc_common.logit({
