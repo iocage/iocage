@@ -261,7 +261,12 @@ def invoke_cli():
         if assert_returncode:
             # Empty or Template jails that should not be started/stopped but
             # sometimes make it in due to a race
-            if b'execvp: /bin/sh: No such' not in reason:
+            try:
+                reason = reason.decode()
+            except AttributeError:
+                pass
+
+            if 'execvp: /bin/sh: No such' not in reason:
                 assert result.returncode == 0, reason
 
         result.output = result.stdout.decode('utf-8')
