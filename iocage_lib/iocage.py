@@ -1070,7 +1070,7 @@ class IOCage(ioc_json.IOCZFS):
 
             if count == 1:
                 ioc_plugin.IOCPlugin(
-                    release=release, branch=branch,
+                    release=release, plugin=name, branch=branch,
                     silent=self.silent,
                     keep_jail_on_failure=keep_jail_on_failure,
                     callback=self.callback, **kwargs,
@@ -1079,7 +1079,7 @@ class IOCage(ioc_json.IOCZFS):
             else:
                 for j in range(1, count + 1):
                     ioc_plugin.IOCPlugin(
-                        release=release, branch=branch,
+                        release=release, plugin=name, branch=branch,
                         silent=self.silent,
                         keep_jail_on_failure=keep_jail_on_failure,
                         thickconfig=thick_config,

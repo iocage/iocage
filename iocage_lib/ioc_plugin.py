@@ -94,7 +94,7 @@ class IOCPlugin(object):
                 plugins = json.load(plugins)
         except FileNotFoundError:
             # Fresh dataset, time to fetch fresh INDEX
-            self.fetch_plugin_index(props)
+            plugins = self.fetch_plugin_index(props)
 
         try:
             with open(_json, "r") as j:
@@ -335,10 +335,12 @@ class IOCPlugin(object):
 
         # We set our properties that we need, and then iterate over the user
         # supplied properties replacing ours.
-        create_props = [f'release={release}', 'type=pluginv2', 'boot=on']
+        create_props = [f'release={release}', 'type=pluginv2', 'boot=on',
+                        'vnet=1']
 
-        create_props = [f"{k}={v}" for k, v in (p.split("=")
-                                                for p in props)] + create_props
+        create_props = create_props + [
+            f"{k}={v}" for k, v in (p.split("=") for p in props)
+        ]
 
         return create_props, pkg_repos
 
@@ -693,9 +695,12 @@ fingerprint: {fingerprint}
         with open(f"{self.iocroot}/.plugin_index/INDEX", "r") as plugins:
             plugins = json.load(plugins)
 
+        if self.plugin is not None:
+            return plugins
+
         _plugins = self.__fetch_sort_plugin__(plugins, official=official)
 
-        if self.plugin is None and not _list:
+        if not _list:
             for p in _plugins:
                 iocage_lib.ioc_common.logit(
                     {
@@ -748,15 +753,9 @@ fingerprint: {fingerprint}
 
                 return table.draw()
 
-        if self.plugin is None:
-            self.plugin = input("\nType the number of the desired"
-                                " plugin\nPress [Enter] or type EXIT to"
-                                " quit: ")
-
-        self.plugin = self.__fetch_validate_plugin__(self.plugin.lower(),
-                                                     _plugins)
-        self.fetch_plugin(f"{self.iocroot}/.plugin_index/{self.plugin}.json",
-                          props, 0, accept_license)
+        self.plugin = input("\nType the number of the desired"
+                            " plugin\nPress [Enter] or type EXIT to"
+                            " quit: ")
 
     def __fetch_validate_plugin__(self, plugin, plugins):
         """
