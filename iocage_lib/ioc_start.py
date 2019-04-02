@@ -1367,8 +1367,6 @@ class IOCStart(object):
                     exception=ioc_exceptions.CommandFailed)
 
     def __check_nat_ipfw__(self):
-        # We want to make sure default to accept is set
-        su.run(['kldunload', 'ipfw'], stdout=su.PIPE, stderr=su.PIPE)
         su.run(
             ['kenv', 'net.inet.ip.fw.default_to_accept=1'], stdout=su.PIPE,
             stderr=su.PIPE
