@@ -1353,33 +1353,44 @@ class IOCStart(object):
             self.__check_nat_ipfw__()
 
     def __check_nat_pf__(self):
-        su.run(['kldload', '-n', 'pf'])
-        pfctl = su.run(['pfctl', '-e'], stdout=su.PIPE, stderr=su.PIPE)
-        self.log.debug('pf kernel module loaded and pf enabled')
+        loaded = su.run(['kldload', 'pf'], stdout=su.PIPE, stderr=su.PIPE)
 
-        if pfctl.returncode != 0:
-            if 'enabled' not in pfctl.stderr.decode():
-                iocage_lib.ioc_common.logit({
-                    'level': 'EXCEPTION',
-                    'message': pfctl.stderr.decode()
-                }, _callback=self.callback,
-                    silent=self.silent,
-                    exception=ioc_exceptions.CommandFailed)
+        # The module was just loaded, enable pf
+        if loaded.returncode == 0:
+            pfctl = su.run(['pfctl', '-e'], stdout=su.PIPE, stderr=su.PIPE)
+
+            if pfctl.returncode != 0:
+                if 'enabled' not in pfctl.stderr.decode():
+                    iocage_lib.ioc_common.logit({
+                        'level': 'EXCEPTION',
+                        'message': pfctl.stderr.decode()
+                    }, _callback=self.callback,
+                        silent=self.silent,
+                        exception=ioc_exceptions.CommandFailed)
+
+            self.log.debug('pf kernel module loaded and pf enabled')
 
     def __check_nat_ipfw__(self):
-        su.run(
-            ['kenv', 'net.inet.ip.fw.default_to_accept=1'], stdout=su.PIPE,
-            stderr=su.PIPE
+        loaded = su.run(
+            ['sysctl', 'net.inet.ip.fw.enable=1'],
+            stdout=su.PIPE, stderr=su.PIPE
         )
-        su.run(['kldload', '-n', 'ipfw'])
-        su.run(['kldload', '-n', 'ipfw_nat'])
-        su.run(
-            ['sysctl', '-q', 'net.inet.ip.fw.enable=1'], stdout=su.PIPE,
-            stderr=su.PIPE
-        )
-        self.log.debug(
-            'ipfw kernel module loaded and net.inet.ip.fw.enable=1 set'
-        )
+
+        # The module isn't loaded yet, doing so
+        if loaded.returncode != 0:
+            su.run(
+                ['kenv', 'net.inet.ip.fw.default_to_accept=1'], stdout=su.PIPE,
+                stderr=su.PIPE
+            )
+            su.run(['kldload', '-n', 'ipfw'])
+            su.run(['kldload', '-n', 'ipfw_nat'])
+            su.run(
+                ['sysctl', '-q', 'net.inet.ip.fw.enable=1'], stdout=su.PIPE,
+                stderr=su.PIPE
+            )
+            self.log.debug(
+                'ipfw kernel module loaded and net.inet.ip.fw.enable=1 set'
+            )
 
     def __add_nat__(self, nat_interface, forwards, backend='ipfw'):
         if backend == 'pf':
