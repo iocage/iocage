@@ -1372,6 +1372,7 @@ class IOCStart(object):
             stderr=su.PIPE
         )
         su.run(['kldload', '-n', 'ipfw'])
+        su.run(['kldload', '-n', 'ipfw_nat'])
         self.log.debug(
             'ipfw kernel module loaded and net.inet.ip.fw.enable=1 set'
         )
@@ -1469,7 +1470,8 @@ class IOCStart(object):
             f'ipfw -q add 100 nat 462 ip4 from {nat_network} to any'
             f' out via {nat_interface}',
             'ipfw -q add 101 nat 462 ip4 from any to any in via'
-            f' {nat_interface}'
+            f' {nat_interface}',
+            'ipfw -q add 102 allow ip from any to any'
         ]
         self.log.debug(f'Rules: {rules}')
 
