@@ -847,7 +847,13 @@ class IOCConfiguration(IOCZFS):
             if mount != "none":
                 return mount
             else:
-                raise RuntimeError(f"Please set a mountpoint on {loc}")
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'EXCEPTION',
+                        'message': f'Please set a mountpoint on {loc}'
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
 
         return pool, get_iocroot()
 
