@@ -178,6 +178,10 @@ def cli(release, template, count, props, pkglist, basejail, clone_basejail,
     if empty:
         release = "EMPTY"
 
+    if clone_basejail:
+        # We want to still create a basejail
+        basejail = True
+
     iocage = ioc.IOCage(skip_jails=True)
 
     try:
