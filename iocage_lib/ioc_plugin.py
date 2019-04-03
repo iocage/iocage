@@ -365,10 +365,10 @@ class IOCPlugin(object):
 
         # We do these tests again as the user could supply a malformed IP to
         # fetch that bypasses the more naive check in cli/fetch
-        dhcp_or_hostname = _conf['dhcp'] or _conf['ip_hostname']
+        auto_configs = _conf['dhcp'] or _conf['ip_hostname'] or _conf['nat']
 
         if _conf["ip4_addr"] == "none" and _conf["ip6_addr"] == "none" and \
-           not dhcp_or_hostname:
+           not auto_configs:
             iocage_lib.ioc_common.logit(
                 {
                     "level": "ERROR",
@@ -541,18 +541,27 @@ fingerprint: {fingerprint}
             # we'll assume they prefer IP6.
             ip = ip6
         else:
-            interface = _conf["interfaces"].split(",")[0].split(":")[0]
+            if _conf['vnet']:
+                interface = _conf['interfaces'].split(',')[0].split(':')[0]
 
-            if interface == "vnet0":
-                # Jails use epairNb by default inside
-                interface = f"{interface.replace('vnet', 'epair')}b"
+                if interface == 'vnet0':
+                    # Jails use epairNb by default inside
+                    interface = f'{interface.replace("vnet", "epair")}b'
 
-            ip4_cmd = [
-                "jexec", f"ioc-{uuid.replace('.', '_')}",
-                "ifconfig", interface, "inet"
-            ]
-            out = su.check_output(ip4_cmd).decode()
-            ip = f"{out.splitlines()[2].split()[1]}"
+                ip4_cmd = [
+                    'jexec', f'ioc-{uuid.replace(".", "_")}',
+                    'ifconfig', interface, 'inet'
+                ]
+                out = su.check_output(ip4_cmd).decode()
+                ip = f'{out.splitlines()[2].split()[1]}'
+            else:
+                ip = json.loads(
+                    su.run([
+                        'jls', '-j', f'ioc-{uuid.replace(".", "_")}',
+                        '--libxo', 'json'
+                    ], stdout=su.PIPE).stdout
+                )['jail-information']['jail'][0]['ipv4']
+
             os.environ["IOCAGE_PLUGIN_IP"] = ip
 
         plugin_env = {"IOCAGE_PLUGIN_IP": ip.rsplit(',')[0]}

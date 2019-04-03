@@ -89,10 +89,14 @@ def common_restart_all_jails(invoke_cli, resource_selector, skip_test, command):
         assert jail.running is True
 
     command.append('ALL')
-    invoke_cli(
+    result = invoke_cli(
         command, assert_returncode=False
     )
+
     for jail in jails:
+        if '* Starting empty_jail' in result.output:
+            continue
+
         assert jail.running is True
 
     for jail in resource_selector.running_jails:

@@ -70,6 +70,7 @@ class IOCStop(object):
         devfs_ruleset = self.conf['devfs_ruleset']
         debug_mode = True if os.environ.get(
             'IOCAGE_DEBUG', 'FALSE') == 'TRUE' else False
+        nat = self.conf['nat']
 
         if not self.status:
             msg = f"{self.uuid} is not running!"
@@ -235,7 +236,7 @@ class IOCStop(object):
         # exception in that case
         # They haven't set an IP address, this interface won't exist
         destroy_nic = True if dhcp or ip4_addr != 'none' or \
-            ip6_addr != 'none' else False
+            ip6_addr != 'none' or (nat and vnet) else False
 
         if vnet and destroy_nic:
             vnet_err = []

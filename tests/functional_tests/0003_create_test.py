@@ -35,6 +35,7 @@ require_zpool = pytest.mark.require_zpool
 require_dhcp = pytest.mark.require_dhcp
 require_jail_ip = pytest.mark.require_jail_ip
 require_networking = pytest.mark.require_networking
+require_nat = pytest.mark.require_nat
 
 
 @require_root
@@ -138,7 +139,8 @@ def test_08_create_thickjail(release, jail, invoke_cli):
 @require_dhcp
 def test_09_dhcp_connectivity_in_jail(release, jail, invoke_cli, ping_ip):
     invoke_cli(
-        ['create', '-r', release, '-n', 'dhcp_jail', 'dhcp=on'],
+        ['create', '-r', release, '-n', 'dhcp_jail', 'dhcp=1',
+         'allow_raw_sockets=1'],
         'Failed to create DHCP Jail'
     )
 
@@ -168,11 +170,11 @@ def test_09_dhcp_connectivity_in_jail(release, jail, invoke_cli, ping_ip):
 @require_zpool
 @require_networking
 def test_10_create_jail_and_install_packages(
-    release, jail, invoke_cli, jail_ip
+    release, jail, invoke_cli, jail_ip, nat
 ):
     # If both jail_ip and dhcp are specified, we can default to jail_ip
     pkg_jail = 'pkg_jail'
-    install_pkgs = ['nano']
+    install_pkgs = ['pkg', 'nano']
     fd, path = tempfile.mkstemp()
 
     try:
@@ -184,6 +186,8 @@ def test_10_create_jail_and_install_packages(
         command = ['create', '-r', release, '-n', pkg_jail, '-p', path]
         if jail_ip:
             command.append(f'ip4_addr={jail_ip}')
+        elif nat:
+            command.append(f'nat=1')
         else:
             command.append('dhcp=on')
 
@@ -300,3 +304,27 @@ def test_15_create_jail_with_assigned_ip(release, jail, invoke_cli, jail_ip):
             ]
         )
     )
+
+
+@require_root
+@require_zpool
+@require_nat
+def test_16_create_jail_with_nat_ip(release, jail, invoke_cli, ping_ip):
+    jail = jail('nat_ip_jail')
+
+    invoke_cli([
+        'create', '-r', release, '-n', jail.name, 'nat=1',
+        'allow_raw_sockets=1'
+    ])
+
+    assert jail.exists is True
+
+    invoke_cli(
+        ['start', jail.name],
+        'Failed to start nat jail'
+    )
+
+    # Let's test if we can ping ping_ip from inside the jail
+    stdout, stderr = jail.run_command(['ping', '-c', '5', ping_ip])
+
+    assert bool(stderr) is False, f'Ping returned an error: {stderr}'

@@ -672,11 +672,13 @@ class IOCCreate(object):
                 silent=self.silent)
 
         if self.pkglist:
-            dhcp_or_hostname = config.get('dhcp') or config.get('ip_hostname')
+            auto_config = config.get('dhcp') or \
+                config.get('ip_hostname') or \
+                config.get('nat')
 
             if config.get('ip4_addr', 'none') == "none" and \
                 config.get('ip6_addr', 'none') == "none" and \
-                    not dhcp_or_hostname:
+                    not auto_config:
                 iocage_lib.ioc_common.logit({
                     "level": "WARNING",
                     "message": "You need an IP address for the jail to"
