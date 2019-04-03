@@ -22,7 +22,6 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import ipaddress
 import os
 import re
 import subprocess
@@ -93,6 +92,10 @@ def pytest_addoption(parser):
         '--ping_ip', action='store', default='8.8.8.8',
         help='Use --ping_ip for testing connectivity within a jail'
     )
+    parser.addoption(
+        '--nat', action='store_true', default=False,
+        help='Use NAT for creating jails'
+    )
 
 
 def pytest_runtest_setup(item):
@@ -104,6 +107,9 @@ def pytest_runtest_setup(item):
 
     if 'require_dhcp' in item.keywords and not item.config.getvalue('dhcp'):
         pytest.skip('Need --dhcp option to run')
+
+    if 'require_nat' in item.keywords and not item.config.getvalue('nat'):
+        pytest.skip('Need --nat option to run')
 
     if 'require_upgrade' in item.keywords and not item.config.getvalue(
         'upgrade'
@@ -121,11 +127,14 @@ def pytest_runtest_setup(item):
         and all(
             not v for v in (
                 item.config.getvalue('--dhcp'),
-                item.config.getvalue('--jail_ip')
+                item.config.getvalue('--jail_ip'),
+                item.config.getvalue('--nat')
             )
         )
     ):
-        pytest.skip('Need either --dhcp or --jail_ip option to run, not both')
+        pytest.skip(
+            'Need either --dhcp or --jail_ip  or --nat option to run, not all'
+        )
 
 
 @pytest.fixture
@@ -144,6 +153,12 @@ def jail_ip(request):
 def dhcp(request):
     """Specify if dhcp is to be used."""
     return request.config.getoption('--dhcp')
+
+
+@pytest.fixture
+def nat(request):
+    """Specify if nat is to be used."""
+    return request.config.getoption('--nat')
 
 
 @pytest.fixture
@@ -238,11 +253,21 @@ def invoke_cli():
         cmd.insert(0, 'iocage')
         cmd = [str(c) for c in cmd]
 
-        result = subprocess.run(cmd, stdout=subprocess.PIPE)
+        result = subprocess.run(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
         reason = f'{reason}: {result.stderr}' if reason else result.stderr
 
         if assert_returncode:
-            assert result.returncode == 0, reason
+            # Empty or Template jails that should not be started/stopped but
+            # sometimes make it in due to a race
+            try:
+                reason = reason.decode()
+            except AttributeError:
+                pass
+
+            if 'execvp: /bin/sh: No such' not in reason:
+                assert result.returncode == 0, reason
 
         result.output = result.stdout.decode('utf-8')
 
