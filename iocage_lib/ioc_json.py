@@ -2538,8 +2538,10 @@ class IOCJson(IOCConfiguration):
                             value = ','.join(new_value)
                             conf[key] = value
                 elif key == 'nat_prefix':
+                    ip_regex = r'\b(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.' \
+                               r'(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
                     if value != 'none':
-                        if not re.match(r'\d{1,3}\.\d{1,3}$', value):
+                        if not re.match(ip_regex, value):
                             iocage_lib.ioc_common.logit(
                                 {
                                     'level': 'EXCEPTION',
