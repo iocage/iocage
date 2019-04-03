@@ -1474,7 +1474,7 @@ class IOCStart(object):
     def __add_nat_ipfw__(self, nat_interface, forwards):
         ipfw_conf = '/tmp/iocage_nat_ipfw.conf'
         nat_rule = f'ipfw -q nat 462 config if {nat_interface} same_ports'
-        self.log.debug('Initial rule: {nat_rule}')
+        self.log.debug(f'Initial rule: {nat_rule}')
         rdrs = ''
         ip4_addr = self.ip4_addr.split('|')[1].rsplit('/')[0]
         nat_network = str(
@@ -1510,13 +1510,13 @@ class IOCStart(object):
 
                     rules.insert(1, f'{final_line}{rdrs}')
                     self.log.debug(
-                        f' Inserted: {final_line}{rdrs} into rules at index 1'
+                        f'Inserted: {final_line}{rdrs} into rules at index 1'
                     )
 
             if rules[1].endswith(nat_interface):
                 # They don't have any port-forwards
                 rules.insert(1, nat_rule)
-                self.log.debug(f' Inserted: {nat_rule} into rules at index 1')
+                self.log.debug(f'Inserted: {nat_rule} into rules at index 1')
 
             f.seek(0)
             for rule in rules:
