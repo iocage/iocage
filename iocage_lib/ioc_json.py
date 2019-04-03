@@ -2538,10 +2538,23 @@ class IOCJson(IOCConfiguration):
                             value = ','.join(new_value)
                             conf[key] = value
                 elif key == 'nat_prefix':
-                    ip_regex = r'\b(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.' \
-                               r'(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
                     if value != 'none':
-                        if not re.match(ip_regex, value):
+                        try:
+                            ip = ipaddress.IPv4Address(f'{value}.0.0')
+
+                            if not ip.is_private:
+                                iocage_lib.ioc_common.logit(
+                                    {
+                                        'level': 'EXCEPTION',
+                                        'message': f'Invalid nat_prefix value:'
+                                                   f' {value}\n'
+                                                   'Must be a private range'
+                                    },
+                                    _callback=self.callback,
+                                    silent=self.silent,
+                                    exception=ioc_exceptions.ValidationFailed
+                                )
+                        except ipaddress.AddressValueError:
                             iocage_lib.ioc_common.logit(
                                 {
                                     'level': 'EXCEPTION',
