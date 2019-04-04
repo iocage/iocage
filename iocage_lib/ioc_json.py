@@ -2706,7 +2706,7 @@ class IOCJson(IOCConfiguration):
         if "options" in prop:
             prop = keys.split(".")[1:]
 
-        prop_cmd = f"{serviceset},{','.join(prop)},{value}".split(",")
+        prop_cmd = f"{serviceset},{','.join(prop)},{value}".split(",", 2)
         setting = settings["options"]
 
         try:
