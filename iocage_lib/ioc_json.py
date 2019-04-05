@@ -1536,7 +1536,8 @@ class IOCJson(IOCConfiguration):
         if state:
             ruleset = su.check_output(
                 [
-                    'jls', '-j', f'ioc-{conf["host_hostuuid"]}',
+                    'jls', '-j',
+                    f'ioc-{conf["host_hostuuid"].replace(".", "_")}',
                     'devfs_ruleset'
                 ]
             ).decode().rstrip()
