@@ -407,7 +407,7 @@ class IOCFstab(object):
 
         Example: ' ' -> \040
         """
-        result = ctypes.create_string_buffer(1024)
+        result = ctypes.create_string_buffer(len(_string) * 4 + 1)
         self.libc.strvis(
             result, _string.encode(), 0x4 | 0x8 | 0x10 | 0x2000 | 0x8000
         )
@@ -420,7 +420,7 @@ class IOCFstab(object):
 
         Example: \040 -> ' '
         """
-        result = ctypes.create_string_buffer(1024)
+        result = ctypes.create_string_buffer(len(_string) * 4 + 1)
         self.libc.strunvis(
             result, _string.encode(), 0x4 | 0x8 | 0x10 | 0x2000 | 0x8000
         )
