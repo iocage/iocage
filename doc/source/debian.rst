@@ -5,7 +5,7 @@ Create a Debian Squeeze Jail (GNU/kFreeBSD)
 ===========================================
 
 This section shows the process to set up a Debian (GNU/kFreeBSD) jail.
-GNrUkFreeBSD is a Debian userland tailored for the FreeBSD kernel.
+GNU/kFreeBSD is a Debian userland tailored for the FreeBSD kernel.
 
 The examples in this section use a jail with the custom name
 **debjail**. Remember to replace **debjail** with your jail's UUID or
@@ -25,7 +25,7 @@ NAME!
 :samp:`# pkg install debootstrap`
 
 **Grab the mountpoint for the empty jail, append /root/ to it, and run**
-**debootstrap:**
+**`debootstrap <https://www.freebsd.org/cgi/man.cgi?query=debootstrap>`_:**
 
 :samp:`# iocage get mountpoint debjail`
 
