@@ -930,7 +930,7 @@ class IOCStart(object):
             return errors
 
     def start_network_interface_vnet(
-        self, nic_defs, net_configs, jid, nat_addr=None
+        self, nic_defs, net_configs, jid, nat_addr=0
     ):
         """
         Start VNET on interface
@@ -949,7 +949,7 @@ class IOCStart(object):
             nic, bridge = nic_def.split(":")
 
             try:
-                if nat_addr is None:
+                if not nat_addr:
                     membermtu = self.find_bridge_mtu(bridge)
                 else:
                     membermtu = '1500'
@@ -997,7 +997,7 @@ class IOCStart(object):
         if len(errors) != 0:
             return errors
 
-    def start_network_vnet_iface(self, nic, bridge, mtu, jid, nat_addr=None):
+    def start_network_vnet_iface(self, nic, bridge, mtu, jid, nat_addr=0):
         """
         The real meat and potatoes for starting a VNET interface.
 
@@ -1083,7 +1083,7 @@ class IOCStart(object):
                 stderr=su.STDOUT
             )
 
-            if nat_addr is None:
+            if not nat_addr:
                 try:
                     # Host interface as supplied by user also needs to be on
                     # the bridge
