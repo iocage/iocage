@@ -937,6 +937,35 @@ class IOCStart(object):
             if err:
                 errors.extend(err)
 
+        if not errors:
+            # There have been no errors reported for any interface
+            # Let's setup default route as specified
+            dhcp = self.get('dhcp')
+            wants_dhcp = dhcp or 'DHCP' in self.ip4_addr.upper()
+            if not wants_dhcp and 'accept_rtadv' not in self.ip6_addr.lower():
+                for ip, default_route, ipv6 in filter(
+                    lambda v: v[0] != 'none',
+                    net_configs
+                ):
+                    try:
+                        iocage_lib.ioc_common.checkoutput(
+                            [
+                                'setfib', self.exec_fib, 'jexec',
+                                f'ioc-{self.uuid}',
+                                'route'
+                            ] + list(
+                                filter(
+                                    bool, [
+                                        'add', '-6' if ipv6 else '',
+                                        'default', default_route
+                                    ]
+                                )
+                            ),
+                            stderr=su.STDOUT
+                        )
+                    except su.CalledProcessError as err:
+                        errors.append(f'{err.output.decode("utf-8")}'.rstrip())
+
         if len(errors) != 0:
             return errors
 
@@ -1142,18 +1171,8 @@ class IOCStart(object):
 
         if ipv6:
             ifconfig = [iface, 'inet6', ip, 'up']
-            # set route to none if this is not the first interface
-            if iface.rsplit('epair')[1][0] == '0':
-                route = ['add', '-6', 'default', defaultgw]
-            else:
-                route = 'none'
         else:
             ifconfig = [iface, ip, 'up']
-            # set route to none if this is not the first interface
-            if iface.rsplit('epair')[1][0] == '0':
-                route = ['add', 'default', defaultgw]
-            else:
-                route = 'none'
 
         try:
             if not wants_dhcp and ip != 'accept_rtadv':
@@ -1161,11 +1180,6 @@ class IOCStart(object):
                 iocage_lib.ioc_common.checkoutput(
                     ['setfib', self.exec_fib, 'jexec', f'ioc-{self.uuid}',
                      'ifconfig'] + ifconfig, stderr=su.STDOUT)
-                # route has value of none if this is not the first interface
-                if route != 'none':
-                    iocage_lib.ioc_common.checkoutput(
-                        ['setfib', self.exec_fib, 'jexec', f'ioc-{self.uuid}',
-                         'route'] + route, stderr=su.STDOUT)
         except su.CalledProcessError as err:
             return f'{err.output.decode("utf-8")}'.rstrip()
         else:
