@@ -34,6 +34,8 @@ import iocage_lib.ioc_json
 import iocage_lib.ioc_list
 import iocage_lib.ioc_exceptions
 import texttable
+import ctypes
+from ctypes.util import find_library
 
 
 class IOCFstab(object):
@@ -46,6 +48,7 @@ class IOCFstab(object):
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")
+        self.libc = ctypes.CDLL(find_library('c'))
         self.uuid = uuid
         self.action = action
         self.src = source
@@ -55,8 +58,16 @@ class IOCFstab(object):
         self.fsdump = fsdump
         self.fspass = fspass
         self.index = int(index) if index is not None else None
-        self.mount = f"{self.src}\t{self.dest}\t{self.fstype}\t" \
-            f"{self.fsoptions}\t{self.fsdump}\t{self.fspass}"
+
+        if action != 'list':
+            self.src = self.__fstab_encode__(self.src)
+            self.dest = self.__fstab_encode__(self.dest)
+        else:
+            self.src = self.__fstab_decode__(self.src)
+            self.dest = self.__fstab_decode__(self.dest)
+
+        self.mount = f'{self.src}\t{self.dest}\t{self.fstype}\t' \
+            f'{self.fsoptions}\t{self.fsdump}\t{self.fspass}'
         self._fstab_list = _fstab_list
         self.header = header
         self.silent = silent
@@ -86,10 +97,10 @@ class IOCFstab(object):
 
             try:
                 self.__fstab_mount__()
-            except RuntimeError:
+            except RuntimeError as e:
                 iocage_lib.ioc_common.logit({
                     'level': 'WARNING',
-                    'message': 'Mounting entry failed, check \'mount\''
+                    'message': f'Mounting entry failed: {e}'
                 },
                     _callback=self.callback,
                     silent=self.silent
@@ -99,10 +110,10 @@ class IOCFstab(object):
 
             try:
                 self.__fstab_umount__(dest)
-            except RuntimeError:
+            except RuntimeError as e:
                 iocage_lib.ioc_common.logit({
                     'level': 'WARNING',
-                    'message': 'Unmounting entry failed, check \'mount\''
+                    'message': f'Unmounting entry failed: {e}'
                 },
                     _callback=self.callback,
                     silent=self.silent
@@ -135,9 +146,9 @@ class IOCFstab(object):
                 )
                 continue
 
-            source = pathlib.Path(source)
+            source = pathlib.Path(self.__fstab_decode__(source))
+            dest = pathlib.Path(self.__fstab_decode__(destination))
             missing_root = False
-            dest = pathlib.Path(destination)
 
             if mode != 'all' and (
                 self.action == 'add' or self.action == 'replace'
@@ -224,7 +235,7 @@ class IOCFstab(object):
                 fstab.write(f'{line}\n')
 
             date = datetime.datetime.utcnow().strftime("%F %T")
-            fstab.write(f"{self.mount} # Added by iocage on {date}\n")
+            fstab.write(f'{self.mount} # Added by iocage on {date}\n')
 
         iocage_lib.ioc_common.logit({
             "level": "INFO",
@@ -245,8 +256,8 @@ class IOCFstab(object):
                 f'{self.iocroot}/jails/{self.uuid}/fstab', 'w'
         ) as fstab:
             for index, line in enumerate(self.fstab):
-                if line.rsplit("#")[0].rstrip() == self.mount or index \
-                        == self.index:
+                if line.rsplit('#')[0].rstrip() == self.mount \
+                        or index == self.index:
                     removed = True
                     dest = line.split('\t')[1]
 
@@ -279,9 +290,16 @@ class IOCFstab(object):
         if not status:
             return
 
-        os.makedirs(self.dest, exist_ok=True)
-        proc = su.Popen(["mount", "-t", self.fstype, "-o", self.fsoptions,
-                         self.src, self.dest], stdout=su.PIPE, stderr=su.PIPE)
+        # These aren't valid for mount
+        src = self.__fstab_decode__(self.src)
+        dst = self.__fstab_decode__(self.dest)
+
+        os.makedirs(dst, exist_ok=True)
+
+        proc = su.Popen(
+            ["mount", "-t", self.fstype, "-o", self.fsoptions, src,
+             dst], stdout=su.PIPE, stderr=su.PIPE
+        )
 
         stdout_data, stderr_data = proc.communicate()
 
@@ -299,7 +317,10 @@ class IOCFstab(object):
         if not status:
             return
 
-        proc = su.Popen(["umount", "-f", dest], stdout=su.PIPE, stderr=su.PIPE)
+        # This isn't valid for mount
+        dst = self.__fstab_decode__(dest)
+
+        proc = su.Popen(["umount", "-f", dst], stdout=su.PIPE, stderr=su.PIPE)
         stdout_data, stderr_data = proc.communicate()
 
         if stderr_data:
@@ -361,13 +382,14 @@ class IOCFstab(object):
 
     def fstab_list(self):
         """Returns list of lists, or a table"""
-        if not self.header:
-            flat_fstab = [f for f in self._fstab_list]
+        flat_fstab = [
+            (
+                i, self.__fstab_decode__(f)
+            ) for (i, f) in self._fstab_list
+        ]
 
+        if not self.header:
             return flat_fstab
-        else:
-            flat_fstab = [(i, f[1].replace(
-                '\t', ' ')) for (i, f) in enumerate(self._fstab_list)]
 
         table = texttable.Texttable(max_width=0)
 
@@ -378,3 +400,29 @@ class IOCFstab(object):
         table.add_rows(flat_fstab)
 
         return table.draw()
+
+    def __fstab_encode__(self, _string):
+        """
+        Will parse any non-acceptable fstab characters and encode them
+
+        Example: ' ' -> \040
+        """
+        result = ctypes.create_string_buffer(len(_string) * 4 + 1)
+        self.libc.strvis(
+            result, _string.encode(), 0x4 | 0x8 | 0x10 | 0x2000 | 0x8000
+        )
+
+        return result.value.decode()
+
+    def __fstab_decode__(self, _string):
+        """
+        Will parse any non-acceptable fstab characters and decode them
+
+        Example: \040 -> ' '
+        """
+        result = ctypes.create_string_buffer(len(_string) * 4 + 1)
+        self.libc.strunvis(
+            result, _string.encode(), 0x4 | 0x8 | 0x10 | 0x2000 | 0x8000
+        )
+
+        return result.value.decode()
