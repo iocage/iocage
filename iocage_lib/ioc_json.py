@@ -1923,7 +1923,11 @@ class IOCJson(IOCConfiguration):
             conf, write = self.json_load()
             uuid = conf["host_hostuuid"]
             status, jid = iocage_lib.ioc_list.IOCList().list_get_jid(uuid)
-            conf[key] = value
+            # Convert truthy to int
+            if key in self.truthy_props:
+                conf[key] = iocage_lib.ioc_common.check_truthy(value)
+            else:
+                conf[key] = value
             sysctls_cmd = ["sysctl", "-d", "security.jail.param"]
             jail_param_regex = re.compile("security.jail.param.")
             sysctls_list = su.Popen(
