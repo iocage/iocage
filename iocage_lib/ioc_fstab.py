@@ -136,6 +136,8 @@ class IOCFstab(object):
         jail_root = f'{self.iocroot}/jails/{self.uuid}/root'
 
         for index, line in enumerate(fstab):
+            mnt = line.split(' # ')[0]
+
             try:
                 source, destination, fstype, options, \
                     dump, _pass = line.split('\t')[0:6]
@@ -175,15 +177,51 @@ class IOCFstab(object):
                     break
             else:
                 if jail_root not in destination:
-                    verrors.append(
-                        f'Destination: {destination} does not include '
-                        f'jail\'s mountpoint! ({jail_root})'
-                    )
-                    missing_root = True
+                    if pathlib.Path('/mnt/iocage') in dest.parents or \
+                            pathlib.Path('/iocage') in dest.parents:
+                        dst = str(dest).split('/iocage')[1]
+                        dst = pathlib.Path(f'{self.iocroot}/{dst}')
+
+                    if not dst.is_dir():
+                        verrors.append(
+                            f'Destination: {destination} does not include '
+                            f'jail\'s mountpoint! ({jail_root})'
+                        )
+                        missing_root = True
+                    else:
+                        mnt = mnt.replace(destination, str(dst))
+                        destination = dst
+
+                        iocage_lib.ioc_common.logit({
+                            "level": "INFO",
+                            "message": f'Invalid destination: {dest}'
+                                       f' replaced with {dst}'
+                        },
+                            _callback=self.callback,
+                            silent=self.silent)
 
             if not source.is_dir():
                 if fstype == 'nullfs':
-                    verrors.append(f'Source: {source} does not exist!')
+                    if pathlib.Path('/mnt/iocage') in source.parents or \
+                            pathlib.Path('/iocage') in source.parents:
+                        src = str(source).split('/iocage')[1]
+                        src = pathlib.Path(f'{self.iocroot}/{src}')
+
+                    if not src.is_dir():
+                        verrors.append(f'Source: {source} does not exist!')
+                    else:
+                        mnt = mnt.replace(str(source), str(src))
+
+                        iocage_lib.ioc_common.logit({
+                            "level": "INFO",
+                            "message": f'Invalid source: {source}'
+                                       f' replaced with {src}'
+                        },
+                            _callback=self.callback,
+                            silent=self.silent)
+                        source = src
+
+
             if not source.is_absolute():
                 if fstype == 'nullfs':
                     verrors.append(
@@ -213,6 +251,20 @@ class IOCFstab(object):
                     f'Pass: {_pass} must be one digit long!'
                 )
             dests[str(source)] = destination
+
+            if mnt != line.split(' # ')[0]:
+                # We want to set these back
+                _mount = self.mount
+                _index = self.index
+
+                self.mount = mnt
+                self.index = index
+                # The file may have changed
+                self.fstab = list(self.__read_fstab__())
+                self.__fstab_edit__(_string=True)
+
+                self.mount = _mount
+                self.index = _index
 
         if verrors:
             iocage_lib.ioc_common.logit({
@@ -354,7 +406,7 @@ class IOCFstab(object):
                             _callback=self.callback,
                             silent=self.silent)
                     else:
-                        fstab.write(line)
+                        fstab.write(f'{line}\n')
 
             if not matched:
                 iocage_lib.ioc_common.logit({
