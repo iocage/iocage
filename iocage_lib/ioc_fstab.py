@@ -221,7 +221,6 @@ class IOCFstab(object):
                             silent=self.silent)
                         source = src
 
-
             if not source.is_absolute():
                 if fstype == 'nullfs':
                     verrors.append(
