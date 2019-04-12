@@ -182,7 +182,7 @@ class IOCStart(object):
 
         iocage_lib.ioc_fstab.IOCFstab(
             self.uuid,
-            'list', '', '', '', '', '', '',
+            'list'
         ).__validate_fstab__(fstab_list, 'all')
 
         if wants_dhcp:

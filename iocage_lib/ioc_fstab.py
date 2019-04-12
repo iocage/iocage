@@ -42,9 +42,10 @@ class IOCFstab(object):
 
     """Will add or remove an entry, and mount or umount the filesystem."""
 
-    def __init__(self, uuid, action, source, destination, fstype, fsoptions,
-                 fsdump, fspass, index=None, silent=False, callback=None,
-                 header=False, _fstab_list=None):
+    def __init__(self, uuid, action, source='', destination='', fstype='',
+                 fsoptions='', fsdump='', fspass='', index=None, silent=False,
+                 callback=None, header=False, _fstab_list=None
+    ):
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")
@@ -182,25 +183,25 @@ class IOCFstab(object):
                         dst = str(dest).split('/iocage')[1]
                         dst = pathlib.Path(f'{self.iocroot}/{dst}')
 
-                    # If the correct iocroot + dir still does not exist, let's
-                    # prompt them about their original desination
-                    if not dst.is_dir():
+                        if dst.is_dir():
+                            mnt = mnt.replace(destination, str(dst))
+                            destination = dst
+
+                            iocage_lib.ioc_common.logit({
+                                "level": "INFO",
+                                "message": f'Invalid destination: {dest}'
+                                           f' replaced with {dst}'
+                            },
+                                _callback=self.callback,
+                                silent=self.silent)
+                    else:
+                        # If the old mount points aren't in the parents,
+                        # time to prompt
                         verrors.append(
                             f'Destination: {destination} does not include '
                             f'jail\'s mountpoint! ({jail_root})'
                         )
                         missing_root = True
-                    else:
-                        mnt = mnt.replace(destination, str(dst))
-                        destination = dst
-
-                        iocage_lib.ioc_common.logit({
-                            "level": "INFO",
-                            "message": f'Invalid destination: {dest}'
-                                       f' replaced with {dst}'
-                        },
-                            _callback=self.callback,
-                            silent=self.silent)
 
             if not source.is_dir():
                 if fstype == 'nullfs':
@@ -209,21 +210,21 @@ class IOCFstab(object):
                         src = str(source).split('/iocage')[1]
                         src = pathlib.Path(f'{self.iocroot}/{src}')
 
-                    # If the correct iocroot + dir still does not exist, let's
-                    # prompt them about their original source
-                    if not src.is_dir():
-                        verrors.append(f'Source: {source} does not exist!')
-                    else:
-                        mnt = mnt.replace(str(source), str(src))
+                        if src.is_dir():
+                            mnt = mnt.replace(str(source), str(src))
 
-                        iocage_lib.ioc_common.logit({
-                            "level": "INFO",
-                            "message": f'Invalid source: {source}'
-                                       f' replaced with {src}'
-                        },
-                            _callback=self.callback,
-                            silent=self.silent)
-                        source = src
+                            iocage_lib.ioc_common.logit({
+                                "level": "INFO",
+                                "message": f'Invalid source: {source}'
+                                           f' replaced with {src}'
+                            },
+                                _callback=self.callback,
+                                silent=self.silent)
+                            source = src
+                    else:
+                        # If the old mount points aren't in the parents,
+                        # time to prompt
+                        verrors.append(f'Source: {source} does not exist!')
 
             if not source.is_absolute():
                 if fstype == 'nullfs':
