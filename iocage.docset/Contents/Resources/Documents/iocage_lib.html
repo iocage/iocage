@@ -1,0 +1,1314 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8"/>
+<title>iocage_lib package — iocage 1.2 RC documentation</title>
+<link href="_static/agogo.css" rel="stylesheet" type="text/css"/>
+<link href="_static/pygments.css" rel="stylesheet" type="text/css"/>
+<script data-url_root="./" id="documentation_options" src="_static/documentation_options.js" type="text/javascript"></script>
+<script src="_static/jquery.js" type="text/javascript"></script>
+<script src="_static/underscore.js" type="text/javascript"></script>
+<script src="_static/doctools.js" type="text/javascript"></script>
+<script src="_static/language_data.js" type="text/javascript"></script>
+<link href="genindex.html" rel="index" title="Index"/>
+<link href="search.html" rel="search" title="Search"/>
+</head><body>
+<div class="header-wrapper" role="banner">
+<div class="header">
+<div class="headertitle"><a href="index.html">iocage 1.2 RC documentation</a></div>
+<div aria-label="related navigation" class="rel" role="navigation">
+<a href="py-modindex.html" title="Python Module Index">modules</a> |
+          <a accesskey="I" href="genindex.html" title="General Index">index</a>
+</div>
+</div>
+</div>
+<div class="content-wrapper">
+<div class="content">
+<div class="document">
+<div class="documentwrapper">
+<div class="bodywrapper">
+<div class="body" role="main">
+<div class="section" id="iocage-lib-package">
+<h1>iocage_lib package<a class="headerlink" href="#iocage-lib-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-iocage_lib.ioc_check">
+<span id="iocage-lib-ioc-check-module"></span><h2><a name="//apple_ref/cpp/Module/iocage_lib.ioc_check"></a>iocage_lib.ioc_check module<a class="headerlink" href="#module-iocage_lib.ioc_check" title="Permalink to this headline">¶</a></h2>
+<p>Check datasets before execution</p>
+<dl class="class">
+<dt id="iocage_lib.ioc_check.IOCCheck"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_check.IOCCheck"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_check.</code><code class="descname">IOCCheck</code><span class="sig-paren">(</span><em>silent=False</em>, <em>callback=None</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_check.IOCCheck" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Checks if the required iocage datasets are present</p>
+</dd></dl>
+</div>
+<div class="section" id="module-iocage_lib.ioc_clean">
+<span id="iocage-lib-ioc-clean-module"></span><h2><a name="//apple_ref/cpp/Module/iocage_lib.ioc_clean"></a>iocage_lib.ioc_clean module<a class="headerlink" href="#module-iocage_lib.ioc_clean" title="Permalink to this headline">¶</a></h2>
+<p>Destroy all of a dataset type.</p>
+<dl class="class">
+<dt id="iocage_lib.ioc_clean.IOCClean"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_clean.IOCClean"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_clean.</code><code class="descname">IOCClean</code><span class="sig-paren">(</span><em>callback=None</em>, <em>silent=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_clean.IOCClean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iocage_lib.ioc_json.IOCZFS" title="iocage_lib.ioc_json.IOCZFS"><code class="xref py py-class docutils literal notranslate"><span class="pre">iocage_lib.ioc_json.IOCZFS</span></code></a></p>
+<p>Cleans datasets and snapshots of a given type.</p>
+<dl class="method">
+<dt id="iocage_lib.ioc_clean.IOCClean.clean_all"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_clean.IOCClean.clean_all"></a>
+<code class="descname">clean_all</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_clean.IOCClean.clean_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cleans everything related to iocage.</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_clean.IOCClean.clean_debug"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_clean.IOCClean.clean_debug"></a>
+<code class="descname">clean_debug</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_clean.IOCClean.clean_debug" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes the debug directory</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_clean.IOCClean.clean_images"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_clean.IOCClean.clean_images"></a>
+<code class="descname">clean_images</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_clean.IOCClean.clean_images" title="Permalink to this definition">¶</a></dt>
+<dd><p>Destroys the images dataset</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_clean.IOCClean.clean_jails"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_clean.IOCClean.clean_jails"></a>
+<code class="descname">clean_jails</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_clean.IOCClean.clean_jails" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cleans all jails and their respective snapshots.</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_clean.IOCClean.clean_releases"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_clean.IOCClean.clean_releases"></a>
+<code class="descname">clean_releases</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_clean.IOCClean.clean_releases" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cleans all releases and the jails created from them.</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_clean.IOCClean.clean_templates"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_clean.IOCClean.clean_templates"></a>
+<code class="descname">clean_templates</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_clean.IOCClean.clean_templates" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cleans all templates and their respective children.</p>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-iocage_lib.ioc_common">
+<span id="iocage-lib-ioc-common-module"></span><h2><a name="//apple_ref/cpp/Module/iocage_lib.ioc_common"></a>iocage_lib.ioc_common module<a class="headerlink" href="#module-iocage_lib.ioc_common" title="Permalink to this headline">¶</a></h2>
+<p>Common methods we reuse.</p>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.callback"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.callback"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">callback</code><span class="sig-paren">(</span><em>_log</em>, <em>callback_exception</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.callback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper to call the appropriate logging level</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.check_release_newer"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.check_release_newer"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">check_release_newer</code><span class="sig-paren">(</span><em>release</em>, <em>callback=None</em>, <em>silent=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.check_release_newer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if the host RELEASE is greater than the target release</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.check_truthy"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.check_truthy"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">check_truthy</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.check_truthy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if the given value is ‘True’</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.checkoutput"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.checkoutput"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">checkoutput</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.checkoutput" title="Permalink to this definition">¶</a></dt>
+<dd><p>Just a wrapper to return utf-8 from check_output</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.construct_truthy"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.construct_truthy"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">construct_truthy</code><span class="sig-paren">(</span><em>item</em>, <em>inverse=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.construct_truthy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Will return an iterable with all truthy variations</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.consume_and_log"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.consume_and_log"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">consume_and_log</code><span class="sig-paren">(</span><em>exec_gen</em>, <em>log=True</em>, <em>callback=None</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.consume_and_log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Consume a generator and massage the output with lines</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.copytree"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.copytree"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">copytree</code><span class="sig-paren">(</span><em>src</em>, <em>dst</em>, <em>symlinks=False</em>, <em>ignore=None</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.copytree" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copies a tree and overwrites.</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.gen_nat_ip"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.gen_nat_ip"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">gen_nat_ip</code><span class="sig-paren">(</span><em>ip_prefix</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.gen_nat_ip" title="Permalink to this definition">¶</a></dt>
+<dd><p>Best effort to try to allocate a private NAT IP for a jail</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.gen_unused_lo_ip"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.gen_unused_lo_ip"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">gen_unused_lo_ip</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.gen_unused_lo_ip" title="Permalink to this definition">¶</a></dt>
+<dd><p>Best effort to try to allocate a localhost IP for a jail</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.generate_devfs_ruleset"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.generate_devfs_ruleset"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">generate_devfs_ruleset</code><span class="sig-paren">(</span><em>conf</em>, <em>paths=None</em>, <em>includes=None</em>, <em>callback=None</em>, <em>silent=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.generate_devfs_ruleset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Will add a per jail devfs ruleset with the specified rules,
+specifying defaults that equal devfs_ruleset 4</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.get_host_release"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.get_host_release"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">get_host_release</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.get_host_release" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper to return the hosts sanitized RELEASE</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.get_jail_freebsd_version"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.get_jail_freebsd_version"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">get_jail_freebsd_version</code><span class="sig-paren">(</span><em>path</em>, <em>release</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.get_jail_freebsd_version" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks the current patch level for the jail</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.get_name_sortkey"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.get_name_sortkey"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">get_name_sortkey</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.get_name_sortkey" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.get_natural_sortkey"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.get_natural_sortkey"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">get_natural_sortkey</code><span class="sig-paren">(</span><em>text</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.get_natural_sortkey" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.get_nested_key"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.get_nested_key"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">get_nested_key</code><span class="sig-paren">(</span><em>_dict</em>, <em>keys=None</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.get_nested_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets a nested key from a dictionary.</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.get_size_sortkey"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.get_size_sortkey"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">get_size_sortkey</code><span class="sig-paren">(</span><em>size</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.get_size_sortkey" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.get_used_ips"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.get_used_ips"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">get_used_ips</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.get_used_ips" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run ifconfig in every jail and return an iteratable of the inuse addresses</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.ioc_sort"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.ioc_sort"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">ioc_sort</code><span class="sig-paren">(</span><em>caller</em>, <em>s_type</em>, <em>data=None</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.ioc_sort" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.is_tty"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.is_tty"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">is_tty</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.is_tty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True or False if stdout is a tty</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.logit"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.logit"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">logit</code><span class="sig-paren">(</span><em>content</em>, <em>_callback=None</em>, <em>silent=False</em>, <em>exception=&lt;class 'RuntimeError'&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.logit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper to check callable status of callback or call ours.</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.lowercase_set"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.lowercase_set"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">lowercase_set</code><span class="sig-paren">(</span><em>values</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.lowercase_set" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.match_to_dir"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.match_to_dir"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">match_to_dir</code><span class="sig-paren">(</span><em>iocroot</em>, <em>uuid</em>, <em>old_uuid=None</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.match_to_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks for existence of jail/template with specified uuid.
+Replaces dots and underscores in the uuid with pattern [._] and returns
+the template- or jail directory that matches, or returns None if no match
+was found.
+Background: jail(8) doesn’t allow dots in the name, they will be replaced
+with underscores. Because of this, foo.bar and foo_bar will be considered
+identical, as they cannot coexist.</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.open_atomic"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.open_atomic"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">open_atomic</code><span class="sig-paren">(</span><em>filepath</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.open_atomic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Open temporary file object that atomically moves to destination upon
+exiting.</p>
+<p>Allows reading and writing to and from the same filename.</p>
+<p>The file will not be moved to destination in case of an exception.</p>
+<dl class="simple">
+<dt>filepath<span class="classifier">string</span></dt><dd><p>the file path to be opened</p>
+</dd>
+<dt>fsync<span class="classifier">bool</span></dt><dd><p>whether to force write the file to disk</p>
+</dd>
+<dt><a href="#id1"><span class="problematic" id="id2">*</span></a>args<span class="classifier">mixed</span></dt><dd><p>Any valid arguments for <code class="code docutils literal notranslate"><span class="pre">open</span></code></p>
+</dd>
+<dt><a href="#id3"><span class="problematic" id="id4">**</span></a>kwargs<span class="classifier">mixed</span></dt><dd><p>Any valid keyword arguments for <code class="code docutils literal notranslate"><span class="pre">open</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.parse_latest_release"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.parse_latest_release"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">parse_latest_release</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.parse_latest_release" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the latest RELEASE from upstreams supported list</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.raise_sort_error"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.raise_sort_error"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">raise_sort_error</code><span class="sig-paren">(</span><em>sort_list</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.raise_sort_error" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.runscript"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.runscript"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">runscript</code><span class="sig-paren">(</span><em>script</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.runscript" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs the script provided and return a tuple with first value showing
+stdout and last showing stderr</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.set_rcconf"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.set_rcconf"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">set_rcconf</code><span class="sig-paren">(</span><em>jail_path</em>, <em>key</em>, <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.set_rcconf" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.sort_ava"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.sort_ava"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">sort_ava</code><span class="sig-paren">(</span><em>ava</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.sort_ava" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sort df by AVA</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.sort_boot"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.sort_boot"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">sort_boot</code><span class="sig-paren">(</span><em>boot</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.sort_boot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sort the list by boot, then by name.</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.sort_created"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.sort_created"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">sort_created</code><span class="sig-paren">(</span><em>crt</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.sort_created" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sort snaplist by CREATED</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.sort_crt"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.sort_crt"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">sort_crt</code><span class="sig-paren">(</span><em>crt</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.sort_crt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sort df by CRT</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.sort_ip"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.sort_ip"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">sort_ip</code><span class="sig-paren">(</span><em>sort_row</em>, <em>version='4'</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.sort_ip" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sort the list by IP address
+We expect the following values for ip sorting
+1) interface|ip/subnet
+2) interface|ip
+3) interface|dhcp
+4) ip
+5) ip|accept_rtadv</p>
+<p>All the while obviously not forgetting that there can be multiple
+ips specified by ‘,’ delimiter</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.sort_ip6"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.sort_ip6"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">sort_ip6</code><span class="sig-paren">(</span><em>ip</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.sort_ip6" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper for sort_ip</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.sort_jid"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.sort_jid"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">sort_jid</code><span class="sig-paren">(</span><em>jid</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.sort_jid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sort the list by JID.</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.sort_key"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.sort_key"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">sort_key</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.sort_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sort list by the first key.</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.sort_name"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.sort_name"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">sort_name</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.sort_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sort list by the name.</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.sort_qta"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.sort_qta"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">sort_qta</code><span class="sig-paren">(</span><em>qta</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.sort_qta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sort df by QTA or snaplist by USED</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.sort_release"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.sort_release"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">sort_release</code><span class="sig-paren">(</span><em>releases</em>, <em>split=False</em>, <em>fetch_releases=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.sort_release" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sort the list by RELEASE, if split is true it’s expecting full
+datasets.</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.sort_res"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.sort_res"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">sort_res</code><span class="sig-paren">(</span><em>res</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.sort_res" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sort df by RES or snaplist by RSIZE</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.sort_state"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.sort_state"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">sort_state</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.sort_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sort the list by state, then by name.</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.sort_template"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.sort_template"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">sort_template</code><span class="sig-paren">(</span><em>template</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.sort_template" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function for templates to be sorted in sort_name</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.sort_type"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.sort_type"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">sort_type</code><span class="sig-paren">(</span><em>jail_type</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.sort_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sort the list by jail type, then by name.</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.sort_use"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.sort_use"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">sort_use</code><span class="sig-paren">(</span><em>use</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.sort_use" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sort df by USE</p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.tempfile"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.tempfile"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">tempfile</code><span class="sig-paren">(</span><em>suffix=''</em>, <em>dir=None</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.tempfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Context for temporary file.</p>
+<p>Will find a free temporary filename upon entering
+and will try to delete the file on leaving, even in case of an exception.</p>
+<dl class="simple">
+<dt>suffix<span class="classifier">string</span></dt><dd><p>optional file suffix</p>
+</dd>
+<dt>dir<span class="classifier">string</span></dt><dd><p>optional directory to save temporary file in</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_common.try_convert"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_common.try_convert"></a>
+<code class="descclassname">iocage_lib.ioc_common.</code><code class="descname">try_convert</code><span class="sig-paren">(</span><em>value</em>, <em>default</em>, <em>*types</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_common.try_convert" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</div>
+<div class="section" id="module-iocage_lib.ioc_create">
+<span id="iocage-lib-ioc-create-module"></span><h2><a name="//apple_ref/cpp/Module/iocage_lib.ioc_create"></a>iocage_lib.ioc_create module<a class="headerlink" href="#module-iocage_lib.ioc_create" title="Permalink to this headline">¶</a></h2>
+<p>iocage create module.</p>
+<dl class="class">
+<dt id="iocage_lib.ioc_create.IOCCreate"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_create.IOCCreate"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_create.</code><code class="descname">IOCCreate</code><span class="sig-paren">(</span><em>release</em>, <em>props</em>, <em>num</em>, <em>pkglist=None</em>, <em>plugin=False</em>, <em>migrate=False</em>, <em>config=None</em>, <em>silent=False</em>, <em>template=False</em>, <em>short=False</em>, <em>basejail=False</em>, <em>thickjail=False</em>, <em>empty=False</em>, <em>uuid=None</em>, <em>clone=False</em>, <em>thickconfig=False</em>, <em>clone_basejail=False</em>, <em>callback=None</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_create.IOCCreate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Create a jail from a clone.</p>
+<dl class="method">
+<dt id="iocage_lib.ioc_create.IOCCreate.create_config"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_create.IOCCreate.create_config"></a>
+<code class="descname">create_config</code><span class="sig-paren">(</span><em>jail_uuid</em>, <em>release</em>, <em>source_template</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_create.IOCCreate.create_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create the jail configuration with the minimal needed defaults.
+If self.thickconfig is True, it will create a jail with all properties.</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_create.IOCCreate.create_install_packages"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_create.IOCCreate.create_install_packages"></a>
+<code class="descname">create_install_packages</code><span class="sig-paren">(</span><em>jail_uuid</em>, <em>location</em>, <em>repo='pkg.freebsd.org'</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_create.IOCCreate.create_install_packages" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes a list of pkg’s to install into the target jail. The resolver
+property is required for pkg to have network access.</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_create.IOCCreate.create_jail"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_create.IOCCreate.create_jail"></a>
+<code class="descname">create_jail</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_create.IOCCreate.create_jail" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper to catch SIGINT</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_create.IOCCreate.create_rc"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_create.IOCCreate.create_rc"></a>
+<code class="descname">create_rc</code><span class="sig-paren">(</span><em>location</em>, <em>host_hostname</em>, <em>basejail=0</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_create.IOCCreate.create_rc" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Writes a boilerplate rc.conf file for a jail if it doesn’t exist,</dt><dd><p>otherwise changes the hostname.</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_create.IOCCreate.create_thickjail"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_create.IOCCreate.create_thickjail"></a>
+<code class="descname">create_thickjail</code><span class="sig-paren">(</span><em>jail_uuid</em>, <em>source</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_create.IOCCreate.create_thickjail" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-iocage_lib.ioc_debug">
+<span id="iocage-lib-ioc-debug-module"></span><h2><a name="//apple_ref/cpp/Module/iocage_lib.ioc_debug"></a>iocage_lib.ioc_debug module<a class="headerlink" href="#module-iocage_lib.ioc_debug" title="Permalink to this headline">¶</a></h2>
+<p>This collects debug about all the iocage jails.</p>
+<dl class="class">
+<dt id="iocage_lib.ioc_debug.IOCDebug"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_debug.IOCDebug"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_debug.</code><code class="descname">IOCDebug</code><span class="sig-paren">(</span><em>path</em>, <em>silent=False</em>, <em>callback=None</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_debug.IOCDebug" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl>
+<dt>Collects the following debug for a system + jails/templates:</dt><dd><p>zfs list
+mount
+df -h</p>
+<p>iocage get all
+/etc/hosts
+/etc/rc.conf
+/etc/nsswitch.conf
+ifconfig -a
+netstat -nr
+/etc/resolv.conf</p>
+</dd>
+</dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_debug.IOCDebug.run_debug"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_debug.IOCDebug.run_debug"></a>
+<code class="descname">run_debug</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_debug.IOCDebug.run_debug" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_debug.IOCDebug.run_host_debug"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_debug.IOCDebug.run_host_debug"></a>
+<code class="descname">run_host_debug</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_debug.IOCDebug.run_host_debug" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_debug.IOCDebug.run_jail_debug"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_debug.IOCDebug.run_jail_debug"></a>
+<code class="descname">run_jail_debug</code><span class="sig-paren">(</span><em>name</em>, <em>path</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_debug.IOCDebug.run_jail_debug" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-iocage_lib.ioc_destroy">
+<span id="iocage-lib-ioc-destroy-module"></span><h2><a name="//apple_ref/cpp/Module/iocage_lib.ioc_destroy"></a>iocage_lib.ioc_destroy module<a class="headerlink" href="#module-iocage_lib.ioc_destroy" title="Permalink to this headline">¶</a></h2>
+<p>iocage destroy module.</p>
+<dl class="class">
+<dt id="iocage_lib.ioc_destroy.IOCDestroy"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_destroy.IOCDestroy"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_destroy.</code><code class="descname">IOCDestroy</code><span class="sig-paren">(</span><em>callback=None</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_destroy.IOCDestroy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iocage_lib.ioc_json.IOCZFS" title="iocage_lib.ioc_json.IOCZFS"><code class="xref py py-class docutils literal notranslate"><span class="pre">iocage_lib.ioc_json.IOCZFS</span></code></a></p>
+<p>Destroy a jail’s datasets and then if they have a RELEASE snapshot,
+destroy that as well.</p>
+<dl class="method">
+<dt id="iocage_lib.ioc_destroy.IOCDestroy.destroy_jail"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_destroy.IOCDestroy.destroy_jail"></a>
+<code class="descname">destroy_jail</code><span class="sig-paren">(</span><em>path</em>, <em>clean=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_destroy.IOCDestroy.destroy_jail" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>A convenience wrapper to call __stop_jails__ and</dt><dd><p>__destroy_parse_datasets__</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-iocage_lib.ioc_exceptions">
+<span id="iocage-lib-ioc-exceptions-module"></span><h2><a name="//apple_ref/cpp/Module/iocage_lib.ioc_exceptions"></a>iocage_lib.ioc_exceptions module<a class="headerlink" href="#module-iocage_lib.ioc_exceptions" title="Permalink to this headline">¶</a></h2>
+<p>Exception classes for iocage</p>
+<dl class="exception">
+<dt id="iocage_lib.ioc_exceptions.CommandFailed"><a name="//apple_ref/cpp/Exception/iocage_lib.ioc_exceptions.CommandFailed"></a>
+<em class="property">exception </em><code class="descclassname">iocage_lib.ioc_exceptions.</code><code class="descname">CommandFailed</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_exceptions.CommandFailed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iocage_lib.ioc_exceptions.ExceptionWithMsg" title="iocage_lib.ioc_exceptions.ExceptionWithMsg"><code class="xref py py-class docutils literal notranslate"><span class="pre">iocage_lib.ioc_exceptions.ExceptionWithMsg</span></code></a></p>
+</dd></dl>
+<dl class="exception">
+<dt id="iocage_lib.ioc_exceptions.CommandNeedsRoot"><a name="//apple_ref/cpp/Exception/iocage_lib.ioc_exceptions.CommandNeedsRoot"></a>
+<em class="property">exception </em><code class="descclassname">iocage_lib.ioc_exceptions.</code><code class="descname">CommandNeedsRoot</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_exceptions.CommandNeedsRoot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iocage_lib.ioc_exceptions.ExceptionWithMsg" title="iocage_lib.ioc_exceptions.ExceptionWithMsg"><code class="xref py py-class docutils literal notranslate"><span class="pre">iocage_lib.ioc_exceptions.ExceptionWithMsg</span></code></a></p>
+</dd></dl>
+<dl class="exception">
+<dt id="iocage_lib.ioc_exceptions.ExceptionWithMsg"><a name="//apple_ref/cpp/Exception/iocage_lib.ioc_exceptions.ExceptionWithMsg"></a>
+<em class="property">exception </em><code class="descclassname">iocage_lib.ioc_exceptions.</code><code class="descname">ExceptionWithMsg</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_exceptions.ExceptionWithMsg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>message attribute will be an iterable if a message is supplied</p>
+</dd></dl>
+<dl class="exception">
+<dt id="iocage_lib.ioc_exceptions.Exists"><a name="//apple_ref/cpp/Exception/iocage_lib.ioc_exceptions.Exists"></a>
+<em class="property">exception </em><code class="descclassname">iocage_lib.ioc_exceptions.</code><code class="descname">Exists</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_exceptions.Exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iocage_lib.ioc_exceptions.ExceptionWithMsg" title="iocage_lib.ioc_exceptions.ExceptionWithMsg"><code class="xref py py-class docutils literal notranslate"><span class="pre">iocage_lib.ioc_exceptions.ExceptionWithMsg</span></code></a></p>
+</dd></dl>
+<dl class="exception">
+<dt id="iocage_lib.ioc_exceptions.JailCorruptConfiguration"><a name="//apple_ref/cpp/Exception/iocage_lib.ioc_exceptions.JailCorruptConfiguration"></a>
+<em class="property">exception </em><code class="descclassname">iocage_lib.ioc_exceptions.</code><code class="descname">JailCorruptConfiguration</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_exceptions.JailCorruptConfiguration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iocage_lib.ioc_exceptions.JailMisconfigured" title="iocage_lib.ioc_exceptions.JailMisconfigured"><code class="xref py py-class docutils literal notranslate"><span class="pre">iocage_lib.ioc_exceptions.JailMisconfigured</span></code></a></p>
+</dd></dl>
+<dl class="exception">
+<dt id="iocage_lib.ioc_exceptions.JailMisconfigured"><a name="//apple_ref/cpp/Exception/iocage_lib.ioc_exceptions.JailMisconfigured"></a>
+<em class="property">exception </em><code class="descclassname">iocage_lib.ioc_exceptions.</code><code class="descname">JailMisconfigured</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_exceptions.JailMisconfigured" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iocage_lib.ioc_exceptions.ExceptionWithMsg" title="iocage_lib.ioc_exceptions.ExceptionWithMsg"><code class="xref py py-class docutils literal notranslate"><span class="pre">iocage_lib.ioc_exceptions.ExceptionWithMsg</span></code></a></p>
+</dd></dl>
+<dl class="exception">
+<dt id="iocage_lib.ioc_exceptions.JailMissingConfiguration"><a name="//apple_ref/cpp/Exception/iocage_lib.ioc_exceptions.JailMissingConfiguration"></a>
+<em class="property">exception </em><code class="descclassname">iocage_lib.ioc_exceptions.</code><code class="descname">JailMissingConfiguration</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_exceptions.JailMissingConfiguration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iocage_lib.ioc_exceptions.JailMisconfigured" title="iocage_lib.ioc_exceptions.JailMisconfigured"><code class="xref py py-class docutils literal notranslate"><span class="pre">iocage_lib.ioc_exceptions.JailMisconfigured</span></code></a></p>
+</dd></dl>
+<dl class="exception">
+<dt id="iocage_lib.ioc_exceptions.JailRunning"><a name="//apple_ref/cpp/Exception/iocage_lib.ioc_exceptions.JailRunning"></a>
+<em class="property">exception </em><code class="descclassname">iocage_lib.ioc_exceptions.</code><code class="descname">JailRunning</code><a class="headerlink" href="#iocage_lib.ioc_exceptions.JailRunning" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+</dd></dl>
+<dl class="exception">
+<dt id="iocage_lib.ioc_exceptions.PoolNotActivated"><a name="//apple_ref/cpp/Exception/iocage_lib.ioc_exceptions.PoolNotActivated"></a>
+<em class="property">exception </em><code class="descclassname">iocage_lib.ioc_exceptions.</code><code class="descname">PoolNotActivated</code><a class="headerlink" href="#iocage_lib.ioc_exceptions.PoolNotActivated" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+</dd></dl>
+<dl class="exception">
+<dt id="iocage_lib.ioc_exceptions.ValidationFailed"><a name="//apple_ref/cpp/Exception/iocage_lib.ioc_exceptions.ValidationFailed"></a>
+<em class="property">exception </em><code class="descclassname">iocage_lib.ioc_exceptions.</code><code class="descname">ValidationFailed</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_exceptions.ValidationFailed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iocage_lib.ioc_exceptions.ExceptionWithMsg" title="iocage_lib.ioc_exceptions.ExceptionWithMsg"><code class="xref py py-class docutils literal notranslate"><span class="pre">iocage_lib.ioc_exceptions.ExceptionWithMsg</span></code></a></p>
+</dd></dl>
+<dl class="exception">
+<dt id="iocage_lib.ioc_exceptions.ValueNotFound"><a name="//apple_ref/cpp/Exception/iocage_lib.ioc_exceptions.ValueNotFound"></a>
+<em class="property">exception </em><code class="descclassname">iocage_lib.ioc_exceptions.</code><code class="descname">ValueNotFound</code><a class="headerlink" href="#iocage_lib.ioc_exceptions.ValueNotFound" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+</dd></dl>
+<dl class="function">
+<dt id="iocage_lib.ioc_exceptions.ignore_exceptions"><a name="//apple_ref/cpp/Function/iocage_lib.ioc_exceptions.ignore_exceptions"></a>
+<code class="descclassname">iocage_lib.ioc_exceptions.</code><code class="descname">ignore_exceptions</code><span class="sig-paren">(</span><em>*exceptions</em>, <em>clean=None</em>, <em>suppress_exception=True</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_exceptions.ignore_exceptions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ignore any exceptions specified by <cite>exceptions</cite> and make sure that
+we clean any resources specified by callable <cite>clean</cite></p>
+</dd></dl>
+</div>
+<div class="section" id="module-iocage_lib.ioc_exec">
+<span id="iocage-lib-ioc-exec-module"></span><h2><a name="//apple_ref/cpp/Module/iocage_lib.ioc_exec"></a>iocage_lib.ioc_exec module<a class="headerlink" href="#module-iocage_lib.ioc_exec" title="Permalink to this headline">¶</a></h2>
+<p>iocage exec module.</p>
+<dl class="class">
+<dt id="iocage_lib.ioc_exec.IOCExec"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_exec.IOCExec"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_exec.</code><code class="descname">IOCExec</code><span class="sig-paren">(</span><em>command</em>, <em>path</em>, <em>uuid=''</em>, <em>host_user='root'</em>, <em>jail_user=None</em>, <em>plugin=False</em>, <em>unjailed=False</em>, <em>skip=False</em>, <em>stdin_bytestring=None</em>, <em>su_env=None</em>, <em>decode=False</em>, <em>callback=None</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_exec.IOCExec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Run jexec with a user inside the specified jail.</p>
+<dl class="method">
+<dt id="iocage_lib.ioc_exec.IOCExec.exec_jail"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_exec.IOCExec.exec_jail"></a>
+<code class="descname">exec_jail</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_exec.IOCExec.exec_jail" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_exec.IOCExec.flight_checks"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_exec.IOCExec.flight_checks"></a>
+<code class="descname">flight_checks</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_exec.IOCExec.flight_checks" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="iocage_lib.ioc_exec.InteractiveExec"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_exec.InteractiveExec"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_exec.</code><code class="descname">InteractiveExec</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_exec.InteractiveExec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iocage_lib.ioc_exec.IOCExec" title="iocage_lib.ioc_exec.IOCExec"><code class="xref py py-class docutils literal notranslate"><span class="pre">iocage_lib.ioc_exec.IOCExec</span></code></a></p>
+</dd></dl>
+<dl class="class">
+<dt id="iocage_lib.ioc_exec.SilentExec"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_exec.SilentExec"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_exec.</code><code class="descname">SilentExec</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_exec.SilentExec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+</div>
+<div class="section" id="module-iocage_lib.ioc_fetch">
+<span id="iocage-lib-ioc-fetch-module"></span><h2><a name="//apple_ref/cpp/Module/iocage_lib.ioc_fetch"></a>iocage_lib.ioc_fetch module<a class="headerlink" href="#module-iocage_lib.ioc_fetch" title="Permalink to this headline">¶</a></h2>
+<p>iocage fetch module.</p>
+<dl class="class">
+<dt id="iocage_lib.ioc_fetch.IOCFetch"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_fetch.IOCFetch"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_fetch.</code><code class="descname">IOCFetch</code><span class="sig-paren">(</span><em>release</em>, <em>server='download.freebsd.org'</em>, <em>user='anonymous'</em>, <em>password='anonymous@'</em>, <em>auth=None</em>, <em>root_dir=None</em>, <em>http=True</em>, <em>_file=False</em>, <em>verify=True</em>, <em>hardened=False</em>, <em>update=True</em>, <em>eol=True</em>, <em>files=('MANIFEST'</em>, <em>'base.txz'</em>, <em>'lib32.txz'</em>, <em>'src.txz')</em>, <em>silent=False</em>, <em>callback=None</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_fetch.IOCFetch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iocage_lib.ioc_json.IOCZFS" title="iocage_lib.ioc_json.IOCZFS"><code class="xref py py-class docutils literal notranslate"><span class="pre">iocage_lib.ioc_json.IOCZFS</span></code></a></p>
+<p>Fetch a RELEASE for use as a jail base.</p>
+<dl class="method">
+<dt id="iocage_lib.ioc_fetch.IOCFetch.fetch_download"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_fetch.IOCFetch.fetch_download"></a>
+<code class="descname">fetch_download</code><span class="sig-paren">(</span><em>_list</em>, <em>missing=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_fetch.IOCFetch.fetch_download" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the download dataset and then downloads the RELEASE.</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_fetch.IOCFetch.fetch_extract"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_fetch.IOCFetch.fetch_extract"></a>
+<code class="descname">fetch_extract</code><span class="sig-paren">(</span><em>f</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_fetch.IOCFetch.fetch_extract" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes a src and dest then creates the RELEASE dataset for the data.</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_fetch.IOCFetch.fetch_http_release"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_fetch.IOCFetch.fetch_http_release"></a>
+<code class="descname">fetch_http_release</code><span class="sig-paren">(</span><em>eol</em>, <em>_list=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_fetch.IOCFetch.fetch_http_release" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fetch a user specified RELEASE from FreeBSD’s http server or a user
+supplied one. The user can also specify the user, password and
+root-directory containing the release tree that looks like so:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>XX.X-RELEASE</p></li>
+<li><p>XX.X-RELEASE</p></li>
+<li><p>XX.X-RELEASE</p></li>
+</ul>
+</div></blockquote>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_fetch.IOCFetch.fetch_release"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_fetch.IOCFetch.fetch_release"></a>
+<code class="descname">fetch_release</code><span class="sig-paren">(</span><em>_list=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_fetch.IOCFetch.fetch_release" title="Permalink to this definition">¶</a></dt>
+<dd><p>Small wrapper to choose the right fetch.</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_fetch.IOCFetch.fetch_update"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_fetch.IOCFetch.fetch_update"></a>
+<code class="descname">fetch_update</code><span class="sig-paren">(</span><em>cli=False</em>, <em>uuid=None</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_fetch.IOCFetch.fetch_update" title="Permalink to this definition">¶</a></dt>
+<dd><p>This calls ‘freebsd-update’ to update the fetched RELEASE.</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_fetch.IOCFetch.update_progress"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_fetch.IOCFetch.update_progress"></a>
+<code class="descname">update_progress</code><span class="sig-paren">(</span><em>progress</em>, <em>display_text</em>, <em>elapsed</em>, <em>chunk_size</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_fetch.IOCFetch.update_progress" title="Permalink to this definition">¶</a></dt>
+<dd><p>Displays or updates a console progress bar.
+Original source: <a class="reference external" href="https://stackoverflow.com/a/15860757/1391441">https://stackoverflow.com/a/15860757/1391441</a></p>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-iocage_lib.ioc_fstab">
+<span id="iocage-lib-ioc-fstab-module"></span><h2><a name="//apple_ref/cpp/Module/iocage_lib.ioc_fstab"></a>iocage_lib.ioc_fstab module<a class="headerlink" href="#module-iocage_lib.ioc_fstab" title="Permalink to this headline">¶</a></h2>
+<p>Manipulate a jails fstab</p>
+<dl class="class">
+<dt id="iocage_lib.ioc_fstab.IOCFstab"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_fstab.IOCFstab"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_fstab.</code><code class="descname">IOCFstab</code><span class="sig-paren">(</span><em>uuid</em>, <em>action</em>, <em>source=''</em>, <em>destination=''</em>, <em>fstype=''</em>, <em>fsoptions=''</em>, <em>fsdump=''</em>, <em>fspass=''</em>, <em>index=None</em>, <em>silent=False</em>, <em>callback=None</em>, <em>header=False</em>, <em>_fstab_list=None</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_fstab.IOCFstab" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Will add or remove an entry, and mount or umount the filesystem.</p>
+<dl class="method">
+<dt id="iocage_lib.ioc_fstab.IOCFstab.fstab_list"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_fstab.IOCFstab.fstab_list"></a>
+<code class="descname">fstab_list</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_fstab.IOCFstab.fstab_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns list of lists, or a table</p>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-iocage_lib.ioc_image">
+<span id="iocage-lib-ioc-image-module"></span><h2><a name="//apple_ref/cpp/Module/iocage_lib.ioc_image"></a>iocage_lib.ioc_image module<a class="headerlink" href="#module-iocage_lib.ioc_image" title="Permalink to this headline">¶</a></h2>
+<p>iocage export and import module</p>
+<dl class="class">
+<dt id="iocage_lib.ioc_image.IOCImage"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_image.IOCImage"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_image.</code><code class="descname">IOCImage</code><span class="sig-paren">(</span><em>callback=None</em>, <em>silent=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_image.IOCImage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>export() and import()</p>
+<dl class="method">
+<dt id="iocage_lib.ioc_image.IOCImage.export_jail"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_image.IOCImage.export_jail"></a>
+<code class="descname">export_jail</code><span class="sig-paren">(</span><em>uuid</em>, <em>path</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_image.IOCImage.export_jail" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a recursive snapshot of the jail and export to a file.</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_image.IOCImage.import_jail"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_image.IOCImage.import_jail"></a>
+<code class="descname">import_jail</code><span class="sig-paren">(</span><em>jail</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_image.IOCImage.import_jail" title="Permalink to this definition">¶</a></dt>
+<dd><p>Import from an iocage export.</p>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-iocage_lib.ioc_json">
+<span id="iocage-lib-ioc-json-module"></span><h2><a name="//apple_ref/cpp/Module/iocage_lib.ioc_json"></a>iocage_lib.ioc_json module<a class="headerlink" href="#module-iocage_lib.ioc_json" title="Permalink to this headline">¶</a></h2>
+<p>Convert, load or write JSON.</p>
+<dl class="class">
+<dt id="iocage_lib.ioc_json.IOCConfiguration"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_json.IOCConfiguration"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_json.</code><code class="descname">IOCConfiguration</code><span class="sig-paren">(</span><em>location</em>, <em>checking_datasets</em>, <em>silent</em>, <em>callback</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCConfiguration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iocage_lib.ioc_json.IOCZFS" title="iocage_lib.ioc_json.IOCZFS"><code class="xref py py-class docutils literal notranslate"><span class="pre">iocage_lib.ioc_json.IOCZFS</span></code></a></p>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCConfiguration.check_config"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCConfiguration.check_config"></a>
+<code class="descname">check_config</code><span class="sig-paren">(</span><em>conf</em>, <em>default=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCConfiguration.check_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes JSON as input and checks to see what is missing and adds the
+new keys to the defaults with their default values if missing.</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCConfiguration.check_default_config"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCConfiguration.check_default_config"></a>
+<code class="descname">check_default_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCConfiguration.check_default_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>This sets up the default configuration for jails.</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCConfiguration.check_jail_config"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCConfiguration.check_jail_config"></a>
+<code class="descname">check_jail_config</code><span class="sig-paren">(</span><em>conf</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCConfiguration.check_jail_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks the jails configuration and migrates anything needed</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCConfiguration.fix_properties"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCConfiguration.fix_properties"></a>
+<code class="descname">fix_properties</code><span class="sig-paren">(</span><em>conf</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCConfiguration.fix_properties" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes a conf file and makes sure any property that has a bad value
+that was previously allowed is fixed to the correct equivalent, but
+aren’t a CONFIG_VERSION bump</p>
+<p>Returns a bool if it updated anything and it needs writing</p>
+</dd></dl>
+<dl class="staticmethod">
+<dt id="iocage_lib.ioc_json.IOCConfiguration.get_mac_prefix"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCConfiguration.get_mac_prefix"></a>
+<em class="property">static </em><code class="descname">get_mac_prefix</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCConfiguration.get_mac_prefix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCConfiguration.get_pool_and_iocroot"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCConfiguration.get_pool_and_iocroot"></a>
+<code class="descname">get_pool_and_iocroot</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCConfiguration.get_pool_and_iocroot" title="Permalink to this definition">¶</a></dt>
+<dd><p>For internal getting of pool and iocroot.</p>
+</dd></dl>
+<dl class="staticmethod">
+<dt id="iocage_lib.ioc_json.IOCConfiguration.get_version"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCConfiguration.get_version"></a>
+<em class="property">static </em><code class="descname">get_version</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCConfiguration.get_version" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the iocage configuration version.</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCConfiguration.json_write"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCConfiguration.json_write"></a>
+<code class="descname">json_write</code><span class="sig-paren">(</span><em>data</em>, <em>_file='/config.json'</em>, <em>defaults=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCConfiguration.json_write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a JSON file at the location given with supplied data.</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="iocage_lib.ioc_json.IOCCpuset"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_json.IOCCpuset"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_json.</code><code class="descname">IOCCpuset</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCCpuset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="staticmethod">
+<dt id="iocage_lib.ioc_json.IOCCpuset.retrieve_cpu_sets"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCCpuset.retrieve_cpu_sets"></a>
+<em class="property">static </em><code class="descname">retrieve_cpu_sets</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCCpuset.retrieve_cpu_sets" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCCpuset.set_cpuset"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCCpuset.set_cpuset"></a>
+<code class="descname">set_cpuset</code><span class="sig-paren">(</span><em>value=None</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCCpuset.set_cpuset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="staticmethod">
+<dt id="iocage_lib.ioc_json.IOCCpuset.validate_cpuset_prop"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCCpuset.validate_cpuset_prop"></a>
+<em class="property">static </em><code class="descname">validate_cpuset_prop</code><span class="sig-paren">(</span><em>value</em>, <em>raise_error=True</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCCpuset.validate_cpuset_prop" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="iocage_lib.ioc_json.IOCJson"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_json.IOCJson"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_json.</code><code class="descname">IOCJson</code><span class="sig-paren">(</span><em>location=''</em>, <em>silent=False</em>, <em>cli=False</em>, <em>stop=False</em>, <em>checking_datasets=False</em>, <em>suppress_log=False</em>, <em>callback=None</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCJson" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iocage_lib.ioc_json.IOCConfiguration" title="iocage_lib.ioc_json.IOCConfiguration"><code class="xref py py-class docutils literal notranslate"><span class="pre">iocage_lib.ioc_json.IOCConfiguration</span></code></a></p>
+<p>Migrates old iocage configurations(UCL and ZFS Props) to the new JSON
+format, will set and get properties.</p>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCJson.activate_pool"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCJson.activate_pool"></a>
+<code class="descname">activate_pool</code><span class="sig-paren">(</span><em>pool</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCJson.activate_pool" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCJson.get_full_config"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCJson.get_full_config"></a>
+<code class="descname">get_full_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCJson.get_full_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCJson.json_check_prop"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCJson.json_check_prop"></a>
+<code class="descname">json_check_prop</code><span class="sig-paren">(</span><em>key</em>, <em>value</em>, <em>conf</em>, <em>default=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCJson.json_check_prop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if the property matches known good values, if it’s the
+CLI, deny setting any properties not in this list.</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCJson.json_convert_from_ucl"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCJson.json_convert_from_ucl"></a>
+<code class="descname">json_convert_from_ucl</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCJson.json_convert_from_ucl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert to JSON. Accepts a location to the ucl configuration.</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCJson.json_convert_from_zfs"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCJson.json_convert_from_zfs"></a>
+<code class="descname">json_convert_from_zfs</code><span class="sig-paren">(</span><em>uuid</em>, <em>skip=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCJson.json_convert_from_zfs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert to JSON. Accepts a jail UUID</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCJson.json_get_value"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCJson.json_get_value"></a>
+<code class="descname">json_get_value</code><span class="sig-paren">(</span><em>prop</em>, <em>default=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCJson.json_get_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a string with the specified prop’s value.</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCJson.json_load"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCJson.json_load"></a>
+<code class="descname">json_load</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCJson.json_load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the JSON at the location given. Returns a JSON object.</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCJson.json_migrate_uuid_to_tag"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCJson.json_migrate_uuid_to_tag"></a>
+<code class="descname">json_migrate_uuid_to_tag</code><span class="sig-paren">(</span><em>uuid</em>, <em>tag</em>, <em>state</em>, <em>conf</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCJson.json_migrate_uuid_to_tag" title="Permalink to this definition">¶</a></dt>
+<dd><p>This will migrate an old uuid + tag jail to a tag only one</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCJson.json_plugin_get_value"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCJson.json_plugin_get_value"></a>
+<code class="descname">json_plugin_get_value</code><span class="sig-paren">(</span><em>prop</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCJson.json_plugin_get_value" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCJson.json_plugin_load"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCJson.json_plugin_load"></a>
+<code class="descname">json_plugin_load</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCJson.json_plugin_load" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCJson.json_plugin_set_value"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCJson.json_plugin_set_value"></a>
+<code class="descname">json_plugin_set_value</code><span class="sig-paren">(</span><em>prop</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCJson.json_plugin_set_value" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCJson.json_set_value"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCJson.json_set_value"></a>
+<code class="descname">json_set_value</code><span class="sig-paren">(</span><em>prop</em>, <em>_import=False</em>, <em>default=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCJson.json_set_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set a property for the specified jail.</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="iocage_lib.ioc_json.IOCRCTL"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_json.IOCRCTL"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_json.</code><code class="descname">IOCRCTL</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCRCTL" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCRCTL.rctl_rules_exist"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCRCTL.rctl_rules_exist"></a>
+<code class="descname">rctl_rules_exist</code><span class="sig-paren">(</span><em>prop=None</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCRCTL.rctl_rules_exist" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCRCTL.remove_rctl_rules"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCRCTL.remove_rctl_rules"></a>
+<code class="descname">remove_rctl_rules</code><span class="sig-paren">(</span><em>props=None</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCRCTL.remove_rctl_rules" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCRCTL.set_rctl_rules"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCRCTL.set_rctl_rules"></a>
+<code class="descname">set_rctl_rules</code><span class="sig-paren">(</span><em>props</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCRCTL.set_rctl_rules" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="iocage_lib.ioc_json.IOCRCTL.types"><a name="//apple_ref/cpp/Attribute/iocage_lib.ioc_json.IOCRCTL.types"></a>
+<code class="descname">types</code><em class="property"> = {'coredumpsize', 'cputime', 'datasize', 'maxproc', 'memorylocked', 'memoryuse', 'msgqqueued', 'msgqsize', 'nmsgq', 'nsem', 'nsemop', 'nshm', 'nthr', 'openfiles', 'pcpu', 'pseudoterminals', 'readbps', 'readiops', 'shmsize', 'stacksize', 'swapuse', 'vmemoryuse', 'wallclock', 'writebps', 'writeiops'}</em><a class="headerlink" href="#iocage_lib.ioc_json.IOCRCTL.types" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="staticmethod">
+<dt id="iocage_lib.ioc_json.IOCRCTL.validate_rctl_props"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCRCTL.validate_rctl_props"></a>
+<em class="property">static </em><code class="descname">validate_rctl_props</code><span class="sig-paren">(</span><em>prop</em>, <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCRCTL.validate_rctl_props" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="staticmethod">
+<dt id="iocage_lib.ioc_json.IOCRCTL.validate_rctl_tunable"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCRCTL.validate_rctl_tunable"></a>
+<em class="property">static </em><code class="descname">validate_rctl_tunable</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCRCTL.validate_rctl_tunable" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="iocage_lib.ioc_json.IOCSnapshot"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_json.IOCSnapshot"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_json.</code><code class="descname">IOCSnapshot</code><span class="sig-paren">(</span><em>snap_id</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCSnapshot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCSnapshot.delete"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCSnapshot.delete"></a>
+<code class="descname">delete</code><span class="sig-paren">(</span><em>recursive=True</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCSnapshot.delete" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="iocage_lib.ioc_json.IOCSnapshot.exists"><a name="//apple_ref/cpp/Attribute/iocage_lib.ioc_json.IOCSnapshot.exists"></a>
+<code class="descname">exists</code><a class="headerlink" href="#iocage_lib.ioc_json.IOCSnapshot.exists" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCSnapshot.normalize_data"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCSnapshot.normalize_data"></a>
+<code class="descname">normalize_data</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCSnapshot.normalize_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="iocage_lib.ioc_json.IOCSnapshot.raw_data"><a name="//apple_ref/cpp/Attribute/iocage_lib.ioc_json.IOCSnapshot.raw_data"></a>
+<code class="descname">raw_data</code><a class="headerlink" href="#iocage_lib.ioc_json.IOCSnapshot.raw_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="iocage_lib.ioc_json.IOCZFS"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_json.IOCZFS"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_json.</code><code class="descname">IOCZFS</code><span class="sig-paren">(</span><em>callback=None</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCZFS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="attribute">
+<dt id="iocage_lib.ioc_json.IOCZFS.iocroot_datasets"><a name="//apple_ref/cpp/Attribute/iocage_lib.ioc_json.IOCZFS.iocroot_datasets"></a>
+<code class="descname">iocroot_datasets</code><a class="headerlink" href="#iocage_lib.ioc_json.IOCZFS.iocroot_datasets" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="iocage_lib.ioc_json.IOCZFS.iocroot_path"><a name="//apple_ref/cpp/Attribute/iocage_lib.ioc_json.IOCZFS.iocroot_path"></a>
+<code class="descname">iocroot_path</code><a class="headerlink" href="#iocage_lib.ioc_json.IOCZFS.iocroot_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="iocage_lib.ioc_json.IOCZFS.pools"><a name="//apple_ref/cpp/Attribute/iocage_lib.ioc_json.IOCZFS.pools"></a>
+<code class="descname">pools</code><a class="headerlink" href="#iocage_lib.ioc_json.IOCZFS.pools" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="iocage_lib.ioc_json.IOCZFS.release_snapshots"><a name="//apple_ref/cpp/Attribute/iocage_lib.ioc_json.IOCZFS.release_snapshots"></a>
+<code class="descname">release_snapshots</code><a class="headerlink" href="#iocage_lib.ioc_json.IOCZFS.release_snapshots" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCZFS.zfs_destroy_dataset"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCZFS.zfs_destroy_dataset"></a>
+<code class="descname">zfs_destroy_dataset</code><span class="sig-paren">(</span><em>identifier</em>, <em>recursive=False</em>, <em>force=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCZFS.zfs_destroy_dataset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCZFS.zfs_get_dataset_and_dependents"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCZFS.zfs_get_dataset_and_dependents"></a>
+<code class="descname">zfs_get_dataset_and_dependents</code><span class="sig-paren">(</span><em>identifier</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCZFS.zfs_get_dataset_and_dependents" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCZFS.zfs_get_dataset_name"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCZFS.zfs_get_dataset_name"></a>
+<code class="descname">zfs_get_dataset_name</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCZFS.zfs_get_dataset_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCZFS.zfs_get_property"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCZFS.zfs_get_property"></a>
+<code class="descname">zfs_get_property</code><span class="sig-paren">(</span><em>identifier</em>, <em>key</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCZFS.zfs_get_property" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCZFS.zfs_get_snapshot"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCZFS.zfs_get_snapshot"></a>
+<code class="descname">zfs_get_snapshot</code><span class="sig-paren">(</span><em>snap_id</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCZFS.zfs_get_snapshot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.IOCZFS.zfs_set_property"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.IOCZFS.zfs_set_property"></a>
+<code class="descname">zfs_set_property</code><span class="sig-paren">(</span><em>identifier</em>, <em>key</em>, <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.IOCZFS.zfs_set_property" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="iocage_lib.ioc_json.JailRuntimeConfiguration"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_json.JailRuntimeConfiguration"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_json.</code><code class="descname">JailRuntimeConfiguration</code><span class="sig-paren">(</span><em>jail_name</em>, <em>data=None</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.JailRuntimeConfiguration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.JailRuntimeConfiguration.normalize_data"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.JailRuntimeConfiguration.normalize_data"></a>
+<code class="descname">normalize_data</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.JailRuntimeConfiguration.normalize_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="iocage_lib.ioc_json.JailRuntimeConfiguration.path"><a name="//apple_ref/cpp/Attribute/iocage_lib.ioc_json.JailRuntimeConfiguration.path"></a>
+<code class="descname">path</code><a class="headerlink" href="#iocage_lib.ioc_json.JailRuntimeConfiguration.path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.JailRuntimeConfiguration.remove"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.JailRuntimeConfiguration.remove"></a>
+<code class="descname">remove</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.JailRuntimeConfiguration.remove" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.JailRuntimeConfiguration.set"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.JailRuntimeConfiguration.set"></a>
+<code class="descname">set</code><span class="sig-paren">(</span><em>key</em>, <em>value=None</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.JailRuntimeConfiguration.set" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_json.JailRuntimeConfiguration.sync_changes"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_json.JailRuntimeConfiguration.sync_changes"></a>
+<code class="descname">sync_changes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.JailRuntimeConfiguration.sync_changes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="iocage_lib.ioc_json.Release"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_json.Release"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_json.</code><code class="descname">Release</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.Release" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iocage_lib.ioc_json.Resource" title="iocage_lib.ioc_json.Resource"><code class="xref py py-class docutils literal notranslate"><span class="pre">iocage_lib.ioc_json.Resource</span></code></a></p>
+<dl class="attribute">
+<dt id="iocage_lib.ioc_json.Release.path"><a name="//apple_ref/cpp/Attribute/iocage_lib.ioc_json.Release.path"></a>
+<code class="descname">path</code><a class="headerlink" href="#iocage_lib.ioc_json.Release.path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="iocage_lib.ioc_json.Resource"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_json.Resource"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_json.</code><code class="descname">Resource</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_json.Resource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iocage_lib.ioc_json.IOCZFS" title="iocage_lib.ioc_json.IOCZFS"><code class="xref py py-class docutils literal notranslate"><span class="pre">iocage_lib.ioc_json.IOCZFS</span></code></a></p>
+<dl class="attribute">
+<dt id="iocage_lib.ioc_json.Resource.exists"><a name="//apple_ref/cpp/Attribute/iocage_lib.ioc_json.Resource.exists"></a>
+<code class="descname">exists</code><a class="headerlink" href="#iocage_lib.ioc_json.Resource.exists" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="attribute">
+<dt id="iocage_lib.ioc_json.Resource.path"><a name="//apple_ref/cpp/Attribute/iocage_lib.ioc_json.Resource.path"></a>
+<code class="descname">path</code><a class="headerlink" href="#iocage_lib.ioc_json.Resource.path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-iocage_lib.ioc_list">
+<span id="iocage-lib-ioc-list-module"></span><h2><a name="//apple_ref/cpp/Module/iocage_lib.ioc_list"></a>iocage_lib.ioc_list module<a class="headerlink" href="#module-iocage_lib.ioc_list" title="Permalink to this headline">¶</a></h2>
+<p>List all datasets by type</p>
+<dl class="class">
+<dt id="iocage_lib.ioc_list.IOCList"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_list.IOCList"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_list.</code><code class="descname">IOCList</code><span class="sig-paren">(</span><em>lst_type='all'</em>, <em>hdr=True</em>, <em>full=False</em>, <em>_sort=None</em>, <em>silent=False</em>, <em>callback=None</em>, <em>plugin=False</em>, <em>quick=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_list.IOCList" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>List jails that are a specified type.</p>
+<dl class="simple">
+<dt>Format is:</dt><dd><p>JID UID BOOT STATE TYPE IP4 RELEASE</p>
+</dd>
+</dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_list.IOCList.list_all"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_list.IOCList.list_all"></a>
+<code class="descname">list_all</code><span class="sig-paren">(</span><em>jails</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_list.IOCList.list_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>List all jails.</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_list.IOCList.list_all_quick"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_list.IOCList.list_all_quick"></a>
+<code class="descname">list_all_quick</code><span class="sig-paren">(</span><em>jails</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_list.IOCList.list_all_quick" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a table of jails with minimal processing</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_list.IOCList.list_bases"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_list.IOCList.list_bases"></a>
+<code class="descname">list_bases</code><span class="sig-paren">(</span><em>datasets</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_list.IOCList.list_bases" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lists all bases.</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_list.IOCList.list_datasets"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_list.IOCList.list_datasets"></a>
+<code class="descname">list_datasets</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_list.IOCList.list_datasets" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lists the datasets of given type.</p>
+</dd></dl>
+<dl class="classmethod">
+<dt id="iocage_lib.ioc_list.IOCList.list_get_jid"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_list.IOCList.list_get_jid"></a>
+<em class="property">classmethod </em><code class="descname">list_get_jid</code><span class="sig-paren">(</span><em>uuid</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_list.IOCList.list_get_jid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a tuple containing True or False and the jail’s id or ‘-‘.</p>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-iocage_lib.ioc_plugin">
+<span id="iocage-lib-ioc-plugin-module"></span><h2><a name="//apple_ref/cpp/Module/iocage_lib.ioc_plugin"></a>iocage_lib.ioc_plugin module<a class="headerlink" href="#module-iocage_lib.ioc_plugin" title="Permalink to this headline">¶</a></h2>
+<p>iocage plugin module</p>
+<dl class="class">
+<dt id="iocage_lib.ioc_plugin.IOCPlugin"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_plugin.IOCPlugin"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_plugin.</code><code class="descname">IOCPlugin</code><span class="sig-paren">(</span><em>release=None</em>, <em>plugin=None</em>, <em>branch=None</em>, <em>keep_jail_on_failure=False</em>, <em>callback=None</em>, <em>silent=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_plugin.IOCPlugin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This is responsible for the general life cycle of a plugin jail. This
+includes creation, updating and upgrading.</p>
+<dl class="method">
+<dt id="iocage_lib.ioc_plugin.IOCPlugin.fetch_plugin"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_plugin.IOCPlugin.fetch_plugin"></a>
+<code class="descname">fetch_plugin</code><span class="sig-paren">(</span><em>_json</em>, <em>props</em>, <em>num</em>, <em>accept_license</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_plugin.IOCPlugin.fetch_plugin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper to fetch plugins</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_plugin.IOCPlugin.fetch_plugin_index"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_plugin.IOCPlugin.fetch_plugin_index"></a>
+<code class="descname">fetch_plugin_index</code><span class="sig-paren">(</span><em>props</em>, <em>_list=False</em>, <em>list_header=False</em>, <em>list_long=False</em>, <em>accept_license=False</em>, <em>icon=False</em>, <em>official=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_plugin.IOCPlugin.fetch_plugin_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_plugin.IOCPlugin.update"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_plugin.IOCPlugin.update"></a>
+<code class="descname">update</code><span class="sig-paren">(</span><em>jid</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_plugin.IOCPlugin.update" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_plugin.IOCPlugin.upgrade"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_plugin.IOCPlugin.upgrade"></a>
+<code class="descname">upgrade</code><span class="sig-paren">(</span><em>jid</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_plugin.IOCPlugin.upgrade" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-iocage_lib.ioc_start">
+<span id="iocage-lib-ioc-start-module"></span><h2><a name="//apple_ref/cpp/Module/iocage_lib.ioc_start"></a>iocage_lib.ioc_start module<a class="headerlink" href="#module-iocage_lib.ioc_start" title="Permalink to this headline">¶</a></h2>
+<p>This is responsible for starting jails.</p>
+<dl class="class">
+<dt id="iocage_lib.ioc_start.IOCStart"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_start.IOCStart"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_start.</code><code class="descname">IOCStart</code><span class="sig-paren">(</span><em>uuid</em>, <em>path</em>, <em>silent=False</em>, <em>callback=None</em>, <em>is_depend=False</em>, <em>unit_test=False</em>, <em>suppress_exception=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_start.IOCStart" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Starts jails, the network stack for the jail and generates a resolv file</p>
+<p>for them. It also finds any scripts the user supplies for exec_*</p>
+<dl class="method">
+<dt id="iocage_lib.ioc_start.IOCStart.check_aliases"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_start.IOCStart.check_aliases"></a>
+<code class="descname">check_aliases</code><span class="sig-paren">(</span><em>ip_addrs</em>, <em>mode='4'</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_start.IOCStart.check_aliases" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if the alias already exists for given IP’s, otherwise add
+default interface to the ips and return the new list</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_start.IOCStart.find_bridge_mtu"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_start.IOCStart.find_bridge_mtu"></a>
+<code class="descname">find_bridge_mtu</code><span class="sig-paren">(</span><em>bridge</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_start.IOCStart.find_bridge_mtu" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_start.IOCStart.get_bridge_members"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_start.IOCStart.get_bridge_members"></a>
+<code class="descname">get_bridge_members</code><span class="sig-paren">(</span><em>bridge</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_start.IOCStart.get_bridge_members" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_start.IOCStart.get_default_gateway"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_start.IOCStart.get_default_gateway"></a>
+<code class="descname">get_default_gateway</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_start.IOCStart.get_default_gateway" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_start.IOCStart.start_copy_localtime"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_start.IOCStart.start_copy_localtime"></a>
+<code class="descname">start_copy_localtime</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_start.IOCStart.start_copy_localtime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_start.IOCStart.start_generate_resolv"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_start.IOCStart.start_generate_resolv"></a>
+<code class="descname">start_generate_resolv</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_start.IOCStart.start_generate_resolv" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_start.IOCStart.start_network"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_start.IOCStart.start_network"></a>
+<code class="descname">start_network</code><span class="sig-paren">(</span><em>vnet</em>, <em>nat=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_start.IOCStart.start_network" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function is largely a check to see if VNET is true, and then to
+actually run the correct function, otherwise it passes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>vnet</strong> – Boolean</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_start.IOCStart.start_network_interface_vnet"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_start.IOCStart.start_network_interface_vnet"></a>
+<code class="descname">start_network_interface_vnet</code><span class="sig-paren">(</span><em>nic_defs</em>, <em>net_configs</em>, <em>jid</em>, <em>nat_addr=0</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_start.IOCStart.start_network_interface_vnet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start VNET on interface</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nic_defs</strong> – comma separated interface definitions (nic, bridge)</p></li>
+<li><p><strong>net_configs</strong> – Tuple of IP address and router pairs</p></li>
+<li><p><strong>jid</strong> – The jails ID</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_start.IOCStart.start_network_vnet_addr"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_start.IOCStart.start_network_vnet_addr"></a>
+<code class="descname">start_network_vnet_addr</code><span class="sig-paren">(</span><em>iface</em>, <em>ip</em>, <em>defaultgw</em>, <em>ipv6=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_start.IOCStart.start_network_vnet_addr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add an IP address to a vnet interface inside the jail.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>iface</strong> – The interface to use</p></li>
+<li><p><strong>ip</strong> – The IP address to assign</p></li>
+<li><p><strong>defaultgw</strong> – The gateway IP to assign to the nic</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>If an error occurs it returns the error. Otherwise, it’s None</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_start.IOCStart.start_network_vnet_iface"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_start.IOCStart.start_network_vnet_iface"></a>
+<code class="descname">start_network_vnet_iface</code><span class="sig-paren">(</span><em>nic</em>, <em>bridge</em>, <em>mtu</em>, <em>jid</em>, <em>nat_addr=0</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_start.IOCStart.start_network_vnet_iface" title="Permalink to this definition">¶</a></dt>
+<dd><p>The real meat and potatoes for starting a VNET interface.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nic</strong> – The network interface to assign the IP in the jail</p></li>
+<li><p><strong>bridge</strong> – The bridge to attach the VNET interface</p></li>
+<li><p><strong>mtu</strong> – The mtu of the VNET interface</p></li>
+<li><p><strong>jid</strong> – The jails ID</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>If an error occurs it returns the error. Otherwise, it’s None</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-iocage_lib.ioc_stop">
+<span id="iocage-lib-ioc-stop-module"></span><h2><a name="//apple_ref/cpp/Module/iocage_lib.ioc_stop"></a>iocage_lib.ioc_stop module<a class="headerlink" href="#module-iocage_lib.ioc_stop" title="Permalink to this headline">¶</a></h2>
+<p>This stops jails.</p>
+<dl class="class">
+<dt id="iocage_lib.ioc_stop.IOCStop"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_stop.IOCStop"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_stop.</code><code class="descname">IOCStop</code><span class="sig-paren">(</span><em>uuid</em>, <em>path</em>, <em>silent=False</em>, <em>callback=None</em>, <em>force=False</em>, <em>suppress_exception=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_stop.IOCStop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Stops a jail and unmounts the jails mountpoints.</p>
+</dd></dl>
+</div>
+<div class="section" id="module-iocage_lib.ioc_upgrade">
+<span id="iocage-lib-ioc-upgrade-module"></span><h2><a name="//apple_ref/cpp/Module/iocage_lib.ioc_upgrade"></a>iocage_lib.ioc_upgrade module<a class="headerlink" href="#module-iocage_lib.ioc_upgrade" title="Permalink to this headline">¶</a></h2>
+<p>iocage upgrade module</p>
+<dl class="class">
+<dt id="iocage_lib.ioc_upgrade.IOCUpgrade"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_upgrade.IOCUpgrade"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_upgrade.</code><code class="descname">IOCUpgrade</code><span class="sig-paren">(</span><em>new_release</em>, <em>path</em>, <em>interactive=True</em>, <em>silent=False</em>, <em>callback=None</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_upgrade.IOCUpgrade" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iocage_lib.ioc_json.IOCZFS" title="iocage_lib.ioc_json.IOCZFS"><code class="xref py py-class docutils literal notranslate"><span class="pre">iocage_lib.ioc_json.IOCZFS</span></code></a></p>
+<p>Will upgrade a jail to the specified RELEASE.</p>
+<dl class="method">
+<dt id="iocage_lib.ioc_upgrade.IOCUpgrade.upgrade_basejail"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_upgrade.IOCUpgrade.upgrade_basejail"></a>
+<code class="descname">upgrade_basejail</code><span class="sig-paren">(</span><em>snapshot=True</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_upgrade.IOCUpgrade.upgrade_basejail" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.ioc_upgrade.IOCUpgrade.upgrade_jail"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_upgrade.IOCUpgrade.upgrade_jail"></a>
+<code class="descname">upgrade_jail</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_upgrade.IOCUpgrade.upgrade_jail" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-iocage_lib.iocage">
+<span id="iocage-lib-iocage-module"></span><h2><a name="//apple_ref/cpp/Module/iocage_lib.iocage"></a>iocage_lib.iocage module<a class="headerlink" href="#module-iocage_lib.iocage" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iocage_lib.iocage.IOCage"><a name="//apple_ref/cpp/Class/iocage_lib.iocage.IOCage"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.iocage.</code><code class="descname">IOCage</code><span class="sig-paren">(</span><em>jail=None</em>, <em>rc=False</em>, <em>callback=None</em>, <em>silent=False</em>, <em>activate=False</em>, <em>skip_jails=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iocage_lib.ioc_json.IOCZFS" title="iocage_lib.ioc_json.IOCZFS"><code class="xref py py-class docutils literal notranslate"><span class="pre">iocage_lib.ioc_json.IOCZFS</span></code></a></p>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.activate"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.activate"></a>
+<code class="descname">activate</code><span class="sig-paren">(</span><em>zpool</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.activate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Activates the zpool for iocage usage</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.chroot"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.chroot"></a>
+<code class="descname">chroot</code><span class="sig-paren">(</span><em>command</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.chroot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deprecated: Chroots into a jail and runs a command, or the shell.</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.clean"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.clean"></a>
+<code class="descname">clean</code><span class="sig-paren">(</span><em>d_type</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.clean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Destroys all of a specified dataset types.</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.create"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.create"></a>
+<code class="descname">create</code><span class="sig-paren">(</span><em>release</em>, <em>props</em>, <em>count=0</em>, <em>pkglist=None</em>, <em>template=False</em>, <em>short=False</em>, <em>_uuid=None</em>, <em>basejail=False</em>, <em>thickjail=False</em>, <em>empty=False</em>, <em>clone=None</em>, <em>skip_batch=False</em>, <em>thickconfig=False</em>, <em>clone_basejail=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.create" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the jail dataset</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.debug"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.debug"></a>
+<code class="descname">debug</code><span class="sig-paren">(</span><em>directory</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.debug" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.destroy_jail"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.destroy_jail"></a>
+<code class="descname">destroy_jail</code><span class="sig-paren">(</span><em>force=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.destroy_jail" title="Permalink to this definition">¶</a></dt>
+<dd><p>Destroys the supplied jail, to reduce perfomance hit,
+call IOCage with skip_jails=True</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.destroy_release"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.destroy_release"></a>
+<code class="descname">destroy_release</code><span class="sig-paren">(</span><em>download=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.destroy_release" title="Permalink to this definition">¶</a></dt>
+<dd><p>Destroy supplied RELEASE and the download dataset if asked</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.df"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.df"></a>
+<code class="descname">df</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.df" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list containing the resource usage of all jails</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.exec"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.exec"></a>
+<code class="descname">exec</code><span class="sig-paren">(</span><em>command</em>, <em>host_user='root'</em>, <em>jail_user=None</em>, <em>console=False</em>, <em>start_jail=False</em>, <em>interactive=False</em>, <em>unjailed=False</em>, <em>msg_return=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.exec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Executes a command in the jail as the supplied users.</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.export"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.export"></a>
+<code class="descname">export</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.export" title="Permalink to this definition">¶</a></dt>
+<dd><p>Will export a jail</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.fetch"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.fetch"></a>
+<code class="descname">fetch</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.fetch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fetches a release or plugin.</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.fstab"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.fstab"></a>
+<code class="descname">fstab</code><span class="sig-paren">(</span><em>action</em>, <em>source</em>, <em>destination</em>, <em>fstype</em>, <em>options</em>, <em>dump</em>, <em>_pass</em>, <em>index=None</em>, <em>add_path=False</em>, <em>header=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.fstab" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds an fstab entry for a jail</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.get"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.get"></a>
+<code class="descname">get</code><span class="sig-paren">(</span><em>prop</em>, <em>recursive=False</em>, <em>plugin=False</em>, <em>pool=False</em>, <em>start_jail=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a jail property</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.import_"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.import_"></a>
+<code class="descname">import_</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.import_" title="Permalink to this definition">¶</a></dt>
+<dd><p>Imports a jail</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.list"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.list"></a>
+<code class="descname">list</code><span class="sig-paren">(</span><em>lst_type</em>, <em>header=False</em>, <em>long=False</em>, <em>sort='name'</em>, <em>uuid=None</em>, <em>plugin=False</em>, <em>quick=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of lst_type</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.rename"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.rename"></a>
+<code class="descname">rename</code><span class="sig-paren">(</span><em>new_name</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.rename" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.restart"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.restart"></a>
+<code class="descname">restart</code><span class="sig-paren">(</span><em>soft=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.restart" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.rollback"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.rollback"></a>
+<code class="descname">rollback</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.rollback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rolls back a jail and all datasets to the supplied snapshot</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.set"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.set"></a>
+<code class="descname">set</code><span class="sig-paren">(</span><em>prop</em>, <em>plugin=False</em>, <em>rename=False</em>, <em>zfs=False</em>, <em>zfs_dataset=None</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets a property for a jail or plugin</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.snap_list"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.snap_list"></a>
+<code class="descname">snap_list</code><span class="sig-paren">(</span><em>long=True</em>, <em>_sort='created'</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.snap_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gathers a list of snapshots and returns it</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.snap_remove"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.snap_remove"></a>
+<code class="descname">snap_remove</code><span class="sig-paren">(</span><em>snapshot</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.snap_remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes user supplied snapshot from jail</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.snapshot"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.snapshot"></a>
+<code class="descname">snapshot</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.snapshot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Will create a snapshot for the given jail</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.start"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.start"></a>
+<code class="descname">start</code><span class="sig-paren">(</span><em>jail=None</em>, <em>ignore_exception=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks jails type and existence, then starts the jail</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.stop"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.stop"></a>
+<code class="descname">stop</code><span class="sig-paren">(</span><em>jail=None</em>, <em>force=False</em>, <em>ignore_exception=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stops the jail.</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.update"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.update"></a>
+<code class="descname">update</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates a jail to the latest patchset.</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.update_all"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.update_all"></a>
+<code class="descname">update_all</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.update_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs update for all jails</p>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.upgrade"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.upgrade"></a>
+<code class="descname">upgrade</code><span class="sig-paren">(</span><em>release</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.upgrade" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.IOCage.upgrade_all"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.IOCage.upgrade_all"></a>
+<code class="descname">upgrade_all</code><span class="sig-paren">(</span><em>release</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.IOCage.upgrade_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs upgrade for all jails</p>
+</dd></dl>
+</dd></dl>
+<dl class="class">
+<dt id="iocage_lib.iocage.PoolAndDataset"><a name="//apple_ref/cpp/Class/iocage_lib.iocage.PoolAndDataset"></a>
+<em class="property">class </em><code class="descclassname">iocage_lib.iocage.</code><code class="descname">PoolAndDataset</code><a class="headerlink" href="#iocage_lib.iocage.PoolAndDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iocage_lib.ioc_json.IOCZFS" title="iocage_lib.ioc_json.IOCZFS"><code class="xref py py-class docutils literal notranslate"><span class="pre">iocage_lib.ioc_json.IOCZFS</span></code></a></p>
+<dl class="method">
+<dt id="iocage_lib.iocage.PoolAndDataset.get_datasets"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.PoolAndDataset.get_datasets"></a>
+<code class="descname">get_datasets</code><span class="sig-paren">(</span><em>option_type</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.PoolAndDataset.get_datasets" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper to get datasets.</p>
+<dl class="simple">
+<dt>Return:</dt><dd><p>generator: from libzfs.ZFSDataset.</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.PoolAndDataset.get_iocroot"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.PoolAndDataset.get_iocroot"></a>
+<code class="descname">get_iocroot</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.PoolAndDataset.get_iocroot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper to get the iocroot.</p>
+<dl class="simple">
+<dt>Return:</dt><dd><p>string: with the iocroot name.</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="method">
+<dt id="iocage_lib.iocage.PoolAndDataset.get_pool"><a name="//apple_ref/cpp/Method/iocage_lib.iocage.PoolAndDataset.get_pool"></a>
+<code class="descname">get_pool</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.iocage.PoolAndDataset.get_pool" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper to get the current pool.</p>
+<dl class="simple">
+<dt>Return:</dt><dd><p>string: with the pool name.</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="module-iocage_lib">
+<span id="module-contents"></span><h2><a name="//apple_ref/cpp/Module/iocage_lib"></a>Module contents<a class="headerlink" href="#module-iocage_lib" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sidebar">
+<h3>Table of Contents</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Install iocage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="basic-use.html">Basic Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plugins.html">Plugins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="networking.html">Networking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="jailtypes.html">Jail Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best-practices.html">Best Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advanced-use.html">Advanced Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="templates.html">Using Templates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debian.html">Create a Debian Squeeze Jail (GNU/kFreeBSD)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="known-issues.html">Known Issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a></li>
+</ul>
+<div role="search">
+<h3 style="margin-top: 1.5em;">Search</h3>
+<form action="search.html" class="search" method="get">
+<input name="q" type="text"/>
+<input type="submit" value="Go"/>
+</form>
+</div>
+</div>
+<div class="clearer"></div>
+</div>
+</div>
+<div class="footer-wrapper">
+<div class="footer">
+<div class="left">
+<div aria-label="related navigaton" role="navigation">
+<a href="py-modindex.html" title="Python Module Index">modules</a> |
+            <a href="genindex.html" title="General Index">index</a>
+</div>
+<div aria-label="source link" role="note">
+</div>
+</div>
+<div class="right">
+<div class="footer" role="contentinfo">
+        © Copyright 2014-2019, iocage.
+    </div>
+</div>
+<div class="clearer"></div>
+</div>
+</div>
+</body>
+</html>
