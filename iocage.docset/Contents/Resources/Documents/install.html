@@ -1,0 +1,273 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Install iocage &#8212; iocage 1.2 RC documentation</title>
+    <link rel="stylesheet" href="_static/agogo.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Basic Usage" href="basic-use.html" />
+    <link rel="prev" title="iocage - A FreeBSD Jail Manager" href="index.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="index.html">iocage 1.2 RC documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="index.html" title="iocage - A FreeBSD Jail Manager"
+             accesskey="P">previous</a> |
+          <a href="basic-use.html" title="Basic Usage"
+             accesskey="N">next</a> |
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="install-iocage">
+<span id="index-0"></span><span id="id1"></span><h1>Install iocage<a class="headerlink" href="#install-iocage" title="Permalink to this headline">¶</a></h1>
+<p>iocage is a jail and container manager merging some of the best features
+and technologies from the FreeBSD operating system. It is geared for
+ease of use with simple command syntax. Visit the
+<a class="reference external" href="https://github.com/iocage/iocage">iocage github</a> for more information.</p>
+<div class="section" id="using-binary-packages">
+<h2>Using binary packages<a class="headerlink" href="#using-binary-packages" title="Permalink to this headline">¶</a></h2>
+<p>To install using binary packages on a FreeBSD system, run:</p>
+<p><code class="samp docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">pkg</span> <span class="pre">install</span> <span class="pre">py36-iocage</span></code></p>
+</div>
+<div class="section" id="using-github">
+<h2>Using github<a class="headerlink" href="#using-github" title="Permalink to this headline">¶</a></h2>
+<p>If installing from github, the FreeBSD source tree <strong>must</strong> be located
+at <code class="samp docutils literal notranslate"><span class="pre">$SRC_BASE</span></code> ( <code class="samp docutils literal notranslate"><span class="pre">/usr/src</span></code> by default).</p>
+<p>To install from github, run these commands:</p>
+<p><code class="samp docutils literal notranslate"><span class="pre">pkg</span> <span class="pre">install</span> <span class="pre">python36</span> <span class="pre">git-lite</span> <span class="pre">libgit2</span> <span class="pre">cython3</span> <span class="pre">py36-pip</span></code></p>
+<p><code class="samp docutils literal notranslate"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">--recursive</span> <span class="pre">https://github.com/iocage/iocage</span></code></p>
+<p><code class="samp docutils literal notranslate"><span class="pre">make</span> <span class="pre">install</span></code> as root.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>To install subsequent updates run: <code class="samp docutils literal notranslate"><span class="pre">make</span> <span class="pre">install</span></code> as
+root.</p>
+</div>
+</div>
+<div class="section" id="using-pkg-8">
+<h2>Using pkg(8)<a class="headerlink" href="#using-pkg-8" title="Permalink to this headline">¶</a></h2>
+<p>It is possible to install pre-build packages using pkg(8) if using
+FreeBSD 10 or above.</p>
+<p>To install using pkg(8), run:</p>
+<p><code class="samp docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">pkg</span> <span class="pre">install</span> <span class="pre">py36-iocage</span></code></p>
+</div>
+<div class="section" id="building-ports">
+<h2>Building Ports<a class="headerlink" href="#building-ports" title="Permalink to this headline">¶</a></h2>
+<p>iocage is in the FreeBSD ports tree as sysutils/py-iocage.</p>
+<p>Build the ports:
+<code class="samp docutils literal notranslate"><span class="pre">cd</span> <span class="pre">/usr/ports/sysutils/iocage/</span> <span class="pre">;</span> <span class="pre">make</span> <span class="pre">install</span> <span class="pre">clean</span></code></p>
+</div>
+<div class="section" id="upgrading-from-iocage-legacy">
+<h2>Upgrading from <code class="samp docutils literal notranslate"><span class="pre">iocage_legacy</span></code><a class="headerlink" href="#upgrading-from-iocage-legacy" title="Permalink to this headline">¶</a></h2>
+<p>This repository replaces <code class="samp docutils literal notranslate"><span class="pre">iocage_legacy</span></code> .
+To upgrade to the current version:</p>
+<ol class="arabic simple">
+<li><p>Stop the jails ( <code class="samp docutils literal notranslate"><span class="pre">Service</span> <span class="pre">iocage</span> <span class="pre">stop;</span> <span class="pre">iocage</span> <span class="pre">stop</span> <span class="pre">ALL</span></code>)</p></li>
+<li><p>Back up your data.</p></li>
+<li><p>Remove the old <code class="samp docutils literal notranslate"><span class="pre">iocage</span></code> package if it is installed
+( <code class="samp docutils literal notranslate"><span class="pre">pkg</span> <span class="pre">delete</span> <span class="pre">iocage</span></code>)</p></li>
+<li><p>Install <code class="samp docutils literal notranslate"><span class="pre">iocage</span></code> using one of the methods above.</p></li>
+<li><p>Migrate the jails by running <code class="samp docutils literal notranslate"><span class="pre">iocage</span> <span class="pre">list</span></code> as root.</p></li>
+<li><p>Start the jails ( <code class="samp docutils literal notranslate"><span class="pre">service</span> <span class="pre">iocage</span> <span class="pre">onestart</span></code>).</p></li>
+</ol>
+</div>
+<div class="section" id="migrating-from-ezjail-to-iocage">
+<span id="ezjail-migration"></span><span id="index-1"></span><h2>Migrating from Ezjail to Iocage<a class="headerlink" href="#migrating-from-ezjail-to-iocage" title="Permalink to this headline">¶</a></h2>
+<p><strong>Assumptions</strong>:</p>
+<ul class="simple">
+<li><p>ezjail jails are located at <code class="docutils literal notranslate"><span class="pre">/usr/jails</span></code></p></li>
+<li><p>iocage jails are located at <code class="docutils literal notranslate"><span class="pre">/iocage/jails</span></code></p></li>
+</ul>
+<div class="section" id="create-target">
+<h3>Create Target<a class="headerlink" href="#create-target" title="Permalink to this headline">¶</a></h3>
+<p>Create an empty jail in iocage to act as the target for the migration.
+The release and networking information will be updated with information
+from ezjail.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">iocage</span> <span class="n">create</span> <span class="o">-</span><span class="n">e</span> <span class="o">-</span><span class="n">n</span> <span class="n">NewJail</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="copy-old-data">
+<h3>Copy Old Data<a class="headerlink" href="#copy-old-data" title="Permalink to this headline">¶</a></h3>
+<p>Before data can be copied, another symlink must be created in the root
+directory. Ezjail relies on symlinks to utlilize the basejail system,
+however when looking in an existing jail, it’s symlinked to the root.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">%</span> <span class="n">ls</span> <span class="o">-</span><span class="n">ls</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">jails</span><span class="o">/</span><span class="n">OldJail</span><span class="o">/</span><span class="nb">bin</span>
+<span class="mi">1</span> <span class="n">lrwxr</span><span class="o">-</span><span class="n">xr</span><span class="o">-</span><span class="n">x</span>  <span class="mi">1</span> <span class="n">root</span>  <span class="n">wheel</span>  <span class="mi">13</span> <span class="n">Feb</span> <span class="mi">22</span>  <span class="mi">2017</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">jails</span><span class="o">/</span><span class="n">OldJail</span><span class="o">/</span><span class="nb">bin</span><span class="o">@</span> <span class="o">-&gt;</span> <span class="o">/</span><span class="n">basejail</span><span class="o">/</span><span class="nb">bin</span>
+</pre></div>
+</div>
+<p>This would work fine from within a running jail, but on the host
+filesystem this link doesn’t currently exist. Because of this, create a
+symlink from the basejail to the root filesystem of the jail host.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ln</span> <span class="o">-</span><span class="n">s</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">jails</span><span class="o">/</span><span class="n">basejail</span> <span class="o">/</span><span class="n">basejail</span>
+</pre></div>
+</div>
+<p>Now that the link exists, copy the data from the ezjail jail directory
+to the iocage jail directory.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rsync</span> <span class="o">-</span><span class="n">a</span> <span class="o">--</span><span class="n">copy</span><span class="o">-</span><span class="n">links</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">jails</span><span class="o">/</span><span class="n">OldJail</span><span class="o">/</span> <span class="o">/</span><span class="n">iocage</span><span class="o">/</span><span class="n">jails</span><span class="o">/</span><span class="n">NewJail</span><span class="o">/</span><span class="n">root</span><span class="o">/</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="populate-iocage-config-json">
+<h3>Populate iocage config.json<a class="headerlink" href="#populate-iocage-config-json" title="Permalink to this headline">¶</a></h3>
+<p>There are 2 main parts from ezjail that need to be copied into the
+iocage config:</p>
+<ul class="simple">
+<li><p>release information</p></li>
+<li><p>IP address</p></li>
+</ul>
+<div class="section" id="release">
+<h4>Release<a class="headerlink" href="#release" title="Permalink to this headline">¶</a></h4>
+<p>The release info can be found in the old basejail files via the
+<code class="docutils literal notranslate"><span class="pre">freebsd-update</span></code> executable.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ grep USERLAND_VERSION= /usr/jails/basejail/bin/freebsd-version
+USERLAND_VERSION=&quot;11.1-RELEASE-p6&quot;
+</pre></div>
+</div>
+<p>This value goes into the “release” line of <code class="docutils literal notranslate"><span class="pre">config.json</span></code></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;release&quot;</span><span class="p">:</span> <span class="s2">&quot;11.1-RELEASE-p6&quot;</span><span class="p">,</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="ip-address">
+<h4>IP Address<a class="headerlink" href="#ip-address" title="Permalink to this headline">¶</a></h4>
+<p>The IP addresses used in an ezjail jail are found in
+<code class="docutils literal notranslate"><span class="pre">/usr/local/etc/ezjail/OldJail</span></code></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ grep ip= /usr/local/etc/ezjail/OldJail
+export jail_OldJail_ip=&quot;em0|192.168.1.10&quot;
+</pre></div>
+</div>
+<p>This goes into the “ip4_addr” line of <code class="docutils literal notranslate"><span class="pre">config.json</span></code></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;ip4_addr&quot;</span><span class="p">:</span> <span class="s2">&quot;em0|192.168.1.10/24&quot;</span><span class="p">,</span>
+</pre></div>
+</div>
+<p>Remember to append the subnet mask when adding network info to the
+iocage config.</p>
+</div>
+<div class="section" id="start-the-new-jail">
+<h4>Start the New Jail<a class="headerlink" href="#start-the-new-jail" title="Permalink to this headline">¶</a></h4>
+<p>Make sure the old jail is shut down so there won’t be any IP conflicts.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ezjail</span><span class="o">-</span><span class="n">admin</span> <span class="n">stop</span> <span class="n">OldJail</span>
+</pre></div>
+</div>
+<p>Start the new jail with iocage</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">iocage</span> <span class="n">start</span> <span class="n">NewJail</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="optional-update-fstab">
+<h4>(Optional) Update fstab<a class="headerlink" href="#optional-update-fstab" title="Permalink to this headline">¶</a></h4>
+<p>If there are other mounts in use in ezjail, these can be easily copied
+into iocage as well.</p>
+<p>Ezjail fstab entries are located at <code class="docutils literal notranslate"><span class="pre">/etc/fstab.OldJail</span></code> on the host.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cat /etc/fstab.OldJail
+/usr/jails/basejail /usr/jails/OldJail/basejail   nullfs   ro   0   0
+/path/on/host /usr/jails/OldJail/path/in/jail   nullfs   rw   0   0
+</pre></div>
+</div>
+<p>The basejail line isn’t needed in iocage if using the default jail type,
+but the remaining entries need to be updated.</p>
+<p>Edit the fstab for the iocage jail and change the paths of the
+mountpoint.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cat /iocage/jails/NewJail/fstab
+/path/on/host /iocage/jails/NewJail/root/path/in/jail   nullfs   rw   0   0
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          <h3>Table of Contents</h3>
+          <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Install iocage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#using-binary-packages">Using binary packages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#using-github">Using github</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#using-pkg-8">Using pkg(8)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#building-ports">Building Ports</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#upgrading-from-iocage-legacy">Upgrading from <code class="samp docutils literal notranslate"><span class="pre">iocage_legacy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#migrating-from-ezjail-to-iocage">Migrating from Ezjail to Iocage</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="basic-use.html">Basic Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plugins.html">Plugins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="networking.html">Networking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="jailtypes.html">Jail Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best-practices.html">Best Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advanced-use.html">Advanced Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="templates.html">Using Templates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debian.html">Create a Debian Squeeze Jail (GNU/kFreeBSD)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="known-issues.html">Known Issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="index.html" title="iocage - A FreeBSD Jail Manager"
+              >previous</a> |
+            <a href="basic-use.html" title="Basic Usage"
+              >next</a> |
+            <a href="py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014-2019, iocage.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

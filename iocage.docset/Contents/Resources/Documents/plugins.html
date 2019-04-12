@@ -1,0 +1,163 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Plugins &#8212; iocage 1.2 RC documentation</title>
+    <link rel="stylesheet" href="_static/agogo.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Networking" href="networking.html" />
+    <link rel="prev" title="Basic Usage" href="basic-use.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="index.html">iocage 1.2 RC documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="basic-use.html" title="Basic Usage"
+             accesskey="P">previous</a> |
+          <a href="networking.html" title="Networking"
+             accesskey="N">next</a> |
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="plugins">
+<span id="index-0"></span><span id="id1"></span><h1>Plugins<a class="headerlink" href="#plugins" title="Permalink to this headline">¶</a></h1>
+<p>iocage plugins are a simple and very fast method to get application
+containers installed and configured. At its core, a plugin is a jail
+specifically running one program. Popular programs can be installed
+repeatedly with one line. Additionally, plugins are easily extended by
+users, offering a high level of customizability and functionality.</p>
+<p>In structure, a plugin consists of <code class="file docutils literal notranslate"><span class="pre">.json</span></code> manifest and
+<code class="file docutils literal notranslate"><span class="pre">.png</span></code> icon files.</p>
+<p><strong>See what’s available</strong></p>
+<p>To see a list of all currently available plugins, open a command line
+and type <strong class="command">iocage list -PR</strong> or
+<strong class="command">iocage list --plugins --remote</strong>. The full
+<a class="reference external" href="https://raw.githubusercontent.com/freenas/iocage-ix-plugins/master/INDEX">iocage plugin list</a>
+is also available on GitHub.</p>
+<p>Check which plugins are installed on the system with
+<strong class="command">iocage list --plugins</strong> or <strong class="command">iocage list -P</strong>.</p>
+<p><strong>Getting started with plugins</strong></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>iocage needs to be <a class="reference external" href="Activateiocage">activated</a> before
+plugins can be installed or modified!</p>
+</div>
+<p>To get started, open a command line and type
+<strong class="command">iocage fetch --plugins ip4_addr=&quot;IF|IP&quot;</strong>. This initial
+<strong class="command">fetch</strong> also supports <em>dhcp</em> in the same manner as
+<strong class="command">iocage create</strong>. The IP listed for the plugin needs to
+be a valid IP not already in use. Use the <em>- -name</em> flag to easily fetch a
+specific plugin:</p>
+<p><code class="samp docutils literal notranslate"><span class="pre">$</span> <span class="pre">iocage</span> <span class="pre">fetch</span> <span class="pre">--plugins</span> <span class="pre">--name</span> <span class="pre">plexmediaserver</span> <span class="pre">ip4_addr=&quot;igb0|192.168.0.91&quot;</span></code></p>
+<p>If available, plugins can also be fetched locally with
+<strong class="command">iocage fetch -P the/path/to/plugin.json ip4_addr=&quot;re0|192.168.0.100&quot;</strong></p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Using <strong class="command">iocage fetch</strong> locally is very useful when
+testing an in-development plugin.</p>
+</div>
+<p>After fetching a plugin, view of all its properties with
+<strong class="command">iocage get -a NAME|UUID | less</strong>. Individual properties are
+found with <strong class="command">iocage get PROPERTY</strong>:</p>
+<p><code class="samp docutils literal notranslate"><span class="pre">$</span> <span class="pre">iocage</span> <span class="pre">get</span> <span class="pre">type</span> <span class="pre">quasselcore</span></code></p>
+<p>Adjust the plugin properties with <strong class="command">iocage set</strong>:</p>
+<p><code class="samp docutils literal notranslate"><span class="pre">$</span> <span class="pre">iocage</span> <span class="pre">set</span> <span class="pre">PROPERTY</span> <span class="pre">quasselcore</span></code></p>
+<p><strong class="command">iocage set</strong> is used to configure
+that plugin. In this example, a complete Quasselcore plugin is
+installed to a FreeNAS system, then the note of the plugin is changed:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>[root@freenas ~]# iocage fetch --plugins --name quasselcore ip4_addr=&quot;em0|192.168.1.50&quot;
+[root@freenas ~]# iocage set notes=&quot;Hello world&quot; quasselcore
+[root@freenas ~]# iocage get notes quasselcore
+Hello world
+</pre></div>
+</div>
+<p><strong>Upgrading and updating plugins</strong></p>
+<p>The process for upgrading and updating plugins is exactly the same as
+normal jails. See <a class="reference internal" href="advanced-use.html#updating-jails"><span class="std std-ref">Updating Jails</span></a> or <a class="reference internal" href="advanced-use.html#upgrading-jails"><span class="std std-ref">Upgrading Jails</span></a> .</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          <h3>Table of Contents</h3>
+          <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">Install iocage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="basic-use.html">Basic Usage</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Plugins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="networking.html">Networking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="jailtypes.html">Jail Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best-practices.html">Best Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advanced-use.html">Advanced Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="templates.html">Using Templates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debian.html">Create a Debian Squeeze Jail (GNU/kFreeBSD)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="known-issues.html">Known Issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="basic-use.html" title="Basic Usage"
+              >previous</a> |
+            <a href="networking.html" title="Networking"
+              >next</a> |
+            <a href="py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014-2019, iocage.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>
