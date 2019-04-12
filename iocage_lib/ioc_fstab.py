@@ -182,6 +182,8 @@ class IOCFstab(object):
                         dst = str(dest).split('/iocage')[1]
                         dst = pathlib.Path(f'{self.iocroot}/{dst}')
 
+                    # If the correct iocroot + dir still does not exist, let's
+                    # prompt them about their original desination
                     if not dst.is_dir():
                         verrors.append(
                             f'Destination: {destination} does not include '
@@ -207,6 +209,8 @@ class IOCFstab(object):
                         src = str(source).split('/iocage')[1]
                         src = pathlib.Path(f'{self.iocroot}/{src}')
 
+                    # If the correct iocroot + dir still does not exist, let's
+                    # prompt them about their original source
                     if not src.is_dir():
                         verrors.append(f'Source: {source} does not exist!')
                     else:
