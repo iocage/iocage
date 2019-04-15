@@ -174,6 +174,17 @@ class IOCStart(object):
         self.defaultrouter = self.conf['defaultrouter']
         self.defaultrouter6 = self.conf['defaultrouter6']
 
+        fstab_list = []
+        with open(f'{self.iocroot}/jails/{self.uuid}/fstab', 'r') as _fstab:
+            for line in _fstab.readlines():
+                line = line.rsplit("#")[0].rstrip()
+                fstab_list.append(line)
+
+        iocage_lib.ioc_fstab.IOCFstab(
+            self.uuid,
+            'list'
+        ).__validate_fstab__(fstab_list, 'all')
+
         if wants_dhcp:
             if not bpf:
                 prop_missing_msgs.append(
