@@ -177,23 +177,20 @@ class IOCageCLI(click.MultiCommand):
         return rv
 
     def get_command(self, ctx, name):
+        mod = __import__(f"iocage_cli.{name}", None, None, ["cli"])
+        mod_name = mod.__name__.replace("iocage_cli.", "")
+
         try:
-            mod = __import__(f"iocage_cli.{name}", None, None, ["cli"])
-            mod_name = mod.__name__.replace("iocage_cli.", "")
+            if mod.__rootcmd__ and sys.argv[-1] not in ("help", "--help"):
+                if len(sys.argv) != 1:
+                    if os.geteuid() != 0:
+                        sys.exit("You need to have root privileges to"
+                                 f" run {mod_name}")
+        except AttributeError:
+            # It's not a root required command.
+            pass
 
-            try:
-                if mod.__rootcmd__ and sys.argv[-1] not in ("help", "--help"):
-                    if len(sys.argv) != 1:
-                        if os.geteuid() != 0:
-                            sys.exit("You need to have root privileges to"
-                                     f" run {mod_name}")
-            except AttributeError:
-                # It's not a root required command.
-                pass
-
-            return mod.cli
-        except (ImportError, AttributeError):
-            return
+        return mod.cli
 
 
 @click.command(cls=IOCageCLI)
