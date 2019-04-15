@@ -42,9 +42,10 @@ class IOCFstab(object):
 
     """Will add or remove an entry, and mount or umount the filesystem."""
 
-    def __init__(self, uuid, action, source, destination, fstype, fsoptions,
-                 fsdump, fspass, index=None, silent=False, callback=None,
-                 header=False, _fstab_list=None):
+    def __init__(self, uuid, action, source='', destination='', fstype='',
+                 fsoptions='', fsdump='', fspass='', index=None, silent=False,
+                 callback=None, header=False, _fstab_list=None
+                 ):
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")
@@ -136,6 +137,8 @@ class IOCFstab(object):
         jail_root = f'{self.iocroot}/jails/{self.uuid}/root'
 
         for index, line in enumerate(fstab):
+            mnt = line.split(' # ')[0]
+
             try:
                 source, destination, fstype, options, \
                     dump, _pass = line.split('\t')[0:6]
@@ -175,15 +178,54 @@ class IOCFstab(object):
                     break
             else:
                 if jail_root not in destination:
-                    verrors.append(
-                        f'Destination: {destination} does not include '
-                        f'jail\'s mountpoint! ({jail_root})'
-                    )
-                    missing_root = True
+                    if pathlib.Path('/mnt/iocage') in dest.parents or \
+                            pathlib.Path('/iocage') in dest.parents:
+                        dst = str(dest).split('/iocage')[1]
+                        dst = pathlib.Path(f'{self.iocroot}/{dst}')
+
+                        if dst.is_dir():
+                            mnt = mnt.replace(destination, str(dst))
+                            destination = dst
+
+                            iocage_lib.ioc_common.logit({
+                                "level": "INFO",
+                                "message": f'Invalid destination: {dest}'
+                                           f' replaced with {dst}'
+                            },
+                                _callback=self.callback,
+                                silent=self.silent)
+                    else:
+                        # If the old mount points aren't in the parents,
+                        # time to prompt
+                        verrors.append(
+                            f'Destination: {destination} does not include '
+                            f'jail\'s mountpoint! ({jail_root})'
+                        )
+                        missing_root = True
 
             if not source.is_dir():
                 if fstype == 'nullfs':
-                    verrors.append(f'Source: {source} does not exist!')
+                    if pathlib.Path('/mnt/iocage') in source.parents or \
+                            pathlib.Path('/iocage') in source.parents:
+                        src = str(source).split('/iocage')[1]
+                        src = pathlib.Path(f'{self.iocroot}/{src}')
+
+                        if src.is_dir():
+                            mnt = mnt.replace(str(source), str(src))
+
+                            iocage_lib.ioc_common.logit({
+                                "level": "INFO",
+                                "message": f'Invalid source: {source}'
+                                           f' replaced with {src}'
+                            },
+                                _callback=self.callback,
+                                silent=self.silent)
+                            source = src
+                    else:
+                        # If the old mount points aren't in the parents,
+                        # time to prompt
+                        verrors.append(f'Source: {source} does not exist!')
+
             if not source.is_absolute():
                 if fstype == 'nullfs':
                     verrors.append(
@@ -213,6 +255,20 @@ class IOCFstab(object):
                     f'Pass: {_pass} must be one digit long!'
                 )
             dests[str(source)] = destination
+
+            if mnt != line.split(' # ')[0]:
+                # We want to set these back
+                _mount = self.mount
+                _index = self.index
+
+                self.mount = mnt
+                self.index = index
+                # The file may have changed
+                self.fstab = list(self.__read_fstab__())
+                self.__fstab_edit__(_string=True)
+
+                self.mount = _mount
+                self.index = _index
 
         if verrors:
             iocage_lib.ioc_common.logit({
@@ -354,7 +410,7 @@ class IOCFstab(object):
                             _callback=self.callback,
                             silent=self.silent)
                     else:
-                        fstab.write(line)
+                        fstab.write(f'{line}\n')
 
             if not matched:
                 iocage_lib.ioc_common.logit({
