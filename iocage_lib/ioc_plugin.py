@@ -94,7 +94,7 @@ class IOCPlugin(object):
                 plugins = json.load(plugins)
         except FileNotFoundError:
             # Fresh dataset, time to fetch fresh INDEX
-            plugins = self.fetch_plugin_index(props)
+            plugins = self.fetch_plugin_index(props, index_only=True)
 
         try:
             with open(_json, "r") as j:
@@ -679,7 +679,8 @@ fingerprint: {fingerprint}
                            list_long=False,
                            accept_license=False,
                            icon=False,
-                           official=False):
+                           official=False,
+                           index_only=False):
 
         if self.server == "download.freebsd.org":
             git_server = "https://github.com/freenas/iocage-ix-plugins.git"
@@ -704,12 +705,12 @@ fingerprint: {fingerprint}
         with open(f"{self.iocroot}/.plugin_index/INDEX", "r") as plugins:
             plugins = json.load(plugins)
 
-        if self.plugin is not None:
+        if index_only:
             return plugins
 
         _plugins = self.__fetch_sort_plugin__(plugins, official=official)
 
-        if not _list:
+        if self.plugin is None and not _list:
             for p in _plugins:
                 iocage_lib.ioc_common.logit(
                     {
@@ -762,9 +763,15 @@ fingerprint: {fingerprint}
 
                 return table.draw()
 
-        self.plugin = input("\nType the number of the desired"
-                            " plugin\nPress [Enter] or type EXIT to"
-                            " quit: ")
+        if self.plugin is None:
+            self.plugin = input("\nType the number of the desired"
+                                " plugin\nPress [Enter] or type EXIT to"
+                                " quit: ")
+
+        self.plugin = self.__fetch_validate_plugin__(self.plugin.lower(),
+                                                     _plugins)
+        self.fetch_plugin(f"{self.iocroot}/.plugin_index/{self.plugin}.json",
+                          props, 0, accept_license)
 
     def __fetch_validate_plugin__(self, plugin, plugins):
         """
