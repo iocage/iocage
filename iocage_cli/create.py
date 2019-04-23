@@ -52,45 +52,73 @@ def validate_count(ctx, param, value):
         return int(value)
 
 
-@click.command(name="create", help="Create a jail.")
-@click.option("--count", "-c", callback=validate_count, default="1",
-              help="Designate a number of jails to create. Jails are"
-                   " numbered sequentially.")
-@click.option("--thickconfig", "-C", default=False, is_flag=True,
-              help="Do not use inheritable configuration with jails")
-@click.option("--release", "-r", required=False,
-              help="Specify the RELEASE to use for the new jail.")
-@click.option("--template", "-t", required=False,
-              help="Specify the template to use for the new jail instead of"
-                   " a RELEASE.")
-@click.option("--pkglist", "-p", default=None,
-              help="Specify a JSON file which manages the installation of"
-                   " each package in the newly created jail.")
-@click.option("--name", "-n", default=None,
-              help="Provide a specific name instead of an UUID for this jail.")
-@click.option("--uuid", "-u", "_uuid", default=None,
-              help="Provide a specific UUID for this jail.")
-@click.option("--basejail", "-b", is_flag=True, default=False,
-              help="Set the new jail type to a basejail. Basejails are"
-                   " thick jails (unless specified) that mount the specified"
-                   " RELEASE directories as nullfs mounts over the jail's"
-                   " directories.")
-@click.option("--clone_basejail", "-B", is_flag=True, default=False,
-              help="Set the new jail type to a clonetype basejail. Basejails"
-                   " mount the specified RELEASE directories as nullfs mounts "
-                   " over the jail's directories.")
-@click.option("--thickjail", "-T", is_flag=True, default=False,
-              help="Set the new jail type to a thickjail. Thickjails"
-                   " are copied (not cloned) from specified RELEASE.")
-@click.option("--empty", "-e", is_flag=True, default=False,
-              help="Create an empty jail used for unsupported or custom"
-                   " jails.")
-@click.option("--short", "-s", is_flag=True, default=False,
-              help="Use a short UUID of 8 characters instead of the default"
-                   " 36.")
+@click.command(
+    name="create", help="Create a jail."
+)
+@click.option(
+    "--count", "-c", callback=validate_count, default="1",
+    help="Designate a number of jails to create. Jails are "
+         "numbered sequentially."
+)
+@click.option(
+    "--thickconfig", "-C", default=False, is_flag=True,
+    help="Do not use inheritable configuration with jails"
+)
+@click.option(
+    "--release", "-r", required=False,
+    help="Specify the RELEASE to use for the new jail."
+)
+@click.option(
+    "--template", "-t", required=False,
+    help="Specify the template to use for the new jail instead of a RELEASE."
+)
+@click.option(
+    "--pkglist", "-p", default=None,
+    help="Specify a JSON file which manages the installation of "
+         "each package in the newly created jail."
+)
+@click.option(
+    "--name", "-n", default=None,
+    help="Provide a specific name instead of an UUID for this jail."
+)
+@click.option(
+    "--uuid", "-u", "_uuid", default=None,
+    help="Provide a specific UUID for this jail."
+)
+@click.option(
+    '--proxy', '-S', default=None,
+    help='Provide proxy to use for creating jail'
+)
+@click.option(
+    "--basejail", "-b", is_flag=True, default=False,
+    help="Set the new jail type to a basejail. Basejails are "
+         "thick jails (unless specified) that mount the specified "
+         "RELEASE directories as nullfs mounts over the jail's "
+         "directories."
+)
+@click.option(
+    "--clone_basejail", "-B", is_flag=True, default=False,
+    help="Set the new jail type to a clonetype basejail. Basejails "
+         "mount the specified RELEASE directories as nullfs mounts "
+         "over the jail's directories.")
+@click.option(
+    "--thickjail", "-T", is_flag=True, default=False,
+    help="Set the new jail type to a thickjail. Thickjails "
+         "are copied (not cloned) from specified RELEASE."
+)
+@click.option(
+    "--empty", "-e", is_flag=True, default=False,
+    help="Create an empty jail used for unsupported or custom jails."
+)
+@click.option(
+    "--short", "-s", is_flag=True, default=False,
+    help="Use a short UUID of 8 characters instead of the default 36."
+)
 @click.argument("props", nargs=-1)
-def cli(release, template, count, props, pkglist, basejail, clone_basejail,
-        thickjail, empty, short, name, _uuid, thickconfig):
+def cli(
+    release, template, count, props, pkglist, basejail, clone_basejail,
+    thickjail, empty, short, name, _uuid, thickconfig, proxy
+):
 
     if _uuid:
         try:
@@ -106,6 +134,12 @@ def cli(release, template, count, props, pkglist, basejail, clone_basejail,
                     "level": "EXCEPTION",
                     "message": "Flag --count cannot be used with --uuid"
                 })
+
+    if proxy:
+        os.environ.update({
+            'http_proxy': proxy,
+            'https_proxy': proxy
+        })
 
     if name:
         # noinspection Annotator

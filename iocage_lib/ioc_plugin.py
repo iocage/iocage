@@ -564,7 +564,9 @@ fingerprint: {fingerprint}
 
             os.environ["IOCAGE_PLUGIN_IP"] = ip
 
-        plugin_env = {"IOCAGE_PLUGIN_IP": ip.rsplit(',')[0]}
+        plugin_env = {
+            'IOCAGE_PLUGIN_IP': ip.rsplit(',')[0], **os.environ.copy()
+        }
 
         # We need to pipe from tar to the root of the jail.
 
@@ -1324,22 +1326,27 @@ fingerprint: {fingerprint}
         This is to replicate the functionality of cloning/pulling a repo
         """
         ref = self.branch
-        os.makedirs(destination, exist_ok=True)
 
         try:
             # "Pull"
-            repo = git.Repo(destination)
-            origin = repo.remotes.origin
-        except git.exc.InvalidGitRepositoryError:
+            # TODO: Pull is going to fail because of the detached head state
+            # Discuss with Brandon the best possible scenario to resolve this
+            # Probably a git fetch + git checkout --detached might be a good
+            # way to resolve this
+            su.check_call(
+                ['git', '-C', destination, 'pull'],
+                stdout=su.PIPE, stderr=su.PIPE, env=os.environ.copy()
+            )
+        except su.CalledProcessError:
             # Clone
-            repo = git.Repo.init(destination)
-            origin = repo.create_remote('origin', repo_url)
-            origin.fetch()
+            repo = git.Repo.clone_from(
+                repo_url, destination, env=os.environ.copy()
+            )
+            origin = repo.remotes.origin
+        else:
+            return
 
-            repo.create_head('master', origin.refs.master)
-            repo.heads.master.set_tracking_branch(origin.refs.master)
-            repo.heads.master.checkout()
-
+        # origin will exist in case pull doesn't succeed
         if not origin.exists():
             iocage_lib.ioc_common.logit(
                 {

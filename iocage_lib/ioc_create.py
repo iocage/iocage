@@ -879,7 +879,9 @@ class IOCCreate(object):
                     _callback=self.callback)
 
         # We will have mismatched ABI errors from earlier, this is to be safe.
-        pkg_env = {"ASSUME_ALWAYS_YES": "yes"}
+        pkg_env = {
+            "ASSUME_ALWAYS_YES": "yes", **os.environ.copy()
+        }
         cmd = ("/usr/local/sbin/pkg-static", "upgrade", "-f", "-q", "-y")
         try:
             with iocage_lib.ioc_exec.IOCExec(
