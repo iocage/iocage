@@ -25,6 +25,7 @@
 import click
 import iocage_lib.ioc_common as ioc_common
 import iocage_lib.iocage as ioc
+import os
 
 __rootcmd__ = True
 
@@ -48,61 +49,114 @@ def validate_count(ctx, param, value):
 
 
 @click.command(
-    context_settings=dict(max_content_width=400, ),
+    context_settings=dict(max_content_width=400),
     name="fetch", help="Fetch a version of FreeBSD for jail usage or a"
-    " preconfigured plugin.")
-@click.option("--http", "-h", default=True,
-              help="No-op flag for backwards compat", is_flag=True)
-@click.option("--file", "-f", "_file", default=False,
-              help="Use a local file directory for root-dir instead of HTTP",
-              is_flag=True)
-@click.option("--files", "-F", multiple=True,
-              help="Specify the files to fetch from the mirror.")
-@click.option("--server", "-s", default="download.freebsd.org",
-              help="Server to fetch from.")
-@click.option("--keep_jail_on_failure", "-k", default=False, is_flag=True,
-              help="Keep jails on failure")
-@click.option("--user", "-u", default="anonymous", help="The user to use.")
+    " preconfigured plugin."
+)
 @click.option(
-    "--password", "-p", default="anonymous@", help="The password to use.")
-@click.option("--auth", "-a", default=None,
-              help="Authentication method for HTTP fetching. Valid values:"
-              " basic, digest")
-@click.option("--verify/--noverify", "-V/-NV", default=True,
-              help="Enable or disable verifying SSL cert for HTTP fetching.")
-@click.option("--release", "-r", help="The FreeBSD release to fetch.")
-@click.option("--plugin-file", "-P", is_flag=True,
-              help="This is a plugin file outside the INDEX, but exists in "
-              "that location.\nDeveloper option, most will prefer to "
-              "use --plugins.")
+    "--http", "-h", default=True, is_flag=True,
+    help="No-op flag for backwards compat"
+)
 @click.option(
-    "--plugins", help="List all available plugins for creation.", is_flag=True)
-@click.argument("props", nargs=-1)
-@click.option("--count", "-c", callback=validate_count, default="1",
-              help="Designate a number of plugin type jails to create.")
-@click.option("--root-dir", "-d",
-              help="Root directory " + "containing all the RELEASEs.")
-@click.option("--update/--noupdate", "-U/-NU", default=True,
-              help="Decide whether or not to update the fetch to the latest "
-              "patch level.")
-@click.option("--eol/--noeol", "-E/-NE", default=True,
-              help="Enable or disable EOL checking with upstream.")
-@click.option("--name", "-n",
-              help="Supply a plugin name for --plugins to fetch or use a"
-              " autocompleted filename for --plugin-file.\nAlso accepts full"
-              " path for --plugin-file.")
-@click.option("--accept/--noaccept", default=False,
-              help="Accept the plugin's LICENSE agreement.")
-@click.option("--official", "-O", is_flag=True, default=False,
-              help="Lists only official plugins.")
-@click.option("--branch", default=None,
-              help="Select a different plugin branch (for development)")
-@click.option("--thickconfig", "-C", default=False, is_flag=True,
-              help="Do not use inheritable configuration with plugins")
+    "--file", "-f", "_file", default=False, is_flag=True,
+    help="Use a local file directory for root-dir instead of HTTP"
+)
+@click.option(
+    "--files", "-F", multiple=True,
+    help="Specify the files to fetch from the mirror."
+)
+@click.option(
+    "--server", "-s", default="download.freebsd.org",
+    help="Server to fetch from."
+)
+@click.option(
+    "--keep_jail_on_failure", "-k", default=False, is_flag=True,
+    help="Keep jails on failure"
+)
+@click.option(
+    "--user", "-u", default="anonymous", help="The user to use."
+)
+@click.option(
+    "--password", "-p", default="anonymous@", help="The password to use."
+)
+@click.option(
+    "--auth", "-a", default=None,
+    help="Authentication method for HTTP fetching. Valid values:"
+         " basic, digest"
+)
+@click.option(
+    "--verify/--noverify", "-V/-NV", default=True,
+    help="Enable or disable verifying SSL cert for HTTP fetching."
+)
+@click.option(
+    "--release", "-r", help="The FreeBSD release to fetch."
+)
+@click.option(
+    "--plugin-file", "-P", is_flag=True,
+    help="This is a plugin file outside the INDEX, but exists in "
+         "that location.\nDeveloper option, most will prefer to "
+         "use --plugins."
+)
+@click.option(
+    "--plugins", help="List all available plugins for creation.", is_flag=True
+)
+@click.argument(
+    "props", nargs=-1
+)
+@click.option(
+    "--count", "-c", callback=validate_count, default="1",
+    help="Designate a number of plugin type jails to create."
+)
+@click.option(
+    "--root-dir", "-d",
+    help="Root directory " + "containing all the RELEASEs."
+)
+@click.option(
+    "--update/--noupdate", "-U/-NU", default=True,
+    help="Decide whether or not to update the fetch to the latest "
+         "patch level."
+)
+@click.option(
+    "--eol/--noeol", "-E/-NE", default=True,
+    help="Enable or disable EOL checking with upstream."
+)
+@click.option(
+    "--name", "-n",
+    help="Supply a plugin name for --plugins to fetch or use a"
+         " autocompleted filename for --plugin-file.\nAlso accepts full"
+         " path for --plugin-file."
+)
+@click.option(
+    "--accept/--noaccept", default=False,
+    help="Accept the plugin's LICENSE agreement."
+)
+@click.option(
+    "--official", "-O", is_flag=True, default=False,
+    help="Lists only official plugins."
+)
+@click.option(
+    "--branch", default=None,
+    help="Select a different plugin branch (for development)"
+)
+@click.option(
+    "--thickconfig", "-C", default=False, is_flag=True,
+    help="Do not use inheritable configuration with plugins"
+)
+@click.option(
+    '--proxy', '-S', default=None,
+    help='Provide proxy to use for creating jail'
+)
 def cli(**kwargs):
     """CLI command that calls fetch_release()"""
     release = kwargs.get("release", None)
     _file = kwargs.get("_file", False)
+
+    proxy = kwargs.pop('proxy')
+    if proxy:
+        os.environ.update({
+            'http_proxy': proxy,
+            'https_proxy': proxy
+        })
 
     if kwargs['plugin_file'] and kwargs['name'] is None:
         ioc_common.logit({

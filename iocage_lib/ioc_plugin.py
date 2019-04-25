@@ -564,7 +564,13 @@ fingerprint: {fingerprint}
 
             os.environ["IOCAGE_PLUGIN_IP"] = ip
 
-        plugin_env = {"IOCAGE_PLUGIN_IP": ip.rsplit(',')[0]}
+        plugin_env = {
+            **{
+                k: os.environ.get(k)
+                for k in ['http_proxy', 'https_proxy'] if os.environ.get(k)
+            },
+            'IOCAGE_PLUGIN_IP': ip.rsplit(',')[0]
+        }
 
         # We need to pipe from tar to the root of the jail.
 
@@ -1331,21 +1337,40 @@ fingerprint: {fingerprint}
         This is to replicate the functionality of cloning/pulling a repo
         """
         ref = self.branch
-        os.makedirs(destination, exist_ok=True)
 
         try:
             # "Pull"
             repo = git.Repo(destination)
             origin = repo.remotes.origin
-        except git.exc.InvalidGitRepositoryError:
+            ref = 'master' if f'origin/{ref}' not in repo.refs else ref
+            for command in [
+                ['checkout', ref],
+                ['pull']
+            ]:
+                iocage_lib.ioc_exec.SilentExec(
+                    ['git', '-C', destination] + command,
+                    None, unjailed=True, decode=True,
+                    su_env={
+                        k: os.environ.get(k)
+                        for k in ['http_proxy', 'https_proxy'] if
+                        os.environ.get(k)
+                    }
+                )
+        except (
+            iocage_lib.ioc_exceptions.CommandFailed,
+            git.exc.InvalidGitRepositoryError,
+            git.exc.NoSuchPathError
+        ):
             # Clone
-            repo = git.Repo.init(destination)
-            origin = repo.create_remote('origin', repo_url)
-            origin.fetch()
-
-            repo.create_head('master', origin.refs.master)
-            repo.heads.master.set_tracking_branch(origin.refs.master)
-            repo.heads.master.checkout()
+            try:
+                os.rmdir(destination)
+            except FileNotFoundError:
+                pass
+            finally:
+                repo = git.Repo.clone_from(
+                    repo_url, destination, env=os.environ.copy()
+                )
+                origin = repo.remotes.origin
 
         if not origin.exists():
             iocage_lib.ioc_common.logit(
@@ -1372,5 +1397,4 @@ fingerprint: {fingerprint}
                     _callback=self.callback)
 
         # Time to make this reality
-        repo.head.reference = f'origin/{ref}'
-        repo.head.reset(index=True, working_tree=True)
+        repo.git.checkout(ref)
