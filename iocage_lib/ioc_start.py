@@ -144,6 +144,17 @@ class IOCStart(object):
         prop_missing = False
         prop_missing_msgs = []
 
+        fstab_list = []
+        with open(f'{self.iocroot}/jails/{self.uuid}/fstab', 'r') as _fstab:
+            for line in _fstab.readlines():
+                line = line.rsplit("#")[0].rstrip()
+                fstab_list.append(line)
+
+        iocage_lib.ioc_fstab.IOCFstab(
+            self.uuid,
+            'list'
+        ).__validate_fstab__(fstab_list, 'all')
+        
         if dhcp == "on":
             if bpf != "yes":
                 prop_missing_msgs.append(
