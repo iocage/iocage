@@ -77,7 +77,7 @@ class IOCFstab(object):
         if action != 'list':
             self.fstab = list(self.__read_fstab__())
 
-            if action != 'edit':
+            if action == 'add':
                 self.dests = self.__validate_fstab__(self.fstab, 'all')
 
             self.__fstab_parse__()
