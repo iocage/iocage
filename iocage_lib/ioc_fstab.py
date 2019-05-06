@@ -77,7 +77,7 @@ class IOCFstab(object):
         if action != 'list':
             self.fstab = list(self.__read_fstab__())
 
-            if action == 'add':
+            if action != 'edit':
                 self.dests = self.__validate_fstab__(self.fstab, 'all')
 
             self.__fstab_parse__()
@@ -270,7 +270,7 @@ class IOCFstab(object):
                 self.mount = _mount
                 self.index = _index
 
-        if verrors:
+        if verrors and self.action == 'add':
             iocage_lib.ioc_common.logit({
                 'level': 'EXCEPTION',
                 'message': verrors
