@@ -270,7 +270,7 @@ class IOCFstab(object):
                 self.mount = _mount
                 self.index = _index
 
-        if verrors:
+        if verrors and self.action == 'add':
             iocage_lib.ioc_common.logit({
                 'level': 'EXCEPTION',
                 'message': verrors
