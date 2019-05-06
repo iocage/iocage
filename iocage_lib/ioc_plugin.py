@@ -53,7 +53,7 @@ class IOCPlugin(object):
     includes creation, updating and upgrading.
     """
 
-    def __init__(self, release=None, plugin=None, branch=None,
+    def __init__(self, release=None, jail=None, plugin=None, branch=None,
                  keep_jail_on_failure=False, callback=None, silent=False,
                  **kwargs):
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
@@ -62,6 +62,7 @@ class IOCPlugin(object):
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.release = release
         self.plugin = plugin
+        self.jail = jail
         self.http = kwargs.pop("http", True)
         self.server = kwargs.pop("server", "download.freebsd.org")
         self.hardened = kwargs.pop("hardened", False)
@@ -83,11 +84,10 @@ class IOCPlugin(object):
             # Backwards compat
             self.branch = 'master'
 
-    def fetch_plugin(self, _json, props, num, accept_license):
+    def fetch_plugin(self, props, num, accept_license):
         """Helper to fetch plugins"""
-
-        _json = f"{self.iocroot}/.plugin_index/{_json}.json" if not \
-            _json.endswith(".json") else _json
+        _json = f"{self.iocroot}/.plugin_index/{self.plugin}.json" if not \
+            self.plugin.endswith(".json") else self.plugin
 
         try:
             with open(f"{self.iocroot}/.plugin_index/INDEX", "r") as plugins:
@@ -122,14 +122,13 @@ class IOCPlugin(object):
         self.release = conf['release']
         self.__fetch_plugin_inform__(conf, num, plugins, accept_license)
         props, pkg = self.__fetch_plugin_props__(conf, props, num)
-        jail_name = conf["name"].lower()
-        location = f"{self.iocroot}/jails/{jail_name}"
+        location = f"{self.iocroot}/jails/{self.jail}"
 
         try:
             devfs = conf.get("devfs_ruleset", None)
 
             if devfs is not None:
-                plugin_devfs = devfs[f'plugin_{jail_name}']
+                plugin_devfs = devfs[f'plugin_{self.jail}']
                 plugin_devfs_paths = plugin_devfs['paths']
 
                 for prop in props:
@@ -149,18 +148,18 @@ class IOCPlugin(object):
                     paths=plugin_devfs_paths,
                     includes=plugin_devfs_includes
                 )
-            jail_name, jaildir, _conf, repo_dir = self.__fetch_plugin_create__(
-                props, jail_name)
-            location = f"{self.iocroot}/jails/{jail_name}"
-            self.__fetch_plugin_install_packages__(jail_name, jaildir, conf,
-                                                   pkg, props, repo_dir)
-            self.__fetch_plugin_post_install__(conf, _conf, jaildir, jail_name)
-        except Exception as e:
+            jaildir, _conf, repo_dir = self.__fetch_plugin_create__(props)
+            self.__fetch_plugin_install_packages__(
+                jaildir, conf, pkg, props, repo_dir
+            )
+            self.__fetch_plugin_post_install__(conf, _conf, jaildir)
+        except BaseException as e:
+            self.keep_jail_on_failure = False
             if not self.keep_jail_on_failure:
-                msg = f'{jail_name}\'s post_install.sh had a failure\n' \
+                msg = f'{self.jail} had a failure\n' \
                       f'Exception: {e.__class__.__name__} ' \
                       f'Message: {str(e)}\n' \
-                      'Partial plugin destroyed'
+                      f'Partial plugin destroyed'
                 iocage_lib.ioc_destroy.IOCDestroy().destroy_jail(location)
                 iocage_lib.ioc_common.logit({
                     'level': 'EXCEPTION',
@@ -344,23 +343,23 @@ class IOCPlugin(object):
 
         return create_props, pkg_repos
 
-    def __fetch_plugin_create__(self, create_props, uuid):
+    def __fetch_plugin_create__(self, create_props):
         """Creates the plugin with the provided properties"""
-        uuid = iocage_lib.ioc_create.IOCCreate(
+        iocage_lib.ioc_create.IOCCreate(
             self.release,
             create_props,
             0,
             silent=True,
             basejail=True,
-            uuid=uuid,
+            uuid=self.jail,
             plugin=True,
             thickconfig=self.thickconfig,
             callback=self.callback
         ).create_jail()
 
-        jaildir = f"{self.iocroot}/jails/{uuid}"
+        jaildir = f"{self.iocroot}/jails/{self.jail}"
         repo_dir = f"{jaildir}/root/usr/local/etc/pkg/repos"
-        path = f"{self.pool}/iocage/jails/{uuid}"
+        path = f"{self.pool}/iocage/jails/{self.jail}"
         _conf = iocage_lib.ioc_json.IOCJson(jaildir).json_get_value('all')
 
         # We do these tests again as the user could supply a malformed IP to
@@ -385,9 +384,9 @@ class IOCPlugin(object):
                 },
                 _callback=self.callback)
 
-        return uuid, jaildir, _conf, repo_dir
+        return jaildir, _conf, repo_dir
 
-    def __fetch_plugin_install_packages__(self, uuid, jaildir, conf, pkg_repos,
+    def __fetch_plugin_install_packages__(self, jaildir, conf, pkg_repos,
                                           create_props, repo_dir):
         """Attempts to start the jail and install the packages"""
         kmods = conf.get("kmods", {})
@@ -423,7 +422,8 @@ class IOCPlugin(object):
                 pkglist=["ca_root_nss"],
                 silent=True,
                 callback=self.callback).create_install_packages(
-                    uuid, jaildir)
+                    self.jail, jaildir
+                )
 
             if err:
                 iocage_lib.ioc_common.logit(
@@ -511,7 +511,8 @@ fingerprint: {fingerprint}
             silent=True,
             plugin=True,
             callback=self.callback).create_install_packages(
-                uuid, jaildir, repo=conf["packagesite"])
+                self.jail, jaildir, repo=conf["packagesite"]
+            )
 
         if err:
             iocage_lib.ioc_common.logit(
@@ -522,9 +523,9 @@ fingerprint: {fingerprint}
                 },
                 _callback=self.callback)
 
-    def __fetch_plugin_post_install__(self, conf, _conf, jaildir, uuid):
+    def __fetch_plugin_post_install__(self, conf, _conf, jaildir):
         """Fetches the users artifact and runs the post install"""
-        iocage_lib.ioc_start.IOCStart(uuid, jaildir, silent=True)
+        iocage_lib.ioc_start.IOCStart(self.jail, jaildir, silent=True)
 
         ip4 = _conf["ip4_addr"]
         if '|' in ip4:
@@ -549,7 +550,7 @@ fingerprint: {fingerprint}
                     interface = f'{interface.replace("vnet", "epair")}b'
 
                 ip4_cmd = [
-                    'jexec', f'ioc-{uuid.replace(".", "_")}',
+                    'jexec', f'ioc-{self.jail.replace(".", "_")}',
                     'ifconfig', interface, 'inet'
                 ]
                 out = su.check_output(ip4_cmd).decode()
@@ -557,7 +558,7 @@ fingerprint: {fingerprint}
             else:
                 ip = json.loads(
                     su.run([
-                        'jls', '-j', f'ioc-{uuid.replace(".", "_")}',
+                        'jls', '-j', f'ioc-{self.jail.replace(".", "_")}',
                         '--libxo', 'json'
                     ], stdout=su.PIPE).stdout
                 )['jail-information']['jail'][0]['ipv4']
@@ -585,7 +586,9 @@ fingerprint: {fingerprint}
 
             self.__clone_repo(conf['artifact'], f'{jaildir}/plugin')
 
-            with open(f"{jaildir}/{uuid.rsplit('_', 1)[0]}.json", "w") as f:
+            with open(
+                f"{jaildir}/{self.jail.rsplit('_', 1)[0]}.json", "w"
+            ) as f:
                 f.write(json.dumps(conf, indent=4, sort_keys=True))
 
             try:
@@ -612,7 +615,7 @@ fingerprint: {fingerprint}
                 command = ["/root/post_install.sh"]
                 try:
                     with iocage_lib.ioc_exec.IOCExec(
-                        command, jaildir, uuid=uuid, plugin=True,
+                        command, jaildir, uuid=self.jail, plugin=True,
                         skip=True, callback=self.callback,
                         su_env=plugin_env
                     ) as _exec:
@@ -860,7 +863,7 @@ fingerprint: {fingerprint}
         iocage_lib.ioc_common.logit(
             {
                 "level": "INFO",
-                "message": f"Snapshotting {self.plugin}... "
+                "message": f"Snapshotting {self.jail}... "
             },
             _callback=self.callback,
             silent=self.silent)
@@ -913,7 +916,7 @@ fingerprint: {fingerprint}
             self.__update_pull_plugin_artifact__(plugin_conf)
 
             post_path = \
-                f"{self.iocroot}/jails/{self.plugin}/plugin/post_upgrade.sh"
+                f"{self.iocroot}/jails/{self.jail}/plugin/post_upgrade.sh"
 
             if os.path.exists(post_path):
                 iocage_lib.ioc_common.logit(
@@ -947,7 +950,7 @@ fingerprint: {fingerprint}
 
     def __update_pull_plugin_artifact__(self, plugin_conf):
         """Pull the latest artifact to be sure we're up to date"""
-        path = f"{self.iocroot}/jails/{self.plugin}"
+        path = f"{self.iocroot}/jails/{self.jail}"
 
         shutil.rmtree(f"{path}/plugin", ignore_errors=True)
         self.__clone_repo(plugin_conf['artifact'], f'{path}/plugin')
@@ -966,8 +969,8 @@ fingerprint: {fingerprint}
         try:
             with iocage_lib.ioc_exec.IOCExec(
                 command=['pkg', '-j', jid, 'delete', '-a', '-f', '-y'],
-                path=f'{self.iocroot}/jails/{self.plugin}',
-                uuid=self.plugin,
+                path=f'{self.iocroot}/jails/{self.jail}',
+                uuid=self.jail,
                 callback=self.callback,
                 unjailed=True
             ) as _exec:
@@ -997,7 +1000,7 @@ fingerprint: {fingerprint}
 
     def __update_pkg_install__(self, plugin_conf):
         """Installs all pkgs listed in the plugins configuration"""
-        path = f"{self.iocroot}/jails/{self.plugin}"
+        path = f"{self.iocroot}/jails/{self.jail}"
         conf, write = iocage_lib.ioc_json.IOCJson(
             location=path).json_load()
 
@@ -1021,7 +1024,7 @@ fingerprint: {fingerprint}
                 0,
                 pkglist=["ca_root_nss"],
                 silent=True, callback=self.callback
-            ).create_install_packages(self.plugin, path)
+            ).create_install_packages(self.jail, path)
 
             if err:
                 self.__rollback_jail__(name="update")
@@ -1042,9 +1045,10 @@ fingerprint: {fingerprint}
                 silent=True,
                 plugin=True,
                 callback=self.callback).create_install_packages(
-                self.plugin,
+                self.jail,
                 path,
-                repo=plugin_conf["packagesite"])
+                repo=plugin_conf["packagesite"]
+            )
 
             if err:
                 self.__rollback_jail__(name="update")
@@ -1063,7 +1067,7 @@ fingerprint: {fingerprint}
         iocage_lib.ioc_common.logit(
             {
                 "level": "INFO",
-                "message": f"Snapshotting {self.plugin}... "
+                "message": f"Snapshotting {self.jail}... "
             },
             _callback=self.callback,
             silent=self.silent)
@@ -1094,7 +1098,7 @@ fingerprint: {fingerprint}
         plugin_name = self.plugin.rsplit('_', 1)[0]
         shutil.copy(
             f'{self.iocroot}/.plugin_index/{plugin_name}.json',
-            f'{self.iocroot}/jails/{self.plugin}/{self.plugin}.json'
+            f'{self.iocroot}/jails/{self.jail}/{plugin_name}.json'
         )
 
         release_p = pathlib.Path(f"{self.iocroot}/releases/{plugin_release}")
@@ -1111,7 +1115,7 @@ fingerprint: {fingerprint}
                 silent=self.silent)
             self.__fetch_release__(plugin_release)
 
-        path = f"{self.iocroot}/jails/{self.plugin}/root"
+        path = f"{self.iocroot}/jails/{self.jail}/root"
 
         iocage_lib.ioc_common.logit(
             {
@@ -1137,7 +1141,7 @@ fingerprint: {fingerprint}
         name = f"ioc_plugin_{name}_{self.date}"
 
         ioc.IOCage(
-            jail=self.plugin,
+            jail=self.jail,
             skip_jails=True,
             silent=True
         ).snapshot(name)
@@ -1149,7 +1153,7 @@ fingerprint: {fingerprint}
         name = f"ioc_plugin_{name}_{self.date}"
 
         iocage = ioc.IOCage(
-            jail=self.plugin,
+            jail=self.jail,
             skip_jails=True,
             silent=True)
 
@@ -1221,7 +1225,7 @@ fingerprint: {fingerprint}
 
     def __run_post_upgrade__(self):
         """Run the plugins post_postupgrade.sh"""
-        path = f"{self.iocroot}/jails/{self.plugin}"
+        path = f"{self.iocroot}/jails/{self.jail}"
 
         shutil.copy(f"{path}/plugin/post_upgrade.sh",
                     f"{path}/root/root")
@@ -1239,7 +1243,7 @@ fingerprint: {fingerprint}
             with iocage_lib.ioc_exec.IOCExec(
                 command,
                 path,
-                uuid=self.plugin,
+                uuid=self.jail,
                 plugin=True,
                 skip=True,
                 callback=self.callback
@@ -1270,13 +1274,13 @@ fingerprint: {fingerprint}
     def __remove_snapshot__(self, name):
         """Removes all matching plugin snapshots"""
         conf = iocage_lib.ioc_json.IOCJson(
-            f'{self.iocroot}/jails/{self.plugin}'
+            f'{self.iocroot}/jails/{self.jail}'
         ).json_get_value('all')
         release = conf['release']
 
         names = [f'ioc_plugin_{name}_{self.date}', f'ioc_update_{release}']
         dataset = self.zfs.get_dataset(
-            f'{self.pool}/iocage/jails/{self.plugin}')
+            f'{self.pool}/iocage/jails/{self.jail}')
         dataset_snaps = dataset.snapshots_recursive
 
         for snap in dataset_snaps:
@@ -1288,23 +1292,23 @@ fingerprint: {fingerprint}
     def __stop_rc__(self):
         iocage_lib.ioc_exec.SilentExec(
             command=["/bin/sh", "/etc/rc.shutdown"],
-            path=f"{self.iocroot}/jails/{self.plugin}",
-            uuid=self.plugin,
+            path=f"{self.iocroot}/jails/{self.jail}",
+            uuid=self.jail,
             callback=self.callback
         )
 
     def __start_rc__(self):
         iocage_lib.ioc_exec.SilentExec(
             command=["/bin/sh", "/etc/rc"],
-            path=f"{self.iocroot}/jails/{self.plugin}",
-            uuid=self.plugin,
+            path=f"{self.iocroot}/jails/{self.jail}",
+            uuid=self.jail,
             callback=self.callback
         )
 
     def __check_manifest__(self, plugin_conf):
         """If the Major ABI changed, they cannot update anymore."""
         jail_conf, write = iocage_lib.ioc_json.IOCJson(
-            location=f"{self.iocroot}/jails/{self.plugin}").json_load()
+            location=f"{self.iocroot}/jails/{self.jail}").json_load()
 
         jail_rel = int(jail_conf["release"].split(".", 1)[0])
         manifest_rel = int(plugin_conf["release"].split(".", 1)[0])
