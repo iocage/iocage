@@ -779,8 +779,9 @@ fingerprint: {fingerprint}
 
         self.plugin = self.__fetch_validate_plugin__(self.plugin.lower(),
                                                      _plugins)
-        self.fetch_plugin(f"{self.iocroot}/.plugin_index/{self.plugin}.json",
-                          props, 0, accept_license)
+
+        # We now run the fetch the user requested
+        self.fetch_plugin(props, 0, accept_license)
 
     def __fetch_validate_plugin__(self, plugin, plugins):
         """
