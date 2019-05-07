@@ -118,22 +118,10 @@ class IOCCreate(object):
         rtsold_enable = 'NO'
 
         if iocage_lib.ioc_common.match_to_dir(self.iocroot, jail_uuid):
-            if not self.plugin:
-                iocage_lib.ioc_common.logit({
-                    'level': 'EXCEPTION',
-                    'message': f'Jail: {jail_uuid} already exists!'
-                })
-
-            for i in itertools.count(start=2, step=1):
-                if iocage_lib.ioc_common.match_to_dir(self.iocroot,
-                                                      f'{jail_uuid}_{i}'):
-                    continue
-
-                # They now have a uniquely named plugin
-                jail_uuid = f'{jail_uuid}_{i}'
-                location = f'{location}_{i}'
-                self.uuid = jail_uuid
-                break
+            iocage_lib.ioc_common.logit({
+                'level': 'EXCEPTION',
+                'message': f'Jail: {jail_uuid} already exists!'
+            })
 
         if self.migrate:
             config = self.config

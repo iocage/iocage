@@ -1071,23 +1071,49 @@ class IOCage(ioc_json.IOCZFS):
 
                 return
 
+            i = 1
+            original_jail_name = name
+            while True:
+                if name not in self.jails:
+                    jail_name = name
+                    break
+                elif f'{name}_{i}' not in self.jails:
+                    jail_name = f'{name}_{i}'
+                    break
+                i += 1
+
+            self.jails[jail_name] = jail_name   # Not a valid value
             if count == 1:
                 ioc_plugin.IOCPlugin(
-                    release=release, plugin=name, branch=branch,
-                    silent=self.silent,
+                    release=release, jail=jail_name, plugin=name,
+                    branch=branch, silent=self.silent,
                     keep_jail_on_failure=keep_jail_on_failure,
                     callback=self.callback, **kwargs,
                     thickconfig=thick_config,
-                ).fetch_plugin(name, props, 0, accept)
+                ).fetch_plugin(props, 0, accept)
             else:
                 for j in range(1, count + 1):
+                    # Repeating this block in case they have gaps in their
+                    # plugins
+                    # Allows plugin_1, plugin_2, and such to happen instead of
+                    # plugin_1_1, plugin_1_2
+                    while True:
+                        if jail_name not in self.jails:
+                            break
+                        elif f'{original_jail_name}_{i}' not in self.jails:
+                            jail_name = f'{original_jail_name}_{i}'
+                            break
+
+                        i += 1
+
+                    self.jails[jail_name] = jail_name   # Not a valid value
                     ioc_plugin.IOCPlugin(
-                        release=release, plugin=name, branch=branch,
-                        silent=self.silent,
+                        release=release, jail=jail_name, plugin=name,
+                        branch=branch, silent=self.silent,
                         keep_jail_on_failure=keep_jail_on_failure,
                         thickconfig=thick_config,
                         callback=self.callback, **kwargs
-                    ).fetch_plugin(name, props, j, accept)
+                    ).fetch_plugin(props, j, accept)
         else:
             if _list:
                 if remote:
