@@ -154,7 +154,6 @@ class IOCPlugin(object):
             )
             self.__fetch_plugin_post_install__(conf, _conf, jaildir)
         except BaseException as e:
-            self.keep_jail_on_failure = False
             if not self.keep_jail_on_failure:
                 msg = f'{self.jail} had a failure\n' \
                       f'Exception: {e.__class__.__name__} ' \
