@@ -897,7 +897,19 @@ class IOCage(ioc_json.IOCZFS):
             login_flags = self.get('login_flags').split()
             console_cmd = ['login', '-p'] + login_flags
 
-            ioc_exec.InteractiveExec(console_cmd, path, uuid=uuid)
+            try:
+                ioc_exec.InteractiveExec(console_cmd, path, uuid=uuid)
+            except BaseException as e:
+                ioc_common.logit(
+                    {
+                        'level': 'ERROR',
+                        'message': 'Console failed!\nThe cause could be bad '
+                                   f'permissions for {path}/root/usr/lib.'
+                    },
+                    _callback=self.callback,
+                    silent=False
+                )
+                raise e
             return
 
         if interactive:
