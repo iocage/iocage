@@ -1171,15 +1171,6 @@ class IOCage(ioc_json.IOCZFS):
                     },
                     _callback=self.callback,
                     silent=self.silent)
-        else:
-            _fstab_list = []
-            index = 0
-
-            with open(f"{self.iocroot}/jails/{uuid}/fstab", "r") as _fstab:
-                for line in _fstab.readlines():
-                    line = line.rsplit("#")[0].rstrip()
-                    _fstab_list.append([index, line])
-                    index += 1
 
         if action == "list":
             fstab = ioc_fstab.IOCFstab(
@@ -1193,7 +1184,6 @@ class IOCage(ioc_json.IOCZFS):
                 _pass,
                 index=index,
                 header=header,
-                _fstab_list=_fstab_list
             ).fstab_list()
 
             return fstab
