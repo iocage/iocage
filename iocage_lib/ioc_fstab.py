@@ -44,7 +44,7 @@ class IOCFstab(object):
 
     def __init__(self, uuid, action, source='', destination='', fstype='',
                  fsoptions='', fsdump='', fspass='', index=None, silent=False,
-                 callback=None, header=False, _fstab_list=None
+                 callback=None, header=False
                  ):
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage_lib.ioc_json.IOCJson(
@@ -69,16 +69,14 @@ class IOCFstab(object):
 
         self.mount = f'{self.src}\t{self.dest}\t{self.fstype}\t' \
             f'{self.fsoptions}\t{self.fsdump}\t{self.fspass}'
-        self._fstab_list = _fstab_list
         self.header = header
         self.silent = silent
         self.callback = callback
 
-        if action != 'list':
-            self.fstab = list(self.__read_fstab__())
+        self.fstab = list(self.__read_fstab__())
 
-            if action != 'edit':
-                self.dests = self.__validate_fstab__(self.fstab, 'all')
+        if action != 'edit' and action != 'list':
+            self.dests = self.__validate_fstab__(self.fstab, 'all')
 
             self.__fstab_parse__()
 
@@ -128,8 +126,13 @@ class IOCFstab(object):
 
     def __read_fstab__(self):
         with open(f"{self.iocroot}/jails/{self.uuid}/fstab", "r") as f:
-            for line in f:
-                yield line.rstrip()
+            for i, line in enumerate(f, ):
+                if not line.strip().startswith('#'):
+                    if self.action != 'list':
+                        yield line.rstrip()
+                    else:
+                        line = line.rsplit('#')[0].rstrip()
+                        yield ([i, line])
 
     def __validate_fstab__(self, fstab, mode='single'):
         dests = {}
@@ -137,12 +140,16 @@ class IOCFstab(object):
         jail_root = f'{self.iocroot}/jails/{self.uuid}/root'
 
         for index, line in enumerate(fstab):
+            # Comment
+            if line.strip().startswith('#'):
+                continue
             mnt = line.split(' # ')[0]
 
             try:
                 source, destination, fstype, options, \
-                    dump, _pass = line.split('\t')[0:6]
+                    dump, _pass = line.split()[0:6]
                 _pass = _pass.split()[0]  # iocage comment can interfere
+
             except ValueError:
                 verrors.append(
                     f'Malformed fstab at line {index}: {repr(line)}'
@@ -315,7 +322,7 @@ class IOCFstab(object):
                 if line.rsplit('#')[0].rstrip() == self.mount \
                         or index == self.index:
                     removed = True
-                    dest = line.split('\t')[1]
+                    dest = line.split()[1]
 
                     continue
 
@@ -441,7 +448,7 @@ class IOCFstab(object):
         flat_fstab = [
             (
                 i, self.__fstab_decode__(f)
-            ) for (i, f) in self._fstab_list
+            ) for (i, f) in self.fstab
         ]
 
         if not self.header:
