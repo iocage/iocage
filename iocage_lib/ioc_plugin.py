@@ -88,13 +88,7 @@ class IOCPlugin(object):
         """Helper to fetch plugins"""
         _json = f"{self.iocroot}/.plugin_index/{self.plugin}.json" if not \
             self.plugin.endswith(".json") else self.plugin
-
-        try:
-            with open(f"{self.iocroot}/.plugin_index/INDEX", "r") as plugins:
-                plugins = json.load(plugins)
-        except FileNotFoundError:
-            # Fresh dataset, time to fetch fresh INDEX
-            plugins = self.fetch_plugin_index(props, index_only=True)
+        plugins = self.fetch_plugin_index(props, index_only=True)
 
         try:
             with open(_json, "r") as j:
