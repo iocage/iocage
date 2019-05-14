@@ -30,10 +30,12 @@ import pytest
 
 require_root = pytest.mark.require_root
 require_zpool = pytest.mark.require_zpool
+require_image = pytest.mark.require_image
 
 
 @require_root
 @require_zpool
+@require_image
 def test_01_export_jail(invoke_cli, resource_selector, skip_test):
     jails = resource_selector.stopped_jails
     skip_test(not jails)

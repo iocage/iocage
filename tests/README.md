@@ -55,6 +55,8 @@ auth
     Authentication method for HTTP fetching. Valid values: basic, digest
 noupdate
     Decide whether or not to update the fetch to the latest patch level.
+image
+    Run the export and import operations.
 ```
 
 

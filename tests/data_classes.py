@@ -274,7 +274,7 @@ class ZFS:
     pool_mountpoint = None
 
     def __init__(self):
-        self.set_pool()
+        pass
 
     def set_pool(self):
         if not self.pool:
