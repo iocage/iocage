@@ -585,7 +585,7 @@ Original source: <a class="reference external" href="https://stackoverflow.com/a
 <p>Manipulate a jails fstab</p>
 <dl class="class">
 <dt id="iocage_lib.ioc_fstab.IOCFstab"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_fstab.IOCFstab"></a>
-<em class="property">class </em><code class="descclassname">iocage_lib.ioc_fstab.</code><code class="descname">IOCFstab</code><span class="sig-paren">(</span><em>uuid</em>, <em>action</em>, <em>source=''</em>, <em>destination=''</em>, <em>fstype=''</em>, <em>fsoptions=''</em>, <em>fsdump=''</em>, <em>fspass=''</em>, <em>index=None</em>, <em>silent=False</em>, <em>callback=None</em>, <em>header=False</em>, <em>_fstab_list=None</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_fstab.IOCFstab" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_fstab.</code><code class="descname">IOCFstab</code><span class="sig-paren">(</span><em>uuid</em>, <em>action</em>, <em>source=''</em>, <em>destination=''</em>, <em>fstype=''</em>, <em>fsoptions=''</em>, <em>fsdump=''</em>, <em>fspass=''</em>, <em>index=None</em>, <em>silent=False</em>, <em>callback=None</em>, <em>header=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_fstab.IOCFstab" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Will add or remove an entry, and mount or umount the filesystem.</p>
 <dl class="method">
@@ -933,18 +933,18 @@ CLI, deny setting any properties not in this list.</p>
 <p>iocage plugin module</p>
 <dl class="class">
 <dt id="iocage_lib.ioc_plugin.IOCPlugin"><a name="//apple_ref/cpp/Class/iocage_lib.ioc_plugin.IOCPlugin"></a>
-<em class="property">class </em><code class="descclassname">iocage_lib.ioc_plugin.</code><code class="descname">IOCPlugin</code><span class="sig-paren">(</span><em>release=None</em>, <em>plugin=None</em>, <em>branch=None</em>, <em>keep_jail_on_failure=False</em>, <em>callback=None</em>, <em>silent=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_plugin.IOCPlugin" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">iocage_lib.ioc_plugin.</code><code class="descname">IOCPlugin</code><span class="sig-paren">(</span><em>release=None</em>, <em>jail=None</em>, <em>plugin=None</em>, <em>branch=None</em>, <em>keep_jail_on_failure=False</em>, <em>callback=None</em>, <em>silent=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_plugin.IOCPlugin" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>This is responsible for the general life cycle of a plugin jail. This
 includes creation, updating and upgrading.</p>
 <dl class="method">
 <dt id="iocage_lib.ioc_plugin.IOCPlugin.fetch_plugin"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_plugin.IOCPlugin.fetch_plugin"></a>
-<code class="descname">fetch_plugin</code><span class="sig-paren">(</span><em>_json</em>, <em>props</em>, <em>num</em>, <em>accept_license</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_plugin.IOCPlugin.fetch_plugin" title="Permalink to this definition">¶</a></dt>
+<code class="descname">fetch_plugin</code><span class="sig-paren">(</span><em>props</em>, <em>num</em>, <em>accept_license</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_plugin.IOCPlugin.fetch_plugin" title="Permalink to this definition">¶</a></dt>
 <dd><p>Helper to fetch plugins</p>
 </dd></dl>
 <dl class="method">
 <dt id="iocage_lib.ioc_plugin.IOCPlugin.fetch_plugin_index"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_plugin.IOCPlugin.fetch_plugin_index"></a>
-<code class="descname">fetch_plugin_index</code><span class="sig-paren">(</span><em>props</em>, <em>_list=False</em>, <em>list_header=False</em>, <em>list_long=False</em>, <em>accept_license=False</em>, <em>icon=False</em>, <em>official=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_plugin.IOCPlugin.fetch_plugin_index" title="Permalink to this definition">¶</a></dt>
+<code class="descname">fetch_plugin_index</code><span class="sig-paren">(</span><em>props</em>, <em>_list=False</em>, <em>list_header=False</em>, <em>list_long=False</em>, <em>accept_license=False</em>, <em>icon=False</em>, <em>official=False</em>, <em>index_only=False</em><span class="sig-paren">)</span><a class="headerlink" href="#iocage_lib.ioc_plugin.IOCPlugin.fetch_plugin_index" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 <dl class="method">
 <dt id="iocage_lib.ioc_plugin.IOCPlugin.update"><a name="//apple_ref/cpp/Method/iocage_lib.ioc_plugin.IOCPlugin.update"></a>
