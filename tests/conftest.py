@@ -96,6 +96,10 @@ def pytest_addoption(parser):
         '--nat', action='store_true', default=False,
         help='Use NAT for creating jails'
     )
+    parser.addoption(
+        '--image', action='store_true', default=False,
+        help='Run image operations (export/import)'
+    )
 
 
 def pytest_runtest_setup(item):
@@ -135,6 +139,8 @@ def pytest_runtest_setup(item):
         pytest.skip(
             'Need either --dhcp or --jail_ip  or --nat option to run, not all'
         )
+    if 'require_image' in item.keywords and not item.config.getvalue('image'):
+        pytest.skip('Need --image option to run')
 
 
 @pytest.fixture
@@ -246,6 +252,10 @@ def noupdate(request):
     """ Decide whether or not to update the fetch to the latest patch level."""
     return request.config.getoption('--noupdate')
 
+@pytest.fixture
+def image(request):
+    """Run the export and import operations."""
+    return request.config.getoption('--image')
 
 @pytest.fixture
 def invoke_cli():
