@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2017, iocage
+# Copyright (c) 2014-2019, iocage
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -127,6 +127,9 @@ class IOCFstab(object):
     def __read_fstab__(self):
         with open(f"{self.iocroot}/jails/{self.uuid}/fstab", "r") as f:
             for i, line in enumerate(f, ):
+                if not line.strip():
+                    continue
+
                 if not line.strip().startswith('#'):
                     if self.action != 'list':
                         yield line.rstrip()
