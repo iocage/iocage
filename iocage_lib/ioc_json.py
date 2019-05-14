@@ -360,7 +360,8 @@ class IOCRCTL(object):
             IOCRCTL.validate_rctl_tunable()
 
             if not re.findall(
-                r'(?:deny|log|devctl|sig\w*|throttle)=\d+(?:b|k|m|g|t|p|)$',
+                r'(?:deny|log|devctl|sig\w*|throttle)='
+                r'\d+(?:[Bb]|[Kk]|[Mm]|[Gg]|[Tt]|[Pp]|)$',
                 value
             ):
                 iocage_lib.ioc_common.logit(
@@ -374,7 +375,8 @@ class IOCRCTL(object):
                 )
             else:
                 if re.findall(
-                    r'(?:deny|log|devctl|sig\w*|throttle)=\d+(?:b|k|m|g|t|p)$',
+                    r'(?:deny|log|devctl|sig\w*|throttle)='
+                    r'\d+(?:[Bb]|[Kk]|[Mm]|[Gg]|[Tt]|[Pp])$',
                     value
                 ) and prop in (
                     'cputime', 'maxproc', 'openfiles', 'pseudoterminals',
@@ -384,8 +386,8 @@ class IOCRCTL(object):
                     iocage_lib.ioc_common.logit(
                         {
                             'level': 'EXCEPTION',
-                            'message': 'b, k, m, g, t, p suffixes are not '
-                                       f'allowed with {prop}'
+                            'message': f'suffix {value[-1]} is not allowed '
+                            f'with {prop}'
                         }
                     )
                 action = value.split('=')[0]
