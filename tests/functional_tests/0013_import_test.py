@@ -30,10 +30,12 @@ import re
 
 require_root = pytest.mark.require_root
 require_zpool = pytest.mark.require_zpool
+require_image = pytest.mark.require_image
 
 
 @require_root
 @require_zpool
+@require_image
 def test_01_import_jail(invoke_cli, jail, skip_test, remove_file, zfs):
     images_dataset_path = zfs.images_dataset_path
     list_dir = glob.glob(
