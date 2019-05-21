@@ -360,9 +360,8 @@ class IOCRCTL(object):
             IOCRCTL.validate_rctl_tunable()
 
             if not re.findall(
-                r'(?:deny|log|devctl|sig\w*|throttle)='
-                r'\d+(?:[Bb]|[Kk]|[Mm]|[Gg]|[Tt]|[Pp]|)$',
-                value
+                r'(?:deny|log|devctl|sig\w*|throttle)=\d+(?:b|k|m|g|t|p|)$',
+                value, flags=re.IGNORECASE
             ):
                 iocage_lib.ioc_common.logit(
                     {
@@ -375,9 +374,8 @@ class IOCRCTL(object):
                 )
             else:
                 if re.findall(
-                    r'(?:deny|log|devctl|sig\w*|throttle)='
-                    r'\d+(?:[Bb]|[Kk]|[Mm]|[Gg]|[Tt]|[Pp])$',
-                    value
+                    r'(?:deny|log|devctl|sig\w*|throttle)=\d+(?:b|k|m|g|t|p)$',
+                    value, flags=re.IGNORECASE
                 ) and prop in (
                     'cputime', 'maxproc', 'openfiles', 'pseudoterminals',
                     'nthr', 'msgqqueued', 'nmsgq', 'nsem', 'nsemop', 'nshm',
