@@ -413,15 +413,6 @@ class IOCRCTL(object):
                         }
                     )
 
-                if prop == 'pcpu' and int(value.split('=')[1]) > 100:
-                    iocage_lib.ioc_common.logit(
-                        {
-                            'level': 'EXCEPTION',
-                            'message': 'pcpu property requires a valid '
-                                       'percentage'
-                        }
-                    )
-
 
 class IOCSnapshot(object):
     # FIXME: Please move me to another file and let's see how we can build
