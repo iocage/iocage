@@ -53,6 +53,7 @@ class IOCStart(object):
         self, uuid, path, silent=False, callback=None,
         is_depend=False, unit_test=False, suppress_exception=False
     ):
+        self.jail_uuid = uuid
         self.uuid = uuid.replace(".", "_")
         self.path = path
         self.callback = callback
@@ -175,13 +176,15 @@ class IOCStart(object):
         self.defaultrouter6 = self.conf['defaultrouter6']
 
         fstab_list = []
-        with open(f'{self.iocroot}/jails/{self.uuid}/fstab', 'r') as _fstab:
+        with open(
+                f'{self.iocroot}/jails/{self.jail_uuid}/fstab', 'r'
+        ) as _fstab:
             for line in _fstab.readlines():
                 line = line.rsplit("#")[0].rstrip()
                 fstab_list.append(line)
 
         iocage_lib.ioc_fstab.IOCFstab(
-            self.uuid,
+            self.jail_uuid,
             'list'
         ).__validate_fstab__(fstab_list, 'all')
 
