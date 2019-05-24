@@ -338,7 +338,7 @@ class IOCStop(object):
             msg = f'  + Removing jail process FAILED:\n' \
                 f'{stop_err.decode("utf-8")}'
             iocage_lib.ioc_common.logit({
-                'level': 'EXCEPTION',
+                'level': 'ERROR',
                 'message': msg
             },
                 _callback=self.callback,
