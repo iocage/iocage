@@ -36,6 +36,7 @@ import iocage_lib.ioc_exceptions
 import texttable
 import ctypes
 from ctypes.util import find_library
+from collections import OrderedDict
 
 
 class IOCFstab(object):
@@ -75,7 +76,7 @@ class IOCFstab(object):
 
         self.fstab = list(self.__read_fstab__())
 
-        if action != 'edit' and action != 'list':
+        if action != 'list':
             self.dests = self.__validate_fstab__(self.fstab, 'all')
 
             self.__fstab_parse__()
@@ -120,7 +121,7 @@ class IOCFstab(object):
         elif self.action == "edit":
             self.__fstab_edit__()
         elif self.action == "replace":
-            self.__validate_fstab__([self.mount])
+            self.__validate_fstab__([self.mount], actions=['replace'])
             self.__fstab_edit__(_string=True)
             self.__fstab_mount__()
 
@@ -137,8 +138,9 @@ class IOCFstab(object):
                         line = line.rsplit('#')[0].rstrip()
                         yield ([i, line])
 
-    def __validate_fstab__(self, fstab, mode='single'):
-        dests = {}
+    def __validate_fstab__(self, fstab, mode='single', actions=None):
+        # `actions` specify on which `action` to raise validation error
+        dests = OrderedDict()
         verrors = []
         jail_root = f'{self.iocroot}/jails/{self.uuid}/root'
 
@@ -167,7 +169,13 @@ class IOCFstab(object):
                 self.action == 'add' or self.action == 'replace'
             ):
                 if destination in self.dests.values():
-                    if str(source) in self.dests.keys():
+                    if str(source) in self.dests.keys() and (
+                        self.index != list(
+                            self.dests.values()
+                        ).index(self.dest) or self.action == 'add'
+                    ):
+                        # We need to make sure that this is not raised
+                        # when replacing some option other then src/destination
                         verrors.append(
                             f'Destination: {self.dest} already exists!'
                         )
@@ -186,6 +194,11 @@ class IOCFstab(object):
                         f'jail\'s mountpoint! ({jail_root})'
                     )
                     break
+                if not dest.is_dir():
+                    verrors.append(
+                        f'Destination: {destination} does not exist '
+                        'or is not a directory.'
+                    )
             else:
                 if jail_root not in destination:
                     if pathlib.Path('/mnt/iocage') in dest.parents or \
@@ -280,7 +293,7 @@ class IOCFstab(object):
                 self.mount = _mount
                 self.index = _index
 
-        if verrors and self.action == 'add':
+        if verrors and self.action in (actions or ['add']):
             iocage_lib.ioc_common.logit({
                 'level': 'EXCEPTION',
                 'message': verrors
