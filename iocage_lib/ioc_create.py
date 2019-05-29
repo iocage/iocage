@@ -575,7 +575,7 @@ class IOCCreate(object):
 
         # Unique jail properties, they will be overridden by user supplied
         # values.
-        jail_props["host_hostname"] = jail_uuid
+        jail_props["host_hostname"] = jail_uuid.replace('_', '-')
         jail_props["host_hostuuid"] = jail_uuid
         jail_props["hostid_strict_check"] = "off"
         jail_props["release"] = release
