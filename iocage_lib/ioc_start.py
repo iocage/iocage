@@ -947,7 +947,7 @@ class IOCStart(object):
             wants_dhcp = dhcp or 'DHCP' in self.ip4_addr.upper()
             if not wants_dhcp and 'accept_rtadv' not in self.ip6_addr.lower():
                 for ip, default_route, ipv6 in filter(
-                    lambda v: v[0] != 'none',
+                    lambda v: v[0] != 'none' and v[1] != 'none',
                     net_configs
                 ):
                     try:
