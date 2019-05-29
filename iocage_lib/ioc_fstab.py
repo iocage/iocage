@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2017, iocage
+# Copyright (c) 2014-2019, iocage
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -36,6 +36,7 @@ import iocage_lib.ioc_exceptions
 import texttable
 import ctypes
 from ctypes.util import find_library
+from collections import OrderedDict
 
 
 class IOCFstab(object):
@@ -44,7 +45,7 @@ class IOCFstab(object):
 
     def __init__(self, uuid, action, source='', destination='', fstype='',
                  fsoptions='', fsdump='', fspass='', index=None, silent=False,
-                 callback=None, header=False, _fstab_list=None
+                 callback=None, header=False
                  ):
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage_lib.ioc_json.IOCJson(
@@ -69,16 +70,14 @@ class IOCFstab(object):
 
         self.mount = f'{self.src}\t{self.dest}\t{self.fstype}\t' \
             f'{self.fsoptions}\t{self.fsdump}\t{self.fspass}'
-        self._fstab_list = _fstab_list
         self.header = header
         self.silent = silent
         self.callback = callback
 
-        if action != 'list':
-            self.fstab = list(self.__read_fstab__())
+        self.fstab = list(self.__read_fstab__())
 
-            if action != 'edit':
-                self.dests = self.__validate_fstab__(self.fstab, 'all')
+        if action != 'list':
+            self.dests = self.__validate_fstab__(self.fstab, 'all')
 
             self.__fstab_parse__()
 
@@ -122,27 +121,40 @@ class IOCFstab(object):
         elif self.action == "edit":
             self.__fstab_edit__()
         elif self.action == "replace":
-            self.__validate_fstab__([self.mount])
+            self.__validate_fstab__([self.mount], actions=['replace'])
             self.__fstab_edit__(_string=True)
             self.__fstab_mount__()
 
     def __read_fstab__(self):
         with open(f"{self.iocroot}/jails/{self.uuid}/fstab", "r") as f:
-            for line in f:
-                yield line.rstrip()
+            for i, line in enumerate(f, ):
+                if not line.strip():
+                    continue
 
-    def __validate_fstab__(self, fstab, mode='single'):
-        dests = {}
+                if not line.strip().startswith('#'):
+                    if self.action != 'list':
+                        yield line.rstrip()
+                    else:
+                        line = line.rsplit('#')[0].rstrip()
+                        yield ([i, line])
+
+    def __validate_fstab__(self, fstab, mode='single', actions=None):
+        # `actions` specify on which `action` to raise validation error
+        dests = OrderedDict()
         verrors = []
         jail_root = f'{self.iocroot}/jails/{self.uuid}/root'
 
         for index, line in enumerate(fstab):
+            # Comment
+            if line.strip().startswith('#'):
+                continue
             mnt = line.split(' # ')[0]
 
             try:
                 source, destination, fstype, options, \
-                    dump, _pass = line.split('\t')[0:6]
+                    dump, _pass = line.split()[0:6]
                 _pass = _pass.split()[0]  # iocage comment can interfere
+
             except ValueError:
                 verrors.append(
                     f'Malformed fstab at line {index}: {repr(line)}'
@@ -157,7 +169,13 @@ class IOCFstab(object):
                 self.action == 'add' or self.action == 'replace'
             ):
                 if destination in self.dests.values():
-                    if str(source) in self.dests.keys():
+                    if str(source) in self.dests.keys() and (
+                        self.index != list(
+                            self.dests.values()
+                        ).index(self.dest) or self.action == 'add'
+                    ):
+                        # We need to make sure that this is not raised
+                        # when replacing some option other then src/destination
                         verrors.append(
                             f'Destination: {self.dest} already exists!'
                         )
@@ -176,6 +194,11 @@ class IOCFstab(object):
                         f'jail\'s mountpoint! ({jail_root})'
                     )
                     break
+                if not dest.is_dir():
+                    verrors.append(
+                        f'Destination: {destination} does not exist '
+                        'or is not a directory.'
+                    )
             else:
                 if jail_root not in destination:
                     if pathlib.Path('/mnt/iocage') in dest.parents or \
@@ -270,7 +293,7 @@ class IOCFstab(object):
                 self.mount = _mount
                 self.index = _index
 
-        if verrors:
+        if verrors and self.action in (actions or ['add']):
             iocage_lib.ioc_common.logit({
                 'level': 'EXCEPTION',
                 'message': verrors
@@ -315,7 +338,7 @@ class IOCFstab(object):
                 if line.rsplit('#')[0].rstrip() == self.mount \
                         or index == self.index:
                     removed = True
-                    dest = line.split('\t')[1]
+                    dest = line.split()[1]
 
                     continue
 
@@ -441,7 +464,7 @@ class IOCFstab(object):
         flat_fstab = [
             (
                 i, self.__fstab_decode__(f)
-            ) for (i, f) in self._fstab_list
+            ) for (i, f) in self.fstab
         ]
 
         if not self.header:
