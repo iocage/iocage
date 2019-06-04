@@ -2003,6 +2003,7 @@ class IOCage(ioc_json.IOCZFS):
             if jail_type == "pluginv2" or jail_type == "plugin":
                 # TODO: Warn about erasing all pkgs
                 ioc_plugin.IOCPlugin(
+                    jail=uuid,
                     plugin=uuid,
                     callback=self.callback
                 ).update(jid)
@@ -2143,6 +2144,7 @@ class IOCage(ioc_json.IOCZFS):
                 started = True
 
             new_release = ioc_plugin.IOCPlugin(
+                jail=uuid,
                 plugin=uuid,
                 callback=self.callback
             ).upgrade(jid)
