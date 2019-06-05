@@ -92,10 +92,10 @@ def validate_count(ctx, param, value):
     "--release", "-r", help="The FreeBSD release to fetch."
 )
 @click.option(
-    "--plugin-file", "-P", is_flag=True,
-    help="This is a plugin file outside the INDEX, but exists in "
-         "that location.\nDeveloper option, most will prefer to "
-         "use --plugins."
+    '--plugin-name', '-P', default=None,
+    help='Supply a plugin name for --plugins to fetch or use a'
+         ' auto completed filename for --plugin-name.\nAlso accepts full'
+         ' path for a plugin file.'
 )
 @click.option(
     "--plugins", help="List all available plugins for creation.", is_flag=True
@@ -121,10 +121,9 @@ def validate_count(ctx, param, value):
     help="Enable or disable EOL checking with upstream."
 )
 @click.option(
-    "--name", "-n",
-    help="Supply a plugin name for --plugins to fetch or use a"
-         " autocompleted filename for --plugin-file.\nAlso accepts full"
-         " path for --plugin-file."
+    '--name', '-n',
+    help='Specify which jail name to use. Leave empty for default '
+         'selection based on --plugin-name.'
 )
 @click.option(
     "--accept/--noaccept", default=False,
@@ -156,12 +155,6 @@ def cli(**kwargs):
         os.environ.update({
             'http_proxy': proxy,
             'https_proxy': proxy
-        })
-
-    if kwargs['plugin_file'] and kwargs['name'] is None:
-        ioc_common.logit({
-            "level": "EXCEPTION",
-            "message": "Please supply a --name for plugin-file."
         })
 
     if release is not None:
