@@ -992,7 +992,7 @@ class IOCage(ioc_json.IOCZFS):
         name = kwargs.pop("name", None)
         props = kwargs.pop("props", ())
         plugins = kwargs.pop("plugins", False)
-        plugin_file = kwargs.pop("plugin_file", False)
+        plugin_name = kwargs.pop("plugin_name", None)
         count = kwargs.pop("count", 1)
         accept = kwargs.pop("accept", False)
         _list = kwargs.pop("list", False)
@@ -1033,7 +1033,7 @@ class IOCage(ioc_json.IOCZFS):
             else:
                 kwargs["hardened"] = False
 
-        if plugins or plugin_file:
+        if plugins or plugin_name:
             ip = [
                 x for x in props
 
@@ -1075,7 +1075,7 @@ class IOCage(ioc_json.IOCZFS):
             if plugins:
                 ioc_plugin.IOCPlugin(
                     release=release,
-                    plugin=name,
+                    plugin=plugin_name,
                     branch=branch,
                     thickconfig=thick_config,
                     **kwargs).fetch_plugin_index(
@@ -1084,20 +1084,20 @@ class IOCage(ioc_json.IOCZFS):
                 return
 
             i = 1
-            original_jail_name = name
+            check_jail_name = name or plugin_name
             while True:
-                if name not in self.jails:
-                    jail_name = name
+                if check_jail_name not in self.jails:
+                    jail_name = check_jail_name
                     break
-                elif f'{name}_{i}' not in self.jails:
-                    jail_name = f'{name}_{i}'
+                elif f'{check_jail_name}_{i}' not in self.jails:
+                    jail_name = f'{check_jail_name}_{i}'
                     break
                 i += 1
 
             self.jails[jail_name] = jail_name   # Not a valid value
             if count == 1:
                 ioc_plugin.IOCPlugin(
-                    release=release, jail=jail_name, plugin=name,
+                    release=release, jail=jail_name, plugin=plugin_name,
                     branch=branch, silent=self.silent,
                     keep_jail_on_failure=keep_jail_on_failure,
                     callback=self.callback, **kwargs,
@@ -1112,15 +1112,15 @@ class IOCage(ioc_json.IOCZFS):
                     while True:
                         if jail_name not in self.jails:
                             break
-                        elif f'{original_jail_name}_{i}' not in self.jails:
-                            jail_name = f'{original_jail_name}_{i}'
+                        elif f'{check_jail_name}_{i}' not in self.jails:
+                            jail_name = f'{check_jail_name}_{i}'
                             break
 
                         i += 1
 
                     self.jails[jail_name] = jail_name   # Not a valid value
                     ioc_plugin.IOCPlugin(
-                        release=release, jail=jail_name, plugin=name,
+                        release=release, jail=jail_name, plugin=plugin_name,
                         branch=branch, silent=self.silent,
                         keep_jail_on_failure=keep_jail_on_failure,
                         thickconfig=thick_config,
