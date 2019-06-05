@@ -76,7 +76,7 @@ def cli(dataset_type, header, _long, remote, http, plugins, _sort, quick,
             remote=True,
             header=header,
             _long=_long,
-            plugin_file=True,
+            plugins=True,
             official=official)
     elif not remote:
         _list = iocage.list(
