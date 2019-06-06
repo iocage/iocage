@@ -1361,7 +1361,7 @@ fingerprint: {fingerprint}
         ):
             # Clone
             try:
-                os.rmdir(destination)
+                shutil.rmtree(destination)
             except FileNotFoundError:
                 pass
             finally:
