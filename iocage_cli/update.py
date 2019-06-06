@@ -29,11 +29,17 @@ __rootcmd__ = True
 
 
 @click.command(
-    name="update",
-    help="Run freebsd-update to update a specified "
-    "jail to the latest patch level.")
-@click.argument("jail", required=True)
-def cli(jail):
+    name='update',
+    help='Run freebsd-update to update a specified '
+    'jail to the latest patch level.'
+)
+@click.option(
+    '--pkgs', '-P', default=False, is_flag=True,
+    help='Decide whether or not to update the pkg repositories and '
+         'all installed packages in jail( this has no effect for plugins ).'
+)
+@click.argument('jail', required=True)
+def cli(jail, pkgs):
     """Update the supplied jail to the latest patchset"""
     skip_jails = bool(jail != 'ALL')
-    ioc.IOCage(jail=jail, skip_jails=skip_jails).update()
+    ioc.IOCage(jail=jail, skip_jails=skip_jails).update(pkgs=pkgs)

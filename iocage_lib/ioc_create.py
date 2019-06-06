@@ -756,72 +756,73 @@ class IOCCreate(object):
                     _callback=self.callback,
                     silent=False)
 
-        # Connectivity test courtesy David Cottlehuber off Google Group
-        srv_connect_cmd = ["drill", "-t", f"_http._tcp.{repo} SRV"]
-        dnssec_connect_cmd = ["drill", "-D", f"{repo}"]
-        dns_connect_cmd = ["drill", f"{repo}"]
-
-        iocage_lib.ioc_common.logit({
-            "level": "INFO",
-            "message": f"Testing {jail_uuid}'s SRV response to {repo}"
-        },
-            _callback=self.callback,
-            silent=False)
-
-        try:
-            iocage_lib.ioc_exec.SilentExec(
-                srv_connect_cmd, location, uuid=jail_uuid, plugin=self.plugin
-            )
-        except iocage_lib.ioc_exceptions.CommandFailed:
-            # This shouldn't be fatal since SRV records are not required
-            iocage_lib.ioc_common.logit({
-                "level": "WARNING",
-                "message":
-                    f"{repo}'s SRV record could not be verified.\n"
-            },
-                _callback=self.callback,
-                silent=False)
-
-        iocage_lib.ioc_common.logit({
-            "level": "INFO",
-            "message": f"Testing {jail_uuid}'s DNSSEC response to {repo}"
-        },
-            _callback=self.callback,
-            silent=False)
-        try:
-            iocage_lib.ioc_exec.SilentExec(
-                dnssec_connect_cmd, location, uuid=jail_uuid,
-                plugin=self.plugin,
-            )
-        except iocage_lib.ioc_exceptions.CommandFailed:
-            # Not fatal, they may not be using DNSSEC
-            iocage_lib.ioc_common.logit({
-                "level": "WARNING",
-                "message": f"{repo} could not be reached via DNSSEC.\n"
-            },
-                _callback=self.callback,
-                silent=False)
+            # Connectivity test courtesy David Cottlehuber off Google Group
+            srv_connect_cmd = ["drill", "-t", f"_http._tcp.{repo} SRV"]
+            dnssec_connect_cmd = ["drill", "-D", f"{repo}"]
+            dns_connect_cmd = ["drill", f"{repo}"]
 
             iocage_lib.ioc_common.logit({
                 "level": "INFO",
-                "message": f"Testing {jail_uuid}'s DNS response to {repo}"
+                "message": f"Testing {jail_uuid}'s SRV response to {repo}"
             },
                 _callback=self.callback,
                 silent=False)
 
             try:
                 iocage_lib.ioc_exec.SilentExec(
-                    dns_connect_cmd, location, uuid=jail_uuid,
-                    plugin=self.plugin,
+                    srv_connect_cmd, location, uuid=jail_uuid,
+                    plugin=self.plugin
                 )
             except iocage_lib.ioc_exceptions.CommandFailed:
+                # This shouldn't be fatal since SRV records are not required
                 iocage_lib.ioc_common.logit({
-                    "level": "EXCEPTION",
-                    "message": f"{repo} could not be reached via DNS, check"
-                    f" {jail_uuid}'s network configuration"
+                    "level": "WARNING",
+                    "message":
+                        f"{repo}'s SRV record could not be verified.\n"
                 },
                     _callback=self.callback,
                     silent=False)
+
+            iocage_lib.ioc_common.logit({
+                "level": "INFO",
+                "message": f"Testing {jail_uuid}'s DNSSEC response to {repo}"
+            },
+                _callback=self.callback,
+                silent=False)
+            try:
+                iocage_lib.ioc_exec.SilentExec(
+                    dnssec_connect_cmd, location, uuid=jail_uuid,
+                    plugin=self.plugin,
+                )
+            except iocage_lib.ioc_exceptions.CommandFailed:
+                # Not fatal, they may not be using DNSSEC
+                iocage_lib.ioc_common.logit({
+                    "level": "WARNING",
+                    "message": f"{repo} could not be reached via DNSSEC.\n"
+                },
+                    _callback=self.callback,
+                    silent=False)
+
+                iocage_lib.ioc_common.logit({
+                    "level": "INFO",
+                    "message": f"Testing {jail_uuid}'s DNS response to {repo}"
+                },
+                    _callback=self.callback,
+                    silent=False)
+
+                try:
+                    iocage_lib.ioc_exec.SilentExec(
+                        dns_connect_cmd, location, uuid=jail_uuid,
+                        plugin=self.plugin,
+                    )
+                except iocage_lib.ioc_exceptions.CommandFailed:
+                    iocage_lib.ioc_common.logit({
+                        "level": "EXCEPTION",
+                        "message": f"{repo} could not be reached via DNS,"
+                        f" check {jail_uuid}'s network configuration"
+                    },
+                        _callback=self.callback,
+                        silent=False)
 
         if isinstance(self.pkglist, str):
             with open(self.pkglist, "r") as j:
@@ -883,7 +884,7 @@ class IOCCreate(object):
                 iocage_lib.ioc_common.consume_and_log(
                     _exec,
                     callback=self.callback,
-                    log=not(self.silent)
+                    log=not self.silent
                 )
         except iocage_lib.ioc_exceptions.CommandFailed as e:
             iocage_lib.ioc_stop.IOCStop(jail_uuid, location, force=True,
