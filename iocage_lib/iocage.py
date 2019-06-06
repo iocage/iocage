@@ -809,16 +809,31 @@ class IOCage(ioc_json.IOCZFS):
 
         return jail_list
 
-    def exec(self,
-             command,
-             host_user="root",
-             jail_user=None,
-             console=False,
-             start_jail=False,
-             interactive=False,
-             unjailed=False,
-             msg_return=False):
+    def exec_all(
+        self, command, host_user='root', jail_user=None, console=False,
+        start_jail=False, interactive=False, unjailed=False, msg_return=False
+    ):
+        """Runs exec for all jails"""
+        self._all = False
+        for jail in self.jails:
+            self.jail = jail
+            self.exec(
+                command, host_user, jail_user, console, start_jail,
+                interactive, unjailed, msg_return
+            )
+
+    def exec(
+        self, command, host_user='root', jail_user=None, console=False,
+        start_jail=False, interactive=False, unjailed=False, msg_return=False
+    ):
         """Executes a command in the jail as the supplied users."""
+        if self._all:
+            self.exec_all(
+                command, host_user, jail_user, console, start_jail,
+                interactive, unjailed, msg_return
+            )
+            return
+
         pkg = unjailed
 
         if host_user and jail_user is not None:
@@ -1932,17 +1947,17 @@ class IOCage(ioc_json.IOCZFS):
                 force=force, suppress_exception=ignore_exception
             )
 
-    def update_all(self):
+    def update_all(self, pkgs=False):
         """Runs update for all jails"""
         self._all = False
         for jail in self.jails:
             self.jail = jail
-            self.update()
+            self.update(pkgs)
 
-    def update(self):
+    def update(self, pkgs=False):
         """Updates a jail to the latest patchset."""
         if self._all:
-            self.update_all()
+            self.update_all(pkgs)
             return
 
         uuid, path = self.__check_jail_existence__()
@@ -1959,7 +1974,9 @@ class IOCage(ioc_json.IOCZFS):
             "jail", "clonejail", "pluginv2") else False
 
         if updateable:
-            self.snapshot(f'ioc_update_{conf["release"]}')
+            self.snapshot(
+                f'ioc_update_{conf["release"]}_{datetime.datetime.now()}'
+            )
 
             if not status:
                 self.silent = True
@@ -2000,14 +2017,59 @@ class IOCage(ioc_json.IOCZFS):
                 self.stop()
                 self.silent = _silent
         else:
+            if pkgs and not (jail_type in ('plugin', 'pluginv2')):
+                # Let's update pkg repos first
+                ioc_common.logit({
+                    'level': 'INFO',
+                    'message': 'Updating pkgs...'
+                })
+                pkg_update = su.run(
+                    ['pkg-static', '-j', jid, 'update', '-q', '-f'],
+                    stdout=su.PIPE, stderr=su.STDOUT
+                )
+                if pkg_update.returncode:
+                    ioc_common.logit({
+                        'level': 'EXCEPTION',
+                        'message': 'Failed to update pkg repositories.'
+                    })
+                else:
+                    ioc_common.logit({
+                        'level': 'INFO',
+                        'message': 'Updated pkg repositories successfully.'
+                    })
+                # This will run pkg upgrade now
+                ioc_create.IOCCreate(
+                    self.jail, '', 0, pkglist=[],
+                    silent=True, callback=self.callback
+                ).create_install_packages(self.jail, path, repo='')
+
+                ioc_common.logit({
+                    'level': 'INFO',
+                    'message': 'Upgraded pkgs successfully.'
+                })
+
             if jail_type == "pluginv2" or jail_type == "plugin":
                 # TODO: Warn about erasing all pkgs
+                ioc_common.logit({
+                    'level': 'INFO',
+                    'message': 'Updating plugin...'
+                })
                 ioc_plugin.IOCPlugin(
                     jail=uuid,
                     plugin=uuid,
                     callback=self.callback
                 ).update(jid)
-            elif not ioc_common.check_truthy(conf['basejail']):
+                ioc_common.logit({
+                    'level': 'INFO',
+                    'message': 'Updated plugin successfully.'
+                })
+
+            # Jail updates should always happen
+            ioc_common.logit({
+                'level': 'INFO',
+                'message': 'Updating jail...'
+            })
+            if not ioc_common.check_truthy(conf['basejail']):
                 new_release = ioc_fetch.IOCFetch(
                     release,
                     callback=self.callback
@@ -2022,12 +2084,17 @@ class IOCage(ioc_json.IOCZFS):
                     callback=self.callback
                 ).fetch_update()
 
+            ioc_common.logit({
+                'level': 'INFO',
+                'message': 'Updated jail successfully.'
+            })
+
             if started:
                 self.silent = True
                 self.stop()
                 self.silent = _silent
 
-            message = f"\n{uuid} has been updated successfully."
+            message = f"\n{uuid} updates have been applied successfully."
             ioc_common.logit(
                 {
                     "level": "INFO",
