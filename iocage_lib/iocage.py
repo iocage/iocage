@@ -893,8 +893,11 @@ class IOCage(ioc_json.IOCZFS):
             ip4_addr = self.get("ip4_addr")
             ip6_addr = self.get("ip6_addr")
             dhcp = self.get("dhcp")
+            nat = self.get('nat')
 
-            if ip4_addr == "none" and ip6_addr == "none" and not dhcp:
+            if (
+                ip4_addr == ip6_addr == "none" and not dhcp and not nat
+            ):
                 ioc_common.logit(
                     {
                         "level":
