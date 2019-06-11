@@ -911,21 +911,57 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
                 iocage_lib.ioc_common.consume_and_log(
                     _exec, callback=self.callback)
 
-            fetch_install_cmd = [
-                fetch_name, "-b", mount_root, "-d",
-                f"{mount_root}/var/db/freebsd-update/", "-f",
-                f"{mount_root}/etc/freebsd-update.conf", "install"
-            ]
-            with iocage_lib.ioc_exec.IOCExec(
-                fetch_install_cmd,
-                f"{self.iocroot}/jails/{uuid}",
-                uuid=uuid,
-                unjailed=True,
-                callback=self.callback,
-                su_env=fetch_env
-            ) as _exec:
-                iocage_lib.ioc_common.consume_and_log(
-                    _exec, callback=self.callback)
+            try:
+                fetch_install_cmd = [
+                    fetch_name, "-b", mount_root, "-d",
+                    f"{mount_root}/var/db/freebsd-update/", "-f",
+                    f"{mount_root}/etc/freebsd-update.conf", "install"
+                ]
+                with iocage_lib.ioc_exec.IOCExec(
+                    fetch_install_cmd,
+                    f"{self.iocroot}/jails/{uuid}",
+                    uuid=uuid,
+                    unjailed=True,
+                    callback=self.callback,
+                    su_env=fetch_env
+                ) as _exec:
+                    try:
+                        iocage_lib.ioc_common.consume_and_log(
+                            _exec, callback=self.callback)
+                    except iocage_lib.ioc_exceptions.CommandFailed as e:
+                        iocage_lib.ioc_common.logit(
+                            {
+                                'level': 'EXCEPTION',
+                                'message': b''.join(e.message)
+                            },
+                            _callback=self.callback,
+                            silent=self.silent
+                        )
+
+            finally:
+                new_release = iocage_lib.ioc_common.get_jail_freebsd_version(
+                    mount_root, self.release
+                )
+
+                if self.release != new_release:
+                    jails = iocage_lib.ioc_list.IOCList(
+                        'uuid', hdr=False).list_datasets()
+
+                    if not cli:
+                        for jail, path in jails.items():
+                            _json = iocage_lib.ioc_json.IOCJson(path)
+                            props = _json.json_get_value('all')
+
+                            if props['basejail'] and self.release.rsplit(
+                                '-', 1
+                            )[0] in props['release']:
+                                props['release'] = new_release
+                                _json.json_write(props)
+                    else:
+                        _json = iocage_lib.ioc_json.IOCJson(jails[uuid])
+                        props = _json.json_get_value('all')
+                        props['release'] = new_release
+                        _json.json_write(props)
 
             if self.verify:
                 # tmp only exists if they verify SSL certs
@@ -943,26 +979,6 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
             pass
 
         su.Popen(["umount", f"{mount_root}/dev"]).communicate()
-
-        new_release = iocage_lib.ioc_common.get_jail_freebsd_version(
-            mount_root, self.release
-        )
-
-        if self.release != new_release:
-            jails = iocage_lib.ioc_list.IOCList(
-                'uuid', hdr=False).list_datasets()
-
-            for jail, path in jails.items():
-                _json = iocage_lib.ioc_json.IOCJson(path)
-                props = _json.json_get_value('all')
-
-                if props['basejail'] and self.release.rsplit(
-                    '-', 1
-                ) in props['release']:
-                    props['release'] = new_release
-                    _json.json_write(props)
-
-        return new_release
 
     def __fetch_extract_remove__(self, tar):
         """
