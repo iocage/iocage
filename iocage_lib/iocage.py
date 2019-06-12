@@ -2072,20 +2072,13 @@ class IOCage(ioc_json.IOCZFS):
                 'level': 'INFO',
                 'message': 'Updating jail...'
             })
-            if not ioc_common.check_truthy(conf['basejail']):
-                new_release = ioc_fetch.IOCFetch(
-                    release,
-                    callback=self.callback
-                ).fetch_update(True, uuid)
 
-                conf['release'] = new_release
-                ioc_json.IOCJson(path).json_write(conf)
-            else:
-                # Basejails only need their RELEASE updated
-                ioc_fetch.IOCFetch(
-                    release,
-                    callback=self.callback
-                ).fetch_update()
+            is_basejail = ioc_common.check_truthy(conf['basejail'])
+            params = [] if is_basejail else [True, uuid]
+            ioc_fetch.IOCFetch(
+                release,
+                callback=self.callback
+            ).fetch_update(*params)
 
             ioc_common.logit({
                 'level': 'INFO',
