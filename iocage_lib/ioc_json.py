@@ -1136,20 +1136,17 @@ class IOCConfiguration(IOCZFS):
             pass
         else:
             try:
-                with open(
-                    freebsd_version, mode='r', encoding='utf-8'
-                ) as r:
-                    for line in r:
-                        if line.startswith('USERLAND_VERSION'):
-                            release = line.rstrip().partition('=')[2]
-                            release = release.strip("'\"")
+                release = iocage_lib.ioc_common.get_jail_freebsd_version(
+                    str(freebsd_version).rsplit('/', 2)[0], release
+                )
             except Exception as e:
                 iocage_lib.ioc_common.logit(
                     {
                         'level': 'EXCEPTION',
                         'message': 'Exception:'
-                        f" '{e.__class__.__name__}:{str(e)}' occured\n"
-                        f"Loading {uuid}'s configuration failed"
+                        f" '{e.__class__.__name__}:{str(e)}' occurred\n"
+                        f"Loading {str(freebsd_version).split('/')[-4]}'s "
+                        "configuration failed"
                     }
                 )
 
