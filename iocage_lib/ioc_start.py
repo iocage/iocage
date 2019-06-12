@@ -343,6 +343,8 @@ class IOCStart(object):
                     self.conf['nat_prefix']
                 )
                 self.ip4_addr = f'{nat_interface}|{ip4_addr}'
+                # Make this reality for list
+                self.set(f'ip4_addr={self.ip4_addr}')
                 self.log.debug(f'Received ip4_addr: {self.ip4_addr}')
             else:
                 self.log.debug('VNET is True')
@@ -355,7 +357,11 @@ class IOCStart(object):
                         self.conf['nat_prefix']
                     )
                 self.ip4_addr = f'vnet0|{ip4_addr}/30'
+                # Make this reality for list
+                self.set(f'ip4_addr={self.ip4_addr}')
                 nat = self.defaultrouter
+                # Make this reality for list
+                self.set(f'defaultrouter={self.defaultrouter}')
                 self.log.debug(f'Received default_router: {nat}')
                 self.log.debug(f'Received ip4_addr: {self.ip4_addr}')
 
