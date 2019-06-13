@@ -1082,9 +1082,10 @@ class IOCConfiguration(IOCZFS):
         """
         release = conf.get('release', None)
         template = conf.get('template', 0)
+        host_hostuuid = conf.get('host_hostuuid', None)
         renamed = False
 
-        if release is None:
+        if release is None or host_hostuuid is None:
             err_name = self.location.rsplit('/', 1)[-1]
             iocage_lib.ioc_common.logit(
                 {
@@ -1098,36 +1099,22 @@ class IOCConfiguration(IOCZFS):
         release = release.rsplit('-p', 1)[0]
         cloned_release = conf.get('cloned_release', 'LEGACY_JAIL')
 
-        freebsd_version = pathlib.Path(
-            f'{self.iocroot}/releases/{release}/root/bin/freebsd-version'
-        )
+        if iocage_lib.ioc_common.check_truthy(template):
+            jail_path = f'{self.iocroot}/templates/{conf["host_hostuuid"]}/' \
+                'root'
+        else:
+            jail_path = f'{self.iocroot}/jails/{host_hostuuid}/root'
+
+        freebsd_version = pathlib.Path(f'{jail_path}/bin/freebsd-version')
+
         if not freebsd_version.is_file():
-            try:
-                if iocage_lib.ioc_common.check_truthy(template):
-                    freebsd_version = pathlib.Path(
-                        f'{self.iocroot}/templates/'
-                        f"{conf['host_hostuuid']}/root/bin/freebsd-version"
-                    )
-                else:
-                    temp_uuid = self.location.rsplit('/', 1)[-1]
-                    freebsd_version = pathlib.Path(
-                        f'{self.iocroot}/jails/{temp_uuid}/root/bin/'
-                        'freebsd-version'
-                    )
-                if not freebsd_version.is_file():
-                    iocage_lib.ioc_common.logit(
-                        {
-                            'level': 'EXCEPTION',
-                            'message': 'freebsd-version could not be found at'
-                            f' {freebsd_version}'
-                        }
-                    )
-            except KeyError:
-                # At this point it should be a real misconfigured jail
-                uuid = self.location.rsplit('/', 1)[-1]
-                raise RuntimeError('Configuration is missing!'
-                                   f' Please destroy {uuid} and recreate'
-                                   ' it.')
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message': 'freebsd-version could not be found at'
+                    f' {freebsd_version}'
+                }
+            )
 
         if release[:4].endswith('-'):
             # 9.3-RELEASE and under don't actually have this binary.
@@ -1137,7 +1124,7 @@ class IOCConfiguration(IOCZFS):
         else:
             try:
                 release = iocage_lib.ioc_common.get_jail_freebsd_version(
-                    str(freebsd_version).rsplit('/', 2)[0], release
+                    jail_path, release
                 )
             except Exception as e:
                 iocage_lib.ioc_common.logit(
@@ -1145,7 +1132,7 @@ class IOCConfiguration(IOCZFS):
                         'level': 'EXCEPTION',
                         'message': 'Exception:'
                         f" '{e.__class__.__name__}:{str(e)}' occurred\n"
-                        f"Loading {str(freebsd_version).split('/')[-4]}'s "
+                        f"Loading {host_hostuuid}'s "
                         "configuration failed"
                     }
                 )
