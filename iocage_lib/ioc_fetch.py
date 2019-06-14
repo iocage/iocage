@@ -38,6 +38,7 @@ import requests.packages.urllib3.exceptions
 
 import iocage_lib.ioc_common
 import iocage_lib.ioc_destroy
+import iocage_lib.ioc_exceptions
 import iocage_lib.ioc_exec
 import iocage_lib.ioc_json
 import iocage_lib.ioc_start
@@ -908,8 +909,18 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
                 callback=self.callback,
                 su_env=fetch_env
             ) as _exec:
-                iocage_lib.ioc_common.consume_and_log(
-                    _exec, callback=self.callback)
+                try:
+                    iocage_lib.ioc_common.consume_and_log(
+                        _exec, callback=self.callback)
+                except iocage_lib.ioc_exceptions.CommandFailed as e:
+                    iocage_lib.ioc_common.logit(
+                        {
+                            'level': 'EXCEPTION',
+                            'message': b''.join(e.message)
+                        },
+                        _callback=self.callback,
+                        silent=self.silent
+                    )
 
             try:
                 fetch_install_cmd = [
