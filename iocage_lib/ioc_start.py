@@ -62,8 +62,8 @@ class IOCStart(object):
         self.unit_test = unit_test
         self.ip4_addr = 'none'
         self.ip6_addr = 'none'
-        self.defaultrouter = 'none'
-        self.defaultrouter6 = 'none'
+        self.defaultrouter = 'auto'
+        self.defaultrouter6 = 'auto'
         self.log = logging.getLogger('iocage')
 
         if not self.unit_test:
@@ -174,6 +174,7 @@ class IOCStart(object):
         localhost_ip = self.conf['localhost_ip']
         self.defaultrouter = self.conf['defaultrouter']
         self.defaultrouter6 = self.conf['defaultrouter6']
+        self.host_gateways = iocage_lib.ioc_common.get_host_gateways()
 
         fstab_list = []
         with open(
@@ -203,7 +204,7 @@ class IOCStart(object):
 
         if nat and nat_interface == 'none':
             self.log.debug('Grabbing default route\'s interface')
-            nat_interface = self.get_default_gateway()[1]
+            nat_interface = self.get_default_interface()
             self.log.debug(f'Interface: {nat_interface}')
 
             iocage_lib.ioc_common.logit({
@@ -213,17 +214,15 @@ class IOCStart(object):
             }, _callback=self.callback,
                 silent=self.silent)
 
-        if self.conf['vnet'] and self.defaultrouter == 'none':
-            self.log.debug('Grabbing default route')
-            self.defaultrouter = self.get_default_gateway()[0]
-            self.log.debug(f'Default Gateway: {self.defaultrouter}')
+        if self.conf['vnet'] and self.defaultrouter == 'auto':
+            self.log.debug('Grabbing IPv4 default route')
+            self.defaultrouter = self.get_default_gateway('ipv4')
+            self.log.debug(f'Default IPv4 Gateway: {self.defaultrouter}')
 
-            iocage_lib.ioc_common.logit({
-                'level': 'WARNING',
-                'message': f'{self.uuid}: vnet requires defaultrouter,'
-                           f' using {self.defaultrouter}'
-            }, _callback=self.callback,
-                silent=self.silent)
+        if self.conf['vnet'] and self.defaultrouter6 == 'auto':
+            self.log.debug('Grabbing IPv6 default route')
+            self.defaultrouter6 = self.get_default_gateway('ipv6')
+            self.log.debug(f'Default IPv6 Gateway: {self.defaultrouter6}')
 
         if 'accept_rtadv' in self.ip6_addr and not self.conf['vnet']:
             prop_missing_msgs.append(
@@ -1058,7 +1057,7 @@ class IOCStart(object):
         """
         vnet_default_interface = self.get('vnet_default_interface')
         if vnet_default_interface == 'auto':
-            vnet_default_interface = self.get_default_gateway()[1]
+            vnet_default_interface = self.get_default_interface()
 
         mac_a, mac_b = self.__start_generate_vnet_mac__(nic)
         epair_a_cmd = ["ifconfig", "epair", "create"]
@@ -1312,19 +1311,49 @@ class IOCStart(object):
             stdout=su.PIPE
         )
 
-    def get_default_gateway(self):
-        # e.g response - ('192.168.122.1', 'lagg0')
-        try:
-            return netifaces.gateways()["default"][netifaces.AF_INET]
-        except KeyError:
+    def get_default_interface(self):
+        if self.host_gateways['ipv4']['interface']:
+            return self.host_gateways['ipv4']['interface']
+        elif self.host_gateways['ipv6']['interface']:
+            return self.host_gateways['ipv6']['interface']
+        else:
             iocage_lib.ioc_common.logit(
                 {
                     'level': 'EXCEPTION',
-                    'message': 'No default gateway interface found'
+                    'message': 'No default interface found'
                 },
                 _callback=self.callback,
-                silent=self.silent
-            )
+                silent=self.silent)
+
+    def get_default_gateway(self, address_family='ipv4'):
+        gateway = self.host_gateways[address_family]['gateway']
+        interface = self.host_gateways[address_family]['interface']
+        if gateway and '%' in gateway:
+            interface_bridge_map = self.get_interface_bridge_map()
+            ipv6 = gateway.split('%')[0]
+            if interface in interface_bridge_map:
+                jail_nic = interface_bridge_map[interface][0]
+            else:
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'EXCEPTION',
+                        'message': (f'No bridge for interface {interface}'
+                                    'found in configuration.')
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
+            return f'{ipv6}%{jail_nic.replace("vnet", "epair")}b'
+        elif gateway:
+            return gateway
+        else:
+            return 'none'
+
+    def get_interface_bridge_map(self):
+        interface_bridge_map = {}
+        for interface in self.get('interfaces').split(','):
+            nic, bridge = interface.split(':')
+            interface_bridge_map.setdefault(bridge, []).append(nic)
+        return interface_bridge_map
 
     def get_bridge_members(self, bridge):
         return [
@@ -1349,7 +1378,7 @@ class IOCStart(object):
                 # Let's get the default vnet interface
                 default_if = self.get('vnet_default_interface')
                 if default_if == 'auto':
-                    default_if = self.get_default_gateway()[1]
+                    default_if = self.get_default_interface()
 
                 if default_if != 'none':
                     bridge_cmd = [
