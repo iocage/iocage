@@ -23,6 +23,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """iocage plugin module"""
 import collections
+import concurrent.futures
 import datetime
 import distutils.dir_util
 import json
@@ -31,7 +32,6 @@ import pathlib
 import re
 import shutil
 import subprocess as su
-
 import requests
 import git
 
@@ -83,6 +83,113 @@ class IOCPlugin(object):
         elif self.branch is None and self.hardened:
             # Backwards compat
             self.branch = 'master'
+
+    def clone_repo(self):
+        if self.server == "download.freebsd.org":
+            git_server = "https://github.com/freenas/iocage-ix-plugins.git"
+        else:
+            git_server = self.server
+
+        git_working_dir = f"{self.iocroot}/.plugin_index"
+
+        if os.geteuid() == 0:
+            try:
+                self.__clone_repo(git_server, git_working_dir)
+            except Exception as err:
+                iocage_lib.ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": err
+                    },
+                    _callback=self.callback
+                )
+
+    def fetch_plugin_packagesites(self, package_sites):
+        def download_parse_packagesite(packagesite_url):
+            package_site_data = {}
+            try:
+                response = requests.get(f'{packagesite_url}/All/', timeout=20)
+                response.raise_for_status()
+
+                for pkg in re.findall(r'<a.*>\s*(\S+).txz</a>', response.text):
+
+                    pkg, version = pkg.rsplit('-', 1)
+                    epoch_split = version.rsplit(',', 1)
+                    epoch = epoch_split[1] if len(epoch_split) == 2 else '0'
+                    revision_split = epoch_split[0].rsplit('_', 1)
+                    revision = \
+                        revision_split[1] if len(revision_split) == 2 else '0'
+                    package_site_data[pkg] = {
+                        'version': revision_split[0],
+                        'revision': revision,
+                        'epoch': epoch,
+                    }
+            except Exception:
+                pass
+
+            return packagesite_url, package_site_data
+
+        plugin_packagesite_mapping = {}
+        package_sites = set([
+            url.rstrip('/') for url in package_sites
+        ])
+
+        with concurrent.futures.ThreadPoolExecutor() as exc:
+            results = exc.map(
+                download_parse_packagesite, package_sites
+            )
+
+            for result in results:
+                plugin_packagesite_mapping[result[0]] = result[1]
+
+        return plugin_packagesite_mapping
+
+    def fetch_plugin_versions_from_plugin_index(self, plugins_index):
+        plugin_packagesite_mapping = self.fetch_plugin_packagesites([
+            v['packagesite'] for v in plugins_index.values()
+        ])
+
+        version_dict = {}
+        for plugin in plugins_index:
+            plugin_dict = plugins_index[plugin]
+            packagesite = plugin_dict['packagesite']
+            primary_package = plugin_dict.get('primary_pkg') or plugin
+            packagesite = packagesite.rstrip('/')
+            plugin_pkgs = plugin_packagesite_mapping[packagesite]
+            try:
+                version_data = plugin_pkgs[primary_package]
+            except KeyError:
+                plugin_dict.update({
+                    k: 'N/A' for k in ('revision', 'version', 'epoch')
+                })
+            else:
+                plugin_dict.update(version_data)
+
+            version_dict[plugin] = plugin_dict
+
+        return version_dict
+
+    def fetch_plugin_versions(self):
+        self.clone_repo()
+
+        with open(
+            os.path.join(self.iocroot, '.plugin_index', 'INDEX'), 'r'
+        ) as f:
+            index = json.loads(f.read())
+
+        plugin_index = {}
+        for plugin in index:
+            plugin_index[plugin] = {
+                'primary_pkg': index[plugin].get('primary_pkg'),
+            }
+            with open(
+                os.path.join(
+                    self.iocroot, '.plugin_index', index[plugin]['MANIFEST']
+                ), 'r'
+            ) as f:
+                plugin_index[plugin].update(json.loads(f.read()))
+
+        return self.fetch_plugin_versions_from_plugin_index(plugin_index)
 
     def fetch_plugin(self, props, num, accept_license):
         """Helper to fetch plugins"""
