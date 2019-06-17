@@ -1025,3 +1025,32 @@ def get_used_ips():
                     addresses.append(address)
 
     return addresses
+
+
+def get_host_gateways():
+    netifaces_af_mapping = {
+        'Internet': netifaces.AF_INET,
+        'Internet6': netifaces.AF_INET6
+    }
+
+    output = su.run(['netstat', '-r', '-n', '--libxo', 'json'],
+                    stdout=su.PIPE)
+    route_families = (json.loads(output.stdout)
+                      ['statistics']
+                      ['route-information']
+                      ['route-table']
+                      ['rt-family'])
+
+    gateways = {'default': {}}
+    for af in ('Internet', 'Internet6'):
+        route_entries = list(filter(
+            lambda x: x['address-family'] == af, route_families)
+        )[0]['rt-entry']
+        default_route = list(filter(
+            lambda x: x['destination'] == 'default', route_entries)
+        )
+        if default_route and 'gateway' in default_route[0]:
+            gateways['default'][netifaces_af_mapping[af]] = (
+                default_route[0]['gateway'], default_route[0]['interface-name']
+            )
+    return gateways

@@ -700,7 +700,7 @@ class IOCConfiguration(IOCZFS):
     @staticmethod
     def get_version():
         """Sets the iocage configuration version."""
-        version = '23'
+        version = '24'
 
         return version
 
@@ -947,11 +947,6 @@ class IOCConfiguration(IOCZFS):
         if current_conf_version == iocage_conf_version:
             return conf, False
 
-        # New style thin configuration jails won't have this. Only their
-        # defaults will
-        if current_conf_version is None and thickconfig != 'THICK':
-            return conf, False
-
         if os.geteuid() != 0:
             iocage_lib.ioc_common.logit(
                 {
@@ -964,10 +959,13 @@ class IOCConfiguration(IOCZFS):
                 silent=self.silent,
                 exception=ioc_exceptions.CommandNeedsRoot)
 
-        if not default:
-            jail_conf = self.check_jail_config(conf)
-
         conf['CONFIG_VERSION'] = iocage_conf_version
+
+        # New style thin configuration jails won't have this. Only their
+        # defaults will
+        if thickconfig != 'THICK' and not default:
+            jail_conf = self.check_jail_config(conf)
+            return jail_conf, False
 
         # Version 2 keys
         if not conf.get('sysvmsg'):
@@ -1070,6 +1068,12 @@ class IOCConfiguration(IOCZFS):
             conf['nat_backend'] = 'ipfw'
         if not conf.get('nat_forwards'):
             conf['nat_forwards'] = 'none'
+
+        # Version 24 keys
+        # Migrate defaultrouter and defaultrouter6 default 'none' to 'auto'
+        for option in ('defaultrouter', 'defaultrouter6'):
+            if conf.get(option) == 'none':
+                conf[option] = 'auto'
 
         if not default:
             conf.update(jail_conf)
@@ -1191,6 +1195,12 @@ class IOCConfiguration(IOCZFS):
             # New jail creation
             pass
 
+        # Version 24 keys
+        # Migrate defaultrouter and defaultrouter6 default 'none' to 'auto'
+        for option in ('defaultrouter', 'defaultrouter6'):
+            if conf.get(option) == 'none':
+                del conf[option]
+
         try:
             if not renamed:
                 self.json_write(conf)
@@ -1265,8 +1275,8 @@ class IOCConfiguration(IOCZFS):
             'ip6_addr': 'none',
             'ip6_saddrsel': '1',
             'ip6': 'new',
-            'defaultrouter': 'none',
-            'defaultrouter6': 'none',
+            'defaultrouter': 'auto',
+            'defaultrouter6': 'auto',
             'resolver': '/etc/resolv.conf',
             'mac_prefix': self.mac_prefix,
             'vnet0_mac': 'none',
