@@ -84,7 +84,7 @@ class IOCPlugin(object):
             # Backwards compat
             self.branch = 'master'
 
-    def clone_repo(self):
+    def clone_repo(self, depth=None):
         if self.server == "download.freebsd.org":
             git_server = "https://github.com/freenas/iocage-ix-plugins.git"
         else:
@@ -94,7 +94,7 @@ class IOCPlugin(object):
 
         if os.geteuid() == 0:
             try:
-                self.__clone_repo(git_server, git_working_dir)
+                self.__clone_repo(git_server, git_working_dir, depth)
             except Exception as err:
                 iocage_lib.ioc_common.logit(
                     {
@@ -1403,7 +1403,7 @@ fingerprint: {fingerprint}
         fetch_args = {'release': release, 'eol': False}
         iocage_lib.iocage.IOCage(silent=self.silent).fetch(**fetch_args)
 
-    def __clone_repo(self, repo_url, destination):
+    def __clone_repo(self, repo_url, destination, depth=None):
         """
         This is to replicate the functionality of cloning/pulling a repo
         """
@@ -1438,8 +1438,11 @@ fingerprint: {fingerprint}
             except FileNotFoundError:
                 pass
             finally:
+                kwargs = {'env': os.environ.copy(), 'depth': depth}
                 repo = git.Repo.clone_from(
-                    repo_url, destination, env=os.environ.copy()
+                    repo_url, destination, **{
+                        k: v for k, v in kwargs.items() if v
+                    }
                 )
                 origin = repo.remotes.origin
 
