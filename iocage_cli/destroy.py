@@ -112,6 +112,10 @@ def cli(force, release, download, jails, recursive):
 
     if jails and not release:
         for jail in jails:
+            iocage = ioc.IOCage(jail=jail, skip_jails=True)
+            # If supplied a partial, we want the real match we got.
+            jail, _ = iocage.__check_jail_existence__()
+
             if not force:
                 ioc_common.logit({
                     "level": "WARNING",
@@ -124,8 +128,7 @@ def cli(force, release, download, jails, recursive):
             child_test(zfs, iocroot, jail, "jail", force=force,
                        recursive=recursive)
 
-            ioc.IOCage(jail=jail,
-                       skip_jails=True).destroy_jail(force=force)
+            iocage.destroy_jail(force=force)
     elif jails and release:
         for release in jails:
             if not force:
