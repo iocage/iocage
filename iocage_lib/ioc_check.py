@@ -34,7 +34,7 @@ class IOCCheck(object):
 
     """Checks if the required iocage datasets are present"""
 
-    def __init__(self, silent=False, callback=None):
+    def __init__(self, silent=False, callback=None, migrate=False):
         self.pool = iocage_lib.ioc_json.IOCJson(
             silent=silent,
             checking_datasets=True
@@ -44,6 +44,20 @@ class IOCCheck(object):
 
         self.__check_fd_mount__()
         self.__check_datasets__()
+        if migrate:
+            self.__check_migrations__()
+
+    def __check_migrations__(self):
+        zfs = iocage_lib.ioc_json.IOCZFS()
+        pool_mountpoint = zfs.zfs_get_property(self.pool, 'mountpoint')
+        iocage_mountpoint = zfs.zfs_get_property(
+            f'{self.pool}/iocage', 'mountpoint'
+        )
+        if not iocage_mountpoint.startswith(pool_mountpoint):
+            zfs.zfs_set_property(
+                f'{self.pool}/iocage', 'mountpoint',
+                os.path.join(pool_mountpoint, 'iocage')
+            )
 
     def __check_datasets__(self):
         """
