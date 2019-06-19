@@ -1025,3 +1025,17 @@ def get_used_ips():
                     addresses.append(address)
 
     return addresses
+
+
+def parse_package_name(pkg):
+    pkg, version = pkg.rsplit('-', 1)
+    epoch_split = version.rsplit(',', 1)
+    epoch = epoch_split[1] if len(epoch_split) == 2 else '0'
+    revision_split = epoch_split[0].rsplit('_', 1)
+    revision = \
+        revision_split[1] if len(revision_split) == 2 else '0'
+    return {
+        'version': revision_split[0],
+        'revision': revision,
+        'epoch': epoch,
+    }

@@ -23,17 +23,17 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """iocage plugin module"""
 import collections
+import concurrent.futures
 import datetime
 import distutils.dir_util
 import json
 import os
+import git
 import pathlib
 import re
 import shutil
 import subprocess as su
-
 import requests
-import git
 
 import iocage_lib.ioc_common
 import iocage_lib.ioc_create
@@ -83,6 +83,114 @@ class IOCPlugin(object):
         elif self.branch is None and self.hardened:
             # Backwards compat
             self.branch = 'master'
+
+    def clone_repo(self, depth=None):
+        if self.server == "download.freebsd.org":
+            git_server = "https://github.com/freenas/iocage-ix-plugins.git"
+        else:
+            git_server = self.server
+
+        git_working_dir = f"{self.iocroot}/.plugin_index"
+
+        if os.geteuid() == 0:
+            try:
+                self._clone_repo(
+                    self.branch, git_server, git_working_dir,
+                    depth, self.callback
+                )
+            except Exception as err:
+                iocage_lib.ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": err
+                    },
+                    _callback=self.callback
+                )
+
+    @staticmethod
+    def fetch_plugin_packagesites(package_sites):
+        def download_parse_packagesite(packagesite_url):
+            package_site_data = {}
+            try:
+                response = requests.get(f'{packagesite_url}/All/', timeout=20)
+                response.raise_for_status()
+
+                for pkg in re.findall(r'<a.*>\s*(\S+).txz</a>', response.text):
+                    package_site_data[pkg.rsplit('-', 1)[0]] = \
+                        iocage_lib.ioc_common.parse_package_name(pkg)
+            except Exception:
+                pass
+
+            return packagesite_url, package_site_data
+
+        plugin_packagesite_mapping = {}
+        package_sites = set([
+            url.rstrip('/') for url in package_sites
+        ])
+
+        with concurrent.futures.ThreadPoolExecutor() as exc:
+            results = exc.map(
+                download_parse_packagesite, package_sites
+            )
+
+            for result in results:
+                plugin_packagesite_mapping[result[0]] = result[1]
+
+        return plugin_packagesite_mapping
+
+    @staticmethod
+    def fetch_plugin_versions_from_plugin_index(plugins_index):
+        plugin_packagesite_mapping = IOCPlugin.fetch_plugin_packagesites([
+            v['packagesite'] for v in plugins_index.values()
+        ])
+
+        version_dict = {}
+        for plugin in plugins_index:
+            plugin_dict = plugins_index[plugin]
+            packagesite = plugin_dict['packagesite']
+            primary_package = plugin_dict.get('primary_pkg') or plugin
+            packagesite = packagesite.rstrip('/')
+            plugin_pkgs = plugin_packagesite_mapping[packagesite]
+            try:
+                version_data = plugin_pkgs[primary_package]
+            except KeyError:
+                plugin_dict.update({
+                    k: 'N/A' for k in ('revision', 'version', 'epoch')
+                })
+            else:
+                plugin_dict.update(version_data)
+
+            version_dict[plugin] = plugin_dict
+
+        return version_dict
+
+    @staticmethod
+    def retrieve_plugin_index_data(plugin_index_path):
+        with open(
+            os.path.join(plugin_index_path, 'INDEX'), 'r'
+        ) as f:
+            index = json.loads(f.read())
+
+        plugin_index = {}
+        for plugin in index:
+            plugin_index[plugin] = {
+                'primary_pkg': index[plugin].get('primary_pkg'),
+            }
+            with open(
+                os.path.join(plugin_index_path, index[plugin]['MANIFEST']), 'r'
+            ) as f:
+                plugin_index[plugin].update(json.loads(f.read()))
+
+        return plugin_index
+
+    def fetch_plugin_versions(self):
+        self.clone_repo()
+
+        plugin_index = self.retrieve_plugin_index_data(
+            os.path.join(self.iocroot, '.plugin_index')
+        )
+
+        return self.fetch_plugin_versions_from_plugin_index(plugin_index)
 
     def fetch_plugin(self, props, num, accept_license):
         """Helper to fetch plugins"""
@@ -577,7 +685,10 @@ fingerprint: {fingerprint}
                 _callback=self.callback,
                 silent=self.silent)
 
-            self.__clone_repo(conf['artifact'], f'{jaildir}/plugin')
+            self._clone_repo(
+                self.branch, conf['artifact'],
+                f'{jaildir}/plugin', callback=self.callback
+            )
 
             with open(
                 f"{jaildir}/{self.jail.rsplit('_', 1)[0]}.json", "w"
@@ -674,35 +785,11 @@ fingerprint: {fingerprint}
             except FileNotFoundError:
                 pass
 
-    def fetch_plugin_index(self,
-                           props,
-                           _list=False,
-                           list_header=False,
-                           list_long=False,
-                           accept_license=False,
-                           icon=False,
-                           official=False,
-                           index_only=False):
-
-        if self.server == "download.freebsd.org":
-            git_server = "https://github.com/freenas/iocage-ix-plugins.git"
-        else:
-            git_server = self.server
-
-        git_working_dir = f"{self.iocroot}/.plugin_index"
-
-        # list --plugins won't often be root.
-
-        if os.geteuid() == 0:
-            try:
-                self.__clone_repo(git_server, git_working_dir)
-            except Exception as err:
-                iocage_lib.ioc_common.logit(
-                    {
-                        "level": "EXCEPTION",
-                        "message": err
-                    },
-                    _callback=self.callback)
+    def fetch_plugin_index(
+        self, props, _list=False, list_header=False, list_long=False,
+        accept_license=False, icon=False, official=False, index_only=False
+    ):
+        self.clone_repo()
 
         with open(f"{self.iocroot}/.plugin_index/INDEX", "r") as plugins:
             plugins = json.load(plugins)
@@ -940,14 +1027,19 @@ fingerprint: {fingerprint}
 
         git_working_dir = f"{self.iocroot}/.plugin_index"
 
-        self.__clone_repo(git_server, git_working_dir)
+        self._clone_repo(
+            self.branch, git_server, git_working_dir, callback=self.callback
+        )
 
     def __update_pull_plugin_artifact__(self, plugin_conf):
         """Pull the latest artifact to be sure we're up to date"""
         path = f"{self.iocroot}/jails/{self.jail}"
 
         shutil.rmtree(f"{path}/plugin", ignore_errors=True)
-        self.__clone_repo(plugin_conf['artifact'], f'{path}/plugin')
+        self._clone_repo(
+            self.branch, plugin_conf['artifact'],
+            f'{path}/plugin', callback=self.callback
+        )
 
         try:
             distutils.dir_util.copy_tree(
@@ -1330,12 +1422,12 @@ fingerprint: {fingerprint}
         fetch_args = {'release': release, 'eol': False}
         iocage_lib.iocage.IOCage(silent=self.silent).fetch(**fetch_args)
 
-    def __clone_repo(self, repo_url, destination):
+    @staticmethod
+    def _clone_repo(ref, repo_url, destination, depth=None, callback=None):
         """
         This is to replicate the functionality of cloning/pulling a repo
         """
-        ref = self.branch
-
+        branch = ref
         try:
             # "Pull"
             repo = git.Repo(destination)
@@ -1365,8 +1457,11 @@ fingerprint: {fingerprint}
             except FileNotFoundError:
                 pass
             finally:
+                kwargs = {'env': os.environ.copy(), 'depth': depth}
                 repo = git.Repo.clone_from(
-                    repo_url, destination, env=os.environ.copy()
+                    repo_url, destination, **{
+                        k: v for k, v in kwargs.items() if v
+                    }
                 )
                 origin = repo.remotes.origin
 
@@ -1376,12 +1471,13 @@ fingerprint: {fingerprint}
                     'level': 'EXCEPTION',
                     'message': f'Origin: {origin.url} does not exist!'
                 },
-                _callback=self.callback)
+                _callback=callback
+            )
 
         if f'origin/{ref}' not in repo.refs:
             ref = 'master'
             msgs = [
-                f'\nBranch {self.branch} does not exist at {repo_url}!',
+                f'\nBranch {branch} does not exist at {repo_url}!',
                 'Using "master" branch for plugin, this may not work '
                 'with your RELEASE'
             ]
@@ -1392,7 +1488,8 @@ fingerprint: {fingerprint}
                         'level': 'INFO',
                         'message': msg
                     },
-                    _callback=self.callback)
+                    _callback=callback
+                )
 
         # Time to make this reality
         repo.git.checkout(ref)
