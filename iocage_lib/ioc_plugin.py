@@ -112,18 +112,8 @@ class IOCPlugin(object):
                 response.raise_for_status()
 
                 for pkg in re.findall(r'<a.*>\s*(\S+).txz</a>', response.text):
-
-                    pkg, version = pkg.rsplit('-', 1)
-                    epoch_split = version.rsplit(',', 1)
-                    epoch = epoch_split[1] if len(epoch_split) == 2 else '0'
-                    revision_split = epoch_split[0].rsplit('_', 1)
-                    revision = \
-                        revision_split[1] if len(revision_split) == 2 else '0'
-                    package_site_data[pkg] = {
-                        'version': revision_split[0],
-                        'revision': revision,
-                        'epoch': epoch,
-                    }
+                    package_site_data[pkg.rsplit('-', 1)[0]] = \
+                        iocage_lib.ioc_common.parse_package_name(pkg)
             except Exception:
                 pass
 
