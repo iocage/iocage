@@ -797,41 +797,47 @@ fingerprint: {fingerprint}
         if index_only:
             return plugins
 
-        _plugins = self.__fetch_sort_plugin__(plugins, official=official)
+        plugins_ordered_dict = collections.OrderedDict(
+            sorted({
+                k: {'name': v['name'], 'description': v['description']}
+                for k, v in plugins.items()
+                if not (official and not v.get('official', False))
+            }.items())
+        )
 
         if self.plugin is None and not _list:
-            for p in _plugins:
+            for i, p in enumerate(plugins_ordered_dict.items()):
+                k, v = p
                 iocage_lib.ioc_common.logit(
                     {
-                        "level": "INFO",
-                        "message": f"[{_plugins.index(p)}] {p}"
+                        'level': 'INFO',
+                        'message':
+                            f'[{i}] {v["name"]} - {v["description"]} ({k})'
                     },
                     _callback=self.callback,
-                    silent=self.silent)
+                    silent=self.silent
+                )
 
         if _list:
             plugin_list = []
 
-            for p in _plugins:
-                p = p.split("-", 1)
-                name = p[0]
-                desc, pkg = re.sub(r'[()]', '', p[1]).rsplit(" ", 1)
-                license = plugins[pkg].get("license", "")
-                _official = str(plugins[pkg].get("official", False))
-                icon_path = plugins[pkg].get("icon", None)
-
-                p = [name, desc, pkg]
+            for k, v in plugins_ordered_dict.items():
+                plugin_dict = {
+                    'name': v['name'],
+                    'description': v['description'],
+                    'plugin': k,
+                }
 
                 if not list_header:
-                    p += [license, _official]
+                    plugin_dict.update({
+                        'license': plugins[k].get('license', ''),
+                        'official': plugins[k].get('official', False),
+                    })
 
                 if icon:
-                    p += [icon_path]
+                    plugin_dict['icon'] = plugins[k].get('icon', None)
 
-                if official and _official == "False":
-                    continue
-
-                plugin_list.append(p)
+                plugin_list.append(plugin_dict)
 
             if not list_header:
                 return plugin_list
@@ -846,6 +852,12 @@ fingerprint: {fingerprint}
                 if icon:
                     list_header += ["ICON"]
 
+                plugin_list = [
+                    [p['name'], p['description'], p['plugin']] + (
+                        [p['icon']] if icon else []
+                    )
+                    for p in plugin_list
+                ]
                 plugin_list.insert(0, list_header)
 
                 table.add_rows(plugin_list)
@@ -857,8 +869,9 @@ fingerprint: {fingerprint}
                                 " plugin\nPress [Enter] or type EXIT to"
                                 " quit: ")
 
-        self.plugin = self.__fetch_validate_plugin__(self.plugin.lower(),
-                                                     _plugins)
+        self.plugin = self.__fetch_validate_plugin__(
+            self.plugin.lower(), plugins_ordered_dict
+        )
 
         # We now run the fetch the user requested
         self.fetch_plugin(props, 0, accept_license)
@@ -874,9 +887,9 @@ fingerprint: {fingerprint}
         if plugin.lower() == "exit":
             exit()
 
-        if len(plugin) <= 2:
+        if plugin.isdigit():
             try:
-                plugin = plugins[int(plugin)]
+                plugin = list(plugins.items())[int(plugin)][0]
             except IndexError:
                 iocage_lib.ioc_common.logit(
                     {
@@ -887,58 +900,21 @@ fingerprint: {fingerprint}
             except ValueError:
                 exit()
         else:
-            # Quick list validation
-            try:
-                plugin = [
-                    i for i, p in enumerate(plugins)
-
-                    if plugin.capitalize() in p or plugin in p
-                ]
-                try:
-                    plugin = plugins[int(plugin[0])]
-                except IndexError:
+            if plugin not in plugins:
+                for k, v in plugins.items():
+                    if plugin == v['name']:
+                        plugin = k
+                        break
+                else:
                     iocage_lib.ioc_common.logit(
                         {
-                            "level": "EXCEPTION",
-                            "message": f"Plugin: {_plugin} not in list!"
+                            'level': 'EXCEPTION',
+                            'message': f'Plugin: {_plugin} not available.'
                         },
-                        _callback=self.callback)
-            except ValueError as err:
-                iocage_lib.ioc_common.logit(
-                    {
-                        "level": "EXCEPTION",
-                        "message": err
-                    },
-                    _callback=self.callback)
+                        _callback=self.callback
+                    )
 
-        return plugin.rsplit("(", 1)[1].replace(")", "")
-
-    def __fetch_sort_plugin__(self, plugins, official=False):
-        """
-        Sort the list by plugin.
-        """
-        p_dict = {}
-        plugin_list = []
-
-        for plugin in plugins:
-            _official = str(plugins[plugin].get("official", False))
-
-            if official and _official == "False":
-                continue
-
-            _plugin = f"{plugins[plugin]['name']} -" \
-                f" {plugins[plugin]['description']}" \
-                      f" ({plugin})"
-            p_dict[plugin] = _plugin
-
-        ordered_p_dict = collections.OrderedDict(sorted(p_dict.items()))
-        index = 0
-
-        for p in ordered_p_dict.values():
-            plugin_list.insert(index, f"{p}")
-            index += 1
-
-        return plugin_list
+        return plugin
 
     def update(self, jid):
         iocage_lib.ioc_common.logit(
