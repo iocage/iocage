@@ -44,6 +44,8 @@ import json
 import iocage_lib.ioc_exceptions
 import iocage_lib.ioc_exec
 
+INTERACTIVE = False
+
 
 def callback(_log, callback_exception):
     """Helper to call the appropriate logging level"""
@@ -68,26 +70,22 @@ def callback(_log, callback_exception):
     elif level == 'NOTICE':
         log.log(25, message)
     elif level == 'EXCEPTION':
-        try:
-            if not is_tty():
+        if not INTERACTIVE:
+            raise callback_exception(message)
+        else:
+            if not isinstance(message, str) and isinstance(
+                message,
+                collections.Iterable
+            ):
+                message = '\n'.join(message)
+
+            if not suppress_log:
+                log.error(message)
+
+            if force_raise:
                 raise callback_exception(message)
             else:
-                if not isinstance(message, str) and isinstance(
-                    message,
-                    collections.Iterable
-                ):
-                    message = '\n'.join(message)
-
-                if not suppress_log:
-                    log.error(message)
-
-                if force_raise:
-                    raise callback_exception(message)
-                else:
-                    raise SystemExit(1)
-        except AttributeError:
-            # They are lacking the fileno object
-            raise callback_exception(message)
+                raise SystemExit(1)
 
 
 def logit(content, _callback=None, silent=False, exception=RuntimeError):
@@ -925,14 +923,10 @@ def construct_truthy(item, inverse=False):
     return (f'{item}=on', f'{item}=yes', f'{item}=1', f'{item}=true')
 
 
-def is_tty():
+def set_interactive(interactive):
     """Returns True or False if stdout is a tty"""
-    try:
-        is_tty = os.isatty(sys.stdout.fileno())
-    except ValueError:
-        is_tty = False
-
-    return is_tty
+    global INTERACTIVE
+    INTERACTIVE = interactive
 
 
 def lowercase_set(values):
