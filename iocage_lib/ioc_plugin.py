@@ -53,6 +53,8 @@ class IOCPlugin(object):
     includes creation, updating and upgrading.
     """
 
+    PLUGIN_VERSION = '2'
+
     def __init__(self, release=None, jail=None, plugin=None, branch=None,
                  keep_jail_on_failure=False, callback=None, silent=False,
                  **kwargs):
@@ -435,12 +437,21 @@ class IOCPlugin(object):
 
         # We set our properties that we need, and then iterate over the user
         # supplied properties replacing ours.
-        create_props = [f'release={release}', 'type=pluginv2', 'boot=on',
-                        'vnet=1']
+        create_props = [
+            f'release={release}', 'boot=on', 'vnet=1'
+        ]
 
         create_props = create_props + [
             f"{k}={v}" for k, v in (p.split("=") for p in props)
         ]
+
+        # These properties are not user configurable
+
+        for prop in (
+            f'type=pluginv{self.PLUGIN_VERSION}',
+            f'plugin_name={self.plugin}'
+        ):
+            create_props.append(prop)
 
         return create_props, pkg_repos
 

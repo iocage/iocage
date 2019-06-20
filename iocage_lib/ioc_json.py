@@ -700,7 +700,7 @@ class IOCConfiguration(IOCZFS):
     @staticmethod
     def get_version():
         """Sets the iocage configuration version."""
-        version = '23'
+        version = '24'
 
         return version
 
@@ -1382,7 +1382,8 @@ class IOCConfiguration(IOCZFS):
             'nat_prefix': '172.16',
             'nat_interface': 'none',
             'nat_backend': 'ipfw',
-            'nat_forwards': 'none'
+            'nat_forwards': 'none',
+            'plugin_name': 'none',
         }
 
         try:
@@ -2306,7 +2307,8 @@ class IOCJson(IOCConfiguration):
             'nat_prefix': ('string', ),
             'nat_interface': ('string', ),
             'nat_backend': ('pf', 'ipfw'),
-            'nat_forwards': ('string', )
+            'nat_forwards': ('string', ),
+            'plugin_name': ('string', ),
         }
 
         zfs_props = {
