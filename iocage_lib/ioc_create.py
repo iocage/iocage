@@ -38,7 +38,6 @@ import iocage_lib.ioc_start
 import iocage_lib.ioc_stop
 import iocage_lib.ioc_exceptions
 import libzfs
-import itertools
 import dns.resolver
 import dns.exception
 import shutil

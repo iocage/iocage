@@ -30,7 +30,6 @@ import os
 import shutil
 import stat
 import subprocess as su
-import sys
 import tempfile as tmp
 import requests
 import datetime as dt
