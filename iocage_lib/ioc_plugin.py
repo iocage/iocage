@@ -535,7 +535,7 @@ class IOCPlugin(object):
                 silent=True,
                 callback=self.callback
             ).create_install_packages(
-                    self.jail, jaildir
+                self.jail, jaildir
             )
 
             if err:
