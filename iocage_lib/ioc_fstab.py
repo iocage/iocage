@@ -463,7 +463,8 @@ class IOCFstab(object):
         """Returns list of lists, or a table"""
         flat_fstab = [
             (
-                i, self.__fstab_decode__(f)
+                i, [self.__fstab_decode__(v) for v in f.split()]
+                if not self.header else self.__fstab_decode__(f)
             ) for (i, f) in self.fstab
         ]
 
