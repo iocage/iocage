@@ -133,7 +133,8 @@ def cli(action, fstab_string, jail, header, replace):
             })
         else:
             for f in fstab:
+                line = '\t'.join(f[1])
                 ioc_common.logit({
                     "level": "INFO",
-                    "message": f'{f[0]}\t{f[1]}'
+                    "message": f'{f[0]}\t{line}'
                 })
