@@ -867,7 +867,7 @@ class IOCage(ioc_json.IOCZFS):
         status, jid = self.list("jid", uuid=uuid)
 
         if not status and not start_jail:
-            if not ioc_common.is_tty():
+            if not ioc_common.INTERACTIVE:
                 ioc_common.logit(
                     {
                         "level": "EXCEPTION",
@@ -1258,7 +1258,7 @@ class IOCage(ioc_json.IOCZFS):
                 return state
             elif plugin:
                 if not status and not start_jail:
-                    if not ioc_common.is_tty():
+                    if not ioc_common.INTERACTIVE:
                         ioc_common.logit(
                             {
                                 "level": "EXCEPTION",
