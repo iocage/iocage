@@ -533,9 +533,10 @@ class IOCPlugin(object):
                 0,
                 pkglist=["ca_root_nss"],
                 silent=True,
-                callback=self.callback).create_install_packages(
-                    self.jail, jaildir
-                )
+                callback=self.callback
+            ).create_install_packages(
+                self.jail, jaildir
+            )
 
             if err:
                 iocage_lib.ioc_common.logit(
@@ -622,9 +623,10 @@ fingerprint: {fingerprint}
             pkglist=conf["pkgs"],
             silent=True,
             plugin=True,
-            callback=self.callback).create_install_packages(
-                self.jail, jaildir, repo=conf["packagesite"]
-            )
+            callback=self.callback
+        ).create_install_packages(
+            self.jail, jaildir, repo=conf["packagesite"]
+        )
 
         if err:
             iocage_lib.ioc_common.logit(

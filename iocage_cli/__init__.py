@@ -38,12 +38,14 @@ import coloredlogs
 import iocage_lib.ioc_check as ioc_check
 # This prevents it from getting in our way.
 from click import core
+from iocage_lib.ioc_common import set_interactive
 
 core._verify_python3_env = lambda: None
 locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
 
 sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf8', buffering=1)
 sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf8', buffering=1)
+set_interactive(True)
 
 # @formatter:off
 # Sometimes SIGINT won't be installed.
