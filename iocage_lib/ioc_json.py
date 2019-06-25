@@ -2012,7 +2012,7 @@ class IOCJson(IOCConfiguration):
                     self.zfs_set_property(new_location, "readonly", "on")
 
                     return
-                elif not iocage_lib.ioc_common.check_truthy(value):
+                else:
                     if not _import:
                         self.zfs.get_dataset(new_location).rename(
                             old_location, False, True)
@@ -2020,6 +2020,9 @@ class IOCJson(IOCConfiguration):
                         self.location = old_location.lstrip(self.pool).replace(
                             "/iocage", self.iocroot)
                         self.zfs_set_property(old_location, "readonly", "off")
+
+                        self.json_check_prop(key, value, conf, default)
+                        self.json_write(conf)
 
                         iocage_lib.ioc_common.logit(
                             {
