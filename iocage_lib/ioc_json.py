@@ -2651,11 +2651,11 @@ class IOCJson(IOCConfiguration):
                         uuid=uuid,
                         plugin=True
                     ) as _exec:
-                        prop_out = iocage_lib.ioc_common.consume_and_log(
+                        output = iocage_lib.ioc_common.consume_and_log(
                             _exec,
                             log=False
                         )
-                        return prop_out[0]
+                        return output['stdout'][0] if output['stdout'] else ''
             else:
                 return settings
         except KeyError:

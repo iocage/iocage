@@ -351,12 +351,12 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
                 unjailed=True,
                 callback=self.callback,
             ) as _exec:
-                update_output = iocage_lib.ioc_common.consume_and_log(
+                output = iocage_lib.ioc_common.consume_and_log(
                     _exec,
                     callback=self.callback
                 )
 
-            for i in update_output:
+            for i in output['stdout']:
                 if i == 'No updates are available to install.':
                     return True
 
