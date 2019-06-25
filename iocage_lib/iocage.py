@@ -951,14 +951,14 @@ class IOCage(ioc_json.IOCZFS):
                 unjailed=pkg,
                 su_env=su_env
             ) as _exec:
-                msgs = ioc_common.consume_and_log(
+                output = ioc_common.consume_and_log(
                     _exec
                 )
 
                 if msg_return:
-                    return msgs
+                    return output['stdout']
 
-                for line in msgs:
+                for line in output['stdout']:
                     ioc_common.logit(
                         {
                             "level": "INFO",

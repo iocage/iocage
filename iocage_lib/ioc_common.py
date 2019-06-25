@@ -867,26 +867,44 @@ def consume_and_log(exec_gen, log=True, callback=None):
     """
     Consume a generator and massage the output with lines
     """
-    final_output = ''
     output_list = []
+    error_list = []
+    stdout = stderr = ''
 
-    for stdout, _ in exec_gen:
-        final_output += stdout.decode()
+    def append_and_log(output):
+        for i, v in enumerate(output):
+            if v.endswith('\n'):
+                a_list = error_list if i else output_list
+                a_list.append(v)
 
-        if not final_output.endswith('\n'):
-            continue
+                if log:
+                    logit(
+                        {
+                            'level': 'INFO',
+                            'message': v.rstrip()
+                        },
+                        _callback=callback
+                    )
 
-        output_list.append(final_output.rstrip())
+                output[i] = ''
 
-        if log:
-            logit({
-                "level": "INFO",
-                "message": final_output.rstrip()
-            },
-                _callback=callback)
-        final_output = ''
+        return output
 
-    return output_list
+    for output in filter(lambda o: any(v for v in o), exec_gen):
+        output = list(output)
+        if isinstance(output[0], bytes):
+            for i in range(len(output)):
+                output[i] = output[i].decode()
+
+        o, e = output
+        stdout += o
+        stderr += e
+
+        stdout, stderr = append_and_log([stdout, stderr])
+
+    append_and_log([stdout, stderr])
+
+    return {'stdout': output_list, 'stderr': error_list}
 
 
 def get_jail_freebsd_version(path, release):
