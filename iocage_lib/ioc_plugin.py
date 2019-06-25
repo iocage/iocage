@@ -27,6 +27,7 @@ import concurrent.futures
 import datetime
 import distutils.dir_util
 import json
+import logging
 import os
 import git
 import pathlib
@@ -74,6 +75,7 @@ class IOCPlugin(object):
         self.callback = callback
         self.keep_jail_on_failure = keep_jail_on_failure
         self.thickconfig = kwargs.pop('thickconfig', False)
+        self.log = logging.getLogger('iocage')
 
         if self.branch is None and not self.hardened:
             freebsd_version = su.run(['freebsd-version'],
@@ -199,6 +201,7 @@ class IOCPlugin(object):
         _json = f"{self.iocroot}/.plugin_index/{self.plugin}.json" if not \
             self.plugin.endswith(".json") else self.plugin
         plugins = self.fetch_plugin_index(props, index_only=True)
+        self.log.debug(f'Plugin json file path: {_json}')
 
         try:
             with open(_json, "r") as j:
@@ -505,6 +508,7 @@ class IOCPlugin(object):
         secure = True if "https://" in conf["packagesite"] else False
 
         for kmod in kmods:
+            self.log.debug(f'Loading {kmod}')
             try:
                 su.check_call(
                     ["kldload", "-n", kmod], stdout=su.PIPE, stderr=su.PIPE)

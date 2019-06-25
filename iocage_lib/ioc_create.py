@@ -23,6 +23,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """iocage create module."""
 import json
+import logging
 import os
 import pathlib
 import re
@@ -73,6 +74,7 @@ class IOCCreate(object):
         self.callback = callback
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.thickconfig = thickconfig
+        self.log = logging.getLogger('iocage')
 
         if basejail and not clone_basejail:
             # We want these thick to remove any odd dependency chains later
@@ -842,6 +844,8 @@ class IOCCreate(object):
                                  stdout=su.PIPE,
                                  stderr=su.STDOUT)
             pkg_err = pkg_install.returncode
+
+            self.log.debug(pkg_install.stdout)
 
             if pkg_err == 0:
                 break
