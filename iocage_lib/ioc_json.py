@@ -700,7 +700,7 @@ class IOCConfiguration(IOCZFS):
     @staticmethod
     def get_version():
         """Sets the iocage configuration version."""
-        version = '24'
+        version = '24.1'
 
         return version
 
@@ -1070,6 +1070,10 @@ class IOCConfiguration(IOCZFS):
             conf['nat_backend'] = 'ipfw'
         if not conf.get('nat_forwards'):
             conf['nat_forwards'] = 'none'
+
+        # Version 24 key
+        if not conf.get('plugin_name'):
+            conf['plugin_name'] = 'none'
 
         if not default:
             conf.update(jail_conf)
