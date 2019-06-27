@@ -339,14 +339,22 @@ class IOCList(object):
 
                 try:
                     with open(f"{mountpoint}/plugin/ui.json", "r") as u:
-                        ip = full_ip4.split("|", 1)
-                        ip = ip[1] if len(ip) != 1 else ip[0]
+                        all_ips = map(
+                            lambda v: 'DHCP' if 'dhcp' in v.lower() else v,
+                            [
+                                i.split('|')[-1].split('/')[0].strip()
+                                for i in full_ip4.split(',')
+                            ]
+                        )
 
-                        ip = ip.split("/", 1)[0] if "DHCP" not in full_ip4 \
-                            else "DHCP"
                         ui_data = json.load(u)
                         admin_portal = ui_data["adminportal"]
-                        admin_portal = admin_portal.replace("%%IP%%", ip)
+                        admin_portal = ','.join(
+                            map(
+                                lambda v: admin_portal.replace('%%IP%%', v),
+                                all_ips
+                            )
+                        )
 
                         try:
                             ph = ui_data["adminportal_placeholders"].items()
