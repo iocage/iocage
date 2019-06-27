@@ -1181,7 +1181,7 @@ class IOCStart(object):
         if ipv6:
             ifconfig = [iface, 'inet6', ip, 'up']
         else:
-            ifconfig = [iface, ip, 'up']
+            ifconfig = [iface, ip, 'alias']
 
         try:
             if not wants_dhcp and ip != 'accept_rtadv':
