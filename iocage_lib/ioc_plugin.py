@@ -57,9 +57,10 @@ class IOCPlugin(object):
 
     PLUGIN_VERSION = '2'
 
-    def __init__(self, release=None, jail=None, plugin=None, branch=None,
-                 keep_jail_on_failure=False, callback=None, silent=False,
-                 **kwargs):
+    def __init__(
+        self, release=None, jail=None, plugin=None, branch=None,
+        keep_jail_on_failure=False, callback=None, silent=False, **kwargs
+    ):
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")
@@ -68,7 +69,6 @@ class IOCPlugin(object):
         self.plugin = plugin
         self.jail = jail
         self.http = kwargs.pop("http", True)
-        self.server = kwargs.pop("server", "download.freebsd.org")
         self.hardened = kwargs.pop("hardened", False)
         self.date = datetime.datetime.utcnow().strftime("%F")
         self.branch = branch
@@ -77,6 +77,19 @@ class IOCPlugin(object):
         self.keep_jail_on_failure = keep_jail_on_failure
         self.thickconfig = kwargs.pop('thickconfig', False)
         self.log = logging.getLogger('iocage')
+        self.git_repository = kwargs.get(
+            'git_repository'
+        ) or 'https://github.com/freenas/iocage-ix-plugins.git'
+
+        self.git_destination = kwargs.get('git_destination')
+        if not self.git_destination:
+            # If not provided, we use git repository uri and split on scheme
+            # and convert slashes/dot to underscore to guarantee uniqueness
+            # i.e github_com_freenas_iocage-ix-plugins_git
+            self.git_destination = os.path.join(
+                self.iocroot, '.plugins', self.git_repository.split(
+                    '://', 1)[-1].replace('/', '_').replace('.', '_')
+            )
 
         if self.branch is None and not self.hardened:
             freebsd_version = su.run(['freebsd-version'],
@@ -89,28 +102,11 @@ class IOCPlugin(object):
             # Backwards compat
             self.branch = 'master'
 
-    def clone_repo(self, depth=None):
-        if self.server == "download.freebsd.org":
-            git_server = "https://github.com/freenas/iocage-ix-plugins.git"
-        else:
-            git_server = self.server
-
-        git_working_dir = f"{self.iocroot}/.plugin_index"
-
-        if os.geteuid() == 0:
-            try:
-                self._clone_repo(
-                    self.branch, git_server, git_working_dir,
-                    depth, self.callback
-                )
-            except Exception as err:
-                iocage_lib.ioc_common.logit(
-                    {
-                        "level": "EXCEPTION",
-                        "message": err
-                    },
-                    _callback=self.callback
-                )
+    def pull_clone_git_repo(self, depth=None):
+        self._clone_repo(
+            self.branch, self.git_repository, self.git_destination,
+            depth, self.callback
+        )
 
     @staticmethod
     def fetch_plugin_packagesites(package_sites):
@@ -189,18 +185,19 @@ class IOCPlugin(object):
         return plugin_index
 
     def fetch_plugin_versions(self):
-        self.clone_repo()
+        self.pull_clone_git_repo()
 
-        plugin_index = self.retrieve_plugin_index_data(
-            os.path.join(self.iocroot, '.plugin_index')
-        )
+        plugin_index = self.retrieve_plugin_index_data(self.git_destination)
 
         return self.fetch_plugin_versions_from_plugin_index(plugin_index)
 
     def fetch_plugin(self, props, num, accept_license):
         """Helper to fetch plugins"""
-        _json = f"{self.iocroot}/.plugin_index/{self.plugin}.json" if not \
-            self.plugin.endswith(".json") else self.plugin
+        if not self.plugin.endswith('.json'):
+            _json = os.path.join(self.git_destination, f'{self.plugin}.json')
+        else:
+            _json = self.plugin
+
         plugins = self.fetch_plugin_index(props, index_only=True)
         self.log.debug(f'Plugin json file path: {_json}')
 
@@ -807,9 +804,9 @@ fingerprint: {fingerprint}
         self, props, _list=False, list_header=False, list_long=False,
         accept_license=False, icon=False, official=False, index_only=False
     ):
-        self.clone_repo()
+        self.pull_clone_git_repo()
 
-        with open(f"{self.iocroot}/.plugin_index/INDEX", "r") as plugins:
+        with open(os.path.join(self.git_destination, 'INDEX'), 'r') as plugins:
             plugins = json.load(plugins)
 
         if index_only:
@@ -957,7 +954,7 @@ fingerprint: {fingerprint}
             },
             _callback=self.callback,
             silent=self.silent)
-        self.__update_pull_plugin_index__()
+        self.pull_clone_git_repo()
 
         plugin_conf = self.__load_plugin_json()
         self.__check_manifest__(plugin_conf)
@@ -1010,20 +1007,6 @@ fingerprint: {fingerprint}
                 self.__start_rc__()
 
         self.__remove_snapshot__(name="update")
-
-    def __update_pull_plugin_index__(self):
-        """Pull the latest index to be sure we're up to date"""
-
-        if self.server == "download.freebsd.org":
-            git_server = "https://github.com/freenas/iocage-ix-plugins.git"
-        else:
-            git_server = self.server
-
-        git_working_dir = f"{self.iocroot}/.plugin_index"
-
-        self._clone_repo(
-            self.branch, git_server, git_working_dir, callback=self.callback
-        )
 
     def __update_pull_plugin_artifact__(self, plugin_conf):
         """Pull the latest artifact to be sure we're up to date"""
@@ -1166,7 +1149,7 @@ fingerprint: {fingerprint}
             },
             _callback=self.callback,
             silent=self.silent)
-        self.__update_pull_plugin_index__()
+        self.pull_clone_git_repo()
 
         plugin_conf = self.__load_plugin_json()
         self.__check_manifest__(plugin_conf)
@@ -1177,8 +1160,10 @@ fingerprint: {fingerprint}
         # We want the new json to live with the jail
         plugin_name = self.plugin.rsplit('_', 1)[0]
         shutil.copy(
-            f'{self.iocroot}/.plugin_index/{plugin_name}.json',
-            f'{self.iocroot}/jails/{self.jail}/{plugin_name}.json'
+            os.path.join(self.git_destination, f'{plugin_name}.json'),
+            os.path.join(
+                self.iocroot, 'jails', self.jail, f'{plugin_name}.json'
+            )
         )
 
         release_p = pathlib.Path(f"{self.iocroot}/releases/{plugin_release}")
@@ -1243,7 +1228,7 @@ fingerprint: {fingerprint}
     def __load_plugin_json(self):
         """Load the plugins configuration"""
         plugin_name = self.plugin.rsplit('_', 1)[0]
-        _json = f"{self.iocroot}/.plugin_index/{plugin_name}.json"
+        _json = os.path.join(self.git_destination, f'{plugin_name}.json')
 
         try:
             with open(_json, "r") as j:
@@ -1287,7 +1272,7 @@ fingerprint: {fingerprint}
                 },
                 _callback=self.callback)
 
-        jsons = pathlib.Path(f'{self.iocroot}/.plugin_index').glob('*.json')
+        jsons = pathlib.Path(self.git_destination).glob('*.json')
 
         for f in jsons:
             _conf = json.loads(pathlib.Path(f).open('r').read())

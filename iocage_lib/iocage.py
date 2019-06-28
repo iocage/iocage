@@ -1061,7 +1061,8 @@ class IOCage(ioc_json.IOCZFS):
             if _list:
                 rel_list = ioc_plugin.IOCPlugin(
                     branch=branch,
-                    thickconfig=thick_config
+                    thickconfig=thick_config,
+                    **kwargs
                 ).fetch_plugin_index(
                     "", _list=True, list_header=header, list_long=_long,
                     icon=True, official=official
@@ -1145,6 +1146,9 @@ class IOCage(ioc_json.IOCZFS):
                         callback=self.callback, **kwargs
                     ).fetch_plugin(props, j, accept)
         else:
+            kwargs.pop('git_repository', None)
+            kwargs.pop('git_destination', None)
+
             if _list:
                 if remote:
                     rel_list = ioc_fetch.IOCFetch(
