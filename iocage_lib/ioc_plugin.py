@@ -459,7 +459,8 @@ class IOCPlugin(object):
 
         for prop in (
             f'type=pluginv{self.PLUGIN_VERSION}',
-            f'plugin_name={self.plugin}'
+            f'plugin_name={self.plugin}',
+            f'plugin_repository={self.git_repository}',
         ):
             create_props.append(prop)
 
