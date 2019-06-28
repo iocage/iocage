@@ -24,6 +24,7 @@
 """Check datasets before execution"""
 import collections
 import os
+import shutil
 
 import iocage_lib.ioc_common
 import iocage_lib.ioc_json
@@ -44,19 +45,31 @@ class IOCCheck(object):
 
         self.__check_fd_mount__()
         self.__check_datasets__()
+
+        self.zfs = iocage_lib.ioc_json.IOCZFS()
+        self.pool_mountpoint = self.zfs.zfs_get_property(
+            self.pool, 'mountpoint'
+        )
+        self.iocage_mountpoint = self.zfs.zfs_get_property(
+            f'{self.pool}/iocage', 'mountpoint'
+        )
+
         if migrate:
             self.__check_migrations__()
 
-    def __check_migrations__(self):
-        zfs = iocage_lib.ioc_json.IOCZFS()
-        pool_mountpoint = zfs.zfs_get_property(self.pool, 'mountpoint')
-        iocage_mountpoint = zfs.zfs_get_property(
-            f'{self.pool}/iocage', 'mountpoint'
+        self.__clean_files__()
+
+    def __clean_files__(self):
+        shutil.rmtree(
+            os.path.join(self.iocage_mountpoint, '.plugin_index'),
+            ignore_errors=True
         )
-        if not iocage_mountpoint.startswith(pool_mountpoint):
-            zfs.zfs_set_property(
+
+    def __check_migrations__(self):
+        if not self.iocage_mountpoint.startswith(self.pool_mountpoint):
+            self.zfs.zfs_set_property(
                 f'{self.pool}/iocage', 'mountpoint',
-                os.path.join(pool_mountpoint, 'iocage')
+                os.path.join(self.pool_mountpoint, 'iocage')
             )
 
     def __check_datasets__(self):
