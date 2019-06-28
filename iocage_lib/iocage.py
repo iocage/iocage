@@ -2063,7 +2063,7 @@ class IOCage(ioc_json.IOCZFS):
                 })
                 ioc_plugin.IOCPlugin(
                     jail=uuid,
-                    plugin=uuid,
+                    plugin=conf['plugin_name'],
                     callback=self.callback
                 ).update(jid)
                 ioc_common.logit({
@@ -2212,7 +2212,7 @@ class IOCage(ioc_json.IOCZFS):
 
             new_release = ioc_plugin.IOCPlugin(
                 jail=uuid,
-                plugin=uuid,
+                plugin=conf['plugin_name'],
                 callback=self.callback
             ).upgrade(jid)
             plugin = True

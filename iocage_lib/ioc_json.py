@@ -933,10 +933,13 @@ class IOCConfiguration(IOCZFS):
             if p in self.truthy_props:
                 conf[p] = 1 if iocage_lib.ioc_common.check_truthy(v) else 0
 
-        if conf.get('type') in ('plugin', 'pluginv2') \
-                and conf.get('plugin_repository', 'none') == 'none':
-            conf['plugin_repository'] = \
-                'https://github.com/freenas/iocage-ix-plugins.git'
+        if conf.get('type') in ('plugin', 'pluginv2'):
+            if conf.get('plugin_repository', 'none') == 'none':
+                conf['plugin_repository'] = \
+                    'https://github.com/freenas/iocage-ix-plugins.git'
+
+            if conf.get('host_hostuuid') and conf.get('plugin_name') == 'none':
+                conf['plugin_name'] = conf['host_hostuuid']
 
         return True if original_conf != conf else False
 
