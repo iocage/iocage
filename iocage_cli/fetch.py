@@ -70,6 +70,11 @@ def validate_count(ctx, param, value):
     help="Server to fetch from."
 )
 @click.option(
+    '--git_repository', '-g',
+    default='https://github.com/freenas/iocage-ix-plugins.git',
+    help='Git repository to use to fetch plugin.'
+)
+@click.option(
     "--keep_jail_on_failure", "-k", default=False, is_flag=True,
     help="Keep jails on failure"
 )
