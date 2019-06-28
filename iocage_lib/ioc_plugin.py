@@ -24,6 +24,7 @@
 """iocage plugin module"""
 import collections
 import concurrent.futures
+import contextlib
 import datetime
 import distutils.dir_util
 import json
@@ -1416,12 +1417,28 @@ fingerprint: {fingerprint}
         iocage_lib.iocage.IOCage(silent=self.silent).fetch(**fetch_args)
 
     @staticmethod
+    def _verify_git_repo(repo_url, destination):
+        verified = False
+        with contextlib.suppress(
+            git.exc.InvalidGitRepositoryError,
+            git.exc.NoSuchPathError,
+            AttributeError,
+        ):
+            repo = git.Repo(destination)
+            verified = any(u == repo_url for u in repo.remotes.origin.urls)
+
+        return verified
+
+    @staticmethod
     def _clone_repo(ref, repo_url, destination, depth=None, callback=None):
         """
         This is to replicate the functionality of cloning/pulling a repo
         """
         branch = ref
         try:
+            if not IOCPlugin._verify_git_repo(repo_url, destination):
+                raise git.exc.InvalidGitRepositoryError()
+
             # "Pull"
             repo = git.Repo(destination)
             origin = repo.remotes.origin
@@ -1445,18 +1462,14 @@ fingerprint: {fingerprint}
             git.exc.NoSuchPathError
         ):
             # Clone
-            try:
-                shutil.rmtree(destination)
-            except FileNotFoundError:
-                pass
-            finally:
-                kwargs = {'env': os.environ.copy(), 'depth': depth}
-                repo = git.Repo.clone_from(
-                    repo_url, destination, **{
-                        k: v for k, v in kwargs.items() if v
-                    }
-                )
-                origin = repo.remotes.origin
+            shutil.rmtree(destination, ignore_errors=True)
+            kwargs = {'env': os.environ.copy(), 'depth': depth}
+            repo = git.Repo.clone_from(
+                repo_url, destination, **{
+                    k: v for k, v in kwargs.items() if v
+                }
+            )
+            origin = repo.remotes.origin
 
         if not origin.exists():
             iocage_lib.ioc_common.logit(
