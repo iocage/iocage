@@ -77,6 +77,15 @@ class IOCPlugin(object):
         self.keep_jail_on_failure = keep_jail_on_failure
         self.thickconfig = kwargs.pop('thickconfig', False)
         self.log = logging.getLogger('iocage')
+
+        # If we have a jail which exists for this plugin, we will like to
+        # enforce the plugin to respect the github repository it was
+        # created from for updates/upgrades etc. If for some reason, this
+        # is not desired, the user is free to change it via "set" manually
+        # on his own.
+        # TODO: For a lack of ability to do this efficiently/correctly here,
+        #  the above should be enforced by the caller of IOCPlugin
+
         self.git_repository = kwargs.get(
             'git_repository'
         ) or 'https://github.com/freenas/iocage-ix-plugins.git'
@@ -450,7 +459,8 @@ class IOCPlugin(object):
 
         for prop in (
             f'type=pluginv{self.PLUGIN_VERSION}',
-            f'plugin_name={self.plugin}'
+            f'plugin_name={self.plugin}',
+            f'plugin_repository={self.git_repository}',
         ):
             create_props.append(prop)
 

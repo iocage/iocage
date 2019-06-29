@@ -700,7 +700,7 @@ class IOCConfiguration(IOCZFS):
     @staticmethod
     def get_version():
         """Sets the iocage configuration version."""
-        version = '24.1'
+        version = '25'
 
         return version
 
@@ -933,6 +933,14 @@ class IOCConfiguration(IOCZFS):
             if p in self.truthy_props:
                 conf[p] = 1 if iocage_lib.ioc_common.check_truthy(v) else 0
 
+        if conf.get('type') in ('plugin', 'pluginv2'):
+            if conf.get('plugin_repository', 'none') == 'none':
+                conf['plugin_repository'] = \
+                    'https://github.com/freenas/iocage-ix-plugins.git'
+
+            if conf.get('host_hostuuid') and conf.get('plugin_name') == 'none':
+                conf['plugin_name'] = conf['host_hostuuid']
+
         return True if original_conf != conf else False
 
     def check_config(self, conf, default=False):
@@ -1074,6 +1082,10 @@ class IOCConfiguration(IOCZFS):
         # Version 24 key
         if not conf.get('plugin_name'):
             conf['plugin_name'] = 'none'
+
+        # Version 25 key
+        if not conf.get('plugin_repository'):
+            conf['plugin_repository'] = 'none'
 
         if not default:
             conf.update(jail_conf)
@@ -1388,6 +1400,7 @@ class IOCConfiguration(IOCZFS):
             'nat_backend': 'ipfw',
             'nat_forwards': 'none',
             'plugin_name': 'none',
+            'plugin_repository': 'none',
         }
 
         try:
@@ -2316,6 +2329,7 @@ class IOCJson(IOCConfiguration):
             'nat_backend': ('pf', 'ipfw'),
             'nat_forwards': ('string', ),
             'plugin_name': ('string', ),
+            'plugin_repository': ('string', ),
         }
 
         zfs_props = {
