@@ -179,8 +179,13 @@ class IOCageCLI(click.MultiCommand):
         return rv
 
     def get_command(self, ctx, name):
-        mod = __import__(f"iocage_cli.{name}", None, None, ["cli"])
-        mod_name = mod.__name__.replace("iocage_cli.", "")
+
+        try:
+            mod = __import__(f"iocage_cli.{name}", None, None, ["cli"])
+            mod_name = mod.__name__.replace("iocage_cli.", "")
+        except ImportError:
+            # No such command
+            return
 
         try:
             if mod.__rootcmd__ and sys.argv[-1] not in ("help", "--help"):
