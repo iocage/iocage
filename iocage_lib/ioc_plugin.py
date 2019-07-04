@@ -265,6 +265,7 @@ class IOCPlugin(object):
                     paths=plugin_devfs_paths,
                     includes=plugin_devfs_includes
                 )
+            self.log.debug('Going to create plugin jail')
             jaildir, _conf, repo_dir = self.__fetch_plugin_create__(props)
             self.__install_plugin_pkgs__(
                 jaildir, conf, pkg, props, repo_dir
@@ -338,6 +339,8 @@ class IOCPlugin(object):
                     ], stdout=su.PIPE).stdout
                 )['jail-information']['jail'][0]['ipv4']
 
+        self.log.debug(f'IP for plugin jail is {ip}.')
+
         os.environ['IOCAGE_PLUGIN_IP'] = ip
 
         plugin_env = {
@@ -367,11 +370,19 @@ class IOCPlugin(object):
         with open(os.path.join(jaildir, f'{self.plugin}.json'), 'w') as f:
             f.write(json.dumps(conf, indent=4, sort_keys=True))
 
+        self.log.debug(
+            'Copied plugin\'s json file to '
+            f'{os.path.join(jaildir, f"{self.plugin}.json")}'
+        )
+
         with contextlib.suppress(distutils.errors.DistutilsFileError):
             distutils.dir_util.copy_tree(
                 os.path.join(jail_plugin_path, 'overlay'),
                 os.path.join(jail_plugin_path, 'root'),
                 preserve_symlinks=True
+            )
+            self.log.debug(
+                'Overlay tree of plugin artifact copied into the jail.'
             )
 
         if os.path.exists(os.path.join(jail_plugin_path, 'post_install.sh')):
@@ -646,6 +657,7 @@ class IOCPlugin(object):
             callback=self.callback
         ).create_jail()
 
+        self.log.debug('Plugin jail created.')
         jaildir = f"{self.iocroot}/jails/{self.jail}"
         repo_dir = f"{jaildir}/root/usr/local/etc/pkg/repos"
         path = f"{self.pool}/iocage/jails/{self.jail}"
@@ -690,8 +702,11 @@ class IOCPlugin(object):
         self.__load_kmods__(conf.get('kmods', []))
         if 'https://' in conf['packagesite']:
             self.__install_secure_packagesite_pkgs(create_props, jaildir)
+        self.log.debug('Setting up pkg(8) repos.')
         self.__setup_pkg_repos__(jaildir, repo_dir, pkg_repos, conf)
+        self.log.debug('pkg(8) repos setup successfully.')
 
+        self.log.debug('Installing plugin packages.')
         err = iocage_lib.ioc_create.IOCCreate(
             self.release, create_props, 0, pkglist=conf['pkgs'],
             silent=True, plugin=True, callback=self.callback
@@ -707,6 +722,8 @@ class IOCPlugin(object):
                 },
                 _callback=self.callback
             )
+        else:
+            self.log.debug('Plugin packages installed successfully.')
 
     def __load_kmods__(self, kmods):
         for kmod in kmods:
@@ -766,6 +783,10 @@ class IOCPlugin(object):
         ) as f_conf:
             f_conf.write(freebsd_conf)
 
+        self.log.debug(
+            f'{os.path.join(jail_pkg_path, "repos/FreeBSD.conf")} created.'
+        )
+
         for repo in pkg_repos:
             repo_name = repo
             repo = pkg_repos[repo]
@@ -789,6 +810,10 @@ class IOCPlugin(object):
                     ])
                 )
 
+            self.log.debug(
+                f'{os.path.join(repo_dir, f"{repo_name}.conf")} created.'
+            )
+
             for r in repo:
                 with open(os.path.join(f_dir, repo_name), 'w') as f:
                     f.write(
@@ -797,6 +822,8 @@ class IOCPlugin(object):
                             f'fingerprint: {r["fingerprint"]}'
                         ])
                     )
+
+                self.log.debug(f'{os.path.join(f_dir, repo_name)} created.')
 
     def fetch_plugin_index(
         self, props, _list=False, list_header=False, list_long=False,
