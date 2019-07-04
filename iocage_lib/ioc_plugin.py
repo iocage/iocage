@@ -263,7 +263,7 @@ class IOCPlugin(object):
                     includes=plugin_devfs_includes
                 )
             jaildir, _conf, repo_dir = self.__fetch_plugin_create__(props)
-            self.__fetch_plugin_install_packages__(
+            self.__install_plugin_pkgs__(
                 jaildir, conf, pkg, props, repo_dir
             )
             self.__fetch_plugin_post_install__(conf, _conf, jaildir)
@@ -509,145 +509,127 @@ class IOCPlugin(object):
 
         return jaildir, _conf, repo_dir
 
-    def __fetch_plugin_install_packages__(self, jaildir, conf, pkg_repos,
-                                          create_props, repo_dir):
-        """Attempts to start the jail and install the packages"""
-        kmods = conf.get("kmods", {})
-        secure = True if "https://" in conf["packagesite"] else False
+    def __install_plugin_pkgs__(
+        self, jaildir, conf, pkg_repos, create_props, repo_dir
+    ):
+        """
+        Installs plugin packages in the jail
+        """
+        # Following steps are executed to install pkgs in a plugin
+        # 1) Relevant kmods are loaded
+        # 2) If secure packagesite is detected, ca_root_nss pkg is installed
+        # 3) Setup pkg repo directories
+        # 4) Install plugin packages in the jail
 
+        self.__load_kmods__(conf.get('kmods', []))
+        if 'https://' in conf['packagesite']:
+            self.__install_secure_packagesite_pkgs(create_props, jaildir)
+        self.__setup_pkg_repos__(jaildir, repo_dir, pkg_repos, conf)
+
+        err = iocage_lib.ioc_create.IOCCreate(
+            self.release, create_props, 0, pkglist=conf['pkgs'],
+            silent=True, plugin=True, callback=self.callback
+        ).create_install_packages(
+            self.jail, jaildir, repo=conf['packagesite']
+        )
+        if err:
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message': f'\npkg error:\n  - {err}\n\nRefusing to fetch '
+                    f'artifact and run post_install.sh!'
+                },
+                _callback=self.callback
+            )
+
+    def __load_kmods__(self, kmods):
         for kmod in kmods:
             self.log.debug(f'Loading {kmod}')
             try:
-                su.check_call(
-                    ["kldload", "-n", kmod], stdout=su.PIPE, stderr=su.PIPE)
-            except su.CalledProcessError:
+                with iocage_lib.ioc_exec.IOCExec(
+                    ['kldload', '-n', kmod], '', uuid=None,
+                    unjailed=True, callback=self.callback,
+                ) as _exec:
+                    iocage_lib.ioc_common.consume_and_log(_exec)
+            except iocage_lib.ioc_exceptions.CommandFailed as e:
                 iocage_lib.ioc_common.logit(
                     {
-                        "level": "EXCEPTION",
-                        "message": "Module not found!"
+                        'level': 'EXCEPTION',
+                        'message': f'Module not found: {e}'
                     },
-                    _callback=self.callback)
+                    _callback=self.callback
+                )
 
-        if secure:
-            # Certificate verification
+    def __install_secure_packagesite_pkgs(self, create_props, jaildir):
+        iocage_lib.ioc_common.logit(
+            {
+                'level': 'INFO',
+                'message': 'Secure packagesite detected, installing '
+                           'ca_root_nss package.'
+            },
+            _callback=self.callback,
+            silent=self.silent
+        )
+
+        err = iocage_lib.ioc_create.IOCCreate(
+            self.release, create_props, 0, pkglist=['ca_root_nss'],
+            silent=True, callback=self.callback
+        ).create_install_packages(self.jail, jaildir)
+
+        if err:
             iocage_lib.ioc_common.logit(
                 {
-                    "level": "INFO",
-                    "message": "Secure packagesite detected, installing "
-                    "ca_root_nss package."
+                    'level': 'EXCEPTION',
+                    'message': 'pkg error, please try non-secure packagesite.'
                 },
-                _callback=self.callback,
-                silent=self.silent)
-
-            err = iocage_lib.ioc_create.IOCCreate(
-                self.release,
-                create_props,
-                0,
-                pkglist=["ca_root_nss"],
-                silent=True,
-                callback=self.callback
-            ).create_install_packages(
-                self.jail, jaildir
+                _callback=self.callback
             )
 
-            if err:
-                iocage_lib.ioc_common.logit(
-                    {
-                        "level": "EXCEPTION",
-                        "message":
-                        "pkg error, please try non-secure packagesite."
-                    },
-                    _callback=self.callback)
+    def __setup_pkg_repos__(self, jaildir, repo_dir, pkg_repos, conf):
+        for path in (f'{jaildir}/root/usr/local/etc/pkg/repos', repo_dir):
+            os.makedirs(path, mode=0o755, exist_ok=True)
 
-        try:
-            os.makedirs(f"{jaildir}/root/usr/local/etc/pkg/repos", 0o755)
-        except OSError:
-            # Same as below, it exists and we're OK with that.
-            pass
+        freebsd_conf = 'FreeBSD: { enabled: no }'
+        pkg_path = '/usr/local/etc/pkg'
+        jail_root_path = os.path.join(jaildir, 'root')
+        jail_pkg_path = os.path.join(jail_root_path, pkg_path[1:])
+        jail_fprints_path = os.path.join(jail_pkg_path, 'fingerprints')
 
-        freebsd_conf = """\
-FreeBSD: { enabled: no }
-"""
-
-        try:
-            os.makedirs(repo_dir, 0o755)
-        except OSError:
-            # It exists, that's fine.
-            pass
-
-        with open(f"{jaildir}/root/usr/local/etc/pkg/repos/FreeBSD.conf",
-                  "w") as f_conf:
+        with open(
+            os.path.join(jail_pkg_path, 'repos/FreeBSD.conf'), 'w'
+        ) as f_conf:
             f_conf.write(freebsd_conf)
 
         for repo in pkg_repos:
             repo_name = repo
             repo = pkg_repos[repo]
-            f_dir = f"{jaildir}/root/usr/local/etc/pkg/fingerprints/" \
-                f"{repo_name}/trusted"
-            r_dir = f"{jaildir}/root/usr/local/etc/pkg/fingerprints/" \
-                f"{repo_name}/revoked"
-            repo_conf = """\
-{reponame}: {{
-            url: "{packagesite}",
-            signature_type: "fingerprints",
-            fingerprints: "/usr/local/etc/pkg/fingerprints/{reponame}",
-            enabled: true
-            }}
-"""
+            f_dir = os.path.join(jail_fprints_path, repo_name, 'trusted')
+            r_dir = os.path.join(jail_fprints_path, repo_name, 'revoked')
 
-            try:
-                os.makedirs(f_dir, 0o755)
-                os.makedirs(r_dir, 0o755)
-            except OSError:
-                iocage_lib.ioc_common.logit(
-                    {
-                        "level": "ERROR",
-                        "message":
-                        f"Repo: {repo_name} already exists, skipping!"
-                    },
-                    _callback=self.callback,
-                    silent=self.silent)
+            os.makedirs(f_dir, 0o755, exist_ok=True)
+            os.makedirs(r_dir, 0o755, exist_ok=True)
 
-            r_file = f"{repo_dir}/{repo_name}.conf"
-
-            with open(r_file, "w") as r_conf:
-                r_conf.write(
-                    repo_conf.format(
-                        reponame=repo_name, packagesite=conf["packagesite"]))
-
-            f_file = f"{f_dir}/{repo_name}"
+            with open(os.path.join(repo_dir, f'{repo_name}.conf'), 'w') as f:
+                f.write(
+                    '\n'.join([
+                        f'{repo_name}: {{',
+                        f'\turl: "{conf["packagesite"]}",',
+                        '\tsignature_type: "fingerprints",',
+                        '\tfingerprints: '
+                        f'"{os.path.join(jail_fprints_path, repo_name)}"',
+                        '\tenabled: true',
+                        '}'
+                    ])
+                )
 
             for r in repo:
-                finger_conf = """\
-function: {function}
-fingerprint: {fingerprint}
-"""
-                with open(f_file, "w") as f_conf:
-                    f_conf.write(
-                        finger_conf.format(
-                            function=r["function"],
-                            fingerprint=r["fingerprint"]))
-
-        err = iocage_lib.ioc_create.IOCCreate(
-            self.release,
-            create_props,
-            0,
-            pkglist=conf["pkgs"],
-            silent=True,
-            plugin=True,
-            callback=self.callback
-        ).create_install_packages(
-            self.jail, jaildir, repo=conf["packagesite"]
-        )
-
-        if err:
-            iocage_lib.ioc_common.logit(
-                {
-                    "level": "EXCEPTION",
-                    "message": f"\npkg error:\n  - {err}\n"
-                    "\nRefusing to fetch artifact and run post_install.sh!"
-                },
-                _callback=self.callback)
+                with open(os.path.join(f_dir, repo_name), 'w') as f:
+                    f.write(
+                        '\n'.join([
+                            f'function: {r["function"]}',
+                            f'fingerprint: {r["fingerprint"]}'
+                        ])
+                    )
 
     def __fetch_plugin_post_install__(self, conf, _conf, jaildir):
         """Fetches the users artifact and runs the post install"""
