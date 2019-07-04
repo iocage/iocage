@@ -27,6 +27,7 @@ import concurrent.futures
 import contextlib
 import datetime
 import distutils.dir_util
+import distutils.errors
 import json
 import logging
 import os
@@ -200,7 +201,9 @@ class IOCPlugin(object):
 
         return self.fetch_plugin_versions_from_plugin_index(plugin_index)
 
-    def fetch_plugin(self, props, num, accept_license):
+    def fetch_plugin(
+        self, props, num, accept_license, execute_postinstall=True
+    ):
         """Helper to fetch plugins"""
         if not self.plugin.endswith('.json'):
             _json = os.path.join(self.git_destination, f'{self.plugin}.json')
@@ -266,7 +269,9 @@ class IOCPlugin(object):
             self.__install_plugin_pkgs__(
                 jaildir, conf, pkg, props, repo_dir
             )
-            self.__fetch_plugin_post_install__(conf, _conf, jaildir)
+            self.__retrieve_artifact_and_execute_post_install(
+                conf, _conf, jaildir, execute_postinstall
+            )
         except BaseException as e:
             if not self.keep_jail_on_failure:
                 msg = f'{self.jail} had a failure\n' \
@@ -281,6 +286,167 @@ class IOCPlugin(object):
                     _callback=self.callback,
                     silent=self.silent)
             raise
+
+    def __retrieve_artifact_and_execute_post_install(
+        self, conf, _conf, jaildir, post_install_execute=True
+    ):
+        # Following steps are executed to fetch and run post install script
+        # 1) Jail is started
+        # 2) IP of jail/plugin is determined. ( if multiple ip's are provided
+        # we will use the first one - also ip6 is given preference if set )
+        # 3) We set IOCAGE_PLUGIN_IP in environment with determined ip.
+        # 4) Clone the artifact
+        # 5) Make sure we have a copy of plugin's conf in jail
+        # 6) Copy overlay tree in the plugin jail as specified by artifact
+        # 7) Copy post install script and execute it
+        # 8) Log admin portal / doc url if they exist
+
+        iocage_lib.ioc_start.IOCStart(self.jail, jaildir, silent=True)
+
+        ip4 = _conf['ip4_addr']
+        ip6 = _conf['ip6_addr']
+        ip = None
+        if ip4 != 'none' and 'DHCP' not in ip4.upper():
+            ip = ','.join([
+                v.split('|')[-1].split('/')[0] for v in ip4.split(',')
+            ])
+
+        if ip6 != 'none':
+            ip = ','.join([
+                v.split('|')[-1].split('/')[0] for v in ip6.split(',')
+            ])
+
+        if not ip:
+            if _conf['vnet']:
+                interface = _conf['interfaces'].split(',')[0].split(':')[0]
+
+                if interface == 'vnet0':
+                    # Jails use epairNb by default inside
+                    interface = f'{interface.replace("vnet", "epair")}b'
+
+                ip4_cmd = [
+                    'jexec', f'ioc-{self.jail.replace(".", "_")}',
+                    'ifconfig', interface, 'inet'
+                ]
+                out = su.check_output(ip4_cmd).decode()
+                ip = f'{out.splitlines()[2].split()[1]}'
+            else:
+                ip = json.loads(
+                    su.run([
+                        'jls', '-j', f'ioc-{self.jail.replace(".", "_")}',
+                        '--libxo', 'json'
+                    ], stdout=su.PIPE).stdout
+                )['jail-information']['jail'][0]['ipv4']
+
+        os.environ['IOCAGE_PLUGIN_IP'] = ip
+
+        plugin_env = {
+            **{
+                k: os.environ.get(k)
+                for k in ['http_proxy', 'https_proxy'] if os.environ.get(k)
+            },
+            'IOCAGE_PLUGIN_IP': ip
+        }
+
+        iocage_lib.ioc_common.logit(
+            {
+                'level': 'INFO',
+                'message': '\nFetching artifact... '
+            },
+            _callback=self.callback,
+            silent=self.silent
+        )
+
+        jail_plugin_path = os.path.join(jaildir, 'plugin')
+
+        self._clone_repo(
+            self.branch, conf['artifact'],
+            jail_plugin_path, callback=self.callback
+        )
+
+        with open(os.path.join(jaildir, f'{self.plugin}.json'), 'w') as f:
+            f.write(json.dumps(conf, indent=4, sort_keys=True))
+
+        with contextlib.suppress(distutils.errors.DistutilsFileError):
+            distutils.dir_util.copy_tree(
+                os.path.join(jail_plugin_path, 'overlay'),
+                os.path.join(jail_plugin_path, 'root'),
+                preserve_symlinks=True
+            )
+
+        if os.path.exists(os.path.join(jail_plugin_path, 'post_install.sh')):
+            shutil.copy(
+                os.path.join(jail_plugin_path, 'post_install.sh'),
+                os.path.join(jaildir, 'root/root')
+            )
+            if post_install_execute:
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'INFO',
+                        'message': '\nRunning post_install.sh'
+                    },
+                    _callback=self.callback, silent=self.silent
+                )
+                try:
+                    with iocage_lib.ioc_exec.IOCExec(
+                        ['/root/post_install.sh'], jaildir, uuid=self.jail,
+                        plugin=True, skip=True, callback=self.callback,
+                        su_env=plugin_env
+                    ) as _exec:
+                        iocage_lib.ioc_common.consume_and_log(
+                            _exec,
+                            callback=self.callback
+                        )
+                except iocage_lib.ioc_exceptions.CommandFailed as e:
+                    message = b' '.join(e.message[-10:]).decode().rstrip()
+                    iocage_lib.ioc_common.logit(
+                        {
+                            'level': 'EXCEPTION',
+                            'message': f'Last 10 lines:\n{message}'
+                        }, _callback=self.callback)
+
+        if os.path.exists(os.path.join(jail_plugin_path, 'ui.json')):
+            with open(os.path.join(jail_plugin_path, 'ui.json'), 'r') as f:
+                ui_data = json.loads(f.read())
+
+            admin_portal = ui_data.get('adminportal', None)
+            doc_url = ui_data.get('docurl', None)
+
+            if admin_portal:
+                admin_portal = ','.join(
+                    map(
+                        lambda v: admin_portal.replace('%%IP%%', v),
+                        ip.split(',')
+                    )
+                )
+
+                for placeholder, prop in ui_data.get(
+                    'adminportal_placeholders', {}
+                ).items():
+                    admin_portal = admin_portal.replace(
+                        placeholder,
+                        iocage_lib.ioc_json.IOCJson(
+                            jaildir
+                        ).json_plugin_get_value(prop.split('.'))
+                    )
+
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'INFO',
+                        'message': '\nAdmin Portal:\n'
+                        f'{admin_portal}'
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
+
+            if doc_url:
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'INFO',
+                        'message': f'\nDoc URL:\n{doc_url}'
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
 
     def __fetch_plugin_inform__(self, conf, num, plugins, accept_license):
         """Logs the pertinent information before fetching a plugin"""
@@ -616,7 +782,8 @@ class IOCPlugin(object):
                         f'\turl: "{conf["packagesite"]}",',
                         '\tsignature_type: "fingerprints",',
                         '\tfingerprints: '
-                        f'"{os.path.join(jail_fprints_path, repo_name)}"',
+                        '"'
+                        f'{os.path.join(pkg_path, "fingerprints",repo_name)}"',
                         '\tenabled: true',
                         '}'
                     ])
