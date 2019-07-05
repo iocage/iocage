@@ -653,21 +653,20 @@ fingerprint: {fingerprint}
         """Fetches the users artifact and runs the post install"""
         iocage_lib.ioc_start.IOCStart(self.jail, jaildir, silent=True)
 
-        ip4 = _conf["ip4_addr"]
-        if '|' in ip4:
-            ip4 = ip4.split("|")[1].rsplit("/")[0]
+        ip4 = _conf['ip4_addr']
+        ip6 = _conf['ip6_addr']
+        ip = None
+        if ip6 != 'none':
+            ip = ','.join([
+                v.split('|')[-1].split('/')[0] for v in ip6.split(',')
+            ])
 
-        ip6 = _conf["ip6_addr"]
-        if '|' in ip6:
-            ip6 = ip6.split("|")[1].rsplit("/")[0]
+        if not ip and ip4 != 'none' and 'DHCP' not in ip4.upper():
+            ip = ','.join([
+                v.split('|')[-1].split('/')[0] for v in ip4.split(',')
+            ])
 
-        if ip4 != "none" and 'DHCP' not in ip4.upper():
-            ip = ip4
-        elif ip6 != "none":
-            # If they had an IP4 address and an IP6 one,
-            # we'll assume they prefer IP6.
-            ip = ip6
-        else:
+        if not ip:
             if _conf['vnet']:
                 interface = _conf['interfaces'].split(',')[0].split(':')[0]
 
@@ -689,14 +688,16 @@ fingerprint: {fingerprint}
                     ], stdout=su.PIPE).stdout
                 )['jail-information']['jail'][0]['ipv4']
 
-            os.environ["IOCAGE_PLUGIN_IP"] = ip
+        self.log.debug(f'IP for {self.plugin} - {self.jail}: {ip}.')
+
+        os.environ['IOCAGE_PLUGIN_IP'] = ip
 
         plugin_env = {
             **{
                 k: os.environ.get(k)
                 for k in ['http_proxy', 'https_proxy'] if os.environ.get(k)
             },
-            'IOCAGE_PLUGIN_IP': ip.rsplit(',')[0]
+            'IOCAGE_PLUGIN_IP': ip
         }
 
         # We need to pipe from tar to the root of the jail.
@@ -716,7 +717,7 @@ fingerprint: {fingerprint}
             )
 
             with open(
-                f"{jaildir}/{self.jail.rsplit('_', 1)[0]}.json", "w"
+                f"{jaildir}/{self.plugin}.json", "w"
             ) as f:
                 f.write(json.dumps(conf, indent=4, sort_keys=True))
 
@@ -768,9 +769,14 @@ fingerprint: {fingerprint}
                         admin_portal = ui_data.get('adminportal', None)
                         doc_url = ui_data.get('docurl', None)
 
-                        if admin_portal is not None:
-                            admin_portal = admin_portal.replace(
-                                '%%IP%%', ip.rsplit(',')[0]
+                        if admin_portal:
+                            admin_portal = ','.join(
+                                map(
+                                    lambda v: admin_portal.replace(
+                                        '%%IP%%', v
+                                    ),
+                                    ip.split(',')
+                                )
                             )
 
                             try:
