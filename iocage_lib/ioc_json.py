@@ -625,12 +625,20 @@ class IOCZFS(object):
                 exception=ioc_exceptions.CommandFailed
             )
 
-    def zfs_get_dataset_and_dependents(self, identifier):
+    def zfs_get_dataset_and_dependents(self, identifier, depth=None):
+        id_depth = len(identifier.split('/'))
         try:
-            datasets = list(su.run(
-                ['zfs', 'list', '-rHo', 'name', identifier],
-                check=True, stdout=su.PIPE, stderr=su.PIPE
-            ).stdout.decode().split())
+            datasets = list(
+                filter(
+                    lambda p: p if not depth else len(
+                        p.split('/')
+                    ) - id_depth <= depth and len(p.split('/')) - id_depth,
+                    su.run(
+                        ['zfs', 'list', '-rHo', 'name', identifier],
+                        check=True, stdout=su.PIPE, stderr=su.PIPE
+                    ).stdout.decode().split()
+                )
+            )
         except su.CalledProcessError as e:
             iocage_lib.ioc_common.logit(
                 {
@@ -642,8 +650,8 @@ class IOCZFS(object):
                 _callback=self.callback,
                 exception=ioc_exceptions.CommandFailed
             )
-
-        return datasets
+        else:
+            return datasets
 
 
 class IOCConfiguration(IOCZFS):
