@@ -666,7 +666,7 @@ class Resource(IOCZFS):
 
     @property
     def exists(self):
-        return os.path.exists(self.path)
+        return os.path.exists(self.path or '')
 
 
 class Release(Resource):
@@ -675,13 +675,13 @@ class Release(Resource):
         # the release, let's normalize it
         # a name can't contain "/". If it's a path, we can make a split and
         # use the last name
-        super().__init__(name if '/' not in name else name.rsplit('/', 1)[1])
+        super().__init__(name.rsplit('/', 1)[-1])
 
     @property
     def path(self):
         return os.path.join(
             self.iocroot_path, 'releases', self.name
-        )
+        ) if self.iocroot_path else None
 
 
 class IOCConfiguration(IOCZFS):
