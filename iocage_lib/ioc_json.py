@@ -639,51 +639,6 @@ class IOCZFS(object):
         return datasets
 
 
-class Resource(IOCZFS):
-    # TODO: Let's also rethink how best we should handle this in the future
-    def __init__(self, name):
-        super().__init__()
-        self.name = name
-
-    def __bool__(self):
-        return self.exists
-
-    def __hash__(self):
-        return hash(self.path)
-
-    def __repr__(self):
-        return str(self.name)
-
-    def __str__(self):
-        return str(self.name)
-
-    def __eq__(self, other):
-        return other.path == self.path
-
-    @property
-    def path(self):
-        raise NotImplementedError
-
-    @property
-    def exists(self):
-        return os.path.exists(self.path or '')
-
-
-class Release(Resource):
-    def __init__(self, name):
-        # We can expect the name to be either a full path or just the name of
-        # the release, let's normalize it
-        # a name can't contain "/". If it's a path, we can make a split and
-        # use the last name
-        super().__init__(name.rsplit('/', 1)[-1])
-
-    @property
-    def path(self):
-        return os.path.join(
-            self.iocroot_path, 'releases', self.name
-        ) if self.iocroot_path else None
-
-
 class IOCConfiguration(IOCZFS):
     def __init__(self, location, checking_datasets, silent, callback):
         super().__init__(callback)
