@@ -47,6 +47,8 @@ import iocage_lib.ioc_debug as ioc_debug
 import iocage_lib.ioc_exceptions as ioc_exceptions
 import libzfs
 
+from iocage_lib.release import Release
+
 
 class PoolAndDataset(ioc_json.IOCZFS):
 
@@ -664,7 +666,7 @@ class IOCage(ioc_json.IOCZFS):
         """Destroy supplied RELEASE and the download dataset if asked"""
         path = f"{self.pool}/iocage/releases/{self.jail}"
 
-        release = ioc_json.Release(self.jail)
+        release = Release(self.jail)
         # Let's make sure the release exists before we try to destroy it
         if not release:
             ioc_common.logit({
