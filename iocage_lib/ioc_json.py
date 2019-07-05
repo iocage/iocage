@@ -480,19 +480,26 @@ class IOCZFS(object):
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.callback = callback
 
-    @property
-    def iocroot_path(self):
+    def _iocroot(self, mountpoint=False):
         # For now we assume iocroot is set, however moving on we need to think
         # how best to structure this
         # We should give thought to how we handle
         for pool in self.pools:
-            if self.zfs_get_property(
-                pool, 'org.freebsd.ioc:active'
-            ) == 'yes':
-                return self.zfs_get_property(
-                    os.path.join(pool, 'iocage'),
-                    'mountpoint'
-                )
+            if self.zfs_get_property(pool, 'org.freebsd.ioc:active') == 'yes':
+                if mountpoint:
+                    return self.zfs_get_property(
+                        os.path.join(pool, 'iocage'), 'mountpoint'
+                    )
+                else:
+                    return os.path.join(pool, 'iocage')
+
+    @property
+    def iocroot_path(self):
+        return self._iocroot(mountpoint=True)
+
+    @property
+    def iocroot_dataset(self):
+        return self._iocroot()
 
     @property
     def pools(self):
