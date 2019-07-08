@@ -255,12 +255,12 @@ class IOCImage(object):
                 silent=self.silent)
 
         # Templates become jails again once imported, let's make that reality.
-        iocage_lib.ioc_json.IOCJson(
-            f"{self.iocroot}/jails/{uuid}",
-            silent=True).json_set_value("type=jail")
-        iocage_lib.ioc_json.IOCJson(
-            f"{self.iocroot}/jails/{uuid}", silent=True).json_set_value(
-                "template=0", _import=True)
+        jail_json = iocage_lib.ioc_json.IOCJson(
+            f'{self.iocroot}/jails/{uuid}', silent=True
+        )
+        if jail_json.json_get_value('type') == 'template':
+            jail_json.json_set_value('type=jail')
+            jail_json.json_set_value('template=0', _import=True)
 
         msg = f"\nImported: {uuid}"
         iocage_lib.ioc_common.logit(
