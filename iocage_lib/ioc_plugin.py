@@ -36,6 +36,7 @@ import re
 import shutil
 import subprocess as su
 import requests
+import urllib.parse
 
 import iocage_lib.ioc_common
 import iocage_lib.ioc_create
@@ -1029,10 +1030,29 @@ fingerprint: {fingerprint}
         path = f"{self.iocroot}/jails/{self.jail}"
 
         shutil.rmtree(f"{path}/plugin", ignore_errors=True)
-        self._clone_repo(
-            self.branch, plugin_conf['artifact'],
-            f'{path}/plugin', callback=self.callback
-        )
+
+        uri = urllib.parse.urlparse(plugin_conf['artifact'])
+        if uri.scheme == 'file':
+            artifact_path = urllib.parse.unquote(uri.path)
+            if not os.path.exists(artifact_path):
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'EXCEPTION',
+                        'message': f'{artifact_path} does not exist!'
+                    },
+                    _callback=self.callback,
+                    silent=self.silent
+                )
+
+            distutils.dir_util.copy_tree(
+                artifact_path,
+                os.path.join(path, 'plugin')
+            )
+        else:
+            self._clone_repo(
+                self.branch, plugin_conf['artifact'],
+                f'{path}/plugin', callback=self.callback
+            )
 
         try:
             distutils.dir_util.copy_tree(
