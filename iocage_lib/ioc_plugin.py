@@ -66,6 +66,11 @@ class IOCPlugin(object):
             self.pool).json_get_value("iocroot")
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.release = release
+        if os.path.exists(plugin or ''):
+            self.plugin_json_path = plugin
+            plugin = plugin.rsplit('/', 1)[-1].rstrip('.json')
+        else:
+            self.plugin_json_path = None
         self.plugin = plugin
         self.jail = jail
         self.http = kwargs.pop("http", True)
@@ -202,10 +207,10 @@ class IOCPlugin(object):
 
     def fetch_plugin(self, props, num, accept_license):
         """Helper to fetch plugins"""
-        if not self.plugin.endswith('.json'):
+        if not self.plugin_json_path:
             _json = os.path.join(self.git_destination, f'{self.plugin}.json')
         else:
-            _json = self.plugin
+            _json = self.plugin_json_path
 
         plugins = self.fetch_plugin_index(props, index_only=True)
         self.log.debug(f'Plugin json file path: {_json}')
