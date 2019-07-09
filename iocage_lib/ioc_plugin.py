@@ -712,24 +712,12 @@ fingerprint: {fingerprint}
                 _callback=self.callback,
                 silent=self.silent)
 
-            self._clone_repo(
-                self.branch, conf['artifact'],
-                f'{jaildir}/plugin', callback=self.callback
-            )
+            self.__update_pull_plugin_artifact__(conf)
 
             with open(
                 f"{jaildir}/{self.plugin}.json", "w"
             ) as f:
                 f.write(json.dumps(conf, indent=4, sort_keys=True))
-
-            try:
-                distutils.dir_util.copy_tree(
-                    f"{jaildir}/plugin/overlay/",
-                    f"{jaildir}/root",
-                    preserve_symlinks=True)
-            except distutils.errors.DistutilsFileError:
-                # It just doesn't exist
-                pass
 
             try:
                 shutil.copy(f"{jaildir}/plugin/post_install.sh",
