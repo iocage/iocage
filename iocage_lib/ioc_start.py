@@ -467,13 +467,16 @@ class IOCStart(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-        if self.conf["type"] == "pluginv2" and os.path.isfile(
-                f"{self.path}/{self.uuid.rsplit('_', 1)[0]}.json"):
-            with open(f"{self.path}/{self.uuid.rsplit('_', 1)[0]}.json",
-                      "r") as f:
+        if self.conf['type'] == 'pluginv2' and os.path.isfile(
+            os.path.join(self.path, f'{self.conf["plugin_name"]}.json')
+        ):
+            with open(
+                os.path.join(self.path, f'{self.conf["plugin_name"]}.json'),
+                'r'
+            ) as f:
                 devfs_json = json.load(f)
                 if "devfs_ruleset" in devfs_json:
-                    plugin_name = self.uuid.rsplit('_', 1)[0]
+                    plugin_name = self.conf['plugin_name']
                     plugin_devfs = devfs_json[
                         "devfs_ruleset"][f"plugin_{plugin_name}"]
                     plugin_devfs_paths = plugin_devfs['paths']
