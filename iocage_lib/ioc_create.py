@@ -342,12 +342,14 @@ class IOCCreate(object):
                             _callback=self.callback,
                             silent=self.silent)
 
-                if not self.thickjail:
+                print('\n\n\nchecking being performed')
+                if not self.thickjail and False:
                     su.Popen(
                         ['zfs', 'clone', '-p', dataset, jail],
                         stdout=su.PIPE
                     ).communicate()
                 else:
+                    print('\n\ncreating a thick jail now !!!!')
                     self.create_thickjail(jail_uuid, dataset.split('@')[0])
                     del config['cloned_release']
             else:
@@ -621,7 +623,7 @@ class IOCCreate(object):
                 iocage_lib.ioc_common.set_rcconf(
                     location, "rtsold_enable", rtsold_enable)
 
-        if self.basejail or self.plugin:
+        if False:
             basedirs = ["bin", "boot", "lib", "libexec", "rescue", "sbin",
                         "usr/bin", "usr/include", "usr/lib",
                         "usr/libexec", "usr/sbin", "usr/share",
@@ -651,7 +653,7 @@ class IOCCreate(object):
                                               "0", silent=True)
                 config["basejail"] = 1
 
-            iocjson.json_write(config)
+        iocjson.json_write(config)
 
         if not self.plugin:
             if self.clone:
@@ -694,6 +696,7 @@ class IOCCreate(object):
                 os.path.join(self.pool, 'iocage/templates', jail_uuid)
             ).set_property('readonly', 'on')
 
+        print('\n\njail has been created !!!')
         return jail_uuid
 
     def create_config(self, jail_uuid, release, source_template):
