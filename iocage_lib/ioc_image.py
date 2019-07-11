@@ -46,6 +46,7 @@ class IOCImage(object):
         self.silent = silent
         assert compression_algo in ('zip', 'lzma')
         self.compression_algo = compression_algo
+        self.extension = 'zip' if self.compression_algo == 'zip' else 'tar.xz'
 
     def export_jail(self, uuid, path):
         """Make a recursive snapshot of the jail and export to a file."""
@@ -55,7 +56,6 @@ class IOCImage(object):
         export_type, jail_name = path.rsplit('/', 2)[-2:]
         image_path = f"{self.pool}/iocage/{export_type}/{jail_name}"
         jail_list = []
-        extension = 'zip' if self.compression_algo == 'zip' else 'tar.xz'
 
         # Looks like foo/iocage/jails/df0ef69a-57b6-4480-b1f8-88f7b6febbdf@BAR
         target = f"{image_path}@ioc-export-{self.date}"
@@ -115,7 +115,8 @@ class IOCImage(object):
         iocage_lib.ioc_common.logit(
             {
                 'level': 'INFO',
-                'message': f'\nPreparing compressed file: {image}.{extension}.'
+                'message': '\nPreparing compressed '
+                f'file: {image}.{self.extension}.'
             },
             self.callback,
             silent=self.silent)
@@ -123,17 +124,17 @@ class IOCImage(object):
         os.chdir(images)
         if self.compression_algo == 'zip':
             with zipfile.ZipFile(
-                f'{image}.{extension}', 'w',
+                f'{image}.{self.extension}', 'w',
                 compression=zipfile.ZIP_DEFLATED, allowZip64=True
             ) as final:
                 for jail in jail_list:
                     final.write(jail)
         else:
-            with tarfile.open(f'{image}.{extension}', mode='w:xz') as f:
+            with tarfile.open(f'{image}.{self.extension}', mode='w:xz') as f:
                 for jail in jail_list:
                     f.add(jail)
 
-        with open(f'{image}.{extension}', 'rb') as import_image:
+        with open(f'{image}.{self.extension}', 'rb') as import_image:
             digest = hashlib.sha256()
             chunk_size = 10 * 1024 * 1024
 
@@ -169,7 +170,7 @@ class IOCImage(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-        msg = f"\nExported: {image}.{extension}"
+        msg = f"\nExported: {image}.{self.extension}"
         iocage_lib.ioc_common.logit(
             {
                 "level": "INFO",
@@ -182,7 +183,7 @@ class IOCImage(object):
         """Import from an iocage export."""
         image_dir = f"{self.iocroot}/images"
         exports = os.listdir(image_dir)
-        matches = fnmatch.filter(exports, f"{jail}*.zip")
+        matches = fnmatch.filter(exports, f'{jail}*.{self.extension}')
 
         if len(matches) > 1:
             msg = f"Multiple images found for {jail}:"
@@ -207,42 +208,58 @@ class IOCImage(object):
                 silent=self.silent)
 
         image_target = f"{image_dir}/{matches[0]}"
-        uuid, date = matches[0][:-4].rsplit('_', 1)  # :-4 will strip .zip
+        uuid, date = matches[0][:-len(f'.{self.extension}')].rsplit('_', 1)
 
-        import_image = zipfile.ZipFile(image_target, "r")
+        if self.compression_algo == 'zip':
+            reader = {
+                'func': zipfile.ZipFile, 'params': ['r'], 'iter': 'namelist'
+            }
+        else:
+            reader = {
+                'func': tarfile.open, 'params': ['r:xz'], 'iter': 'getmembers'
+            }
 
-        for z in import_image.namelist():
-            # Split the children dataset out
-            z_dataset_type = z.split(f'{date}_', 1)[-1]
-            z_dataset_type = z_dataset_type.split(f'{uuid}_', 1)[-1]
-            if z_dataset_type == date:
-                # This is the parent dataset
-                z_dataset_type = uuid
-            else:
-                z_dataset_type = \
-                    f"{uuid}/{z_dataset_type.replace('_', '/')}".rstrip('/')
+        with reader['func'](image_target, *reader['params']) as f:
+            for member in getattr(f, reader['iter'])():
+                if self.compression_algo != 'zip':
+                    name = member.name
+                else:
+                    name = member
 
-            cmd = [
-                "zfs", "recv", "-F",
-                f"{self.pool}/iocage/jails/{z_dataset_type}"
-            ]
+                z_dataset_type = name.split(f'{date}_', 1)[-1]
+                z_dataset_type = z_dataset_type.split(f'{uuid}_', 1)[-1]
+                if z_dataset_type == date:
+                    # This is the parent dataset
+                    z_dataset_type = uuid
+                else:
+                    z_dataset_type = \
+                        f'{uuid}/{z_dataset_type.replace("_", "/")}'.rstrip(
+                            '/'
+                        )
 
-            msg = f"Importing dataset: {z_dataset_type}"
-            iocage_lib.ioc_common.logit(
-                {
-                    "level": "INFO",
-                    "message": msg
-                },
-                self.callback,
-                silent=self.silent)
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'INFO',
+                        'message': f'Importing dataset: {z_dataset_type}'
+                    },
+                    self.callback,
+                    silent=self.silent
+                )
 
-            dataset = import_image.open(z)
-            recv = su.Popen(cmd, stdin=su.PIPE)
+                recv = su.Popen(
+                    [
+                        'zfs', 'recv', '-F', os.path.join(
+                            self.pool, 'iocage/jails', z_dataset_type
+                        )
+                    ], stdin=su.PIPE
+                )
+                if self.compression_algo == 'zip':
+                    data = f.open(name).read()
+                else:
+                    data = f.extractfile(member).read()
 
-            for line in dataset:
-                recv.stdin.write(line)
-
-            recv.communicate()
+                recv.stdin.write(data)
+                recv.communicate()
 
         # Cleanup our mess.
         try:
