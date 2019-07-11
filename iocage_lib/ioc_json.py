@@ -480,19 +480,26 @@ class IOCZFS(object):
         self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.callback = callback
 
-    @property
-    def iocroot_path(self):
+    def _iocroot(self, mountpoint=False):
         # For now we assume iocroot is set, however moving on we need to think
         # how best to structure this
         # We should give thought to how we handle
         for pool in self.pools:
-            if self.zfs_get_property(
-                pool, 'org.freebsd.ioc:active'
-            ) == 'yes':
-                return self.zfs_get_property(
-                    os.path.join(pool, 'iocage'),
-                    'mountpoint'
-                )
+            if self.zfs_get_property(pool, 'org.freebsd.ioc:active') == 'yes':
+                if mountpoint:
+                    return self.zfs_get_property(
+                        os.path.join(pool, 'iocage'), 'mountpoint'
+                    )
+                else:
+                    return os.path.join(pool, 'iocage')
+
+    @property
+    def iocroot_path(self):
+        return self._iocroot(mountpoint=True)
+
+    @property
+    def iocroot_dataset(self):
+        return self._iocroot()
 
     @property
     def pools(self):
@@ -618,12 +625,20 @@ class IOCZFS(object):
                 exception=ioc_exceptions.CommandFailed
             )
 
-    def zfs_get_dataset_and_dependents(self, identifier):
+    def zfs_get_dataset_and_dependents(self, identifier, depth=None):
+        id_depth = len(identifier.split('/'))
         try:
-            datasets = list(su.run(
-                ['zfs', 'list', '-rHo', 'name', identifier],
-                check=True, stdout=su.PIPE, stderr=su.PIPE
-            ).stdout.decode().split())
+            datasets = list(
+                filter(
+                    lambda p: p if not depth else len(
+                        p.split('/')
+                    ) - id_depth <= depth and len(p.split('/')) - id_depth,
+                    su.run(
+                        ['zfs', 'list', '-rHo', 'name', identifier],
+                        check=True, stdout=su.PIPE, stderr=su.PIPE
+                    ).stdout.decode().split()
+                )
+            )
         except su.CalledProcessError as e:
             iocage_lib.ioc_common.logit(
                 {
@@ -635,53 +650,8 @@ class IOCZFS(object):
                 _callback=self.callback,
                 exception=ioc_exceptions.CommandFailed
             )
-
-        return datasets
-
-
-class Resource(IOCZFS):
-    # TODO: Let's also rethink how best we should handle this in the future
-    def __init__(self, name):
-        super().__init__()
-        self.name = name
-
-    def __bool__(self):
-        return self.exists
-
-    def __hash__(self):
-        return hash(self.path)
-
-    def __repr__(self):
-        return str(self.name)
-
-    def __str__(self):
-        return str(self.name)
-
-    def __eq__(self, other):
-        return other.path == self.path
-
-    @property
-    def path(self):
-        raise NotImplementedError
-
-    @property
-    def exists(self):
-        return os.path.exists(self.path)
-
-
-class Release(Resource):
-    def __init__(self, name):
-        # We can expect the name to be either a full path or just the name of
-        # the release, let's normalize it
-        # a name can't contain "/". If it's a path, we can make a split and
-        # use the last name
-        super().__init__(name if '/' not in name else name.rsplit('/', 1)[1])
-
-    @property
-    def path(self):
-        return os.path.join(
-            self.iocroot_path, 'releases', self.name
-        )
+        else:
+            return datasets
 
 
 class IOCConfiguration(IOCZFS):
