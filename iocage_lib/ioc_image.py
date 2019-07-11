@@ -27,6 +27,7 @@ import fnmatch
 import hashlib
 import os
 import subprocess as su
+import tarfile
 import zipfile
 
 import iocage_lib.ioc_common
@@ -36,13 +37,15 @@ import iocage_lib.ioc_json
 class IOCImage(object):
     """export() and import()"""
 
-    def __init__(self, callback=None, silent=False):
+    def __init__(self, callback=None, silent=False, compression_algo='zip'):
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")
         self.date = datetime.datetime.utcnow().strftime("%F")
         self.callback = callback
         self.silent = silent
+        assert compression_algo in ('zip', 'lzma')
+        self.compression_algo = compression_algo
 
     def export_jail(self, uuid, path):
         """Make a recursive snapshot of the jail and export to a file."""
@@ -52,6 +55,7 @@ class IOCImage(object):
         export_type, jail_name = path.rsplit('/', 2)[-2:]
         image_path = f"{self.pool}/iocage/{export_type}/{jail_name}"
         jail_list = []
+        extension = 'zip' if self.compression_algo == 'zip' else 'tar.xz'
 
         # Looks like foo/iocage/jails/df0ef69a-57b6-4480-b1f8-88f7b6febbdf@BAR
         target = f"{image_path}@ioc-export-{self.date}"
@@ -108,26 +112,28 @@ class IOCImage(object):
                     _callback=self.callback,
                     silent=self.silent)
 
-        msg = f"\nPreparing zip file: {image}.zip."
         iocage_lib.ioc_common.logit(
             {
-                "level": "INFO",
-                "message": msg
+                'level': 'INFO',
+                'message': f'\nPreparing compressed file: {image}.{extension}.'
             },
             self.callback,
             silent=self.silent)
 
-        with zipfile.ZipFile(
-                f"{image}.zip",
-                "w",
-                compression=zipfile.ZIP_DEFLATED,
-                allowZip64=True) as final:
-            os.chdir(images)
+        os.chdir(images)
+        if self.compression_algo == 'zip':
+            with zipfile.ZipFile(
+                f'{image}.{extension}', 'w',
+                compression=zipfile.ZIP_DEFLATED, allowZip64=True
+            ) as final:
+                for jail in jail_list:
+                    final.write(jail)
+        else:
+            with tarfile.open(f'{image}.{extension}', mode='w:xz') as f:
+                for jail in jail_list:
+                    f.add(jail)
 
-            for jail in jail_list:
-                final.write(jail)
-
-        with open(f"{image}.zip", "rb") as import_image:
+        with open(f'{image}.{extension}', 'rb') as import_image:
             digest = hashlib.sha256()
             chunk_size = 10 * 1024 * 1024
 
@@ -163,7 +169,7 @@ class IOCImage(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-        msg = f"\nExported: {image}.zip"
+        msg = f"\nExported: {image}.{extension}"
         iocage_lib.ioc_common.logit(
             {
                 "level": "INFO",
