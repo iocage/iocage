@@ -1388,10 +1388,10 @@ class IOCage(ioc_json.IOCZFS):
 
             return jail_list
 
-    def import_(self, compression_algo='zip'):
+    def import_(self, compression_algo='zip', path=None):
         """Imports a jail"""
         ioc_image.IOCImage().import_jail(
-            self.jail, compression_algo=compression_algo
+            self.jail, compression_algo=compression_algo, path=path
         )
 
     def list(self,
