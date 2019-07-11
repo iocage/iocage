@@ -177,53 +177,67 @@ class IOCImage(object):
             self.callback,
             silent=self.silent)
 
-    def import_jail(self, jail, compression_algo=None):
+    def import_jail(self, jail, compression_algo=None, path=None):
         """Import from an iocage export."""
+        # Path can be an absolute path pointing straight to the exported jail
+        # or it can the directory where the exported jail lives
         # TODO: We should introduce parsers for this
-        image_dir = f"{self.iocroot}/images"
-        if not compression_algo:
-            extension_regex = r'zip|tar\.xz'
+        image_dir = path or os.path.join(self.iocroot, 'images')
+        if not os.path.exists(image_dir):
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message': f'{image_dir} does not exist.'
+                }
+            )
+        elif os.path.isfile(image_dir):
+            image_dir, filename = image_dir.rsplit('/', 1)
         else:
-            extension_regex = r'zip' if \
-                compression_algo == 'zip' else r'tar.xz'
-        regex = re.compile(rf'{jail}.*(?:{extension_regex})')
-        matches = [
-            f for f in os.listdir(image_dir) if regex.match(f)
-        ]
+            if not compression_algo:
+                extension_regex = r'zip|tar\.xz'
+            else:
+                extension_regex = r'zip' if \
+                    compression_algo == 'zip' else r'tar.xz'
+            regex = re.compile(rf'{jail}.*(?:{extension_regex})')
+            matches = [
+                f for f in os.listdir(image_dir) if regex.match(f)
+            ]
 
-        if len(matches) > 1:
-            msg = f"Multiple images found for {jail}:"
+            if len(matches) > 1:
+                msg = f"Multiple images found for {jail}:"
 
-            for j in sorted(matches):
-                msg += f"\n  {j}"
+                for j in sorted(matches):
+                    msg += f"\n  {j}"
 
-            msg += '\nPlease explicitly select image or define ' \
-                   'compression algorithm to use'
+                msg += '\nPlease explicitly select image or define ' \
+                       'compression algorithm to use'
 
-            iocage_lib.ioc_common.logit(
-                {
-                    "level": "EXCEPTION",
-                    "message": msg
-                },
-                _callback=self.callback,
-                silent=self.silent)
-        elif len(matches) < 1:
-            iocage_lib.ioc_common.logit(
-                {
-                    "level": "EXCEPTION",
-                    "message": f"{jail} not found!"
-                },
-                _callback=self.callback,
-                silent=self.silent)
+                iocage_lib.ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": msg
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
+            elif len(matches) < 1:
+                iocage_lib.ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": f"{jail} not found!"
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
+            else:
+                filename = matches[0]
 
-        if matches[0].rsplit('.', 1)[-1] == 'zip':
+        if filename.rsplit('.', 1)[-1] == 'zip':
             compression_algo = extension = 'zip'
         else:
             compression_algo = 'lzma'
             extension = 'tar.xz'
 
-        image_target = f"{image_dir}/{matches[0]}"
-        uuid, date = matches[0][:-len(f'.{extension}')].rsplit('_', 1)
+        image_target = f"{image_dir}/{filename}"
+        uuid, date = filename[:-len(f'.{extension}')].rsplit('_', 1)
 
         if compression_algo == 'zip':
             reader = {
