@@ -32,7 +32,7 @@ __rootcmd__ = True
 @click.command(name="import", help="Import a specified jail.")
 @click.option(
     '--compression', '-c',
-    default='zip',
+    default=None,
     help='Choose which compression algorithm to '
          'use for exporting jail (zip/lzma).'
 )
