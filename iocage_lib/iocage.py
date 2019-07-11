@@ -987,7 +987,7 @@ class IOCage(ioc_json.IOCZFS):
                     _callback=self.callback,
                     silent=self.silent)
 
-    def export(self):
+    def export(self, compression_algo):
         """Will export a jail"""
         uuid, path = self.__check_jail_existence__()
         status, _ = self.list("jid", uuid=uuid)
@@ -1004,7 +1004,9 @@ class IOCage(ioc_json.IOCZFS):
                 _callback=self.callback,
                 silent=self.silent)
 
-        ioc_image.IOCImage().export_jail(uuid, path)
+        ioc_image.IOCImage(
+            compression_algo=compression_algo
+        ).export_jail(uuid, path)
 
     def fetch(self, **kwargs):
         """Fetches a release or plugin."""
