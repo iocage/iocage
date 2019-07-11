@@ -987,7 +987,7 @@ class IOCage(ioc_json.IOCZFS):
                     _callback=self.callback,
                     silent=self.silent)
 
-    def export(self, compression_algo):
+    def export(self, compression_algo='zip'):
         """Will export a jail"""
         uuid, path = self.__check_jail_existence__()
         status, _ = self.list("jid", uuid=uuid)
@@ -1388,9 +1388,11 @@ class IOCage(ioc_json.IOCZFS):
 
             return jail_list
 
-    def import_(self):
+    def import_(self, compression_algo='zip'):
         """Imports a jail"""
-        ioc_image.IOCImage().import_jail(self.jail)
+        ioc_image.IOCImage(
+            compression_algo=compression_algo
+        ).import_jail(self.jail)
 
     def list(self,
              lst_type,
