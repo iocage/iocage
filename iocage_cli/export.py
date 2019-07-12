@@ -30,7 +30,13 @@ __rootcmd__ = True
 
 
 @click.command(name="export", help="Exports a specified jail.")
+@click.option(
+    '--compression', '-c',
+    default='zip',
+    help='Choose which compression algorithm to '
+         'use for exporting jail (zip/lzma).'
+)
 @click.argument("jail", required=True)
-def cli(jail):
+def cli(compression, jail):
     """Make a recursive snapshot of the jail and export to a file."""
-    ioc.IOCage(jail=jail).export()
+    ioc.IOCage(jail=jail).export(compression)
