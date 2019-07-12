@@ -23,10 +23,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """iocage export and import module"""
 import datetime
-import fnmatch
+import re
 import hashlib
 import os
 import subprocess as su
+import tarfile
 import zipfile
 
 import iocage_lib.ioc_common
@@ -44,7 +45,7 @@ class IOCImage(object):
         self.callback = callback
         self.silent = silent
 
-    def export_jail(self, uuid, path):
+    def export_jail(self, uuid, path, compression_algo='zip'):
         """Make a recursive snapshot of the jail and export to a file."""
         images = f"{self.iocroot}/images"
         name = f"{uuid}_{self.date}"
@@ -52,6 +53,7 @@ class IOCImage(object):
         export_type, jail_name = path.rsplit('/', 2)[-2:]
         image_path = f"{self.pool}/iocage/{export_type}/{jail_name}"
         jail_list = []
+        extension = 'zip' if compression_algo == 'zip' else 'tar.xz'
 
         # Looks like foo/iocage/jails/df0ef69a-57b6-4480-b1f8-88f7b6febbdf@BAR
         target = f"{image_path}@ioc-export-{self.date}"
@@ -108,26 +110,29 @@ class IOCImage(object):
                     _callback=self.callback,
                     silent=self.silent)
 
-        msg = f"\nPreparing zip file: {image}.zip."
         iocage_lib.ioc_common.logit(
             {
-                "level": "INFO",
-                "message": msg
+                'level': 'INFO',
+                'message': '\nPreparing compressed '
+                f'file: {image}.{extension}.'
             },
             self.callback,
             silent=self.silent)
 
-        with zipfile.ZipFile(
-                f"{image}.zip",
-                "w",
-                compression=zipfile.ZIP_DEFLATED,
-                allowZip64=True) as final:
-            os.chdir(images)
+        os.chdir(images)
+        if compression_algo == 'zip':
+            with zipfile.ZipFile(
+                f'{image}.{extension}', 'w',
+                compression=zipfile.ZIP_DEFLATED, allowZip64=True
+            ) as final:
+                for jail in jail_list:
+                    final.write(jail)
+        else:
+            with tarfile.open(f'{image}.{extension}', mode='w:xz') as f:
+                for jail in jail_list:
+                    f.add(jail)
 
-            for jail in jail_list:
-                final.write(jail)
-
-        with open(f"{image}.zip", "rb") as import_image:
+        with open(f'{image}.{extension}', 'rb') as import_image:
             digest = hashlib.sha256()
             chunk_size = 10 * 1024 * 1024
 
@@ -163,7 +168,7 @@ class IOCImage(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-        msg = f"\nExported: {image}.zip"
+        msg = f"\nExported: {image}.{extension}"
         iocage_lib.ioc_common.logit(
             {
                 "level": "INFO",
@@ -172,71 +177,118 @@ class IOCImage(object):
             self.callback,
             silent=self.silent)
 
-    def import_jail(self, jail):
+    def import_jail(self, jail, compression_algo=None, path=None):
         """Import from an iocage export."""
-        image_dir = f"{self.iocroot}/images"
-        exports = os.listdir(image_dir)
-        matches = fnmatch.filter(exports, f"{jail}*.zip")
-
-        if len(matches) > 1:
-            msg = f"Multiple images found for {jail}:"
-
-            for j in sorted(matches):
-                msg += f"\n  {j}"
-
+        # Path can be an absolute path pointing straight to the exported jail
+        # or it can the directory where the exported jail lives
+        # TODO: We should introduce parsers for this
+        image_dir = path or os.path.join(self.iocroot, 'images')
+        if not os.path.exists(image_dir):
             iocage_lib.ioc_common.logit(
                 {
-                    "level": "EXCEPTION",
-                    "message": msg
-                },
-                _callback=self.callback,
-                silent=self.silent)
-        elif len(matches) < 1:
-            iocage_lib.ioc_common.logit(
-                {
-                    "level": "EXCEPTION",
-                    "message": f"{jail} not found!"
-                },
-                _callback=self.callback,
-                silent=self.silent)
-
-        image_target = f"{image_dir}/{matches[0]}"
-        uuid, date = matches[0][:-4].rsplit('_', 1)  # :-4 will strip .zip
-
-        import_image = zipfile.ZipFile(image_target, "r")
-
-        for z in import_image.namelist():
-            # Split the children dataset out
-            z_dataset_type = z.split(f'{date}_', 1)[-1]
-            z_dataset_type = z_dataset_type.split(f'{uuid}_', 1)[-1]
-            if z_dataset_type == date:
-                # This is the parent dataset
-                z_dataset_type = uuid
+                    'level': 'EXCEPTION',
+                    'message': f'{image_dir} does not exist.'
+                }
+            )
+        elif os.path.isfile(image_dir):
+            image_dir, filename = image_dir.rsplit('/', 1)
+        else:
+            if not compression_algo:
+                extension_regex = r'zip|tar\.xz'
             else:
-                z_dataset_type = \
-                    f"{uuid}/{z_dataset_type.replace('_', '/')}".rstrip('/')
-
-            cmd = [
-                "zfs", "recv", "-F",
-                f"{self.pool}/iocage/jails/{z_dataset_type}"
+                extension_regex = r'zip' if \
+                    compression_algo == 'zip' else r'tar.xz'
+            regex = re.compile(rf'{jail}.*(?:{extension_regex})')
+            matches = [
+                f for f in os.listdir(image_dir) if regex.match(f)
             ]
 
-            msg = f"Importing dataset: {z_dataset_type}"
-            iocage_lib.ioc_common.logit(
-                {
-                    "level": "INFO",
-                    "message": msg
-                },
-                self.callback,
-                silent=self.silent)
+            if len(matches) > 1:
+                msg = f"Multiple images found for {jail}:"
 
-            dataset = import_image.open(z)
-            recv = su.Popen(cmd, stdin=su.PIPE)
+                for j in sorted(matches):
+                    msg += f"\n  {j}"
 
-            for line in dataset:
-                recv.stdin.write(line)
+                msg += '\nPlease explicitly select image or define ' \
+                       'compression algorithm to use'
 
-            recv.communicate()
+                iocage_lib.ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": msg
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
+            elif len(matches) < 1:
+                iocage_lib.ioc_common.logit(
+                    {
+                        "level": "EXCEPTION",
+                        "message": f"{jail} not found!"
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
+            else:
+                filename = matches[0]
+
+        if filename.rsplit('.', 1)[-1] == 'zip':
+            compression_algo = extension = 'zip'
+        else:
+            compression_algo = 'lzma'
+            extension = 'tar.xz'
+
+        image_target = f"{image_dir}/{filename}"
+        uuid, date = filename[:-len(f'.{extension}')].rsplit('_', 1)
+
+        if compression_algo == 'zip':
+            reader = {
+                'func': zipfile.ZipFile, 'params': ['r'], 'iter': 'namelist'
+            }
+        else:
+            reader = {
+                'func': tarfile.open, 'params': ['r:xz'], 'iter': 'getmembers'
+            }
+
+        with reader['func'](image_target, *reader['params']) as f:
+            for member in getattr(f, reader['iter'])():
+                if compression_algo != 'zip':
+                    name = member.name
+                else:
+                    name = member
+
+                z_dataset_type = name.split(f'{date}_', 1)[-1]
+                z_dataset_type = z_dataset_type.split(f'{uuid}_', 1)[-1]
+                if z_dataset_type == date:
+                    # This is the parent dataset
+                    z_dataset_type = uuid
+                else:
+                    z_dataset_type = \
+                        f'{uuid}/{z_dataset_type.replace("_", "/")}'.rstrip(
+                            '/'
+                        )
+
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'INFO',
+                        'message': f'Importing dataset: {z_dataset_type}'
+                    },
+                    self.callback,
+                    silent=self.silent
+                )
+
+                recv = su.Popen(
+                    [
+                        'zfs', 'recv', '-F', os.path.join(
+                            self.pool, 'iocage/jails', z_dataset_type
+                        )
+                    ], stdin=su.PIPE
+                )
+                if compression_algo == 'zip':
+                    data = f.open(name).read()
+                else:
+                    data = f.extractfile(member).read()
+
+                recv.stdin.write(data)
+                recv.communicate()
 
         # Cleanup our mess.
         try:

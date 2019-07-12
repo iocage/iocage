@@ -987,7 +987,7 @@ class IOCage(ioc_json.IOCZFS):
                     _callback=self.callback,
                     silent=self.silent)
 
-    def export(self):
+    def export(self, compression_algo='zip'):
         """Will export a jail"""
         uuid, path = self.__check_jail_existence__()
         status, _ = self.list("jid", uuid=uuid)
@@ -1004,7 +1004,9 @@ class IOCage(ioc_json.IOCZFS):
                 _callback=self.callback,
                 silent=self.silent)
 
-        ioc_image.IOCImage().export_jail(uuid, path)
+        ioc_image.IOCImage().export_jail(
+            uuid, path, compression_algo=compression_algo
+        )
 
     def fetch(self, **kwargs):
         """Fetches a release or plugin."""
@@ -1386,9 +1388,11 @@ class IOCage(ioc_json.IOCZFS):
 
             return jail_list
 
-    def import_(self):
+    def import_(self, compression_algo='zip', path=None):
         """Imports a jail"""
-        ioc_image.IOCImage().import_jail(self.jail)
+        ioc_image.IOCImage().import_jail(
+            self.jail, compression_algo=compression_algo, path=path
+        )
 
     def list(self,
              lst_type,

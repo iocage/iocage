@@ -30,7 +30,19 @@ __rootcmd__ = True
 
 
 @click.command(name="import", help="Import a specified jail.")
+@click.option(
+    '--compression', '-c',
+    default=None,
+    help='Choose which compression algorithm to '
+         'use for exporting jail (zip/lzma).'
+)
+@click.option(
+    '--path', '-p',
+    default=None,
+    help='Specify directory where exported jail lives or absolute '
+         'path to exported jail'
+)
 @click.argument("jail", required=True)
-def cli(jail):
+def cli(compression, path, jail):
     """Import from an iocage export."""
-    ioc.IOCage(jail=jail).import_()
+    ioc.IOCage(jail=jail).import_(compression, path=path)
