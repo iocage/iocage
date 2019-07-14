@@ -449,7 +449,7 @@ class IOCSnapshot(object):
             self.data = self.raw_data
 
         self.__dict__.update({
-            k: v for k, v in zip(self.attr_list, self.data.split())
+            k: v for k, v in zip(self.attr_list, self.data.split('\t'))
         })
 
     def delete(self, recursive=True):
