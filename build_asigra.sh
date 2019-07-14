@@ -16,58 +16,22 @@ iocage_path_build()
 root_path="/root/asigra_image_build"
 jail="asigra_migration_image_9b5802df"
 create_branch="asigra_migration"
-operate_branch="NAS-102494"
-ip4="192.168.0.25"
+operate_branch="master"
+jail_path="/zroot/iocage/jails/" # /mnt/vol1/iocage/jails
+#ip4="172.16.145.135"
 
 mkdir -p "$root_path"
 cd "$root_path"
 iocage_path_build $create_branch
 
-echo '''
-{
-                "artifact": "https://github.com/miwi-fbsd/iocage-plugin-asigra.git",
-                "fingerprints": {
-                    "iocage-plugins": [
-                        {
-                            "fingerprint": "226efd3a126fb86e71d60a37353d17f57af816d1c7ecad0623c21f0bf73eb0c7",
-                            "function": "sha256"
-                        }
-                    ]
-                },
-                "name": "asigra",
-                "official": true,
-                "packagesite": "http://pkg.cdn.trueos.org/iocage/unstable",
-                "pkgs": [
-                    "ca_root_nss",
-                    "nss_ldap",
-                    "pam_ldap",
-                    "nginx",
-                    "dsoperator",
-                    "dssystem"
-                ],
-                "properties": {
-                    "allow_raw_sockets": "1",
-                    "allow_set_hostname": "1",
-                    "allow_sysvipc": "1",
-                    "mount_devfs": "1",
-                    "mount_fdescfs": "1",
-                    "mount_procfs": "1",
-                    "sysvmsg": "new",
-                    "sysvsem": "new",
-                    "sysvshm": "new"
-                },
-                "release": "11.2-RELEASE"
-            }
-''' > "$root_path/asigra.json"
-
-rm -rf iocage-plugin-asigra
+rm -rf asigra_plugin
 git clone --depth 1 https://github.com/miwi-fbsd/iocage-plugin-asigra.git "$root_path/asigra_plugin"
 
-iocage fetch -P "$root_path/asigra_plugin/asigra.json" -n "$jail" vnet=1 ip4_addr="$ip4"
+iocage fetch -P "$root_path/asigra_plugin/asigra.json" -n "$jail" vnet=1 dhcp=1
 
 iocage stop "$jail"
 
-jail_root="/mnt/vol1/iocage/jails/${jail}/root"
+jail_root="${jail_path}/${jail}/root"
 
 rm -rf "$jail_root/usr/src"
 rm -rf "$jail_root/usr/local/man"
@@ -89,7 +53,7 @@ mkdir "$jail_root/var/db/freebsd-update"
 mkdir "$jail_root/var/cache/pkg"
 mkdir "$jail_root/rescue"
 
-echo '''
+cat > "$jail_root/usr/local/etc/rc.d/asigra_db_update" <<EOL
 #!/bin/sh
 # $FreeBSD$
 
@@ -111,7 +75,7 @@ stop_cmd=':'
 
 load_rc_config $name
 run_rc_command "$1"
-''' > "$jail_root/usr/local/etc/rc.d/asigra_db_update"
+EOL
 
 chmod +x "$jail_root/usr/local/etc/rc.d/asigra_db_update"
 
