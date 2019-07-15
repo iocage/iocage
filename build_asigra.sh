@@ -53,9 +53,10 @@ mkdir "$jail_root/var/db/freebsd-update"
 mkdir "$jail_root/var/cache/pkg"
 mkdir "$jail_root/rescue"
 
-cat > "$jail_root/usr/local/etc/rc.d/asigra_db_update" <<EOL
-#!/bin/sh
-# $FreeBSD$
+echo "#!/bin/sh" > "$jail_root/usr/local/etc/rc.d/asigra_db_update"
+echo '# $FreeBSD$' >> "$jail_root/usr/local/etc/rc.d/asigra_db_update"
+
+cat >> "$jail_root/usr/local/etc/rc.d/asigra_db_update" <<EOL
 
 # PROVIDE: asigra_db_update
 # REQUIRE: postgresql
@@ -74,8 +75,9 @@ start_cmd='update_db'
 stop_cmd=':'
 
 load_rc_config $name
-run_rc_command "$1"
 EOL
+
+echo 'run_rc_command "$1"' >> "$jail_root/usr/local/etc/rc.d/asigra_db_update"
 
 chmod +x "$jail_root/usr/local/etc/rc.d/asigra_db_update"
 
