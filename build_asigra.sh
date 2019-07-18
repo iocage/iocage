@@ -24,10 +24,51 @@ mkdir -p "$root_path"
 cd "$root_path"
 iocage_path_build $create_branch
 
-rm -rf asigra_plugin
-git clone --depth 1 https://github.com/miwi-fbsd/iocage-plugin-asigra.git "$root_path/asigra_plugin"
+#rm -rf asigra_plugin
+#git clone --depth 1 https://github.com/miwi-fbsd/iocage-plugin-asigra.git "$root_path/asigra_plugin"
 
-iocage fetch -P "$root_path/asigra_plugin/asigra.json" -n "$jail" vnet=1 dhcp=1
+cat > "$root_path/asigra.json" <<EOL
+{
+  "name": "asigra",
+  "release": "11.2-RELEASE",
+  "artifact": "https://github.com/miwi-fbsd/iocage-plugin-asigra.git",
+  "pkgs": [
+	"postgresql10-server",
+	"postgresql10-client",
+	"postgresql10-contrib",
+	"ca_root_nss",
+	"nss_ldap",
+	"pam_ldap",
+	"nginx",
+	"dsoperator",
+	"dssystem"
+  ],
+  "properties": {
+	"mount_devfs": "1",
+	"mount_fdescfs": "1",
+	"mount_procfs": "1",
+	"allow_set_hostname": "1",
+	"allow_raw_sockets": "1",
+	"allow_sysvipc": "1",
+	"sysvmsg": "new",
+	"sysvsem": "new",
+	"sysvshm": "new"
+  },
+  "packagesite": "http://pkg.cdn.trueos.org/iocage/unstable",
+  "fingerprints": {
+	  "iocage-plugins": [
+		  {
+		  "function": "sha256",
+		  "fingerprint": "226efd3a126fb86e71d60a37353d17f57af816d1c7ecad0623c21f0bf73eb0c7"
+	  }
+	  ]
+  },
+  "official": true
+}
+EOL
+
+
+iocage fetch -P "$root_path/asigra.json" -n "$jail" vnet=1 dhcp=1
 
 iocage stop "$jail"
 
@@ -48,6 +89,11 @@ rm -rf "$jail_root/usr/share/misc"
 rm -rf "$jail_root/var/cache/pkg"
 rm -rf "$jail_root/rescue"
 rm -rf "$jail_root/var/db/freebsd-update"
+rm -rf "$jail_root/usr/bin/c++*"
+rm -rf "$jail_root/usr/bin/clang*"
+rm -rf "$jail_root/usr/bin/cpp*"
+rm -rf "$jail_root/usr/bin/cc*"
+rm -rf "$jail_root/usr/bin/lldb*"
 
 mkdir "$jail_root/var/db/freebsd-update"
 mkdir "$jail_root/var/cache/pkg"
