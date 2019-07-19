@@ -22,6 +22,7 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 import mock
+import pytest
 import iocage_lib.ioc_start as ioc_start
 
 
@@ -54,6 +55,98 @@ def test_should_return_default_mtu_if_no_members(mock_checkoutput):
     mtu = ioc_start.IOCStart("", "", unit_test=True).find_bridge_mtu('bridge0')
     assert mtu == '1500'
     mock_checkoutput.called_with(["ifconfig", "bridge0"])
+
+
+@mock.patch('iocage_lib.ioc_common.logit')
+@pytest.mark.parametrize('test_input,expected', [
+    ({'host_gateways': {'ipv4': {'gateway': '217.29.43.254',
+                                 'interface': 'inet0'},
+                        'ipv6': {'gateway': None,
+                                 'interface': None}}},
+     'inet0'),
+    ({'host_gateways': {'ipv4': {'gateway': '217.29.43.254',
+                                 'interface': 'inet0'},
+                        'ipv6': {'gateway': 'fe80::8%mgmt0',
+                                 'interface': 'mgmt0'}}},
+     'inet0'),
+    ({'host_gateways': {'ipv4': {'gateway': None,
+                                 'interface': None},
+                        'ipv6': {'gateway': 'fe80::8%mgmt0',
+                                 'interface': 'mgmt0'}}},
+     'mgmt0'),
+    ({'host_gateways': {'ipv4': {'gateway': None,
+                                 'interface': None},
+                        'ipv6': {'gateway': None,
+                                 'interface': None}}},
+     Exception)])
+def test_should_return_default_interface(mock_logit, test_input, expected):
+    iocstart = ioc_start.IOCStart("", "", unit_test=True)
+    iocstart.host_gateways = test_input['host_gateways']
+    actual = iocstart.get_default_interface()
+    if expected != Exception:
+        assert actual == expected
+        mock_logit.assert_not_called()
+    else:
+        mock_logit.assert_called_once_with({'level': 'EXCEPTION',
+                                            'message': 'No default interface found'},
+                                           _callback=None,
+                                           silent=False)
+
+
+@pytest.mark.parametrize('test_input,expected', [
+    ({'host_gateways': {'ipv4': {'gateway': None,
+                                 'interface': None},
+                        'ipv6': {'gateway': None,
+                                 'interface': None}},
+      'interfaces': {'inet0': ['vnet0']}},
+     {'ipv4': 'none',
+      'ipv6': 'none'}),
+    ({'host_gateways': {'ipv4': {'gateway': '217.29.43.254',
+                                 'interface': 'inet0'},
+                        'ipv6': {'gateway': 'fe80::8%inet0',
+                                 'interface': 'inet0'}},
+      'interfaces': {'inet0': ['vnet0']}},
+     {'ipv4': '217.29.43.254',
+      'ipv6': 'fe80::8%epair0b'}),
+    ({'host_gateways': {'ipv4': {'gateway': None,
+                                 'interface': None},
+                        'ipv6': {'gateway': 'fe80::8%mgmt0',
+                                 'interface': 'mgmt0'}},
+      'interfaces': {'inet0': ['vnet0'], 'mgmt0': ['vnet1']}},
+     {'ipv4': 'none',
+      'ipv6': 'fe80::8%epair1b'}),
+    ({'host_gateways': {'ipv4': {'gateway': None,
+                                 'interface': None},
+                        'ipv6': {'gateway': 'fe80::8%inet0',
+                                 'interface': 'inet0'}},
+      'interfaces': {'inet0': ['vnet0', 'vnet1'], 'mgmt0': ['vnet2']}},
+     {'ipv4': 'none',
+      'ipv6': 'fe80::8%epair0b'}),
+    ({'host_gateways': {'ipv4': {'gateway': None,
+                                 'interface': None},
+                        'ipv6': {'gateway': 'fe80::8%inet0',
+                                 'interface': 'inet0'}},
+      'interfaces': {'inet0': ['vnet1', 'vnet0'], 'mgmt0': ['vnet2']}},
+     {'ipv4': 'none',
+      'ipv6': 'fe80::8%epair1b'})])
+def test_should_return_default_gateway(test_input, expected):
+    iocstart = ioc_start.IOCStart("", "", unit_test=True)
+    iocstart.host_gateways = test_input['host_gateways']
+    iocstart.get_interface_bridge_map = mock.Mock(
+        return_value=test_input['interfaces'])
+    assert iocstart.get_default_gateway() == expected['ipv4']
+    assert iocstart.get_default_gateway('ipv4') == expected['ipv4']
+    assert iocstart.get_default_gateway('ipv6') == expected['ipv6']
+
+
+@pytest.mark.parametrize('interfaces,expected', [
+    ('vnet0:inet0,vnet1:inet0', {'inet0': ['vnet0', 'vnet1']}),
+    ('vnet0:inet0,vnet1:mgmt0', {'inet0': ['vnet0'], 'mgmt0': ['vnet1']})])
+def test_get_interface_bridge_map(interfaces, expected):
+    iocstart = ioc_start.IOCStart("", "", unit_test=True)
+    iocstart.get = mock.Mock(return_value=interfaces)
+    assert iocstart.get_interface_bridge_map() == expected
+
 
 bridge_if_config = """bridge0: flags=8843<UP,BROADCAST,RUNNING,SIMPLEX,MULTICAST> metric 0 mtu 1500
         ether 00:00:00:00:00:00
