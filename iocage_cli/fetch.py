@@ -23,6 +23,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """fetch module for the cli."""
 import click
+import iocage_lib.ioc_clioptions as ioc_cliopt
 import iocage_lib.ioc_common as ioc_common
 import iocage_lib.iocage as ioc
 import os
@@ -98,12 +99,16 @@ def validate_count(ctx, param, value):
 )
 @click.option(
     '--plugin-name', '-P', default=None,
+    cls=ioc_cliopt.MutuallyExclusiveOption,
+    mutually_exclusive=["plugins"],
     help='Supply a plugin name for --plugins to fetch or use a'
          ' auto completed filename for --plugin-name.\nAlso accepts full'
          ' path for a plugin file.'
 )
 @click.option(
-    "--plugins", help="List all available plugins for creation.", is_flag=True
+    "--plugins", help="List all available plugins for creation.", is_flag=True,
+    cls=ioc_cliopt.MutuallyExclusiveOption,
+    mutually_exclusive=["plugin_name"]
 )
 @click.argument(
     "props", nargs=-1
