@@ -941,6 +941,45 @@ fingerprint: {fingerprint}
 
         return plugin
 
+    def __run_hook_script__(self, script_path):
+        self.__stop_rc__()
+        path = f"{self.iocroot}/jails/{self.jail}"
+
+        jail_path = os.path.join(self.iocroot, 'jails', self.jail)
+        new_script_path = os.path.join(jail_path, 'root/tmp')
+
+        shutil.copy(script_path, new_script_path)
+        script_path = os.path.join(
+            new_script_path, script_path.split('/')[-1]
+        )
+
+        try:
+            with iocage_lib.ioc_exec.IOCExec(
+                ['sh', os.path.join('/tmp', script_path.split('/')[-1])],
+                path,
+                uuid=self.jail,
+                plugin=True,
+                skip=True,
+                callback=self.callback
+            ) as _exec:
+                iocage_lib.ioc_common.consume_and_log(
+                    _exec,
+                    callback=self.callback,
+                    log=not self.silent
+                )
+        except iocage_lib.ioc_exceptions.CommandFailed as e:
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message': b'\n'.join(e.message).decode()
+                },
+                _callback=self.callback,
+                silent=self.silent
+            )
+        else:
+            self.__stop_rc__()
+            self.__start_rc__()
+
     def update(self, jid):
         iocage_lib.ioc_common.logit(
             {
