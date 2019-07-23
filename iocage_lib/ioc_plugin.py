@@ -1008,6 +1008,30 @@ fingerprint: {fingerprint}
         plugin_conf = self.__load_plugin_json()
         self.__check_manifest__(plugin_conf)
 
+        if plugin_conf['artifact']:
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'INFO',
+                    'message': 'Updating plugin artifact... '
+                },
+                _callback=self.callback,
+                silent=self.silent
+            )
+            self.__update_pull_plugin_artifact__(plugin_conf)
+            pre_update_hook = os.path.join(
+                self.iocroot, 'jails', self.jail, 'plugin/pre_update.sh'
+            )
+            if os.path.exists(pre_update_hook):
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'INFO',
+                        'message': 'Running pre_update.sh... '
+                    },
+                    _callback=self.callback,
+                    silent=self.silent
+                )
+                self.__run_hook_script__(pre_update_hook)
+
         iocage_lib.ioc_common.logit(
             {
                 "level": "INFO",
@@ -1027,15 +1051,6 @@ fingerprint: {fingerprint}
         self.__update_pkg_install__(plugin_conf)
 
         if plugin_conf["artifact"]:
-            iocage_lib.ioc_common.logit(
-                {
-                    "level": "INFO",
-                    "message": "Updating plugin artifact... "
-                },
-                _callback=self.callback,
-                silent=self.silent)
-            self.__update_pull_plugin_artifact__(plugin_conf)
-
             post_path = \
                 f"{self.iocroot}/jails/{self.jail}/plugin/post_upgrade.sh"
 
