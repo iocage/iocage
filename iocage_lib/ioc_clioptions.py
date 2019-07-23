@@ -56,5 +56,3 @@ class MutuallyExclusiveOption(click.Option):
             opts,
             args
         )
-
-
