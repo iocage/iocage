@@ -942,6 +942,8 @@ fingerprint: {fingerprint}
         return plugin
 
     def __run_hook_script__(self, script_path):
+        # If the post_upgrade has a service command, we want it to
+        # succeed. This is essentially a soft jail restart.
         self.__stop_rc__()
         path = f"{self.iocroot}/jails/{self.jail}"
 
@@ -1051,24 +1053,19 @@ fingerprint: {fingerprint}
         self.__update_pkg_install__(plugin_conf)
 
         if plugin_conf["artifact"]:
-            post_path = \
-                f"{self.iocroot}/jails/{self.jail}/plugin/post_upgrade.sh"
-
-            if os.path.exists(post_path):
+            post_update_hook = os.path.join(
+                self.iocroot, 'jails', self.jail, 'plugin/post_update.sh'
+            )
+            if os.path.exists(post_update_hook):
                 iocage_lib.ioc_common.logit(
                     {
-                        "level": "INFO",
-                        "message": "Running post_upgrade.sh... "
+                        'level': 'INFO',
+                        'message': 'Running post_update.sh... '
                     },
                     _callback=self.callback,
-                    silent=self.silent)
-
-                # If the post_upgrade has a service command, we want it to
-                # succeed. This is essentially a soft jail restart.
-                self.__stop_rc__()
-                self.__run_post_upgrade__()
-                self.__stop_rc__()
-                self.__start_rc__()
+                    silent=self.silent
+                )
+                self.__run_hook_script__(post_update_hook)
 
         self.__remove_snapshot__(name="update")
 
