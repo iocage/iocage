@@ -942,7 +942,7 @@ fingerprint: {fingerprint}
         return plugin
 
     def __run_hook_script__(self, script_path):
-        # If the post_upgrade has a service command, we want it to
+        # If the hook script has a service command, we want it to
         # succeed. This is essentially a soft jail restart.
         self.__stop_rc__()
         path = f"{self.iocroot}/jails/{self.jail}"
@@ -1367,54 +1367,6 @@ fingerprint: {fingerprint}
                            'be found!'
             },
             _callback=self.callback)
-
-    def __run_post_upgrade__(self):
-        """Run the plugins post_postupgrade.sh"""
-        path = f"{self.iocroot}/jails/{self.jail}"
-
-        shutil.copy(f"{path}/plugin/post_upgrade.sh",
-                    f"{path}/root/root")
-
-        command = ["sh", "/root/post_upgrade.sh"]
-        iocage_lib.ioc_common.logit(
-            {
-                "level": "INFO",
-                "message": "\nCommand output:"
-            },
-            _callback=self.callback,
-            silent=self.silent)
-
-        try:
-            with iocage_lib.ioc_exec.IOCExec(
-                command,
-                path,
-                uuid=self.jail,
-                plugin=True,
-                skip=True,
-                callback=self.callback
-            ) as _exec:
-                iocage_lib.ioc_common.consume_and_log(
-                    _exec,
-                    callback=self.callback,
-                    log=not(self.silent)
-                )
-        except iocage_lib.ioc_exceptions.CommandFailed as e:
-            final_msg = 'An error occurred! Please read above'
-
-            iocage_lib.ioc_common.logit(
-                {
-                    "level": "ERROR",
-                    "message": b'\n'.join(e.message).decode()
-                },
-                _callback=self.callback,
-                silent=self.silent)
-
-            iocage_lib.ioc_common.logit(
-                {
-                    "level": "EXCEPTION",
-                    "message": final_msg
-                },
-                _callback=self.callback)
 
     def __remove_snapshot__(self, name):
         """Removes all matching plugin snapshots"""
