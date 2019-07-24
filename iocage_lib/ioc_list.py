@@ -375,13 +375,15 @@ class IOCList(object):
                         except iocage_lib.ioc_exceptions.CommandFailed as e:
                             admin_portal = b' '.join(e.message).decode()
 
+                        doc_url = ui_data.get('docurl', '-')
+
                 except FileNotFoundError:
                     # They just didn't set a admin portal.
-                    admin_portal = "-"
+                    admin_portal = doc_url = '-'
 
                 jail_list.append([jid, uuid, boot, state, jail_type,
                                   full_release, full_ip4, ip6, template,
-                                  admin_portal])
+                                  admin_portal, doc_url])
             elif self.full:
                 jail_list.append([jid, uuid, boot, state, jail_type,
                                   full_release, full_ip4, ip6, template,
@@ -407,11 +409,11 @@ class IOCList(object):
         if self.full:
             if self.plugin:
                 table.set_cols_dtype(["t", "t", "t", "t", "t", "t", "t", "t",
-                                      "t", "t"])
+                                      "t", "t", "t"])
 
                 jail_list.insert(0, ["JID", "NAME", "BOOT", "STATE", "TYPE",
                                      "RELEASE", "IP4", "IP6", "TEMPLATE",
-                                     "PORTAL"])
+                                     "PORTAL", "DOC_URL"])
             else:
                 # We get an infinite float otherwise.
                 table.set_cols_dtype(["t", "t", "t", "t", "t", "t", "t", "t",
