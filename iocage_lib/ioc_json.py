@@ -2363,6 +2363,21 @@ class IOCJson(IOCConfiguration):
         elif key in props.keys():
             # Either it contains what we expect, or it's a string.
 
+            if props[key] == truth_variations:
+                if key in ('nat', 'bpf'):
+                    other_key = 'nat' if key == 'bpf' else 'bpf'
+                    if (
+                        iocage_lib.ioc_common.check_truthy(value) and
+                        iocage_lib.ioc_common.check_truthy(conf.get(other_key))
+                    ):
+                        iocage_lib.ioc_common.logit(
+                            {
+                                'level': 'EXCEPTION',
+                                'message': f'{other_key} should be disabled '
+                                f'when {key} is being enabled.'
+                            }
+                        )
+
             for k in props[key]:
                 if k in value.lower():
                     return value, conf
