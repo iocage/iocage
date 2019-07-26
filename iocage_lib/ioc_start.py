@@ -26,6 +26,7 @@ import datetime
 import hashlib
 import os
 import re
+import itertools
 import shutil
 import json
 import subprocess as su
@@ -50,8 +51,8 @@ class IOCStart(object):
     """
 
     def __init__(
-        self, uuid, path, silent=False, callback=None,
-        is_depend=False, unit_test=False, suppress_exception=False
+        self, uuid, path, silent=False, callback=None, is_depend=False,
+        unit_test=False, suppress_exception=False, used_ports=None
     ):
         self.jail_uuid = uuid
         self.uuid = uuid.replace(".", "_")
@@ -65,6 +66,7 @@ class IOCStart(object):
         self.defaultrouter = 'auto'
         self.defaultrouter6 = 'auto'
         self.log = logging.getLogger('iocage')
+        self.used_ports = used_ports or []
 
         if not self.unit_test:
             self.conf = iocage_lib.ioc_json.IOCJson(path).json_get_value('all')
@@ -201,6 +203,34 @@ class IOCStart(object):
                     f"{self.uuid}: dhcp requires vnet!"
                 )
                 prop_missing = True
+
+        if nat and nat_forwards != 'none':
+            # If NAT is enabled and nat port forwarding as well,
+            # we want to make sure that the current jail's port forwarding
+            # does not conflict with other running jail's nat_forwards
+
+            if set(int(v[-1]) for v in self.__parse_nat_fwds__(
+                nat_forwards
+            )) & set(itertools.chain(
+                *iocage_lib.ioc_common.get_jails_with_config(
+                    lambda j: (j['state'] == 'up' and j['nat'] and
+                               j['nat_forwards'] != 'none'),
+                    lambda j: [
+                        int(v[-1]) for v in
+                        self.__parse_nat_fwds__(
+                            j['nat_forwards']
+                        )
+                    ]
+                ).values(), self.used_ports
+            )):
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'EXCEPTION',
+                        'message': f'Please correct {nat_forwards} port rule '
+                        'as another running jail is using one of the '
+                        'mentioned ports.'
+                    }
+                )
 
         if nat and nat_interface == 'none':
             self.log.debug('Grabbing default route\'s interface')

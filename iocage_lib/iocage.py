@@ -1880,7 +1880,7 @@ class IOCage(ioc_json.IOCZFS):
                 _callback=self.callback,
                 silent=self.silent)
 
-    def start(self, jail=None, ignore_exception=False):
+    def start(self, jail=None, ignore_exception=False, used_ports=None):
         """Checks jails type and existence, then starts the jail"""
         if self.rc or self._all:
             if not jail:
@@ -1930,7 +1930,8 @@ class IOCage(ioc_json.IOCZFS):
                     silent=self.silent,
                     callback=self.callback,
                     is_depend=self.is_depend,
-                    suppress_exception=ignore_exception
+                    suppress_exception=ignore_exception,
+                    used_ports=used_ports,
                 )
 
                 return False, None
