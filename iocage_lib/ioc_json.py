@@ -2500,12 +2500,11 @@ class IOCJson(IOCConfiguration):
 
                     if value != 'none':
                         regex = re.compile(
-                            r'(^tcp|^udp|^tcp\/udp)\(\d{1,5}((:|-?)'
-                            r'(\d{1,5}))\)'
+                            r'^(tcp|udp|tcp\/udp)\(\d{1,5}((:|-?)(\d{1,5}))\)'
                         )
                         for fwd in value.split(','):
                             # We assume TCP for simpler inputs
-                            fwd = f'tcp({fwd})'
+                            fwd = f'tcp({fwd})' if fwd.isdigit() else fwd
                             new_value.append(fwd)
 
                             match = regex.match(fwd)
