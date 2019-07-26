@@ -1078,3 +1078,21 @@ def get_host_gateways():
             gateways[af_mapping[af]]['interface'] = \
                 default_route[0]['interface-name']
     return gateways
+
+
+def get_jails_with_config(filters=None, mapping_func=None):
+    # FIXME: Due to how api is structured, there is no good place to put this
+    #  so when we move on with restructuring the api, let's remove this as well
+    #  importing iocage_lib.iocage above gives us a circular dep due to how
+    #  iocage designates iocage_lib.iocage at top and imports everything else
+    #  within.
+    import iocage_lib.iocage
+    return {
+        j['host_hostuuid']: j if not mapping_func else mapping_func(j)
+        for j in map(
+            lambda v: list(v.values())[0],
+            iocage_lib.iocage.IOCage(jail=None).get(
+                'all', recursive=True
+            )
+        ) if not filters or filters(j)
+    }
