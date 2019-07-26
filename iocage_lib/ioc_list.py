@@ -23,6 +23,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """List all datasets by type"""
 import json
+import netifaces
 import os
 import re
 import subprocess as su
@@ -339,13 +340,27 @@ class IOCList(object):
 
                 try:
                     with open(f"{mountpoint}/plugin/ui.json", "r") as u:
-                        all_ips = map(
-                            lambda v: 'DHCP' if 'dhcp' in v.lower() else v,
-                            [
-                                i.split('|')[-1].split('/')[0].strip()
-                                for i in full_ip4.split(',')
+                        if not conf.get('nat'):
+                            all_ips = map(
+                                lambda v: 'DHCP' if 'dhcp' in v.lower() else v,
+                                [
+                                    i.split('|')[-1].split('/')[0].strip()
+                                    for i in full_ip4.split(',')
+                                ]
+                            )
+                        else:
+                            default_gateways = \
+                                iocage_lib.ioc_common.get_host_gateways()
+
+                            all_ips = [
+                                f['addr']
+                                for k in default_gateways
+                                if default_gateways[k]['interface']
+                                for f in netifaces.ifaddresses(
+                                    default_gateways[k]['interface']
+                                )[netifaces.AF_INET
+                                    if k == 'ipv4' else netifaces.AF_INET6]
                             ]
-                        )
 
                         ui_data = json.load(u)
                         admin_portal = ui_data["adminportal"]
