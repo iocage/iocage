@@ -37,6 +37,7 @@ import shutil
 import subprocess as su
 import requests
 import urllib.parse
+import uuid
 
 import iocage_lib.ioc_common
 import iocage_lib.ioc_create
@@ -897,6 +898,7 @@ fingerprint: {fingerprint}
         self.plugin = self.__fetch_validate_plugin__(
             self.plugin.lower(), plugins_ordered_dict
         )
+        self.jail = f'{self.plugin}_{str(uuid.uuid4())[:4]}'
 
         # We now run the fetch the user requested
         self.fetch_plugin(props, 0, accept_license)
