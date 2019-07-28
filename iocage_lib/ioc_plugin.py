@@ -212,34 +212,40 @@ class IOCPlugin(object):
 
         return self.fetch_plugin_versions_from_plugin_index(plugin_index)
 
-    def fetch_plugin(self, props, num, accept_license):
-        """Helper to fetch plugins"""
+    def retrieve_plugin_json(self):
         if not self.plugin_json_path:
             _json = os.path.join(self.git_destination, f'{self.plugin}.json')
         else:
             _json = self.plugin_json_path
 
-        plugins = self.fetch_plugin_index(props, index_only=True)
         self.log.debug(f'Plugin json file path: {_json}')
 
         try:
-            with open(_json, "r") as j:
+            with open(_json, 'r') as j:
                 conf = json.load(j)
         except FileNotFoundError:
             iocage_lib.ioc_common.logit(
                 {
-                    "level": "EXCEPTION",
-                    "message": f"{_json} was not found!"
+                    'level': 'EXCEPTION',
+                    'message': f'{_json} was not found!'
                 },
-                _callback=self.callback)
+                _callback=self.callback
+            )
         except json.decoder.JSONDecodeError:
             iocage_lib.ioc_common.logit(
                 {
-                    "level": "EXCEPTION",
-                    "message": "Invalid JSON file supplied, please supply a "
-                    "correctly formatted JSON file."
+                    'level': 'EXCEPTION',
+                    'message': 'Invalid JSON file supplied, please supply a '
+                    'correctly formatted JSON file.'
                 },
-                _callback=self.callback)
+                _callback=self.callback
+            )
+        return conf
+
+    def fetch_plugin(self, props, num, accept_license):
+        """Helper to fetch plugins"""
+        plugins = self.fetch_plugin_index(props, index_only=True)
+        conf = self.retrieve_plugin_json()
 
         if self.hardened:
             conf['release'] = conf['release'].replace("-RELEASE", "-STABLE")
