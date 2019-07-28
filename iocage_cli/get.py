@@ -86,6 +86,12 @@ def cli(prop, _type, _pool, jail, recursive, header, plugin, force):
                        'together. '
         })
 
+    if _type == 'all' and not jail:
+        ioc_common.logit({
+            'level': 'EXCEPTION',
+            'message': 'Please specify a jail name when using -a flag.'
+        })
+
     if not recursive:
         if prop == 'state' or _type == 'state':
             state = ioc.IOCage(jail=jail).get(prop)
