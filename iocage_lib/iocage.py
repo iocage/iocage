@@ -1106,8 +1106,18 @@ class IOCage(ioc_json.IOCZFS):
 
                 return
 
+            plugin_obj = ioc_plugin.IOCPlugin(
+                release=release, plugin=plugin_name,
+                branch=branch, silent=self.silent,
+                keep_jail_on_failure=keep_jail_on_failure,
+                callback=self.callback, **kwargs,
+                thickconfig=thick_config,
+            )
+
             i = 1
-            check_jail_name = name or plugin_name
+            check_jail_name = name or plugin_obj.retrieve_plugin_json().get(
+                'name', plugin_name
+            )
             while True:
                 if check_jail_name not in self.jails:
                     jail_name = check_jail_name
@@ -1119,13 +1129,8 @@ class IOCage(ioc_json.IOCZFS):
 
             self.jails[jail_name] = jail_name   # Not a valid value
             if count == 1:
-                ioc_plugin.IOCPlugin(
-                    release=release, jail=jail_name, plugin=plugin_name,
-                    branch=branch, silent=self.silent,
-                    keep_jail_on_failure=keep_jail_on_failure,
-                    callback=self.callback, **kwargs,
-                    thickconfig=thick_config,
-                ).fetch_plugin(props, 0, accept)
+                plugin_obj.jail = jail_name
+                plugin_obj.fetch_plugin(props, 0, accept)
             else:
                 for j in range(1, count + 1):
                     # Repeating this block in case they have gaps in their
@@ -1142,13 +1147,8 @@ class IOCage(ioc_json.IOCZFS):
                         i += 1
 
                     self.jails[jail_name] = jail_name   # Not a valid value
-                    ioc_plugin.IOCPlugin(
-                        release=release, jail=jail_name, plugin=plugin_name,
-                        branch=branch, silent=self.silent,
-                        keep_jail_on_failure=keep_jail_on_failure,
-                        thickconfig=thick_config,
-                        callback=self.callback, **kwargs
-                    ).fetch_plugin(props, j, accept)
+                    plugin_obj.jail = jail_name
+                    plugin_obj.fetch_plugin(props, j, accept)
         else:
             kwargs.pop('git_repository', None)
             kwargs.pop('git_destination', None)
