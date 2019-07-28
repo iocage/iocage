@@ -71,6 +71,11 @@ class IOCPlugin(object):
         if os.path.exists(plugin or ''):
             self.plugin_json_path = plugin
             plugin = plugin.rsplit('/', 1)[-1].rstrip('.json')
+            if self.plugin_json_path == jail:
+                # If user specified a complete path to plugin json file
+                # jail would be having the same value. We ensure that we don't
+                # do that here.
+                jail = f'{plugin}_{str(uuid.uuid4())[:4]}'
         else:
             self.plugin_json_path = None
         self.plugin = plugin
