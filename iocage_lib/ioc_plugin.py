@@ -37,6 +37,7 @@ import shutil
 import subprocess as su
 import requests
 import urllib.parse
+import uuid
 
 import iocage_lib.ioc_common
 import iocage_lib.ioc_create
@@ -70,6 +71,11 @@ class IOCPlugin(object):
         if os.path.exists(plugin or ''):
             self.plugin_json_path = plugin
             plugin = plugin.rsplit('/', 1)[-1].rstrip('.json')
+            if self.plugin_json_path == jail:
+                # If user specified a complete path to plugin json file
+                # jail would be having the same value. We ensure that we don't
+                # do that here.
+                jail = f'{plugin}_{str(uuid.uuid4())[:4]}'
         else:
             self.plugin_json_path = None
         self.plugin = plugin
@@ -206,34 +212,40 @@ class IOCPlugin(object):
 
         return self.fetch_plugin_versions_from_plugin_index(plugin_index)
 
-    def fetch_plugin(self, props, num, accept_license):
-        """Helper to fetch plugins"""
+    def retrieve_plugin_json(self):
         if not self.plugin_json_path:
             _json = os.path.join(self.git_destination, f'{self.plugin}.json')
         else:
             _json = self.plugin_json_path
 
-        plugins = self.fetch_plugin_index(props, index_only=True)
         self.log.debug(f'Plugin json file path: {_json}')
 
         try:
-            with open(_json, "r") as j:
+            with open(_json, 'r') as j:
                 conf = json.load(j)
         except FileNotFoundError:
             iocage_lib.ioc_common.logit(
                 {
-                    "level": "EXCEPTION",
-                    "message": f"{_json} was not found!"
+                    'level': 'EXCEPTION',
+                    'message': f'{_json} was not found!'
                 },
-                _callback=self.callback)
+                _callback=self.callback
+            )
         except json.decoder.JSONDecodeError:
             iocage_lib.ioc_common.logit(
                 {
-                    "level": "EXCEPTION",
-                    "message": "Invalid JSON file supplied, please supply a "
-                    "correctly formatted JSON file."
+                    'level': 'EXCEPTION',
+                    'message': 'Invalid JSON file supplied, please supply a '
+                    'correctly formatted JSON file.'
                 },
-                _callback=self.callback)
+                _callback=self.callback
+            )
+        return conf
+
+    def fetch_plugin(self, props, num, accept_license):
+        """Helper to fetch plugins"""
+        plugins = self.fetch_plugin_index(props, index_only=True)
+        conf = self.retrieve_plugin_json()
 
         if self.hardened:
             conf['release'] = conf['release'].replace("-RELEASE", "-STABLE")
@@ -897,6 +909,7 @@ fingerprint: {fingerprint}
         self.plugin = self.__fetch_validate_plugin__(
             self.plugin.lower(), plugins_ordered_dict
         )
+        self.jail = f'{self.plugin}_{str(uuid.uuid4())[:4]}'
 
         # We now run the fetch the user requested
         self.fetch_plugin(props, 0, accept_license)
