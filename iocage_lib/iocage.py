@@ -1988,8 +1988,9 @@ class IOCage(ioc_json.IOCZFS):
             "jail", "clonejail", "pluginv2") else False
 
         if updateable:
+            date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             self.snapshot(
-                f'ioc_update_{conf["release"]}_{datetime.datetime.now()}'
+                f'ioc_update_{conf["release"]}_{date}'
             )
 
             if not status:
