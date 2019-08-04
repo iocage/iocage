@@ -908,8 +908,36 @@ class IOCConfiguration(IOCZFS):
                 conf['plugin_repository'] = \
                     'https://github.com/freenas/iocage-ix-plugins.git'
 
-            if conf.get('host_hostuuid') and conf.get('plugin_name') == 'none':
-                conf['plugin_name'] = conf['host_hostuuid']
+            if conf.get('plugin_name', 'none') == 'none':
+                jail_path = os.path.join(
+                    self.iocroot_path, 'jails', conf.get('host_hostuuid')
+                )
+
+                json_files = [
+                    f for f in os.listdir(jail_path)
+                    if f != 'config.json' and f.endswith('.json')
+                ]
+
+                if len(json_files) == 1:
+                    # It should be 1 only but if it isn't, this is unexpected
+                    # and we can't anticipate which file to use in this case
+                    try:
+                        with open(
+                            os.path.join(jail_path, json_files[0]), 'r'
+                        ) as f:
+                            plugin_data = json.loads(f.read())
+                    except json.JSONDecodeError:
+                        pass
+                    else:
+                        if plugin_data.get('name'):
+                            conf['plugin_name'] = plugin_data['name']
+
+            # This is our last resort - if above strategy didn't work,
+            # let's use host_hostuuid in this case
+            if conf.get('host_hostuuid') and conf.get(
+                'plugin_name', 'none'
+            ) == 'none':
+                conf['plugin_name'] = conf['host_hostuuid'].rsplit('_', 1)[0]
 
         return True if original_conf != conf else False
 
