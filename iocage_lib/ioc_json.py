@@ -2323,14 +2323,31 @@ class IOCJson(IOCConfiguration):
 
         if key in (
             'nat_prefix', 'nat_interface', 'nat_backend'
-        ) and not default:
-            iocage_lib.ioc_common.logit(
-                {
-                    'level': 'EXCEPTION',
-                    'message': f'{key} can only be changed for defaults!'
-                },
-                _callback=self.callback,
-                silent=self.silent)
+        ):
+            if not default:
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'EXCEPTION',
+                        'message': f'{key} can only be changed for defaults!'
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
+
+            active_nat_jails = iocage_lib.ioc_common.get_jails_with_config(
+                lambda j: (j['state'] == 'up' and j['nat'])
+            )
+            active_jails_msg = '\n'.join(
+                f'   - {jail}' for jail in active_nat_jails
+            )
+            if active_nat_jails:
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'EXCEPTION',
+                        'message': f'{key} cannot be changed with active '
+                        'NAT jails. Please stop the following active jails.\n'
+                        f'{active_jails_msg}'
+                    }
+                )
 
         if key in zfs_props.keys():
             if iocage_lib.ioc_common.check_truthy(
