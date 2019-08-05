@@ -37,6 +37,7 @@ import sys
 import iocage_lib.ioc_common
 import iocage_lib.ioc_create
 import iocage_lib.ioc_exec
+import iocage_lib.ioc_fstab
 import iocage_lib.ioc_list
 import iocage_lib.ioc_stop
 import iocage_lib.ioc_exceptions as ioc_exceptions
@@ -1092,12 +1093,31 @@ class IOCConfiguration(IOCZFS):
         cloned_release = conf.get('cloned_release', 'LEGACY_JAIL')
 
         if iocage_lib.ioc_common.check_truthy(template):
-            jail_path = f'{self.iocroot}/templates/{conf["host_hostuuid"]}/' \
-                'root'
+            freebsd_version_path = \
+                f'{self.iocroot}/templates/{conf["host_hostuuid"]}/root'
         else:
-            jail_path = f'{self.iocroot}/jails/{host_hostuuid}/root'
+            freebsd_version_path = f'{self.iocroot}/jails/{host_hostuuid}/root'
 
-        freebsd_version = pathlib.Path(f'{jail_path}/bin/freebsd-version')
+        freebsd_version = pathlib.Path(
+            f'{freebsd_version_path}/bin/freebsd-version'
+        )
+
+        if not freebsd_version.is_file() and conf.get('basejail'):
+            # It is possible the basejail hasn't started yet. I believe
+            # the best case here is to parse fstab entries and determine
+            # which release is being used and check it for freebsd-version
+            for index, fstab_entry in iocage_lib.ioc_fstab.IOCFstab(
+                host_hostuuid, 'list',
+            ).fstab_list():
+                if fstab_entry[1].rstrip('/') == os.path.join(
+                    freebsd_version_path, 'bin'
+                ):
+                    freebsd_version = pathlib.Path(
+                        os.path.join(fstab_entry[0], 'freebsd-version')
+                    )
+                    freebsd_version_path = fstab_entry[0].rstrip('/').rsplit(
+                        '/', 1
+                    )[0]
 
         if not freebsd_version.is_file():
             iocage_lib.ioc_common.logit(
@@ -1116,7 +1136,7 @@ class IOCConfiguration(IOCZFS):
         else:
             try:
                 release = iocage_lib.ioc_common.get_jail_freebsd_version(
-                    jail_path, release
+                    freebsd_version_path, release
                 )
             except Exception as e:
                 iocage_lib.ioc_common.logit(
