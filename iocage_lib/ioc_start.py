@@ -1371,7 +1371,7 @@ class IOCStart(object):
                     {
                         'level': 'EXCEPTION',
                         'message': (f'No bridge for interface {interface}'
-                                    'found in configuration.')
+                                    ' found in configuration.')
                     },
                     _callback=self.callback,
                     silent=self.silent)
