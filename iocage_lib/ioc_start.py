@@ -1360,33 +1360,18 @@ class IOCStart(object):
 
     def get_default_gateway(self, address_family='ipv4'):
         gateway = self.host_gateways[address_family]['gateway']
-        interface = self.host_gateways[address_family]['interface']
-        if gateway and '%' in gateway:
-            interface_bridge_map = self.get_interface_bridge_map()
-            ipv6 = gateway.split('%')[0]
-            if interface in interface_bridge_map:
-                jail_nic = interface_bridge_map[interface][0]
-            else:
-                iocage_lib.ioc_common.logit(
-                    {
-                        'level': 'EXCEPTION',
-                        'message': (f'No bridge for interface {interface}'
-                                    'found in configuration.')
-                    },
-                    _callback=self.callback,
-                    silent=self.silent)
-            return f'{ipv6}%{jail_nic.replace("vnet", "epair")}b'
-        elif gateway:
+        if gateway:
             return gateway
         else:
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'WARNING',
+                    'message': 'No default gateway found.'
+                },
+                _callback=self.callback,
+                silent=self.silent
+            )
             return 'none'
-
-    def get_interface_bridge_map(self):
-        interface_bridge_map = {}
-        for interface in self.get('interfaces').split(','):
-            nic, bridge = interface.split(':')
-            interface_bridge_map.setdefault(bridge, []).append(nic)
-        return interface_bridge_map
 
     def get_bridge_members(self, bridge):
         return [
