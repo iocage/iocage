@@ -1392,7 +1392,8 @@ class IOCStart(object):
             iocage_lib.ioc_common.logit(
                 {
                     'level': 'WARNING',
-                    'message': 'No default gateway found.'
+                    'message': 'No default gateway found'
+                    f' for {address_family}.'
                 },
                 _callback=self.callback,
                 silent=self.silent
