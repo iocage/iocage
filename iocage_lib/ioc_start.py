@@ -1610,7 +1610,10 @@ class IOCStart(object):
                     )
 
             if rules[1].endswith(nat_interface):
-                # They don't have any port-forwards
+                # They don't have any port-forwards or the file is empty
+                if rdrs:
+                    nat_rule += rdrs
+
                 rules.insert(1, nat_rule)
                 self.log.debug(f'Inserted: {nat_rule} into rules at index 1')
 
