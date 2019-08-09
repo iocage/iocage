@@ -26,6 +26,7 @@ import datetime
 import hashlib
 import os
 import re
+import fcntl
 import itertools
 import shutil
 import json
@@ -720,7 +721,12 @@ class IOCStart(object):
                 f'Adding NAT: Interface - {nat_interface}'
                 f' Forwards - {nat_forwards} Backend - {nat_backend}'
             )
-            self.__add_nat__(nat_interface, nat_forwards, nat_backend)
+            # We use a lock here to ensure that two jails at the same
+            # time do not attempt to write nat rules
+            with open('/tmp/iocage_nat_lock', 'w') as f:
+                # Lock is automatically released when file is closed
+                fcntl.flock(f, fcntl.LOCK_EX)
+                self.__add_nat__(nat_interface, nat_forwards, nat_backend)
 
         # This needs to be a list.
         exec_start = self.conf['exec_start'].split()
