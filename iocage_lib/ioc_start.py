@@ -988,6 +988,32 @@ class IOCStart(object):
                     lambda v: v[0] != 'none' and v[1] != 'none',
                     net_configs
                 ):
+                    if ipv6:
+                        # When we have ipv6, it is possible that default route
+                        # is "fe80::20d:b9ff:fe33:8716%interface0"
+                        # Now interface here is default gateway of the host
+                        # machine which the jail isn't aware of. In the jail
+                        # when adding default route, the value of interface
+                        # should be the default gateway of the jail. Let's
+                        # correct that behavior.
+                        defined_interfaces = [i.split(':') for i in nics]
+                        specified_interfaces = [
+                            'vnet0' if '|' not in i else i.split('|')[0]
+                            for i in ip
+                        ]
+                        # The default gateway here for the jail would be the
+                        # one which is present first in "defined_interfaces"
+                        # and also in "specified_interfaces".
+                        default_gw = 'vnet0'  # Defaulting to vnet0
+                        for i in defined_interfaces:
+                            if i in specified_interfaces:
+                                default_gw = i
+                                break
+                        default_route = f'{default_route.split("%")[0]}' \
+                            f'%{default_gw.replace("vnet", "epair")}b'
+
+                    self.log.debug(f'Setting default route {default_route}')
+
                     try:
                         iocage_lib.ioc_common.checkoutput(
                             [
@@ -1360,33 +1386,19 @@ class IOCStart(object):
 
     def get_default_gateway(self, address_family='ipv4'):
         gateway = self.host_gateways[address_family]['gateway']
-        interface = self.host_gateways[address_family]['interface']
-        if gateway and '%' in gateway:
-            interface_bridge_map = self.get_interface_bridge_map()
-            ipv6 = gateway.split('%')[0]
-            if interface in interface_bridge_map:
-                jail_nic = interface_bridge_map[interface][0]
-            else:
-                iocage_lib.ioc_common.logit(
-                    {
-                        'level': 'EXCEPTION',
-                        'message': (f'No bridge for interface {interface}'
-                                    'found in configuration.')
-                    },
-                    _callback=self.callback,
-                    silent=self.silent)
-            return f'{ipv6}%{jail_nic.replace("vnet", "epair")}b'
-        elif gateway:
+        if gateway:
             return gateway
         else:
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'WARNING',
+                    'message': 'No default gateway found'
+                    f' for {address_family}.'
+                },
+                _callback=self.callback,
+                silent=self.silent
+            )
             return 'none'
-
-    def get_interface_bridge_map(self):
-        interface_bridge_map = {}
-        for interface in self.get('interfaces').split(','):
-            nic, bridge = interface.split(':')
-            interface_bridge_map.setdefault(bridge, []).append(nic)
-        return interface_bridge_map
 
     def get_bridge_members(self, bridge):
         return [
