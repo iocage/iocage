@@ -105,25 +105,25 @@ def test_should_return_default_interface(mock_logit, test_input, expected):
                         'ipv6': {'gateway': 'fe80::8%inet0',
                                  'interface': 'inet0'}}},
      {'ipv4': '217.29.43.254',
-      'ipv6': 'fe80::8%epair0b'}),
+      'ipv6': 'fe80::8%inet0'}),
     ({'host_gateways': {'ipv4': {'gateway': None,
                                  'interface': None},
                         'ipv6': {'gateway': 'fe80::8%mgmt0',
                                  'interface': 'mgmt0'}}},
      {'ipv4': 'none',
-      'ipv6': 'fe80::8%epair1b'}),
+      'ipv6': 'fe80::8%mgmt0'}),
     ({'host_gateways': {'ipv4': {'gateway': None,
                                  'interface': None},
                         'ipv6': {'gateway': 'fe80::8%inet0',
                                  'interface': 'inet0'}}},
      {'ipv4': 'none',
-      'ipv6': 'fe80::8%epair0b'}),
+      'ipv6': 'fe80::8%inet0'}),
     ({'host_gateways': {'ipv4': {'gateway': None,
                                  'interface': None},
                         'ipv6': {'gateway': 'fe80::8%inet0',
                                  'interface': 'inet0'}}},
      {'ipv4': 'none',
-      'ipv6': 'fe80::8%epair1b'})])
+      'ipv6': 'fe80::8%inet0'})])
 def test_should_return_default_gateway(test_input, expected):
     iocstart = ioc_start.IOCStart("", "", unit_test=True)
     iocstart.host_gateways = test_input['host_gateways']
