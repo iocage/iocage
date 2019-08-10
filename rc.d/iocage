@@ -27,6 +27,7 @@ load_rc_config "$name"
 start_cmd="iocage_start"
 stop_cmd="iocage_stop"
 export LANG=$iocage_lang
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin
 
 iocage_start()
 {
