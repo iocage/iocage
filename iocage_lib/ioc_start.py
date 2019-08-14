@@ -994,7 +994,9 @@ class IOCStart(object):
                     lambda v: v[0] != 'none' and v[1] != 'none',
                     net_configs
                 ):
-                    if ipv6:
+                    # TODO: Scope/zone id should be investigated further
+                    #  to make sure no case is missed wrt this
+                    if ipv6 and '%' in default_route:
                         # When we have ipv6, it is possible that default route
                         # is "fe80::20d:b9ff:fe33:8716%interface0"
                         # Now interface here is default gateway of the host
