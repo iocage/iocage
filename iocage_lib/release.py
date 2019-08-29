@@ -4,6 +4,7 @@ import requests
 
 from iocage_lib.resource import Resource, ListableResource
 from iocage_lib.ioc_fetch import IOCFetch
+from iocage_lib.ioc_common import check_release_newer
 
 
 class Release(Resource):
@@ -45,7 +46,9 @@ class ListableReleases(ListableResource):
             assert req.status_code == 200
 
             for release in filter(
-                lambda r: r if not self.eol_check else r not in self.eol_list,
+                lambda r: (
+                    r if not self.eol_check else r not in self.eol_list
+                ) and not check_release_newer(r, raise_error=False),
                 re.findall(
                     r'href="(\d.*RELEASE)/"', req.content.decode('utf-8')
                 )

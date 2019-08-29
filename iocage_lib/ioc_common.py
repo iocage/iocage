@@ -706,7 +706,9 @@ def get_host_release():
     return release
 
 
-def check_release_newer(release, callback=None, silent=False):
+def check_release_newer(
+    release, callback=None, silent=False, raise_error=True
+):
     """Checks if the host RELEASE is greater than the target release"""
     host_release = get_host_release()
 
@@ -716,7 +718,7 @@ def check_release_newer(release, callback=None, silent=False):
     h_float = float(str(host_release).rsplit("-")[0])
     r_float = float(str(release).rsplit("-")[0])
 
-    if h_float < r_float:
+    if h_float < r_float and raise_error:
         logit(
             {
                 "level": "EXCEPTION",
@@ -725,6 +727,8 @@ def check_release_newer(release, callback=None, silent=False):
             },
             _callback=callback,
             silent=silent)
+
+    return h_float < r_float
 
 
 def generate_devfs_ruleset(conf, paths=None, includes=None, callback=None,

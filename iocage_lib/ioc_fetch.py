@@ -205,6 +205,10 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
             else:
                 eol = []
 
+            if self.release:
+                iocage_lib.ioc_common.check_release_newer(
+                    self.release, callback=self.callback, silent=self.silent
+                )
             rel = self.fetch_http_release(eol, _list=_list)
 
             if _list:
