@@ -24,6 +24,7 @@
 """iocage upgrade module"""
 import datetime
 import fileinput
+import hashlib
 import os
 import pathlib
 import subprocess as su
@@ -80,6 +81,11 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
         }
 
         self.callback = callback
+
+        # symbolic link created on fetch by freebsd-update
+        bd_hash = hashlib.sha256((self.path + '\n').encode('utf-8')).hexdigest()
+        self.freebsd_install_link = os.path.join(self.path,
+            'var/db/freebsd-update', bd_hash + '-install')
 
     def upgrade_jail(self):
         tmp_dataset = self.zfs_get_dataset_name('/tmp')
@@ -140,44 +146,40 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
                         callback=self.callback
                     )
             else:
-                try:
-                    iocage_lib.ioc_exec.InteractiveExec(
-                        fetch_cmd,
-                        self.path.replace('/root', ''),
-                        uuid=self.uuid,
-                        unjailed=True
-                    )
-                except iocage_lib.ioc_exceptions.CommandFailed:
-                    self.__rollback_jail__()
-                    msg = f'Upgrade failed! Rolling back jail'
-                    iocage_lib.ioc_common.logit(
-                        {
-                            "level": "EXCEPTION",
-                            "message": msg
-                        },
-                        _callback=self.callback,
-                        silent=self.silent
-                    )
+                iocage_lib.ioc_exec.InteractiveExec(
+                    fetch_cmd,
+                    self.path.replace('/root', ''),
+                    uuid=self.uuid,
+                    unjailed=True
+                )
 
-            if not self.interactive:
-                while not self.__upgrade_install__(tmp.name):
-                    pass
-            else:
-                # FreeBSD update loops 3 times
-                for _ in range(3):
-                    try:
-                        self.__upgrade_install__(tmp.name)
-                    except iocage_lib.ioc_exceptions.CommandFailed:
-                        self.__rollback_jail__()
-                        msg = f'Upgrade failed! Rolling back jail'
-                        iocage_lib.ioc_common.logit(
-                            {
-                                'level': 'EXCEPTION',
-                                'message': msg
-                            },
-                            _callback=self.callback,
-                            silent=self.silent
-                        )
+            if not os.path.islink(self.freebsd_install_link):
+                msg = f'Upgrade failed, nothing to install after fetch!'
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'EXCEPTION',
+                        'message': msg
+                    },
+                    _callback=self.callback,
+                    silent=self.silent
+                )
+
+            for _ in range(50): # up to 50 invocations to prevent runaway
+                if os.path.islink(self.freebsd_install_link):
+                    self.__upgrade_install__(tmp.name)
+                else:
+                    break
+
+            if os.path.islink(self.freebsd_install_link):
+                msg = f'Upgrade failed, freebsd-update won\'t finish!'
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'EXCEPTION',
+                        'message': msg
+                    },
+                    _callback=self.callback,
+                    silent=self.silent
+                )
 
             new_release = iocage_lib.ioc_common.get_jail_freebsd_version(
                 self.path,
@@ -335,7 +337,7 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
         return new_release
 
     def __upgrade_install__(self, name):
-        """Installs the upgrade and returns the exit code."""
+        """Installs the upgrade."""
         install_cmd = [
             name, "-b", self.path, "-d",
             f"{self.path}/var/db/freebsd-update/", "-f",
@@ -351,16 +353,10 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
                 unjailed=True,
                 callback=self.callback,
             ) as _exec:
-                output = iocage_lib.ioc_common.consume_and_log(
+                iocage_lib.ioc_common.consume_and_log(
                     _exec,
                     callback=self.callback
                 )
-
-            for i in output['stdout']:
-                if i == 'No updates are available to install.':
-                    return True
-
-            return False
         else:
             iocage_lib.ioc_exec.InteractiveExec(
                 install_cmd,
