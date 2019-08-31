@@ -1294,20 +1294,15 @@ class IOCConfiguration(IOCZFS):
                     silent=self.silent)
         return conf
 
-    def check_default_config(self):
-        """This sets up the default configuration for jails."""
-        default_json_location = f'{self.iocroot}/defaults.json'
-        write = True  # Write the defaults file
-        fix_write = False
-
+    @staticmethod
+    def retrieve_default_props():
         try:
             with open('/etc/hostid', 'r') as _file:
                 hostid = _file.read().strip()
         except Exception:
             hostid = None
-
-        default_props = {
-            'CONFIG_VERSION': self.json_version,
+        return {
+            'CONFIG_VERSION': IOCConfiguration.get_version(),
             'interfaces': 'vnet0:bridge0',
             'host_domainname': 'none',
             'exec_fib': '0',
@@ -1320,7 +1315,7 @@ class IOCConfiguration(IOCZFS):
             'defaultrouter': 'auto',
             'defaultrouter6': 'auto',
             'resolver': '/etc/resolv.conf',
-            'mac_prefix': self.mac_prefix,
+            'mac_prefix': IOCConfiguration.get_mac_prefix(),
             'vnet0_mac': 'none',
             'vnet1_mac': 'none',
             'vnet2_mac': 'none',
@@ -1438,6 +1433,14 @@ class IOCConfiguration(IOCZFS):
             'plugin_name': 'none',
             'plugin_repository': 'none',
         }
+
+    def check_default_config(self):
+        """This sets up the default configuration for jails."""
+        default_json_location = f'{self.iocroot}/defaults.json'
+        write = True  # Write the defaults file
+        fix_write = False
+
+        default_props = self.retrieve_default_props()
 
         try:
             with open(default_json_location, 'r') as default_json:
