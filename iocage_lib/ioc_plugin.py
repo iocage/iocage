@@ -215,6 +215,8 @@ class IOCPlugin(object):
     def retrieve_plugin_json(self):
         if not self.plugin_json_path:
             _json = os.path.join(self.git_destination, f'{self.plugin}.json')
+            if not os.path.exists(self.git_destination):
+                self.pull_clone_git_repo()
         else:
             _json = self.plugin_json_path
 

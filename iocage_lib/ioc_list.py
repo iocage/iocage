@@ -27,6 +27,7 @@ import netifaces
 import os
 import re
 import subprocess as su
+import urllib.parse
 import uuid as _uuid
 
 import iocage_lib.ioc_common
@@ -340,6 +341,37 @@ class IOCList(object):
 
                 try:
                     with open(f"{mountpoint}/plugin/ui.json", "r") as u:
+                        # We want to ensure that we show the correct NAT
+                        # ports for nat based plugins and when NAT isn't
+                        # desired, we don't show them at all. In all these
+                        # variable values, what persists across NAT/DHCP/Static
+                        # ip based plugins is that the internal ports of the
+                        # jail don't change. For example if a plugin jail has
+                        # nginx running on port 4000, it will still want to
+                        # have it running on 4000 regardless of the fact
+                        # how user configures to start the plugin jail. We take
+                        # this fact, and search for an explicit specified port
+                        # number in the admin portal, if none is found, that
+                        # means that it is ( 80 - default for http ).
+
+                        nat_forwards_dict = {}
+                        nat_forwards = conf.get('nat_forwards', 'none')
+                        for rule in nat_forwards.split(
+                            ','
+                        ) if nat_forwards != 'none' else ():
+                            # Rule can be proto(port), proto(in/out), port
+                            if rule.isdigit():
+                                jail = host = rule
+                            else:
+                                rule = rule.split('(')[-1].strip(')')
+                                if ':' in rule:
+                                    jail, host = rule.split(':')
+                                else:
+                                    # only one port provided
+                                    jail = host = rule
+
+                            nat_forwards_dict[int(jail)] = int(host)
+
                         if not conf.get('nat'):
                             all_ips = map(
                                 lambda v: 'DHCP' if 'dhcp' in v.lower() else v,
@@ -364,12 +396,35 @@ class IOCList(object):
 
                         ui_data = json.load(u)
                         admin_portal = ui_data["adminportal"]
-                        admin_portal = ','.join(
-                            map(
-                                lambda v: admin_portal.replace('%%IP%%', v),
-                                all_ips
+                        admin_portals = []
+                        for portal in admin_portal.split(','):
+                            if conf.get('nat'):
+                                portal_uri = urllib.parse.urlparse(portal)
+                                portal_port = portal_uri.port or 80
+                                # We do this safely as it's possible
+                                # dev hasn't added it to plugin's json yet
+                                nat_port = nat_forwards_dict.get(portal_port)
+                                if nat_port:
+                                    uri = portal_uri._replace(
+                                        netloc=f'{portal_uri._hostinfo[0]}:'
+                                               f'{nat_port}'
+                                    ).geturl()
+                                else:
+                                    uri = portal
+                            else:
+                                uri = portal
+
+                            admin_portals.append(
+                                ','.join(
+                                    map(
+                                        lambda v: uri.replace(
+                                            '%%IP%%', v),
+                                        all_ips
+                                    )
+                                )
                             )
-                        )
+
+                        admin_portal = ','.join(admin_portals)
 
                         try:
                             ph = ui_data["adminportal_placeholders"].items()
