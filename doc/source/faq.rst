@@ -50,7 +50,7 @@ FAQ
     of this documentation for more details.
 
 **Is there a way to display resource consumption?**
-    Yes - :command:`iocage df [UUID | NAME]`
+    Yes - :command:`iocage df`
 
 **Is NAT supported for jails?**
     Yes. NAT is built into FreeBSD. Treat your server as a core
