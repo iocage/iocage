@@ -579,12 +579,6 @@ class IOCPlugin(object):
                     },
                     _callback=self.callback)
 
-        try:
-            os.makedirs(f"{jaildir}/root/usr/local/etc/pkg/repos", 0o755)
-        except OSError:
-            # Same as below, it exists and we're OK with that.
-            pass
-
         freebsd_conf = """\
 FreeBSD: { enabled: no }
 """
