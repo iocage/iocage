@@ -1156,61 +1156,10 @@ fingerprint: {fingerprint}
         """Installs all pkgs listed in the plugins configuration"""
         path = f"{self.iocroot}/jails/{self.jail}"
 
-        secure = True if "https://" in plugin_conf["packagesite"] else False
-        pkg_repos = plugin_conf["fingerprints"]
-
-        if secure:
-            # Certificate verification
-            iocage_lib.ioc_common.logit(
-                {
-                    "level": "INFO",
-                    "message": "Secure packagesite detected, installing"
-                               " ca_root_nss package."
-                },
-                _callback=self.callback,
-                silent=self.silent)
-
-            err = iocage_lib.ioc_create.IOCCreate(
-                self.release,
-                "",
-                0,
-                pkglist=["ca_root_nss"],
-                silent=True, callback=self.callback
-            ).create_install_packages(self.jail, path)
-
-            if err:
-                self.__rollback_jail__(name="update")
-                iocage_lib.ioc_common.logit(
-                    {
-                        "level": "EXCEPTION",
-                        "message":
-                        "PKG error, please try non-secure packagesite."
-                    },
-                    _callback=self.callback)
-
-        for repo in pkg_repos:
-            err = iocage_lib.ioc_create.IOCCreate(
-                self.release,
-                "",
-                0,
-                pkglist=plugin_conf["pkgs"],
-                silent=True,
-                plugin=True,
-                callback=self.callback).create_install_packages(
-                self.jail,
-                path,
-                repo=plugin_conf["packagesite"]
-            )
-
-            if err:
-                self.__rollback_jail__(name="update")
-                msg = "PKG error, update failed! Rolling back snapshot.\n"
-                iocage_lib.ioc_common.logit(
-                    {
-                        "level": "EXCEPTION",
-                        "message": msg
-                    },
-                    _callback=self.callback)
+        self.__fetch_plugin_install_packages__(
+            path, plugin_conf, plugin_conf['fingerprints'], [],
+            os.path.join(path, 'root/usr/local/etc/pkg/repos')
+        )
 
     def upgrade(self, jid):
         iocage_lib.ioc_common.logit(
