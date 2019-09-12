@@ -1161,8 +1161,6 @@ fingerprint: {fingerprint}
     def __update_pkg_install__(self, plugin_conf):
         """Installs all pkgs listed in the plugins configuration"""
         path = f"{self.iocroot}/jails/{self.jail}"
-        conf, write = iocage_lib.ioc_json.IOCJson(
-            location=path).json_load()
 
         secure = True if "https://" in plugin_conf["packagesite"] else False
         pkg_repos = plugin_conf["fingerprints"]
@@ -1219,9 +1217,6 @@ fingerprint: {fingerprint}
                         "message": msg
                     },
                     _callback=self.callback)
-
-        if write:
-            self.json_write(conf)
 
     def upgrade(self, jid):
         iocage_lib.ioc_common.logit(
