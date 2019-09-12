@@ -1064,6 +1064,10 @@ fingerprint: {fingerprint}
         self.__update_pkg_install__(plugin_conf)
 
         if plugin_conf["artifact"]:
+            # We need to do this again to ensure that if some files
+            # were removed when we removed pkgs and the overlay directory
+            # is supposed to bring them back, this does that
+            self.__update_pull_plugin_artifact__(plugin_conf)
             post_update_hook = os.path.join(
                 self.iocroot, 'jails', self.jail, 'plugin/post_update.sh'
             )
