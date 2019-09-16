@@ -720,11 +720,14 @@ class IOCCreate(object):
         Takes a list of pkg's to install into the target jail. The resolver
         property is required for pkg to have network access.
         """
+        started = False
         status, jid = iocage_lib.ioc_list.IOCList().list_get_jid(jail_uuid)
 
         if not status:
             iocage_lib.ioc_start.IOCStart(jail_uuid, location, silent=True)
-            status, jid = iocage_lib.ioc_list.IOCList().list_get_jid(jail_uuid)
+            started, jid = iocage_lib.ioc_list.IOCList().list_get_jid(
+                jail_uuid
+            )
 
         if repo:
             r = re.match('(https?(://)?)?([^/]+)', repo)
@@ -966,9 +969,7 @@ class IOCCreate(object):
                         pkg_err_list.append(pkg_err_msg)
                     break
 
-        os.remove(f"{location}/root/etc/resolv.conf")
-
-        if status:
+        if started:
             iocage_lib.ioc_stop.IOCStop(jail_uuid, location, silent=True)
 
         if self.plugin and pkg_err_list:

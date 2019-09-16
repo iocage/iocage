@@ -579,12 +579,6 @@ class IOCPlugin(object):
                     },
                     _callback=self.callback)
 
-        try:
-            os.makedirs(f"{jaildir}/root/usr/local/etc/pkg/repos", 0o755)
-        except OSError:
-            # Same as below, it exists and we're OK with that.
-            pass
-
         freebsd_conf = """\
 FreeBSD: { enabled: no }
 """
@@ -671,7 +665,9 @@ fingerprint: {fingerprint}
 
     def __fetch_plugin_post_install__(self, conf, _conf, jaildir):
         """Fetches the users artifact and runs the post install"""
-        iocage_lib.ioc_start.IOCStart(self.jail, jaildir, silent=True)
+        status, jid = iocage_lib.ioc_list.IOCList().list_get_jid(self.jail)
+        if not status:
+            iocage_lib.ioc_start.IOCStart(self.jail, jaildir, silent=True)
 
         ip4 = _conf['ip4_addr']
         ip6 = _conf['ip6_addr']
@@ -1068,6 +1064,10 @@ fingerprint: {fingerprint}
         self.__update_pkg_install__(plugin_conf)
 
         if plugin_conf["artifact"]:
+            # We need to do this again to ensure that if some files
+            # were removed when we removed pkgs and the overlay directory
+            # is supposed to bring them back, this does that
+            self.__update_pull_plugin_artifact__(plugin_conf)
             post_update_hook = os.path.join(
                 self.iocroot, 'jails', self.jail, 'plugin/post_update.sh'
             )
@@ -1159,67 +1159,23 @@ fingerprint: {fingerprint}
     def __update_pkg_install__(self, plugin_conf):
         """Installs all pkgs listed in the plugins configuration"""
         path = f"{self.iocroot}/jails/{self.jail}"
-        conf, write = iocage_lib.ioc_json.IOCJson(
-            location=path).json_load()
 
-        secure = True if "https://" in plugin_conf["packagesite"] else False
-        pkg_repos = plugin_conf["fingerprints"]
-
-        if secure:
-            # Certificate verification
+        try:
+            self.__fetch_plugin_install_packages__(
+                path, plugin_conf, plugin_conf['fingerprints'], [],
+                os.path.join(path, 'root/usr/local/etc/pkg/repos')
+            )
+        except (Exception, SystemExit):
             iocage_lib.ioc_common.logit(
                 {
-                    "level": "INFO",
-                    "message": "Secure packagesite detected, installing"
-                               " ca_root_nss package."
+                    'level': 'ERROR',
+                    'message': 'PKG error, update failed! '
+                               'Rolling back snapshot.\n'
                 },
-                _callback=self.callback,
-                silent=self.silent)
-
-            err = iocage_lib.ioc_create.IOCCreate(
-                self.release,
-                "",
-                0,
-                pkglist=["ca_root_nss"],
-                silent=True, callback=self.callback
-            ).create_install_packages(self.jail, path)
-
-            if err:
-                self.__rollback_jail__(name="update")
-                iocage_lib.ioc_common.logit(
-                    {
-                        "level": "EXCEPTION",
-                        "message":
-                        "PKG error, please try non-secure packagesite."
-                    },
-                    _callback=self.callback)
-
-        for repo in pkg_repos:
-            err = iocage_lib.ioc_create.IOCCreate(
-                self.release,
-                "",
-                0,
-                pkglist=plugin_conf["pkgs"],
-                silent=True,
-                plugin=True,
-                callback=self.callback).create_install_packages(
-                self.jail,
-                path,
-                repo=plugin_conf["packagesite"]
+                _callback=self.callback
             )
-
-            if err:
-                self.__rollback_jail__(name="update")
-                msg = "PKG error, update failed! Rolling back snapshot.\n"
-                iocage_lib.ioc_common.logit(
-                    {
-                        "level": "EXCEPTION",
-                        "message": msg
-                    },
-                    _callback=self.callback)
-
-        if write:
-            self.json_write(conf)
+            self.__rollback_jail__(name='update')
+            raise
 
     def upgrade(self, jid):
         iocage_lib.ioc_common.logit(
