@@ -1160,10 +1160,22 @@ fingerprint: {fingerprint}
         """Installs all pkgs listed in the plugins configuration"""
         path = f"{self.iocroot}/jails/{self.jail}"
 
-        self.__fetch_plugin_install_packages__(
-            path, plugin_conf, plugin_conf['fingerprints'], [],
-            os.path.join(path, 'root/usr/local/etc/pkg/repos')
-        )
+        try:
+            self.__fetch_plugin_install_packages__(
+                path, plugin_conf, plugin_conf['fingerprints'], [],
+                os.path.join(path, 'root/usr/local/etc/pkg/repos')
+            )
+        except (Exception, SystemExit):
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'ERROR',
+                    'message': 'PKG error, update failed! '
+                               'Rolling back snapshot.\n'
+                },
+                _callback=self.callback
+            )
+            self.__rollback_jail__(name='update')
+            raise
 
     def upgrade(self, jid):
         iocage_lib.ioc_common.logit(
