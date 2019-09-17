@@ -963,6 +963,20 @@ def lowercase_set(values):
     return set([v.lower() for v in values])
 
 
+def boolean_prop_exists(supplied_props, props_to_check):
+    # supplied_props is a list i.e ["dhcp=1"]
+    # props_to_check is a list of props i.e ["dhcp", "nat"]
+    check_set = set()
+    for check_prop in props_to_check:
+        check_set.update(
+            iocage_lib.ioc_common.lowercase_set(
+                iocage_lib.ioc_common.construct_truthy(check_prop)
+            )
+        )
+
+    return iocage_lib.ioc_common.lowercase_set(supplied_props) & check_set
+
+
 def gen_unused_lo_ip():
     """Best effort to try to allocate a localhost IP for a jail"""
     interface_addrs = netifaces.ifaddresses('lo0')
