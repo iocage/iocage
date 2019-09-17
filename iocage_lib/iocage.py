@@ -1056,12 +1056,6 @@ class IOCage(ioc_json.IOCZFS):
                 kwargs["hardened"] = False
 
         if plugins or plugin_name:
-            ip = [
-                x for x in props
-
-                if x.startswith("ip4_addr") or x.startswith("ip6_addr")
-            ]
-
             if _list:
                 rel_list = ioc_plugin.IOCPlugin(
                     branch=branch,
@@ -1073,27 +1067,6 @@ class IOCage(ioc_json.IOCZFS):
                 )
 
                 return rel_list
-
-            if not ip and (not ioc_common.lowercase_set(
-                ioc_common.construct_truthy('dhcp')
-            ) & ioc_common.lowercase_set(
-                props) and not ioc_common.lowercase_set(
-                    ioc_common.construct_truthy('ip_hostname')
-            ) & ioc_common.lowercase_set(
-                props) and not ioc_common.lowercase_set(
-                    ioc_common.construct_truthy('nat')
-            ) & ioc_common.lowercase_set(props)):
-                ioc_common.logit(
-                    {
-                        "level":
-                        "EXCEPTION",
-                        "message":
-                        "An IP address is needed to fetch a plugin!\n"
-                        "Please specify ip(4|6)"
-                        "_addr=\"[INTERFACE|]IPADDRESS\"!"
-                    },
-                    _callback=self.callback,
-                    silent=self.silent)
 
             if plugins:
                 ioc_plugin.IOCPlugin(
