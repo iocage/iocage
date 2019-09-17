@@ -493,15 +493,9 @@ class IOCPlugin(object):
         if all(
             props.get(k, 'none') == 'none'
             for k in ('ip4_addr', 'ip6_addr')
-        ) and (not iocage_lib.ioc_common.lowercase_set(
-                iocage_lib.ioc_common.construct_truthy('dhcp')
-        ) & iocage_lib.ioc_common.lowercase_set(
-            create_props) and not iocage_lib.ioc_common.lowercase_set(
-            iocage_lib.ioc_common.construct_truthy('ip_hostname')
-        ) & iocage_lib.ioc_common.lowercase_set(
-            create_props) and not iocage_lib.ioc_common.lowercase_set(
-            iocage_lib.ioc_common.construct_truthy('nat')
-        ) & iocage_lib.ioc_common.lowercase_set(create_props)):
+        ) and not iocage_lib.ioc_common.boolean_prop_exists(
+            create_props, ['dhcp', 'nat', 'ip_hostname']
+        ):
             iocage_lib.ioc_common.logit(
                 {
                     'level': 'EXCEPTION',
