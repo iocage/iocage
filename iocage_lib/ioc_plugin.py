@@ -254,8 +254,8 @@ class IOCPlugin(object):
             conf['release'] = re.sub(r"\W\w.", "-", conf['release'])
 
         self.release = conf['release']
-        self.__fetch_plugin_inform__(conf, num, plugins, accept_license)
         props, pkg = self.__fetch_plugin_props__(conf, props, num)
+        self.__fetch_plugin_inform__(conf, num, plugins, accept_license)
         location = f"{self.iocroot}/jails/{self.jail}"
 
         try:
@@ -413,16 +413,33 @@ class IOCPlugin(object):
         freebsd_version = f"{self.iocroot}/releases/{conf['release']}" \
             "/root/bin/freebsd-version"
         json_props = conf.get("properties", {})
-        props = list(props)
+        truthy_inverse = iocage_lib.ioc_common.truthy_inverse_values()
+        props = {p.split('=')[0]: p.split('=')[1] for p in list(props)}
+        network_props = {
+            'nat': truthy_inverse, 'dhcp': truthy_inverse,
+            'ip4_addr': ('none',), 'ip6_addr=': ('none',)
+        }
 
         for p, v in json_props.items():
             # The JSON properties are going to be treated as user entered
             # ones on the command line. If the users prop exists on the
             # command line, we will skip the JSON one.
-            _p = f"{p}={v}"
+            if p not in props:
+                if p in network_props and v not in network_props[p]:
+                    # This means that "p" is enabled in the plugin manifest
+                    # We should now ensure that we don't have any other
+                    # connectivity option enabled
+                    network_props.pop(p)
+                    if any(
+                        nk in props and props[nk] not in nv
+                        for nk, nv in network_props.items()
+                    ):
+                        # This means that some other network option has
+                        # been specified which is enabled and we don't want
+                        # to add the plugin manifest default
+                        continue
 
-            if p not in [_prop.split("=")[0] for _prop in props]:
-                props.append(_p)
+                props[p] = v
 
             if not os.path.isdir(f"{self.iocroot}/releases/{self.release}"):
                 iocage_lib.ioc_common.check_release_newer(
@@ -469,11 +486,25 @@ class IOCPlugin(object):
         # supplied properties replacing ours.
         create_props = [
             f'release={release}', 'boot=on', 'vnet=1'
+        ] + [
+            f'{k}={v}' for k, v in props.items()
         ]
 
-        create_props = create_props + [
-            f"{k}={v}" for k, v in (p.split("=") for p in props)
-        ]
+        if all(
+            props.get(k, 'none') == 'none'
+            for k in ('ip4_addr', 'ip6_addr')
+        ) and not iocage_lib.ioc_common.boolean_prop_exists(
+            create_props, ['dhcp', 'nat', 'ip_hostname']
+        ):
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message': 'Network connectivity is required to fetch a '
+                               'plugin. Please enable dhcp/nat or supply'
+                               ' a valid ip address.'
+                },
+                _callback=self.callback,
+                silent=self.silent)
 
         # These properties are not user configurable
 

@@ -928,9 +928,17 @@ def get_jail_freebsd_version(path, release):
     return new_release
 
 
+def truthy_values():
+    return '1', 'on', 'yes', 'true', True, 1
+
+
+def truthy_inverse_values():
+    return '0', 'off', 'no', 'false', 0, False, None
+
+
 def check_truthy(value):
     """Checks if the given value is 'True'"""
-    if str(value).lower() in ('1', 'on', 'yes', 'true'):
+    if str(value).lower() in truthy_values():
         return 1
 
     return 0
@@ -938,10 +946,11 @@ def check_truthy(value):
 
 def construct_truthy(item, inverse=False):
     """Will return an iterable with all truthy variations"""
-    if inverse:
-        return (f'{item}=off', f'{item}=no', f'{item}=0', f'{item}=false')
-
-    return (f'{item}=on', f'{item}=yes', f'{item}=1', f'{item}=true')
+    return (
+        f'{item}={v}' for v in (
+            truthy_inverse_values() if inverse else truthy_values()
+        )
+    )
 
 
 def set_interactive(interactive):
@@ -952,6 +961,20 @@ def set_interactive(interactive):
 
 def lowercase_set(values):
     return set([v.lower() for v in values])
+
+
+def boolean_prop_exists(supplied_props, props_to_check):
+    # supplied_props is a list i.e ["dhcp=1"]
+    # props_to_check is a list of props i.e ["dhcp", "nat"]
+    check_set = set()
+    for check_prop in props_to_check:
+        check_set.update(
+            iocage_lib.ioc_common.lowercase_set(
+                iocage_lib.ioc_common.construct_truthy(check_prop)
+            )
+        )
+
+    return iocage_lib.ioc_common.lowercase_set(supplied_props) & check_set
 
 
 def gen_unused_lo_ip():
