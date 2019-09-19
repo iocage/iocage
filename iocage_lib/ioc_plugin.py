@@ -58,6 +58,10 @@ class IOCPlugin(object):
     """
 
     PLUGIN_VERSION = '2'
+    DEFAULT_PROPS = {
+        'vnet': 1,
+        'boot': 1
+    }
 
     def __init__(
         self, release=None, jail=None, plugin=None, branch=None,
@@ -484,10 +488,8 @@ class IOCPlugin(object):
 
         # We set our properties that we need, and then iterate over the user
         # supplied properties replacing ours.
-        create_props = [
-            f'release={release}', 'boot=on', 'vnet=1'
-        ] + [
-            f'{k}={v}' for k, v in props.items()
+        create_props = [f'release={release}'] + [
+            f'{k}={v}' for k, v in {**self.DEFAULT_PROPS, **props}.items()
         ]
 
         if all(
