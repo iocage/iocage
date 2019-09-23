@@ -10,8 +10,17 @@ from iocage_lib.zfs import (
 
 class Resource:
     # TODO: Let's also rethink how best we should handle this in the future
+    zfs_resource = NotImplementedError
+
     def __init__(self, name):
         self.name = name
+
+    @property
+    def properties(self):
+        return properties(self.name, self.zfs_resource)
+
+    def set_property(self, prop, value):
+        set_property(self.name, prop, value, self.zfs_resource)
 
     def __bool__(self):
         return self.exists
@@ -25,9 +34,6 @@ class Resource:
     def __str__(self):
         return str(self.name)
 
-    def __eq__(self, other):
-        return other.path == self.path
-
     def iocage_path(self):
         return iocage_activated_dataset() or ''
 
@@ -37,27 +43,7 @@ class Resource:
 
     @property
     def exists(self):
-        return os.path.exists(self.path or '')
-
-
-class ZFSResource(Resource):
-
-    zfs_resource = NotImplementedError
-
-    @property
-    def path(self):
-        try:
-            return self.properties['mountpoint']
-        except ZFSException:
-            # Unable to find zfs resource
-            return False
-
-    @property
-    def properties(self):
-        return properties(self.name, self.zfs_resource)
-
-    def set_property(self, prop, value):
-        set_property(self.name, prop, value, self.zfs_resource)
+        raise NotImplementedError
 
 
 class ListableResource(collections.abc.Iterable):

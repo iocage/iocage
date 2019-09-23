@@ -1,9 +1,12 @@
+from iocage_lib.dataset import Dataset
 from iocage_lib.ioc_exceptions import PoolNotActivated
-from iocage_lib.resource import ZFSResource, ListableResource
+from iocage_lib.resource import Resource, ListableResource
 from iocage_lib.zfs import list_pools, IOCAGE_POOL_PROP, pool_health
 
 
-class Pool(ZFSResource):
+class Pool(Resource):
+
+    zfs_resource = 'zpool'
 
     @property
     def active(self):
@@ -19,7 +22,7 @@ class Pool(ZFSResource):
                 f'Please check pool status, it should be ONLINE'
             )
 
-        self.set_property(IOCAGE_POOL_PROP, 'yes')
+        Dataset(self.name).set_property(IOCAGE_POOL_PROP, 'yes')
         self.comment_check()
 
     def comment_check(self):
@@ -27,8 +30,19 @@ class Pool(ZFSResource):
             self.set_property('comment', '-')
 
     def deactivate_pool(self):
-        self.set_property(IOCAGE_POOL_PROP, 'no')
+        Dataset(self.name).set_property(IOCAGE_POOL_PROP, 'no')
         self.comment_check()
+
+    def __eq__(self, other):
+        return other.name == self.name
+
+    @property
+    def path(self):
+        return None
+
+    @property
+    def exists(self):
+        return Dataset(self.name).exists
 
 
 class PoolListableResource(ListableResource):

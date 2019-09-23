@@ -2,12 +2,13 @@ import os
 import re
 import requests
 
-from iocage_lib.resource import ZFSResource, IocageListableResource
+from iocage_lib.dataset import Dataset
+from iocage_lib.resource import  IocageListableResource
 from iocage_lib.ioc_fetch import IOCFetch
 from iocage_lib.ioc_common import check_release_newer
 
 
-class Release(ZFSResource):
+class Release(Dataset):
 
     @property
     def path(self):
