@@ -10,7 +10,7 @@ class Pool(Resource):
 
     @property
     def active(self):
-        return self.properties[IOCAGE_POOL_PROP] == 'yes'
+        return Dataset(self.name).properties[IOCAGE_POOL_PROP] == 'yes'
 
     @property
     def health(self):
@@ -26,8 +26,12 @@ class Pool(Resource):
         self.comment_check()
 
     def comment_check(self):
-        if self.properties['comment'] == 'iocage':
+        if self.properties.get('comment') == 'iocage':
             self.set_property('comment', '-')
+        else:
+            ds = Dataset(self.name)
+            if ds.properties.get('comment') == 'iocage':
+                ds.set_property('comment', '-')
 
     def deactivate_pool(self):
         Dataset(self.name).set_property(IOCAGE_POOL_PROP, 'no')
