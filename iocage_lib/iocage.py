@@ -45,6 +45,9 @@ import iocage_lib.ioc_stop as ioc_stop
 import iocage_lib.ioc_upgrade as ioc_upgrade
 import iocage_lib.ioc_debug as ioc_debug
 import iocage_lib.ioc_exceptions as ioc_exceptions
+
+from iocage_lib.pools import Pool, PoolListableResource
+
 import libzfs
 
 from iocage_lib.release import Release
@@ -371,38 +374,10 @@ class IOCage(ioc_json.IOCZFS):
 
         return stderr
 
-    def __remove_activate_comment(self, pool):
-        """Removes old legacy comment for zpool activation"""
-        # Check and clean if necessary iocage_legacy way
-        # to mark a ZFS pool as usable (now replaced by ZFS property)
-        comment = self.zfs.get(pool.name).properties["comment"]
-
-        if comment.value == "iocage":
-            comment.value = "-"
-
     def activate(self, zpool):
         """Activates the zpool for iocage usage"""
-        pools = list(self.zfs.pools)
-        prop = "org.freebsd.ioc:active"
-        match = False
-
-        for pool in pools:
-            if pool.name == zpool:
-                if pool.status not in ('UNAVAIL', 'FAULTED', 'SPLIT'):
-                    match = True
-                else:
-                    ioc_common.logit(
-                        {
-                            'level': 'EXCEPTION',
-                            'message': f'ZFS pool "{zpool}" is '
-                            f'{pool.status}!\nPlease check zpool status '
-                            f'{zpool} for more information.'
-                        },
-                        _callback=self.callback,
-                        silent=self.silent
-                    )
-
-        if not match:
+        zpool = Pool(zpool)
+        if not zpool.exists:
             ioc_common.logit(
                 {
                     "level": "EXCEPTION",
@@ -411,18 +386,11 @@ class IOCage(ioc_json.IOCZFS):
                 _callback=self.callback,
                 silent=self.silent)
 
-        for pool in pools:
-            if pool.status != "UNAVAIL":
-                ds = self.zfs.get_dataset(pool.name)
+        for pool in PoolListableResource():
+            if pool == zpool:
+                pool.activate_pool()
             else:
-                continue
-
-            if pool.name == zpool:
-                ds.properties[prop] = libzfs.ZFSUserProperty("yes")
-            else:
-                ds.properties[prop] = libzfs.ZFSUserProperty("no")
-
-            self.__remove_activate_comment(pool)
+                pool.deactivate_pool()
 
     def chroot(self, command):
         """Deprecated: Chroots into a jail and runs a command, or the shell."""
