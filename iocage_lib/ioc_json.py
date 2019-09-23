@@ -46,6 +46,9 @@ import netifaces
 import random
 import pathlib
 
+from iocage_lib.dataset import Dataset
+from iocage_lib.pools import PoolListableResource, Pool
+
 
 class JailRuntimeConfiguration(object):
     def __init__(self, jail_name, data=None):
@@ -678,31 +681,29 @@ class IOCConfiguration(IOCZFS):
     def get_pool_and_iocroot(self):
         """For internal getting of pool and iocroot."""
         def get_pool():
+            # This function does following (keeping old behavior):
+            # 1) Ensures multiple activated pools aren't present
+            # 2) Activates first pool it finds until activate command has been
+            #  issued already ( keeping old behavior )
+            # 3) Only activate if pool is not freenas-boot and iocage skip
+            # is false
             old = False
-            zpools = list(map(lambda x: x.name, list(self.zfs.pools)))
-
-            match = 0
-
-            for pool in zpools:
-                prop_ioc_active = self.zfs_get_property(
-                    pool, "org.freebsd.ioc:active")
-                prop_comment = self.zfs_get_property(pool, "comment")
-
-                if prop_ioc_active == "yes":
-                    _dataset = pool
-                    match += 1
-                elif prop_comment == "iocage":
-                    _dataset = pool
-                    match += 1
+            matches = []
+            for pool in PoolListableResource():
+                ds = Dataset(pool.name)
+                if pool.active:
+                    matches.append(pool)
+                elif ds.properties['comment'] == 'iocage':
+                    matches.append(pool)
                     old = True
 
-            if match == 1:
+            if len(matches) == 1:
                 if old:
-                    self.activate_pool(_dataset)
+                    matches[0].activate_pool()
 
-                return _dataset
+                return matches[0].name
 
-            elif match >= 2:
+            elif len(matches) > 1:
                 iocage_lib.ioc_common.logit(
                     {
                         "level": "ERROR",
@@ -711,18 +712,11 @@ class IOCConfiguration(IOCZFS):
                     _callback=self.callback,
                     silent=self.silent)
 
-                for zpool in zpools:
-                    iocage_lib.ioc_common.logit(
-                        {
-                            "level": "ERROR",
-                            "message": f"  {zpool}"
-                        },
-                        _callback=self.callback,
-                        silent=self.silent)
-                raise RuntimeError(f"You have {match} pools marked active"
-                                   " for iocage usage.\n Run \"iocage"
-                                   f" activate ZPOOL\" on the preferred"
-                                   " pool.\n")
+                pools = '\n'.join([str(p) for p in matches])
+                raise RuntimeError(f'{pools}\nYou have {len(matches)} pools'
+                                   f'marked active for iocage usage.\n '
+                                   f'Run \"iocage  activate ZPOOL\" '
+                                   f'on the preferred pool.\n')
             else:
                 if len(sys.argv) >= 2 and "activate" in sys.argv[1:]:
                     pass
@@ -730,7 +724,7 @@ class IOCConfiguration(IOCZFS):
                     # We use the first zpool the user has, they are free to
                     # change it.
                     try:
-                        zpool = zpools[0]
+                        zpool = matches[0]
                     except IndexError:
                         iocage_lib.ioc_common.logit(
                             {
@@ -766,9 +760,9 @@ class IOCConfiguration(IOCZFS):
                             silent=self.silent,
                             exception=ioc_exceptions.PoolNotActivated)
 
-                    if zpool == "freenas-boot":
+                    if zpool == Pool('freenas-boot'):
                         try:
-                            zpool = zpools[1]
+                            zpool = matches[1]
                         except IndexError:
                             iocage_lib.ioc_common.logit(
                                 {
@@ -792,10 +786,9 @@ class IOCConfiguration(IOCZFS):
                         _callback=self.callback,
                         silent=self.silent)
 
-                    self.zfs_set_property(zpool, "org.freebsd.ioc:active",
-                                          "yes")
+                    zpool.activate_pool()
 
-                    return zpool
+                    return zpool.name
 
         pool = get_pool()
 
