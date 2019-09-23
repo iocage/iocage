@@ -43,15 +43,23 @@ def pool_health(pool):
     return run(['zpool', 'list', '-H', '-o', 'health', pool]).stdout.strip()
 
 
-def dataset_properties(dataset):
+def properties(dataset, resource_type='zfs'):
     return {
         v.split()[0].strip(): v.split()[1].strip()
         if len(v.split()) > 1 else '-'
         for v in run(
-            ['zfs', 'get', '-H', '-o', 'property,value', 'all', dataset]
+            [resource_type, 'get', '-H', '-o', 'property,value', 'all', dataset]
         ).stdout.split('\n')
         if v
     }
+
+
+def dataset_properties(dataset):
+    return properties(dataset, 'zfs')
+
+
+def pool_properties(pool):
+    return properties(pool, 'zpool')
 
 
 def iocage_activated_pool():
@@ -88,5 +96,13 @@ def get_dependents(identifier, depth=None):
         return []
 
 
+def set_property(dataset, prop, value, resource_type='zfs'):
+    run([resource_type, 'set', f'{prop}={value}', dataset])
+
+
 def set_dataset_property(dataset, prop, value):
-    run(['zfs', 'set', f'{prop}={value}', dataset])
+    set_property(dataset, prop, value, 'zfs')
+
+
+def set_pool_property(pool, prop, value):
+    set_property(pool, prop, value, 'zpool')

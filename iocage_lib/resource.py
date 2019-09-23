@@ -3,7 +3,7 @@ import os
 
 
 from iocage_lib.zfs import (
-    ZFSException, dataset_properties, get_dependents, set_dataset_property,
+    ZFSException, properties, get_dependents, set_property,
     iocage_activated_dataset
 )
 
@@ -41,6 +41,9 @@ class Resource:
 
 
 class ZFSResource(Resource):
+
+    zfs_resource = NotImplementedError
+
     @property
     def path(self):
         try:
@@ -51,10 +54,10 @@ class ZFSResource(Resource):
 
     @property
     def properties(self):
-        return dataset_properties(self.name)
+        return properties(self.name, self.zfs_resource)
 
     def set_property(self, prop, value):
-        set_dataset_property(self.name, prop, value)
+        set_property(self.name, prop, value, self.zfs_resource)
 
 
 class ListableResource(collections.abc.Iterable):
