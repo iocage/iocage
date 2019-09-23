@@ -2,21 +2,19 @@ import os
 import re
 import requests
 
-from iocage_lib.resource import Resource, ListableResource
+from iocage_lib.resource import ZFSResource, IocageListableResource
 from iocage_lib.ioc_fetch import IOCFetch
 from iocage_lib.ioc_common import check_release_newer
 
 
-class Release(Resource):
+class Release(ZFSResource):
 
     @property
     def path(self):
-        return os.path.join(
-            self.zfs.iocroot_path, 'releases', self.name
-        ) if self.zfs.iocroot_path else None
+        return os.path.join(self.iocage_path(), 'releases', self.name)
 
 
-class ListableReleases(ListableResource):
+class ListableReleases(IocageListableResource):
 
     resource = Release
     path = 'releases'
