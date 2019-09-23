@@ -39,6 +39,10 @@ def list_pools():
     ))
 
 
+def pool_health(pool):
+    return run(['zpool', 'list', '-H', '-o', 'health', pool]).stdout.strip()
+
+
 def dataset_properties(dataset):
     return {
         v.split()[0].strip(): v.split()[1].strip()
