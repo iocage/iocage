@@ -38,10 +38,11 @@ import iocage_lib.ioc_list
 import iocage_lib.ioc_start
 import iocage_lib.ioc_stop
 import iocage_lib.ioc_exceptions
-import libzfs
 import dns.resolver
 import dns.exception
 import shutil
+
+from iocage_lib.dataset import Dataset
 
 
 class IOCCreate(object):
@@ -72,7 +73,6 @@ class IOCCreate(object):
         self.clone = clone
         self.silent = silent
         self.callback = callback
-        self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.thickconfig = thickconfig
         self.log = logging.getLogger('iocage')
 
@@ -322,21 +322,23 @@ class IOCCreate(object):
                 try:
                     su.check_call(['zfs', 'snapshot', dataset], stderr=su.PIPE)
                 except su.CalledProcessError:
-                    try:
-                        snapshot = self.zfs.get_snapshot(dataset)
+                    release = os.path.join(
+                        self.pool, 'iocage/releases', self.release
+                    )
+                    if not Dataset(release).exists:
+                        raise RuntimeError(
+                            f'RELEASE: {self.release} not found!'
+                        )
+                    else:
                         iocage_lib.ioc_common.logit({
                             'level': 'EXCEPTION',
-                            'message': f'Snapshot: {snapshot.name} exists!\n'
+                            'message': f'Snapshot: {dataset} exists!\n'
                                        'Please manually run zfs destroy'
-                                       f' {snapshot.name} if you wish to '
+                                       f' {dataset} if you wish to '
                                        'destroy it.'
                         },
                             _callback=self.callback,
                             silent=self.silent)
-
-                    except libzfs.ZFSException:
-                        raise RuntimeError(
-                            f'RELEASE: {self.release} not found!')
 
                 if not self.thickjail:
                     su.Popen(
@@ -385,8 +387,9 @@ class IOCCreate(object):
 
                 iocjson.json_set_value("type=template")
                 iocjson.json_set_value("template=1")
-                iocjson.zfs_set_property(f"{self.pool}/iocage/templates/"
-                                         f"{jail_uuid}", "readonly", "off")
+                Dataset(
+                    os.path.join(self.pool, 'iocage', 'templates')
+                ).set_property('readonly', 'off')
 
                 # If you supply pkglist and templates without setting the
                 # config's type, you will end up with a type of jail
@@ -525,9 +528,9 @@ class IOCCreate(object):
 
         # If jail is template, the dataset would be readonly at this point
         if is_template:
-            iocjson.zfs_set_property(
-                f"{self.pool}/iocage/templates/{jail_uuid}", "readonly", "off"
-            )
+            Dataset(
+                os.path.join(self.pool, 'iocage/templates', jail_uuid)
+            ).set_property('readonly', 'off')
 
         if self.empty:
             open(f"{location}/fstab", "wb").close()
@@ -684,8 +687,9 @@ class IOCCreate(object):
 
         if is_template:
             # We have to set readonly back, since we're done with our tasks
-            iocjson.zfs_set_property(f"{self.pool}/iocage/templates/"
-                                     f"{jail_uuid}", "readonly", "on")
+            Dataset(
+                os.path.join(self.pool, 'iocage/templates', jail_uuid)
+            ).set_property('readonly', 'on')
 
         return jail_uuid
 
