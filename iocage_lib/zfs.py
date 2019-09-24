@@ -115,3 +115,10 @@ def create_dataset(data):
             ('-o', f'{k}={v}') for k, v in data.get('properties', {}).items()
         ), data['name']
     ]).returncode == 0
+
+
+def list_snapshots(raise_error=True, snapshot=None):
+    return run([
+        'zfs', 'list', '-H', '-t', 'snapshot', '-o', 'name',
+        *([snapshot] if snapshot else [])
+    ], check=raise_error).stdout
