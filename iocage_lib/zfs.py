@@ -153,3 +153,12 @@ def umount_dataset(dataset):
 
 def get_dataset_from_mountpoint(path):
     return run(['zfs', 'get', '-H', '-o', 'name', path]).stdout.strip()
+
+
+def rename_dataset(old_name, new_name, options):
+    flags = []
+    options = options or {}
+    if options.get('force_unmount'):
+        flags.append('-f')
+
+    return run(['zfs', 'rename', *flags, old_name, new_name]).returncode == 0
