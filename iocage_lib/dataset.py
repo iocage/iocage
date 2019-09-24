@@ -1,4 +1,5 @@
 from iocage_lib.resource import Resource
+from iocage_lib.snapshot import SnapshotListableResource
 from iocage_lib.zfs import (
     ZFSException, create_dataset, get_dependents, destroy_zfs_resource,
     umount_dataset, mount_dataset, get_dataset_from_mountpoint
@@ -34,6 +35,9 @@ class Dataset(Resource):
 
     def __eq__(self, other):
         return other.path == self.path
+
+    def snapshots_recursive(self):
+        return SnapshotListableResource(resource=self.name, recursive=True)
 
     @property
     def exists(self):

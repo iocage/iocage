@@ -121,10 +121,16 @@ def create_dataset(data):
     ]).returncode == 0
 
 
-def list_snapshots(raise_error=True, snapshot=None):
+def list_snapshots(raise_error=True, resource=None, recursive=False):
+    flags = []
+    if recursive:
+        if not resource:
+            raise ZFSException(1, 'Resource must be specified with recursive')
+        flags.append('-r')
+
     return run([
-        'zfs', 'list', '-H', '-t', 'snapshot', '-o', 'name',
-        *([snapshot] if snapshot else [])
+        'zfs', 'list', '-H', *flags, '-t', 'snapshot', '-o', 'name',
+        *([resource] if resource else [])
     ], check=raise_error).stdout
 
 

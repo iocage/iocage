@@ -14,7 +14,7 @@ class Snapshot(Resource):
 
     @property
     def exists(self):
-        return bool(list_snapshots(raise_error=False, snapshot=self.name))
+        return bool(list_snapshots(raise_error=False, resource=self.name))
 
     @property
     def path(self):
@@ -28,8 +28,15 @@ class SnapshotListableResource(ListableResource):
 
     resource = Snapshot
 
+    def __init__(self, *args, **kwargs):
+        self.resource = kwargs.get('resource', False)
+        self.recursive = kwargs.get('recursive', False)
+        super().__init__(*args, **kwargs)
+
     def __iter__(self):
-        for snap in list_snapshots():
+        for snap in list_snapshots(
+            resource=self.resource, recursive=self.recursive
+        ):
             yield self.resource(snap)
 
     @property
