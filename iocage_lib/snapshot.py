@@ -1,6 +1,7 @@
 from iocage_lib.resource import Resource, ListableResource
 from iocage_lib.zfs import (
-    list_snapshots, destroy_zfs_resource, iocage_activated_dataset
+    list_snapshots, destroy_zfs_resource, iocage_activated_dataset,
+    rollback_snapshot,
 )
 
 import iocage_lib.dataset as dataset
@@ -27,6 +28,9 @@ class Snapshot(Resource):
         return bool(list(list_snapshots(
             raise_error=False, resource=self.resource_name)
         ))
+
+    def rollback(self, options=None):
+        return rollback_snapshot(self.resource_name, options)
 
     @property
     def path(self):
