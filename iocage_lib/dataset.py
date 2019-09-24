@@ -1,15 +1,25 @@
 from iocage_lib.resource import Resource
 from iocage_lib.zfs import (
     ZFSException, create_dataset, get_dependents, destroy_zfs_resource,
-    umount_dataset, mount_dataset
+    umount_dataset, mount_dataset, get_dataset_from_mountpoint
 )
 
+import contextlib
 import os
 
 
 class Dataset(Resource):
 
     zfs_resource = 'zfs'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if os.path.exists(self.name):
+            # Probably absolute path has been provided, in this case
+            # we try to find the name of the dataset, if we don't succeed,
+            # we keep the value as it is
+            with contextlib.suppress(ZFSException):
+                self.name = get_dataset_from_mountpoint(self.name)
 
     def create(self, data):
         return create_dataset({'name': self.name, **data})
