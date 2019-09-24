@@ -46,7 +46,7 @@ def pool_health(pool):
 
 def properties(dataset, resource_type='zfs'):
     return {
-        v.split()[0].strip(): v.split()[1].strip()
+        v.split()[0].strip(): v.split(maxsplit=1)[-1].strip()
         if len(v.split()) > 1 else '-'
         for v in run(
             [resource_type, 'get', '-H', '-o', 'property,value', 'all', dataset]

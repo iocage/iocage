@@ -11,6 +11,8 @@ import os
 
 class Snapshot(Resource):
 
+    zfs_resource = 'zfs'
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if '@' in self.resource_name:
@@ -45,9 +47,8 @@ class SnapshotListableResource(ListableResource):
     resource = Snapshot
 
     def __init__(self, *args, **kwargs):
-        self.resource_name = kwargs.get('resource', False)
-        self.recursive = kwargs.get('recursive', False)
-        super().__init__(*args, **kwargs)
+        self.resource_name = kwargs.pop('resource_name', False)
+        self.recursive = kwargs.pop('recursive', False)
 
     def __iter__(self):
         for snap in list_snapshots(
