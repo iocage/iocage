@@ -133,5 +133,8 @@ def destroy_zfs_resource(resource, recursive=False, force=False):
     return run([*cmd, resource]).returncode == 0
 
 
+def mount_dataset(dataset):
+    return run(['zfs', 'mount', dataset]).returncode == 0
+
 def umount_dataset(dataset):
     return run(['zfs', 'umount', dataset]).returncode == 0
