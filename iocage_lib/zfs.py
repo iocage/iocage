@@ -186,3 +186,7 @@ def create_snapshot(snap, options=None):
         flags.append('-r')
 
     return run(['zfs', 'snapshot', *flags, snap])
+
+
+def dataset_exists(dataset):
+    return run(['zfs', 'list', dataset], check=False).returncode == 0
