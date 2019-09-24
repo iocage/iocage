@@ -2162,7 +2162,7 @@ Remove the snapshot: ioc_upgrade_{_date} if everything is OK
             target = f'{self.pool}/iocage/jails/{uuid}@{snapshot}'
 
         # Let's verify target exists and then destroy it, else log it
-        snapshot = self.zfs_get_snapshot(target)
+        snapshot = Snapshot(target)
 
         if not snapshot:
             ioc_common.logit({
@@ -2170,7 +2170,7 @@ Remove the snapshot: ioc_upgrade_{_date} if everything is OK
                 'message': f'Snapshot: {target} not found!'
             })
         else:
-            snapshot.delete(recursive=True)
+            snapshot.destroy(recursive=True)
 
             ioc_common.logit(
                 {
