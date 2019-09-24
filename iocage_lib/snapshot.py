@@ -14,6 +14,10 @@ class Snapshot(Resource):
         return self.name == other.name
 
     @property
+    def dataset(self):
+        return dataset.Dataset(self.name.split('@', 1)[0])
+
+    @property
     def exists(self):
         return bool(list_snapshots(raise_error=False, resource=self.name))
 

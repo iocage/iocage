@@ -1,7 +1,8 @@
 from iocage_lib.resource import Resource
 from iocage_lib.zfs import (
     ZFSException, create_dataset, get_dependents, destroy_zfs_resource,
-    umount_dataset, mount_dataset, get_dataset_from_mountpoint
+    umount_dataset, mount_dataset, get_dataset_from_mountpoint,
+    rename_dataset,
 )
 
 import iocage_lib.snapshot as snapshot
@@ -27,6 +28,12 @@ class Dataset(Resource):
 
     def create(self, data):
         return create_dataset({'name': self.resource_name, **data})
+
+    def rename(self, new_name, options=None):
+        result = rename_dataset(self.name, new_name, options)
+        if result:
+            self.name = self.resource_name = new_name
+        return result
 
     @property
     def path(self):
