@@ -1,6 +1,8 @@
 from iocage_lib.ioc_exceptions import PoolNotActivated
 from iocage_lib.resource import Resource, ListableResource
-from iocage_lib.zfs import list_pools, IOCAGE_POOL_PROP, pool_health
+from iocage_lib.zfs import (
+    list_pools, IOCAGE_POOL_PROP, pool_health, get_dependents
+)
 
 import iocage_lib.dataset as dataset
 
@@ -55,6 +57,11 @@ class Pool(Resource):
     @property
     def exists(self):
         return Dataset(self.name).exists
+
+    @property
+    def datasets(self):
+        for d in get_dependents(self.name):
+            yield dataset.Dataset(d)
 
 
 class PoolListableResource(ListableResource):
