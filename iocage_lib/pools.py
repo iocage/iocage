@@ -41,7 +41,9 @@ class Pool(Resource):
         return other.name == self.name
 
     def create_dataset(self, data):
-        return Dataset(data['name']).create(data)
+        ds = Dataset(data['name'])
+        ds.create(data)
+        return ds
 
     @property
     def path(self):
