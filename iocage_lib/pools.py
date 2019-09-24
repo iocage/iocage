@@ -1,7 +1,10 @@
-from iocage_lib.dataset import Dataset
 from iocage_lib.ioc_exceptions import PoolNotActivated
 from iocage_lib.resource import Resource, ListableResource
 from iocage_lib.zfs import list_pools, IOCAGE_POOL_PROP, pool_health
+
+import iocage_lib.dataset as dataset
+
+Dataset = dataset.Dataset
 
 
 class Pool(Resource):

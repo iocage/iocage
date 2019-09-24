@@ -1,8 +1,9 @@
-from iocage_lib.dataset import Dataset
 from iocage_lib.resource import Resource, ListableResource
 from iocage_lib.zfs import (
     list_snapshots, destroy_zfs_resource, iocage_activated_dataset
 )
+
+import iocage_lib.dataset as dataset
 
 import pathlib
 
@@ -42,7 +43,7 @@ class SnapshotListableResource(ListableResource):
     @property
     def release_snapshots(self):
         # Returns all jail snapshots on each RELEASE dataset
-        iocage_dataset = Dataset(iocage_activated_dataset())
+        iocage_dataset = dataset.Dataset(iocage_activated_dataset())
         if iocage_dataset.exists:
             rel_dir = pathlib.Path(f'{iocage_dataset.path}/releases')
 
