@@ -1427,9 +1427,6 @@ fingerprint: {fingerprint}
                 },
                 _callback=self.callback)
 
-        if write:
-            self.json_write(plugin_conf)
-
     def __fetch_release__(self, release):
         """Will call fetch to get the new RELEASE the plugin will rely on"""
         fetch_args = {'release': release, 'eol': False}
