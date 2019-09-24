@@ -717,7 +717,6 @@ class IOCage:
         ioc_destroy.IOCDestroy().destroy_jail(path)
 
     def df(self):
-        # FIXME: Please update me
         """Returns a list containing the resource usage of all jails"""
         jail_list = []
 
@@ -730,14 +729,14 @@ class IOCage:
             if template == "template":
                 mountpoint = f"{self.pool}/iocage/templates/{jail}"
 
-            ds = self.zfs.get_dataset(mountpoint)
+            ds = Dataset(mountpoint)
             zconf = ds.properties
 
-            compressratio = zconf["compressratio"].value
-            reservation = zconf["reservation"].value
-            quota = zconf["quota"].value
-            used = zconf["used"].value
-            available = zconf["available"].value
+            compressratio = zconf["compressratio"]
+            reservation = zconf["reservation"]
+            quota = zconf["quota"]
+            used = zconf["used"]
+            available = zconf["available"]
 
             jail_list.append(
                 [jail, compressratio, reservation, quota, used, available])
