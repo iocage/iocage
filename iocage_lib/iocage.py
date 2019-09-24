@@ -1508,6 +1508,7 @@ class IOCage:
             _callback=self.callback,
             silent=self.silent)
 
+    # FIXME: Please update me
     def set(self,
             prop,
             plugin=False,
@@ -1634,11 +1635,11 @@ class IOCage:
         else:
             full_path = f"{self.pool}/iocage/jails/{uuid}"
 
-        snapshots = self.zfs.get_dataset(full_path)
+        dataset = Dataset(full_path)
 
-        for snap in snapshots.snapshots_recursive:
-            snap_name = snap.name.rsplit("@")[1] if not long else snap.name
-            root_snap_name = snap.name.rsplit("@")[0].split("/")[-1]
+        for snap in dataset.snapshots_recursive():
+            snap_name = snap.name if not long else snap.resource_name
+            root_snap_name = snap.resource_name.rsplit("@")[0].split("/")[-1]
             root = False
 
             if root_snap_name == "root":
@@ -1651,9 +1652,9 @@ class IOCage:
 
                 continue
 
-            creation = snap.properties["creation"].value
-            used = snap.properties["used"].value
-            referenced = snap.properties["referenced"].value
+            creation = snap.properties["creation"]
+            used = snap.properties["used"]
+            referenced = snap.properties["referenced"]
 
             snap_list_temp.append([snap_name, creation, referenced, used]) \
                 if not root else snap_list_root.append([snap_name, creation,
