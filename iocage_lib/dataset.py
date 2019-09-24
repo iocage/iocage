@@ -1,5 +1,7 @@
 from iocage_lib.resource import Resource
-from iocage_lib.zfs import ZFSException, create_dataset
+from iocage_lib.zfs import (
+    ZFSException, create_dataset, get_dependents, destroy_zfs_resource
+)
 
 import os
 
@@ -25,3 +27,10 @@ class Dataset(Resource):
     @property
     def exists(self):
         return os.path.exists(self.path)
+
+    def get_dependents(self, depth=1):
+        for d in get_dependents(self.name, depth):
+            yield Dataset(d)
+
+    def destroy(self, recursive=False, force=False):
+        return destroy_zfs_resource(self.name, recursive, force)
