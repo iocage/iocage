@@ -153,12 +153,16 @@ def mount_dataset(dataset):
     return run(['zfs', 'mount', dataset]).returncode == 0
 
 
-def umount_dataset(dataset):
-    return run(['zfs', 'umount', dataset]).returncode == 0
+def umount_dataset(dataset, force=True):
+    return run(
+        ['zfs', 'umount', *(['-f' if force else '']), dataset]
+    ).returncode == 0
 
 
 def get_dataset_from_mountpoint(path):
-    return run(['zfs', 'get', '-H', '-o', 'name', path]).stdout.strip()
+    return run(
+        ['zfs', 'get', '-H', '-o', 'value', 'name', path]
+    ).stdout.strip()
 
 
 def rename_dataset(old_name, new_name, options=None):
@@ -190,3 +194,11 @@ def create_snapshot(snap, options=None):
 
 def dataset_exists(dataset):
     return run(['zfs', 'list', dataset], check=False).returncode == 0
+
+
+def clone_snapshot(snapshot, dataset):
+    return run(['zfs', 'clone', snapshot, dataset]).returncode == 0
+
+
+def promote_dataset(dataset):
+    return run(['zfs', 'promote', dataset]).returncode == 0
