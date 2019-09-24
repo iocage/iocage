@@ -129,5 +129,5 @@ def destroy_zfs_resource(resource, recursive=False, force=False):
     if recursive:
         cmd.append('-r')
     if force:
-        cmd.append('-f')
+        cmd.append('-Rf')
     return run([*cmd, resource]).returncode == 0
