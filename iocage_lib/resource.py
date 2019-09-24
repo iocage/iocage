@@ -13,26 +13,26 @@ class Resource:
     zfs_resource = NotImplementedError
 
     def __init__(self, name):
-        self.name = name
+        self.resource_name = self.name = name
 
     @property
     def properties(self):
-        return properties(self.name, self.zfs_resource)
+        return properties(self.resource_name, self.zfs_resource)
 
     def set_property(self, prop, value):
-        set_property(self.name, prop, value, self.zfs_resource)
+        set_property(self.resource_name, prop, value, self.zfs_resource)
 
     def __bool__(self):
         return self.exists
 
     def __hash__(self):
-        return hash(self.path)
+        return hash(self.resource_name)
 
     def __repr__(self):
-        return str(self.name)
+        return str(self.resource_name)
 
     def __str__(self):
-        return str(self.name)
+        return str(self.resource_name)
 
     def iocage_path(self):
         return iocage_activated_dataset() or ''
