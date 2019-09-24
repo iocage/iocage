@@ -1,5 +1,5 @@
 from iocage_lib.resource import Resource
-from iocage_lib.zfs import ZFSException
+from iocage_lib.zfs import ZFSException, create_dataset
 
 import os
 
@@ -7,6 +7,9 @@ import os
 class Dataset(Resource):
 
     zfs_resource = 'zfs'
+
+    def create(self, data):
+        return create_dataset({'name': self.name, **data})
 
     @property
     def path(self):

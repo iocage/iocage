@@ -1,3 +1,4 @@
+import itertools
 import os
 import subprocess
 
@@ -106,3 +107,11 @@ def set_dataset_property(dataset, prop, value):
 
 def set_pool_property(pool, prop, value):
     set_property(pool, prop, value, 'zpool')
+
+
+def create_dataset(data):
+    return run([
+        'zfs', 'create', *itertools.chain.from_iterable(
+            ('-o', f'{k}={v}') for k, v in data.get('properties', {}).items()
+        ), data['name']
+    ]).returncode == 0
