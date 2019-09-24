@@ -1,5 +1,5 @@
 from iocage_lib.resource import Resource, ListableResource
-from iocage_lib.zfs import list_snapshots
+from iocage_lib.zfs import list_snapshots, destroy_zfs_resource
 
 
 class Snapshot(Resource):
@@ -14,6 +14,9 @@ class Snapshot(Resource):
     @property
     def path(self):
         return None
+
+    def destroy(self, recursive=True, force=True):
+        return destroy_zfs_resource(self.name, recursive, force)
 
 
 class SnapshotListableResource(ListableResource):
