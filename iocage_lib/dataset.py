@@ -21,10 +21,12 @@ class Dataset(Resource):
             # we try to find the name of the dataset, if we don't succeed,
             # we keep the value as it is
             with contextlib.suppress(ZFSException):
-                self.name = get_dataset_from_mountpoint(self.name)
+                self.resource_name = self.name = get_dataset_from_mountpoint(
+                    self.name
+                )
 
     def create(self, data):
-        return create_dataset({'name': self.name, **data})
+        return create_dataset({'name': self.resource_name, **data})
 
     @property
     def path(self):
@@ -39,7 +41,7 @@ class Dataset(Resource):
 
     def snapshots_recursive(self):
         return snapshot.SnapshotListableResource(
-            resource=self.name, recursive=True
+            resource=self.resource_name, recursive=True
         )
 
     @property
@@ -47,14 +49,14 @@ class Dataset(Resource):
         return os.path.exists(self.path)
 
     def get_dependents(self, depth=1):
-        for d in get_dependents(self.name, depth):
+        for d in get_dependents(self.resource_name, depth):
             yield Dataset(d)
 
     def destroy(self, recursive=False, force=False):
-        return destroy_zfs_resource(self.name, recursive, force)
+        return destroy_zfs_resource(self.resource_name, recursive, force)
 
     def mount(self):
-        return mount_dataset(self.name)
+        return mount_dataset(self.resource_name)
 
     def umount(self):
-        return umount_dataset(self.name)
+        return umount_dataset(self.resource_name)
