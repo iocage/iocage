@@ -28,8 +28,10 @@ import iocage_lib.ioc_destroy
 import iocage_lib.ioc_json
 import shutil
 
+from iocage_lib.dataset import Dataset
 
-class IOCClean(iocage_lib.ioc_json.IOCZFS):
+
+class IOCClean:
     """Cleans datasets and snapshots of a given type."""
 
     def __init__(self, callback=None, silent=False):
@@ -118,7 +120,7 @@ class IOCClean(iocage_lib.ioc_json.IOCZFS):
             _callback=self.callback,
             silent=self.silent)
 
-        self.zfs_destroy_dataset(f'{self.pool}/iocage/images', force=True)
+        Dataset(f'{self.pool}/iocage/images').destroy(True, True)
 
     def clean_debug(self):
         """Removes the debug directory"""
