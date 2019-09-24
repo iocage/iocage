@@ -1508,13 +1508,7 @@ class IOCage:
             _callback=self.callback,
             silent=self.silent)
 
-    # FIXME: Please update me
-    def set(self,
-            prop,
-            plugin=False,
-            rename=False,
-            zfs=False,
-            zfs_dataset=None):
+    def set(self, prop, plugin=False, rename=False):
         """Sets a property for a jail or plugin"""
         # The cli check prevents users changing unwanted properties. We do
         # want to change a protected property with rename, so we disable that.
@@ -1555,22 +1549,6 @@ class IOCage:
         if plugin:
             _prop = prop.split(".")
             iocjson.json_plugin_set_value(_prop)
-
-            return
-
-        if zfs:
-            if zfs_dataset is None:
-                ioc_common.logit(
-                    {
-                        "level": "EXCEPTION",
-                        "message":
-                        "Setting a zfs property requires zfs_dataset."
-                    },
-                    _callback=self.callback,
-                    silent=self.silent)
-
-            zfs_key, zfs_value = prop.split("=", 2)
-            iocjson.zfs_set_property(zfs_dataset, zfs_key, zfs_value)
 
             return
 

@@ -1,9 +1,7 @@
 import collections.abc
-import os
-
 
 from iocage_lib.zfs import (
-    ZFSException, properties, get_dependents, set_property,
+    properties, get_dependents, set_property,
     iocage_activated_dataset
 )
 
