@@ -33,7 +33,6 @@ class IOCClean(iocage_lib.ioc_json.IOCZFS):
     """Cleans datasets and snapshots of a given type."""
 
     def __init__(self, callback=None, silent=False):
-        super().__init__(callback)
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value('pool')
         self.iocroot = iocage_lib.ioc_json.IOCJson(self.pool).json_get_value(
             'iocroot')

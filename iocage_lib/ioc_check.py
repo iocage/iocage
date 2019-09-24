@@ -28,7 +28,9 @@ import shutil
 
 import iocage_lib.ioc_common
 import iocage_lib.ioc_json
-import libzfs
+
+from iocage_lib.dataset import Dataset
+from iocage_lib.zfs import ZFSException
 
 
 class IOCCheck(object):
@@ -46,13 +48,8 @@ class IOCCheck(object):
         self.__check_fd_mount__()
         self.__check_datasets__()
 
-        self.zfs = iocage_lib.ioc_json.IOCZFS()
-        self.pool_mountpoint = self.zfs.zfs_get_property(
-            self.pool, 'mountpoint'
-        )
-        self.iocage_mountpoint = self.zfs.zfs_get_property(
-            f'{self.pool}/iocage', 'mountpoint'
-        )
+        self.pool_root_dataset = Dataset(self.pool)
+        self.iocage_dataset = Dataset(os.path.join(self.pool, 'iocage'))
 
         if migrate:
             self.__check_migrations__()
@@ -61,15 +58,18 @@ class IOCCheck(object):
 
     def __clean_files__(self):
         shutil.rmtree(
-            os.path.join(self.iocage_mountpoint, '.plugin_index'),
+            os.path.join(self.iocage_dataset.path, '.plugin_index'),
             ignore_errors=True
         )
 
     def __check_migrations__(self):
-        if not self.iocage_mountpoint.startswith(self.pool_mountpoint):
-            self.zfs.zfs_set_property(
-                f'{self.pool}/iocage', 'mountpoint',
-                os.path.join(self.pool_mountpoint, 'iocage')
+        if not self.iocage_dataset.path.startswith(
+            self.pool_root_dataset.path
+        ):
+            self.iocage_dataset.set_property(
+                'mountpoint', os.path.join(
+                    self.pool_root_dataset.path, 'iocage'
+                )
             )
 
     def __check_datasets__(self):
@@ -81,21 +81,20 @@ class IOCCheck(object):
                     "iocage/jails", "iocage/log", "iocage/releases",
                     "iocage/templates")
 
-        zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
-        pool = zfs.get(self.pool)
-
         for dataset in datasets:
             zfs_dataset_name = f"{self.pool}/{dataset}"
             try:
-                ds = zfs.get_dataset(zfs_dataset_name)
+                ds = Dataset(zfs_dataset_name)
 
-                if ds.mountpoint is None:
+                if ds.path is None:
                     iocage_lib.ioc_common.logit({
                         "level": "EXCEPTION",
                         "message": f'Please set a mountpoint on {ds.name}'
                     },
                         _callback=self.callback)
-            except libzfs.ZFSException:
+                elif not ds.exists:
+                    raise ZFSException(-1, 'Dataset does not exist')
+            except ZFSException:
                 # Doesn't exist
 
                 if os.geteuid() != 0:
@@ -115,16 +114,15 @@ class IOCCheck(object):
                     "aclinherit": "passthrough"
                 }
 
-                pool.create(zfs_dataset_name, dataset_options)
-                ds = zfs.get_dataset(zfs_dataset_name)
-                ds.mount()
+                ds = Dataset(zfs_dataset_name)
+                ds.create({'properties': dataset_options})
 
             prop = ds.properties.get("exec")
-            if prop.value != "on":
+            if prop != "on":
                 iocage_lib.ioc_common.logit({
                     "level": "EXCEPTION",
                     "message": f"Dataset \"{dataset}\" has "
-                               f"exec={prop.value} (should be on)"
+                               f"exec={prop} (should be on)"
                 },
                     _callback=self.callback)
 
