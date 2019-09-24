@@ -74,7 +74,7 @@ def iocage_activated_pool():
 def iocage_activated_dataset():
     pool = iocage_activated_pool()
     if pool:
-        if 'iocage' in get_dependents(pool, depth=1):
+        if os.path.join(pool, 'iocage') in get_dependents(pool, depth=1):
             return os.path.join(pool, 'iocage')
 
     return None
@@ -128,10 +128,16 @@ def list_snapshots(raise_error=True, resource=None, recursive=False):
             raise ZFSException(1, 'Resource must be specified with recursive')
         flags.append('-r')
 
-    return run([
-        'zfs', 'list', '-H', *flags, '-t', 'snapshot', '-o', 'name',
-        *([resource] if resource else [])
-    ], check=raise_error).stdout
+    return filter(
+        bool,
+        map(
+            str.strip,
+            run([
+                'zfs', 'list', '-H', *flags, '-t', 'snapshot', '-o', 'name',
+                *([resource] if resource else [])
+            ], check=raise_error).stdout.split('\n')
+        )
+    )
 
 
 def destroy_zfs_resource(resource, recursive=False, force=False):

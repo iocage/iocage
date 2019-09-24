@@ -1359,7 +1359,9 @@ class IOCage:
         # Can't rename when the child is in a non-global zone
         for str_dataset in self.get("jail_zfs_dataset").split():
             data_dataset = Dataset(f'{self.pool}/{str_dataset.strip()}')
-            data_dataset.set_property('jailed', 'off')
+            if data_dataset.exists:
+                # We only do this when it exists ( keeping old behavior )
+                data_dataset.set_property('jailed', 'off')
 
         for release_snap in SnapshotListableResource().release_snapshots:
             if uuid == release_snap.name:

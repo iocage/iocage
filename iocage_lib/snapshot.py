@@ -5,28 +5,35 @@ from iocage_lib.zfs import (
 
 import iocage_lib.dataset as dataset
 
-import pathlib
+import os
 
 
 class Snapshot(Resource):
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if '@' in self.resource_name:
+            self.name = self.resource_name.split('@', 1)[-1]
+
     def __eq__(self, other):
-        return self.name == other.name
+        return self.resource_name == other.resource_name
 
     @property
     def dataset(self):
-        return dataset.Dataset(self.name.split('@', 1)[0])
+        return dataset.Dataset(self.resource_name.split('@', 1)[0])
 
     @property
     def exists(self):
-        return bool(list_snapshots(raise_error=False, resource=self.name))
+        return bool(list(list_snapshots(
+            raise_error=False, resource=self.resource_name)
+        ))
 
     @property
     def path(self):
         return None
 
     def destroy(self, recursive=True, force=True):
-        return destroy_zfs_resource(self.name, recursive, force)
+        return destroy_zfs_resource(self.resource_name, recursive, force)
 
 
 class SnapshotListableResource(ListableResource):
@@ -34,13 +41,13 @@ class SnapshotListableResource(ListableResource):
     resource = Snapshot
 
     def __init__(self, *args, **kwargs):
-        self.resource = kwargs.get('resource', False)
+        self.resource_name = kwargs.get('resource', False)
         self.recursive = kwargs.get('recursive', False)
         super().__init__(*args, **kwargs)
 
     def __iter__(self):
         for snap in list_snapshots(
-            resource=self.resource, recursive=self.recursive
+            resource=self.resource_name, recursive=self.recursive
         ):
             yield self.resource(snap)
 
@@ -49,8 +56,9 @@ class SnapshotListableResource(ListableResource):
         # Returns all jail snapshots on each RELEASE dataset
         iocage_dataset = dataset.Dataset(iocage_activated_dataset())
         if iocage_dataset.exists:
-            rel_dir = pathlib.Path(f'{iocage_dataset.path}/releases')
 
-            # Quicker than asking zfs and parsing
-            for snap in rel_dir.glob('**/root/.zfs/snapshot/*'):
-                yield Snapshot(snap.name)
+            for snap in list_snapshots(
+                resource=os.path.join(iocage_dataset.path, 'releases'),
+                recursive=True,
+            ):
+                yield self.resource(snap)

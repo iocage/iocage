@@ -48,7 +48,7 @@ class Dataset(Resource):
 
     def snapshots_recursive(self):
         return snapshot.SnapshotListableResource(
-            resource=self.resource_name, recursive=True
+            resource_name=self.resource_name, recursive=True
         )
 
     @property
