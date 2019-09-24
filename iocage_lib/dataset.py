@@ -2,7 +2,7 @@ from iocage_lib.resource import Resource
 from iocage_lib.zfs import (
     ZFSException, create_dataset, get_dependents, destroy_zfs_resource,
     umount_dataset, mount_dataset, get_dataset_from_mountpoint,
-    rename_dataset, dataset_exists
+    rename_dataset, dataset_exists, promote_dataset
 )
 
 import iocage_lib.snapshot as snapshot
@@ -74,5 +74,8 @@ class Dataset(Resource):
     def mount(self):
         return mount_dataset(self.resource_name)
 
-    def umount(self):
-        return umount_dataset(self.resource_name)
+    def promote(self):
+        return promote_dataset(self.resource_name)
+
+    def umount(self, force=True):
+        return umount_dataset(self.resource_name, force)
