@@ -41,7 +41,6 @@ import iocage_lib.ioc_fstab
 import iocage_lib.ioc_list
 import iocage_lib.ioc_stop
 import iocage_lib.ioc_exceptions as ioc_exceptions
-import libzfs
 import netifaces
 import random
 import pathlib
@@ -417,66 +416,6 @@ class IOCRCTL(object):
                             '"readbps, writebps, readiops, writeiops"'
                         }
                     )
-
-
-class IOCSnapshot(object):
-    # FIXME: Please move me to another file and let's see how we can build
-    # our hierarchy for the whole ZFS related section
-    # TODO: Update this object via some fashion(after delete, so forth)
-    def __init__(self, snap_id):
-        self.data = None
-        self.snap_id = snap_id
-
-        self.attr_list = [
-            'name', 'used', 'available', 'referred', 'mountpoint'
-        ]
-        for attr in self.attr_list:
-            setattr(self, attr, None)
-
-        self.normalize_data()
-
-    @property
-    def exists(self):
-        return bool(self.data is not None and self.data)
-
-    @property
-    def raw_data(self):
-        with ioc_exceptions.ignore_exceptions(su.CalledProcessError):
-            return su.run(
-                ['zfs', 'list', '-Ht', 'snapshot', self.snap_id or self.name],
-                stdout=su.PIPE, stderr=su.PIPE
-            ).stdout.decode()
-
-    def normalize_data(self):
-        # Expected format
-        # ['NAME', 'USED', 'AVAIL', 'REFER', 'MOUNTPOINT']
-        if not self.data:
-            self.data = self.raw_data
-
-        self.__dict__.update({
-            k: v for k, v in zip(self.attr_list, self.data.split('\t'))
-        })
-
-    def delete(self, recursive=True):
-        with ioc_exceptions.ignore_exceptions(
-            su.CalledProcessError
-        ):
-            return su.run(
-                ['zfs', 'destroy', '-r' if recursive else '', '-f', self.name],
-                stdout=su.PIPE, stderr=su.PIPE
-            ).returncode == 0
-
-    def __eq__(self, other):
-        return self.name == other.name
-
-    def __bool__(self):
-        return self.exists is True
-
-    def __hash__(self):
-        return hash(self.name)
-
-    def __repr__(self):
-        return self.name
 
 
 class IOCConfiguration:
