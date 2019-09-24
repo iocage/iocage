@@ -46,8 +46,9 @@ import iocage_lib.ioc_exec
 import iocage_lib.ioc_json
 import iocage_lib.ioc_upgrade
 import iocage_lib.ioc_exceptions
-import libzfs
 import texttable
+
+from iocage_lib.dataset import Dataset
 
 
 class IOCPlugin(object):
@@ -70,7 +71,6 @@ class IOCPlugin(object):
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")
-        self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.release = release
         if os.path.exists(plugin or ''):
             self.plugin_json_path = plugin
@@ -1378,17 +1378,15 @@ fingerprint: {fingerprint}
             f'{self.iocroot}/jails/{self.jail}'
         ).json_get_value('all')
         release = conf['release']
-
         names = [f'ioc_plugin_{name}_{self.date}', f'ioc_update_{release}']
-        dataset = self.zfs.get_dataset(
-            f'{self.pool}/iocage/jails/{self.jail}')
-        dataset_snaps = dataset.snapshots_recursive
 
-        for snap in dataset_snaps:
-            snap_name = snap.snapshot_name
+        for snap in Dataset(
+            f'{self.pool}/iocage/jails/{self.jail}'
+        ).snapshots_recursive():
+            snap_name = snap.name
 
             if snap_name in names:
-                snap.delete()
+                snap.destroy()
 
     def __stop_rc__(self):
         iocage_lib.ioc_exec.SilentExec(
