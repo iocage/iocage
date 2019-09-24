@@ -65,11 +65,13 @@ class SnapshotListableResource(ListableResource):
     @property
     def release_snapshots(self):
         # Returns all jail snapshots on each RELEASE dataset
-        iocage_dataset = dataset.Dataset(iocage_activated_dataset())
-        if iocage_dataset.exists:
+        releases_dataset = dataset.Dataset(
+            os.path.join(iocage_activated_dataset(), 'releases')
+        )
+        if releases_dataset.exists and dataset:
 
             for snap in list_snapshots(
-                resource=os.path.join(iocage_dataset.path, 'releases'),
+                resource=releases_dataset.name,
                 recursive=True,
             ):
                 yield self.resource(snap)
