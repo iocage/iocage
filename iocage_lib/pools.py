@@ -40,6 +40,9 @@ class Pool(Resource):
     def __eq__(self, other):
         return other.name == self.name
 
+    def create_dataset(self, data):
+        return Dataset(data['name']).create(data)
+
     @property
     def path(self):
         return None
