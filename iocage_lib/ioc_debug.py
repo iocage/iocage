@@ -22,11 +22,15 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """This collects debug about all the iocage jails."""
-import libzfs
+import itertools
 import os
 import subprocess as su
+
 import iocage_lib.ioc_json as ioc_json
 import iocage_lib.ioc_list as ioc_list
+
+from iocage_lib.dataset import Dataset
+from iocage_lib.pools import PoolListableResource
 
 
 class IOCDebug(object):
@@ -52,7 +56,6 @@ class IOCDebug(object):
     def __init__(self, path, silent=False, callback=None):
         self.pool = ioc_json.IOCJson(' ').json_get_value('pool')
         self.path = path
-        self.zfs = libzfs.ZFS(history=True, history_prefix='<iocage>')
         self.callback = callback
         self.silent = silent
 
@@ -60,18 +63,21 @@ class IOCDebug(object):
         os.makedirs(self.path, exist_ok=True)
         self.run_host_debug()
 
-        jails = self.zfs.get_dataset(f'{self.pool}/iocage/jails').children
-        templates = self.zfs.get_dataset(
-            f'{self.pool}/iocage/templates').children
+        jails = Dataset(
+            os.path.join(self.pool, 'iocage/jails')
+        ).get_dependents()
+        templates = Dataset(
+            os.path.join(self.pool, 'iocage/templates')
+        ).get_dependents()
 
         for jail in jails:
-            jail_path = jail.mountpoint
+            jail_path = jail.path
             jail = jail.name.rsplit('/', 1)[-1]
 
             self.run_jail_debug(jail, jail_path)
 
         for template in templates:
-            template_path = template.mountpoint
+            template_path = template.path
             template = template.name.rsplit('/', 1)[-1]
 
             self.run_jail_debug(template, template_path)
@@ -79,7 +85,11 @@ class IOCDebug(object):
     def run_host_debug(self):
         host_path = f'{self.path}/host'
 
-        zfs_datasets = (z.name for z in self.zfs.datasets)
+        zfs_datasets = (
+            z.name for z in itertools.chain(*(
+                p.datasets for p in PoolListableResource()
+            ))
+        )
         mounted_filesystems = self.__execute_debug__('/sbin/mount')
         df = self.__execute_debug__(['df', '-h'])
         netstat = self.__execute_debug__(['netstat', '-nr'])
