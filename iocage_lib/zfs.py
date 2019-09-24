@@ -110,8 +110,12 @@ def set_pool_property(pool, prop, value):
 
 
 def create_dataset(data):
+    flags = []
+    if data.get('create_ancestors'):
+        flags.append('-p')
+
     return run([
-        'zfs', 'create', *itertools.chain.from_iterable(
+        'zfs', 'create', *flags, *itertools.chain.from_iterable(
             ('-o', f'{k}={v}') for k, v in data.get('properties', {}).items()
         ), data['name']
     ]).returncode == 0
