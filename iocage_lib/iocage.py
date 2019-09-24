@@ -1701,23 +1701,18 @@ class IOCage:
         else:
             target = f"{self.pool}/iocage/jails/{uuid}"
 
-        dataset = self.zfs.get_dataset(target)
+        snap = Snapshot(f'{target}@{name}')
+        if snap.exists:
+            ioc_common.logit(
+                {
+                    'level': 'EXCEPTION', 'force_raise': True,
+                    'message': 'Snapshot already exists'
+                },
+                _callback=self.callback, silent=self.silent,
+                exception=ioc_exceptions.Exists
+            )
 
-        try:
-            dataset.snapshot(f"{target}@{name}", recursive=True)
-        except libzfs.ZFSException as err:
-            if err.code == libzfs.Error.EXISTS:
-                ioc_common.logit(
-                    {
-                        'level': 'EXCEPTION',
-                        'message': 'Snapshot already exists!',
-                        'force_raise': True
-                    },
-                    _callback=self.callback,
-                    silent=self.silent,
-                    exception=ioc_exceptions.Exists)
-            else:
-                raise ()
+        snap.create_snapshot({'recursive': True})
 
         if not self.silent:
             ioc_common.logit({
