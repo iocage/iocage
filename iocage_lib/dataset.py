@@ -35,6 +35,11 @@ class Dataset(Resource):
             self.name = self.resource_name = new_name
         return result
 
+    def create_snapshot(self, snap_name, options=None):
+        snap = snapshot.Snapshot(f'{self.resource_name}@{snap_name}')
+        snap.create_snapshot(options)
+        return snap
+
     @property
     def path(self):
         try:

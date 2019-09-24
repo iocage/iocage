@@ -177,3 +177,12 @@ def rollback_snapshot(snap, options=None):
         flags.append('-r')
 
     return run(['zfs', 'rollback', *flags, snap]).returncode == 0
+
+
+def create_snapshot(snap, options=None):
+    flags = []
+    options = options or {}
+    if options.get('recursive'):
+        flags.append('-r')
+
+    return run(['zfs', 'snapshot', *flags, snap])

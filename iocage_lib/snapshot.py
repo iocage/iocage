@@ -1,7 +1,7 @@
 from iocage_lib.resource import Resource, ListableResource
 from iocage_lib.zfs import (
     list_snapshots, destroy_zfs_resource, iocage_activated_dataset,
-    rollback_snapshot,
+    rollback_snapshot, create_snapshot
 )
 
 import iocage_lib.dataset as dataset
@@ -24,6 +24,9 @@ class Snapshot(Resource):
     @property
     def dataset(self):
         return dataset.Dataset(self.resource_name.split('@', 1)[0])
+
+    def create_snapshot(self, options=None):
+        return create_snapshot(self.resource_name, options)
 
     @property
     def exists(self):
