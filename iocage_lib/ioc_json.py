@@ -452,7 +452,7 @@ class IOCConfiguration:
                 ds = Dataset(pool.name)
                 if pool.active:
                     matches.append(pool)
-                elif ds.properties['comment'] == 'iocage':
+                elif ds.properties.get('comment') == 'iocage':
                     matches.append(pool)
                     old = True
 
@@ -552,14 +552,13 @@ class IOCConfiguration:
         pool = get_pool()
 
         def get_iocroot():
-            try:
-                loc = os.path.join(pool, 'iocage')
-                mount = Dataset(loc).properties['mountpoint']
-            except Exception:
-                raise RuntimeError(f"{pool} not found!")
+            loc = Dataset(os.path.join(pool, 'iocage'))
 
-            if mount != "none":
-                return mount
+            if not loc.exists:
+                # It's okay, ioc check would create datasets
+                return ''
+            elif loc.mounted:
+                return loc.path
             else:
                 iocage_lib.ioc_common.logit(
                     {
