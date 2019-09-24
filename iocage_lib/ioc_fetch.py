@@ -42,10 +42,13 @@ import iocage_lib.ioc_exceptions
 import iocage_lib.ioc_exec
 import iocage_lib.ioc_json
 import iocage_lib.ioc_start
-import libzfs
 
 
-class IOCFetch(iocage_lib.ioc_json.IOCZFS):
+from iocage_lib.pools import Pool
+from iocage_lib.dataset import Dataset
+
+
+class IOCFetch:
 
     """Fetch a RELEASE for use as a jail base."""
 
@@ -65,7 +68,6 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
                  files=('MANIFEST', 'base.txz', 'lib32.txz', 'src.txz'),
                  silent=False,
                  callback=None):
-        super().__init__(callback)
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")
@@ -91,7 +93,7 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
         self.eol = eol
         self.silent = silent
         self.callback = callback
-        self.zpool = self.zfs.get(self.pool)
+        self.zpool = Pool(self.pool)
 
         if hardened:
             if release:
@@ -251,16 +253,16 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
             if os.path.isdir(dataset):
                 pass
             else:
-                self.zpool.create(pool_dataset, {"compression": "lz4"})
-                self.zfs.get_dataset(pool_dataset).mount()
+                self.zpool.create_dataset({
+                    'name': pool_dataset, 'compression': 'lz4'
+                })
 
             for f in self.files:
                 if not os.path.isfile(f):
 
-                    _dataset = self.zfs.get_dataset(pool_dataset)
-
-                    _dataset.umount()
-                    _dataset.delete()
+                    ds = Dataset(pool_dataset)
+                    ds.umount()
+                    ds.destroy()
 
                     if f == "MANIFEST":
                         error = f"{f} is a required file!" \
@@ -656,16 +658,11 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
             fresh = True
             dataset = f"{self.pool}/iocage/download/{self.release}"
 
-            try:
-                # It may actually still exist, just unmounted.
-                self.zpool.create(dataset, {"compression": "lz4"})
-            except libzfs.ZFSException as err:
-                if err.code == libzfs.Error.EXISTS:
-                    pass
-                else:
-                    raise
-
-            self.zfs.get_dataset(dataset).mount()
+            ds = Dataset(dataset)
+            if not ds.exists:
+                ds.create({'compression': 'lz4'})
+            if ds.properties['mounted'] != 'yes':
+                ds.mount()
 
         if missing or fresh:
             os.chdir(f"{self.iocroot}/download/{self.release}")
@@ -808,10 +805,9 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
         dataset = f"{self.pool}/iocage/releases/{self.release}/root"
 
         if not os.path.isdir(dest):
-            self.zpool.create(dataset, {"compression": "lz4"},
-                              libzfs.DatasetType.FILESYSTEM, 0, True)
-
-            self.zfs.get_dataset(dataset).mount_recursive(True)
+            self.zpool.create_dataset({
+                'compression': 'lz4', 'name': dataset, 'create_ancestors': True
+            })
 
         with tarfile.open(src) as f:
             # Extracting over the same files is much slower then
@@ -822,14 +818,14 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
 
     def fetch_update(self, cli=False, uuid=None):
         """This calls 'freebsd-update' to update the fetched RELEASE."""
-        tmp_dataset = self.zfs_get_dataset_name('/tmp')
-        tmp_val = self.zfs_get_property(tmp_dataset, 'exec')
+        tmp_dataset = Dataset('/tmp')
+        tmp_val = tmp_dataset.properties['exec']
 
         if tmp_val == 'off':
             iocage_lib.ioc_common.logit(
                 {
                     'level': 'EXCEPTION',
-                    'message': f'{tmp_dataset} needs exec=on!'
+                    'message': f'{tmp_dataset.name} needs exec=on!'
                 },
                 _callback=self.callback,
                 silent=self.silent)
