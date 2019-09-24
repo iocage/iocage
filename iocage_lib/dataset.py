@@ -1,6 +1,7 @@
 from iocage_lib.resource import Resource
 from iocage_lib.zfs import (
-    ZFSException, create_dataset, get_dependents, destroy_zfs_resource
+    ZFSException, create_dataset, get_dependents, destroy_zfs_resource,
+    umount_dataset
 )
 
 import os
@@ -34,3 +35,6 @@ class Dataset(Resource):
 
     def destroy(self, recursive=False, force=False):
         return destroy_zfs_resource(self.name, recursive, force)
+
+    def umount(self):
+        return umount_dataset(self.name)
