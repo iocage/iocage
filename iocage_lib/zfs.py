@@ -140,5 +140,10 @@ def destroy_zfs_resource(resource, recursive=False, force=False):
 def mount_dataset(dataset):
     return run(['zfs', 'mount', dataset]).returncode == 0
 
+
 def umount_dataset(dataset):
     return run(['zfs', 'umount', dataset]).returncode == 0
+
+
+def get_dataset_from_mountpoint(path):
+    return run(['zfs', 'get', '-H', '-o', 'name', path]).stdout.strip()
