@@ -35,8 +35,10 @@ import iocage_lib.ioc_common
 import iocage_lib.ioc_json
 import iocage_lib.ioc_list
 
+from iocage_lib.dataset import Dataset
 
-class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
+
+class IOCUpgrade:
 
     """Will upgrade a jail to the specified RELEASE."""
 
@@ -88,14 +90,14 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
             'var/db/freebsd-update', bd_hash + '-install')
 
     def upgrade_jail(self):
-        tmp_dataset = self.zfs_get_dataset_name('/tmp')
-        tmp_val = self.zfs_get_property(tmp_dataset, 'exec')
+        tmp_dataset = Dataset('/tmp')
+        tmp_val = tmp_dataset.properties['exec']
 
         if tmp_val == 'off':
             iocage_lib.ioc_common.logit(
                 {
                     'level': 'EXCEPTION',
-                    'message': f'{tmp_dataset} needs exec=on!'
+                    'message': f'{tmp_dataset.name} needs exec=on!'
                 },
                 _callback=self.callback,
                 silent=self.silent)
