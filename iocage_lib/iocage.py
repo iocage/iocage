@@ -49,7 +49,7 @@ import iocage_lib.ioc_exceptions as ioc_exceptions
 from iocage_lib.dataset import Dataset
 from iocage_lib.pools import Pool, PoolListableResource
 from iocage_lib.release import Release
-from iocage_lib.snapshot import SnapshotListableResource
+from iocage_lib.snapshot import SnapshotListableResource, Snapshot
 
 
 class PoolAndDataset:
@@ -1478,24 +1478,27 @@ class IOCage:
         else:
             target = f"{self.pool}/iocage/jails/{uuid}"
 
-        try:
-            datasets = self.zfs.get_dataset(target)
-            self.zfs.get_snapshot(f"{datasets.name}@{name}")
-        except libzfs.ZFSException as err:
+        dataset = Dataset(target)
+        if not dataset.exists:
             ioc_common.logit(
-                {
-                    "level": "EXCEPTION",
-                    "message": err
-                },
-                _callback=self.callback,
-                silent=self.silent)
+                {'level': 'EXCEPTION', 'message': f'{target} does not exist'},
+                _callback=self.callback, silent=self.silent
+            )
+        snap = Snapshot(f'{dataset.name}@{name}')
+        if not snap.exists:
+            ioc_common.logit(
+                {'level': 'EXCEPTION', 'message': f'{target} does not exist'},
+                _callback=self.callback, silent=self.silent
+            )
 
-        for dataset in datasets.dependents:
-            if dataset.type == libzfs.DatasetType.FILESYSTEM:
-                self.zfs.get_snapshot(f"{dataset.name}@{name}").rollback()
+        for ds in dataset.get_dependents(depth=None):
+            if ds.properties['type'] == 'filesystem':
+                Snapshot(f'{ds.name}@{name}').rollback(
+                    {'destroy_latest': True}
+                )
 
         # datasets is actually the parent.
-        self.zfs.get_snapshot(f"{datasets.name}@{name}").rollback()
+        snap.rollback({'destroy_latest': True})
 
         ioc_common.logit(
             {
