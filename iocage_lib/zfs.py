@@ -122,3 +122,12 @@ def list_snapshots(raise_error=True, snapshot=None):
         'zfs', 'list', '-H', '-t', 'snapshot', '-o', 'name',
         *([snapshot] if snapshot else [])
     ], check=raise_error).stdout
+
+
+def destroy_zfs_resource(resource, recursive=False, force=False):
+    cmd = ['zfs', 'destroy']
+    if recursive:
+        cmd.append('-r')
+    if force:
+        cmd.append('-f')
+    return run([*cmd, resource]).returncode == 0
