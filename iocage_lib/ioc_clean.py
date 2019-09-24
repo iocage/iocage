@@ -84,7 +84,7 @@ class IOCClean:
     def clean_all(self):
         """Cleans everything related to iocage."""
         datasets = ('iocage', 'iocage/download', 'iocage/images',
-                    'iocage/jails', 'iocage/log', 'iocage/releases',
+                    'iocage/log', 'iocage/releases', 'iocage/jails',
                     'iocage/templates')
 
         for dataset in reversed(datasets):

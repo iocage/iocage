@@ -239,7 +239,10 @@ class IOCDestroy:
             datasets.reverse()
 
             for dataset in datasets:
-                self.path = Dataset(dataset).properties['mountpoint']
+                ds = Dataset(dataset)
+                if not ds.exists:
+                    continue
+                self.path = ds.path
 
                 try:
                     self.j_conf = iocage_lib.ioc_json.IOCJson(
