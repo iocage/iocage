@@ -46,18 +46,13 @@ import iocage_lib.ioc_upgrade as ioc_upgrade
 import iocage_lib.ioc_debug as ioc_debug
 import iocage_lib.ioc_exceptions as ioc_exceptions
 
+from iocage_lib.dataset import Dataset
 from iocage_lib.pools import Pool, PoolListableResource
-
-import libzfs
-
 from iocage_lib.release import Release
+from iocage_lib.snapshot import SnapshotListableResource
 
 
-class PoolAndDataset(ioc_json.IOCZFS):
-
-    def __init__(self):
-        super().__init__()
-        self.pool = ioc_json.IOCJson().json_get_value("pool")
+class PoolAndDataset:
 
     def get_pool(self):
         """
@@ -67,26 +62,7 @@ class PoolAndDataset(ioc_json.IOCZFS):
                 string: with the pool name.
         """
 
-        return self.pool
-
-    def get_datasets(self, option_type):
-        """
-        Helper to get datasets.
-
-        Return:
-                generator: from libzfs.ZFSDataset.
-        """
-        __types = {
-            'all': '/iocage/jails',
-            'base': '/iocage/releases',
-            'template': '/iocage/templates',
-            'uuid': '/iocage/jails',
-            'root': '/iocage',
-        }
-
-        if option_type in __types.keys():
-            return self.zfs.get_dataset(
-                f"{self.pool}{__types[option_type]}").children
+        return ioc_json.IOCJson().json_get_value("pool")
 
     def get_iocroot(self):
         """
@@ -98,7 +74,7 @@ class PoolAndDataset(ioc_json.IOCZFS):
         return ioc_json.IOCJson().json_get_value("iocroot")
 
 
-class IOCage(ioc_json.IOCZFS):
+class IOCage:
 
     def __init__(self,
                  jail=None,
@@ -108,7 +84,6 @@ class IOCage(ioc_json.IOCZFS):
                  activate=False,
                  skip_jails=False,
                  ):
-        super().__init__(callback)
         self.rc = rc
         self.silent = silent
 
@@ -123,18 +98,7 @@ class IOCage(ioc_json.IOCZFS):
             if not skip_jails:
                 # When they need to destroy a jail with a missing or bad
                 # configuration, this gets in our way otherwise.
-                try:
-                    self.jails = self.list("uuid")
-                except libzfs.ZFSException as err:
-                    if err.code == libzfs.Error.NOENT and rc:
-                        # No jails exist for RC, that's OK
-                        self.jails = []
-
-                        return
-
-                    else:
-                        # Really going to raise this.
-                        raise
+                self.jails = self.list("uuid")
 
         self.skip_jails = skip_jails
         self.jail = jail
@@ -753,6 +717,7 @@ class IOCage(ioc_json.IOCZFS):
         ioc_destroy.IOCDestroy().destroy_jail(path)
 
     def df(self):
+        # FIXME: Please update me
         """Returns a list containing the resource usage of all jails"""
         jail_list = []
 
@@ -1391,43 +1356,20 @@ class IOCage(ioc_json.IOCZFS):
 
         self.silent = _silent
 
-        try:
-            # Can't rename when the child is in a non-global zone
-            for str_dataset in self.get("jail_zfs_dataset").split():
-                str_dataset = f"{self.pool}/{str_dataset.strip()}"
+        # Can't rename when the child is in a non-global zone
+        for str_dataset in self.get("jail_zfs_dataset").split():
+            data_dataset = Dataset(f'{self.pool}/{str_dataset.strip()}')
+            data_dataset.set_property('jailed', 'off')
 
-                data_dataset = self.zfs.get_dataset(str_dataset)
-                dependents = data_dataset.dependents
-
-                self.set("jailed=off", zfs=True, zfs_dataset=data_dataset.name)
-
-                for dep in dependents:
-                    if dep.type != libzfs.DatasetType.FILESYSTEM:
-                        continue
-
-                    d = dep.name
-                    self.set("jailed=off", zfs=True, zfs_dataset=d)
-
-        except libzfs.ZFSException as err:
-            # The dataset doesn't exist, that's OK
-
-            if err.code == libzfs.Error.NOENT:
-                pass
-            else:
-                # Danger, Will Robinson!
-                raise
-
-        for release_snap, rel_path in self.release_snapshots.items():
-            if uuid == release_snap:
-                rel_ds = self.zfs_get_dataset_name(rel_path)
+        for release_snap in SnapshotListableResource().release_snapshots:
+            if uuid == release_snap.name:
+                rel_ds = release_snap.dataset.name
                 su.check_call([
                     'zfs', 'rename', '-r', f'{rel_ds}@{uuid}', f'@{new_name}'
                 ])
 
-        try:
-            self.zfs.get_dataset(path).rename(new_path, False, True)
-        except libzfs.ZFSException:
-            raise
+        dataset = Dataset(path)
+        dataset.rename(new_path, {'force_unmount': True})
 
         self.jail = new_name
 
@@ -1448,7 +1390,7 @@ class IOCage(ioc_json.IOCZFS):
         # Templates are readonly
         if _template:
             # All self.set's set this back to on, this must be last
-            self.set('readonly=off', zfs=True, zfs_dataset=new_path)
+            dataset.set_property('readonly', 'off')
 
         # Adjust mountpoints in fstab
         jail_fstab = f"{new_mountpoint}/fstab"
@@ -1479,7 +1421,7 @@ class IOCage(ioc_json.IOCZFS):
                 if source_template == uuid:
                     _json.json_set_value(f'source_template={new_name}')
 
-            self.set("readonly=on", zfs=True, zfs_dataset=new_path)
+            dataset.set_property('readonly', 'on')
 
         ioc_common.logit(
             {
