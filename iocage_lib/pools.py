@@ -15,7 +15,7 @@ class Pool(Resource):
 
     @property
     def active(self):
-        return Dataset(self.name).properties[IOCAGE_POOL_PROP] == 'yes'
+        return Dataset(self.name).properties.get(IOCAGE_POOL_PROP) == 'yes'
 
     @property
     def health(self):

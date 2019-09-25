@@ -18,6 +18,12 @@ class Release(dataset.Dataset):
         if self.resource_name:
             self.name = self.resource_name.rsplit('/', 1)[-1]
 
+    def __repr__(self):
+        return str(self.name)
+
+    def __str__(self):
+        return str(self.name)
+
 
 class ListableReleases(IocageListableResource):
 

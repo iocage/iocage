@@ -388,7 +388,7 @@ class IOCCreate(object):
                 iocjson.json_set_value("type=template")
                 iocjson.json_set_value("template=1")
                 Dataset(
-                    os.path.join(self.pool, 'iocage', 'templates')
+                    os.path.join(self.pool, 'iocage', 'templates', jail_uuid)
                 ).set_property('readonly', 'off')
 
                 # If you supply pkglist and templates without setting the
