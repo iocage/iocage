@@ -448,11 +448,11 @@ class IOCConfiguration:
             # is false
             old = False
             matches = []
-            for pool in PoolListableResource():
-                ds = Dataset(pool.name)
+            zpools = list(PoolListableResource())
+            for pool in zpools:
                 if pool.active:
                     matches.append(pool)
-                elif ds.properties.get('comment') == 'iocage':
+                elif pool.properties.get('comment') == 'iocage':
                     matches.append(pool)
                     old = True
 
@@ -483,7 +483,7 @@ class IOCConfiguration:
                     # We use the first zpool the user has, they are free to
                     # change it.
                     try:
-                        zpool = matches[0]
+                        zpool = zpools[0]
                     except IndexError:
                         iocage_lib.ioc_common.logit(
                             {
@@ -521,7 +521,7 @@ class IOCConfiguration:
 
                     if zpool == Pool('freenas-boot'):
                         try:
-                            zpool = matches[1]
+                            zpool = zpools[1]
                         except IndexError:
                             iocage_lib.ioc_common.logit(
                                 {
@@ -1432,7 +1432,7 @@ class IOCJson(IOCConfiguration):
                         'message': 'iocage_legacy develop had a broken '
                                    'hack88 implementation.\nPlease '
                                    f'manually rename {jail_uuid} or '
-                                   f'destroy it with zfs.'
+                                   'destroy it with zfs.'
                     },
                     _callback=self.callback,
                     silent=self.silent)
@@ -1585,7 +1585,9 @@ class IOCJson(IOCConfiguration):
                             full_dataset_obj.rename(
                                 short_dataset, {'force_unmount': True}
                             )
-                            full_dataset_data.set_property('jailed', 'on')
+                            Dataset(
+                                os.path.join(short_dataset, 'data')
+                            ).set_property('jailed', 'on')
 
                             uuid = short_uuid
                             self.location = \
@@ -1727,7 +1729,11 @@ class IOCJson(IOCConfiguration):
                         continue
 
                     ds = Dataset(_path)
-                    origin = ds.properties.get('origin', '-')
+                    if ds.exists:
+                        origin = ds.properties.get('origin', '-')
+                    else:
+                        # Preserving old behavior
+                        origin = None
 
                     if origin == t_old_path or origin == t_path:
                         _status, _ = iocage_lib.ioc_list.IOCList(

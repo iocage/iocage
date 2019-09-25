@@ -1386,7 +1386,7 @@ fingerprint: {fingerprint}
             snap_name = snap.name
 
             if snap_name in names:
-                snap.destroy()
+                snap.destroy(recursive=False, force=False)
 
     def __stop_rc__(self):
         iocage_lib.ioc_exec.SilentExec(

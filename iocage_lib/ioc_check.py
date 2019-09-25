@@ -86,14 +86,14 @@ class IOCCheck(object):
             try:
                 ds = Dataset(zfs_dataset_name)
 
-                if ds.path is None:
+                if not ds.exists:
+                    raise ZFSException(-1, 'Dataset does not exist')
+                elif not ds.path:
                     iocage_lib.ioc_common.logit({
                         "level": "EXCEPTION",
                         "message": f'Please set a mountpoint on {ds.name}'
                     },
                         _callback=self.callback)
-                elif not ds.exists:
-                    raise ZFSException(-1, 'Dataset does not exist')
             except ZFSException:
                 # Doesn't exist
 
