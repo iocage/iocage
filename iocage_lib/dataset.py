@@ -1,11 +1,11 @@
-from iocage_lib.resource import Resource
+from iocage_lib.resource import Resource, ListableResource
 from iocage_lib.zfs import (
     ZFSException, create_dataset, get_dependents, destroy_zfs_resource,
     umount_dataset, mount_dataset, get_dataset_from_mountpoint,
-    rename_dataset, dataset_exists, promote_dataset
+    rename_dataset, dataset_exists, promote_dataset, list_snapshots,
+    iocage_activated_dataset, rollback_snapshot, create_snapshot,
+    clone_snapshot,
 )
-
-import iocage_lib.snapshot as snapshot
 
 import contextlib
 import os
@@ -36,7 +36,7 @@ class Dataset(Resource):
         return result
 
     def create_snapshot(self, snap_name, options=None):
-        snap = snapshot.Snapshot(f'{self.resource_name}@{snap_name}')
+        snap = Snapshot(f'{self.resource_name}@{snap_name}')
         snap.create_snapshot(options)
         return snap
 
@@ -52,7 +52,7 @@ class Dataset(Resource):
         return other.path == self.path
 
     def snapshots_recursive(self):
-        return snapshot.SnapshotListableResource(
+        return SnapshotListableResource(
             resource_name=self.resource_name, recursive=True
         )
 
@@ -79,3 +79,71 @@ class Dataset(Resource):
 
     def umount(self, force=True):
         return umount_dataset(self.resource_name, force)
+
+
+class Snapshot(Resource):
+
+    zfs_resource = 'zfs'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if '@' in self.resource_name:
+            self.name = self.resource_name.split('@', 1)[-1]
+
+    def __eq__(self, other):
+        return self.resource_name == other.resource_name
+
+    @property
+    def dataset(self):
+        return Dataset(self.resource_name.split('@', 1)[0])
+
+    def create_snapshot(self, options=None):
+        return create_snapshot(self.resource_name, options)
+
+    @property
+    def exists(self):
+        return bool(list(list_snapshots(
+            raise_error=False, resource=self.resource_name)
+        ))
+
+    def rollback(self, options=None):
+        return rollback_snapshot(self.resource_name, options)
+
+    def clone(self, dataset):
+        return clone_snapshot(self.resource_name, dataset)
+
+    @property
+    def path(self):
+        return None
+
+    def destroy(self, recursive=True, force=True):
+        return destroy_zfs_resource(self.resource_name, recursive, force)
+
+
+class SnapshotListableResource(ListableResource):
+
+    resource = Snapshot
+
+    def __init__(self, *args, **kwargs):
+        self.resource_name = kwargs.pop('resource_name', False)
+        self.recursive = kwargs.pop('recursive', False)
+
+    def __iter__(self):
+        for snap in list_snapshots(
+            resource=self.resource_name, recursive=self.recursive
+        ):
+            yield self.resource(snap)
+
+    @property
+    def release_snapshots(self):
+        # Returns all jail snapshots on each RELEASE dataset
+        releases_dataset = Dataset(
+            os.path.join(iocage_activated_dataset(), 'releases')
+        )
+        if releases_dataset.exists:
+
+            for snap in list_snapshots(
+                resource=releases_dataset.name,
+                recursive=True,
+            ):
+                yield self.resource(snap)
