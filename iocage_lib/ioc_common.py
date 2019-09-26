@@ -432,11 +432,11 @@ def sort_release(releases, split=False, fetch_releases=False):
     if split:
         for i, rel in enumerate(releases):
             try:
-                rel, r_type = rel.properties["mountpoint"].value.rsplit("/")[
+                rel, r_type = rel.properties["mountpoint"].rsplit("/")[
                     -1].split("-", 1)
             except ValueError:
                 # Non-standard naming scheme
-                rel = rel.properties["mountpoint"].value.rsplit("/")[
+                rel = rel.properties["mountpoint"].rsplit("/")[
                     -1].split("-", 1)[0]
                 r_type = ''
 
@@ -462,6 +462,9 @@ def sort_release(releases, split=False, fetch_releases=False):
 
         else:
             for release in releases:
+                if not isinstance(release, str):
+                    release = release.name
+
                 try:
                     release, r_type = release.split("-", 1)
 

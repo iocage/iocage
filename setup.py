@@ -56,7 +56,6 @@ setup(
         'GitPython>=2.1.11',
         'netifaces>=0.10.8',
         'dnspython>=1.15.0',
-        'libzfs'
     ],
     setup_requires=['pytest-runner'],
     entry_points={'console_scripts': ['iocage = iocage_lib:cli']},

@@ -32,8 +32,9 @@ import uuid as _uuid
 
 import iocage_lib.ioc_common
 import iocage_lib.ioc_json
-import libzfs
 import texttable
+
+from iocage_lib.dataset import Dataset
 
 
 class IOCList(object):
@@ -52,7 +53,6 @@ class IOCList(object):
         self.header = hdr
         self.full = full
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
-        self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.sort = _sort
         self.silent = silent
         self.callback = callback
@@ -63,12 +63,14 @@ class IOCList(object):
     def list_datasets(self):
         """Lists the datasets of given type."""
         if self.list_type == "base":
-            ds = self.zfs.get_dataset(f"{self.pool}/iocage/releases").children
+            ds = Dataset(f"{self.pool}/iocage/releases").get_dependents()
         elif self.list_type == "template":
-            ds = self.zfs.get_dataset(
-                f"{self.pool}/iocage/templates").children
+            ds = Dataset(
+                f"{self.pool}/iocage/templates").get_dependents()
         else:
-            ds = self.zfs.get_dataset(f"{self.pool}/iocage/jails").children
+            ds = Dataset(f"{self.pool}/iocage/jails").get_dependents()
+
+        ds = list(ds)
 
         if self.list_type in ('all', 'basejail', 'template'):
             if self.quick:
@@ -83,7 +85,7 @@ class IOCList(object):
             for jail in ds:
                 uuid = jail.name.rsplit("/", 1)[-1]
                 try:
-                    jails[uuid] = jail.properties["mountpoint"].value
+                    jails[uuid] = jail.properties["mountpoint"]
                 except KeyError:
                     iocage_lib.ioc_common.logit(
                         {
@@ -95,13 +97,12 @@ class IOCList(object):
                         silent=self.silent
                     )
 
-            template_datasets = self.zfs.get_dataset(
-                f"{self.pool}/iocage/templates")
-            template_datasets = template_datasets.children
+            template_datasets = Dataset(
+                f'{self.pool}/iocage/templates').get_dependents()
 
             for template in template_datasets:
                 uuid = template.name.rsplit("/", 1)[-1]
-                jails[uuid] = template.properties["mountpoint"].value
+                jails[uuid] = template.properties['mountpoint']
 
             return jails
         elif self.list_type == "base":
@@ -115,7 +116,7 @@ class IOCList(object):
 
         for jail in jails:
             try:
-                mountpoint = jail.properties["mountpoint"].value
+                mountpoint = jail.properties['mountpoint']
             except KeyError:
                 iocage_lib.ioc_common.logit(
                     {
@@ -187,7 +188,7 @@ class IOCList(object):
 
         for jail in jails:
             try:
-                mountpoint = jail.properties["mountpoint"].value
+                mountpoint = jail.properties['mountpoint']
             except KeyError:
                 iocage_lib.ioc_common.logit(
                     {
@@ -284,11 +285,11 @@ class IOCList(object):
             if conf["type"] == "template":
                 template = "-"
             else:
-                jail_root = self.zfs.get_dataset(f"{jail.name}/root")
-                _origin_property = jail_root.properties["origin"]
+                jail_root = Dataset(f'{jail.name}/root')
+                _origin_property = jail_root.properties.get('origin')
 
-                if _origin_property and _origin_property.value != "":
-                    template = jail_root.properties["origin"].value
+                if _origin_property:
+                    template = _origin_property
                     template = template.rsplit("/root@", 1)[0].rsplit(
                         "/", 1)[-1]
                 else:

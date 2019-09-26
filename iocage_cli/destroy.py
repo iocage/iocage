@@ -27,12 +27,13 @@ import os
 import click
 import iocage_lib.ioc_common as ioc_common
 import iocage_lib.iocage as ioc
-import libzfs
+
+from iocage_lib.dataset import Dataset
 
 __rootcmd__ = True
 
 
-def child_test(zfs, iocroot, name, _type, force=False, recursive=False):
+def child_test(iocroot, name, _type, force=False, recursive=False):
     """Tests for dependent children"""
     path = None
     children = []
@@ -43,7 +44,7 @@ def child_test(zfs, iocroot, name, _type, force=False, recursive=False):
     for p in paths:
         if os.path.isdir(p):
             path = p
-            children = zfs.get_dataset_by_path(path).snapshots_recursive
+            children = Dataset(path).snapshots_recursive()
 
             break
 
@@ -63,7 +64,7 @@ def child_test(zfs, iocroot, name, _type, force=False, recursive=False):
     _children = []
 
     for child in children:
-        _name = child.name.rsplit("@", 1)[-1]
+        _name = child.name
         _children.append(f"  {_name}\n")
 
     sort = ioc_common.ioc_sort("", "name", data=_children)
@@ -101,7 +102,6 @@ def child_test(zfs, iocroot, name, _type, force=False, recursive=False):
 def cli(force, release, download, jails, recursive):
     """Destroys the jail's 2 datasets and the snapshot from the RELEASE."""
     # Want these here, otherwise they're reinstanced for each jail.
-    zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
     iocroot = ioc.PoolAndDataset().get_iocroot()
 
     if download and not release:
@@ -125,7 +125,7 @@ def cli(force, release, download, jails, recursive):
                 if not click.confirm("\nAre you sure?"):
                     continue  # no, continue to next jail
 
-            child_test(zfs, iocroot, jail, "jail", force=force,
+            child_test(iocroot, jail, "jail", force=force,
                        recursive=recursive)
 
             iocage.destroy_jail(force=force)
@@ -140,7 +140,7 @@ def cli(force, release, download, jails, recursive):
                 if not click.confirm("\nAre you sure?"):
                     continue
 
-            children = child_test(zfs, iocroot, release, "release",
+            children = child_test(iocroot, release, "release",
                                   force=force, recursive=recursive)
 
             if children:

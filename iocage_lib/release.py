@@ -2,24 +2,32 @@ import os
 import re
 import requests
 
-from iocage_lib.resource import Resource, ListableResource
+import iocage_lib.dataset as dataset
+
+from iocage_lib.resource import IocageListableResource
 from iocage_lib.ioc_fetch import IOCFetch
 from iocage_lib.ioc_common import check_release_newer
 
 
-class Release(Resource):
+class Release(dataset.Dataset):
 
-    @property
-    def path(self):
-        return os.path.join(
-            self.zfs.iocroot_path, 'releases', self.name
-        ) if self.zfs.iocroot_path else None
+    def __init__(self, name, *args, **kwargs):
+        if '/' not in name and self.iocage_path():
+            name = os.path.join(self.iocage_path(), 'releases', name)
+        super().__init__(name, *args, **kwargs)
+        if self.resource_name:
+            self.name = self.resource_name.rsplit('/', 1)[-1]
+
+    def __repr__(self):
+        return str(self.name)
+
+    def __str__(self):
+        return str(self.name)
 
 
-class ListableReleases(ListableResource):
+class ListableReleases(IocageListableResource):
 
     resource = Release
-    path = 'releases'
 
     def __init__(self, remote=False, eol_check=True):
         # We should abstract distribution and have eol checks live there in
@@ -27,6 +35,8 @@ class ListableReleases(ListableResource):
         # or not. Also perhaps we should think of a filter
         # interface.
         super().__init__()
+        if self.dataset_path:
+            self.dataset_path = os.path.join(self.dataset_path, 'releases')
         self.remote = remote
         self.eol_check = eol_check
         self.eol_list = []
