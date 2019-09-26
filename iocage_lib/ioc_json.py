@@ -41,10 +41,13 @@ import iocage_lib.ioc_fstab
 import iocage_lib.ioc_list
 import iocage_lib.ioc_stop
 import iocage_lib.ioc_exceptions as ioc_exceptions
-import libzfs
 import netifaces
 import random
 import pathlib
+
+from iocage_lib.dataset import Dataset
+from iocage_lib.pools import PoolListableResource, Pool
+from iocage_lib.snapshot import Snapshot
 
 
 class JailRuntimeConfiguration(object):
@@ -415,249 +418,8 @@ class IOCRCTL(object):
                     )
 
 
-class IOCSnapshot(object):
-    # FIXME: Please move me to another file and let's see how we can build
-    # our hierarchy for the whole ZFS related section
-    # TODO: Update this object via some fashion(after delete, so forth)
-    def __init__(self, snap_id):
-        self.data = None
-        self.snap_id = snap_id
-
-        self.attr_list = [
-            'name', 'used', 'available', 'referred', 'mountpoint'
-        ]
-        for attr in self.attr_list:
-            setattr(self, attr, None)
-
-        self.normalize_data()
-
-    @property
-    def exists(self):
-        return bool(self.data is not None and self.data)
-
-    @property
-    def raw_data(self):
-        with ioc_exceptions.ignore_exceptions(su.CalledProcessError):
-            return su.run(
-                ['zfs', 'list', '-Ht', 'snapshot', self.snap_id or self.name],
-                stdout=su.PIPE, stderr=su.PIPE
-            ).stdout.decode()
-
-    def normalize_data(self):
-        # Expected format
-        # ['NAME', 'USED', 'AVAIL', 'REFER', 'MOUNTPOINT']
-        if not self.data:
-            self.data = self.raw_data
-
-        self.__dict__.update({
-            k: v for k, v in zip(self.attr_list, self.data.split('\t'))
-        })
-
-    def delete(self, recursive=True):
-        with ioc_exceptions.ignore_exceptions(
-            su.CalledProcessError
-        ):
-            return su.run(
-                ['zfs', 'destroy', '-r' if recursive else '', '-f', self.name],
-                stdout=su.PIPE, stderr=su.PIPE
-            ).returncode == 0
-
-    def __eq__(self, other):
-        return self.name == other.name
-
-    def __bool__(self):
-        return self.exists is True
-
-    def __hash__(self):
-        return hash(self.name)
-
-    def __repr__(self):
-        return self.name
-
-
-class IOCZFS(object):
-    # TODO: We should use a context manager for libzfs
-    def __init__(self, callback=None):
-        self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
-        self.callback = callback
-
-    def _iocroot(self, mountpoint=False):
-        # For now we assume iocroot is set, however moving on we need to think
-        # how best to structure this
-        # We should give thought to how we handle
-        for pool in self.pools:
-            if self.zfs_get_property(pool, 'org.freebsd.ioc:active') == 'yes':
-                if mountpoint:
-                    return self.zfs_get_property(
-                        os.path.join(pool, 'iocage'), 'mountpoint'
-                    )
-                else:
-                    return os.path.join(pool, 'iocage')
-
-    @property
-    def iocroot_path(self):
-        return self._iocroot(mountpoint=True)
-
-    @property
-    def iocroot_dataset(self):
-        return self._iocroot()
-
-    @property
-    def pools(self):
-        # Returns list of pools. In case of failure, an empty list
-        with ioc_exceptions.ignore_exceptions(
-            su.CalledProcessError
-        ):
-            pools = su.run(
-                [
-                    'zpool', 'list', '-H',
-                ],
-                stdout=su.PIPE, stderr=su.PIPE
-            ).stdout.decode().split('\n')
-            return [p.split()[0] for p in pools if p]
-
-        return []
-
-    @property
-    def iocroot_datasets(self):
-        return self.zfs_get_dataset_and_dependents(self.iocroot_path)
-        # Returns a list of all datasets
-
-    @property
-    def release_snapshots(self):
-        # Returns all jail snapshots on each RELEASE dataset
-        rel_dir = pathlib.Path(f'{self.iocroot_path}/releases')
-        snaps = {}
-
-        # Quicker than asking zfs and parsing
-        for snap in rel_dir.glob('**/root/.zfs/snapshot/*'):
-            snaps[snap.name] = str(snap).rsplit('/.zfs', 1)[0]
-
-        return snaps
-
-    def _zfs_get_properties(self, identifier):
-        p_dict = {}
-
-        props = su.run(
-            [
-                'zfs',
-                'get',
-                '-pHo',
-                'property, value',
-                'all',
-                identifier
-            ], stdout=su.PIPE, stderr=su.PIPE
-        ).stdout.decode().splitlines()
-
-        for prop in props:
-            try:
-                p, v = prop.split()
-            except ValueError:
-                p, v = prop.strip(), '-'
-
-            p_dict[p] = v
-
-        return p_dict
-
-    def zfs_get_property(self, identifier, key):
-        with ioc_exceptions.ignore_exceptions(Exception):
-            if key == 'mountpoint':
-                mountpoint = su.run(
-                    [
-                        'zfs',
-                        'get',
-                        '-pHo',
-                        'value',
-                        key,
-                        identifier
-                    ], stdout=su.PIPE, stderr=su.PIPE
-                ).stdout.decode().rstrip()
-
-                return mountpoint
-
-            return self._zfs_get_properties(identifier)[key]
-
-        return '-'
-
-    def zfs_set_property(self, identifier, key, value):
-        su.run(
-            [
-                'zfs', 'set', f'{key}={value}', identifier
-            ], stdout=su.PIPE, stderr=su.PIPE
-        )
-
-    def zfs_get_dataset_name(self, name):
-        with ioc_exceptions.ignore_exceptions(su.CalledProcessError):
-            return su.run(
-                ['zfs', 'get', '-pHo', 'name', 'mountpoint', name],
-                stdout=su.PIPE, stderr=su.PIPE
-            ).stdout.decode().rstrip()
-
-    def zfs_get_snapshot(self, snap_id):
-        # Let's return snapshot object from which additional information
-        # can be derived wrt snap_id in question
-        # Snap_id expected value - vol/iocage/jails/jail1@snaptest
-        return IOCSnapshot(snap_id)
-
-    def zfs_destroy_dataset(self, identifier, recursive=False, force=False):
-        cmd = ['zfs', 'destroy']
-
-        if recursive:
-            cmd += ['-r']
-
-        if force:
-            cmd += ['-Rf']
-
-        try:
-            su.run(
-                cmd + [identifier], check=True, stdout=su.PIPE, stderr=su.PIPE
-            )
-        except su.CalledProcessError as e:
-            if force:
-                return
-
-            iocage_lib.ioc_common.logit(
-                {
-                    'level': 'EXCEPTION',
-                    'message': f'Destroying {identifier} failed!\n'
-                               f'Reason: {e.stderr.decode()}'
-                },
-                _callback=self.callback,
-                exception=ioc_exceptions.CommandFailed
-            )
-
-    def zfs_get_dataset_and_dependents(self, identifier, depth=None):
-        id_depth = len(identifier.split('/'))
-        try:
-            datasets = list(
-                filter(
-                    lambda p: p if not depth else len(
-                        p.split('/')
-                    ) - id_depth <= depth and len(p.split('/')) - id_depth,
-                    su.run(
-                        ['zfs', 'list', '-rHo', 'name', identifier],
-                        check=True, stdout=su.PIPE, stderr=su.PIPE
-                    ).stdout.decode().split()
-                )
-            )
-        except su.CalledProcessError as e:
-            iocage_lib.ioc_common.logit(
-                {
-                    'level': 'EXCEPTION',
-                    'message': 'Getting dataset and dependents for '
-                               f'{identifier} failed!\n'
-                               f'Reason: {e.stderr.decode()}'
-                },
-                _callback=self.callback,
-                exception=ioc_exceptions.CommandFailed
-            )
-        else:
-            return datasets
-
-
-class IOCConfiguration(IOCZFS):
+class IOCConfiguration:
     def __init__(self, location, checking_datasets, silent, callback):
-        super().__init__(callback)
         self.location = location
         self.silent = silent
         self.callback = callback
@@ -678,31 +440,29 @@ class IOCConfiguration(IOCZFS):
     def get_pool_and_iocroot(self):
         """For internal getting of pool and iocroot."""
         def get_pool():
+            # This function does following (keeping old behavior):
+            # 1) Ensures multiple activated pools aren't present
+            # 2) Activates first pool it finds until activate command has been
+            #  issued already ( keeping old behavior )
+            # 3) Only activate if pool is not freenas-boot and iocage skip
+            # is false
             old = False
-            zpools = list(map(lambda x: x.name, list(self.zfs.pools)))
-
-            match = 0
-
+            matches = []
+            zpools = list(PoolListableResource())
             for pool in zpools:
-                prop_ioc_active = self.zfs_get_property(
-                    pool, "org.freebsd.ioc:active")
-                prop_comment = self.zfs_get_property(pool, "comment")
-
-                if prop_ioc_active == "yes":
-                    _dataset = pool
-                    match += 1
-                elif prop_comment == "iocage":
-                    _dataset = pool
-                    match += 1
+                if pool.active:
+                    matches.append(pool)
+                elif pool.properties.get('comment') == 'iocage':
+                    matches.append(pool)
                     old = True
 
-            if match == 1:
+            if len(matches) == 1:
                 if old:
-                    self.activate_pool(_dataset)
+                    matches[0].activate_pool()
 
-                return _dataset
+                return matches[0].name
 
-            elif match >= 2:
+            elif len(matches) > 1:
                 iocage_lib.ioc_common.logit(
                     {
                         "level": "ERROR",
@@ -711,18 +471,11 @@ class IOCConfiguration(IOCZFS):
                     _callback=self.callback,
                     silent=self.silent)
 
-                for zpool in zpools:
-                    iocage_lib.ioc_common.logit(
-                        {
-                            "level": "ERROR",
-                            "message": f"  {zpool}"
-                        },
-                        _callback=self.callback,
-                        silent=self.silent)
-                raise RuntimeError(f"You have {match} pools marked active"
-                                   " for iocage usage.\n Run \"iocage"
-                                   f" activate ZPOOL\" on the preferred"
-                                   " pool.\n")
+                pools = '\n'.join([str(p) for p in matches])
+                raise RuntimeError(f'{pools}\nYou have {len(matches)} pools'
+                                   f'marked active for iocage usage.\n '
+                                   f'Run \"iocage  activate ZPOOL\" '
+                                   f'on the preferred pool.\n')
             else:
                 if len(sys.argv) >= 2 and "activate" in sys.argv[1:]:
                     pass
@@ -766,7 +519,7 @@ class IOCConfiguration(IOCZFS):
                             silent=self.silent,
                             exception=ioc_exceptions.PoolNotActivated)
 
-                    if zpool == "freenas-boot":
+                    if zpool == Pool('freenas-boot'):
                         try:
                             zpool = zpools[1]
                         except IndexError:
@@ -792,22 +545,20 @@ class IOCConfiguration(IOCZFS):
                         _callback=self.callback,
                         silent=self.silent)
 
-                    self.zfs_set_property(zpool, "org.freebsd.ioc:active",
-                                          "yes")
+                    zpool.activate_pool()
 
-                    return zpool
+                    return zpool.name
 
         pool = get_pool()
 
         def get_iocroot():
-            try:
-                loc = f"{pool}/iocage"
-                mount = self.zfs_get_property(loc, "mountpoint")
-            except Exception:
-                raise RuntimeError(f"{pool} not found!")
+            loc = Dataset(os.path.join(pool, 'iocage'))
 
-            if mount != "none":
-                return mount
+            if not loc.exists:
+                # It's okay, ioc check would create datasets
+                return ''
+            elif loc.mounted:
+                return loc.path
             else:
                 iocage_lib.ioc_common.logit(
                     {
@@ -841,8 +592,7 @@ class IOCConfiguration(IOCZFS):
         # Templates need to be set r/w and then back to r/o
         try:
             template = iocage_lib.ioc_common.check_truthy(data['template'])
-            jail_dataset = self.zfs.get_dataset_by_path(self.location).name \
-                if template else None
+            jail_dataset = Dataset(self.location).name if template else None
         except KeyError:
             # Not a template, it would exist in the configuration otherwise
             template = False
@@ -911,7 +661,7 @@ class IOCConfiguration(IOCZFS):
 
             if conf.get('plugin_name', 'none') == 'none':
                 jail_path = os.path.join(
-                    self.iocroot_path, 'jails', conf.get('host_hostuuid')
+                    self.iocroot, 'jails', conf.get('host_hostuuid')
                 )
 
                 json_files = [
@@ -1615,7 +1365,7 @@ class IOCJson(IOCConfiguration):
             raise RuntimeError("You need to be root to convert the"
                                " configurations to the new format!")
 
-        props = self.zfs.get_dataset(dataset).properties
+        props = Dataset(dataset).properties
 
         # Filter the props we want to convert.
         prop_prefix = "org.freebsd.iocage"
@@ -1652,16 +1402,14 @@ class IOCJson(IOCConfiguration):
 
         if not skip:
             # Set jailed=off and move the jailed dataset.
-            try:
-                self.zfs_set_property(f"{dataset}/root/data", "jailed", "off")
-                self.zfs.get_dataset(f"{dataset}/root/data").rename(
-                    f"{dataset}/data", False, True)
-                self.zfs_set_property(f"{dataset}/data", jail_zfs_prop,
-                                      f"iocage/jails/{uuid}/data")
-                self.zfs_set_property(f"{dataset}/data", "jailed", "on")
-            except libzfs.ZFSException:
-                # The jailed dataset doesn't exist, which is OK.
-                pass
+            ds = Dataset(os.path.join(dataset, 'root/data'))
+            if ds.exists:
+                ds.set_property('jailed', 'off')
+                ds.rename(
+                    os.path.join(dataset, 'data'), {'force_unmount': True}
+                )
+                ds.set_property(jail_zfs_prop, f'iocage/jails/{uuid}/data')
+                ds.set_property('jailed', 'on')
 
         key_and_value["jail_zfs_dataset"] = f"iocage/jails/{uuid}/data"
 
@@ -1673,50 +1421,32 @@ class IOCJson(IOCConfiguration):
         full_uuid = jail_uuid  # Saves jail_uuid for legacy ZFS migration
         legacy_short = False
 
-        try:
-            jail_dataset = self.zfs.get_dataset(
-                f"{self.pool}/iocage/{jail_type}/{jail_uuid}")
-        except libzfs.ZFSException as err:
-            if err.code == libzfs.Error.NOENT:
-                if os.path.isfile(self.location + "/config"):
-                    iocage_lib.ioc_common.logit(
-                        {
-                            "level": "EXCEPTION",
-                            "message": "iocage_legacy develop had a broken"
-                            " hack88 implementation.\nPlease manually rename"
-                            f" {jail_uuid} or destroy it with zfs."
-                        },
-                        _callback=self.callback,
-                        silent=self.silent)
-
-                    jail_dataset = self.zfs_get_property(
-                        self.location, 'mountpoint'
-                    )
-                    full_uuid = jail_dataset.rsplit('/')[-1]
-                    legacy_short = True
-
-                else:
-                    raise ioc_exceptions.JailMissingConfiguration(
-                        f'{jail_type.rstrip("s").capitalize()}:'
-                        f' {jail_uuid} has a missing configuration, please'
-                        ' check that the dataset is mounted.'
-                    )
-            else:
-                raise()
-
-        skip = False
-
-        if jail_dataset.mountpoint is None:
-            try:
-                jail_dataset.mount_recursive()
-            except libzfs.ZFSException as err:
+        jail_dataset = Dataset(
+            os.path.join(self.pool, 'iocage', jail_type, jail_uuid)
+        )
+        if not jail_dataset.exists:
+            if os.path.isfile(os.path.join(self.location, 'config')):
                 iocage_lib.ioc_common.logit(
                     {
-                        "level": "EXCEPTION",
-                        "message": err
+                        'level': 'EXCEPTION',
+                        'message': 'iocage_legacy develop had a broken '
+                                   'hack88 implementation.\nPlease '
+                                   f'manually rename {jail_uuid} or '
+                                   'destroy it with zfs.'
                     },
                     _callback=self.callback,
                     silent=self.silent)
+            else:
+                raise ioc_exceptions.JailMissingConfiguration(
+                    f'{jail_type.rstrip("s").capitalize()}:'
+                    f' {jail_uuid} has a missing configuration, please'
+                    ' check that the dataset is mounted.'
+                )
+
+        skip = False
+
+        if not jail_dataset.mounted:
+            jail_dataset.mount()
 
         try:
             with open(self.location + "/config.json", "r") as conf:
@@ -1785,9 +1515,11 @@ class IOCJson(IOCConfiguration):
                             short_dataset = \
                                 f"{self.pool}/iocage/jails/{short_uuid}"
 
-                            jail_hostname = self.zfs_get_property(
-                                full_dataset,
-                                'org.freebsd.iocage:host_hostname')
+                            jail_hostname = Dataset(
+                                full_dataset
+                            ).properties.get(
+                                'org.freebsd.iocage:host_hostname', '-'
+                            )
 
                             self.json_convert_from_zfs(full_uuid)
                             with open(self.location + "/config.json",
@@ -1831,26 +1563,31 @@ class IOCJson(IOCConfiguration):
                             host_prop = "org.freebsd.iocage:host_hostname"
 
                             # Set jailed=off and move the jailed dataset.
-                            self.zfs_set_property(f"{full_dataset}/data",
-                                                  'jailed', 'off')
+                            full_dataset_data = Dataset(f"{full_dataset}/data")
+                            full_dataset_data.set_property('jailed', 'off')
+
+                            full_dataset_obj = Dataset(full_dataset)
 
                             # We don't want to change a real hostname.
-
                             if jail_hostname == full_uuid:
-                                self.zfs_set_property(full_dataset, host_prop,
-                                                      short_uuid)
+                                full_dataset_obj.set_property(
+                                    host_prop, short_uuid
+                                )
 
-                            self.zfs_set_property(full_dataset, uuid_prop,
-                                                  short_uuid)
-                            self.zfs_set_property(f"{full_dataset}/data",
-                                                  jail_zfs_prop,
-                                                  f"iocage/jails/"
-                                                  f"{short_uuid}/data")
-
-                            self.zfs.get_dataset(full_dataset).rename(
-                                short_dataset, False, True)
-                            self.zfs_set_property(f"{short_dataset}/data",
-                                                  "jailed", "on")
+                            full_dataset_obj.set_property(
+                                uuid_prop, short_uuid
+                            )
+                            full_dataset_data.set_property(
+                                jail_zfs_prop, os.path.join(
+                                    'iocage/jails', short_uuid, 'data'
+                                )
+                            )
+                            full_dataset_obj.rename(
+                                short_dataset, {'force_unmount': True}
+                            )
+                            Dataset(
+                                os.path.join(short_dataset, 'data')
+                            ).set_property('jailed', 'on')
 
                             uuid = short_uuid
                             self.location = \
@@ -1900,14 +1637,6 @@ class IOCJson(IOCConfiguration):
         conf = self.check_config(conf)
 
         return conf
-
-    def activate_pool(self, pool):
-        if os.geteuid() != 0:
-            raise RuntimeError("Run as root to migrate old pool"
-                               " activation property!")
-
-        self.zfs_set_property(pool, "org.freebsd.ioc:active", "yes")
-        self.zfs_set_property(pool, "comment", "-")
 
     def json_get_value(self, prop, default=False):
         """Returns a string with the specified prop's value."""
@@ -1999,7 +1728,12 @@ class IOCJson(IOCConfiguration):
                     if _uuid == uuid:
                         continue
 
-                    origin = self.zfs_get_property(_path, 'origin')
+                    ds = Dataset(_path)
+                    if ds.exists:
+                        origin = ds.properties.get('origin', '-')
+                    else:
+                        # Preserving old behavior
+                        origin = None
 
                     if origin == t_old_path or origin == t_path:
                         _status, _ = iocage_lib.ioc_list.IOCList(
@@ -2018,35 +1752,17 @@ class IOCJson(IOCConfiguration):
                                 silent=self.silent)
 
                 if iocage_lib.ioc_common.check_truthy(value):
-                    try:
-                        jail_zfs_dataset = f"{self.pool}/" \
-                            f"{conf['jail_zfs_dataset']}"
-                        self.zfs_set_property(jail_zfs_dataset, "jailed",
-                                              "off")
-                    except libzfs.ZFSException as err:
-                        # The dataset doesn't exist, that's OK
+                    jail_zfs_dataset = os.path.join(
+                        self.pool, conf['jail_zfs_dataset']
+                    )
+                    jail_zfs_dataset_obj = Dataset(jail_zfs_dataset)
+                    if jail_zfs_dataset_obj.exists:
+                        jail_zfs_dataset_obj.set_property('jailed', 'off')
 
-                        if err.code == libzfs.Error.NOENT:
-                            pass
-                        else:
-                            iocage_lib.ioc_common.logit(
-                                {
-                                    "level": "EXCEPTION",
-                                    "message": err
-                                },
-                                _callback=self.callback)
-
-                    try:
-                        self.zfs.get_dataset(old_location).rename(
-                            new_location, False, True)
-                    except libzfs.ZFSException as err:
-                        # cannot rename
-                        iocage_lib.ioc_common.logit(
-                            {
-                                "level": "EXCEPTION",
-                                "message": f"Cannot rename zfs dataset: {err}"
-                            },
-                            _callback=self.callback)
+                    new_location_ds = Dataset(old_location)
+                    new_location_ds.rename(
+                        new_location, {'force_unmount': True}
+                    )
 
                     conf["type"] = "template"
 
@@ -2065,17 +1781,17 @@ class IOCJson(IOCConfiguration):
                     self.json_check_prop(key, value, conf, default)
                     self.json_write(conf)
 
-                    self.zfs_set_property(new_location, "readonly", "on")
+                    new_location_ds.set_property('readonly', 'on')
 
                     return
                 else:
                     if not _import:
-                        self.zfs.get_dataset(new_location).rename(
-                            old_location, False, True)
+                        ds = Dataset(new_location)
+                        ds.rename(old_location, {'force_unmount': True})
                         conf["type"] = "jail"
                         self.location = old_location.lstrip(self.pool).replace(
                             "/iocage", self.iocroot)
-                        self.zfs_set_property(old_location, "readonly", "off")
+                        ds.set_property('readonly', 'off')
 
                         self.json_check_prop(key, value, conf, default)
                         self.json_write(conf)
@@ -2435,8 +2151,9 @@ class IOCJson(IOCConfiguration):
                         _callback=self.callback,
                         silent=self.silent)
 
-            self.zfs_set_property(f"{self.pool}/iocage/{_type}/{uuid}", key,
-                                  value)
+            Dataset(
+                os.path.join(self.pool, 'iocage', _type, uuid)
+            ).set_property(key, value)
 
             return value, conf
 
@@ -2714,8 +2431,7 @@ class IOCJson(IOCConfiguration):
 
         conf, write = self.json_load()
         uuid = conf["host_hostuuid"]
-        _path = self.zfs_get_property(f"{self.pool}/iocage/jails/{uuid}",
-                                      "mountpoint")
+        _path = Dataset(f"{self.pool}/iocage/jails/{uuid}").path
 
         # Plugin variables
         settings = self.json_plugin_load()
@@ -2763,8 +2479,7 @@ class IOCJson(IOCConfiguration):
     def json_plugin_set_value(self, prop):
         conf, write = self.json_load()
         uuid = conf["host_hostuuid"]
-        _path = self.zfs_get_property(f"{self.pool}/iocage/jails/{uuid}",
-                                      "mountpoint")
+        _path = Dataset(f"{self.pool}/iocage/jails/{uuid}").path
         status, _ = iocage_lib.ioc_list.IOCList().list_get_jid(uuid)
 
         # Plugin variables
@@ -2909,67 +2624,52 @@ class IOCJson(IOCConfiguration):
                             _callback=self.callback,
                             silent=self.silent)
 
-                    try:
-                        # Can't rename when the child is
-                        # in a non-global zone
-                        jail_parent_ds = f"{self.pool}/iocage/jails/{uuid}"
-                        data_dataset = self.zfs.get_dataset(
-                            f"{jail_parent_ds}/data")
-                        dependents = data_dataset.dependents
+                    # Can't rename when the child is
+                    # in a non-global zone
+                    jail_parent_ds = f"{self.pool}/iocage/jails/{uuid}"
+                    jail_parent_data_obj = Dataset(
+                        os.path.join(jail_parent_ds, 'data')
+                    )
+                    if jail_parent_data_obj.exists:
+                        jail_parent_data_obj.set_property('jailed', 'off')
 
-                        self.zfs_set_property(f"{jail_parent_ds}/data",
-                                              "jailed", "off")
+                    jail = Dataset(jail_parent_ds)
+                    snap = Snapshot(f'{jail_parent_ds}@{tag}')
+                    if snap.exists:
+                        iocage_lib.ioc_common.logit(
+                            {
+                                'level': 'EXCEPTION',
+                                'message': f'Snapshot {snap.resource_name}'
+                                           'already exists'
+                            },
+                            _callback=self.callback, silent=self.silent
+                        )
+                    jail.create_snapshot(
+                        f'{jail_parent_ds}@{tag}', {'recursive': True}
+                    )
 
-                        for dep in dependents:
-                            if dep.type != "FILESYSTEM":
-                                continue
-
-                            d = dep.name
-                            self.zfs_set_property(d, "jailed", "off")
-
-                    except libzfs.ZFSException:
-                        # No data dataset exists
-                        pass
-
-                    jail = self.zfs.get_dataset(jail_parent_ds)
-
-                    try:
-                        jail.snapshot(
-                            f"{jail_parent_ds}@{tag}", recursive=True)
-                    except libzfs.ZFSException as err:
-                        if err.code == libzfs.Error.EXISTS:
-                            err_msg = \
-                                f"Snapshot {jail_parent_ds}@{tag} already" \
-                                " exists!"
-                            iocage_lib.ioc_common.logit(
-                                {
-                                    "level": "EXCEPTION",
-                                    "message": err_msg
-                                },
-                                _callback=self.callback,
-                                silent=self.silent)
-                        else:
-                            raise ()
-
-                    for snap in jail.snapshots_recursive:
-                        snap_name = snap.name.rsplit("@", 1)[1]
+                    for snap in jail.snapshots_recursive():
+                        snap_name = snap.name
 
                         # We only want our snapshot for this, the rest will
                         # follow
 
                         if snap_name == tag:
-                            new_dataset = snap.name.replace(uuid,
-                                                            tag).split("@")[0]
+                            new_dataset = snap.resource_name.replace(
+                                uuid, tag
+                            ).split('@')[0]
                             snap.clone(new_dataset)
 
                     # Datasets are not mounted upon creation
                     new_jail_parent_ds = f"{self.pool}/iocage/jails/{tag}"
-                    new_jail = self.zfs.get_dataset(new_jail_parent_ds)
-                    new_jail.mount()
+                    new_jail = Dataset(new_jail_parent_ds)
+                    if not new_jail.mounted:
+                        new_jail.mount()
                     new_jail.promote()
 
-                    for new_ds in new_jail.children_recursive:
-                        new_ds.mount()
+                    for new_ds in new_jail.get_dependents(depth=None):
+                        if not new_ds.mounted:
+                            new_ds.mount()
                         new_ds.promote()
 
                     # Easier.
@@ -2978,13 +2678,11 @@ class IOCJson(IOCConfiguration):
                         f"@{tag}"
                     ])
 
-                    try:
-                        # The childern will also inherit this
-                        self.zfs_set_property(f"{new_jail_parent_ds}/data",
-                                              "jailed", "on")
-                    except libzfs.ZFSException:
-                        # No data dataset exists
-                        pass
+                    new_jail_parent_ds_obj = Dataset(
+                        os.path.join(new_jail_parent_ds, 'data')
+                    )
+                    if new_jail_parent_ds_obj.exists:
+                        new_jail_parent_ds_obj.set_property('jailed', 'on')
 
                     for line in fileinput.input(
                             f"{self.iocroot}/jails/{tag}/root/etc/rc.conf",
@@ -2999,18 +2697,7 @@ class IOCJson(IOCConfiguration):
                                 inplace=1):
                             print(line.replace(f'{uuid}', f'{tag}').rstrip())
 
-                    # Cleanup old datasets, dependents is like
-                    # children_recursive but in reverse, useful for root/*
-                    # datasets
-
-                    for old_ds in jail.dependents:
-                        if old_ds.type == libzfs.DatasetType.FILESYSTEM:
-                            old_ds.umount(force=True)
-
-                        old_ds.delete()
-
-                    jail.umount(force=True)
-                    jail.delete()
+                    jail.destroy(recursive=True, force=True)
 
                     try:
                         shutil.rmtree(f"{self.iocroot}/jails/{uuid}")
@@ -3021,14 +2708,13 @@ class IOCJson(IOCConfiguration):
 
                     # Cleanup our snapshot from the cloning process
 
-                    for snap in new_jail.snapshots_recursive:
-                        snap_name = snap.name.rsplit("@", 1)[1]
+                    for snap in new_jail.snapshots_recursive():
+                        snap_name = snap.name
 
                         if snap_name == tag:
-                            s = self.zfs.get_snapshot(snap.name)
-                            s.delete()
+                            snap.destroy()
 
-                except libzfs.ZFSException:
+                except Exception:
                     # A template, already renamed to a TAG
                     pass
 
