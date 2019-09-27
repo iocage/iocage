@@ -1051,7 +1051,7 @@ fingerprint: {fingerprint}
             silent=self.silent)
         self.pull_clone_git_repo()
 
-        plugin_conf = self.__load_plugin_json()
+        plugin_conf = self._load_plugin_json()
         self.__check_manifest__(plugin_conf)
 
         if plugin_conf['artifact']:
@@ -1235,7 +1235,7 @@ fingerprint: {fingerprint}
             silent=self.silent)
         self.pull_clone_git_repo()
 
-        plugin_conf = self.__load_plugin_json()
+        plugin_conf = self._load_plugin_json()
         self.__check_manifest__(plugin_conf)
         plugin_release = plugin_conf["release"]
         iocage_lib.ioc_common.check_release_newer(
@@ -1309,7 +1309,7 @@ fingerprint: {fingerprint}
         iocage.stop()
         iocage.rollback(name)
 
-    def __load_plugin_json(self):
+    def _load_plugin_json(self):
         """Load the plugins configuration"""
         plugin_name = self.plugin.rsplit('_', 1)[0]
         _json = os.path.join(self.git_destination, f'{plugin_name}.json')
