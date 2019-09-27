@@ -1309,6 +1309,26 @@ fingerprint: {fingerprint}
         iocage.stop()
         iocage.rollback(name)
 
+    def _plugin_json_file(self):
+        plugin_name = self.plugin.rsplit('_', 1)[0]
+        try:
+            with open(
+                os.path.join(
+                    self.iocroot, 'jails', plugin_name, f'{plugin_name}.json'
+                ), 'r'
+            ) as f:
+                manifest = json.loads(f.read())
+        except Exception:
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message': f'Failed retrieving {plugin_name} json'
+                },
+                _callback=self.callback
+            )
+        else:
+            return manifest
+
     def _load_plugin_json(self):
         """Load the plugins configuration"""
         plugin_name = self.plugin.rsplit('_', 1)[0]
