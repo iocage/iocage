@@ -514,22 +514,25 @@ class IOCFetch:
         files_left = self.files_left.copy()
 
         if os.path.isdir(f"{self.iocroot}/download/{self.release}"):
-            os.chdir(f"{self.iocroot}/download/{self.release}")
+            release_download_path = os.path.join(
+                self.iocroot, 'download', self.release
+            )
 
-            for _, _, files in os.walk("."):
-                if "MANIFEST" not in files:
-                    if self.server == "https://download.freebsd.org":
-                        iocage_lib.ioc_common.logit(
-                            {
-                                'level': 'INFO',
-                                'message': 'MANIFEST missing, downloading one'
-                            },
-                            _callback=self.callback,
-                            silent=self.silent)
-                        self.fetch_download(['MANIFEST'], missing=True)
+            if 'MANIFEST' not in os.listdir(release_download_path) and \
+                    self.server == 'https://download.freebsd.org':
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'INFO',
+                        'message': 'MANIFEST missing, downloading one'
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
+                self.fetch_download(['MANIFEST'], missing=True)
 
             try:
-                with open("MANIFEST", "r") as _manifest:
+                with open(
+                    os.path.join(release_download_path, 'MANIFEST'), 'r'
+                ) as _manifest:
                     for line in _manifest:
                         col = line.split("\t")
                         hashes[col[0]] = col[1]
@@ -548,7 +551,9 @@ class IOCFetch:
                         silent=self.silent)
 
                 self.fetch_download(['MANIFEST'], missing=True)
-                with open("MANIFEST", "r") as _manifest:
+                with open(
+                    os.path.join(release_download_path, 'MANIFEST'), 'r'
+                ) as _manifest:
                     for line in _manifest:
                         col = line.split("\t")
                         hashes[col[0]] = col[1]
@@ -568,7 +573,9 @@ class IOCFetch:
 
                 if f in _list:
                     try:
-                        with open(f, "rb") as txz:
+                        with open(
+                            os.path.join(release_download_path, f), 'rb'
+                        ) as txz:
                             buf = txz.read(hash_block)
 
                             while len(buf) > 0:
@@ -654,7 +661,9 @@ class IOCFetch:
                 ds.mount()
 
         if missing or fresh:
-            os.chdir(f"{self.iocroot}/download/{self.release}")
+            release_download_path = os.path.join(
+                self.iocroot, 'download', self.release
+            )
 
             for f in _list:
                 if self.hardened:
@@ -688,7 +697,7 @@ class IOCFetch:
                 if not status:
                     r.raise_for_status()
 
-                with open(f, "wb") as txz:
+                with open(os.path.join(release_download_path, f), 'wb') as txz:
                     file_size = int(r.headers['Content-Length'])
                     chunk_size = 1024 * 1024
                     total = file_size / chunk_size
