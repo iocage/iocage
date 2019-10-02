@@ -236,17 +236,6 @@ class IOCFetch:
                     _callback=self.callback,
                     silent=self.silent)
 
-            try:
-                os.chdir(f"{self.root_dir}/{self.release}")
-            except OSError as err:
-                iocage_lib.ioc_common.logit(
-                    {
-                        "level": "EXCEPTION",
-                        "message": err
-                    },
-                    _callback=self.callback,
-                    silent=self.silent)
-
             dataset = f"{self.iocroot}/download/{self.release}"
             pool_dataset = f"{self.pool}/iocage/download/{self.release}"
 
@@ -258,7 +247,8 @@ class IOCFetch:
                 })
 
             for f in self.files:
-                if not os.path.isfile(f):
+                file_path = os.path.join(self.root_dir, self.release, f)
+                if not os.path.isfile(file_path):
 
                     ds = Dataset(pool_dataset)
                     ds.destroy(recursive=True, force=True)
@@ -287,7 +277,7 @@ class IOCFetch:
                     },
                     _callback=self.callback,
                     silent=self.silent)
-                shutil.copy(f, dataset)
+                shutil.copy(file_path, dataset)
 
                 if f != "MANIFEST":
                     iocage_lib.ioc_common.logit(
