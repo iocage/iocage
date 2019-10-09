@@ -1299,18 +1299,14 @@ class IOCage:
             self.jail, compression_algo=compression_algo, path=path
         )
 
-    def list(self,
-             lst_type,
-             header=False,
-             long=False,
-             sort="name",
-             uuid=None,
-             plugin=False,
-             quick=False):
+    def list(
+        self, lst_type, header=False, long=False, sort='name', uuid=None,
+        plugin=False, quick=False, **kwargs
+    ):
         """Returns a list of lst_type"""
 
         if lst_type == "jid":
-            return ioc_list.IOCList().list_get_jid(uuid)
+            return ioc_list.IOCList(**kwargs).list_get_jid(uuid)
 
         return ioc_list.IOCList(
             lst_type,
@@ -1319,7 +1315,8 @@ class IOCage:
             sort,
             plugin=plugin,
             quick=quick,
-            silent=self.silent
+            silent=self.silent,
+            **kwargs
         ).list_datasets()
 
     def rename(self, new_name):

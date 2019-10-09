@@ -46,9 +46,10 @@ class IOCList(object):
         JID UID BOOT STATE TYPE IP4 RELEASE
     """
 
-    def __init__(self, lst_type="all", hdr=True, full=False, _sort=None,
-                 silent=False, callback=None,
-                 plugin=False, quick=False):
+    def __init__(
+        self, lst_type='all', hdr=True, full=False, _sort=None, silent=False,
+        callback=None, plugin=False, quick=False, **kwargs
+    ):
         self.list_type = lst_type
         self.header = hdr
         self.full = full
@@ -59,6 +60,7 @@ class IOCList(object):
         self.basejail_only = False if self.list_type != 'basejail' else True
         self.plugin = plugin
         self.quick = quick
+        self.plugin_data = kwargs.get('plugin_data', False)
 
     def list_datasets(self):
         """Lists the datasets of given type."""
@@ -455,6 +457,10 @@ class IOCList(object):
                 jail_list.append([jid, uuid, boot, state, jail_type,
                                   full_release, full_ip4, ip6, template,
                                   admin_portal, doc_url])
+                if self.plugin_data:
+                    jail_list[-1].extend([
+                        conf['plugin_name'], conf['plugin_repository']
+                    ])
             elif self.full:
                 jail_list.append([jid, uuid, boot, state, jail_type,
                                   full_release, full_ip4, ip6, template,
