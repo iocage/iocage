@@ -32,6 +32,7 @@ import uuid as _uuid
 
 import iocage_lib.ioc_common
 import iocage_lib.ioc_json
+import iocage_lib.ioc_plugin
 import texttable
 
 from iocage_lib.dataset import Dataset
@@ -53,7 +54,9 @@ class IOCList(object):
         self.list_type = lst_type
         self.header = hdr
         self.full = full
-        self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
+        self.iocjson = iocage_lib.ioc_json.IOCJson()
+        self.pool = self.iocjson.pool
+        self.iocroot = self.iocjson.iocroot
         self.sort = _sort
         self.silent = silent
         self.callback = callback
@@ -187,6 +190,7 @@ class IOCList(object):
         """List all jails."""
         self.full = True if self.plugin else self.full
         jail_list = []
+        plugin_index_data = {}
 
         for jail in jails:
             try:
@@ -458,8 +462,23 @@ class IOCList(object):
                                   full_release, full_ip4, ip6, template,
                                   admin_portal, doc_url])
                 if self.plugin_data:
+                    if conf['plugin_repository'] not in plugin_index_data:
+                        repo_obj = iocage_lib.ioc_plugin.IOCPlugin(
+                            git_repository=conf['plugin_repository']
+                        )
+                        if not os.path.exists(repo_obj.git_destination):
+                            repo_obj.pull_clone_git_repo()
+                        with open(
+                            os.path.join(repo_obj.git_destination, 'INDEX')
+                        ) as f:
+                            plugin_index_data[conf['plugin_repository']] = \
+                                json.loads(f.read())
+
                     jail_list[-1].extend([
-                        conf['plugin_name'], conf['plugin_repository']
+                        conf['plugin_name'], conf['plugin_repository'],
+                        plugin_index_data[conf['plugin_repository']].get(
+                            conf['plugin_name'], {}
+                        ).get('primary_pkg')
                     ])
             elif self.full:
                 jail_list.append([jid, uuid, boot, state, jail_type,
