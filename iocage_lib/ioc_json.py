@@ -655,9 +655,9 @@ class IOCConfiguration:
                 conf[p] = 1 if iocage_lib.ioc_common.check_truthy(v) else 0
 
         if conf.get('type') in ('plugin', 'pluginv2'):
+            official_repo = 'https://github.com/freenas/iocage-ix-plugins.git'
             if conf.get('plugin_repository', 'none') == 'none':
-                conf['plugin_repository'] = \
-                    'https://github.com/freenas/iocage-ix-plugins.git'
+                conf['plugin_repository'] = official_repo
 
             if conf.get('plugin_name', 'none') == 'none':
                 jail_path = os.path.join(
@@ -701,6 +701,14 @@ class IOCConfiguration:
                 'plugin_name', 'none'
             ) == 'none':
                 conf['plugin_name'] = conf['host_hostuuid'].rsplit('_', 1)[0]
+
+            if conf['plugin_name'] in (
+                'channels-dvr', 'dnsmasq', 'homebridge', 'irssi', 'madsonic',
+                'openvpn', 'quasselcore', 'rtorrent-flood', 'sickchill',
+                'unificontroller', 'unificontroller-lts', 'weechat', 'xmrig',
+            ) and conf['plugin_repository'] in official_repo:
+                conf['plugin_repository'] = \
+                    'https://github.com/ix-plugin-hub/iocage-plugin-index.git'
 
         return True if original_conf != conf else False
 
