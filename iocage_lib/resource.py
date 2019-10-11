@@ -12,10 +12,15 @@ class Resource:
 
     def __init__(self, name):
         self.resource_name = self.name = name
+        self._properties = None
 
     @property
     def properties(self):
-        return properties(self.resource_name, self.zfs_resource)
+        if not self._properties:
+            self._properties = properties(
+                self.resource_name, self.zfs_resource
+            )
+        return self._properties
 
     def set_property(self, prop, value):
         set_property(self.resource_name, prop, value, self.zfs_resource)
