@@ -2,6 +2,8 @@ import itertools
 import os
 import subprocess
 
+from collections import defaultdict
+
 
 def run(command, **kwargs):
     kwargs.setdefault('stdout', subprocess.PIPE)
@@ -53,6 +55,25 @@ def properties(dataset, resource_type='zfs'):
         ]).stdout.split('\n')
         if v
     }
+
+
+def all_properties(path='', resource_type='zfs', depth=None):
+    flags = []
+    if depth:
+        flags.extend(['-d', str(depth)])
+
+    data = run(list(filter(
+        bool, [
+            resource_type, 'get', '-H', '-o', 'name,property,value',
+            *flags, 'all', path
+        ]
+    ))).stdout.split('\n')
+    fs = defaultdict(dict)
+    for line in filter(bool, data):
+        name, prop = line.split()[:2]
+        fs[name.strip()][prop.strip()] = line.split(maxsplit=2)[-1].strip()
+
+    return fs
 
 
 def dataset_properties(dataset):
