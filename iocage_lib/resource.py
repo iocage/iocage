@@ -10,9 +10,10 @@ class Resource:
     # TODO: Let's also rethink how best we should handle this in the future
     zfs_resource = NotImplementedError
 
-    def __init__(self, name):
+    def __init__(self, name, cache=True):
         self.resource_name = self.name = name
         self._properties = None
+        self.cache = cache
 
     @property
     def properties(self):

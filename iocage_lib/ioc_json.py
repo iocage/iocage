@@ -1304,7 +1304,7 @@ class IOCJson(IOCConfiguration):
 
         self.force = True if force_env == "TRUE" else False
 
-    def get_full_config(self):
+    def get_full_config(self, location=None):
         d_conf = self.default_config
         conf, write = self.json_load()
         fix_write = self.fix_properties(conf)
@@ -1415,16 +1415,17 @@ class IOCJson(IOCConfiguration):
 
         self.json_write(key_and_value)
 
-    def json_load(self):
+    def json_load(self, location=None):
         """Load the JSON at the location given. Returns a JSON object."""
-        jail_type, jail_uuid = self.location.rsplit("/", 2)[-2:]
+        location = location or self.location
+        jail_type, jail_uuid = location.rsplit("/", 2)[-2:]
         full_uuid = jail_uuid  # Saves jail_uuid for legacy ZFS migration
         legacy_short = False
 
         jail_dataset = Dataset(
             os.path.join(self.pool, 'iocage', jail_type, jail_uuid)
         )
-        if not jail_dataset.exists:
+        if not os.path.join(self.iocroot, 'jails', ):
             if os.path.isfile(os.path.join(self.location, 'config')):
                 iocage_lib.ioc_common.logit(
                     {
