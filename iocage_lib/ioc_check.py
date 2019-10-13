@@ -29,6 +29,7 @@ import shutil
 import iocage_lib.ioc_common
 import iocage_lib.ioc_json
 
+from iocage_lib.cache import cache
 from iocage_lib.dataset import Dataset
 from iocage_lib.zfs import ZFSException
 
@@ -37,7 +38,11 @@ class IOCCheck(object):
 
     """Checks if the required iocage datasets are present"""
 
-    def __init__(self, silent=False, callback=None, migrate=False):
+    def __init__(
+        self, silent=False, callback=None, migrate=False, reset_cache=False,
+    ):
+        if reset_cache:
+            cache.reset()
         self.pool = iocage_lib.ioc_json.IOCJson(
             silent=silent,
             checking_datasets=True
