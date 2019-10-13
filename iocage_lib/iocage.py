@@ -340,7 +340,7 @@ class IOCage:
 
     def activate(self, zpool):
         """Activates the zpool for iocage usage"""
-        zpool = Pool(zpool)
+        zpool = Pool(zpool, cache=False)
         if not zpool.exists:
             ioc_common.logit(
                 {
