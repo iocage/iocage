@@ -54,6 +54,10 @@ class ListableResource(collections.abc.Iterable):
 
     resource = NotImplemented
 
+    def __init__(self, cache=True):
+        super().__init__()
+        self.cache = cache
+
 
 class ZFSListableResource(ListableResource):
 
