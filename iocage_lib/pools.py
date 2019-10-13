@@ -50,7 +50,9 @@ class Pool(Resource):
                 ds.set_property('comment', '-')
 
     def deactivate_pool(self):
-        Dataset(self.name, cache=self.cache).set_property(IOCAGE_POOL_PROP, 'no')
+        Dataset(self.name, cache=self.cache).set_property(
+            IOCAGE_POOL_PROP, 'no'
+        )
         self.comment_check()
 
     def __eq__(self, other):

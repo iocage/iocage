@@ -17,7 +17,7 @@ class Resource:
 
     @property
     def properties(self):
-        if not self._properties:
+        if not self._properties or not self.cache:
             self._properties = properties(
                 self.resource_name, self.zfs_resource
             )
