@@ -24,6 +24,7 @@
 """iocage fetch module."""
 import hashlib
 import logging
+import re
 import os
 import shutil
 import subprocess as su
@@ -54,7 +55,7 @@ class IOCFetch:
 
     def __init__(self,
                  release,
-                 server="download.freebsd.org",
+                 server=None,
                  user="anonymous",
                  password="anonymous@",
                  auth=None,
@@ -76,7 +77,7 @@ class IOCFetch:
         self.password = password
         self.auth = auth
 
-        if release and (not _file and server == 'download.freebsd.org'):
+        if release and (not _file and server is None):
             self.release = release.upper()
         else:
             self.release = release
@@ -300,12 +301,22 @@ class IOCFetch:
         """
 
         if self.hardened:
-            if self.server == "download.freebsd.org":
+            if self.server is None:
                 self.server = "http://jenkins.hardenedbsd.org"
                 rdir = "builds"
 
-        if self.root_dir is None:
-            self.root_dir = f"ftp/releases/{self.arch}"
+        md = re.match("([0-9]+)[.]([0-9]+)-RELEASE", self.release)
+        if md and (int(md[1]) < 11 or (int(md[1]) == 11 and int(md[2]) < 2)):
+            if self.server is None:
+                self.server = "ftp-archive.freebsd.org"
+            if self.root_dir is None:
+                self.root_dir = \
+                    f"/pub/FreeBSD-Archive/old-releases/{self.arch}"
+        else:
+            if self.server is None:
+                self.server = "download.freebsd.org"
+            if self.root_dir is None:
+                self.root_dir = f"ftp/releases/{self.arch}"
 
         if self.auth and "https" not in self.server:
             self.server = "https://" + self.server

@@ -66,8 +66,7 @@ def validate_count(ctx, param, value):
     help="Specify the files to fetch from the mirror."
 )
 @click.option(
-    "--server", "-s", default="download.freebsd.org",
-    help="Server to fetch from."
+    "--server", "-s", help="Server to fetch from."
 )
 @click.option(
     '--git_repository', '-g',
