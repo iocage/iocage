@@ -1,5 +1,6 @@
 import collections.abc
 
+from iocage_lib.cache import cache as iocage_cache
 from iocage_lib.zfs import (
     properties, get_dependents, set_property,
     iocage_activated_dataset
@@ -24,6 +25,7 @@ class Resource:
         return self._properties
 
     def set_property(self, prop, value):
+        iocage_cache.reset()
         set_property(self.resource_name, prop, value, self.zfs_resource)
 
     def __bool__(self):
