@@ -1,10 +1,14 @@
+from iocage_lib.cache import cache
 from iocage_lib.ioc_exceptions import PoolNotActivated
 from iocage_lib.resource import Resource, ListableResource
 from iocage_lib.zfs import (
-    list_pools, IOCAGE_POOL_PROP, pool_health, get_dependents
+    list_pools, IOCAGE_POOL_PROP, get_dependents
 )
 
 import iocage_lib.dataset as dataset
+
+from copy import deepcopy
+
 
 Dataset = dataset.Dataset
 
@@ -13,13 +17,20 @@ class Pool(Resource):
 
     zfs_resource = 'zpool'
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.cache:
+            self._properties = deepcopy(cache.pools.get(self.resource_name))
+
     @property
     def active(self):
-        return Dataset(self.name).properties.get(IOCAGE_POOL_PROP) == 'yes'
+        return Dataset(self.name, cache=self.cache).properties.get(
+            IOCAGE_POOL_PROP
+        ) == 'yes'
 
     @property
     def health(self):
-        return pool_health(self.name)
+        return self.properties['health']
 
     def activate_pool(self):
         if self.health != 'ONLINE':
@@ -39,7 +50,9 @@ class Pool(Resource):
                 ds.set_property('comment', '-')
 
     def deactivate_pool(self):
-        Dataset(self.name).set_property(IOCAGE_POOL_PROP, 'no')
+        Dataset(self.name, cache=self.cache).set_property(
+            IOCAGE_POOL_PROP, 'no'
+        )
         self.comment_check()
 
     def __eq__(self, other):
@@ -56,12 +69,12 @@ class Pool(Resource):
 
     @property
     def exists(self):
-        return Dataset(self.name).exists
+        return Dataset(self.name, cache=self.cache).exists
 
     @property
     def datasets(self):
         for d in get_dependents(self.name):
-            yield dataset.Dataset(d)
+            yield dataset.Dataset(d, cache=self.cache)
 
 
 class PoolListableResource(ListableResource):
@@ -69,5 +82,5 @@ class PoolListableResource(ListableResource):
     resource = Pool
 
     def __iter__(self):
-        for p in list_pools():
-            yield self.resource(p)
+        for p in (list_pools() if not self.cache else cache.pools):
+            yield self.resource(p, cache=self.cache)

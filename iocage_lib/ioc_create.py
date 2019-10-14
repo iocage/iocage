@@ -42,6 +42,7 @@ import dns.resolver
 import dns.exception
 import shutil
 
+from iocage_lib.cache import cache
 from iocage_lib.dataset import Dataset
 
 
@@ -54,6 +55,7 @@ class IOCCreate(object):
                  short=False, basejail=False, thickjail=False, empty=False,
                  uuid=None, clone=False, thickconfig=False,
                  clone_basejail=False, callback=None):
+        cache.reset()
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage_lib.ioc_json.IOCJson(self.pool).json_get_value(
             "iocroot")
@@ -356,6 +358,7 @@ class IOCCreate(object):
                 except su.CalledProcessError as err:
                     raise RuntimeError(err.output.decode('utf-8').rstrip())
 
+        cache.reset()
         iocjson = iocage_lib.ioc_json.IOCJson(location, silent=True)
 
         # This test is to avoid the same warnings during install_packages.

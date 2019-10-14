@@ -46,6 +46,7 @@ import iocage_lib.ioc_upgrade as ioc_upgrade
 import iocage_lib.ioc_debug as ioc_debug
 import iocage_lib.ioc_exceptions as ioc_exceptions
 
+from iocage_lib.cache import cache
 from iocage_lib.dataset import Dataset
 from iocage_lib.pools import Pool, PoolListableResource
 from iocage_lib.release import Release
@@ -76,20 +77,19 @@ class PoolAndDataset:
 
 class IOCage:
 
-    def __init__(self,
-                 jail=None,
-                 rc=False,
-                 callback=None,
-                 silent=False,
-                 activate=False,
-                 skip_jails=False,
-                 ):
+    def __init__(
+        self, jail=None, rc=False, callback=None, silent=False,
+        activate=False, skip_jails=False, reset_cache=False,
+    ):
         self.rc = rc
         self.silent = silent
 
         # FreeNAS won't be entering through the CLI, so we set sane defaults
         os.environ.get("IOCAGE_SKIP", "FALSE")
         os.environ.get("IOCAGE_FORCE", "TRUE")
+
+        if reset_cache:
+            self.reset_cache()
 
         if not activate:
             self.pool = PoolAndDataset().get_pool()
@@ -105,6 +105,10 @@ class IOCage:
         self._all = True if self.jail and 'ALL' in self.jail else False
         self.callback = callback
         self.is_depend = False
+
+    @staticmethod
+    def reset_cache():
+        cache.reset()
 
     def __all__(self, jail_order, action, ignore_exception=False):
         # So we can properly start these.
@@ -340,7 +344,7 @@ class IOCage:
 
     def activate(self, zpool):
         """Activates the zpool for iocage usage"""
-        zpool = Pool(zpool)
+        zpool = Pool(zpool, cache=False)
         if not zpool.exists:
             ioc_common.logit(
                 {
@@ -1299,18 +1303,14 @@ class IOCage:
             self.jail, compression_algo=compression_algo, path=path
         )
 
-    def list(self,
-             lst_type,
-             header=False,
-             long=False,
-             sort="name",
-             uuid=None,
-             plugin=False,
-             quick=False):
+    def list(
+        self, lst_type, header=False, long=False, sort='name', uuid=None,
+        plugin=False, quick=False, **kwargs
+    ):
         """Returns a list of lst_type"""
 
         if lst_type == "jid":
-            return ioc_list.IOCList().list_get_jid(uuid)
+            return ioc_list.IOCList(**kwargs).list_get_jid(uuid)
 
         return ioc_list.IOCList(
             lst_type,
@@ -1319,7 +1319,8 @@ class IOCage:
             sort,
             plugin=plugin,
             quick=quick,
-            silent=self.silent
+            silent=self.silent,
+            **kwargs
         ).list_datasets()
 
     def rename(self, new_name):

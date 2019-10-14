@@ -1,3 +1,4 @@
+from iocage_lib.cache import cache
 from iocage_lib.resource import Resource, ListableResource
 from iocage_lib.zfs import (
     ZFSException, create_dataset, get_dependents, destroy_zfs_resource,
@@ -10,6 +11,8 @@ from iocage_lib.zfs import (
 import contextlib
 import os
 
+from copy import deepcopy
+
 
 class Dataset(Resource):
 
@@ -21,18 +24,28 @@ class Dataset(Resource):
             # Probably absolute path has been provided, in this case
             # we try to find the name of the dataset, if we don't succeed,
             # we keep the value as it is
-            with contextlib.suppress(ZFSException):
-                self.resource_name = self.name = get_dataset_from_mountpoint(
-                    self.name
-                )
+            with contextlib.suppress(StopIteration, ZFSException):
+                if not self.cache:
+                    self.resource_name = self.name = \
+                        get_dataset_from_mountpoint(self.name)
+                else:
+                    self.resource_name = self.name = next((
+                        n for n, v in cache.datasets.items()
+                        if v.get('mountpoint') == self.name
+                    ))
+
+        if self.cache:
+            self._properties = deepcopy(cache.datasets.get(self.resource_name))
 
     def create(self, data):
+        cache.reset()
         return create_dataset({'name': self.resource_name, **data})
 
     def rename(self, new_name, options=None):
         result = rename_dataset(self.name, new_name, options)
         if result:
             self.name = self.resource_name = new_name
+            cache.reset()
         return result
 
     def create_snapshot(self, snap_name, options=None):
@@ -58,26 +71,30 @@ class Dataset(Resource):
 
     @property
     def exists(self):
-        return dataset_exists(self.resource_name)
+        return dataset_exists(self.resource_name) if not self.cache else \
+            self.resource_name in cache.datasets
 
     @property
     def mounted(self):
         return self.properties['mounted'] == 'yes'
 
-    def get_dependents(self, depth=1):
+    def get_dependents(self, depth=1, cache=True):
         for d in get_dependents(self.resource_name, depth):
-            yield Dataset(d)
+            yield Dataset(d, cache=cache)
 
     def destroy(self, recursive=False, force=False):
+        cache.reset()
         return destroy_zfs_resource(self.resource_name, recursive, force)
 
     def mount(self):
+        cache.reset()
         return mount_dataset(self.resource_name)
 
     def promote(self):
         return promote_dataset(self.resource_name)
 
     def umount(self, force=True):
+        cache.reset()
         return umount_dataset(self.resource_name, force)
 
 

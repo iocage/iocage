@@ -1,5 +1,6 @@
 import collections.abc
 
+from iocage_lib.cache import cache as iocage_cache
 from iocage_lib.zfs import (
     properties, get_dependents, set_property,
     iocage_activated_dataset
@@ -10,14 +11,21 @@ class Resource:
     # TODO: Let's also rethink how best we should handle this in the future
     zfs_resource = NotImplementedError
 
-    def __init__(self, name):
+    def __init__(self, name, cache=True):
         self.resource_name = self.name = name
+        self._properties = None
+        self.cache = cache
 
     @property
     def properties(self):
-        return properties(self.resource_name, self.zfs_resource)
+        if not self._properties or not self.cache:
+            self._properties = properties(
+                self.resource_name, self.zfs_resource
+            )
+        return self._properties
 
     def set_property(self, prop, value):
+        iocage_cache.reset()
         set_property(self.resource_name, prop, value, self.zfs_resource)
 
     def __bool__(self):
@@ -47,6 +55,10 @@ class Resource:
 class ListableResource(collections.abc.Iterable):
 
     resource = NotImplemented
+
+    def __init__(self, cache=True):
+        super().__init__()
+        self.cache = cache
 
 
 class ZFSListableResource(ListableResource):
