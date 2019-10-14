@@ -35,15 +35,17 @@ class Dataset(Resource):
                     ))
 
         if self.cache:
-            self._properties = deepcopy(cache.datasets[self.resource_name])
+            self._properties = deepcopy(cache.datasets.get(self.resource_name))
 
     def create(self, data):
+        cache.reset()
         return create_dataset({'name': self.resource_name, **data})
 
     def rename(self, new_name, options=None):
         result = rename_dataset(self.name, new_name, options)
         if result:
             self.name = self.resource_name = new_name
+            cache.reset()
         return result
 
     def create_snapshot(self, snap_name, options=None):
@@ -81,15 +83,18 @@ class Dataset(Resource):
             yield Dataset(d, cache=cache)
 
     def destroy(self, recursive=False, force=False):
+        cache.reset()
         return destroy_zfs_resource(self.resource_name, recursive, force)
 
     def mount(self):
+        cache.reset()
         return mount_dataset(self.resource_name)
 
     def promote(self):
         return promote_dataset(self.resource_name)
 
     def umount(self, force=True):
+        cache.reset()
         return umount_dataset(self.resource_name, force)
 
 

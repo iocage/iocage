@@ -20,7 +20,7 @@ class Pool(Resource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.cache:
-            self._properties = deepcopy(cache.pools[self.resource_name])
+            self._properties = deepcopy(cache.pools.get(self.resource_name))
 
     @property
     def active(self):
@@ -45,7 +45,7 @@ class Pool(Resource):
         if self.properties.get('comment') == 'iocage':
             self.set_property('comment', '-')
         else:
-            ds = Dataset(self.name, cache=False)
+            ds = Dataset(self.name)
             if ds.properties.get('comment') == 'iocage':
                 ds.set_property('comment', '-')
 
@@ -59,7 +59,7 @@ class Pool(Resource):
         return other.name == self.name
 
     def create_dataset(self, data):
-        ds = Dataset(data['name'], cache=False)
+        ds = Dataset(data['name'])
         ds.create(data)
         return ds
 
@@ -74,7 +74,7 @@ class Pool(Resource):
     @property
     def datasets(self):
         for d in get_dependents(self.name):
-            yield dataset.Dataset(d)
+            yield dataset.Dataset(d, cache=self.cache)
 
 
 class PoolListableResource(ListableResource):
