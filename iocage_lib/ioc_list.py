@@ -474,11 +474,13 @@ class IOCList(object):
                             plugin_index_data[conf['plugin_repository']] = \
                                 json.loads(f.read())
 
+                    index_plugin_conf = plugin_index_data[
+                        conf['plugin_repository']
+                    ].get(conf['plugin_name'], {})
                     jail_list[-1].extend([
                         conf['plugin_name'], conf['plugin_repository'],
-                        plugin_index_data[conf['plugin_repository']].get(
-                            conf['plugin_name'], {}
-                        ).get('primary_pkg')
+                        index_plugin_conf.get('primary_pkg'),
+                        index_plugin_conf.get('category'),
                     ])
             elif self.full:
                 jail_list.append([jid, uuid, boot, state, jail_type,

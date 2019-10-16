@@ -201,6 +201,7 @@ class IOCPlugin(object):
         for plugin in index:
             plugin_index[plugin] = {
                 'primary_pkg': index[plugin].get('primary_pkg'),
+                'category': index[plugin].get('category'),
             }
             with open(
                 os.path.join(plugin_index_path, index[plugin]['MANIFEST']), 'r'
@@ -900,6 +901,7 @@ fingerprint: {fingerprint}
                     plugin_dict.update({
                         'license': plugins[k].get('license', ''),
                         'official': plugins[k].get('official', False),
+                        'category': plugins[k].get('category', None),
                     })
 
                 if icon:
