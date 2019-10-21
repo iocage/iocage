@@ -3,7 +3,7 @@ import collections.abc
 from iocage_lib.cache import cache as iocage_cache
 from iocage_lib.zfs import (
     properties, get_dependents, set_property,
-    iocage_activated_dataset
+    iocage_activated_dataset, inherit_property
 )
 
 
@@ -27,6 +27,10 @@ class Resource:
     def set_property(self, prop, value):
         iocage_cache.reset()
         set_property(self.resource_name, prop, value, self.zfs_resource)
+
+    def inherit_property(self, prop):
+        iocage_cache.reset()
+        inherit_property(self.resource_name, prop)
 
     def __bool__(self):
         return self.exists
