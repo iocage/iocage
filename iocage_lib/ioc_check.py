@@ -71,11 +71,7 @@ class IOCCheck(object):
         if not self.iocage_dataset.path.startswith(
             self.pool_root_dataset.path
         ):
-            self.iocage_dataset.set_property(
-                'mountpoint', os.path.join(
-                    self.pool_root_dataset.path, 'iocage'
-                )
-            )
+            self.iocage_dataset.inherit_property('mountpoint')
 
     def __check_datasets__(self):
         """
