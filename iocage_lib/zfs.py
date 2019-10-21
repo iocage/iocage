@@ -223,3 +223,7 @@ def clone_snapshot(snapshot, dataset):
 
 def promote_dataset(dataset):
     return run(['zfs', 'promote', dataset]).returncode == 0
+
+
+def inherit_property(dataset, ds_property):
+    return run(['zfs', 'inherit', ds_property, dataset]).returncode == 0
