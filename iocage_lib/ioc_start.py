@@ -587,9 +587,11 @@ class IOCStart(object):
             "IOCAGE_NAME": f"ioc-{self.uuid}",
         }
 
-        start = su.Popen(start_cmd, stderr=su.PIPE if not debug_mode else None,
-                         stdout=su.PIPE if not debug_mode else None,
-                         env=start_env)
+        start = su.Popen(
+            start_cmd, stderr=su.PIPE,
+            stdout=su.PIPE if not debug_mode else None,
+            env=start_env
+        )
 
         stdout_data, stderr_data = start.communicate()
 
