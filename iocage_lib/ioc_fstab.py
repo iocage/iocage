@@ -200,7 +200,7 @@ class IOCFstab(object):
                         'or is not a directory.'
                     )
             else:
-                if jail_root not in destination:
+                if not destination.startswith(jail_root):
                     if any(
                         pathlib.Path(i) in dest.parents for i in (
                             '/mnt/mnt', '/mnt/iocage', '/iocage'
