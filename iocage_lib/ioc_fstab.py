@@ -439,7 +439,8 @@ class IOCFstab(object):
                             _callback=self.callback,
                             silent=self.silent)
                     else:
-                        fstab.write(f'{line}\n')
+                        is_list = isinstance(line, list)
+                        fstab.write(f'{line[1] if is_list else line}\n')
 
             if not matched:
                 iocage_lib.ioc_common.logit({
