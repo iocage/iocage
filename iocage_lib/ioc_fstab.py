@@ -201,8 +201,11 @@ class IOCFstab(object):
                     )
             else:
                 if jail_root not in destination:
-                    if pathlib.Path('/mnt/iocage') in dest.parents or \
-                            pathlib.Path('/iocage') in dest.parents:
+                    if any(
+                        pathlib.Path(i) in dest.parents for i in (
+                            '/mnt/mnt', '/mnt/iocage', '/iocage'
+                        )
+                    ):
                         dst = str(dest).split('/iocage')[1]
                         dst = pathlib.Path(f'{self.iocroot}/{dst}')
 
@@ -228,8 +231,11 @@ class IOCFstab(object):
 
             if not source.is_dir():
                 if fstype == 'nullfs':
-                    if pathlib.Path('/mnt/iocage') in source.parents or \
-                            pathlib.Path('/iocage') in source.parents:
+                    if any(
+                        pathlib.Path(i) in source.parents for i in (
+                            '/mnt/mnt', '/mnt/iocage', '/iocage'
+                        )
+                    ):
                         src = str(source).split('/iocage')[1]
                         src = pathlib.Path(f'{self.iocroot}/{src}')
 
