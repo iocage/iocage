@@ -1074,7 +1074,7 @@ Only applies when
 and
 .Ql assign_localhost=1 .
 Assign the jail localhost IP address to a custom IP address instead
-of the first available 
+of the first available
 .Dq 127.0.0.#
 address.
 .Nm
@@ -1667,6 +1667,16 @@ Source:
 .Xr jail 8
 .It Pf allow_mount_procfs= Op 1 | 0
 Allow privileged users inside the jail to mount and unmount the procfs
+file system.
+This permission is effective only together with allow.mount and if
+enforce_statfs is set to a value lower than 2.
+.Pp
+Default: 0
+.Pp
+Source:
+.Xr jail 8
+.It Pf allow_mount_linprocfs= Op 1 | 0
+Allow privileged users inside the jail to mount and unmount the linprocfs
 file system.
 This permission is effective only together with allow.mount and if
 enforce_statfs is set to a value lower than 2.
