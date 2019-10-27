@@ -1512,11 +1512,29 @@ class IOCStart(object):
 
     def __add_nat__(self, nat_interface, forwards, backend='ipfw'):
         if backend == 'pf':
-            pf_conf = self.__add_nat_pf__(nat_interface, forwards)
-            pf = su.run(
-                ['pfctl', '-f', pf_conf], stdout=su.PIPE, stderr=su.PIPE
+
+            pf_nat_anchor = 'iocage_nat'
+            pf_rdr_anchor = 'iocage_rdr'
+            pf_anchors = su.run(
+                ['pfctl', '-sA'], stdout=su.PIPE, stderr=su.PIPE
             )
-            self.log.debug(f'pfctl -f {pf_conf} ran')
+            if set([pf_nat_anchor, pf_rdr_anchor]).issubset(set([l.strip().decode() for l in pf_anchors.stdout.splitlines()])):
+                self.log.debug(f'Found pf anchors {pf_nat_anchor} and {pf_rdr_anchor}')
+                pf_conf = self.__add_nat_pf__(nat_interface, forwards, anchors=True)
+                pf = su.run(
+                    ['pfctl',  '-a', pf_nat_anchor,'-f', pf_conf[0]], stdout=su.PIPE, stderr=su.PIPE
+                )
+                self.log.debug(f'pfctl -a {pf_nat_anchor} -f {pf_conf[0]} ran')
+                pf = su.run(
+                    ['pfctl',  '-a', pf_rdr_anchor,'-f', pf_conf[1]], stdout=su.PIPE, stderr=su.PIPE
+                )
+                self.log.debug(f'pfctl -a {pf_rdr_anchor} -f {pf_conf[1]} ran')
+            else:
+                pf_conf = self.__add_nat_pf__(nat_interface, forwards)
+                pf = su.run(
+                    ['pfctl', '-f', pf_conf[0]], stdout=su.PIPE, stderr=su.PIPE
+                )
+                self.log.debug(f'pfctl -f {pf_conf[0]} ran')
 
             if pf.returncode != 0:
                 iocage_lib.ioc_common.logit({
@@ -1543,8 +1561,8 @@ class IOCStart(object):
                     silent=self.silent,
                     exception=ioc_exceptions.CommandFailed)
 
-    def __add_nat_pf__(self, nat_interface, forwards):
-        pf_conf = '/tmp/iocage_nat_pf.conf'
+    def __add_nat_pf__(self, nat_interface, forwards, anchors=False):
+        nat_pf_conf = ['/tmp/iocage_nat_pf.conf', '/tmp/iocage_rdr_pf.conf']
         ip4_addr = self.ip4_addr.split('|')[1].rsplit('/')[0]
         nat_network = str(
             ipaddress.IPv4Network(f'{ip4_addr}/24', strict=False)
@@ -1569,8 +1587,8 @@ class IOCStart(object):
                 )
         self.log.debug(f'Forwards: {rdrs}')
 
-        with open(os.open(pf_conf, os.O_CREAT | os.O_RDWR), 'w+') as f:
-            self.log.debug(f'{pf_conf} opened')
+        with open(os.open(nat_pf_conf[0], os.O_CREAT | os.O_RDWR), 'w+') as f:
+            self.log.debug(f'{nat_pf_conf[0]} opened')
             for line in f.readlines():
                 line = line.rstrip()
                 if line.startswith('rdr') and ip4_addr not in line:
@@ -1580,14 +1598,32 @@ class IOCStart(object):
             for rule in rules:
                 f.write(f'{rule}\n')
                 self.log.debug(f'Wrote: {rule}')
-            for rdr in rdrs:
-                f.write(rdr)
-                self.log.debug(f'Wrote: {rdr}')
+            if not anchors:
+                for rdr in rdrs:
+                    f.write(rdr)
+                    self.log.debug(f'Wrote: {rdr}')
             f.truncate()
 
-        os.chmod(pf_conf, 0o755)
+        os.chmod(nat_pf_conf[0], 0o755)
 
-        return pf_conf
+        if anchors:
+            with open(os.open(nat_pf_conf[1], os.O_CREAT | os.O_RDWR), 'w+') as f:
+                self.log.debug(f'{nat_pf_conf[1]} opened')
+                for line in f.readlines():
+                    line = line.rstrip()
+                    if line.startswith('rdr') and ip4_addr not in line:
+                        rules.append(line)
+
+                f.seek(0)
+                if not anchors:
+                    for rdr in rdrs:
+                        f.write(rdr)
+                        self.log.debug(f'Wrote: {rdr}')
+                f.truncate()
+
+        os.chmod(nat_pf_conf[1], 0o755)
+
+        return nat_pf_conf
 
     def __add_nat_ipfw__(self, nat_interface, forwards):
         ipfw_conf = '/tmp/iocage_nat_ipfw.conf'
