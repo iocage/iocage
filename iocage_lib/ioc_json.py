@@ -444,8 +444,8 @@ class IOCConfiguration:
             # 1) Ensures multiple activated pools aren't present
             # 2) Activates first pool it finds until activate command has been
             #  issued already ( keeping old behavior )
-            # 3) Only activate if pool is not freenas-boot and iocage skip
-            # is false
+            # 3) Only activate if pool is not freenas-boot/boot-pool and
+            # iocage skip is false
             old = False
             matches = []
             zpools = list(PoolListableResource())
@@ -519,7 +519,7 @@ class IOCConfiguration:
                             silent=self.silent,
                             exception=ioc_exceptions.PoolNotActivated)
 
-                    if zpool == Pool('freenas-boot'):
+                    if zpool in (Pool('freenas-boot'), Pool('boot-pool')):
                         try:
                             zpool = zpools[1]
                         except IndexError:
