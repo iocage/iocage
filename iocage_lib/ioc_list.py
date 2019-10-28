@@ -481,6 +481,7 @@ class IOCList(object):
                         conf['plugin_name'], conf['plugin_repository'],
                         index_plugin_conf.get('primary_pkg'),
                         index_plugin_conf.get('category'),
+                        index_plugin_conf.get('maintainer'),
                     ])
             elif self.full:
                 jail_list.append([jid, uuid, boot, state, jail_type,
