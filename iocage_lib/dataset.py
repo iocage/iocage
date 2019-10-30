@@ -82,6 +82,13 @@ class Dataset(Resource):
         for d in get_dependents(self.resource_name, depth):
             yield Dataset(d, cache=cache)
 
+    @property
+    def locked(self):
+        return not self.mounted or (
+            self.properties.get('encryption', 'off') != 'off'
+            and self.properties.get('keystatus', 'available') != 'available'
+        )
+
     def destroy(self, recursive=False, force=False):
         cache.reset()
         return destroy_zfs_resource(self.resource_name, recursive, force)
