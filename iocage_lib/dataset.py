@@ -80,7 +80,17 @@ class Dataset(Resource):
 
     def get_dependents(self, depth=1, cache=True):
         for d in get_dependents(self.resource_name, depth):
-            yield Dataset(d, cache=cache)
+            ds = Dataset(d, cache=cache)
+            if ds.locked:
+                continue
+            yield ds
+
+    @property
+    def locked(self):
+        return not self.mounted or (
+            self.properties.get('encryption', 'off') != 'off'
+            and self.properties.get('keystatus', 'available') != 'available'
+        )
 
     def destroy(self, recursive=False, force=False):
         cache.reset()
