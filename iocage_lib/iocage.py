@@ -1520,7 +1520,7 @@ class IOCage:
             ioc_common.logit(
                 {
                     "level": "EXCEPTION",
-                    "message": f"{prop} is is missing a value!"
+                    "message": f"{prop} is missing a value!"
                 },
                 _callback=self.callback,
                 silent=self.silent)
