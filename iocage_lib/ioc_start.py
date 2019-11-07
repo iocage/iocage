@@ -273,10 +273,13 @@ class IOCStart(object):
                 silent=self.silent)
 
         if wants_dhcp:
-            self.__check_dhcp__()
+            self.__check_dhcp_or_accept_rtadv__(dhcp=True)
 
         if rtsold:
             self.__check_rtsold__()
+
+        if 'accept_rtadv' in self.ip6_addr:
+            self.__check_dhcp_or_accept_rtadv__(dhcp=False)
 
         if mount_procfs:
             su.Popen(
@@ -742,6 +745,18 @@ class IOCStart(object):
                     ['setfib', self.exec_fib, 'jexec', f'ioc-{self.uuid}']
                     + exec_start, None, unjailed=True, decode=True
                 )
+                if self.get('rtsold') or 'accept_rtadv' in self.ip6_addr:
+                    # rtsold(8) does not start even with rtsold_enable
+                    try:
+                        iocage_lib.ioc_exec.SilentExec(
+                            [
+                                'setfib', self.exec_fib, 'jexec',
+                                f'ioc-{self.uuid}', 'service', 'rtsold',
+                                'start'
+                            ], None, unjailed=True
+                        )
+                    except ioc_exceptions.CommandFailed:
+                        pass
             except ioc_exceptions.CommandFailed as e:
 
                 error = str(e)
@@ -1334,17 +1349,18 @@ class IOCStart(object):
 
         return mac_a, mac_b
 
-    def __check_dhcp__(self):
+    def __check_dhcp_or_accept_rtadv__(self, dhcp):
         # legacy behavior to enable it on every NIC
-        if self.conf['dhcp']:
+        if dhcp and self.conf['dhcp']:
             nic_list = self.get('interfaces').split(',')
             nics = list(map(lambda x: x.split(':')[0], nic_list))
         else:
             nics = []
-            for ip4 in self.ip4_addr.split(','):
-                nic, addr = ip4.rsplit('/', 1)[0].split('|')
+            check_var = 'DHCP' if dhcp else 'ACCEPT_RTADV'
+            for ip in (self.ip4_addr if dhcp else self.ip6_addr).split(','):
+                nic, addr = ip.rsplit('/', 1)[0].split('|')
 
-                if addr.upper() == 'DHCP':
+                if addr.upper() == check_var:
                     nics.append(nic)
 
         for nic in nics:
@@ -1352,10 +1368,16 @@ class IOCStart(object):
                 # Inside jails they are epairNb
                 nic = f"{nic.replace('vnet', 'epair')}b"
 
+            if dhcp:
+                cmd = f'ifconfig_{nic}=SYNCDHCP'
+            else:
+                cmd = f'ifconfig_{nic}_ipv6' \
+                      '=inet6 auto_linklocal accept_rtadv autoconf'
+
             su.run(
                 [
                     'sysrc', '-f', f'{self.path}/root/etc/rc.conf',
-                    f'ifconfig_{nic}=SYNCDHCP'
+                    cmd
                 ],
                 stdout=su.PIPE
             )
