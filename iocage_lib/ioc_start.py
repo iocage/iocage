@@ -939,10 +939,77 @@ class IOCStart(object):
 
             with ioc_exceptions.ignore_exceptions(KeyError):
                 for address in netifaces.ifaddresses(interface)[inet_mode]:
+                    # Each IP address that we find on an interface gets a few
+                    # entries in the current_ips list.
+                    #
+                    # This is because it's valid to pass in various different
+                    # types of address to jail(8) and we need to check them
+                    # all.
+                    #
+                    # IPv4:
+                    #  - 127.0.0.1
+                    #  - 127.0.0.1/8
+                    #  - 127.0.0.1/255.0.0.0
+                    # IPv6:
+                    #  - ::1
+                    #  - ::1/128
+
+                    if inet_mode == netifaces.AF_INET:
+                        # We use this to work out the prefix length for the
+                        # CIDR style entry.
+                        # Strict is disabled as we're passing in actual host
+                        # addresses.
+                        network = ipaddress.ip_network(
+                            "{addr}/{netmask}".format(
+                                addr=address['addr'],
+                                netmask=address['netmask'],
+                            ),
+                            strict=False,
+                        )
+
+                        # 127.0.0.1/8 style entry
+                        ip_cidr = "{addr}/{prefixlen}".format(
+                            addr=address['addr'],
+                            prefixlen=network.prefixlen,
+                        )
+
+                        # 127.0.0.1/255.0.0.0 style entry
+                        # This style isn't used for IPv6
+                        ip_netmask = "{addr}/{netmask}".format(
+                            addr=address['addr'],
+                            netmask=address['netmask'],
+                        )
+                        current_ips.append(ip_netmask)
+                    else:
+                        if '%' in address['addr']:
+                            # Skip link-local addresses as they don't appear to
+                            # work with jails (bug#206012).
+                            continue
+
+                        # The prefixlen is available right in the netmask for
+                        # IPv6 addresses.
+                        prefixlen = address['netmask'].split('/')[1]
+
+                        # ::1/128 style entry
+                        ip_cidr = "{addr}/{prefixlen}".format(
+                            addr=address['addr'],
+                            prefixlen=prefixlen,
+                        )
+
+                    # Add the CIDR style entry
+                    current_ips.append(ip_cidr)
+
+                    # Add a plain 127.0.0.1 / ::1 style entry.
                     current_ips.append(address['addr'])
 
+        # The incoming IP here could be in any of the valid jail(8) styles.
         for ip in _ip_addrs:
             if '|' not in ip:
+                # If | wasn't in an ip, it might exist on a current interface,
+                # so we check it against current_ips.
+                # If we don't find it in current_ips, we force the ip to
+                # contain the magic "iface|" prefix to bring it up on the
+                # default iface.
                 ip = ip if ip in current_ips else f'{def_iface}|{ip}'
 
             new_ips.append(ip)
