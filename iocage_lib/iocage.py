@@ -1751,24 +1751,11 @@ class IOCage:
             uuid, path = self.__check_jail_existence__()
             conf = ioc_json.IOCJson(path, silent=self.silent).json_get_value(
                 'all')
-            host_release = float(os.uname()[2].rsplit("-", 1)[0].rsplit("-",
-                                                                        1)[0])
             release = conf["release"]
 
             if release != "EMPTY":
                 release = float(release.rsplit("-", 1)[0].rsplit("-", 1)[0])
-
-                if host_release < release:
-                    ioc_common.logit(
-                        {
-                            "level":
-                            "EXCEPTION",
-                            "message":
-                            f"\nHost: {host_release} is not greater than"
-                            f" jail: {release}\nThis is unsupported."
-                        },
-                        _callback=self.callback,
-                        silent=self.silent)
+                ioc_common.check_release_newer(release, major_only=True)
 
             err, msg = self.__check_jail_type__(conf["type"], uuid)
             depends = conf["depends"].split()
@@ -1987,20 +1974,8 @@ class IOCage:
             return
 
         if release is not None:
-            host_release = float(os.uname()[2].rsplit("-", 1)[0].rsplit(
-                "-", 1)[0])
             _release = release.rsplit("-", 1)[0].rsplit("-", 1)[0]
-            _release = float(_release)
-
-            if host_release < _release:
-                ioc_common.logit({
-                    "level":
-                    "EXCEPTION",
-                    "message":
-                    f"\nHost: {host_release} is not greater than"
-                    f" target: {_release}\nThis is unsupported."
-                },
-                    _callback=self.callback)
+            ioc_common.check_release_newer(_release, major_only=True)
 
         uuid, path = self.__check_jail_existence__()
         root_path = f"{path}/root"
