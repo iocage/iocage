@@ -710,7 +710,7 @@ def get_host_release():
 
 
 def check_release_newer(
-    release, callback=None, silent=False, raise_error=True
+    release, callback=None, silent=False, raise_error=True, major_only=False
 ):
     """Checks if the host RELEASE is greater than the target release"""
     host_release = get_host_release()
@@ -718,8 +718,8 @@ def check_release_newer(
     if host_release == "Not a RELEASE":
         return
 
-    h_float = float(str(host_release).rsplit("-")[0])
-    r_float = float(str(release).rsplit("-")[0])
+    h_float = float(str(host_release).rsplit('.' if major_only else '-')[0])
+    r_float = float(str(release).rsplit('.' if major_only else '-')[0])
 
     if h_float < r_float and raise_error:
         logit(
