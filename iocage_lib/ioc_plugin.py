@@ -448,7 +448,7 @@ class IOCPlugin(object):
 
             if not os.path.isdir(f"{self.iocroot}/releases/{self.release}"):
                 iocage_lib.ioc_common.check_release_newer(
-                    self.release, self.callback, self.silent)
+                    self.release, self.callback, self.silent, major_only=True)
                 self.__fetch_release__(self.release)
 
         if conf["release"][:4].endswith("-"):
@@ -456,7 +456,7 @@ class IOCPlugin(object):
             release = conf["release"]
         else:
             iocage_lib.ioc_common.check_release_newer(
-                self.release, self.callback, self.silent)
+                self.release, self.callback, self.silent, major_only=True)
 
             try:
                 with open(
@@ -1241,7 +1241,7 @@ fingerprint: {fingerprint}
         self.__check_manifest__(plugin_conf)
         plugin_release = plugin_conf["release"]
         iocage_lib.ioc_common.check_release_newer(
-            plugin_release, self.callback, self.silent)
+            plugin_release, self.callback, self.silent, major_only=True)
 
         # We want the new json to live with the jail
         plugin_name = self.plugin.rsplit('_', 1)[0]

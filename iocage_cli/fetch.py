@@ -176,6 +176,6 @@ def cli(**kwargs):
             })
 
         if not _file:
-            ioc_common.check_release_newer(release)
+            ioc_common.check_release_newer(release, major_only=True)
 
     ioc.IOCage().fetch(**kwargs)
