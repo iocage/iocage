@@ -1006,57 +1006,57 @@ class IOCStart(object):
             # Let's setup default route as specified
             dhcp = self.get('dhcp')
             wants_dhcp = dhcp or 'DHCP' in self.ip4_addr.upper()
-            if not wants_dhcp and 'accept_rtadv' not in self.ip6_addr.lower():
-                for ip, default_route, ipv6 in filter(
-                    lambda v: v[0] != 'none' and v[1] != 'none',
-                    net_configs
-                ):
-                    # TODO: Scope/zone id should be investigated further
-                    #  to make sure no case is missed wrt this
-                    if ipv6 and '%' in default_route:
-                        # When we have ipv6, it is possible that default route
-                        # is "fe80::20d:b9ff:fe33:8716%interface0"
-                        # Now interface here is default gateway of the host
-                        # machine which the jail isn't aware of. In the jail
-                        # when adding default route, the value of interface
-                        # should be the default gateway of the jail. Let's
-                        # correct that behavior.
-                        defined_interfaces = [i.split(':') for i in nics]
-                        specified_interfaces = [
-                            'vnet0' if '|' not in i else i.split('|')[0]
-                            for i in ip
-                        ]
-                        # The default gateway here for the jail would be the
-                        # one which is present first in "defined_interfaces"
-                        # and also in "specified_interfaces".
-                        default_gw = 'vnet0'  # Defaulting to vnet0
-                        for i in defined_interfaces:
-                            if i in specified_interfaces:
-                                default_gw = i
-                                break
-                        default_route = f'{default_route.split("%")[0]}' \
-                            f'%{default_gw.replace("vnet", "epair")}b'
+            skip_accepts_rtadv = 'accept_rtadv' not in self.ip6_addr.lower()
+            for ip, default_route, ipv6 in map(lambda v: v[1], filter(
+                lambda v: v[0] and v[1][0] != 'none' and v[1][1] != 'none',
+                zip((not wants_dhcp, skip_accepts_rtadv), net_configs)
+            )):
+                # TODO: Scope/zone id should be investigated further
+                #  to make sure no case is missed wrt this
+                if ipv6 and '%' in default_route:
+                    # When we have ipv6, it is possible that default route
+                    # is "fe80::20d:b9ff:fe33:8716%interface0"
+                    # Now interface here is default gateway of the host
+                    # machine which the jail isn't aware of. In the jail
+                    # when adding default route, the value of interface
+                    # should be the default gateway of the jail. Let's
+                    # correct that behavior.
+                    defined_interfaces = [i.split(':') for i in nics]
+                    specified_interfaces = [
+                        'vnet0' if '|' not in i else i.split('|')[0]
+                        for i in ip
+                    ]
+                    # The default gateway here for the jail would be the
+                    # one which is present first in "defined_interfaces"
+                    # and also in "specified_interfaces".
+                    default_gw = 'vnet0'  # Defaulting to vnet0
+                    for i in defined_interfaces:
+                        if i in specified_interfaces:
+                            default_gw = i
+                            break
+                    default_route = f'{default_route.split("%")[0]}' \
+                        f'%{default_gw.replace("vnet", "epair")}b'
 
-                    self.log.debug(f'Setting default route {default_route}')
+                self.log.debug(f'Setting default route {default_route}')
 
-                    try:
-                        iocage_lib.ioc_common.checkoutput(
-                            [
-                                'setfib', self.exec_fib, 'jexec',
-                                f'ioc-{self.uuid}',
-                                'route'
-                            ] + list(
-                                filter(
-                                    bool, [
-                                        'add', '-6' if ipv6 else '',
-                                        'default', default_route
-                                    ]
-                                )
-                            ),
-                            stderr=su.STDOUT
-                        )
-                    except su.CalledProcessError as err:
-                        errors.append(f'{err.output.decode("utf-8")}'.rstrip())
+                try:
+                    iocage_lib.ioc_common.checkoutput(
+                        [
+                            'setfib', self.exec_fib, 'jexec',
+                            f'ioc-{self.uuid}',
+                            'route'
+                        ] + list(
+                            filter(
+                                bool, [
+                                    'add', '-6' if ipv6 else '',
+                                    'default', default_route
+                                ]
+                            )
+                        ),
+                        stderr=su.STDOUT
+                    )
+                except su.CalledProcessError as err:
+                    errors.append(f'{err.output.decode("utf-8")}'.rstrip())
 
         if len(errors) != 0:
             return errors
