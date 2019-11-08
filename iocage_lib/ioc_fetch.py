@@ -174,7 +174,7 @@ class IOCFetch:
         try:
             self.release = releases[int(self.release)]
             iocage_lib.ioc_common.check_release_newer(
-                self.release, self.callback, self.silent)
+                self.release, self.callback, self.silent, major_only=True)
         except IndexError:
             # Time to print the list again
             self.release = self.__fetch_validate_release__(releases)
@@ -209,7 +209,8 @@ class IOCFetch:
 
             if self.release:
                 iocage_lib.ioc_common.check_release_newer(
-                    self.release, callback=self.callback, silent=self.silent
+                    self.release, callback=self.callback, silent=self.silent,
+                    major_only=True,
                 )
             rel = self.fetch_http_release(eol, _list=_list)
 

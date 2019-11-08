@@ -58,7 +58,9 @@ class ListableReleases(IocageListableResource):
             for release in filter(
                 lambda r: (
                     r if not self.eol_check else r not in self.eol_list
-                ) and not check_release_newer(r, raise_error=False),
+                ) and not check_release_newer(
+                    r, raise_error=False, major_only=True
+                ),
                 re.findall(
                     r'href="(\d.*RELEASE)/"', req.content.decode('utf-8')
                 )
