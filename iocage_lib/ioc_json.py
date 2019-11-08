@@ -433,7 +433,7 @@ class IOCConfiguration:
     @staticmethod
     def get_version():
         """Sets the iocage configuration version."""
-        version = '26'
+        version = '27'
 
         return version
 
@@ -862,6 +862,13 @@ class IOCConfiguration:
             if conf.get(option) == 'none':
                 conf[option] = 'auto'
 
+        # Version 27 keys
+        for x in range(0,4):
+            if not conf.get(f"vnet{x}_mtu"):
+                conf[f"vnet{x}_mtu"] = 'auto'
+        if not conf.get(f"vnet_default_mtu"):
+            conf[f"vnet_default_mtu"] = '1500'
+
         if not default:
             conf.update(jail_conf)
 
@@ -1190,6 +1197,11 @@ class IOCConfiguration:
             'nat_forwards': 'none',
             'plugin_name': 'none',
             'plugin_repository': 'none',
+            'vnet0_mtu': 'auto',
+            'vnet1_mtu': 'auto',
+            'vnet2_mtu': 'auto',
+            'vnet3_mtu': 'auto',
+            'vnet_default_mtu': '1500',
         }
 
     def check_default_config(self):
@@ -2093,6 +2105,11 @@ class IOCJson(IOCConfiguration):
             'nat_forwards': ('string', ),
             'plugin_name': ('string', ),
             'plugin_repository': ('string', ),
+            "vnet0_mtu": ("string", ),
+            "vnet1_mtu": ("string", ),
+            "vnet2_mtu": ("string", ),
+            "vnet3_mtu": ("string", ),
+            "vnet_default_mtu": ("string", ),
         }
 
         zfs_props = {
