@@ -863,7 +863,7 @@ class IOCConfiguration:
                 conf[option] = 'auto'
 
         # Version 27 keys
-        for x in range(0,4):
+        for x in range(0, 4):
             if not conf.get(f"vnet{x}_mtu"):
                 conf[f"vnet{x}_mtu"] = 'auto'
         if not conf.get(f"vnet_default_mtu"):
