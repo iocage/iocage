@@ -1474,6 +1474,8 @@ class IOCStart(object):
 
         memberif = self.get_bridge_members(bridge)
         if not memberif:
+            if self.unit_test:
+                return "1500"
             return self.get('vnet_default_mtu')
 
         membermtu = iocage_lib.ioc_common.checkoutput(
