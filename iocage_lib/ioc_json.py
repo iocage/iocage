@@ -867,6 +867,15 @@ class IOCConfiguration:
 
         return conf, True
 
+    def backup_iocage_jail_conf(self, location):
+        if os.path.exists(location):
+            dest = location.rsplit('/', 1)[-1].replace('.json', '')
+            shutil.copy(
+                location, os.path.join(
+                    location.rsplit('/', 1)[0], f'{dest}_backup.json'
+                )
+            )
+
     def check_jail_config(self, conf):
         """
         Checks the jails configuration and migrates anything needed
@@ -1237,6 +1246,7 @@ class IOCConfiguration:
             # They may have had new keys added to their default
             # configuration, or it never existed.
             if write or fix_write:
+                self.backup_iocage_jail_conf(default_json_location)
                 self.json_write(default_props, default_json_location,
                                 defaults=True)
 
@@ -1643,6 +1653,10 @@ class IOCJson(IOCConfiguration):
                                        " it.")
 
         conf = self.check_config(conf)
+        if conf[1] and conf[0].get('host_hostuuid'):
+            self.backup_iocage_jail_conf(
+                os.path.join(self.location, 'config.json'),
+            )
 
         return conf
 
