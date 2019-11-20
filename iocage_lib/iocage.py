@@ -2056,6 +2056,7 @@ class IOCage:
                 ioc_start.IOCStart(uuid, path, silent=True)
                 started = True
 
+            status, jid = self.list('jid', uuid=uuid)
             new_release = ioc_plugin.IOCPlugin(
                 jail=uuid,
                 plugin=conf['plugin_name'],
