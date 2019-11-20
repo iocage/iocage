@@ -1260,6 +1260,45 @@ class IOCJson(IOCConfiguration):
     format, will set and get properties.
     """
 
+    truthy_props = [
+        'bpf',
+        'template',
+        'host_time',
+        'basejail',
+        'dhcp',
+        'vnet',
+        'rtsold',
+        'jail_zfs',
+        'hostid_strict_check',
+        'boot',
+        'exec_clean',
+        'mount_linprocfs',
+        'mount_procfs',
+        'allow_vmm',
+        'allow_tun',
+        'allow_socket_af',
+        'allow_quotas',
+        'allow_mount_zfs',
+        'allow_mount_tmpfs',
+        'allow_mount_procfs',
+        'allow_mount_nullfs',
+        'allow_mount_fusefs',
+        'allow_mount_devfs',
+        'allow_mount',
+        'allow_mlock',
+        'allow_chflags',
+        'allow_raw_sockets',
+        'allow_sysvipc',
+        'allow_set_hostname',
+        'mount_fdescfs',
+        'mount_devfs',
+        'ip6_saddrsel',
+        'ip4_saddrsel',
+        'ip_hostname',
+        'assign_localhost',
+        'nat'
+    ]
+
     def __init__(self,
                  location="",
                  silent=False,
@@ -1272,44 +1311,6 @@ class IOCJson(IOCConfiguration):
         self.cli = cli
         self.stop = stop
         self.suppress_log = suppress_log
-        self.truthy_props = [
-            'bpf',
-            'template',
-            'host_time',
-            'basejail',
-            'dhcp',
-            'vnet',
-            'rtsold',
-            'jail_zfs',
-            'hostid_strict_check',
-            'boot',
-            'exec_clean',
-            'mount_linprocfs',
-            'mount_procfs',
-            'allow_vmm',
-            'allow_tun',
-            'allow_socket_af',
-            'allow_quotas',
-            'allow_mount_zfs',
-            'allow_mount_tmpfs',
-            'allow_mount_procfs',
-            'allow_mount_nullfs',
-            'allow_mount_fusefs',
-            'allow_mount_devfs',
-            'allow_mount',
-            'allow_mlock',
-            'allow_chflags',
-            'allow_raw_sockets',
-            'allow_sysvipc',
-            'allow_set_hostname',
-            'mount_fdescfs',
-            'mount_devfs',
-            'ip6_saddrsel',
-            'ip4_saddrsel',
-            'ip_hostname',
-            'assign_localhost',
-            'nat'
-        ]
         super().__init__(location, checking_datasets, silent, callback)
 
         try:
