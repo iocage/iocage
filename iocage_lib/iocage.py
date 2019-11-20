@@ -1487,7 +1487,7 @@ class IOCage:
         snap = Snapshot(f'{dataset.name}@{name}')
         if not snap.exists:
             ioc_common.logit(
-                {'level': 'EXCEPTION', 'message': f'{target} does not exist'},
+                {'level': 'EXCEPTION', 'message': f'{snap} does not exist'},
                 _callback=self.callback, silent=self.silent
             )
 
