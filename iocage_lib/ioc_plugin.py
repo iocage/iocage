@@ -1280,7 +1280,6 @@ fingerprint: {fingerprint}
             plugin_release, path, silent=True).upgrade_basejail(
                 snapshot=False)
 
-        self.silent = True
         self.update(jid)
 
         return new_release
