@@ -1277,8 +1277,10 @@ fingerprint: {fingerprint}
             silent=self.silent)
 
         new_release = iocage_lib.ioc_upgrade.IOCUpgrade(
-            plugin_release, path, silent=True).upgrade_basejail(
-                snapshot=False)
+            plugin_release, path, silent=True
+        ).upgrade_basejail(
+            snapshot=False, snap_name=f'ioc_plugin_upgrade_{self.date}'
+        )
 
         self.update(jid)
 
