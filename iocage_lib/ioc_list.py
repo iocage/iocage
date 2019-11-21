@@ -292,7 +292,10 @@ class IOCList(object):
                 template = "-"
             else:
                 jail_root = Dataset(f'{jail.name}/root')
-                _origin_property = jail_root.properties.get('origin')
+                if jail_root.exists:
+                    _origin_property = jail_root.properties.get('origin')
+                else:
+                    _origin_property = None
 
                 if _origin_property:
                     template = _origin_property
