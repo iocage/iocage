@@ -33,6 +33,8 @@ import zipfile
 import iocage_lib.ioc_common
 import iocage_lib.ioc_json
 
+from iocage_lib.cache import cache
+
 
 class IOCImage(object):
     """export() and import()"""
@@ -307,6 +309,7 @@ class IOCImage(object):
                 silent=self.silent)
 
         # Templates become jails again once imported, let's make that reality.
+        cache.reset()
         jail_json = iocage_lib.ioc_json.IOCJson(
             f'{self.iocroot}/jails/{uuid}', silent=True
         )
