@@ -740,7 +740,7 @@ def generate_devfs_ruleset(conf, paths=None, includes=None, callback=None,
     Will add a per jail devfs ruleset with the specified rules,
     specifying defaults that equal devfs_ruleset 4
     """
-    ruleset = conf['devfs_ruleset']
+    configured_ruleset = conf['devfs_ruleset']
     devfs_includes = []
     devfs_rulesets = su.run(
         ['devfs', 'rule', 'showsets'],
@@ -748,22 +748,37 @@ def generate_devfs_ruleset(conf, paths=None, includes=None, callback=None,
     )
     ruleset_list = [int(i) for i in devfs_rulesets.stdout.splitlines()]
 
-    if ruleset != '4':
-        if int(ruleset) in ruleset_list:
-            return str(ruleset)
+    # 4 is a magic number for default and doesn't refer to
+    # the actual ruleset 4 in devfs.rules(!)
+    default_ruleset = 4
+    min_dynamic_ruleset = 1000  # leave lower numbers to sysadmin
 
-        logit({
-            "level": "INFO",
-            "message": f'* Ruleset {ruleset} does not exist, using defaults'
-        },
-            _callback=callback,
-            silent=silent)
-
-    ruleset = 5  # 0-4 is always reserved
+    ruleset = min_dynamic_ruleset
     while ruleset in ruleset_list:
         ruleset += 1
     ruleset = str(ruleset)
 
+    # Custom devfs_ruleset configured, clone to dynamic ruleset
+    if int(configured_ruleset) != default_ruleset:
+        if int(configured_ruleset) not in ruleset_list:
+            logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": f"devfs_ruleset {ruleset} doesn't exist"
+                },
+                _callback=callback,
+                silent=silent)
+        rules = su.run(
+            ['devfs', 'rule', '-s', configured_ruleset, 'show'],
+            stdout=su.PIPE, universal_newlines=True
+        )
+        for rule in rules.stdout.splitlines():
+            su.run(['devfs', 'rule', '-s', ruleset, 'add'] +
+                   rule.split(' ')[1:], stdout=su.PIPE)
+
+        return ruleset
+
+    # Create default ruleset
     devfs_dict = dict((dev, None) for dev in (
         'hide', 'null', 'zero', 'crypto', 'random', 'urandom', 'ptyp*',
         'ptyq*', 'ptyr*', 'ptys*', 'ptyP*', 'ptyQ*', 'ptyR*', 'ptyS*', 'ptyl*',
