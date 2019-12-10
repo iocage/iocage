@@ -591,7 +591,9 @@ class IOCConfiguration:
         """Write a JSON file at the location given with supplied data."""
         # Templates need to be set r/w and then back to r/o
         try:
-            template = iocage_lib.ioc_common.check_truthy(data['template'])
+            template = iocage_lib.ioc_common.check_truthy(
+                data['template']
+            ) and not defaults
             jail_dataset = Dataset(self.location).name if template else None
         except KeyError:
             # Not a template, it would exist in the configuration otherwise
