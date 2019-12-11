@@ -915,9 +915,9 @@ class IOCConfiguration:
             # It is possible the basejail hasn't started yet. I believe
             # the best case here is to parse fstab entries and determine
             # which release is being used and check it for freebsd-version
-            for index, fstab_entry in iocage_lib.ioc_fstab.IOCFstab(
-                host_hostuuid, 'list',
-            ).fstab_list():
+            fstab = iocage_lib.ioc_fstab.IOCFstab(host_hostuuid, 'list')
+            fstab.__validate_fstab__([l[1] for l in fstab.fstab], 'all')
+            for index, fstab_entry in fstab.fstab_list():
                 if fstab_entry[1].rstrip('/') == os.path.join(
                     freebsd_version_path, 'bin'
                 ):
