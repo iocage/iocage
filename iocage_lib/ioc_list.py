@@ -394,15 +394,33 @@ class IOCList(object):
                             default_gateways = \
                                 iocage_lib.ioc_common.get_host_gateways()
 
+                            # We should list out the ips based on nat_interface
+                            # property because that's the one which the
+                            # firewall will be handling port forwarding on
+                            # TODO: pf/ipfw only do port forwarding for the
+                            # first ip address, we should update that so it
+                            # works for all aliases. However there doesn't
+                            # seem to be a good way apart from hardcoding
+                            # the ip aliases, we use the dynamic option
+                            # provided by the firewalls but that doesn't
+                            # seem to take care of aliases, only the first ip
+                            # if it changes address - if we hardcode, that
+                            # would mean applying the firewall rules again
+                            # on ip changes
+                            nat_iface = conf.get('nat_interface', 'none')
                             all_ips = [
                                 f['addr']
                                 for k in default_gateways
                                 if default_gateways[k]['interface']
                                 for f in netifaces.ifaddresses(
                                     default_gateways[k]['interface']
+                                    if nat_iface == 'none' else nat_iface
                                 )[netifaces.AF_INET
                                     if k == 'ipv4' else netifaces.AF_INET6]
-                            ]
+                            ] if nat_iface in netifaces.interfaces() \
+                                 or nat_iface == 'none' else []
+                            if all_ips:
+                                all_ips = [all_ips[0]]
 
                         ui_data = json.load(u)
                         admin_portal = ui_data["adminportal"]
