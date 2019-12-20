@@ -90,18 +90,7 @@ class IOCUpgrade:
             'var/db/freebsd-update', bd_hash + '-install')
 
     def upgrade_jail(self):
-        tmp_dataset = Dataset('/tmp')
-        if tmp_dataset.exists:
-            tmp_val = tmp_dataset.properties['exec']
-
-            if tmp_val == 'off':
-                iocage_lib.ioc_common.logit(
-                    {
-                        'level': 'EXCEPTION',
-                        'message': f'{tmp_dataset.name} needs exec=on!'
-                    },
-                    _callback=self.callback,
-                    silent=self.silent)
+        iocage_lib.ioc_common.tmp_dataset_checks(self.callback, self.silent)
 
         if "HBSD" in self.freebsd_version:
             su.Popen(["hbsd-upgrade", "-j", self.jid]).communicate()
