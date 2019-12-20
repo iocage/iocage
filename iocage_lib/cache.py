@@ -1,4 +1,4 @@
-from iocage_lib.zfs import all_properties
+from iocage_lib.zfs import all_properties, iocage_activated_pool
 
 import threading
 
@@ -14,7 +14,9 @@ class Cache:
     def datasets(self):
         with self.cache_lock:
             if not self.dataset_data:
-                self.dataset_data = all_properties()
+                self.dataset_data = all_properties(
+                    iocage_activated_pool() or '', recursive=True
+                )
             return self.dataset_data
 
     @property
