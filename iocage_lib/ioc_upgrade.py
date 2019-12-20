@@ -35,8 +35,6 @@ import iocage_lib.ioc_common
 import iocage_lib.ioc_json
 import iocage_lib.ioc_list
 
-from iocage_lib.dataset import Dataset
-
 
 class IOCUpgrade:
 
