@@ -57,10 +57,12 @@ def properties(dataset, resource_type='zfs'):
     }
 
 
-def all_properties(path='', resource_type='zfs', depth=None):
+def all_properties(path='', resource_type='zfs', depth=None, recursive=False):
     flags = []
     if depth:
         flags.extend(['-d', str(depth)])
+    if recursive:
+        flags.append('-r')
 
     data = run(list(filter(
         bool, [
