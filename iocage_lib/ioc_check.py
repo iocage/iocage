@@ -53,8 +53,10 @@ class IOCCheck(object):
         self.__check_fd_mount__()
         self.__check_datasets__()
 
-        self.pool_root_dataset = Dataset(self.pool)
-        self.iocage_dataset = Dataset(os.path.join(self.pool, 'iocage'))
+        self.pool_root_dataset = Dataset(self.pool, cache=False)
+        self.iocage_dataset = Dataset(
+            os.path.join(self.pool, 'iocage'), cache=False
+        )
 
         if migrate:
             self.__check_migrations__()
@@ -85,7 +87,7 @@ class IOCCheck(object):
         for dataset in datasets:
             zfs_dataset_name = f"{self.pool}/{dataset}"
             try:
-                ds = Dataset(zfs_dataset_name)
+                ds = Dataset(zfs_dataset_name, cache=False)
 
                 if not ds.exists:
                     raise ZFSException(-1, 'Dataset does not exist')
