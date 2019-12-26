@@ -72,7 +72,7 @@ def all_properties(path='', resource_type='zfs', depth=None, recursive=False):
     ))).stdout.split('\n')
     fs = defaultdict(dict)
     for line in filter(bool, data):
-        name, prop = line.split()[:2]
+        name, prop = line.split('\t')[:2]
         fs[name.strip()][prop.strip()] = line.split(maxsplit=2)[-1].strip()
 
     return fs
@@ -108,12 +108,12 @@ def get_dependents(identifier, depth=None):
     try:
         return list(
             filter(
-                lambda p: p if not depth else len(
+                lambda p: p and (p if not depth else len(
                     p.split('/')
-                ) - id_depth <= depth and len(p.split('/')) - id_depth,
+                ) - id_depth <= depth and len(p.split('/')) - id_depth),
                 run(
                     ['zfs', 'list', '-rHo', 'name', identifier],
-                ).stdout.split()
+                ).stdout.split('\n')
             )
         )
     except ZFSException:
