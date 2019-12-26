@@ -73,7 +73,9 @@ def all_properties(path='', resource_type='zfs', depth=None, recursive=False):
     fs = defaultdict(dict)
     for line in filter(bool, data):
         name, prop = line.split('\t')[:2]
-        fs[name.strip()][prop.strip()] = line.split(maxsplit=2)[-1].strip()
+        fs[name.strip()][prop.strip()] = line.split(
+            '\t', maxsplit=2
+        )[-1].strip()
 
     return fs
 

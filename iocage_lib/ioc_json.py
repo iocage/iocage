@@ -98,7 +98,7 @@ class JailRuntimeConfiguration(object):
             if '=' in data:
                 k, v = data.split('=', 1)
                 k = k.strip()
-                v = v.replace(';', '').strip()
+                v = v.replace(';', '').strip().strip('"')
 
                 if 'ip4.addr' in k:
                     ip4.append(v)
@@ -162,7 +162,7 @@ class JailRuntimeConfiguration(object):
         config_params = '\n\t'.join(write_data)
         with open(self.path, 'w') as f:
             f.write(
-                f'{self.name} {{\n\t{config_params}\n}}\n'
+                f'"{self.name}" {{\n\t{config_params}\n}}\n'
             )
 
 
