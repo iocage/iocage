@@ -179,6 +179,14 @@ class IOCStart(object):
         self.defaultrouter6 = self.conf['defaultrouter6']
         self.host_gateways = iocage_lib.ioc_common.get_host_gateways()
 
+        rc_conf_path = os.path.join(self.path, 'root/etc/rc.conf')
+        if os.path.exists(rc_conf_path):
+            cp = su.run([
+                'sysrc', '-f', rc_conf_path, f'hostname={host_hostname}'
+            ], capture_output=True)
+            if cp.returncode:
+                self.log.debug(f'Failed to set hostname: {cp.stderr.decode()}')
+
         fstab_list = []
         with open(
                 f'{self.iocroot}/jails/{self.jail_uuid}/fstab', 'r'
