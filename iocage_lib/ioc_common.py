@@ -49,8 +49,6 @@ INTERACTIVE = False
 # 4 is a magic number for default and doesn't refer
 # to the actual ruleset 4 in devfs.rules(!)
 IOCAGE_DEVFS_RULESET = 4
-# Leave lower devfs_ruleset ids to sysadmin
-MIN_DYNAMIC_DEVFS_RULESET = 1000
 
 
 def callback(_log, callback_exception):
@@ -755,7 +753,7 @@ def generate_devfs_ruleset(conf, paths=None, includes=None, callback=None,
     )
     ruleset_list = [int(i) for i in devfs_rulesets.stdout.splitlines()]
 
-    ruleset = MIN_DYNAMIC_DEVFS_RULESET
+    ruleset = int(conf["min_dyn_devfs_ruleset"])
     while ruleset in ruleset_list:
         ruleset += 1
     ruleset = str(ruleset)

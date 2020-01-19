@@ -646,25 +646,12 @@ class IOCStart(object):
                 _callback=self.callback,
                 silent=self.silent)
 
-        if manual_devfs_config:
-            iocage_lib.ioc_common.logit({
-                'level': 'INFO',
-                'message': '  + Cloning devfs_ruleset'
-                           f' {configured_devfs_ruleset}'
-            },
-                _callback=self.callback,
-                silent=self.silent)
-        else:
-            iocage_lib.ioc_common.logit({
-                'level': 'INFO',
-                'message': '  + Generating dynamic devfs_ruleset'
-            },
-                _callback=self.callback,
-                silent=self.silent)
-
         iocage_lib.ioc_common.logit({
             'level': 'INFO',
             'message': f'  + Using devfs_ruleset: {devfs_ruleset}'
+                       + (' (cloned from devfs_ruleset '
+                          f'{configured_devfs_ruleset})' if manual_devfs_config
+                          else ' (iocage generated default)')
         },
             _callback=self.callback,
             silent=self.silent)

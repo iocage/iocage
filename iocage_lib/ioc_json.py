@@ -433,7 +433,7 @@ class IOCConfiguration:
     @staticmethod
     def get_version():
         """Sets the iocage configuration version."""
-        version = '26'
+        version = '27'
 
         return version
 
@@ -864,6 +864,10 @@ class IOCConfiguration:
             if conf.get(option) == 'none':
                 conf[option] = 'auto'
 
+        # Version 27 key
+        if not conf.get('min_dyn_devfs_ruleset'):
+            conf['min_dyn_devfs_ruleset'] = '1000'
+
         if not default:
             conf.update(jail_conf)
 
@@ -1201,6 +1205,7 @@ class IOCConfiguration:
             'nat_forwards': 'none',
             'plugin_name': 'none',
             'plugin_repository': 'none',
+            'min_dyn_devfs_ruleset': '1000',
         }
 
     def check_default_config(self):
@@ -2110,6 +2115,7 @@ class IOCJson(IOCConfiguration):
             'nat_forwards': ('string', ),
             'plugin_name': ('string', ),
             'plugin_repository': ('string', ),
+            'min_dyn_devfs_ruleset': ('string', ),
         }
 
         zfs_props = {
