@@ -1088,7 +1088,7 @@ class IOCConfiguration:
             'vnet2_mac': 'none',
             'vnet3_mac': 'none',
             'vnet_default_interface': 'auto',
-            'devfs_ruleset': '4',
+            'devfs_ruleset': str(iocage_lib.ioc_common.IOCAGE_DEVFS_RULESET),
             'exec_start': '/bin/sh /etc/rc',
             'exec_stop': '/bin/sh /etc/rc.shutdown',
             'exec_prestart': '/usr/bin/true',

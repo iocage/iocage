@@ -44,6 +44,11 @@ import iocage_lib.ioc_exceptions
 import iocage_lib.ioc_exec
 
 INTERACTIVE = False
+# 4 is a magic number for default and doesn't refer
+# to the actual ruleset 4 in devfs.rules(!)
+IOCAGE_DEVFS_RULESET = 4
+# Leave lower devfs_ruleset ids to sysadmin
+MIN_DYNAMIC_DEVFS_RULESET = 1000
 
 
 def callback(_log, callback_exception):
@@ -748,26 +753,15 @@ def generate_devfs_ruleset(conf, paths=None, includes=None, callback=None,
     )
     ruleset_list = [int(i) for i in devfs_rulesets.stdout.splitlines()]
 
-    # 4 is a magic number for default and doesn't refer to
-    # the actual ruleset 4 in devfs.rules(!)
-    default_ruleset = 4
-    min_dynamic_ruleset = 1000  # leave lower numbers to sysadmin
-
-    ruleset = min_dynamic_ruleset
+    ruleset = MIN_DYNAMIC_DEVFS_RULESET
     while ruleset in ruleset_list:
         ruleset += 1
     ruleset = str(ruleset)
 
     # Custom devfs_ruleset configured, clone to dynamic ruleset
-    if int(configured_ruleset) != default_ruleset:
+    if int(configured_ruleset) != IOCAGE_DEVFS_RULESET:
         if int(configured_ruleset) not in ruleset_list:
-            logit(
-                {
-                    "level": "EXCEPTION",
-                    "message": f"devfs_ruleset {ruleset} doesn't exist"
-                },
-                _callback=callback,
-                silent=silent)
+            return (True, configured_ruleset, '0')
         rules = su.run(
             ['devfs', 'rule', '-s', configured_ruleset, 'show'],
             stdout=su.PIPE, universal_newlines=True
@@ -776,7 +770,7 @@ def generate_devfs_ruleset(conf, paths=None, includes=None, callback=None,
             su.run(['devfs', 'rule', '-s', ruleset, 'add'] +
                    rule.split(' ')[1:], stdout=su.PIPE)
 
-        return ruleset
+        return (True, configured_ruleset, ruleset)
 
     # Create default ruleset
     devfs_dict = dict((dev, None) for dev in (
@@ -830,7 +824,7 @@ def generate_devfs_ruleset(conf, paths=None, includes=None, callback=None,
 
         su.run(['devfs', 'rule', '-s', ruleset] + path, stdout=su.PIPE)
 
-    return ruleset
+    return (False, configured_ruleset, ruleset)
 
 
 def runscript(script):
