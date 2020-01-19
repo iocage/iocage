@@ -98,7 +98,7 @@ class JailRuntimeConfiguration(object):
             if '=' in data:
                 k, v = data.split('=', 1)
                 k = k.strip()
-                v = v.replace(';', '').strip()
+                v = v.replace(';', '').strip().strip('"')
 
                 if 'ip4.addr' in k:
                     ip4.append(v)
@@ -162,7 +162,7 @@ class JailRuntimeConfiguration(object):
         config_params = '\n\t'.join(write_data)
         with open(self.path, 'w') as f:
             f.write(
-                f'{self.name} {{\n\t{config_params}\n}}\n'
+                f'"{self.name}" {{\n\t{config_params}\n}}\n'
             )
 
 
@@ -591,7 +591,9 @@ class IOCConfiguration:
         """Write a JSON file at the location given with supplied data."""
         # Templates need to be set r/w and then back to r/o
         try:
-            template = iocage_lib.ioc_common.check_truthy(data['template'])
+            template = iocage_lib.ioc_common.check_truthy(
+                data['template']
+            ) and not defaults
             jail_dataset = Dataset(self.location).name if template else None
         except KeyError:
             # Not a template, it would exist in the configuration otherwise
@@ -913,9 +915,9 @@ class IOCConfiguration:
             # It is possible the basejail hasn't started yet. I believe
             # the best case here is to parse fstab entries and determine
             # which release is being used and check it for freebsd-version
-            for index, fstab_entry in iocage_lib.ioc_fstab.IOCFstab(
-                host_hostuuid, 'list',
-            ).fstab_list():
+            fstab = iocage_lib.ioc_fstab.IOCFstab(host_hostuuid, 'list')
+            fstab.__validate_fstab__([l[1] for l in fstab.fstab], 'all')
+            for index, fstab_entry in fstab.fstab_list():
                 if fstab_entry[1].rstrip('/') == os.path.join(
                     freebsd_version_path, 'bin'
                 ):

@@ -43,6 +43,8 @@ import json
 import iocage_lib.ioc_exceptions
 import iocage_lib.ioc_exec
 
+from iocage_lib.dataset import Dataset
+
 INTERACTIVE = False
 # 4 is a magic number for default and doesn't refer
 # to the actual ruleset 4 in devfs.rules(!)
@@ -1135,3 +1137,19 @@ def get_jails_with_config(filters=None, mapping_func=None):
             )
         ) if not filters or filters(j)
     }
+
+
+def tmp_dataset_checks(_callback, silent):
+    tmp_dataset = Dataset('/tmp', cache=False)
+    if tmp_dataset.exists:
+        tmp_val = tmp_dataset.properties['exec']
+
+        if tmp_val == 'off':
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message': f'{tmp_dataset.name} needs exec=on!'
+                },
+                _callback=_callback,
+                silent=silent
+            )

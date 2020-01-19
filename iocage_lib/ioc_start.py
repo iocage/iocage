@@ -516,12 +516,14 @@ class IOCStart(object):
             iocage_lib.ioc_common.logit({
                 "level": "ERROR",
                 "message": f"{self.uuid} devfs_ruleset"
-                           f" {configured_devfs_ruleset} doesnt_exit!"
+                           f" {configured_devfs_ruleset} does not exist!"
                            " - Not starting jail"
-                }, _callback=self.callback, silent=self.silent)
+            },
+                _callback=self.callback,
+                silent=self.silent)
             return
 
-        # Manually configured devfs_ruleset don't support all iocage features
+        # Manually configured devfs_ruleset doesn't support all iocage features
         if manual_devfs_config:
             if devfs_paths is not None or devfs_includes is not None:
                 iocage_lib.ioc_common.logit({
@@ -650,15 +652,15 @@ class IOCStart(object):
                 'message': '  + Cloning devfs_ruleset'
                            f' {configured_devfs_ruleset}'
             },
-                    _callback=self.callback,
-                    silent=self.silent)
+                _callback=self.callback,
+                silent=self.silent)
         else:
             iocage_lib.ioc_common.logit({
                 'level': 'INFO',
                 'message': '  + Generating dynamic devfs_ruleset'
             },
-                    _callback=self.callback,
-                    silent=self.silent)
+                _callback=self.callback,
+                silent=self.silent)
 
         iocage_lib.ioc_common.logit({
             'level': 'INFO',

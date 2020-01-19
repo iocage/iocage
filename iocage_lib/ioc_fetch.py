@@ -818,18 +818,7 @@ class IOCFetch:
 
     def fetch_update(self, cli=False, uuid=None):
         """This calls 'freebsd-update' to update the fetched RELEASE."""
-        tmp_dataset = Dataset('/tmp')
-        if tmp_dataset.exists:
-            tmp_val = tmp_dataset.properties['exec']
-
-            if tmp_val == 'off':
-                iocage_lib.ioc_common.logit(
-                    {
-                        'level': 'EXCEPTION',
-                        'message': f'{tmp_dataset.name} needs exec=on!'
-                    },
-                    _callback=self.callback,
-                    silent=self.silent)
+        iocage_lib.ioc_common.tmp_dataset_checks(self.callback, self.silent)
 
         if cli:
             cmd = [
