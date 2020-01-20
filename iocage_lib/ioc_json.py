@@ -2396,6 +2396,22 @@ class IOCJson(IOCConfiguration):
                                 silent=self.silent,
                                 exception=ioc_exceptions.ValidationFailed
                             )
+                elif key in ('devfs_ruleset', 'min_dyn_devfs_ruleset'):
+                    try:
+                        intval = int(value)
+                        if intval <= 0:
+                            raise ValueError()
+                        conf[key] = str(intval)
+                    except ValueError:
+                        iocage_lib.ioc_common.logit(
+                            {
+                                'level': 'EXCEPTION',
+                                'message': f'Invalid {key} value: {value}'
+                            },
+                            _callback=self.callback,
+                            silent=self.silent,
+                            exception=ioc_exceptions.ValidationFailed
+                        )
 
                 return value, conf
             else:
