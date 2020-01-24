@@ -2,7 +2,7 @@
 
 [![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/iocage/iocage.svg)](http://isitmaintained.com/project/iocage/iocage "Average time to resolve an issue")
 [![Percentage of issues still open](http://isitmaintained.com/badge/open/iocage/iocage.svg)](http://isitmaintained.com/project/iocage/iocage "Percentage of issues still open")
-![Python Version](https://img.shields.io/badge/Python-3.6-blue.svg)
+![Python Version](https://img.shields.io/badge/Python-3.7-blue.svg)
 [![GitHub issues](https://img.shields.io/github/issues/iocage/iocage.svg)](https://github.com/iocage/iocage/issues)
 [![GitHub forks](https://img.shields.io/github/forks/iocage/iocage.svg)](https://github.com/iocage/iocage/network)
 [![GitHub stars](https://img.shields.io/github/stars/iocage/iocage.svg)](https://github.com/iocage/iocage/stargazers)
@@ -23,7 +23,7 @@ To install using binary packages, simply run: `pkg install py36-iocage`
 
 The FreeBSD source tree ***must*** be located at `$SRC_BASE` (`/usr/src` by default) to build from git.
 
-- `pkg install python36 git-lite py36-cython py36-pip`
+- `pkg install python37 git-lite py36-cython py36-pip`
 - `git clone --recursive https://github.com/iocage/iocage`
 - `make install` as root
 
@@ -122,7 +122,7 @@ To see a list of commands available to you now, type `iocage` outside the jail.
 
 - FreeBSD 9.3-RELEASE amd64 and higher or HardenedBSD/TrueOS
 - ZFS file system
-- Python 3.6+
+- Python 3.7+
 - UTF-8 locale (place into your ~/.login_conf):
 
 ```plain

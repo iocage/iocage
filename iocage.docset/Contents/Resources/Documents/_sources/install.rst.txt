@@ -24,7 +24,7 @@ at :samp:`$SRC_BASE` ( :samp:`/usr/src` by default).
 
 To install from github, run these commands:
 
-:samp:`pkg install python36 git-lite libgit2 cython3 py36-pip`
+:samp:`pkg install python37 git-lite libgit2 cython3 py36-pip`
 
 :samp:`git clone --recursive https://github.com/iocage/iocage`
 
