@@ -14,7 +14,7 @@ Using binary packages
 
 To install using binary packages on a FreeBSD system, run:
 
-:samp:`sudo pkg install py36-iocage`
+:samp:`sudo pkg install py37-iocage`
 
 Using github
 ++++++++++++
@@ -24,7 +24,7 @@ at :samp:`$SRC_BASE` ( :samp:`/usr/src` by default).
 
 To install from github, run these commands:
 
-:samp:`pkg install python37 git-lite libgit2 cython3 py36-pip`
+:samp:`pkg install python37 git-lite libgit2 cython3 py37-pip`
 
 :samp:`git clone --recursive https://github.com/iocage/iocage`
 
@@ -41,7 +41,7 @@ FreeBSD 10 or above.
 
 To install using pkg(8), run:
 
-:samp:`sudo pkg install py36-iocage`
+:samp:`sudo pkg install py37-iocage`
 
 Building Ports
 ++++++++++++++
