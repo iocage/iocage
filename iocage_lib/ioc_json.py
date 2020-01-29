@@ -863,11 +863,11 @@ class IOCConfiguration:
         for option in ('defaultrouter', 'defaultrouter6'):
             if conf.get(option) == 'none':
                 conf[option] = 'auto'
-        
+
         # Version 27 key
         if not conf.get('min_dyn_devfs_ruleset'):
             conf['min_dyn_devfs_ruleset'] = '1000'
-        
+
         # Version 28 keys
         for x in range(0, 4):
             if not conf.get(f"vnet{x}_mtu"):
