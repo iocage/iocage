@@ -145,7 +145,6 @@ class IOCStart(object):
         allow_quotas = self.conf["allow_quotas"]
         allow_socket_af = self.conf["allow_socket_af"]
         allow_vmm = self.conf["allow_vmm"]
-        devfs_ruleset = iocage_lib.ioc_common.generate_devfs_ruleset(self.conf)
         exec_prestart = self.conf["exec_prestart"]
         exec_poststart = self.conf["exec_poststart"]
         exec_clean = self.conf["exec_clean"]
@@ -489,16 +488,8 @@ class IOCStart(object):
             _callback=self.callback,
             silent=self.silent)
 
-        if wants_dhcp and self.conf['type'] != 'pluginv2' \
-                and self.conf['devfs_ruleset'] != '4':
-            iocage_lib.ioc_common.logit({
-                "level": "WARNING",
-                "message": f"  {self.uuid} is not using the devfs_ruleset"
-                           f" of 4, not generating a ruleset for the jail,"
-                           " DHCP may not work."
-            },
-                _callback=self.callback,
-                silent=self.silent)
+        devfs_paths = None
+        devfs_includes = None
 
         if self.conf['type'] == 'pluginv2' and os.path.isfile(
             os.path.join(self.path, f'{self.conf["plugin_name"]}.json')
@@ -512,17 +503,51 @@ class IOCStart(object):
                     plugin_name = self.conf['plugin_name']
                     plugin_devfs = devfs_json[
                         "devfs_ruleset"][f"plugin_{plugin_name}"]
-                    plugin_devfs_paths = plugin_devfs['paths']
-
-                    plugin_devfs_includes = None if 'includes' not in \
+                    devfs_paths = plugin_devfs['paths']
+                    devfs_includes = None if 'includes' not in \
                         plugin_devfs else plugin_devfs['includes']
 
-                    devfs_ruleset = \
-                        iocage_lib.ioc_common.generate_devfs_ruleset(
-                            self.conf,
-                            paths=plugin_devfs_paths,
-                            includes=plugin_devfs_includes
-                        )
+        # Generate dynamic devfs ruleset from configured one
+        (manual_devfs_config, configured_devfs_ruleset, devfs_ruleset) \
+            = iocage_lib.ioc_common.generate_devfs_ruleset(
+                self.conf, devfs_paths, devfs_includes)
+
+        if int(devfs_ruleset) <= 0:
+            iocage_lib.ioc_common.logit({
+                "level": "ERROR",
+                "message": f"{self.uuid} devfs_ruleset"
+                           f" {configured_devfs_ruleset} does not exist!"
+                           " - Not starting jail"
+            },
+                _callback=self.callback,
+                silent=self.silent)
+            return
+
+        # Manually configured devfs_ruleset doesn't support all iocage features
+        if manual_devfs_config:
+            if devfs_paths is not None or devfs_includes is not None:
+                iocage_lib.ioc_common.logit({
+                    "level": "WARNING",
+                    "message": f"  {self.uuid} is not using the devfs_ruleset"
+                               " of "
+                               f"{iocage_lib.ioc_common.IOCAGE_DEVFS_RULESET}"
+                               ", devices and includes from plugin not added"
+                               ", some features of the plugin may not work."
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
+
+            if wants_dhcp and self.conf['type'] != 'pluginv2':
+                iocage_lib.ioc_common.logit({
+                    "level": "WARNING",
+                    "message": f"  {self.uuid} is not using the devfs_ruleset"
+                               " of "
+                               f"{iocage_lib.ioc_common.IOCAGE_DEVFS_RULESET}"
+                               ", not generating a ruleset for the jail,"
+                               " DHCP may not work."
+                },
+                    _callback=self.callback,
+                    silent=self.silent)
 
         parameters = [
             fdescfs, _allow_mlock, tmpfs,
@@ -624,6 +649,9 @@ class IOCStart(object):
         iocage_lib.ioc_common.logit({
             'level': 'INFO',
             'message': f'  + Using devfs_ruleset: {devfs_ruleset}'
+                       + (' (cloned from devfs_ruleset '
+                          f'{configured_devfs_ruleset})' if manual_devfs_config
+                          else ' (iocage generated default)')
         },
             _callback=self.callback,
             silent=self.silent)
@@ -1006,57 +1034,57 @@ class IOCStart(object):
             # Let's setup default route as specified
             dhcp = self.get('dhcp')
             wants_dhcp = dhcp or 'DHCP' in self.ip4_addr.upper()
-            if not wants_dhcp and 'accept_rtadv' not in self.ip6_addr.lower():
-                for ip, default_route, ipv6 in filter(
-                    lambda v: v[0] != 'none' and v[1] != 'none',
-                    net_configs
-                ):
-                    # TODO: Scope/zone id should be investigated further
-                    #  to make sure no case is missed wrt this
-                    if ipv6 and '%' in default_route:
-                        # When we have ipv6, it is possible that default route
-                        # is "fe80::20d:b9ff:fe33:8716%interface0"
-                        # Now interface here is default gateway of the host
-                        # machine which the jail isn't aware of. In the jail
-                        # when adding default route, the value of interface
-                        # should be the default gateway of the jail. Let's
-                        # correct that behavior.
-                        defined_interfaces = [i.split(':') for i in nics]
-                        specified_interfaces = [
-                            'vnet0' if '|' not in i else i.split('|')[0]
-                            for i in ip
-                        ]
-                        # The default gateway here for the jail would be the
-                        # one which is present first in "defined_interfaces"
-                        # and also in "specified_interfaces".
-                        default_gw = 'vnet0'  # Defaulting to vnet0
-                        for i in defined_interfaces:
-                            if i in specified_interfaces:
-                                default_gw = i
-                                break
-                        default_route = f'{default_route.split("%")[0]}' \
-                            f'%{default_gw.replace("vnet", "epair")}b'
+            skip_accepts_rtadv = 'accept_rtadv' not in self.ip6_addr.lower()
+            for ip, default_route, ipv6 in map(lambda v: v[1], filter(
+                lambda v: v[0] and v[1][0] != 'none' and v[1][1] != 'none',
+                zip((not wants_dhcp, skip_accepts_rtadv), net_configs)
+            )):
+                # TODO: Scope/zone id should be investigated further
+                #  to make sure no case is missed wrt this
+                if ipv6 and '%' in default_route:
+                    # When we have ipv6, it is possible that default route
+                    # is "fe80::20d:b9ff:fe33:8716%interface0"
+                    # Now interface here is default gateway of the host
+                    # machine which the jail isn't aware of. In the jail
+                    # when adding default route, the value of interface
+                    # should be the default gateway of the jail. Let's
+                    # correct that behavior.
+                    defined_interfaces = [i.split(':') for i in nics]
+                    specified_interfaces = [
+                        'vnet0' if '|' not in i else i.split('|')[0]
+                        for i in ip
+                    ]
+                    # The default gateway here for the jail would be the
+                    # one which is present first in "defined_interfaces"
+                    # and also in "specified_interfaces".
+                    default_gw = 'vnet0'  # Defaulting to vnet0
+                    for i in defined_interfaces:
+                        if i in specified_interfaces:
+                            default_gw = i
+                            break
+                    default_route = f'{default_route.split("%")[0]}' \
+                        f'%{default_gw.replace("vnet", "epair")}b'
 
-                    self.log.debug(f'Setting default route {default_route}')
+                self.log.debug(f'Setting default route {default_route}')
 
-                    try:
-                        iocage_lib.ioc_common.checkoutput(
-                            [
-                                'setfib', self.exec_fib, 'jexec',
-                                f'ioc-{self.uuid}',
-                                'route'
-                            ] + list(
-                                filter(
-                                    bool, [
-                                        'add', '-6' if ipv6 else '',
-                                        'default', default_route
-                                    ]
-                                )
-                            ),
-                            stderr=su.STDOUT
-                        )
-                    except su.CalledProcessError as err:
-                        errors.append(f'{err.output.decode("utf-8")}'.rstrip())
+                try:
+                    iocage_lib.ioc_common.checkoutput(
+                        [
+                            'setfib', self.exec_fib, 'jexec',
+                            f'ioc-{self.uuid}',
+                            'route'
+                        ] + list(
+                            filter(
+                                bool, [
+                                    'add', '-6' if ipv6 else '',
+                                    'default', default_route
+                                ]
+                            )
+                        ),
+                        stderr=su.STDOUT
+                    )
+                except su.CalledProcessError as err:
+                    errors.append(f'{err.output.decode("utf-8")}'.rstrip())
 
         if len(errors) != 0:
             return errors

@@ -98,7 +98,7 @@ class JailRuntimeConfiguration(object):
             if '=' in data:
                 k, v = data.split('=', 1)
                 k = k.strip()
-                v = v.replace(';', '').strip()
+                v = v.replace(';', '').strip().strip('"')
 
                 if 'ip4.addr' in k:
                     ip4.append(v)
@@ -162,7 +162,7 @@ class JailRuntimeConfiguration(object):
         config_params = '\n\t'.join(write_data)
         with open(self.path, 'w') as f:
             f.write(
-                f'{self.name} {{\n\t{config_params}\n}}\n'
+                f'"{self.name}" {{\n\t{config_params}\n}}\n'
             )
 
 
@@ -433,7 +433,7 @@ class IOCConfiguration:
     @staticmethod
     def get_version():
         """Sets the iocage configuration version."""
-        version = '27'
+        version = '28'
 
         return version
 
@@ -591,7 +591,9 @@ class IOCConfiguration:
         """Write a JSON file at the location given with supplied data."""
         # Templates need to be set r/w and then back to r/o
         try:
-            template = iocage_lib.ioc_common.check_truthy(data['template'])
+            template = iocage_lib.ioc_common.check_truthy(
+                data['template']
+            ) and not defaults
             jail_dataset = Dataset(self.location).name if template else None
         except KeyError:
             # Not a template, it would exist in the configuration otherwise
@@ -861,8 +863,12 @@ class IOCConfiguration:
         for option in ('defaultrouter', 'defaultrouter6'):
             if conf.get(option) == 'none':
                 conf[option] = 'auto'
-
-        # Version 27 keys
+        
+        # Version 27 key
+        if not conf.get('min_dyn_devfs_ruleset'):
+            conf['min_dyn_devfs_ruleset'] = '1000'
+        
+        # Version 28 keys
         for x in range(0, 4):
             if not conf.get(f"vnet{x}_mtu"):
                 conf[f"vnet{x}_mtu"] = 'auto'
@@ -873,6 +879,15 @@ class IOCConfiguration:
             conf.update(jail_conf)
 
         return conf, True
+
+    def backup_iocage_jail_conf(self, location):
+        if os.path.exists(location):
+            dest = location.rsplit('/', 1)[-1].replace('.json', '')
+            shutil.copy(
+                location, os.path.join(
+                    location.rsplit('/', 1)[0], f'{dest}_backup.json'
+                )
+            )
 
     def check_jail_config(self, conf):
         """
@@ -911,9 +926,9 @@ class IOCConfiguration:
             # It is possible the basejail hasn't started yet. I believe
             # the best case here is to parse fstab entries and determine
             # which release is being used and check it for freebsd-version
-            for index, fstab_entry in iocage_lib.ioc_fstab.IOCFstab(
-                host_hostuuid, 'list',
-            ).fstab_list():
+            fstab = iocage_lib.ioc_fstab.IOCFstab(host_hostuuid, 'list')
+            fstab.__validate_fstab__([l[1] for l in fstab.fstab], 'all')
+            for index, fstab_entry in fstab.fstab_list():
                 if fstab_entry[1].rstrip('/') == os.path.join(
                     freebsd_version_path, 'bin'
                 ):
@@ -1086,7 +1101,7 @@ class IOCConfiguration:
             'vnet2_mac': 'none',
             'vnet3_mac': 'none',
             'vnet_default_interface': 'auto',
-            'devfs_ruleset': '4',
+            'devfs_ruleset': str(iocage_lib.ioc_common.IOCAGE_DEVFS_RULESET),
             'exec_start': '/bin/sh /etc/rc',
             'exec_stop': '/bin/sh /etc/rc.shutdown',
             'exec_prestart': '/usr/bin/true',
@@ -1197,6 +1212,7 @@ class IOCConfiguration:
             'nat_forwards': 'none',
             'plugin_name': 'none',
             'plugin_repository': 'none',
+            'min_dyn_devfs_ruleset': '1000',
             'vnet0_mtu': 'auto',
             'vnet1_mtu': 'auto',
             'vnet2_mtu': 'auto',
@@ -1249,6 +1265,7 @@ class IOCConfiguration:
             # They may have had new keys added to their default
             # configuration, or it never existed.
             if write or fix_write:
+                self.backup_iocage_jail_conf(default_json_location)
                 self.json_write(default_props, default_json_location,
                                 defaults=True)
 
@@ -1262,6 +1279,45 @@ class IOCJson(IOCConfiguration):
     format, will set and get properties.
     """
 
+    truthy_props = [
+        'bpf',
+        'template',
+        'host_time',
+        'basejail',
+        'dhcp',
+        'vnet',
+        'rtsold',
+        'jail_zfs',
+        'hostid_strict_check',
+        'boot',
+        'exec_clean',
+        'mount_linprocfs',
+        'mount_procfs',
+        'allow_vmm',
+        'allow_tun',
+        'allow_socket_af',
+        'allow_quotas',
+        'allow_mount_zfs',
+        'allow_mount_tmpfs',
+        'allow_mount_procfs',
+        'allow_mount_nullfs',
+        'allow_mount_fusefs',
+        'allow_mount_devfs',
+        'allow_mount',
+        'allow_mlock',
+        'allow_chflags',
+        'allow_raw_sockets',
+        'allow_sysvipc',
+        'allow_set_hostname',
+        'mount_fdescfs',
+        'mount_devfs',
+        'ip6_saddrsel',
+        'ip4_saddrsel',
+        'ip_hostname',
+        'assign_localhost',
+        'nat'
+    ]
+
     def __init__(self,
                  location="",
                  silent=False,
@@ -1274,44 +1330,6 @@ class IOCJson(IOCConfiguration):
         self.cli = cli
         self.stop = stop
         self.suppress_log = suppress_log
-        self.truthy_props = [
-            'bpf',
-            'template',
-            'host_time',
-            'basejail',
-            'dhcp',
-            'vnet',
-            'rtsold',
-            'jail_zfs',
-            'hostid_strict_check',
-            'boot',
-            'exec_clean',
-            'mount_linprocfs',
-            'mount_procfs',
-            'allow_vmm',
-            'allow_tun',
-            'allow_socket_af',
-            'allow_quotas',
-            'allow_mount_zfs',
-            'allow_mount_tmpfs',
-            'allow_mount_procfs',
-            'allow_mount_nullfs',
-            'allow_mount_fusefs',
-            'allow_mount_devfs',
-            'allow_mount',
-            'allow_mlock',
-            'allow_chflags',
-            'allow_raw_sockets',
-            'allow_sysvipc',
-            'allow_set_hostname',
-            'mount_fdescfs',
-            'mount_devfs',
-            'ip6_saddrsel',
-            'ip4_saddrsel',
-            'ip_hostname',
-            'assign_localhost',
-            'nat'
-        ]
         super().__init__(location, checking_datasets, silent, callback)
 
         try:
@@ -1655,6 +1673,10 @@ class IOCJson(IOCConfiguration):
                                        " it.")
 
         conf = self.check_config(conf)
+        if conf[1] and conf[0].get('host_hostuuid'):
+            self.backup_iocage_jail_conf(
+                os.path.join(self.location, 'config.json'),
+            )
 
         return conf
 
@@ -2105,6 +2127,7 @@ class IOCJson(IOCConfiguration):
             'nat_forwards': ('string', ),
             'plugin_name': ('string', ),
             'plugin_repository': ('string', ),
+            'min_dyn_devfs_ruleset': ('string', ),
             "vnet0_mtu": ("string", ),
             "vnet1_mtu": ("string", ),
             "vnet2_mtu": ("string", ),
@@ -2390,6 +2413,22 @@ class IOCJson(IOCConfiguration):
                                 silent=self.silent,
                                 exception=ioc_exceptions.ValidationFailed
                             )
+                elif key in ('devfs_ruleset', 'min_dyn_devfs_ruleset'):
+                    try:
+                        intval = int(value)
+                        if intval <= 0:
+                            raise ValueError()
+                        conf[key] = str(intval)
+                    except ValueError:
+                        iocage_lib.ioc_common.logit(
+                            {
+                                'level': 'EXCEPTION',
+                                'message': f'Invalid {key} value: {value}'
+                            },
+                            _callback=self.callback,
+                            silent=self.silent,
+                            exception=ioc_exceptions.ValidationFailed
+                        )
 
                 return value, conf
             else:

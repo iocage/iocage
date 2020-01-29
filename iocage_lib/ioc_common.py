@@ -43,7 +43,12 @@ import json
 import iocage_lib.ioc_exceptions
 import iocage_lib.ioc_exec
 
+from iocage_lib.dataset import Dataset
+
 INTERACTIVE = False
+# 4 is a magic number for default and doesn't refer
+# to the actual ruleset 4 in devfs.rules(!)
+IOCAGE_DEVFS_RULESET = 4
 
 
 def callback(_log, callback_exception):
@@ -740,7 +745,7 @@ def generate_devfs_ruleset(conf, paths=None, includes=None, callback=None,
     Will add a per jail devfs ruleset with the specified rules,
     specifying defaults that equal devfs_ruleset 4
     """
-    ruleset = conf['devfs_ruleset']
+    configured_ruleset = conf['devfs_ruleset']
     devfs_includes = []
     devfs_rulesets = su.run(
         ['devfs', 'rule', 'showsets'],
@@ -748,22 +753,26 @@ def generate_devfs_ruleset(conf, paths=None, includes=None, callback=None,
     )
     ruleset_list = [int(i) for i in devfs_rulesets.stdout.splitlines()]
 
-    if ruleset != '4':
-        if int(ruleset) in ruleset_list:
-            return str(ruleset)
-
-        logit({
-            "level": "INFO",
-            "message": f'* Ruleset {ruleset} does not exist, using defaults'
-        },
-            _callback=callback,
-            silent=silent)
-
-    ruleset = 5  # 0-4 is always reserved
+    ruleset = int(conf["min_dyn_devfs_ruleset"])
     while ruleset in ruleset_list:
         ruleset += 1
     ruleset = str(ruleset)
 
+    # Custom devfs_ruleset configured, clone to dynamic ruleset
+    if int(configured_ruleset) != IOCAGE_DEVFS_RULESET:
+        if int(configured_ruleset) not in ruleset_list:
+            return (True, configured_ruleset, '0')
+        rules = su.run(
+            ['devfs', 'rule', '-s', configured_ruleset, 'show'],
+            stdout=su.PIPE, universal_newlines=True
+        )
+        for rule in rules.stdout.splitlines():
+            su.run(['devfs', 'rule', '-s', ruleset, 'add'] +
+                   rule.split(' ')[1:], stdout=su.PIPE)
+
+        return (True, configured_ruleset, ruleset)
+
+    # Create default ruleset
     devfs_dict = dict((dev, None) for dev in (
         'hide', 'null', 'zero', 'crypto', 'random', 'urandom', 'ptyp*',
         'ptyq*', 'ptyr*', 'ptys*', 'ptyP*', 'ptyQ*', 'ptyR*', 'ptyS*', 'ptyl*',
@@ -815,7 +824,7 @@ def generate_devfs_ruleset(conf, paths=None, includes=None, callback=None,
 
         su.run(['devfs', 'rule', '-s', ruleset] + path, stdout=su.PIPE)
 
-    return ruleset
+    return (False, configured_ruleset, ruleset)
 
 
 def runscript(script):
@@ -1126,3 +1135,19 @@ def get_jails_with_config(filters=None, mapping_func=None):
             )
         ) if not filters or filters(j)
     }
+
+
+def tmp_dataset_checks(_callback, silent):
+    tmp_dataset = Dataset('/tmp', cache=False)
+    if tmp_dataset.exists:
+        tmp_val = tmp_dataset.properties['exec']
+
+        if tmp_val == 'off':
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message': f'{tmp_dataset.name} needs exec=on!'
+                },
+                _callback=_callback,
+                silent=silent
+            )

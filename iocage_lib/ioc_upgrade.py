@@ -35,8 +35,6 @@ import iocage_lib.ioc_common
 import iocage_lib.ioc_json
 import iocage_lib.ioc_list
 
-from iocage_lib.dataset import Dataset
-
 
 class IOCUpgrade:
 
@@ -90,18 +88,7 @@ class IOCUpgrade:
             'var/db/freebsd-update', bd_hash + '-install')
 
     def upgrade_jail(self):
-        tmp_dataset = Dataset('/tmp')
-        if tmp_dataset.exists:
-            tmp_val = tmp_dataset.properties['exec']
-
-            if tmp_val == 'off':
-                iocage_lib.ioc_common.logit(
-                    {
-                        'level': 'EXCEPTION',
-                        'message': f'{tmp_dataset.name} needs exec=on!'
-                    },
-                    _callback=self.callback,
-                    silent=self.silent)
+        iocage_lib.ioc_common.tmp_dataset_checks(self.callback, self.silent)
 
         if "HBSD" in self.freebsd_version:
             su.Popen(["hbsd-upgrade", "-j", self.jid]).communicate()
@@ -200,7 +187,7 @@ class IOCUpgrade:
 
         return new_release
 
-    def upgrade_basejail(self, snapshot=True):
+    def upgrade_basejail(self, snapshot=True, snap_name=None):
         if "HBSD" in self.freebsd_version:
             # TODO: Not supported yet
             msg = "Upgrading basejails on HardenedBSD is not supported yet."
@@ -268,7 +255,7 @@ class IOCUpgrade:
             )
         except iocage_lib.ioc_exceptions.CommandFailed:
             msg = "Mounting src into jail failed! Rolling back snapshot."
-            self.__rollback_jail__()
+            self.__rollback_jail__(name=snap_name)
 
             iocage_lib.ioc_common.logit(
                 {
@@ -293,7 +280,7 @@ class IOCUpgrade:
             # These are now the result of a failed merge, nuking and putting
             # the backup back
             msg = "etcupdate failed! Rolling back snapshot."
-            self.__rollback_jail__()
+            self.__rollback_jail__(name=snap_name)
 
             su.Popen([
                 "umount", "-f", f"{self.path}/iocage_upgrade"
@@ -396,9 +383,9 @@ class IOCUpgrade:
         name = f"ioc_upgrade_{self.date}"
         ioc.IOCage(jail=self.uuid, skip_jails=True, silent=True).snapshot(name)
 
-    def __rollback_jail__(self):
+    def __rollback_jail__(self, name=None):
         import iocage_lib.iocage as ioc  # Avoids dep issues
-        name = f"ioc_upgrade_{self.date}"
+        name = name if name else f'ioc_upgrade_{self.date}'
         iocage = ioc.IOCage(jail=self.uuid, skip_jails=True, silent=True)
         iocage.stop()
         iocage.rollback(name)
