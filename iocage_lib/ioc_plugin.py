@@ -192,12 +192,14 @@ class IOCPlugin(object):
 
     @staticmethod
     def retrieve_plugin_index_data(plugin_index_path):
-        with open(
-            os.path.join(plugin_index_path, 'INDEX'), 'r'
-        ) as f:
+        plugin_index = {}
+        index_path = os.path.join(plugin_index_path, 'INDEX')
+        if not os.path.exists(index_path):
+            return plugin_index
+
+        with open(index_path, 'r') as f:
             index = json.loads(f.read())
 
-        plugin_index = {}
         for plugin in index:
             plugin_index[plugin] = {
                 'primary_pkg': index[plugin].get('primary_pkg'),
@@ -860,8 +862,22 @@ fingerprint: {fingerprint}
     ):
         self.pull_clone_git_repo()
 
-        with open(os.path.join(self.git_destination, 'INDEX'), 'r') as plugins:
-            plugins = json.load(plugins)
+        index_path = os.path.join(self.git_destination, 'INDEX')
+        if not os.path.exists(index_path):
+            # Gracefully handle index not existing bit
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message': 'Unable to retrieve INDEX of '
+                               f'{self.git_destination} at '
+                               f'{index_path}.'
+                },
+                _callback=self.callback,
+                silent=self.silent
+            )
+        else:
+            with open(index_path, 'r') as plugins:
+                plugins = json.load(plugins)
 
         if index_only:
             return plugins
