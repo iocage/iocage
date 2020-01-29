@@ -201,13 +201,17 @@ class IOCPlugin(object):
             index = json.loads(f.read())
 
         for plugin in index:
+            plugin_manifest_path = os.path.join(
+                plugin_index_path, index[plugin]['MANIFEST']
+            )
+            if not os.path.exists(plugin_manifest_path):
+                continue
+
             plugin_index[plugin] = {
                 'primary_pkg': index[plugin].get('primary_pkg'),
                 'category': index[plugin].get('category'),
             }
-            with open(
-                os.path.join(plugin_index_path, index[plugin]['MANIFEST']), 'r'
-            ) as f:
+            with open(plugin_manifest_path, 'r') as f:
                 plugin_index[plugin].update(json.loads(f.read()))
 
         return plugin_index
