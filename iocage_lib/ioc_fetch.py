@@ -625,6 +625,10 @@ class IOCFetch:
                             },
                             _callback=self.callback,
                             silent=self.silent)
+                        if f == 'doc.txz':
+                            # some releases might not have it,
+                            # it is safe to skip
+                            self.files_left.remove(f)
                         continue
 
                 if not missing and f in _list:
