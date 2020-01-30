@@ -950,19 +950,20 @@ class IOCFetch:
 
                     if not cli:
                         for jail, path in jails.items():
-                            _json = iocage_lib.ioc_json.IOCJson(path)
+                            _json = iocage_lib.ioc_json.IOCJson(
+                                path, cli=False
+                            )
                             props = _json.json_get_value('all')
 
                             if props['basejail'] and self.release.rsplit(
                                 '-', 1
                             )[0] in props['release']:
-                                props['release'] = new_release
-                                _json.json_write(props)
+                                _json.json_set_value(f'release={new_release}')
                     else:
-                        _json = iocage_lib.ioc_json.IOCJson(jails[uuid])
-                        props = _json.json_get_value('all')
-                        props['release'] = new_release
-                        _json.json_write(props)
+                        _json = iocage_lib.ioc_json.IOCJson(
+                            jails[uuid], cli=False
+                        )
+                        _json.json_set_value(f'release={new_release}')
 
             if self.verify:
                 # tmp only exists if they verify SSL certs
