@@ -1524,14 +1524,18 @@ fingerprint: {fingerprint}
         ) as e:
 
             basic_msg = 'Failed to update git repository:'
+            exception_message = ''
 
             if isinstance(e, git.exc.NoSuchPathError):
                 f_msg = 'Cloning git repository'
             elif isinstance(e, git.exc.InvalidGitRepositoryError):
                 f_msg = f'{basic_msg} Invalid Git Repository'
             else:
+                exception_message = b' '.join(
+                    filter(bool, e.message)
+                ).decode()
                 f_msg = f'{basic_msg} ' \
-                    f'{b" ".join(filter(bool, e.message)).decode()}'
+                    f'{exception_message}'
 
             iocage_lib.ioc_common.logit(
                 {
@@ -1539,6 +1543,23 @@ fingerprint: {fingerprint}
                     'message': f_msg
                 }
             )
+
+            if exception_message.strip().startswith(
+                'fatal: unable to access'
+            ):
+                # It is possible the user had a bad network and we
+                # would be in this case destroying the plugin repository
+                # which would function okay to at least get the
+                # required data points while listing plugins
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'ERROR',
+                        'message': f'Not cloning {repo_url}'
+                                   'as git-pull failed due to '
+                                   'network issues.'
+                    }
+                )
+                return
 
             # Clone
             shutil.rmtree(destination, ignore_errors=True)
