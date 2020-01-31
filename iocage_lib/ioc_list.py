@@ -488,12 +488,54 @@ class IOCList(object):
                             git_repository=conf['plugin_repository']
                         )
                         if not os.path.exists(repo_obj.git_destination):
-                            repo_obj.pull_clone_git_repo()
-                        with open(
-                            os.path.join(repo_obj.git_destination, 'INDEX')
-                        ) as f:
-                            plugin_index_data[conf['plugin_repository']] = \
-                                json.loads(f.read())
+                            try:
+                                repo_obj.pull_clone_git_repo()
+                            except Exception as e:
+                                iocage_lib.ioc_common.logit(
+                                    {
+                                        'level': 'ERROR',
+                                        'message':
+                                            'Failed to clone '
+                                            f'{conf["plugin_repository"]} '
+                                            f'for {uuid_full}: {e}'
+                                    },
+                                    _callback=self.callback,
+                                    silent=self.silent
+                                )
+                        index_path = os.path.join(
+                            repo_obj.git_destination, 'INDEX'
+                        )
+                        if not os.path.exists(index_path):
+                            iocage_lib.ioc_common.logit(
+                                {
+                                    'level': 'ERROR',
+                                    'message':
+                                        f'{index_path} does not exist '
+                                        f'for {uuid_full} plugin.'
+                                },
+                                _callback=self.callback,
+                                silent=self.silent
+                            )
+                            plugin_index_data[
+                                conf['plugin_repository']
+                            ] = {}
+                        else:
+                            with open(index_path) as f:
+                                plugin_index_data[
+                                    conf['plugin_repository']
+                                ] = json.loads(f.read())
+                    elif not plugin_index_data[conf['plugin_repository']]:
+                        iocage_lib.ioc_common.logit(
+                            {
+                                'level': 'ERROR',
+                                'message':
+                                    'Unable to retrieve INDEX from '
+                                    f'{conf["plugin_repository"]} for '
+                                    f'{uuid_full}'
+                            },
+                            _callback=self.callback,
+                            silent=self.silent
+                        )
 
                     index_plugin_conf = plugin_index_data[
                         conf['plugin_repository']
