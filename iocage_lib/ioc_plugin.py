@@ -192,20 +192,26 @@ class IOCPlugin(object):
 
     @staticmethod
     def retrieve_plugin_index_data(plugin_index_path):
-        with open(
-            os.path.join(plugin_index_path, 'INDEX'), 'r'
-        ) as f:
+        plugin_index = {}
+        index_path = os.path.join(plugin_index_path, 'INDEX')
+        if not os.path.exists(index_path):
+            return plugin_index
+
+        with open(index_path, 'r') as f:
             index = json.loads(f.read())
 
-        plugin_index = {}
         for plugin in index:
+            plugin_manifest_path = os.path.join(
+                plugin_index_path, index[plugin]['MANIFEST']
+            )
+            if not os.path.exists(plugin_manifest_path):
+                continue
+
             plugin_index[plugin] = {
                 'primary_pkg': index[plugin].get('primary_pkg'),
                 'category': index[plugin].get('category'),
             }
-            with open(
-                os.path.join(plugin_index_path, index[plugin]['MANIFEST']), 'r'
-            ) as f:
+            with open(plugin_manifest_path, 'r') as f:
                 plugin_index[plugin].update(json.loads(f.read()))
 
         return plugin_index
@@ -860,8 +866,22 @@ fingerprint: {fingerprint}
     ):
         self.pull_clone_git_repo()
 
-        with open(os.path.join(self.git_destination, 'INDEX'), 'r') as plugins:
-            plugins = json.load(plugins)
+        index_path = os.path.join(self.git_destination, 'INDEX')
+        if not os.path.exists(index_path):
+            # Gracefully handle index not existing bit
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message': 'Unable to retrieve INDEX of '
+                               f'{self.git_destination} at '
+                               f'{index_path}.'
+                },
+                _callback=self.callback,
+                silent=self.silent
+            )
+        else:
+            with open(index_path, 'r') as plugins:
+                plugins = json.load(plugins)
 
         if index_only:
             return plugins
@@ -1504,14 +1524,18 @@ fingerprint: {fingerprint}
         ) as e:
 
             basic_msg = 'Failed to update git repository:'
+            exception_message = ''
 
             if isinstance(e, git.exc.NoSuchPathError):
                 f_msg = 'Cloning git repository'
             elif isinstance(e, git.exc.InvalidGitRepositoryError):
                 f_msg = f'{basic_msg} Invalid Git Repository'
             else:
+                exception_message = b' '.join(
+                    filter(bool, e.message)
+                ).decode()
                 f_msg = f'{basic_msg} ' \
-                    f'{b" ".join(filter(bool, e.message)).decode()}'
+                    f'{exception_message}'
 
             iocage_lib.ioc_common.logit(
                 {
@@ -1519,6 +1543,23 @@ fingerprint: {fingerprint}
                     'message': f_msg
                 }
             )
+
+            if exception_message.strip().startswith(
+                'fatal: unable to access'
+            ):
+                # It is possible the user had a bad network and we
+                # would be in this case destroying the plugin repository
+                # which would function okay to at least get the
+                # required data points while listing plugins
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'ERROR',
+                        'message': f'Not cloning {repo_url}'
+                                   'as git-pull failed due to '
+                                   'network issues.'
+                    }
+                )
+                return
 
             # Clone
             shutil.rmtree(destination, ignore_errors=True)
