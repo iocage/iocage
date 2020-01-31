@@ -683,19 +683,18 @@ class IOCConfiguration:
                         pass
                     else:
                         if plugin_data.get('name'):
-                            conf['plugin_name'] = plugin_data['name'].lower()
-                            # If this happens, we want to rename the
-                            # json file so it can be detected by iocage
-                            if plugin_data['name'] != json_files[0].rstrip(
-                                '.json'
-                            ):
-                                shutil.move(
-                                    os.path.join(jail_path, json_files[0]),
-                                    os.path.join(
-                                        jail_path,
-                                        f'{plugin_data["name"].lower()}.json'
-                                    )
-                                )
+                            # If the json file has a name entry, we assume
+                            # that the json file in question is the plugin
+                            # manifest and we use the json file's name
+                            # as the plugin name. Motivation is that most
+                            # if not all have same plugin entries as their
+                            # manifest names, however some plugins like plex
+                            # have a different plugin name in their manifest,
+                            # a short one which causes issues if the user
+                            # tries to upgrade.
+                            conf['plugin_name'] = json_files[0].rsplit(
+                                '.json', 1
+                            )[0]
 
             # This is our last resort - if above strategy didn't work,
             # let's use host_hostuuid in this case
