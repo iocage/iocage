@@ -23,7 +23,8 @@ class Cache:
                 if ioc_pool:
                     ds = os.path.join(ioc_pool, 'iocage')
                 self.dataset_data = all_properties(
-                    ds if ds and dataset_exists(ds) else '', recursive=True
+                    ds if ds and dataset_exists(ds) else '', recursive=True,
+                    types=['filesystem']
                 )
             return self.dataset_data
 
