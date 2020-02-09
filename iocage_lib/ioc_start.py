@@ -1568,15 +1568,21 @@ class IOCStart(object):
             pf_anchors = su.run(
                 ['pfctl', '-sA'], stdout=su.PIPE, stderr=su.PIPE
             )
-            if set([pf_nat_anchor, pf_rdr_anchor]).issubset(set([l.strip().decode() for l in pf_anchors.stdout.splitlines()])):
-                self.log.debug(f'Found pf anchors {pf_nat_anchor} and {pf_rdr_anchor}')
-                pf_conf = self.__add_nat_pf__(nat_interface, forwards, anchors=True)
+            if set([pf_nat_anchor, pf_rdr_anchor]).issubset(set(
+                    [l.strip().decode() for l in
+                     pf_anchors.stdout.splitlines()])):
+                self.log.debug(f'Found pf anchors {pf_nat_anchor} and \
+                        {pf_rdr_anchor}')
+                pf_conf = self.__add_nat_pf__(nat_interface, forwards,
+                                              anchors=True)
                 pf = su.run(
-                    ['pfctl',  '-a', pf_nat_anchor,'-f', pf_conf[0]], stdout=su.PIPE, stderr=su.PIPE
+                    ['pfctl', '-a', pf_nat_anchor, '-f', pf_conf[0]],
+                    stdout=su.PIPE, stderr=su.PIPE
                 )
                 self.log.debug(f'pfctl -a {pf_nat_anchor} -f {pf_conf[0]} ran')
                 pf = su.run(
-                    ['pfctl',  '-a', pf_rdr_anchor,'-f', pf_conf[1]], stdout=su.PIPE, stderr=su.PIPE
+                    ['pfctl', '-a', pf_rdr_anchor, '-f', pf_conf[1]],
+                    stdout=su.PIPE, stderr=su.PIPE
                 )
                 self.log.debug(f'pfctl -a {pf_rdr_anchor} -f {pf_conf[1]} ran')
             else:
@@ -1657,7 +1663,8 @@ class IOCStart(object):
         os.chmod(nat_pf_conf[0], 0o755)
 
         if anchors:
-            with open(os.open(nat_pf_conf[1], os.O_CREAT | os.O_RDWR), 'w+') as f:
+            with open(os.open(nat_pf_conf[1], os.O_CREAT | os.O_RDWR), 'w+') \
+                    as f:
                 self.log.debug(f'{nat_pf_conf[1]} opened')
                 for line in f.readlines():
                     line = line.rstrip()
