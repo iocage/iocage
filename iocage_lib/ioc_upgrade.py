@@ -85,9 +85,11 @@ class IOCUpgrade:
         self.callback = callback
 
         # symbolic link created on fetch by freebsd-update
-        bd_hash = hashlib.sha256((self.path + '\n').encode('utf-8')).hexdigest()
+        bd_hash = hashlib.sha256((self.path + '\n').encode('utf-8'))\
+            .hexdigest()
         self.freebsd_install_link = os.path.join(self.path,
-            'var/db/freebsd-update', bd_hash + '-install')
+                                                 'var/db/freebsd-update',
+                                                 bd_hash + '-install')
 
     def upgrade_jail(self):
         tmp_dataset = Dataset('/tmp')
@@ -167,7 +169,7 @@ class IOCUpgrade:
                     silent=self.silent
                 )
 
-            for _ in range(50): # up to 50 invocations to prevent runaway
+            for _ in range(50):  # up to 50 invocations to prevent runaway
                 if os.path.islink(self.freebsd_install_link):
                     self.__upgrade_install__(tmp.name)
                 else:
