@@ -715,11 +715,13 @@ fingerprint: {fingerprint}
         if ip6 != 'none':
             ip = ','.join([
                 v.split('|')[-1].split('/')[0] for v in ip6.split(',')
+                if 'accept_rtadv' not in v.lower()
             ])
 
-        if not ip and ip4 != 'none' and 'DHCP' not in ip4.upper():
+        if not ip and ip4 != 'none':
             ip = ','.join([
                 v.split('|')[-1].split('/')[0] for v in ip4.split(',')
+                if 'dhcp' not in v.lower()
             ])
 
         if not ip:
