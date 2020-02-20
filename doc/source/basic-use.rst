@@ -43,7 +43,7 @@ iocage currently has four environment variables:
    +------------------+-----------------+----------------------------------------------------+
 
 The process for setting these variables depends on the shell being used.
-The defualt FreeBSD shell :command:`csh/tcsh` and the :command:`bash/sh`
+The default FreeBSD shell :command:`csh/tcsh` and the :command:`bash/sh`
 shell are different from one another and require a slightly different
 process for setting environment variables. For example:
 
