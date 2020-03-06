@@ -625,6 +625,17 @@ class IOCStart(object):
                     ','
                 )[0].split('|')[-1].split('/')[0]
             }
+            default_gw_iface = self.host_gateways['ipv4']['interface']
+            if default_gw_iface:
+                gw_addresses = netifaces.ifaddresses(
+                    default_gw_iface
+                )[netifaces.AF_INET]
+                if gw_addresses:
+                    pre_start_env.update({
+                        'EXT_HOST': gw_addresses[0]['addr'],
+                        'EXT_BCAST': gw_addresses[0]['broadcast'],
+                    })
+
             if vnet:
                 pre_start_env[
                     'INTERNAL_BROADCAST_IP'
