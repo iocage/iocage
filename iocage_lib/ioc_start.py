@@ -583,7 +583,6 @@ class IOCStart(object):
                 f'devfs_ruleset={devfs_ruleset}',
                 f'enforce_statfs={enforce_statfs}',
                 f'children.max={children_max}',
-                f'exec.prestart={exec_prestart}',
                 f'exec.clean={exec_clean}',
                 f'exec.timeout={exec_timeout}',
                 f'stop.timeout={stop_timeout}',
@@ -614,6 +613,49 @@ class IOCStart(object):
             "IOCAGE_HOSTNAME": f"{host_hostname}",
             "IOCAGE_NAME": f"ioc-{self.uuid}",
         }
+
+        if nat:
+            # We pass some environment variables to the shell script
+            # for nat based jails currently aiding in doing jail specific
+            # tasks in the host environment
+            pre_start_env = {
+                **os.environ,
+                'INTERNAL_DEFAULT_ROUTER': self.defaultrouter,
+                'INTERNAL_IP': self.ip4_addr.split(
+                    ','
+                )[0].split('|')[-1].split('/')[0]
+            }
+            if vnet:
+                pre_start_env[
+                    'INTERNAL_BROADCAST_IP'
+                ] = ipaddress.IPv4Network(
+                    f'{pre_start_env["INTERNAL_IP"]}/30', False
+                ).broadcast_address.exploded
+            else:
+                pre_start_env['INTERNAL_BROADCAST_IP'] = pre_start_env[
+                    'INTERNAL_IP'
+                ]
+        else:
+            pre_start_env = None
+
+        prestart_success, prestart_error = iocage_lib.ioc_common.runscript(
+            exec_prestart, pre_start_env
+        )
+
+        if prestart_error:
+            iocage_lib.ioc_stop.IOCStop(
+                self.uuid, self.path, force=True, silent=True
+            )
+
+            iocage_lib.ioc_common.logit({
+                'level': 'EXCEPTION',
+                'message': '  + Executing exec_prestart FAILED\n'
+                           f'ERROR:\n{prestart_error}\n\nRefusing to '
+                           f'start {self.uuid}: exec_prestart failed'
+            },
+                _callback=self.callback,
+                silent=self.silent
+            )
 
         start = su.Popen(
             start_cmd, stderr=su.PIPE,
