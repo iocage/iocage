@@ -60,6 +60,10 @@ class IOCFstab(object):
         self.fsdump = fsdump
         self.fspass = fspass
         self.index = int(index) if index is not None else None
+        if os.path.exists(os.path.join(self.iocroot, 'templates', uuid)):
+            self.is_template = True
+        else:
+            self.is_template = False
 
         if action != 'list':
             self.src = self.__fstab_encode__(self.src)
@@ -126,7 +130,11 @@ class IOCFstab(object):
             self.__fstab_mount__()
 
     def __read_fstab__(self):
-        with open(f"{self.iocroot}/jails/{self.uuid}/fstab", "r") as f:
+        with open(os.path.join(
+            self.iocroot,
+            'templates' if self.is_template else 'jails',
+            self.uuid, 'fstab'
+        ), 'r') as f:
             for i, line in enumerate(f, ):
                 if not line.strip():
                     continue
