@@ -17,7 +17,7 @@ root_path="/root/asigra_image_build"
 jail="asigra_migration_image_9b5802df"
 create_branch="asigra_migration"
 operate_branch="master"
-jail_path="/zroot/iocage/jails" # /mnt/vol1/iocage/jails
+jail_path="/mnt/vol1/iocage/jails" # /mnt/vol1/iocage/jails
 #ip4="172.16.145.135"
 
 mkdir -p "$root_path"
@@ -30,8 +30,8 @@ iocage_path_build $create_branch
 cat > "$root_path/asigra.json" <<EOL
 {
   "name": "asigra",
-  "release": "11.2-RELEASE",
-  "artifact": "https://github.com/miwi-fbsd/iocage-plugin-asigra.git",
+  "release": "11.3-RELEASE",
+  "artifact": "https://github.com/ix-plugin-hub/iocage-plugin-asigra.git",
   "pkgs": [
 	"postgresql10-server",
 	"postgresql10-client",
@@ -52,9 +52,10 @@ cat > "$root_path/asigra.json" <<EOL
 	"allow_sysvipc": "1",
 	"sysvmsg": "new",
 	"sysvsem": "new",
-	"sysvshm": "new"
+	"sysvshm": "new",
+	"dhcp": "1"
   },
-  "packagesite": "http://pkg.cdn.trueos.org/iocage/unstable",
+  "packagesite": "http://tnbuilds01.tn.ixsystems.com/packages/asigra-asigra-ports",
   "fingerprints": {
 	  "iocage-plugins": [
 		  {
@@ -62,8 +63,7 @@ cat > "$root_path/asigra.json" <<EOL
 		  "fingerprint": "226efd3a126fb86e71d60a37353d17f57af816d1c7ecad0623c21f0bf73eb0c7"
 	  }
 	  ]
-  },
-  "official": true
+  }
 }
 EOL
 
