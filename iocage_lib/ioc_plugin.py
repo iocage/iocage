@@ -1012,7 +1012,7 @@ fingerprint: {fingerprint}
     def __run_hook_script__(self, script_path):
         # If the hook script has a service command, we want it to
         # succeed. This is essentially a soft jail restart.
-        self.__stop_rc__()
+        self.stop_rc()
         path = f"{self.iocroot}/jails/{self.jail}"
 
         jail_path = os.path.join(self.iocroot, 'jails', self.jail)
@@ -1047,8 +1047,8 @@ fingerprint: {fingerprint}
                 silent=self.silent
             )
         else:
-            self.__stop_rc__()
-            self.__start_rc__()
+            self.stop_rc()
+            self.start_rc()
 
     def update(self, jid):
         iocage_lib.ioc_common.logit(
@@ -1433,7 +1433,7 @@ fingerprint: {fingerprint}
             if snap_name in names:
                 snap.destroy(recursive=False, force=False)
 
-    def __stop_rc__(self):
+    def stop_rc(self):
         iocage_lib.ioc_exec.SilentExec(
             command=["/bin/sh", "/etc/rc.shutdown"],
             path=f"{self.iocroot}/jails/{self.jail}",
@@ -1441,7 +1441,7 @@ fingerprint: {fingerprint}
             callback=self.callback
         )
 
-    def __start_rc__(self):
+    def start_rc(self):
         iocage_lib.ioc_exec.SilentExec(
             command=["/bin/sh", "/etc/rc"],
             path=f"{self.iocroot}/jails/{self.jail}",
