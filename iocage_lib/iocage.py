@@ -1951,8 +1951,15 @@ class IOCage:
                 self.silent = True
                 self.stop()
                 self.silent = _silent
-            else:
-                self.restart(soft=True)
+            elif jail_type == 'pluginv2':
+                plugin_obj = ioc_plugin.IOCPlugin(
+                    jail=uuid,
+                    plugin=conf['plugin_name'],
+                    git_repository=conf['plugin_repository'],
+                    callback=self.callback,
+                )
+                plugin_obj.stop_rc()
+                plugin_obj.start_rc()
 
             message = f"\n{uuid} updates have been applied successfully."
             ioc_common.logit(
