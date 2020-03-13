@@ -861,7 +861,6 @@ class IOCFetch:
                 _callback=self.callback,
                 silent=self.silent)
 
-        su.Popen(cmd).communicate()
         shutil.copy("/etc/resolv.conf", f"{mount_root}/etc/resolv.conf")
 
         path = '/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:'\
@@ -876,6 +875,7 @@ class IOCFetch:
         }
 
         if os.path.isfile(f"{mount_root}/etc/freebsd-update.conf"):
+            su.Popen(cmd).communicate()
             if self.verify:
                 f = "https://raw.githubusercontent.com/freebsd/freebsd" \
                     "/master/usr.sbin/freebsd-update/freebsd-update.sh"
@@ -907,6 +907,7 @@ class IOCFetch:
                     iocage_lib.ioc_common.consume_and_log(
                         _exec, callback=self.callback)
                 except iocage_lib.ioc_exceptions.CommandFailed as e:
+                    su.Popen(['umount', f'{mount_root}/dev']).communicate()
                     iocage_lib.ioc_common.logit(
                         {
                             'level': 'EXCEPTION',
@@ -944,6 +945,7 @@ class IOCFetch:
                         )
 
             finally:
+                su.Popen(['umount', f'{mount_root}/dev']).communicate()
                 new_release = iocage_lib.ioc_common.get_jail_freebsd_version(
                     mount_root, self.release
                 )
@@ -983,8 +985,6 @@ class IOCFetch:
                 os.remove(f"{mount_root}/etc/resolv.conf")
         except OSError:
             pass
-
-        su.Popen(["umount", f"{mount_root}/dev"]).communicate()
 
     def __fetch_extract_remove__(self, tar):
         """
