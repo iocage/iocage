@@ -24,6 +24,7 @@
 """Check datasets before execution"""
 import collections
 import os
+import threading
 import shutil
 
 import iocage_lib.ioc_common
@@ -32,6 +33,8 @@ import iocage_lib.ioc_json
 from iocage_lib.cache import cache
 from iocage_lib.dataset import Dataset
 from iocage_lib.zfs import ZFSException
+
+DATASET_CREATION_LOCK = threading.Lock()
 
 
 class IOCCheck(object):
@@ -117,8 +120,10 @@ class IOCCheck(object):
                     "aclinherit": "passthrough"
                 }
 
-                ds = Dataset(zfs_dataset_name)
-                ds.create({'properties': dataset_options})
+                with DATASET_CREATION_LOCK:
+                    ds = Dataset(zfs_dataset_name, cache=False)
+                    if not ds.exists:
+                        ds.create({'properties': dataset_options})
 
             prop = ds.properties.get("exec")
             if prop != "on":
