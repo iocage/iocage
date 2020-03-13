@@ -1951,6 +1951,8 @@ class IOCage:
                 self.silent = True
                 self.stop()
                 self.silent = _silent
+            else:
+                self.restart(soft=True)
 
             message = f"\n{uuid} updates have been applied successfully."
             ioc_common.logit(
