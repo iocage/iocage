@@ -36,6 +36,7 @@ import re
 import shutil
 import subprocess as su
 import requests
+import threading
 import urllib.parse
 import uuid
 
@@ -49,6 +50,9 @@ import iocage_lib.ioc_exceptions
 import texttable
 
 from iocage_lib.dataset import Dataset
+
+
+GIT_LOCK = threading.Lock()
 
 
 class IOCPlugin(object):
@@ -1495,109 +1499,110 @@ fingerprint: {fingerprint}
         """
         This is to replicate the functionality of cloning/pulling a repo
         """
-        branch = ref
-        try:
-            if os.path.exists(destination) and not IOCPlugin._verify_git_repo(
-                repo_url, destination
-            ):
-                raise git.exc.InvalidGitRepositoryError()
+        with GIT_LOCK:
+            branch = ref
+            try:
+                if os.path.exists(
+                    destination
+                ) and not IOCPlugin._verify_git_repo(repo_url, destination):
+                    raise git.exc.InvalidGitRepositoryError()
 
-            # "Pull"
-            repo = git.Repo(destination)
-            origin = repo.remotes.origin
-            ref = 'master' if f'origin/{ref}' not in repo.refs else ref
-            for command in [
-                ['checkout', ref],
-                ['pull']
-            ]:
-                iocage_lib.ioc_exec.SilentExec(
-                    ['git', '-C', destination] + command,
-                    None, unjailed=True, decode=True,
-                    su_env={
-                        k: os.environ.get(k)
-                        for k in ['http_proxy', 'https_proxy'] if
-                        os.environ.get(k)
-                    }
-                )
-        except (
-            iocage_lib.ioc_exceptions.CommandFailed,
-            git.exc.InvalidGitRepositoryError,
-            git.exc.NoSuchPathError
-        ) as e:
+                # "Pull"
+                repo = git.Repo(destination)
+                origin = repo.remotes.origin
+                ref = 'master' if f'origin/{ref}' not in repo.refs else ref
+                for command in [
+                    ['checkout', ref],
+                    ['pull']
+                ]:
+                    iocage_lib.ioc_exec.SilentExec(
+                        ['git', '-C', destination] + command,
+                        None, unjailed=True, decode=True,
+                        su_env={
+                            k: os.environ.get(k)
+                            for k in ['http_proxy', 'https_proxy'] if
+                            os.environ.get(k)
+                        }
+                    )
+            except (
+                iocage_lib.ioc_exceptions.CommandFailed,
+                git.exc.InvalidGitRepositoryError,
+                git.exc.NoSuchPathError
+            ) as e:
 
-            basic_msg = 'Failed to update git repository:'
-            exception_message = ''
+                basic_msg = 'Failed to update git repository:'
+                exception_message = ''
 
-            if isinstance(e, git.exc.NoSuchPathError):
-                f_msg = 'Cloning git repository'
-            elif isinstance(e, git.exc.InvalidGitRepositoryError):
-                f_msg = f'{basic_msg} Invalid Git Repository'
-            else:
-                exception_message = b' '.join(
-                    filter(bool, e.message)
-                ).decode()
-                f_msg = f'{basic_msg} ' \
-                    f'{exception_message}'
+                if isinstance(e, git.exc.NoSuchPathError):
+                    f_msg = 'Cloning git repository'
+                elif isinstance(e, git.exc.InvalidGitRepositoryError):
+                    f_msg = f'{basic_msg} Invalid Git Repository'
+                else:
+                    exception_message = b' '.join(
+                        filter(bool, e.message)
+                    ).decode()
+                    f_msg = f'{basic_msg} ' \
+                        f'{exception_message}'
 
-            iocage_lib.ioc_common.logit(
-                {
-                    'level': 'ERROR',
-                    'message': f_msg
-                }
-            )
-
-            if exception_message.strip().startswith(
-                'fatal: unable to access'
-            ):
-                # It is possible the user had a bad network and we
-                # would be in this case destroying the plugin repository
-                # which would function okay to at least get the
-                # required data points while listing plugins
                 iocage_lib.ioc_common.logit(
                     {
                         'level': 'ERROR',
-                        'message': f'Not cloning {repo_url}'
-                                   'as git-pull failed due to '
-                                   'network issues.'
+                        'message': f_msg
                     }
                 )
-                return
 
-            # Clone
-            shutil.rmtree(destination, ignore_errors=True)
-            kwargs = {'env': os.environ.copy(), 'depth': depth}
-            repo = git.Repo.clone_from(
-                repo_url, destination, **{
-                    k: v for k, v in kwargs.items() if v
-                }
-            )
-            origin = repo.remotes.origin
+                if exception_message.strip().startswith(
+                    'fatal: unable to access'
+                ):
+                    # It is possible the user had a bad network and we
+                    # would be in this case destroying the plugin repository
+                    # which would function okay to at least get the
+                    # required data points while listing plugins
+                    iocage_lib.ioc_common.logit(
+                        {
+                            'level': 'ERROR',
+                            'message': f'Not cloning {repo_url}'
+                                       'as git-pull failed due to '
+                                       'network issues.'
+                        }
+                    )
+                    return
 
-        if not origin.exists():
-            iocage_lib.ioc_common.logit(
-                {
-                    'level': 'EXCEPTION',
-                    'message': f'Origin: {origin.url} does not exist!'
-                },
-                _callback=callback
-            )
+                # Clone
+                shutil.rmtree(destination, ignore_errors=True)
+                kwargs = {'env': os.environ.copy(), 'depth': depth}
+                repo = git.Repo.clone_from(
+                    repo_url, destination, **{
+                        k: v for k, v in kwargs.items() if v
+                    }
+                )
+                origin = repo.remotes.origin
 
-        if f'origin/{ref}' not in repo.refs:
-            ref = 'master'
-            msgs = [
-                f'\nBranch {branch} does not exist at {repo_url}!',
-                'Using "master" branch for plugin, this may not work '
-                'with your RELEASE'
-            ]
-
-            for msg in msgs:
+            if not origin.exists():
                 iocage_lib.ioc_common.logit(
                     {
-                        'level': 'INFO',
-                        'message': msg
+                        'level': 'EXCEPTION',
+                        'message': f'Origin: {origin.url} does not exist!'
                     },
                     _callback=callback
                 )
 
-        # Time to make this reality
-        repo.git.checkout(ref)
+            if f'origin/{ref}' not in repo.refs:
+                ref = 'master'
+                msgs = [
+                    f'\nBranch {branch} does not exist at {repo_url}!',
+                    'Using "master" branch for plugin, this may not work '
+                    'with your RELEASE'
+                ]
+
+                for msg in msgs:
+                    iocage_lib.ioc_common.logit(
+                        {
+                            'level': 'INFO',
+                            'message': msg
+                        },
+                        _callback=callback
+                    )
+
+            # Time to make this reality
+            repo.git.checkout(ref)
