@@ -1944,14 +1944,10 @@ class IOCage:
                 ).fetch_update(*params)
             finally:
                 if not started and jail_type == 'pluginv2':
-                    plugin_obj = ioc_plugin.IOCPlugin(
-                        jail=uuid,
-                        plugin=conf['plugin_name'],
-                        git_repository=conf['plugin_repository'],
-                        callback=self.callback,
-                    )
-                    plugin_obj.stop_rc()
-                    plugin_obj.start_rc()
+                    silent = self.silent
+                    self.silent = True
+                    self.restart()
+                    self.silent = silent
 
             ioc_common.logit({
                 'level': 'INFO',
