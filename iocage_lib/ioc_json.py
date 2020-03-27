@@ -580,12 +580,19 @@ class IOCConfiguration:
             # Helps avoid clashes with other systems in the network
             mac_prefix = default_mac[0]['addr'].replace(':', '')[:6]
 
-            return mac_prefix
         except KeyError:
             # They don't have a default gateway, opting for generation of mac
             mac = random.randint(0x00, 0xfffff)
 
-            return f'{mac:06x}'
+            mac_prefix = f'{mac:06x}'
+
+    @staticmethod
+    def validate_mac_prefix(mac_prefix):
+        valid = len(mac_prefix) == 6
+        if valid:
+            binary = format(int(mac_prefix, 16), '024b')
+            valid = binary[7] == '0' and binary[6] == '1'
+        return valid
 
     def json_write(self, data, _file="/config.json", defaults=False):
         """Write a JSON file at the location given with supplied data."""
