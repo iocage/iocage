@@ -586,6 +586,20 @@ class IOCConfiguration:
 
             mac_prefix = f'{mac:06x}'
 
+        # Reason for this change is that the first bit in the first byte of
+        # mac address dictates unicast/multicast address. In case of
+        # multicast address, bridge does not learn from such addresses.
+        # So we make sure that we have it unset and the sixth bit indicates
+        # that this mac is being used in a local network which we set it
+        # always.
+        if not IOCConfiguration.validate_mac_prefix(mac_prefix):
+            binary = list(format(int(mac_prefix, 16), '024b'))
+            binary[6] = '1'
+            binary[7] = '0'
+            mac_prefix = format(int(''.join(binary), 2), '06x')
+
+        return mac_prefix
+
     @staticmethod
     def validate_mac_prefix(mac_prefix):
         valid = len(mac_prefix) == 6
