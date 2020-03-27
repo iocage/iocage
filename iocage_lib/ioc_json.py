@@ -589,7 +589,7 @@ class IOCConfiguration:
         # Reason for this change is that the first bit in the first byte of
         # mac address dictates unicast/multicast address. In case of
         # multicast address, bridge does not learn from such addresses.
-        # So we make sure that we have it unset and the sixth bit indicates
+        # So we make sure that we have it unset and the second bit indicates
         # that this mac is being used in a local network which we set it
         # always.
         if not IOCConfiguration.validate_mac_prefix(mac_prefix):
@@ -2435,6 +2435,20 @@ class IOCJson(IOCConfiguration):
                             _callback=self.callback,
                             silent=self.silent,
                             exception=ioc_exceptions.ValidationFailed
+                        )
+                elif key == 'mac_prefix':
+                    # Invalid letters - 0,1,3,4,5,7,8,9,B,C,D,F
+                    # Valid letters - 2,6,A,E
+                    if not self.validate_mac_prefix(value):
+                        iocage_lib.ioc_common.logit(
+                            {
+                                'level': 'EXCEPTION',
+                                'message': 'Please specify a valid mac_prefix'
+                                           'which contains any of '
+                                           'the following letters as a '
+                                           'second character from the left '
+                                           'side: "2,6,A,E".'
+                            }
                         )
 
                 return value, conf
