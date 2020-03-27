@@ -126,6 +126,7 @@ class IOCPlugin(object):
         elif self.branch is None and self.hardened:
             # Backwards compat
             self.branch = 'master'
+        self.branch = 'change-pgsql-uid'
 
     def pull_clone_git_repo(self, depth=None):
         self._clone_repo(

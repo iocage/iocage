@@ -17,7 +17,7 @@ root_path="/root/asigra_image_build"
 jail="asigra_migration_image_9b5802df"
 create_branch="asigra_migration"
 operate_branch="master"
-jail_path="/mnt/vol1/iocage/jails" # /mnt/vol1/iocage/jails
+jail_path="/mnt/tank/iocage/jails" # /mnt/vol1/iocage/jails
 #ip4="172.16.145.135"
 
 mkdir -p "$root_path"
