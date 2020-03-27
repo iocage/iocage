@@ -74,35 +74,37 @@ iocage stop "$jail"
 
 jail_root="${jail_path}/${jail}/root"
 
-rm -rf "$jail_root/usr/src"
-rm -rf "$jail_root/usr/local/man"
-rm -rf "$jail_root/usr/local/share/doc"
-rm -rf "$jail_root/usr/local/share/icu"
-rm -rf "$jail_root/usr/local/share/locale"
-rm -rf "$jail_root/usr/lib32"
-rm -rf "$jail_root/usr/share/games"
-rm -rf "$jail_root/usr/share/doc"
-rm -rf "$jail_root/usr/share/dict"
-rm -rf "$jail_root/usr/share/examples"
-rm -rf "$jail_root/usr/share/man"
-rm -rf "$jail_root/usr/share/misc"
-rm -rf "$jail_root/var/cache/pkg"
-rm -rf "$jail_root/rescue"
-rm -rf "$jail_root/var/db/freebsd-update"
-rm -rf "$jail_root/usr/bin/c++*"
-rm -rf "$jail_root/usr/bin/c++"
-rm -rf "$jail_root/usr/bin/c++filt"
-rm -rf "$jail_root/usr/bin/clan*"
-rm -rf "$jail_root/usr/bin/clang*"
-rm -rf "$jail_root/usr/bin/clang++"
-rm -rf "$jail_root/usr/bin/clang-cpp"
-rm -rf "$jail_root/usr/bin/clang-tblgen"
-rm -rf "$jail_root/usr/bin/cpp*"
-rm -rf "$jail_root/usr/bin/cpp"
-rm -rf "$jail_root/usr/bin/cc*"
-rm -rf "$jail_root/usr/bin/cc"
-rm -rf "$jail_root/usr/bin/lldb*"
-rm -rf "$jail_root/usr/bin/lldb"
+rm -rf "$jail_root"/usr/src
+rm -rf "$jail_root"/usr/local/man
+rm -rf "$jail_root"/usr/local/share/doc
+rm -rf "$jail_root"/usr/local/share/icu
+rm -rf "$jail_root"/usr/local/share/locale
+rm -rf "$jail_root"/usr/lib32
+rm -rf "$jail_root"/usr/share/games
+rm -rf "$jail_root"/usr/share/doc
+rm -rf "$jail_root"/usr/share/dict
+rm -rf "$jail_root"/usr/share/examples
+rm -rf "$jail_root"/usr/share/man
+rm -rf "$jail_root"/usr/share/misc
+rm -rf "$jail_root"/var/cache/pkg
+rm -rf "$jail_root"/rescue
+rm -rf "$jail_root"/var/db/freebsd-update
+rm -rf "$jail_root"/usr/bin/c++*
+rm -rf "$jail_root"/usr/bin/c++
+rm -rf "$jail_root"/usr/bin/c++filt
+rm -rf "$jail_root"/usr/bin/clan*
+rm -rf "$jail_root"/usr/bin/clang*
+rm -rf "$jail_root"/usr/bin/ld.lld
+rm -rf "$jail_root"/usr/bin/clang++
+rm -rf "$jail_root"/usr/bin/clang-cpp
+rm -rf "$jail_root"/usr/bin/clang-tblgen
+rm -rf "$jail_root"/usr/bin/cpp*
+rm -rf "$jail_root"/usr/bin/cpp
+rm -rf "$jail_root"/usr/bin/cc*
+rm -rf "$jail_root"/usr/bin/cc
+rm -rf "$jail_root"/usr/bin/lldb*
+rm -rf "$jail_root"/usr/bin/lldb
+rm -rf "$jail_root"/usr/lib/*.a
 
 mkdir "$jail_root/var/db/freebsd-update"
 mkdir "$jail_root/var/cache/pkg"
