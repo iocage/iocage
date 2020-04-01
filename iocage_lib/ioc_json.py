@@ -593,6 +593,9 @@ class IOCConfiguration:
         # that this mac is being used in a local network which we set it
         # always.
         if not IOCConfiguration.validate_mac_prefix(mac_prefix):
+            # First and second bits in the first byte will be at
+            # 7th and 6th indexes respectively as networks are
+            # MSB-LTR ordered
             binary = list(format(int(mac_prefix, 16), '024b'))
             binary[6] = '1'
             binary[7] = '0'
@@ -2443,14 +2446,14 @@ class IOCJson(IOCConfiguration):
                         iocage_lib.ioc_common.logit(
                             {
                                 'level': 'EXCEPTION',
-                                'message': 'Please specify a valid mac_prefix'
-                                           'which contains any of '
-                                           'the following letters as a '
-                                           'second character from the left '
-                                           'side: "2,6,A,E".'
-                            }
+                                'message': 'Invalid mac_prefix. Must match '
+                                           '`?X????` where ? can be any '
+                                           'valid hex digit (0-9, A-F) and '
+                                           'X is one of 2, 6, A or E.'
+                            },
+                            _callback=self.callback,
+                            silent=self.silent
                         )
-
                 return value, conf
             else:
                 err = f"{value} is not a valid value for {key}.\n"
