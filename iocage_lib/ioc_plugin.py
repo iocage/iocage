@@ -121,10 +121,7 @@ class IOCPlugin(object):
             )
 
         if self.branch is None and not self.hardened:
-            freebsd_version = su.run(['freebsd-version'],
-                                     stdout=su.PIPE,
-                                     stderr=su.STDOUT)
-            r = freebsd_version.stdout.decode().rstrip().split('-', 1)[0]
+            r = self.retrieve_freebsd_version()
 
             self.branch = f'{r}-RELEASE' if '.' in r else f'{r}.0-RELEASE'
         elif self.branch is None and self.hardened:
@@ -136,6 +133,12 @@ class IOCPlugin(object):
             self.branch, self.git_repository, self.git_destination,
             depth, self.callback
         )
+
+    @staticmethod
+    def retrieve_freebsd_version():
+        return su.run(
+            ['freebsd-version'], stdout=su.PIPE, stderr=su.STDOUT
+        ).stdout.decode().rstrip().split('-', 1)[0]
 
     @staticmethod
     def fetch_plugin_packagesites(package_sites):
@@ -211,12 +214,23 @@ class IOCPlugin(object):
             if not os.path.exists(plugin_manifest_path):
                 continue
 
+            with open(plugin_manifest_path, 'r') as f:
+                plugin_manifest_data = json.loads(f.read())
+
+            if not any(plugin_manifest_data.get(k) for k in ('release', 'packagesite')):
+                continue
+
+            if '${ABI}' in plugin_manifest_data['packagesite']:
+                plugin_manifest_data['packagesite'] = plugin_manifest_data['packagesite'].replace(
+                    '${ABI}',
+                    f'FreeBSD:{plugin_manifest_data["release"].split("-")[0].split(".")[0]}:amd64'
+                )
+
             plugin_index[plugin] = {
                 'primary_pkg': index[plugin].get('primary_pkg'),
                 'category': index[plugin].get('category'),
+                **plugin_manifest_data
             }
-            with open(plugin_manifest_path, 'r') as f:
-                plugin_index[plugin].update(json.loads(f.read()))
 
         return plugin_index
 
