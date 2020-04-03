@@ -121,10 +121,7 @@ class IOCPlugin(object):
             )
 
         if self.branch is None and not self.hardened:
-            freebsd_version = su.run(['freebsd-version'],
-                                     stdout=su.PIPE,
-                                     stderr=su.STDOUT)
-            r = freebsd_version.stdout.decode().rstrip().split('-', 1)[0]
+            r = self.retrieve_freebsd_version()
 
             self.branch = f'{r}-RELEASE' if '.' in r else f'{r}.0-RELEASE'
         elif self.branch is None and self.hardened:
@@ -136,6 +133,12 @@ class IOCPlugin(object):
             self.branch, self.git_repository, self.git_destination,
             depth, self.callback
         )
+
+    @staticmethod
+    def retrieve_freebsd_version():
+        return su.run(
+            ['freebsd-version'], stdout=su.PIPE, stderr=su.STDOUT
+        ).stdout.decode().rstrip().split('-', 1)[0]
 
     @staticmethod
     def fetch_plugin_packagesites(package_sites):
@@ -195,7 +198,7 @@ class IOCPlugin(object):
         return version_dict
 
     @staticmethod
-    def retrieve_plugin_index_data(plugin_index_path):
+    def retrieve_plugin_index_data(plugin_index_path, expand_abi=True):
         plugin_index = {}
         index_path = os.path.join(plugin_index_path, 'INDEX')
         if not os.path.exists(index_path):
@@ -211,14 +214,30 @@ class IOCPlugin(object):
             if not os.path.exists(plugin_manifest_path):
                 continue
 
+            with open(plugin_manifest_path, 'r') as f:
+                plugin_manifest_data = json.loads(f.read())
+
+            if not any(plugin_manifest_data.get(k) for k in ('release', 'packagesite')):
+                continue
+
+            if expand_abi and '${ABI}' in plugin_manifest_data['packagesite']:
+                plugin_manifest_data['packagesite'] = IOCPlugin.expand_abi_with_specified_release(
+                    plugin_manifest_data['packagesite'], plugin_manifest_data['release']
+                )
+
             plugin_index[plugin] = {
                 'primary_pkg': index[plugin].get('primary_pkg'),
                 'category': index[plugin].get('category'),
+                **plugin_manifest_data
             }
-            with open(plugin_manifest_path, 'r') as f:
-                plugin_index[plugin].update(json.loads(f.read()))
 
         return plugin_index
+
+    @staticmethod
+    def expand_abi_with_specified_release(packagesite, release):
+        return packagesite.replace(
+            '${ABI}', f'FreeBSD:{release.split("-")[0].split(".")[0]}:amd64'
+        )
 
     def fetch_plugin_versions(self):
         self.pull_clone_git_repo()
@@ -1340,10 +1359,11 @@ fingerprint: {fingerprint}
 
     def _plugin_json_file(self):
         plugin_name = self.plugin.rsplit('_', 1)[0]
+        jail_name = self.jail or plugin_name
         try:
             with open(
                 os.path.join(
-                    self.iocroot, 'jails', plugin_name, f'{plugin_name}.json'
+                    self.iocroot, 'jails', jail_name, f'{plugin_name}.json'
                 ), 'r'
             ) as f:
                 manifest = json.loads(f.read())
@@ -1351,7 +1371,7 @@ fingerprint: {fingerprint}
             iocage_lib.ioc_common.logit(
                 {
                     'level': 'EXCEPTION',
-                    'message': f'Failed retrieving {plugin_name} json'
+                    'message': f'Failed retrieving {jail_name} json'
                 },
                 _callback=self.callback
             )
