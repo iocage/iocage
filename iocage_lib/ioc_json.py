@@ -895,8 +895,8 @@ class IOCConfiguration:
         for x in range(0, 4):
             if not conf.get(f"vnet{x}_mtu"):
                 conf[f"vnet{x}_mtu"] = 'auto'
-        if not conf.get(f"vnet_default_mtu"):
-            conf[f"vnet_default_mtu"] = '1500'
+        if not conf.get("vnet_default_mtu"):
+            conf["vnet_default_mtu"] = '1500'
 
         if not default:
             conf.update(jail_conf)
