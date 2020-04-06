@@ -625,6 +625,10 @@ class IOCFetch:
                             },
                             _callback=self.callback,
                             silent=self.silent)
+                        if f == 'doc.txz':
+                            # some releases might not have it,
+                            # it is safe to skip
+                            self.files_left.remove(f)
                         continue
 
                 if not missing and f in _list:
@@ -857,7 +861,6 @@ class IOCFetch:
                 _callback=self.callback,
                 silent=self.silent)
 
-        su.Popen(cmd).communicate()
         shutil.copy("/etc/resolv.conf", f"{mount_root}/etc/resolv.conf")
 
         path = '/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:'\
@@ -872,6 +875,7 @@ class IOCFetch:
         }
 
         if os.path.isfile(f"{mount_root}/etc/freebsd-update.conf"):
+            su.Popen(cmd).communicate()
             if self.verify:
                 f = "https://raw.githubusercontent.com/freebsd/freebsd" \
                     "/master/usr.sbin/freebsd-update/freebsd-update.sh"
@@ -903,6 +907,7 @@ class IOCFetch:
                     iocage_lib.ioc_common.consume_and_log(
                         _exec, callback=self.callback)
                 except iocage_lib.ioc_exceptions.CommandFailed as e:
+                    su.Popen(['umount', f'{mount_root}/dev']).communicate()
                     iocage_lib.ioc_common.logit(
                         {
                             'level': 'EXCEPTION',
@@ -940,6 +945,7 @@ class IOCFetch:
                         )
 
             finally:
+                su.Popen(['umount', f'{mount_root}/dev']).communicate()
                 new_release = iocage_lib.ioc_common.get_jail_freebsd_version(
                     mount_root, self.release
                 )
@@ -950,19 +956,20 @@ class IOCFetch:
 
                     if not cli:
                         for jail, path in jails.items():
-                            _json = iocage_lib.ioc_json.IOCJson(path)
+                            _json = iocage_lib.ioc_json.IOCJson(
+                                path, cli=False
+                            )
                             props = _json.json_get_value('all')
 
                             if props['basejail'] and self.release.rsplit(
                                 '-', 1
                             )[0] in props['release']:
-                                props['release'] = new_release
-                                _json.json_write(props)
+                                _json.json_set_value(f'release={new_release}')
                     else:
-                        _json = iocage_lib.ioc_json.IOCJson(jails[uuid])
-                        props = _json.json_get_value('all')
-                        props['release'] = new_release
-                        _json.json_write(props)
+                        _json = iocage_lib.ioc_json.IOCJson(
+                            jails[uuid], cli=False
+                        )
+                        _json.json_set_value(f'release={new_release}')
 
             if self.verify:
                 # tmp only exists if they verify SSL certs
@@ -978,8 +985,6 @@ class IOCFetch:
                 os.remove(f"{mount_root}/etc/resolv.conf")
         except OSError:
             pass
-
-        su.Popen(["umount", f"{mount_root}/dev"]).communicate()
 
     def __fetch_extract_remove__(self, tar):
         """

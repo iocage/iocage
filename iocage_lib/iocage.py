@@ -1937,10 +1937,17 @@ class IOCage:
 
             is_basejail = ioc_common.check_truthy(conf['basejail'])
             params = [] if is_basejail else [True, uuid]
-            ioc_fetch.IOCFetch(
-                release,
-                callback=self.callback
-            ).fetch_update(*params)
+            try:
+                ioc_fetch.IOCFetch(
+                    release,
+                    callback=self.callback
+                ).fetch_update(*params)
+            finally:
+                if not started and jail_type == 'pluginv2':
+                    silent = self.silent
+                    self.silent = True
+                    self.restart()
+                    self.silent = silent
 
             ioc_common.logit({
                 'level': 'INFO',
