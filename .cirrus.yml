@@ -1,5 +1,5 @@
 freebsd_instance:
-  image: freebsd-11-2-release-amd64
+  image: freebsd-11-3-release-amd64
 
 iocage_tests_task:
   create_pool_script:
