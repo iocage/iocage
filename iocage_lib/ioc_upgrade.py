@@ -73,6 +73,10 @@ class IOCUpgrade:
         path = '/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:'\
                '/usr/local/bin:/root/bin'
         self.upgrade_env = {
+            **{
+                k: os.environ.get(k)
+                for k in ['HTTP_PROXY', 'HTTP_PROXY_AUTH', 'HTTP_TIMEOUT'] if os.environ.get(k)
+            },
             'PAGER': '/bin/cat',
             'PATH': path,
             'PWD': '/',
