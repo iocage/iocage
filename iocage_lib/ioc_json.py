@@ -31,6 +31,7 @@ import logging
 import os
 import re
 import shutil
+import string
 import subprocess as su
 import sys
 
@@ -579,8 +580,14 @@ class IOCConfiguration:
             # Use the hosts prefix to start generation from.
             # Helps avoid clashes with other systems in the network
             mac_prefix = default_mac[0]['addr'].replace(':', '')[:6]
+            if len(mac_prefix) != 6 or not set(mac_prefix).issubset(string.hexdigits):
+                # We do this because in certain cases ( very likely due to netifaces not properly
+                # retrieving values ) mac_prefix can be `lo0` which results in an error
+                # as we consider this to be a valid mac prefix below and just try to replace bits
+                # which in this case don't exist resulting in an unintended exception
+                raise ValueError()
 
-        except KeyError:
+        except (KeyError, ValueError):
             # They don't have a default gateway, opting for generation of mac
             mac = random.randint(0x00, 0xfffff)
 
