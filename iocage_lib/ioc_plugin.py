@@ -1194,6 +1194,7 @@ fingerprint: {fingerprint}
             )
 
         try:
+            distutils.dir_util._path_created = {}
             distutils.dir_util.copy_tree(
                 f"{path}/plugin/overlay/",
                 f"{path}/root",
