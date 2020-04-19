@@ -1199,8 +1199,16 @@ fingerprint: {fingerprint}
                 f"{path}/plugin/overlay/",
                 f"{path}/root",
                 preserve_symlinks=True)
-        except distutils.errors.DistutilsFileError:
+        except distutils.errors.DistutilsFileError as e:
             # It just doesn't exist
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'INFO',
+                    'message': f'Error during overlay copy: {str(e)}'
+                },
+                _callback=self.callback,
+                silent=self.silent
+            )
             pass
 
     def __update_pkg_remove__(self, jid):
