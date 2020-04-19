@@ -1193,23 +1193,23 @@ fingerprint: {fingerprint}
                 f'{path}/plugin', callback=self.callback
             )
 
-        try:
-            distutils.dir_util._path_created = {}
-            distutils.dir_util.copy_tree(
-                f"{path}/plugin/overlay/",
-                f"{path}/root",
-                preserve_symlinks=True)
-        except distutils.errors.DistutilsFileError as e:
-            # It just doesn't exist
-            iocage_lib.ioc_common.logit(
-                {
-                    'level': 'INFO',
-                    'message': f'Error during overlay copy: {str(e)}'
-                },
-                _callback=self.callback,
-                silent=self.silent
-            )
-            pass
+        if os.path.isdir(f"{path}/plugin/overlay/"):
+            try:
+                distutils.dir_util._path_created = {}
+                distutils.dir_util.copy_tree(
+                    f"{path}/plugin/overlay/",
+                    f"{path}/root",
+                    preserve_symlinks=True)
+            except distutils.errors.DistutilsFileError as e:
+                # It just doesn't exist
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'EXCEPTION',
+                        'message': f'Error during overlay copy: {str(e)}'
+                    },
+                    _callback=self.callback,
+                    silent=self.silent
+                )
 
     def __update_pkg_remove__(self, jid):
         """Remove all pkgs from the plugin"""
