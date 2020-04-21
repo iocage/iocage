@@ -1,5 +1,5 @@
 freebsd_instance:
-  image: freebsd-11-3-stable-amd64-v20200402
+  image_family: freebsd-11-3-snap
 
 iocage_tests_task:
   create_pool_script:
