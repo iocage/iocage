@@ -164,8 +164,11 @@ Be sure the default gateway knows the route back to the VNET subnets.
 
 **Using VLANs**
 
-If using VLAN interfaces for the jail host, add the VLAN interface AND
-parent interface of the VLAN as bridge members.
+To assign a jail's traffic to a VLAN, add the VLAN interface as a bridge
+member, but not the VLAN's parent.
+
+If using VLAN interfaces for the jail host, on the other hand, add the parent
+as a bridge member, but not the VLAN interface.
 
 .. index:: Configure Network Interfaces
 .. _Configuring Network Interfaces:
