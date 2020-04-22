@@ -23,6 +23,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Manipulate a jails fstab"""
 import datetime
+import fcntl
 import os
 import shutil
 import subprocess as su
@@ -37,13 +38,13 @@ import texttable
 import ctypes
 from collections import OrderedDict
 
-from iocage_lib.utils import load_ctypes_library, ensure_unicode_string
+from iocage_lib.utils import load_ctypes_library, ensure_unicode_str
 
 
 class Fstab(ctypes.Structure):
     _fields_ = [
-        ('fs_file', ctypes.c_char_p),
         ('fs_spec', ctypes.c_char_p),
+        ('fs_file', ctypes.c_char_p),
         ('fs_vfstype', ctypes.c_char_p),
         ('fs_mntops', ctypes.c_char_p),
         ('fs_type', ctypes.c_char_p),
@@ -55,7 +56,7 @@ class Fstab(ctypes.Structure):
 fstab_pointer = ctypes.POINTER(Fstab)
 
 FSTAB_SIGNATURES = {
-    'setfstab': ([ctypes.c_char_p], None),
+    'setfstab': ([ctypes.c_char_p], ctypes.c_int),
     'getfstab': ([], ctypes.c_char_p),
     'getfsent': ([], fstab_pointer),
     'endfsent': ([], None),
@@ -155,21 +156,52 @@ class IOCFstab(object):
             self.__fstab_mount__()
 
     def __read_fstab__(self):
-        with open(os.path.join(
-            self.iocroot,
-            'templates' if self.is_template else 'jails',
-            self.uuid, 'fstab'
-        ), 'r') as f:
-            for i, line in enumerate(f, ):
-                if not line.strip():
-                    continue
+        fstab_file_path = os.path.join(
+            self.iocroot, 'templates' if self.is_template else 'jails', self.uuid, 'fstab'
+        )
+        fstab_list = []
+        with open('/tmp/iocage_fstab_lock', 'w') as f:
+            # Lock is automatically released when file is closed
+            fcntl.flock(f, fcntl.LOCK_EX)
+            if not libc.setfstab(fstab_file_path.encode()):
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'EXCEPTION',
+                        'message': f'Unable to open {fstab_file_path}'
+                    },
+                    _callback=self.callback,
+                    silent=self.silent
+                )
+            try:
+                set_fstab_path = ensure_unicode_str(libc.getfstab())
+                if set_fstab_path != fstab_file_path:
+                    iocage_lib.ioc_common.logit(
+                        {
+                            'level': 'EXCEPTION',
+                            'message': f'Path set by system ({set_fstab_path}) does not match '
+                                       f'fstab file path({fstab_file_path})'
+                        },
+                        _callback=self.callback,
+                        silent=self.silent,
+                    )
+                fstab_entry = libc.getfsent()
+                index = 0
+                while fstab_entry:
+                    line = '\t'.join([
+                        self.__fstab_encode__(ensure_unicode_str(fstab_entry.contents.fs_spec)),
+                        self.__fstab_encode__(ensure_unicode_str(fstab_entry.contents.fs_file)),
+                        ensure_unicode_str(fstab_entry.contents.fs_vfstype),
+                        ensure_unicode_str(fstab_entry.contents.fs_mntops),
+                        str(fstab_entry.contents.fs_freq),
+                        str(fstab_entry.contents.fs_passno),
+                    ])
+                    fstab_list.append([index, line] if self.action == 'list' else line)
+                    index += 1
+                    fstab_entry = libc.getfsent()
+            finally:
+                libc.endfsent()
 
-                if not line.strip().startswith('#'):
-                    if self.action != 'list':
-                        yield line.rstrip()
-                    else:
-                        line = line.rsplit('#')[0].rstrip()
-                        yield ([i, line])
+        return fstab_list
 
     def __validate_fstab__(self, fstab, mode='single', actions=None):
         # `actions` specify on which `action` to raise validation error
@@ -535,7 +567,7 @@ class IOCFstab(object):
             result, _string.encode(), 0x4 | 0x8 | 0x10 | 0x2000 | 0x8000
         )
 
-        return ensure_unicode_string(result.value)
+        return ensure_unicode_str(result.value)
 
     def __fstab_decode__(self, _string):
         """
@@ -551,4 +583,4 @@ class IOCFstab(object):
             result, _string.encode(), 0x4 | 0x8 | 0x10 | 0x2000 | 0x8000
         )
 
-        return ensure_unicode_string(result.value)
+        return ensure_unicode_str(result.value)
