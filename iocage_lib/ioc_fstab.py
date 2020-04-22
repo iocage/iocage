@@ -23,11 +23,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Manipulate a jails fstab"""
 import datetime
-import fcntl
 import os
 import shutil
 import subprocess as su
 import tempfile
+import threading
 import pathlib
 
 import iocage_lib.ioc_common
@@ -53,17 +53,15 @@ class Fstab(ctypes.Structure):
     ]
 
 
-fstab_pointer = ctypes.POINTER(Fstab)
-
-FSTAB_SIGNATURES = {
-    'setfstab': ([ctypes.c_char_p], ctypes.c_int),
-    'getfstab': ([], ctypes.c_char_p),
-    'getfsent': ([], fstab_pointer),
-    'endfsent': ([], None),
-}
-
-
-libc = load_ctypes_library('c', FSTAB_SIGNATURES)
+FSTAB_LOCK = threading.Lock()
+LIBC = load_ctypes_library(
+    'c', {
+        'setfstab': ([ctypes.c_char_p], ctypes.c_int),
+        'getfstab': ([], ctypes.c_char_p),
+        'getfsent': ([], ctypes.POINTER(Fstab)),
+        'endfsent': ([], None),
+    }
+)
 
 
 class IOCFstab(object):
@@ -160,10 +158,8 @@ class IOCFstab(object):
             self.iocroot, 'templates' if self.is_template else 'jails', self.uuid, 'fstab'
         )
         fstab_list = []
-        with open('/tmp/iocage_fstab_lock', 'w') as f:
-            # Lock is automatically released when file is closed
-            fcntl.flock(f, fcntl.LOCK_EX)
-            if not libc.setfstab(fstab_file_path.encode()):
+        with FSTAB_LOCK:
+            if not LIBC.setfstab(fstab_file_path.encode()):
                 iocage_lib.ioc_common.logit(
                     {
                         'level': 'EXCEPTION',
@@ -173,7 +169,7 @@ class IOCFstab(object):
                     silent=self.silent
                 )
             try:
-                set_fstab_path = ensure_unicode_str(libc.getfstab())
+                set_fstab_path = ensure_unicode_str(LIBC.getfstab())
                 if set_fstab_path != fstab_file_path:
                     iocage_lib.ioc_common.logit(
                         {
@@ -184,7 +180,7 @@ class IOCFstab(object):
                         _callback=self.callback,
                         silent=self.silent,
                     )
-                fstab_entry = libc.getfsent()
+                fstab_entry = LIBC.getfsent()
                 index = 0
                 while fstab_entry:
                     line = '\t'.join([
@@ -197,9 +193,9 @@ class IOCFstab(object):
                     ])
                     fstab_list.append([index, line] if self.action == 'list' else line)
                     index += 1
-                    fstab_entry = libc.getfsent()
+                    fstab_entry = LIBC.getfsent()
             finally:
-                libc.endfsent()
+                LIBC.endfsent()
 
         return fstab_list
 
@@ -563,7 +559,7 @@ class IOCFstab(object):
             return _string
 
         result = ctypes.create_string_buffer(len(_string) * 4 + 1)
-        libc.strvis(
+        LIBC.strvis(
             result, _string.encode(), 0x4 | 0x8 | 0x10 | 0x2000 | 0x8000
         )
 
@@ -579,7 +575,7 @@ class IOCFstab(object):
             return _string
 
         result = ctypes.create_string_buffer(len(_string) * 4 + 1)
-        libc.strunvis(
+        LIBC.strunvis(
             result, _string.encode(), 0x4 | 0x8 | 0x10 | 0x2000 | 0x8000
         )
 
