@@ -20,7 +20,7 @@ def load_ctypes_library(name, signatures):
     return lib
 
 
-def ensure_unicode_string(value):
+def ensure_unicode_str(value):
     if not isinstance(value, six.text_type):
         value = value.decode(sys.getfilesystemencoding())
     return value
