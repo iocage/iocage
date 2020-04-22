@@ -35,8 +35,34 @@ import iocage_lib.ioc_list
 import iocage_lib.ioc_exceptions
 import texttable
 import ctypes
-from ctypes.util import find_library
 from collections import OrderedDict
+
+from iocage_lib.utils import load_ctypes_library, ensure_unicode_string
+
+
+class Fstab(ctypes.Structure):
+    _fields_ = [
+        ('fs_file', ctypes.c_char_p),
+        ('fs_spec', ctypes.c_char_p),
+        ('fs_vfstype', ctypes.c_char_p),
+        ('fs_mntops', ctypes.c_char_p),
+        ('fs_type', ctypes.c_char_p),
+        ('fs_freq', ctypes.c_int),
+        ('fs_passno', ctypes.c_int),
+    ]
+
+
+fstab_pointer = ctypes.POINTER(Fstab)
+
+FSTAB_SIGNATURES = {
+    'setfstab': ([ctypes.c_char_p], None),
+    'getfstab': ([], ctypes.c_char_p),
+    'getfsent': ([], fstab_pointer),
+    'endfsent': ([], None),
+}
+
+
+libc = load_ctypes_library('c', FSTAB_SIGNATURES)
 
 
 class IOCFstab(object):
@@ -50,7 +76,6 @@ class IOCFstab(object):
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")
-        self.libc = ctypes.CDLL(find_library('c'))
         self.uuid = uuid
         self.action = action
         self.src = source
@@ -506,11 +531,11 @@ class IOCFstab(object):
             return _string
 
         result = ctypes.create_string_buffer(len(_string) * 4 + 1)
-        self.libc.strvis(
+        libc.strvis(
             result, _string.encode(), 0x4 | 0x8 | 0x10 | 0x2000 | 0x8000
         )
 
-        return result.value.decode()
+        return ensure_unicode_string(result.value)
 
     def __fstab_decode__(self, _string):
         """
@@ -522,8 +547,8 @@ class IOCFstab(object):
             return _string
 
         result = ctypes.create_string_buffer(len(_string) * 4 + 1)
-        self.libc.strunvis(
+        libc.strunvis(
             result, _string.encode(), 0x4 | 0x8 | 0x10 | 0x2000 | 0x8000
         )
 
-        return result.value.decode()
+        return ensure_unicode_string(result.value)
