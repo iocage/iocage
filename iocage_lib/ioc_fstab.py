@@ -27,6 +27,7 @@ import os
 import shutil
 import subprocess as su
 import tempfile
+import threading
 import pathlib
 
 import iocage_lib.ioc_common
@@ -35,8 +36,32 @@ import iocage_lib.ioc_list
 import iocage_lib.ioc_exceptions
 import texttable
 import ctypes
-from ctypes.util import find_library
 from collections import OrderedDict
+
+from iocage_lib.utils import load_ctypes_library, ensure_unicode_str
+
+
+class Fstab(ctypes.Structure):
+    _fields_ = [
+        ('fs_spec', ctypes.c_char_p),
+        ('fs_file', ctypes.c_char_p),
+        ('fs_vfstype', ctypes.c_char_p),
+        ('fs_mntops', ctypes.c_char_p),
+        ('fs_type', ctypes.c_char_p),
+        ('fs_freq', ctypes.c_int),
+        ('fs_passno', ctypes.c_int),
+    ]
+
+
+FSTAB_LOCK = threading.Lock()
+LIBC = load_ctypes_library(
+    'c', {
+        'setfstab': ([ctypes.c_char_p], ctypes.c_int),
+        'getfstab': ([], ctypes.c_char_p),
+        'getfsent': ([], ctypes.POINTER(Fstab)),
+        'endfsent': ([], None),
+    }
+)
 
 
 class IOCFstab(object):
@@ -50,7 +75,6 @@ class IOCFstab(object):
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")
-        self.libc = ctypes.CDLL(find_library('c'))
         self.uuid = uuid
         self.action = action
         self.src = source
@@ -130,21 +154,50 @@ class IOCFstab(object):
             self.__fstab_mount__()
 
     def __read_fstab__(self):
-        with open(os.path.join(
-            self.iocroot,
-            'templates' if self.is_template else 'jails',
-            self.uuid, 'fstab'
-        ), 'r') as f:
-            for i, line in enumerate(f, ):
-                if not line.strip():
-                    continue
+        fstab_file_path = os.path.join(
+            self.iocroot, 'templates' if self.is_template else 'jails', self.uuid, 'fstab'
+        )
+        fstab_list = []
+        with FSTAB_LOCK:
+            if not LIBC.setfstab(fstab_file_path.encode()):
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'EXCEPTION',
+                        'message': f'Unable to open {fstab_file_path}'
+                    },
+                    _callback=self.callback,
+                    silent=self.silent
+                )
+            try:
+                set_fstab_path = ensure_unicode_str(LIBC.getfstab())
+                if set_fstab_path != fstab_file_path:
+                    iocage_lib.ioc_common.logit(
+                        {
+                            'level': 'EXCEPTION',
+                            'message': f'Path set by system ({set_fstab_path}) does not match '
+                                       f'fstab file path({fstab_file_path})'
+                        },
+                        _callback=self.callback,
+                        silent=self.silent,
+                    )
+                fstab_entry = LIBC.getfsent()
+                index = 0
+                while fstab_entry:
+                    line = '\t'.join([
+                        self.__fstab_encode__(ensure_unicode_str(fstab_entry.contents.fs_spec)),
+                        self.__fstab_encode__(ensure_unicode_str(fstab_entry.contents.fs_file)),
+                        ensure_unicode_str(fstab_entry.contents.fs_vfstype),
+                        ensure_unicode_str(fstab_entry.contents.fs_mntops),
+                        str(fstab_entry.contents.fs_freq),
+                        str(fstab_entry.contents.fs_passno),
+                    ])
+                    fstab_list.append([index, line] if self.action == 'list' else line)
+                    index += 1
+                    fstab_entry = LIBC.getfsent()
+            finally:
+                LIBC.endfsent()
 
-                if not line.strip().startswith('#'):
-                    if self.action != 'list':
-                        yield line.rstrip()
-                    else:
-                        line = line.rsplit('#')[0].rstrip()
-                        yield ([i, line])
+        return fstab_list
 
     def __validate_fstab__(self, fstab, mode='single', actions=None):
         # `actions` specify on which `action` to raise validation error
@@ -506,11 +559,11 @@ class IOCFstab(object):
             return _string
 
         result = ctypes.create_string_buffer(len(_string) * 4 + 1)
-        self.libc.strvis(
+        LIBC.strvis(
             result, _string.encode(), 0x4 | 0x8 | 0x10 | 0x2000 | 0x8000
         )
 
-        return result.value.decode()
+        return ensure_unicode_str(result.value)
 
     def __fstab_decode__(self, _string):
         """
@@ -522,8 +575,8 @@ class IOCFstab(object):
             return _string
 
         result = ctypes.create_string_buffer(len(_string) * 4 + 1)
-        self.libc.strunvis(
+        LIBC.strunvis(
             result, _string.encode(), 0x4 | 0x8 | 0x10 | 0x2000 | 0x8000
         )
 
-        return result.value.decode()
+        return ensure_unicode_str(result.value)
