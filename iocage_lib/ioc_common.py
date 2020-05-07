@@ -1119,6 +1119,39 @@ def get_host_gateways():
     return gateways
 
 
+def validate_plugin_manifest(manifest, _callback, silent):
+    errors = []
+    for k in (
+        'name', 'release', 'pkgs', 'packagesite', 'fingerprints', 'artifact',
+    ):
+        if k not in manifest:
+            errors.append(f'Missing "{k}" key in manifest')
+
+    if 'devfs_ruleset' in manifest:
+        if not isinstance(manifest['devfs_ruleset'], dict):
+            errors.append('"devfs_ruleset" must be a dictionary')
+        else:
+            devfs_ruleset = manifest['devfs_ruleset']
+            if 'paths' not in devfs_ruleset:
+                errors.append('Key "paths" not specified in devfs_ruleset')
+            elif not isinstance(devfs_ruleset['paths'], dict):
+                errors.append('"devfs_ruleset.paths" should be a valid dictionary')
+
+            if 'includes' in devfs_ruleset and not isinstance(devfs_ruleset['includes'], list):
+                errors.append('"devfs_ruleset.includes" should be a valid list')
+
+    if errors:
+        errors = '\n'.join(errors)
+        logit(
+            {
+                'level': 'EXCEPTION',
+                'msg': f'Following errors were encountered with plugin manifest:\n{errors}'
+            },
+            _callback=_callback,
+            silent=silent,
+        )
+
+
 def get_jails_with_config(filters=None, mapping_func=None):
     # FIXME: Due to how api is structured, there is no good place to put this
     #  so when we move on with restructuring the api, let's remove this as well
