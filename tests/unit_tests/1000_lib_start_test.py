@@ -52,7 +52,16 @@ def test_should_return_default_mtu_if_no_members(mock_checkoutput):
     mock_checkoutput.side_effect = [bridge_with_no_members_if_config,
                                     member_if_config]
 
-    mtu = ioc_start.IOCStart("", "", unit_test=True).find_bridge_mtu('bridge0')
+    # IOCStart.get() is not implemented in test mode. We need it for this test.
+    # So provide a dummy implementation which gives us the default MTU.
+    def _mock_iocstart_get(prop):
+        if prop=='vnet_default_mtu':
+            return "1500"
+        raise AttributeError(prop)
+
+    iocs = ioc_start.IOCStart("", "", unit_test=True)
+    iocs.get = _mock_iocstart_get
+    mtu = iocs.find_bridge_mtu('bridge0')
     assert mtu == '1500'
     mock_checkoutput.called_with(["ifconfig", "bridge0"])
 

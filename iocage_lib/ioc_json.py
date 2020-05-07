@@ -434,7 +434,7 @@ class IOCConfiguration:
     @staticmethod
     def get_version():
         """Sets the iocage configuration version."""
-        version = '27'
+        version = '28'
 
         return version
 
@@ -898,6 +898,13 @@ class IOCConfiguration:
         if not conf.get('min_dyn_devfs_ruleset'):
             conf['min_dyn_devfs_ruleset'] = '1000'
 
+        # Version 28 keys
+        for x in range(0, 4):
+            if not conf.get(f"vnet{x}_mtu"):
+                conf[f"vnet{x}_mtu"] = 'auto'
+        if not conf.get("vnet_default_mtu"):
+            conf["vnet_default_mtu"] = '1500'
+
         if not default:
             conf.update(jail_conf)
 
@@ -1236,6 +1243,11 @@ class IOCConfiguration:
             'plugin_name': 'none',
             'plugin_repository': 'none',
             'min_dyn_devfs_ruleset': '1000',
+            'vnet0_mtu': 'auto',
+            'vnet1_mtu': 'auto',
+            'vnet2_mtu': 'auto',
+            'vnet3_mtu': 'auto',
+            'vnet_default_mtu': '1500',
         }
 
     def check_default_config(self):
@@ -2152,6 +2164,11 @@ class IOCJson(IOCConfiguration):
             'plugin_name': ('string', ),
             'plugin_repository': ('string', ),
             'min_dyn_devfs_ruleset': ('string', ),
+            "vnet0_mtu": ("string", ),
+            "vnet1_mtu": ("string", ),
+            "vnet2_mtu": ("string", ),
+            "vnet3_mtu": ("string", ),
+            "vnet_default_mtu": ("string", ),
         }
 
         zfs_props = {
