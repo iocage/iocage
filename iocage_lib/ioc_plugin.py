@@ -304,7 +304,7 @@ class IOCPlugin(object):
             status, jid = iocage_lib.ioc_list.IOCList().list_get_jid(self.jail)
             if status:
                 iocage_lib.ioc_stop.IOCStop(
-                    self.jail, jaildir, silent=self.silent, force=True, callback=self.callback
+                    self.jail, jaildir, silent=True, force=True, callback=self.callback
                 )
             with open(os.path.join(jaildir, f'{self.plugin}.json'), 'w') as f:
                 f.write(json.dumps(conf, indent=4, sort_keys=True))
