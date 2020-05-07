@@ -44,7 +44,10 @@ import iocage_lib.ioc_common
 import iocage_lib.ioc_create
 import iocage_lib.ioc_destroy
 import iocage_lib.ioc_exec
+import iocage_lib.ioc_list
 import iocage_lib.ioc_json
+import iocage_lib.ioc_start
+import iocage_lib.ioc_stop
 import iocage_lib.ioc_upgrade
 import iocage_lib.ioc_exceptions
 import texttable
@@ -298,8 +301,14 @@ class IOCPlugin(object):
             # As soon as we create the jail, we should write the plugin manifest to jail directory
             # This is done to ensure that subsequent starts of the jail make use of the plugin
             # manifest as required
+            status, jid = iocage_lib.ioc_list.IOCList().list_get_jid(self.jail)
+            if status:
+                iocage_lib.ioc_stop.IOCStop(
+                    self.jail, jaildir, silent=self.silent, force=True, callback=self.callback
+                )
             with open(os.path.join(jaildir, f'{self.plugin}.json'), 'w') as f:
                 f.write(json.dumps(conf, indent=4, sort_keys=True))
+
             self.__fetch_plugin_install_packages__(
                 jaildir, conf, pkg, props, repo_dir
             )
