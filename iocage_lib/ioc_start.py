@@ -1162,10 +1162,12 @@ class IOCStart(object):
             nic, bridge = nic_def.split(":")
 
             try:
-                if not nat_addr:
+                if self.get(f"{nic}_mtu") != 'auto':
+                    membermtu = self.get(f"{nic}_mtu")
+                elif not nat_addr:
                     membermtu = self.find_bridge_mtu(bridge)
                 else:
-                    membermtu = '1500'
+                    membermtu = self.get('vnet_default_mtu')
 
                 dhcp = self.get('dhcp')
 
@@ -1553,7 +1555,7 @@ class IOCStart(object):
 
         memberif = self.get_bridge_members(bridge)
         if not memberif:
-            return '1500'
+            return self.get('vnet_default_mtu')
 
         membermtu = iocage_lib.ioc_common.checkoutput(
             ["ifconfig", memberif[0]]
