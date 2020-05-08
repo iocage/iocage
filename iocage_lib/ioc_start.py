@@ -491,21 +491,13 @@ class IOCStart(object):
         devfs_paths = None
         devfs_includes = None
 
-        if self.conf['type'] == 'pluginv2' and os.path.isfile(
-            os.path.join(self.path, f'{self.conf["plugin_name"]}.json')
-        ):
-            with open(
-                os.path.join(self.path, f'{self.conf["plugin_name"]}.json'),
-                'r'
-            ) as f:
+        manifest_path = os.path.join(self.path, f'{self.conf["plugin_name"]}.json')
+        if self.conf['type'] == 'pluginv2' and os.path.isfile(manifest_path):
+            with open(manifest_path, 'r') as f:
                 devfs_json = json.load(f)
-                if "devfs_ruleset" in devfs_json:
-                    plugin_name = self.conf['plugin_name']
-                    plugin_devfs = devfs_json[
-                        "devfs_ruleset"][f"plugin_{plugin_name}"]
-                    devfs_paths = plugin_devfs['paths']
-                    devfs_includes = None if 'includes' not in \
-                        plugin_devfs else plugin_devfs['includes']
+            iocage_lib.ioc_common.validate_plugin_manifest(devfs_json, self.callback, self.silent)
+            devfs_paths = devfs_json.get('devfs_ruleset', {}).get('paths')
+            devfs_includes = devfs_json.get('devfs_ruleset', {}).get('includes')
 
         # Generate dynamic devfs ruleset from configured one
         (manual_devfs_config, configured_devfs_ruleset, devfs_ruleset) \
