@@ -44,7 +44,10 @@ import iocage_lib.ioc_common
 import iocage_lib.ioc_create
 import iocage_lib.ioc_destroy
 import iocage_lib.ioc_exec
+import iocage_lib.ioc_list
 import iocage_lib.ioc_json
+import iocage_lib.ioc_start
+import iocage_lib.ioc_stop
 import iocage_lib.ioc_upgrade
 import iocage_lib.ioc_exceptions
 import texttable
@@ -282,6 +285,7 @@ class IOCPlugin(object):
         """Helper to fetch plugins"""
         plugins = self.fetch_plugin_index(props, index_only=True)
         conf = self.retrieve_plugin_json()
+        iocage_lib.ioc_common.validate_plugin_manifest(conf, self.callback, self.silent)
 
         if self.hardened:
             conf['release'] = conf['release'].replace("-RELEASE", "-STABLE")
@@ -293,30 +297,18 @@ class IOCPlugin(object):
         location = f"{self.iocroot}/jails/{self.jail}"
 
         try:
-            devfs = conf.get("devfs_ruleset", None)
-
-            if devfs is not None:
-                plugin_devfs = devfs[f'plugin_{self.jail}']
-                plugin_devfs_paths = plugin_devfs['paths']
-
-                for prop in props:
-                    key, _, value = prop.partition("=")
-
-                    if key == 'dhcp' and iocage_lib.ioc_common.check_truthy(
-                        value
-                    ):
-                        if 'bpf*' not in plugin_devfs_paths:
-                            plugin_devfs_paths["bpf*"] = None
-
-                plugin_devfs_includes = None if 'includes' not in plugin_devfs\
-                    else plugin_devfs['includes']
-
-                iocage_lib.ioc_common.generate_devfs_ruleset(
-                    self.conf,
-                    paths=plugin_devfs_paths,
-                    includes=plugin_devfs_includes
-                )
             jaildir, _conf, repo_dir = self.__fetch_plugin_create__(props)
+            # As soon as we create the jail, we should write the plugin manifest to jail directory
+            # This is done to ensure that subsequent starts of the jail make use of the plugin
+            # manifest as required
+            status, jid = iocage_lib.ioc_list.IOCList().list_get_jid(self.jail)
+            if status:
+                iocage_lib.ioc_stop.IOCStop(
+                    self.jail, jaildir, silent=True, force=True, callback=self.callback
+                )
+            with open(os.path.join(jaildir, f'{self.plugin}.json'), 'w') as f:
+                f.write(json.dumps(conf, indent=4, sort_keys=True))
+
             self.__fetch_plugin_install_packages__(
                 jaildir, conf, pkg, props, repo_dir
             )
@@ -793,11 +785,6 @@ fingerprint: {fingerprint}
                 silent=self.silent)
 
             self.__update_pull_plugin_artifact__(conf)
-
-            with open(
-                f"{jaildir}/{self.plugin}.json", "w"
-            ) as f:
-                f.write(json.dumps(conf, indent=4, sort_keys=True))
 
             try:
                 shutil.copy(f"{jaildir}/plugin/post_install.sh",
