@@ -144,7 +144,7 @@ class IOCUpgrade:
                 )
 
             if not os.path.islink(self.freebsd_install_link):
-                msg = f'Upgrade failed, nothing to install after fetch!'
+                msg = 'Upgrade failed, nothing to install after fetch!'
                 iocage_lib.ioc_common.logit(
                     {
                         'level': 'EXCEPTION',

@@ -827,11 +827,8 @@ fingerprint: {fingerprint}
 
                         if admin_portal:
                             admin_portal = ','.join(
-                                map(
-                                    lambda v: admin_portal.replace(
-                                        '%%IP%%', v
-                                    ),
-                                    ip.split(',')
+                                iocage_lib.ioc_common.retrieve_admin_portals(
+                                    _conf, True, admin_portal
                                 )
                             )
 

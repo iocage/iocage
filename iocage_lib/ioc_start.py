@@ -967,7 +967,7 @@ class IOCStart(object):
             # Let's set the specified rules
             iocage_lib.ioc_common.logit({
                 'level': 'INFO',
-                'message': f'  + Setting RCTL props'
+                'message': '  + Setting RCTL props'
             })
 
             failed = rctl_jail.set_rctl_rules(

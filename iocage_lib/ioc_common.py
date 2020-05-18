@@ -1212,7 +1212,7 @@ def retrieve_admin_portals(conf, jail_running, admin_portal):
         nat_forwards_dict[int(jail)] = int(host)
 
     if not conf.get('nat'):
-        full_ip4 = retrieve_ip4_for_jail(conf, jail_running)['full_ip4'] or conf.get('ip4_addr')
+        full_ip4 = retrieve_ip4_for_jail(conf, jail_running)['full_ip4'] or conf.get('ip4_addr', '')
         all_ips = map(
             lambda v: 'DHCP' if 'dhcp' in v.lower() else v,
             [i.split('|')[-1].split('/')[0].strip() for i in full_ip4.split(',')]
