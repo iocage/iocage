@@ -504,7 +504,7 @@ class IOCStart(object):
             = iocage_lib.ioc_common.generate_devfs_ruleset(
                 self.conf, devfs_paths, devfs_includes)
 
-        if int(devfs_ruleset) <= 0:
+        if int(devfs_ruleset) < 0:
             iocage_lib.ioc_common.logit({
                 "level": "ERROR",
                 "message": f"{self.uuid} devfs_ruleset"

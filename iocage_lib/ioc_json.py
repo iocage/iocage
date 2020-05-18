@@ -2450,7 +2450,7 @@ class IOCJson(IOCConfiguration):
                 elif key in ('devfs_ruleset', 'min_dyn_devfs_ruleset'):
                     try:
                         intval = int(value)
-                        if intval <= 0:
+                        if intval < 0:
                             raise ValueError()
                         conf[key] = str(intval)
                     except ValueError:
