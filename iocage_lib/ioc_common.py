@@ -761,8 +761,8 @@ def generate_devfs_ruleset(conf, paths=None, includes=None, callback=None,
 
     # Custom devfs_ruleset configured, clone to dynamic ruleset
     if int(configured_ruleset) != IOCAGE_DEVFS_RULESET:
-        if int(configured_ruleset) not in ruleset_list:
-            return (True, configured_ruleset, '0')
+        if int(configured_ruleset) != 0 and int(configured_ruleset) not in ruleset_list:
+            return True, configured_ruleset, '-1'
         rules = su.run(
             ['devfs', 'rule', '-s', configured_ruleset, 'show'],
             stdout=su.PIPE, universal_newlines=True
