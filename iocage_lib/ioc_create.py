@@ -711,10 +711,25 @@ class IOCCreate(object):
             'jail_zfs_dataset': f'iocage/jails/{jail_uuid}/data'
         }
 
+        d_conf = iocage_lib.ioc_json.IOCJson().check_default_config()
+        default_mac_prefix = mac_prefix = d_conf['mac_prefix']
+        if 'mac_prefix' not in [
+            prop.split('=')[0] for prop in (self.props or [])
+        ] and not iocage_lib.ioc_json.IOCJson.validate_mac_prefix(default_mac_prefix):
+            prefix = iocage_lib.ioc_json.IOCJson.get_mac_prefix()
+            iocage_lib.ioc_common.logit({
+                'level': 'WARNING',
+                'message': f'Default mac_prefix specified in defaults.json {default_mac_prefix!r} '
+                           f'is invalid. Using {prefix!r} mac prefix instead.'
+            })
+            mac_prefix = iocage_lib.ioc_json.IOCJson.get_mac_prefix()
+            d_conf['mac_prefix'] = mac_prefix
+
         if self.thickconfig:
-            d_conf = iocage_lib.ioc_json.IOCJson().check_default_config()
             jail_props.update(d_conf)
             jail_props['CONFIG_TYPE'] = 'THICK'
+        elif mac_prefix != default_mac_prefix:
+            jail_props['mac_prefix'] = mac_prefix
 
         if source_template is not None:
             jail_props['source_template'] = source_template
