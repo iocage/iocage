@@ -356,9 +356,38 @@ class IOCage:
 
         for pool in PoolListableResource():
             if pool == zpool:
-                pool.activate_pool()
+                locked_error = None
+                if pool.root_dataset.locked:
+                    locked_error = f'ZFS pool "{zpool}" root dataset is locked'
+
+                iocage_ds = Dataset(os.path.join(zpool.name, 'iocage'))
+                if iocage_ds.exists and iocage_ds.locked:
+                    locked_error = f'ZFS dataset "{iocage_ds.name}" is locked'
+                if locked_error:
+                    ioc_common.logit(
+                        {
+                            'level': 'EXCEPTION',
+                            'message': locked_error,
+                        },
+                        _callback=self.callback,
+                        silent=self.silent,
+                    )
+                else:
+                    pool.activate_pool()
             else:
                 pool.deactivate_pool()
+
+    def deactivate(self, zpool):
+        zpool = Pool(zpool, cache=False)
+        if not zpool.exists:
+            ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message': f'ZFS pool "{zpool}" not found!'
+                },
+                _callback=self.callback,
+                silent=self.silent)
+        zpool.deactivate_pool()
 
     def chroot(self, command):
         """Deprecated: Chroots into a jail and runs a command, or the shell."""

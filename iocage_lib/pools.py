@@ -69,7 +69,11 @@ class Pool(Resource):
 
     @property
     def exists(self):
-        return Dataset(self.name, cache=self.cache).exists
+        return self.root_dataset.exists
+
+    @property
+    def root_dataset(self):
+        return Dataset(self.name, cache=self.cache)
 
     @property
     def datasets(self):

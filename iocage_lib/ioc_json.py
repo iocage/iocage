@@ -449,7 +449,7 @@ class IOCConfiguration:
             # iocage skip is false
             old = False
             matches = []
-            zpools = list(PoolListableResource())
+            zpools = [pool for pool in PoolListableResource() if not pool.root_dataset.locked]
             for pool in zpools:
                 if pool.active:
                     matches.append(pool)
