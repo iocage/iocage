@@ -451,8 +451,6 @@ class IOCConfiguration:
             matches = []
             zpools = [pool for pool in PoolListableResource() if not pool.root_dataset.locked]
             for pool in zpools:
-                if pool.root_dataset.locked:
-                    continue
                 if pool.active:
                     matches.append(pool)
                 elif pool.properties.get('comment') == 'iocage':

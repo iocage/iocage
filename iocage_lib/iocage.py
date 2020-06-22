@@ -377,6 +377,18 @@ class IOCage:
             else:
                 pool.deactivate_pool()
 
+    def deactivate(self, zpool):
+        zpool = Pool(zpool, cache=False)
+        if not zpool.exists:
+            ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message': f'ZFS pool "{zpool}" not found!'
+                },
+                _callback=self.callback,
+                silent=self.silent)
+        zpool.deactivate_pool()
+
     def chroot(self, command):
         """Deprecated: Chroots into a jail and runs a command, or the shell."""
         ioc_common.logit(
