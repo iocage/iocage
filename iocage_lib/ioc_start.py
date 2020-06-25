@@ -271,12 +271,12 @@ class IOCStart(object):
             }, _callback=self.callback,
                 silent=self.silent)
 
-        self.__check_dhcp_or_accept_rtadv__(True, wants_dhcp)
+        self.__check_dhcp_or_accept_rtadv__(ipv4=True, enable=wants_dhcp)
 
         if rtsold:
             self.__check_rtsold__()
 
-        self.__check_dhcp_or_accept_rtadv__(False, 'accept_rtadv' in self.ip6_addr)
+        self.__check_dhcp_or_accept_rtadv__(ipv4=False, enable='accept_rtadv' in self.ip6_addr)
 
         if mount_procfs:
             su.Popen(
@@ -1440,23 +1440,24 @@ class IOCStart(object):
                     nics.append(nic)
 
         with open(os.path.join(self.path, 'root/etc/rc.conf'), 'r') as f:
-            entries = [
-                l.strip().split('=')[0].strip()
-                for l in f.readlines() if l.strip() and not l.startswith('#')
-            ]
+            entries = {
+                k: v.replace("'", '').replace('"', '')
+                for k, v in map(
+                    lambda l: [e.strip() for e in l.strip().split('=')],
+                    filter(lambda l: l.strip() and not l.startswith('#'), f.readlines())
+                )
+            }
         for nic in nics:
             if 'vnet' in nic:
                 # Inside jails they are epairNb
                 nic = f"{nic.replace('vnet', 'epair')}b"
 
             key = f'ifconfig_{nic}' if ipv4 else f'ifconfig_{nic}_ipv6'
+            value = 'SYNCDHCP' if ipv4 else 'inet6 auto_linklocal accept_rtadv autoconf'
             if enable:
-                if ipv4:
-                    cmd = [f'{key}=SYNCDHCP']
-                else:
-                    cmd = [f'{key}=inet6 auto_linklocal accept_rtadv autoconf']
+                cmd = [f'{key}={value}']
             else:
-                cmd = ['-x', key] if key in entries else []
+                cmd = ['-x', key] if key in entries and entries[key] == value else []
 
             if cmd:
                 su.run(['sysrc', '-f', f'{self.path}/root/etc/rc.conf'] + cmd, stdout=su.PIPE)
