@@ -271,14 +271,12 @@ class IOCStart(object):
             }, _callback=self.callback,
                 silent=self.silent)
 
-        if wants_dhcp:
-            self.__check_dhcp_or_accept_rtadv__(dhcp=True)
+        self.__check_dhcp_or_accept_rtadv__(True, wants_dhcp)
 
         if rtsold:
             self.__check_rtsold__()
 
-        if 'accept_rtadv' in self.ip6_addr:
-            self.__check_dhcp_or_accept_rtadv__(dhcp=False)
+        self.__check_dhcp_or_accept_rtadv__(False, 'accept_rtadv' in self.ip6_addr)
 
         if mount_procfs:
             su.Popen(
@@ -1424,38 +1422,44 @@ class IOCStart(object):
 
         return mac_a, mac_b
 
-    def __check_dhcp_or_accept_rtadv__(self, dhcp):
+    def __check_dhcp_or_accept_rtadv__(self, ipv4, enable):
         # legacy behavior to enable it on every NIC
-        if dhcp and self.conf['dhcp']:
+        if ipv4 and (self.conf['dhcp'] or not enable):
             nic_list = self.get('interfaces').split(',')
             nics = list(map(lambda x: x.split(':')[0], nic_list))
         else:
             nics = []
-            check_var = 'DHCP' if dhcp else 'ACCEPT_RTADV'
-            for ip in (self.ip4_addr if dhcp else self.ip6_addr).split(','):
+            check_var = 'DHCP' if ipv4 else 'ACCEPT_RTADV'
+            for ip in filter(
+                lambda i: check_var in i.upper() and '|' in i,
+                (self.ip4_addr if ipv4 else self.ip6_addr).split(',')
+            ):
                 nic, addr = ip.rsplit('/', 1)[0].split('|')
 
                 if addr.upper() == check_var:
                     nics.append(nic)
 
+        with open(os.path.join(self.path, 'root/etc/rc.conf'), 'r') as f:
+            entries = [
+                l.strip().split('=')[0].strip()
+                for l in f.readlines() if l.strip() and not l.startswith('#')
+            ]
         for nic in nics:
             if 'vnet' in nic:
                 # Inside jails they are epairNb
                 nic = f"{nic.replace('vnet', 'epair')}b"
 
-            if dhcp:
-                cmd = f'ifconfig_{nic}=SYNCDHCP'
+            key = f'ifconfig_{nic}' if ipv4 else f'ifconfig_{nic}_ipv6'
+            if enable:
+                if ipv4:
+                    cmd = [f'{key}=SYNCDHCP']
+                else:
+                    cmd = [f'{key}=inet6 auto_linklocal accept_rtadv autoconf']
             else:
-                cmd = f'ifconfig_{nic}_ipv6' \
-                      '=inet6 auto_linklocal accept_rtadv autoconf'
+                cmd = ['-x', key] if key in entries else []
 
-            su.run(
-                [
-                    'sysrc', '-f', f'{self.path}/root/etc/rc.conf',
-                    cmd
-                ],
-                stdout=su.PIPE
-            )
+            if cmd:
+                su.run(['sysrc', '-f', f'{self.path}/root/etc/rc.conf'] + cmd, stdout=su.PIPE)
 
     def __check_rtsold__(self):
         if 'accept_rtadv' not in self.ip6_addr:
