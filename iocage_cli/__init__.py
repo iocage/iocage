@@ -71,6 +71,48 @@ def print_version(ctx, param, value):
     print("Version\t1.2")
     sys.exit()
 
+def print_nuggets(ctx, param, value):
+nuggets = '''
+Yum                                                                                          
+                                        ``.--:::---..``                                             
+                                  ./shmmmdhhyyyhhdmmmdmdmmdhs/`                                     
+                            `/oydNyoosoyysyyyysooo++oosssyddhyMs                                    
+                          /dmy+/h.sd+-.              `:/++/-M`dM                                    
+                        .dN/  .h`oN+//+/////+////+o+/:.    :m:Ms                                    
+                       .mm`  `h`/m.```            d        domm`                                    
+                       dN.   s:`N/               +/       /myM:                                     
+                      oM/   -s hy               `h       `NhMo                                      
+                     `Nd    h`/m`               o:       ydNd                                       
+                     +M/   /o`m/               .h       +NmN.                                       
+                     oM:   d`sh                s-      -NdM:                                        
+                     /M+  /o-N.        `.-/++//h/`    `mdMs                                         
+                     `Md  h hh://///+//:-.`     .+o:  ydNd                                          
+                      yM.:o/N.`                    :hhmmN`                                          
+                      .Mhy.m+              `-//:++//+yMMMmo.                                        
+                       oMh+d    `/yyyysyymNdy+/./sys+-.-ohddmNh-                                    
+                        mNmo/+/omo`       ``.+ydN:        `s``NN+`                                  
+                        MNNh` -m+      .      h`om   -++. /o `MMMMh/`                               
+                       .MhhNy+m:     o+-    .y:-m:  .-   o/  sd`+dMmNy:                             
+                       -Mo +NM-    `/ss   `/d:.N:      :ymsyyd`   -smmmmo.                          
+                       :Mo  :mNo      `:shs/:+ydyyyyyymd--:.-yh/    `/dddNh:                        
+                       /Mo   `ymh.  -sh+.             .hN:`:s:.ohyyy.  -yddNm/                      
+                       :Mo     +dmohy-           .:/.:. hs   :o:`  -m+  :sNodM:                     
+                       `My      -hdh`     o:     +`` s: sh     -.  `/NdhyosNd-                      
+                        dN`      `shm:    /y`      .s- om-  /` ./shhdyo+-.mm`                       
+                        .Nh`       oyds`   +:     .y  sh` `:hdhhhs+:.   `dN.                        
+                         -Nh`       :yym-       `:s- -Moyhhhy++-        yM:                         
+                          -Nd`       `yodo    .s+:/syyhy++:.           sM/                          
+                           `mm-        ooyd.`:mhyhhs+/-               sM+                           
+                            `sN+        -s+hhhy++:`                 `yM/                            
+                              /Nh`       -o//.                    .+mm-                             
+                               `hN/      o-                   `:smms:                               
+                                 /Nd.    y`               `:odNh+.                                  
+                                  `oNh-  m            ./sdmh+-                                      
+                                    `sNh/h`     `-/shNds/.                                          
+                                      `/hNmhhdmmdyo/-                                               
+                                          `..``                                                                                                                                                         
+'''
+
 
 class InfoHandler(logging.Handler):
 
@@ -217,7 +259,12 @@ class IOCageCLI(click.MultiCommand):
     "-D",
     is_flag=True,
     help="Log debug output to the console.")
-def cli(version, force, debug):
+@click.option(
+    "--nuggets",
+    is_flag=True,
+    callback=print_nuggets,
+    help="Print some delicious nuggets to the screen.")
+def cli(version, force, debug, nuggets):
     """A jail manager."""
     os.environ['IOCAGE_DEBUG'] = 'FALSE'
     logger = IOCLogger()
