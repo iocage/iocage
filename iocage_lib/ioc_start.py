@@ -1439,14 +1439,19 @@ class IOCStart(object):
                 if addr.upper() == check_var:
                     nics.append(nic)
 
-        with open(os.path.join(self.path, 'root/etc/rc.conf'), 'r') as f:
-            entries = {
-                k: v.replace("'", '').replace('"', '')
-                for k, v in map(
-                    lambda l: [e.strip() for e in l.strip().split('=')],
-                    filter(lambda l: l.strip() and not l.startswith('#'), f.readlines())
-                )
-            }
+        rc_conf_path = os.path.join(self.path, 'root/etc/rc.conf')
+        if not os.path.exists(rc_conf_path):
+            open(rc_conf_path, 'w').close()
+            entries = {}
+        else:
+            with open(rc_conf_path, 'r') as f:
+                entries = {
+                    k: v.replace("'", '').replace('"', '')
+                    for k, v in map(
+                        lambda l: [e.strip() for e in l.strip().split('=')],
+                        filter(lambda l: l.strip() and not l.startswith('#'), f.readlines())
+                    )
+                }
         for nic in nics:
             if 'vnet' in nic:
                 # Inside jails they are epairNb
@@ -1460,7 +1465,7 @@ class IOCStart(object):
                 cmd = ['-x', key] if key in entries and entries[key] == value else []
 
             if cmd:
-                su.run(['sysrc', '-f', f'{self.path}/root/etc/rc.conf'] + cmd, stdout=su.PIPE)
+                su.run(['sysrc', '-f', rc_conf_path] + cmd, stdout=su.PIPE)
 
     def __check_rtsold__(self):
         if 'accept_rtadv' not in self.ip6_addr:
