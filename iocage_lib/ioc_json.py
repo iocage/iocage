@@ -738,7 +738,9 @@ class IOCConfiguration:
                 'channels-dvr', 'dnsmasq', 'homebridge', 'irssi', 'madsonic',
                 'openvpn', 'quasselcore', 'rtorrent-flood', 'sickchill',
                 'unificontroller', 'unificontroller-lts', 'weechat', 'xmrig',
-                'radarr', 'sonarr',
+                'radarr', 'sonarr', 'backuppc', 'clamav', 'couchpotato', 'emby',
+                'jenkins', 'jenkins-lts', 'mineos', 'transmission', 'tautulli',
+                'qbittorrent', 'zoneminder',
             ) and conf['plugin_repository'] in official_repo:
                 conf['plugin_repository'] = \
                     'https://github.com/ix-plugin-hub/iocage-plugin-index.git'
