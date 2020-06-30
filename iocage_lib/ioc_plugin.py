@@ -1083,7 +1083,7 @@ fingerprint: {fingerprint}
         self.pull_clone_git_repo()
 
         plugin_conf = self._load_plugin_json()
-        self.__check_manifest__(plugin_conf)
+        self.__check_manifest__(plugin_conf, upgrade=False)
 
         if plugin_conf['artifact']:
             iocage_lib.ioc_common.logit(
@@ -1279,7 +1279,7 @@ fingerprint: {fingerprint}
         self.pull_clone_git_repo()
 
         plugin_conf = self._load_plugin_json()
-        self.__check_manifest__(plugin_conf)
+        self.__check_manifest__(plugin_conf, upgrade=True)
         plugin_release = plugin_conf["release"]
         iocage_lib.ioc_common.check_release_newer(
             plugin_release, self.callback, self.silent, major_only=True)
@@ -1469,7 +1469,7 @@ fingerprint: {fingerprint}
             callback=self.callback
         )
 
-    def __check_manifest__(self, plugin_conf):
+    def __check_manifest__(self, plugin_conf, upgrade):
         """If the Major ABI changed, they cannot update anymore."""
         jail_conf, write = iocage_lib.ioc_json.IOCJson(
             location=f"{self.iocroot}/jails/{self.jail}").json_load()
@@ -1482,7 +1482,7 @@ fingerprint: {fingerprint}
         iocage_lib.ioc_common.check_release_newer(
             manifest_major_minor, self.callback, self.silent)
 
-        if jail_rel < manifest_rel:
+        if not upgrade and jail_rel < manifest_rel:
             self.__remove_snapshot__(name="update")
             iocage_lib.ioc_common.logit(
                 {
