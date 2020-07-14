@@ -150,19 +150,32 @@ class IOCPlugin(object):
     def fetch_plugin_packagesites(package_sites):
         def download_parse_packagesite(packagesite_url):
             package_site_data = {}
-            with tempfile.TemporaryDirectory() as tmpdir:
-                packagesite_txz_path = os.path.join(tmpdir, 'packagesite.txz')
-                with requests.get(f'{packagesite_url}/packagesite.txz', stream=True) as r:
-                    with open(packagesite_txz_path, 'wb') as f:
-                        shutil.copyfileobj(r.raw, f)
 
             try:
-                response = requests.get(f'{packagesite_url}/All/', timeout=20)
-                response.raise_for_status()
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    packagesite_txz_path = os.path.join(tmpdir, 'packagesite.txz')
+                    with requests.get(f'{packagesite_url}/packagesite.txz', stream=True) as r:
+                        r.raise_for_status()
+                        with open(packagesite_txz_path, 'wb') as f:
+                            shutil.copyfileobj(r.raw, f)
 
-                for pkg in re.findall(r'<a.*>\s*(\S+).txz</a>', response.text):
-                    package_site_data[pkg.rsplit('-', 1)[0]] = \
-                        iocage_lib.ioc_common.parse_package_name(pkg)
+                    with tarfile.open(packagesite_txz_path) as p_file:
+                        p_file.extractall(path=tmpdir)
+
+                    packagesite_path = os.path.join(tmpdir, 'packagesite.yaml')
+                    if not os.path.exists(packagesite_path):
+                        raise FileNotFoundError(f'{packagesite_path} not found')
+
+                    with open(packagesite_path, 'r') as f:
+                        package_site_data = {
+                            p['name']: iocage_lib.ioc_common.parse_package_name(
+                                f'{p["name"]}-{p["version"]}'
+                            )
+                            for p in map(
+                                lambda p: yaml.load(p, Loader=yaml.FullLoader),
+                                filter(bool, f.read().split('\n'))
+                            )
+                        }
             except Exception:
                 pass
 
