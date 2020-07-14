@@ -41,7 +41,6 @@ import tempfile
 import threading
 import urllib.parse
 import uuid
-import yaml
 
 import iocage_lib.ioc_common
 import iocage_lib.ioc_create
@@ -59,6 +58,7 @@ from iocage_lib.dataset import Dataset
 
 
 GIT_LOCK = threading.Lock()
+RE_PLUGIN_VERSION = re.compile(r'"name"\s*:\s*"([\.\+\w-]*)".*"version"\s*:\s*"([\d,\.\+\w]*)"')
 
 
 class IOCPlugin(object):
@@ -167,15 +167,15 @@ class IOCPlugin(object):
                         raise FileNotFoundError(f'{packagesite_path} not found')
 
                     with open(packagesite_path, 'r') as f:
-                        package_site_data = {
-                            p['name']: iocage_lib.ioc_common.parse_package_name(
-                                f'{p["name"]}-{p["version"]}'
+                        for line in f.read().split('\n'):
+                            searched = RE_PLUGIN_VERSION.findall(line)
+                            if not searched:
+                                continue
+                            package_site_data[
+                                searched[0][0]
+                            ] = iocage_lib.ioc_common.parse_package_name(
+                                f'{searched[0][0]}-{searched[0][1]}'
                             )
-                            for p in map(
-                                lambda p: yaml.load(p, Loader=yaml.FullLoader),
-                                filter(bool, f.read().split('\n'))
-                            )
-                        }
             except Exception:
                 pass
 
