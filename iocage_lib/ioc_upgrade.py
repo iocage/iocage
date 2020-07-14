@@ -175,6 +175,25 @@ class IOCUpgrade:
                 self.path,
                 self.new_release
             )
+
+            if f_rel.startswith('12'):
+                #  https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=239498
+                cp = su.Popen(
+                    ['pkg-static', '-j', self.jid, 'install', '-q', '-f', '-y', 'pkg'],
+                    stdout=su.PIPE, stderr=su.PIPE
+                )
+                _, stderr = cp.communicate()
+                if cp.returncode:
+                    # Let's make this non-fatal as this is only being done as a convenience to user
+                    iocage_lib.ioc_common.logit(
+                        {
+                            'level': 'ERROR',
+                            'message': 'Unable to install pkg after upgrade'
+                        },
+                        _callback=self.callback,
+                        silent=self.silent,
+                    )
+
         finally:
             if tmp:
                 if not tmp.closed:
