@@ -36,9 +36,12 @@ import re
 import shutil
 import subprocess as su
 import requests
+import tarfile
+import tempfile
 import threading
 import urllib.parse
 import uuid
+import yaml
 
 import iocage_lib.ioc_common
 import iocage_lib.ioc_create
@@ -147,6 +150,12 @@ class IOCPlugin(object):
     def fetch_plugin_packagesites(package_sites):
         def download_parse_packagesite(packagesite_url):
             package_site_data = {}
+            with tempfile.TemporaryDirectory() as tmpdir:
+                packagesite_txz_path = os.path.join(tmpdir, 'packagesite.txz')
+                with requests.get(f'{packagesite_url}/packagesite.txz', stream=True) as r:
+                    with open(packagesite_txz_path, 'wb') as f:
+                        shutil.copyfileobj(r.raw, f)
+
             try:
                 response = requests.get(f'{packagesite_url}/All/', timeout=20)
                 response.raise_for_status()
