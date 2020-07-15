@@ -36,6 +36,8 @@ import re
 import shutil
 import subprocess as su
 import requests
+import tarfile
+import tempfile
 import threading
 import urllib.parse
 import uuid
@@ -56,6 +58,7 @@ from iocage_lib.dataset import Dataset
 
 
 GIT_LOCK = threading.Lock()
+RE_PLUGIN_VERSION = re.compile(r'"name"\s*:\s*"([\.\+\w-]*)".*"version"\s*:\s*"([\d,\.\+\w]*)"')
 
 
 class IOCPlugin(object):
@@ -147,13 +150,34 @@ class IOCPlugin(object):
     def fetch_plugin_packagesites(package_sites):
         def download_parse_packagesite(packagesite_url):
             package_site_data = {}
-            try:
-                response = requests.get(f'{packagesite_url}/All/', timeout=20)
-                response.raise_for_status()
 
-                for pkg in re.findall(r'<a.*>\s*(\S+).txz</a>', response.text):
-                    package_site_data[pkg.rsplit('-', 1)[0]] = \
-                        iocage_lib.ioc_common.parse_package_name(pkg)
+            try:
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    packagesite_txz_path = os.path.join(tmpdir, 'packagesite.txz')
+                    with requests.get(
+                        f'{packagesite_url}/packagesite.txz', stream=True, timeout=300
+                    ) as r:
+                        r.raise_for_status()
+                        with open(packagesite_txz_path, 'wb') as f:
+                            shutil.copyfileobj(r.raw, f)
+
+                    with tarfile.open(packagesite_txz_path) as p_file:
+                        p_file.extractall(path=tmpdir)
+
+                    packagesite_path = os.path.join(tmpdir, 'packagesite.yaml')
+                    if not os.path.exists(packagesite_path):
+                        raise FileNotFoundError(f'{packagesite_path} not found')
+
+                    with open(packagesite_path, 'r') as f:
+                        for line in f.read().split('\n'):
+                            searched = RE_PLUGIN_VERSION.findall(line)
+                            if not searched:
+                                continue
+                            package_site_data[
+                                searched[0][0]
+                            ] = iocage_lib.ioc_common.parse_package_name(
+                                f'{searched[0][0]}-{searched[0][1]}'
+                            )
             except Exception:
                 pass
 
