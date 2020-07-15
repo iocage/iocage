@@ -154,7 +154,9 @@ class IOCPlugin(object):
             try:
                 with tempfile.TemporaryDirectory() as tmpdir:
                     packagesite_txz_path = os.path.join(tmpdir, 'packagesite.txz')
-                    with requests.get(f'{packagesite_url}/packagesite.txz', stream=True) as r:
+                    with requests.get(
+                        f'{packagesite_url}/packagesite.txz', stream=True, timeout=300
+                    ) as r:
                         r.raise_for_status()
                         with open(packagesite_txz_path, 'wb') as f:
                             shutil.copyfileobj(r.raw, f)
