@@ -2574,7 +2574,7 @@ class IOCJson(IOCConfiguration):
                             _exec,
                             log=False
                         )
-                        return output['stdout'][0] if output['stdout'] else ''
+                        return (output['stdout'][0]).rstrip("\n") if output['stdout'] else ''
             else:
                 return settings
         except KeyError:
