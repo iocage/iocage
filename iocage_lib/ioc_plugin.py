@@ -58,7 +58,7 @@ from iocage_lib.dataset import Dataset
 
 
 GIT_LOCK = threading.Lock()
-RE_PLUGIN_VERSION = re.compile(r'"name"\s*:\s*"([\.\+\w-]*)".*"version"\s*:\s*"([\d,\.\+\w]*)"')
+RE_PLUGIN_VERSION = re.compile(r'"path":"([/\.\+,\d\w-]*)\.txz"')
 
 
 class IOCPlugin(object):
@@ -173,11 +173,10 @@ class IOCPlugin(object):
                             searched = RE_PLUGIN_VERSION.findall(line)
                             if not searched:
                                 continue
+                            name = searched[0].rsplit('/', 1)[-1]
                             package_site_data[
-                                searched[0][0]
-                            ] = iocage_lib.ioc_common.parse_package_name(
-                                f'{searched[0][0]}-{searched[0][1]}'
-                            )
+                                name.rsplit('-', 1)[0]
+                            ] = iocage_lib.ioc_common.parse_package_name(name)
             except Exception:
                 pass
 
