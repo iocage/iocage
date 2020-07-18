@@ -1448,8 +1448,10 @@ class IOCStart(object):
                 entries = {
                     k: v.replace("'", '').replace('"', '')
                     for k, v in map(
-                        lambda l: [e.strip() for e in l.strip().split('=')],
-                        filter(lambda l: l.strip() and not l.startswith('#'), f.readlines())
+                        lambda l: [e.strip() for e in l.strip().split('=', 1)],
+                        filter(
+                            lambda l: not l.strip().startswith('#') and '=' in l, f.readlines()
+                        )
                     )
                 }
         for nic in nics:
