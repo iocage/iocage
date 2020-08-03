@@ -947,6 +947,7 @@ class IOCCreate(object):
 
             pkg_retry = 1
             while True:
+                pkg_err = False
                 cmd = ("/usr/local/sbin/pkg", "install", "-q", "-y", pkg)
 
                 try:
