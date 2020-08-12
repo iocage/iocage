@@ -109,7 +109,8 @@ def iocage_activated_dataset():
     return None
 
 
-def get_dependents(identifier, depth=None):
+def get_dependents(identifier, depth=None, filters=None):
+    filters = filters or ['-t', 'filesystem']
     id_depth = len(identifier.split('/'))
     try:
         return list(
@@ -118,7 +119,7 @@ def get_dependents(identifier, depth=None):
                     p.split('/')
                 ) - id_depth <= depth and len(p.split('/')) - id_depth),
                 run(
-                    ['zfs', 'list', '-rHo', 'name', identifier],
+                    ['zfs', 'list'] + filters + ['-rHo', 'name', identifier],
                 ).stdout.split('\n')
             )
         )
