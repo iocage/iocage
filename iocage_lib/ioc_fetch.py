@@ -868,7 +868,6 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
                 silent=self.silent)
 
         su.Popen(cmd).communicate()
-        shutil.copy("/etc/resolv.conf", f"{mount_root}/etc/resolv.conf")
 
         path = '/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:'\
                '/usr/local/bin:/root/bin'
