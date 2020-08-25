@@ -42,10 +42,13 @@ import iocage_lib.ioc_exceptions
 import iocage_lib.ioc_exec
 import iocage_lib.ioc_json
 import iocage_lib.ioc_start
-import libzfs
 
 
-class IOCFetch(iocage_lib.ioc_json.IOCZFS):
+from iocage_lib.pools import Pool
+from iocage_lib.dataset import Dataset
+
+
+class IOCFetch:
 
     """Fetch a RELEASE for use as a jail base."""
 
@@ -65,7 +68,6 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
                  files=('MANIFEST', 'base.txz', 'lib32.txz', 'src.txz'),
                  silent=False,
                  callback=None):
-        super().__init__(callback)
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage_lib.ioc_json.IOCJson(
             self.pool).json_get_value("iocroot")
@@ -91,7 +93,7 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
         self.eol = eol
         self.silent = silent
         self.callback = callback
-        self.zpool = self.zfs.get(self.pool)
+        self.zpool = Pool(self.pool)
 
         if hardened:
             if release:
@@ -172,7 +174,7 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
         try:
             self.release = releases[int(self.release)]
             iocage_lib.ioc_common.check_release_newer(
-                self.release, self.callback, self.silent)
+                self.release, self.callback, self.silent, major_only=True)
         except IndexError:
             # Time to print the list again
             self.release = self.__fetch_validate_release__(releases)
@@ -205,6 +207,11 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
             else:
                 eol = []
 
+            if self.release:
+                iocage_lib.ioc_common.check_release_newer(
+                    self.release, callback=self.callback, silent=self.silent,
+                    major_only=True,
+                )
             rel = self.fetch_http_release(eol, _list=_list)
 
             if _list:
@@ -230,33 +237,22 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
                     _callback=self.callback,
                     silent=self.silent)
 
-            try:
-                os.chdir(f"{self.root_dir}/{self.release}")
-            except OSError as err:
-                iocage_lib.ioc_common.logit(
-                    {
-                        "level": "EXCEPTION",
-                        "message": err
-                    },
-                    _callback=self.callback,
-                    silent=self.silent)
-
             dataset = f"{self.iocroot}/download/{self.release}"
             pool_dataset = f"{self.pool}/iocage/download/{self.release}"
 
             if os.path.isdir(dataset):
                 pass
             else:
-                self.zpool.create(pool_dataset, {"compression": "lz4"})
-                self.zfs.get_dataset(pool_dataset).mount()
+                self.zpool.create_dataset({
+                    'name': pool_dataset, 'properties': {'compression': 'lz4'}
+                })
 
             for f in self.files:
-                if not os.path.isfile(f):
+                file_path = os.path.join(self.root_dir, self.release, f)
+                if not os.path.isfile(file_path):
 
-                    _dataset = self.zfs.get_dataset(pool_dataset)
-
-                    _dataset.umount()
-                    _dataset.delete()
+                    ds = Dataset(pool_dataset)
+                    ds.destroy(recursive=True, force=True)
 
                     if f == "MANIFEST":
                         error = f"{f} is a required file!" \
@@ -282,7 +278,7 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
                     },
                     _callback=self.callback,
                     silent=self.silent)
-                shutil.copy(f, dataset)
+                shutil.copy(file_path, dataset)
 
                 if f != "MANIFEST":
                     iocage_lib.ioc_common.logit(
@@ -519,22 +515,25 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
         files_left = self.files_left.copy()
 
         if os.path.isdir(f"{self.iocroot}/download/{self.release}"):
-            os.chdir(f"{self.iocroot}/download/{self.release}")
+            release_download_path = os.path.join(
+                self.iocroot, 'download', self.release
+            )
 
-            for _, _, files in os.walk("."):
-                if "MANIFEST" not in files:
-                    if self.server == "https://download.freebsd.org":
-                        iocage_lib.ioc_common.logit(
-                            {
-                                'level': 'INFO',
-                                'message': 'MANIFEST missing, downloading one'
-                            },
-                            _callback=self.callback,
-                            silent=self.silent)
-                        self.fetch_download(['MANIFEST'], missing=True)
+            if 'MANIFEST' not in os.listdir(release_download_path) and \
+                    self.server == 'https://download.freebsd.org':
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'INFO',
+                        'message': 'MANIFEST missing, downloading one'
+                    },
+                    _callback=self.callback,
+                    silent=self.silent)
+                self.fetch_download(['MANIFEST'], missing=True)
 
             try:
-                with open("MANIFEST", "r") as _manifest:
+                with open(
+                    os.path.join(release_download_path, 'MANIFEST'), 'r'
+                ) as _manifest:
                     for line in _manifest:
                         col = line.split("\t")
                         hashes[col[0]] = col[1]
@@ -553,7 +552,9 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
                         silent=self.silent)
 
                 self.fetch_download(['MANIFEST'], missing=True)
-                with open("MANIFEST", "r") as _manifest:
+                with open(
+                    os.path.join(release_download_path, 'MANIFEST'), 'r'
+                ) as _manifest:
                     for line in _manifest:
                         col = line.split("\t")
                         hashes[col[0]] = col[1]
@@ -573,7 +574,9 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
 
                 if f in _list:
                     try:
-                        with open(f, "rb") as txz:
+                        with open(
+                            os.path.join(release_download_path, f), 'rb'
+                        ) as txz:
                             buf = txz.read(hash_block)
 
                             while len(buf) > 0:
@@ -622,6 +625,10 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
                             },
                             _callback=self.callback,
                             silent=self.silent)
+                        if f == 'doc.txz':
+                            # some releases might not have it,
+                            # it is safe to skip
+                            self.files_left.remove(f)
                         continue
 
                 if not missing and f in _list:
@@ -652,19 +659,16 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
             fresh = True
             dataset = f"{self.pool}/iocage/download/{self.release}"
 
-            try:
-                # It may actually still exist, just unmounted.
-                self.zpool.create(dataset, {"compression": "lz4"})
-            except libzfs.ZFSException as err:
-                if err.code == libzfs.Error.EXISTS:
-                    pass
-                else:
-                    raise
-
-            self.zfs.get_dataset(dataset).mount()
+            ds = Dataset(dataset)
+            if not ds.exists:
+                ds.create({'properties': {'compression': 'lz4'}})
+            if not ds.mounted:
+                ds.mount()
 
         if missing or fresh:
-            os.chdir(f"{self.iocroot}/download/{self.release}")
+            release_download_path = os.path.join(
+                self.iocroot, 'download', self.release
+            )
 
             for f in _list:
                 if self.hardened:
@@ -698,7 +702,7 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
                 if not status:
                     r.raise_for_status()
 
-                with open(f, "wb") as txz:
+                with open(os.path.join(release_download_path, f), 'wb') as txz:
                     file_size = int(r.headers['Content-Length'])
                     chunk_size = 1024 * 1024
                     total = file_size / chunk_size
@@ -804,10 +808,10 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
         dataset = f"{self.pool}/iocage/releases/{self.release}/root"
 
         if not os.path.isdir(dest):
-            self.zpool.create(dataset, {"compression": "lz4"},
-                              libzfs.DatasetType.FILESYSTEM, 0, True)
-
-            self.zfs.get_dataset(dataset).mount_recursive(True)
+            self.zpool.create_dataset({
+                'name': dataset, 'create_ancestors': True,
+                'properties': {'compression': 'lz4'},
+            })
 
         with tarfile.open(src) as f:
             # Extracting over the same files is much slower then
@@ -818,17 +822,7 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
 
     def fetch_update(self, cli=False, uuid=None):
         """This calls 'freebsd-update' to update the fetched RELEASE."""
-        tmp_dataset = self.zfs_get_dataset_name('/tmp')
-        tmp_val = self.zfs_get_property(tmp_dataset, 'exec')
-
-        if tmp_val == 'off':
-            iocage_lib.ioc_common.logit(
-                {
-                    'level': 'EXCEPTION',
-                    'message': f'{tmp_dataset} needs exec=on!'
-                },
-                _callback=self.callback,
-                silent=self.silent)
+        iocage_lib.ioc_common.tmp_dataset_checks(self.callback, self.silent)
 
         if cli:
             cmd = [
@@ -867,8 +861,6 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
                 _callback=self.callback,
                 silent=self.silent)
 
-        su.Popen(cmd).communicate()
-
         path = '/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:'\
                '/usr/local/bin:/root/bin'
         fetch_env = {
@@ -881,6 +873,7 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
         }
 
         if os.path.isfile(f"{mount_root}/etc/freebsd-update.conf"):
+            su.Popen(cmd).communicate()
             if self.verify:
                 f = "https://raw.githubusercontent.com/freebsd/freebsd" \
                     "/master/usr.sbin/freebsd-update/freebsd-update.sh"
@@ -912,6 +905,7 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
                     iocage_lib.ioc_common.consume_and_log(
                         _exec, callback=self.callback)
                 except iocage_lib.ioc_exceptions.CommandFailed as e:
+                    su.Popen(['umount', f'{mount_root}/dev']).communicate()
                     iocage_lib.ioc_common.logit(
                         {
                             'level': 'EXCEPTION',
@@ -949,6 +943,7 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
                         )
 
             finally:
+                su.Popen(['umount', f'{mount_root}/dev']).communicate()
                 new_release = iocage_lib.ioc_common.get_jail_freebsd_version(
                     mount_root, self.release
                 )
@@ -959,19 +954,20 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
 
                     if not cli:
                         for jail, path in jails.items():
-                            _json = iocage_lib.ioc_json.IOCJson(path)
+                            _json = iocage_lib.ioc_json.IOCJson(
+                                path, cli=False
+                            )
                             props = _json.json_get_value('all')
 
                             if props['basejail'] and self.release.rsplit(
                                 '-', 1
                             )[0] in props['release']:
-                                props['release'] = new_release
-                                _json.json_write(props)
+                                _json.json_set_value(f'release={new_release}')
                     else:
-                        _json = iocage_lib.ioc_json.IOCJson(jails[uuid])
-                        props = _json.json_get_value('all')
-                        props['release'] = new_release
-                        _json.json_write(props)
+                        _json = iocage_lib.ioc_json.IOCJson(
+                            jails[uuid], cli=False
+                        )
+                        _json.json_set_value(f'release={new_release}')
 
             if self.verify:
                 # tmp only exists if they verify SSL certs
@@ -987,8 +983,6 @@ class IOCFetch(iocage_lib.ioc_json.IOCZFS):
                 os.remove(f"{mount_root}/etc/resolv.conf")
         except OSError:
             pass
-
-        su.Popen(["umount", f"{mount_root}/dev"]).communicate()
 
     def __fetch_extract_remove__(self, tar):
         """

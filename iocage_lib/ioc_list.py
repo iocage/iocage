@@ -30,8 +30,10 @@ import uuid as _uuid
 
 import iocage_lib.ioc_common
 import iocage_lib.ioc_json
-import libzfs
+import iocage_lib.ioc_plugin
 import texttable
+
+from iocage_lib.dataset import Dataset
 
 
 class IOCList(object):
@@ -43,30 +45,35 @@ class IOCList(object):
         JID UID BOOT STATE TYPE IP4 RELEASE
     """
 
-    def __init__(self, lst_type="all", hdr=True, full=False, _sort=None,
-                 silent=False, callback=None,
-                 plugin=False, quick=False):
+    def __init__(
+        self, lst_type='all', hdr=True, full=False, _sort=None, silent=False,
+        callback=None, plugin=False, quick=False, **kwargs
+    ):
         self.list_type = lst_type
         self.header = hdr
         self.full = full
-        self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
-        self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
+        self.iocjson = iocage_lib.ioc_json.IOCJson()
+        self.pool = self.iocjson.pool
+        self.iocroot = self.iocjson.iocroot
         self.sort = _sort
         self.silent = silent
         self.callback = callback
         self.basejail_only = False if self.list_type != 'basejail' else True
         self.plugin = plugin
         self.quick = quick
+        self.plugin_data = kwargs.get('plugin_data', False)
 
     def list_datasets(self):
         """Lists the datasets of given type."""
         if self.list_type == "base":
-            ds = self.zfs.get_dataset(f"{self.pool}/iocage/releases").children
+            ds = Dataset(f"{self.pool}/iocage/releases").get_dependents()
         elif self.list_type == "template":
-            ds = self.zfs.get_dataset(
-                f"{self.pool}/iocage/templates").children
+            ds = Dataset(
+                f"{self.pool}/iocage/templates").get_dependents()
         else:
-            ds = self.zfs.get_dataset(f"{self.pool}/iocage/jails").children
+            ds = Dataset(f"{self.pool}/iocage/jails").get_dependents()
+
+        ds = list(ds)
 
         if self.list_type in ('all', 'basejail', 'template'):
             if self.quick:
@@ -81,7 +88,7 @@ class IOCList(object):
             for jail in ds:
                 uuid = jail.name.rsplit("/", 1)[-1]
                 try:
-                    jails[uuid] = jail.properties["mountpoint"].value
+                    jails[uuid] = jail.properties["mountpoint"]
                 except KeyError:
                     iocage_lib.ioc_common.logit(
                         {
@@ -93,13 +100,12 @@ class IOCList(object):
                         silent=self.silent
                     )
 
-            template_datasets = self.zfs.get_dataset(
-                f"{self.pool}/iocage/templates")
-            template_datasets = template_datasets.children
+            template_datasets = Dataset(
+                f'{self.pool}/iocage/templates').get_dependents()
 
             for template in template_datasets:
                 uuid = template.name.rsplit("/", 1)[-1]
-                jails[uuid] = template.properties["mountpoint"].value
+                jails[uuid] = template.properties['mountpoint']
 
             return jails
         elif self.list_type == "base":
@@ -113,7 +119,7 @@ class IOCList(object):
 
         for jail in jails:
             try:
-                mountpoint = jail.properties["mountpoint"].value
+                mountpoint = jail.properties['mountpoint']
             except KeyError:
                 iocage_lib.ioc_common.logit(
                     {
@@ -182,10 +188,11 @@ class IOCList(object):
         """List all jails."""
         self.full = True if self.plugin else self.full
         jail_list = []
+        plugin_index_data = {}
 
         for jail in jails:
             try:
-                mountpoint = jail.properties["mountpoint"].value
+                mountpoint = jail.properties['mountpoint']
             except KeyError:
                 iocage_lib.ioc_common.logit(
                     {
@@ -282,11 +289,14 @@ class IOCList(object):
             if conf["type"] == "template":
                 template = "-"
             else:
-                jail_root = self.zfs.get_dataset(f"{jail.name}/root")
-                _origin_property = jail_root.properties["origin"]
+                jail_root = Dataset(f'{jail.name}/root')
+                if jail_root.exists:
+                    _origin_property = jail_root.properties.get('origin')
+                else:
+                    _origin_property = None
 
-                if _origin_property and _origin_property.value != "":
-                    template = jail_root.properties["origin"].value
+                if _origin_property:
+                    template = _origin_property
                     template = template.rsplit("/root@", 1)[0].rsplit(
                         "/", 1)[-1]
                 else:
@@ -295,38 +305,9 @@ class IOCList(object):
             if "release" in template.lower() or "stable" in template.lower():
                 template = "-"
 
-            if iocage_lib.ioc_common.check_truthy(
-                conf['dhcp']
-            ) and status and os.geteuid() == 0:
-                interface = conf["interfaces"].split(",")[0].split(":")[0]
-
-                if interface == "vnet0":
-                    # Inside jails they are epairNb
-                    interface = f"{interface.replace('vnet', 'epair')}b"
-
-                short_ip4 = "DHCP"
-                full_ip4_cmd = ["jexec", f"ioc-{uuid_full.replace('.', '_')}",
-                                "ifconfig", interface, "inet"]
-                try:
-                    out = su.check_output(full_ip4_cmd)
-                    full_ip4 = f'{interface}|' \
-                        f'{out.splitlines()[2].split()[1].decode()}'
-                except (su.CalledProcessError, IndexError) as e:
-                    short_ip4 += '(Network Issue)'
-                    if isinstance(e, su.CalledProcessError):
-                        full_ip4 = f'DHCP - Network Issue: {e}'
-                    else:
-                        full_ip4 = f'DHCP - Failed Parsing: {e}'
-            elif iocage_lib.ioc_common.check_truthy(
-                conf['dhcp']
-            ) and not status:
-                short_ip4 = "DHCP"
-                full_ip4 = "DHCP (not running)"
-            elif iocage_lib.ioc_common.check_truthy(
-                conf['dhcp']
-            ) and os.geteuid() != 0:
-                short_ip4 = "DHCP"
-                full_ip4 = "DHCP (running -- address requires root)"
+            ip_dict = iocage_lib.ioc_common.retrieve_ip4_for_jail(conf, status)
+            full_ip4 = ip_dict['full_ip4'] or full_ip4
+            short_ip4 = ip_dict['short_ip4'] or short_ip4
 
             # Append the JID and the NAME to the table
 
@@ -339,23 +320,12 @@ class IOCList(object):
 
                 try:
                     with open(f"{mountpoint}/plugin/ui.json", "r") as u:
-                        all_ips = map(
-                            lambda v: 'DHCP' if 'dhcp' in v.lower() else v,
-                            [
-                                i.split('|')[-1].split('/')[0].strip()
-                                for i in full_ip4.split(',')
-                            ]
-                        )
-
                         ui_data = json.load(u)
-                        admin_portal = ui_data["adminportal"]
                         admin_portal = ','.join(
-                            map(
-                                lambda v: admin_portal.replace('%%IP%%', v),
-                                all_ips
+                            iocage_lib.ioc_common.retrieve_admin_portals(
+                                conf, status, ui_data['adminportal']
                             )
                         )
-
                         try:
                             ph = ui_data["adminportal_placeholders"].items()
                             if ph and not status:
@@ -375,13 +345,79 @@ class IOCList(object):
                         except iocage_lib.ioc_exceptions.CommandFailed as e:
                             admin_portal = b' '.join(e.message).decode()
 
+                        doc_url = ui_data.get('docurl', '-')
+
                 except FileNotFoundError:
                     # They just didn't set a admin portal.
-                    admin_portal = "-"
+                    admin_portal = doc_url = '-'
 
                 jail_list.append([jid, uuid, boot, state, jail_type,
                                   full_release, full_ip4, ip6, template,
-                                  admin_portal])
+                                  admin_portal, doc_url])
+                if self.plugin_data:
+                    if conf['plugin_repository'] not in plugin_index_data:
+                        repo_obj = iocage_lib.ioc_plugin.IOCPlugin(
+                            git_repository=conf['plugin_repository']
+                        )
+                        if not os.path.exists(repo_obj.git_destination):
+                            try:
+                                repo_obj.pull_clone_git_repo()
+                            except Exception as e:
+                                iocage_lib.ioc_common.logit(
+                                    {
+                                        'level': 'ERROR',
+                                        'message':
+                                            'Failed to clone '
+                                            f'{conf["plugin_repository"]} '
+                                            f'for {uuid_full}: {e}'
+                                    },
+                                    _callback=self.callback,
+                                    silent=self.silent
+                                )
+                        index_path = os.path.join(
+                            repo_obj.git_destination, 'INDEX'
+                        )
+                        if not os.path.exists(index_path):
+                            iocage_lib.ioc_common.logit(
+                                {
+                                    'level': 'ERROR',
+                                    'message':
+                                        f'{index_path} does not exist '
+                                        f'for {uuid_full} plugin.'
+                                },
+                                _callback=self.callback,
+                                silent=self.silent
+                            )
+                            plugin_index_data[
+                                conf['plugin_repository']
+                            ] = {}
+                        else:
+                            with open(index_path) as f:
+                                plugin_index_data[
+                                    conf['plugin_repository']
+                                ] = json.loads(f.read())
+                    elif not plugin_index_data[conf['plugin_repository']]:
+                        iocage_lib.ioc_common.logit(
+                            {
+                                'level': 'ERROR',
+                                'message':
+                                    'Unable to retrieve INDEX from '
+                                    f'{conf["plugin_repository"]} for '
+                                    f'{uuid_full}'
+                            },
+                            _callback=self.callback,
+                            silent=self.silent
+                        )
+
+                    index_plugin_conf = plugin_index_data[
+                        conf['plugin_repository']
+                    ].get(conf['plugin_name'], {})
+                    jail_list[-1].extend([
+                        conf['plugin_name'], conf['plugin_repository'],
+                        index_plugin_conf.get('primary_pkg'),
+                        index_plugin_conf.get('category'),
+                        index_plugin_conf.get('maintainer'),
+                    ])
             elif self.full:
                 jail_list.append([jid, uuid, boot, state, jail_type,
                                   full_release, full_ip4, ip6, template,
@@ -407,11 +443,11 @@ class IOCList(object):
         if self.full:
             if self.plugin:
                 table.set_cols_dtype(["t", "t", "t", "t", "t", "t", "t", "t",
-                                      "t", "t"])
+                                      "t", "t", "t"])
 
                 jail_list.insert(0, ["JID", "NAME", "BOOT", "STATE", "TYPE",
                                      "RELEASE", "IP4", "IP6", "TEMPLATE",
-                                     "PORTAL"])
+                                     "PORTAL", "DOC_URL"])
             else:
                 # We get an infinite float otherwise.
                 table.set_cols_dtype(["t", "t", "t", "t", "t", "t", "t", "t",

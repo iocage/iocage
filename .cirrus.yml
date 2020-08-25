@@ -1,5 +1,5 @@
 freebsd_instance:
-  image: freebsd-11-2-release-amd64
+  image_family: freebsd-11-3-snap
 
 iocage_tests_task:
   create_pool_script:
@@ -7,7 +7,7 @@ iocage_tests_task:
     - zpool create pool /root/poolfile
   install_pkgs_script:
     - sed -i '' 's/quarterly/latest/g' /etc/pkg/FreeBSD.conf
-    - pkg install -y git python3
+    - pkg install -y git python3 py37-sqlite3
   configure_python_script:
     - python3 -m ensurepip
   pip_cache:

@@ -164,8 +164,26 @@ Be sure the default gateway knows the route back to the VNET subnets.
 
 **Using VLANs**
 
-If using VLAN interfaces for the jail host, add the VLAN interface AND
-parent interface of the VLAN as bridge members.
+To assign a jail's traffic to a VLAN, add the VLAN interface as a bridge
+member, but not the VLAN's parent.  For example:
+
+.. code-block:: none
+
+   sysrc vlans_em0="666"
+   sysrc ifconfig_em0_666="up"
+   iocage set vnet_default_interface="em0.666" examplejail
+   iocage set interfaces="vnet1:bridge1" examplejail
+
+
+If using VLAN interfaces for the jail host only, on the other hand, add the
+parent as a bridge member, but not the VLAN interface.
+
+.. code-block:: none
+
+   sysrc vlans_em0="666"
+   sysrc ifconfig_em0_666="1.2.3.4/24"
+   iocage set vnet_default_interface="auto" examplejail # "em0" would also work
+   iocage set interfaces="vnet1:bridge1" examplejail
 
 .. index:: Configure Network Interfaces
 .. _Configuring Network Interfaces:

@@ -39,11 +39,17 @@ import glob
 import netifaces
 import concurrent.futures
 import json
+import urllib.parse
 
 import iocage_lib.ioc_exceptions
 import iocage_lib.ioc_exec
 
+from iocage_lib.dataset import Dataset
+
 INTERACTIVE = False
+# 4 is a magic number for default and doesn't refer
+# to the actual ruleset 4 in devfs.rules(!)
+IOCAGE_DEVFS_RULESET = 4
 
 
 def callback(_log, callback_exception):
@@ -432,11 +438,11 @@ def sort_release(releases, split=False, fetch_releases=False):
     if split:
         for i, rel in enumerate(releases):
             try:
-                rel, r_type = rel.properties["mountpoint"].value.rsplit("/")[
+                rel, r_type = rel.properties["mountpoint"].rsplit("/")[
                     -1].split("-", 1)
             except ValueError:
                 # Non-standard naming scheme
-                rel = rel.properties["mountpoint"].value.rsplit("/")[
+                rel = rel.properties["mountpoint"].rsplit("/")[
                     -1].split("-", 1)[0]
                 r_type = ''
 
@@ -462,6 +468,9 @@ def sort_release(releases, split=False, fetch_releases=False):
 
         else:
             for release in releases:
+                if not isinstance(release, str):
+                    release = release.name
+
                 try:
                     release, r_type = release.split("-", 1)
 
@@ -706,17 +715,19 @@ def get_host_release():
     return release
 
 
-def check_release_newer(release, callback=None, silent=False):
+def check_release_newer(
+    release, callback=None, silent=False, raise_error=True, major_only=False
+):
     """Checks if the host RELEASE is greater than the target release"""
     host_release = get_host_release()
 
     if host_release == "Not a RELEASE":
         return
 
-    h_float = float(str(host_release).rsplit("-")[0])
-    r_float = float(str(release).rsplit("-")[0])
+    h_float = float(str(host_release).rsplit('.' if major_only else '-')[0])
+    r_float = float(str(release).rsplit('.' if major_only else '-')[0])
 
-    if h_float < r_float:
+    if h_float < r_float and raise_error:
         logit(
             {
                 "level": "EXCEPTION",
@@ -726,6 +737,8 @@ def check_release_newer(release, callback=None, silent=False):
             _callback=callback,
             silent=silent)
 
+    return h_float < r_float
+
 
 def generate_devfs_ruleset(conf, paths=None, includes=None, callback=None,
                            silent=False):
@@ -733,7 +746,7 @@ def generate_devfs_ruleset(conf, paths=None, includes=None, callback=None,
     Will add a per jail devfs ruleset with the specified rules,
     specifying defaults that equal devfs_ruleset 4
     """
-    ruleset = conf['devfs_ruleset']
+    configured_ruleset = conf['devfs_ruleset']
     devfs_includes = []
     devfs_rulesets = su.run(
         ['devfs', 'rule', 'showsets'],
@@ -741,22 +754,26 @@ def generate_devfs_ruleset(conf, paths=None, includes=None, callback=None,
     )
     ruleset_list = [int(i) for i in devfs_rulesets.stdout.splitlines()]
 
-    if ruleset != '4':
-        if int(ruleset) in ruleset_list:
-            return str(ruleset)
-
-        logit({
-            "level": "INFO",
-            "message": f'* Ruleset {ruleset} does not exist, using defaults'
-        },
-            _callback=callback,
-            silent=silent)
-
-    ruleset = 5  # 0-4 is always reserved
+    ruleset = int(conf["min_dyn_devfs_ruleset"])
     while ruleset in ruleset_list:
         ruleset += 1
     ruleset = str(ruleset)
 
+    # Custom devfs_ruleset configured, clone to dynamic ruleset
+    if int(configured_ruleset) != IOCAGE_DEVFS_RULESET:
+        if int(configured_ruleset) != 0 and int(configured_ruleset) not in ruleset_list:
+            return True, configured_ruleset, '-1'
+        rules = su.run(
+            ['devfs', 'rule', '-s', configured_ruleset, 'show'],
+            stdout=su.PIPE, universal_newlines=True
+        )
+        for rule in rules.stdout.splitlines():
+            su.run(['devfs', 'rule', '-s', ruleset, 'add'] +
+                   rule.split(' ')[1:], stdout=su.PIPE)
+
+        return (True, configured_ruleset, ruleset)
+
+    # Create default ruleset
     devfs_dict = dict((dev, None) for dev in (
         'hide', 'null', 'zero', 'crypto', 'random', 'urandom', 'ptyp*',
         'ptyq*', 'ptyr*', 'ptys*', 'ptyP*', 'ptyQ*', 'ptyR*', 'ptyS*', 'ptyl*',
@@ -808,10 +825,10 @@ def generate_devfs_ruleset(conf, paths=None, includes=None, callback=None,
 
         su.run(['devfs', 'rule', '-s', ruleset] + path, stdout=su.PIPE)
 
-    return ruleset
+    return (False, configured_ruleset, ruleset)
 
 
-def runscript(script):
+def runscript(script, custom_env=None):
     """
     Runs the script provided and return a tuple with first value showing
     stdout and last showing stderr
@@ -829,7 +846,7 @@ def runscript(script):
 
     try:
         output = iocage_lib.ioc_exec.SilentExec(
-            script, None, unjailed=True, decode=True
+            script, None, unjailed=True, decode=True, su_env=custom_env
         )
     except iocage_lib.ioc_exceptions.CommandFailed as e:
         return None, f'Script returned non-zero status: {e}'
@@ -924,9 +941,17 @@ def get_jail_freebsd_version(path, release):
     return new_release
 
 
+def truthy_values():
+    return '1', 'on', 'yes', 'true', True, 1
+
+
+def truthy_inverse_values():
+    return '0', 'off', 'no', 'false', 0, False, None
+
+
 def check_truthy(value):
     """Checks if the given value is 'True'"""
-    if str(value).lower() in ('1', 'on', 'yes', 'true'):
+    if str(value).lower() in truthy_values():
         return 1
 
     return 0
@@ -934,10 +959,11 @@ def check_truthy(value):
 
 def construct_truthy(item, inverse=False):
     """Will return an iterable with all truthy variations"""
-    if inverse:
-        return (f'{item}=off', f'{item}=no', f'{item}=0', f'{item}=false')
-
-    return (f'{item}=on', f'{item}=yes', f'{item}=1', f'{item}=true')
+    return (
+        f'{item}={v}' for v in (
+            truthy_inverse_values() if inverse else truthy_values()
+        )
+    )
 
 
 def set_interactive(interactive):
@@ -948,6 +974,20 @@ def set_interactive(interactive):
 
 def lowercase_set(values):
     return set([v.lower() for v in values])
+
+
+def boolean_prop_exists(supplied_props, props_to_check):
+    # supplied_props is a list i.e ["dhcp=1"]
+    # props_to_check is a list of props i.e ["dhcp", "nat"]
+    check_set = set()
+    for check_prop in props_to_check:
+        check_set.update(
+            iocage_lib.ioc_common.lowercase_set(
+                iocage_lib.ioc_common.construct_truthy(check_prop)
+            )
+        )
+
+    return iocage_lib.ioc_common.lowercase_set(supplied_props) & check_set
 
 
 def gen_unused_lo_ip():
@@ -1050,3 +1090,200 @@ def parse_package_name(pkg):
         'revision': revision,
         'epoch': epoch,
     }
+
+
+def get_host_gateways():
+    gateways = {'ipv4': {'gateway': None, 'interface': None},
+                'ipv6': {'gateway': None, 'interface': None}}
+    af_mapping = {
+        'Internet': 'ipv4',
+        'Internet6': 'ipv6'
+    }
+    output = checkoutput(['netstat', '-r', '-n', '--libxo', 'json'])
+    route_families = (json.loads(output)
+                      ['statistics']
+                      ['route-information']
+                      ['route-table']
+                      ['rt-family'])
+    for af in af_mapping.keys():
+        route_entries = list(filter(
+            lambda x: x['address-family'] == af, route_families)
+        )[0]['rt-entry']
+        default_route = list(filter(
+            lambda x: x['destination'] == 'default', route_entries)
+        )
+        if default_route and 'gateway' in default_route[0]:
+            gateways[af_mapping[af]]['gateway'] = \
+                default_route[0]['gateway']
+            gateways[af_mapping[af]]['interface'] = \
+                default_route[0]['interface-name']
+    return gateways
+
+
+def validate_plugin_manifest(manifest, _callback, silent):
+    errors = []
+    for k in (
+        'name', 'release', 'pkgs', 'packagesite', 'fingerprints', 'artifact',
+    ):
+        if k not in manifest:
+            errors.append(f'Missing "{k}" key in manifest')
+
+    if 'devfs_ruleset' in manifest:
+        if not isinstance(manifest['devfs_ruleset'], dict):
+            errors.append('"devfs_ruleset" must be a dictionary')
+        else:
+            devfs_ruleset = manifest['devfs_ruleset']
+            if 'paths' not in devfs_ruleset:
+                errors.append('Key "paths" not specified in devfs_ruleset')
+            elif not isinstance(devfs_ruleset['paths'], dict):
+                errors.append('"devfs_ruleset.paths" should be a valid dictionary')
+
+            if 'includes' in devfs_ruleset and not isinstance(devfs_ruleset['includes'], list):
+                errors.append('"devfs_ruleset.includes" should be a valid list')
+
+    if errors:
+        errors = '\n'.join(errors)
+        logit(
+            {
+                'level': 'EXCEPTION',
+                'msg': f'The Following errors were encountered with plugin manifest:\n{errors}'
+            },
+            _callback=_callback,
+            silent=silent,
+        )
+
+
+def retrieve_ip4_for_jail(conf, jail_running):
+    short_ip4 = full_ip4 = None
+    if iocage_lib.ioc_common.check_truthy(conf['dhcp']) and jail_running and os.geteuid() == 0:
+        interface = conf['interfaces'].split(',')[0].split(':')[0]
+
+        if interface == 'vnet0':
+            # Inside jails they are epairNb
+            interface = f"{interface.replace('vnet', 'epair')}b"
+
+        short_ip4 = 'DHCP'
+        full_ip4_cmd = [
+            'jexec', f'ioc-{conf["host_hostuuid"].replace(".", "_")}',
+            'ifconfig', interface, 'inet'
+        ]
+        try:
+            out = su.check_output(full_ip4_cmd)
+            full_ip4 = f'{interface}|{out.splitlines()[2].split()[1].decode()}'
+        except (su.CalledProcessError, IndexError) as e:
+            short_ip4 += '(Network Issue)'
+            if isinstance(e, su.CalledProcessError):
+                full_ip4 = f'DHCP - Network Issue: {e}'
+            else:
+                full_ip4 = f'DHCP - Failed Parsing: {e}'
+    elif iocage_lib.ioc_common.check_truthy(conf['dhcp']) and not jail_running:
+        short_ip4 = 'DHCP'
+        full_ip4 = 'DHCP (not running)'
+    elif iocage_lib.ioc_common.check_truthy(conf['dhcp']) and os.geteuid() != 0:
+        short_ip4 = 'DHCP'
+        full_ip4 = 'DHCP (running -- address requires root)'
+
+    return {'short_ip4': short_ip4, 'full_ip4': full_ip4}
+
+
+def retrieve_admin_portals(conf, jail_running, admin_portal):
+    # We want to ensure that we show the correct NAT ports for nat based plugins and when NAT
+    # isn't desired, we don't show them at all. In all these variable values, what persists across
+    # NAT/DHCP/Static ip based plugins is that the internal ports of the jail don't change. For
+    # example if a plugin jail has nginx running on port 4000, it will still want to have it
+    # running on 4000 regardless of the fact how user configures to start the plugin jail. We
+    # take this fact, and search for an explicit specified port number in the admin portal, if
+    # none is found, that means that it is ( 80 - default for http ).
+
+    nat_forwards_dict = {}
+    nat_forwards = conf.get('nat_forwards', 'none')
+    for rule in nat_forwards.split(',') if nat_forwards != 'none' else ():
+        # Rule can be proto(port), proto(in/out), port
+        if rule.isdigit():
+            jail = host = rule
+        else:
+            rule = rule.split('(')[-1].strip(')')
+            if ':' in rule:
+                jail, host = rule.split(':')
+            else:
+                # only one port provided
+                jail = host = rule
+
+        nat_forwards_dict[int(jail)] = int(host)
+
+    if not conf.get('nat'):
+        full_ip4 = retrieve_ip4_for_jail(conf, jail_running)['full_ip4'] or conf.get('ip4_addr', '')
+        all_ips = map(
+            lambda v: 'DHCP' if 'dhcp' in v.lower() else v,
+            [i.split('|')[-1].split('/')[0].strip() for i in full_ip4.split(',')]
+        )
+    else:
+        default_gateways = iocage_lib.ioc_common.get_host_gateways()
+
+        # We should list out the ips based on nat_interface property because that's the one which
+        # the firewall will be handling port forwarding on TODO: pf/ipfw only do port forwarding
+        # for the first ip address, we should update that so it works for all aliases. However
+        # there doesn't seem to be a good way apart from hardcoding the ip aliases, we use the
+        # dynamic option provided by the firewalls but that doesn't seem to take care of aliases,
+        # only the first ip if it changes address - if we hardcode, that would mean applying
+        # the firewall rules again on ip changes
+        nat_iface = conf.get('nat_interface', 'none')
+        all_ips = [
+            f['addr'] for k in default_gateways if default_gateways[k]['interface']
+            for f in netifaces.ifaddresses(
+                default_gateways[k]['interface'] if nat_iface == 'none' else nat_iface
+            )[netifaces.AF_INET if k == 'ipv4' else netifaces.AF_INET6]
+        ] if nat_iface in netifaces.interfaces() or nat_iface == 'none' else []
+        if all_ips:
+            all_ips = [all_ips[0]]
+
+    admin_portals = []
+    for portal in admin_portal.split(','):
+        if conf.get('nat'):
+            portal_uri = urllib.parse.urlparse(portal)
+            portal_port = portal_uri.port or 80
+            # We do this safely as it's possible dev hasn't added it to plugin's json yet
+            nat_port = nat_forwards_dict.get(portal_port)
+            if nat_port:
+                uri = portal_uri._replace(netloc=f'{portal_uri._hostinfo[0]}:{nat_port}').geturl()
+            else:
+                uri = portal
+        else:
+            uri = portal
+        admin_portals.append(','.join(map(lambda v: uri.replace('%%IP%%', v), all_ips)))
+
+    return admin_portals
+
+
+def get_jails_with_config(filters=None, mapping_func=None):
+    # FIXME: Due to how api is structured, there is no good place to put this
+    #  so when we move on with restructuring the api, let's remove this as well
+    #  importing iocage_lib.iocage above gives us a circular dep due to how
+    #  iocage designates iocage_lib.iocage at top and imports everything else
+    #  within.
+    import iocage_lib.iocage
+    return {
+        j['host_hostuuid']: j if not mapping_func else mapping_func(j)
+        for j in map(
+            lambda v: list(v.values())[0],
+            iocage_lib.iocage.IOCage(jail=None).get(
+                'all', recursive=True
+            )
+        ) if not filters or filters(j)
+    }
+
+
+def tmp_dataset_checks(_callback, silent):
+    tmp_dataset = Dataset('/tmp', cache=False)
+    if tmp_dataset.exists:
+        tmp_val = tmp_dataset.properties['exec']
+
+        if tmp_val == 'off':
+            iocage_lib.ioc_common.logit(
+                {
+                    'level': 'EXCEPTION',
+                    'message': f'{tmp_dataset.name} needs exec=on!'
+                },
+                _callback=_callback,
+                silent=silent
+            )

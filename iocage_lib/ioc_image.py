@@ -33,6 +33,8 @@ import zipfile
 import iocage_lib.ioc_common
 import iocage_lib.ioc_json
 
+from iocage_lib.cache import cache
+
 
 class IOCImage(object):
     """export() and import()"""
@@ -119,20 +121,20 @@ class IOCImage(object):
             self.callback,
             silent=self.silent)
 
-        os.chdir(images)
+        final_image_path = os.path.join(images, f'{image}.{extension}')
         if compression_algo == 'zip':
             with zipfile.ZipFile(
-                f'{image}.{extension}', 'w',
+                final_image_path, 'w',
                 compression=zipfile.ZIP_DEFLATED, allowZip64=True
             ) as final:
                 for jail in jail_list:
                     final.write(jail)
         else:
-            with tarfile.open(f'{image}.{extension}', mode='w:xz') as f:
+            with tarfile.open(final_image_path, mode='w:xz') as f:
                 for jail in jail_list:
                     f.add(jail)
 
-        with open(f'{image}.{extension}', 'rb') as import_image:
+        with open(final_image_path, 'rb') as import_image:
             digest = hashlib.sha256()
             chunk_size = 10 * 1024 * 1024
 
@@ -146,7 +148,7 @@ class IOCImage(object):
 
             image_checksum = digest.hexdigest()
 
-        with open(f"{image}.sha256", "w") as checksum:
+        with open(os.path.join(images, f'{image}.sha256'), 'w') as checksum:
             checksum.write(image_checksum)
 
         # Cleanup our mess.
@@ -307,6 +309,7 @@ class IOCImage(object):
                 silent=self.silent)
 
         # Templates become jails again once imported, let's make that reality.
+        cache.reset()
         jail_json = iocage_lib.ioc_json.IOCJson(
             f'{self.iocroot}/jails/{uuid}', silent=True
         )

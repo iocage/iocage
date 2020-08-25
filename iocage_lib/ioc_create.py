@@ -38,10 +38,12 @@ import iocage_lib.ioc_list
 import iocage_lib.ioc_start
 import iocage_lib.ioc_stop
 import iocage_lib.ioc_exceptions
-import libzfs
 import dns.resolver
 import dns.exception
 import shutil
+
+from iocage_lib.cache import cache
+from iocage_lib.dataset import Dataset
 
 
 class IOCCreate(object):
@@ -53,6 +55,7 @@ class IOCCreate(object):
                  short=False, basejail=False, thickjail=False, empty=False,
                  uuid=None, clone=False, thickconfig=False,
                  clone_basejail=False, callback=None):
+        cache.reset()
         self.pool = iocage_lib.ioc_json.IOCJson().json_get_value("pool")
         self.iocroot = iocage_lib.ioc_json.IOCJson(self.pool).json_get_value(
             "iocroot")
@@ -72,7 +75,6 @@ class IOCCreate(object):
         self.clone = clone
         self.silent = silent
         self.callback = callback
-        self.zfs = libzfs.ZFS(history=True, history_prefix="<iocage>")
         self.thickconfig = thickconfig
         self.log = logging.getLogger('iocage')
 
@@ -322,21 +324,23 @@ class IOCCreate(object):
                 try:
                     su.check_call(['zfs', 'snapshot', dataset], stderr=su.PIPE)
                 except su.CalledProcessError:
-                    try:
-                        snapshot = self.zfs.get_snapshot(dataset)
+                    release = os.path.join(
+                        self.pool, 'iocage/releases', self.release
+                    )
+                    if not Dataset(release).exists:
+                        raise RuntimeError(
+                            f'RELEASE: {self.release} not found!'
+                        )
+                    else:
                         iocage_lib.ioc_common.logit({
                             'level': 'EXCEPTION',
-                            'message': f'Snapshot: {snapshot.name} exists!\n'
+                            'message': f'Snapshot: {dataset} exists!\n'
                                        'Please manually run zfs destroy'
-                                       f' {snapshot.name} if you wish to '
+                                       f' {dataset} if you wish to '
                                        'destroy it.'
                         },
                             _callback=self.callback,
                             silent=self.silent)
-
-                    except libzfs.ZFSException:
-                        raise RuntimeError(
-                            f'RELEASE: {self.release} not found!')
 
                 if not self.thickjail:
                     su.Popen(
@@ -354,6 +358,7 @@ class IOCCreate(object):
                 except su.CalledProcessError as err:
                     raise RuntimeError(err.output.decode('utf-8').rstrip())
 
+        cache.reset()
         iocjson = iocage_lib.ioc_json.IOCJson(location, silent=True)
 
         # This test is to avoid the same warnings during install_packages.
@@ -385,8 +390,9 @@ class IOCCreate(object):
 
                 iocjson.json_set_value("type=template")
                 iocjson.json_set_value("template=1")
-                iocjson.zfs_set_property(f"{self.pool}/iocage/templates/"
-                                         f"{jail_uuid}", "readonly", "off")
+                Dataset(
+                    os.path.join(self.pool, 'iocage', 'templates', jail_uuid)
+                ).set_property('readonly', 'off')
 
                 # If you supply pkglist and templates without setting the
                 # config's type, you will end up with a type of jail
@@ -525,9 +531,9 @@ class IOCCreate(object):
 
         # If jail is template, the dataset would be readonly at this point
         if is_template:
-            iocjson.zfs_set_property(
-                f"{self.pool}/iocage/templates/{jail_uuid}", "readonly", "off"
-            )
+            Dataset(
+                os.path.join(self.pool, 'iocage/templates', jail_uuid)
+            ).set_property('readonly', 'off')
 
         if self.empty:
             open(f"{location}/fstab", "wb").close()
@@ -684,8 +690,9 @@ class IOCCreate(object):
 
         if is_template:
             # We have to set readonly back, since we're done with our tasks
-            iocjson.zfs_set_property(f"{self.pool}/iocage/templates/"
-                                     f"{jail_uuid}", "readonly", "on")
+            Dataset(
+                os.path.join(self.pool, 'iocage/templates', jail_uuid)
+            ).set_property('readonly', 'on')
 
         return jail_uuid
 
@@ -704,10 +711,25 @@ class IOCCreate(object):
             'jail_zfs_dataset': f'iocage/jails/{jail_uuid}/data'
         }
 
+        d_conf = iocage_lib.ioc_json.IOCJson().check_default_config()
+        default_mac_prefix = mac_prefix = d_conf['mac_prefix']
+        if 'mac_prefix' not in [
+            prop.split('=')[0] for prop in (self.props or [])
+        ] and not iocage_lib.ioc_json.IOCJson.validate_mac_prefix(default_mac_prefix):
+            prefix = iocage_lib.ioc_json.IOCJson.get_mac_prefix()
+            iocage_lib.ioc_common.logit({
+                'level': 'WARNING',
+                'message': f'Default mac_prefix specified in defaults.json {default_mac_prefix!r} '
+                           f'is invalid. Using {prefix!r} mac prefix instead.'
+            })
+            mac_prefix = iocage_lib.ioc_json.IOCJson.get_mac_prefix()
+            d_conf['mac_prefix'] = mac_prefix
+
         if self.thickconfig:
-            d_conf = iocage_lib.ioc_json.IOCJson().check_default_config()
             jail_props.update(d_conf)
             jail_props['CONFIG_TYPE'] = 'THICK'
+        elif mac_prefix != default_mac_prefix:
+            jail_props['mac_prefix'] = mac_prefix
 
         if source_template is not None:
             jail_props['source_template'] = source_template
@@ -720,11 +742,14 @@ class IOCCreate(object):
         Takes a list of pkg's to install into the target jail. The resolver
         property is required for pkg to have network access.
         """
+        started = False
         status, jid = iocage_lib.ioc_list.IOCList().list_get_jid(jail_uuid)
 
         if not status:
             iocage_lib.ioc_start.IOCStart(jail_uuid, location, silent=True)
-            status, jid = iocage_lib.ioc_list.IOCList().list_get_jid(jail_uuid)
+            started, jid = iocage_lib.ioc_list.IOCList().list_get_jid(
+                jail_uuid
+            )
 
         if repo:
             r = re.match('(https?(://)?)?([^/]+)', repo)
@@ -922,6 +947,7 @@ class IOCCreate(object):
 
             pkg_retry = 1
             while True:
+                pkg_err = False
                 cmd = ("/usr/local/sbin/pkg", "install", "-q", "-y", pkg)
 
                 try:
@@ -966,9 +992,7 @@ class IOCCreate(object):
                         pkg_err_list.append(pkg_err_msg)
                     break
 
-        os.remove(f"{location}/root/etc/resolv.conf")
-
-        if status:
+        if started:
             iocage_lib.ioc_stop.IOCStop(jail_uuid, location, silent=True)
 
         if self.plugin and pkg_err_list:
@@ -1014,10 +1038,6 @@ ipv6_activate_all_interfaces=\"YES\"
         if basejail:
             su.Popen(
                 ['mount', '-F', f'{location}/fstab', '-a']).communicate()
-
-        su.Popen(['sysrc', '-f', f'{location}/root/etc/rc.conf',
-                  f'hostname={host_hostname.replace("_", "-")}'],
-                 stdout=su.PIPE).communicate()
 
         if basejail:
             su.Popen(

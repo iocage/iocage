@@ -24,6 +24,7 @@
 """iocage upgrade module"""
 import datetime
 import fileinput
+import hashlib
 import os
 import pathlib
 import subprocess as su
@@ -35,7 +36,7 @@ import iocage_lib.ioc_json
 import iocage_lib.ioc_list
 
 
-class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
+class IOCUpgrade:
 
     """Will upgrade a jail to the specified RELEASE."""
 
@@ -81,18 +82,13 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
 
         self.callback = callback
 
-    def upgrade_jail(self):
-        tmp_dataset = self.zfs_get_dataset_name('/tmp')
-        tmp_val = self.zfs_get_property(tmp_dataset, 'exec')
+        # symbolic link created on fetch by freebsd-update
+        bd_hash = hashlib.sha256((self.path + '\n').encode('utf-8')).hexdigest()
+        self.freebsd_install_link = os.path.join(self.path,
+            'var/db/freebsd-update', bd_hash + '-install')
 
-        if tmp_val == 'off':
-            iocage_lib.ioc_common.logit(
-                {
-                    'level': 'EXCEPTION',
-                    'message': f'{tmp_dataset} needs exec=on!'
-                },
-                _callback=self.callback,
-                silent=self.silent)
+    def upgrade_jail(self):
+        iocage_lib.ioc_common.tmp_dataset_checks(self.callback, self.silent)
 
         if "HBSD" in self.freebsd_version:
             su.Popen(["hbsd-upgrade", "-j", self.jid]).communicate()
@@ -140,49 +136,64 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
                         callback=self.callback
                     )
             else:
-                try:
-                    iocage_lib.ioc_exec.InteractiveExec(
-                        fetch_cmd,
-                        self.path.replace('/root', ''),
-                        uuid=self.uuid,
-                        unjailed=True
-                    )
-                except iocage_lib.ioc_exceptions.CommandFailed:
-                    self.__rollback_jail__()
-                    msg = f'Upgrade failed! Rolling back jail'
-                    iocage_lib.ioc_common.logit(
-                        {
-                            "level": "EXCEPTION",
-                            "message": msg
-                        },
-                        _callback=self.callback,
-                        silent=self.silent
-                    )
+                iocage_lib.ioc_exec.InteractiveExec(
+                    fetch_cmd,
+                    self.path.replace('/root', ''),
+                    uuid=self.uuid,
+                    unjailed=True
+                )
 
-            if not self.interactive:
-                while not self.__upgrade_install__(tmp.name):
-                    pass
-            else:
-                # FreeBSD update loops 3 times
-                for _ in range(3):
-                    try:
-                        self.__upgrade_install__(tmp.name)
-                    except iocage_lib.ioc_exceptions.CommandFailed:
-                        self.__rollback_jail__()
-                        msg = f'Upgrade failed! Rolling back jail'
-                        iocage_lib.ioc_common.logit(
-                            {
-                                'level': 'EXCEPTION',
-                                'message': msg
-                            },
-                            _callback=self.callback,
-                            silent=self.silent
-                        )
+            if not os.path.islink(self.freebsd_install_link):
+                msg = 'Upgrade failed, nothing to install after fetch!'
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'EXCEPTION',
+                        'message': msg
+                    },
+                    _callback=self.callback,
+                    silent=self.silent
+                )
+
+            for _ in range(50): # up to 50 invocations to prevent runaway
+                if os.path.islink(self.freebsd_install_link):
+                    self.__upgrade_install__(tmp.name)
+                else:
+                    break
+
+            if os.path.islink(self.freebsd_install_link):
+                msg = f'Upgrade failed, freebsd-update won\'t finish!'
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'EXCEPTION',
+                        'message': msg
+                    },
+                    _callback=self.callback,
+                    silent=self.silent
+                )
 
             new_release = iocage_lib.ioc_common.get_jail_freebsd_version(
                 self.path,
                 self.new_release
             )
+
+            if f_rel.startswith('12'):
+                #  https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=239498
+                cp = su.Popen(
+                    ['pkg-static', '-j', self.jid, 'install', '-q', '-f', '-y', 'pkg'],
+                    stdout=su.PIPE, stderr=su.PIPE
+                )
+                _, stderr = cp.communicate()
+                if cp.returncode:
+                    # Let's make this non-fatal as this is only being done as a convenience to user
+                    iocage_lib.ioc_common.logit(
+                        {
+                            'level': 'ERROR',
+                            'message': 'Unable to install pkg after upgrade'
+                        },
+                        _callback=self.callback,
+                        silent=self.silent,
+                    )
+
         finally:
             if tmp:
                 if not tmp.closed:
@@ -195,7 +206,7 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
 
         return new_release
 
-    def upgrade_basejail(self, snapshot=True):
+    def upgrade_basejail(self, snapshot=True, snap_name=None):
         if "HBSD" in self.freebsd_version:
             # TODO: Not supported yet
             msg = "Upgrading basejails on HardenedBSD is not supported yet."
@@ -263,7 +274,7 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
             )
         except iocage_lib.ioc_exceptions.CommandFailed:
             msg = "Mounting src into jail failed! Rolling back snapshot."
-            self.__rollback_jail__()
+            self.__rollback_jail__(name=snap_name)
 
             iocage_lib.ioc_common.logit(
                 {
@@ -288,7 +299,7 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
             # These are now the result of a failed merge, nuking and putting
             # the backup back
             msg = "etcupdate failed! Rolling back snapshot."
-            self.__rollback_jail__()
+            self.__rollback_jail__(name=snap_name)
 
             su.Popen([
                 "umount", "-f", f"{self.path}/iocage_upgrade"
@@ -335,7 +346,7 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
         return new_release
 
     def __upgrade_install__(self, name):
-        """Installs the upgrade and returns the exit code."""
+        """Installs the upgrade."""
         install_cmd = [
             name, "-b", self.path, "-d",
             f"{self.path}/var/db/freebsd-update/", "-f",
@@ -351,16 +362,10 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
                 unjailed=True,
                 callback=self.callback,
             ) as _exec:
-                output = iocage_lib.ioc_common.consume_and_log(
+                iocage_lib.ioc_common.consume_and_log(
                     _exec,
                     callback=self.callback
                 )
-
-            for i in output['stdout']:
-                if i == 'No updates are available to install.':
-                    return True
-
-            return False
         else:
             iocage_lib.ioc_exec.InteractiveExec(
                 install_cmd,
@@ -397,9 +402,9 @@ class IOCUpgrade(iocage_lib.ioc_json.IOCZFS):
         name = f"ioc_upgrade_{self.date}"
         ioc.IOCage(jail=self.uuid, skip_jails=True, silent=True).snapshot(name)
 
-    def __rollback_jail__(self):
+    def __rollback_jail__(self, name=None):
         import iocage_lib.iocage as ioc  # Avoids dep issues
-        name = f"ioc_upgrade_{self.date}"
+        name = name if name else f'ioc_upgrade_{self.date}'
         iocage = ioc.IOCage(jail=self.uuid, skip_jails=True, silent=True)
         iocage.stop()
         iocage.rollback(name)

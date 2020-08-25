@@ -1,4 +1,4 @@
-.Dd March 14, 2019
+.Dd October 25, 2019
 .Dt IOCAGE 8
 .Os
 .Sh NAME
@@ -1561,7 +1561,7 @@ Ignored in
 .Fx
 10.3 and earlier.
 .Pp
-Default: disable
+Default: new
 .Pp
 Source:
 .Xr jail 8
@@ -1572,7 +1572,7 @@ Ignored in
 .Fx
 10.3 and earlier.
 .Pp
-Default: disable
+Default: new
 .Pp
 Source:
 .Xr jail 8
@@ -1583,7 +1583,7 @@ Ignored in
 .Fx 10.3
 and earlier.
 .Pp
-Default: disable
+Default: new
 .Pp
 Source:
 .Xr jail 8
@@ -1778,6 +1778,8 @@ the jail is auto-started at boot time with
 and stopped at shutdown time with
 .Cm stop --rc .
 Jails are started and stopped based on their priority value.
+If boot=1 is added to the create command, the jail is
+started after creation
 .Pp
 Default: 0
 .Pp
