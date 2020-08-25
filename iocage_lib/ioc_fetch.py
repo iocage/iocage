@@ -861,8 +861,6 @@ class IOCFetch:
                 _callback=self.callback,
                 silent=self.silent)
 
-        shutil.copy("/etc/resolv.conf", f"{mount_root}/etc/resolv.conf")
-
         path = '/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:'\
                '/usr/local/bin:/root/bin'
         fetch_env = {
