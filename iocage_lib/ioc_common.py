@@ -1120,6 +1120,14 @@ def get_host_gateways():
     return gateways
 
 
+def get_active_jails():
+    return {
+        d['name']: d for d in json.loads(
+            checkoutput(['jls', '--libxo', 'json', '-v'])
+        )['jail-information']['jail']
+    }
+
+
 def validate_plugin_manifest(manifest, _callback, silent):
     errors = []
     for k in (
