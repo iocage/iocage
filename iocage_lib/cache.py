@@ -17,35 +17,38 @@ class Cache:
 
     @property
     def iocage_activated_pool(self):
+        pools = self.pools
         with self.cache_lock:
             self.dataset_data = self.dataset_data or {}
             if not self.ioc_pool:
-                if not all(self.dataset_data.get(p) for p in self.pools):
+                if not all(self.dataset_data.get(p) for p in pools):
                     self.dataset_data.update(
-                        all_properties([p for p in self.pools], types=['filesystem'])
+                        all_properties([p for p in pools], types=['filesystem'])
                     )
                 for p in filter(
                     lambda p: self.dataset_data.get(p, {}).get('org.freebsd.ioc:active') == 'yes',
-                    self.pools
+                    pools
                 ):
                     self.ioc_pool = p
             return self.ioc_pool
 
     @property
     def iocage_activated_dataset(self):
+        ioc_pool = self.iocage_activated_pool
+        if ioc_pool:
+            dependents = self.dependents(ioc_pool, 1)
+            ioc_ds = os.path.join(ioc_pool, 'iocage')
         with self.cache_lock:
-            if not self.ioc_dataset:
-                ioc_pool = self.iocage_activated_pool
-                if ioc_pool and os.path.join(ioc_pool, 'iocage') in self.dependents(ioc_pool, 1):
-                    self.ioc_dataset = os.path.join(ioc_pool, 'iocage')
+            if not self.ioc_dataset and ioc_pool and ioc_ds in dependents:
+                    self.ioc_dataset = ioc_ds
             return self.ioc_dataset
 
     @property
     def datasets(self):
+        ioc_pool = self.iocage_activated_pool
         with self.cache_lock:
-            if not self.dataset_data:
+            if not self.dataset_data or set(self.dataset_data) == set(self.pool_data):
                 ds = ''
-                ioc_pool = self.iocage_activated_pool
                 if ioc_pool:
                     ds = os.path.join(ioc_pool, 'iocage')
                 self.dataset_data.update(all_properties(
