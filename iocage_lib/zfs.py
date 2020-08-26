@@ -58,8 +58,9 @@ def properties(dataset, resource_type='zfs'):
 
 
 def all_properties(
-    path='', resource_type='zfs', depth=None, recursive=False, types=None
+    paths=None, resource_type='zfs', depth=None, recursive=False, types=None
 ):
+    paths = paths or []
     flags = []
     if depth:
         flags.extend(['-d', str(depth)])
@@ -68,12 +69,9 @@ def all_properties(
     if types:
         flags.extend(['-t', ','.join(types)])
 
-    data = run(list(filter(
-        bool, [
-            resource_type, 'get', '-H', '-o', 'name,property,value',
-            *flags, 'all', path
-        ]
-    ))).stdout.split('\n')
+    data = run([
+        resource_type, 'get', '-H', '-o', 'name,property,value', *flags, 'all', *paths
+    ]).stdout.split('\n')
     fs = defaultdict(dict)
     for line in filter(bool, data):
         name, prop = line.split('\t')[:2]
