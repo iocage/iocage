@@ -1,8 +1,7 @@
 import os
 
 from iocage_lib.zfs import (
-    all_properties, dataset_exists, iocage_activated_pool, get_all_dependents,
-    get_dependents_with_depth,
+    all_properties, dataset_exists, get_all_dependents, get_dependents_with_depth,
 )
 
 import threading
@@ -13,21 +12,36 @@ class Cache:
     cache_lock = threading.Lock()
 
     def __init__(self):
-        self.dataset_data = self.pool_data = self.dataset_dep_data = None
+        self.fields = ['dataset_data', 'pool_data', 'dataset_dep_data', 'ioc_pool']
+        self.reset()
+
+    @property
+    def iocage_activated_pool(self):
+        with self.cache_lock:
+            self.dataset_data = self.dataset_data or {}
+            if not self.ioc_pool:
+                if not all(self.dataset_data.get(p) for p in self.pools):
+                    self.dataset_data.update(
+                        all_properties([p for p in self.pools], types=['filesystem'])
+                    )
+                for p in filter(
+                    lambda p: self.dataset_data.get(p, {}).get('org.freebsd.ioc:active') == 'yes',
+                    self.pools
+                ):
+                    self.ioc_pool = p
+            return self.ioc_pool
 
     @property
     def datasets(self):
         with self.cache_lock:
             if not self.dataset_data:
                 ds = ''
-                ioc_pool = iocage_activated_pool()
+                ioc_pool = self.iocage_activated_pool
                 if ioc_pool:
                     ds = os.path.join(ioc_pool, 'iocage')
-                self.dataset_data = all_properties(
-                    ds if ds and dataset_exists(ds) else '', recursive=True, types=['filesystem']
-                )
-                if not self.dataset_data[ioc_pool]:
-                    self.dataset_data.update(all_properties(ioc_pool, types=['filesystem']))
+                self.dataset_data.update(all_properties(
+                    [ds if ds and dataset_exists(ds) else ''], recursive=True, types=['filesystem']
+                ))
             return self.dataset_data
 
     def dependents(self, dataset, depth=None):
@@ -57,7 +71,8 @@ class Cache:
 
     def reset(self):
         with self.cache_lock:
-            self.dataset_data = self.pool_data = self.dataset_dep_data = None
+            for f in self.fields:
+                setattr(self, f, None)
 
 
 cache = Cache()
