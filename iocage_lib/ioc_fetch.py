@@ -874,29 +874,71 @@ class IOCFetch:
             'TERM': 'xterm-256color'
         }
 
-        if os.path.isfile(f"{mount_root}/etc/freebsd-update.conf"):
-            su.Popen(cmd).communicate()
-            if self.verify:
-                f = "https://raw.githubusercontent.com/freebsd/freebsd" \
-                    "/master/usr.sbin/freebsd-update/freebsd-update.sh"
+        update_path = f'{mount_root}/etc/freebsd-update.conf'
+        exception_msg = None
+        if not os.path.exists(update_path) or not os.path.isfile(update_path):
+            exception_msg = f'{update_path} not found or is not a file.'
+        else:
+            with open(update_path, 'r') as f:
+                contents = f.read()
+            if 'ServerName' not in contents:
+                exception_msg = f'ServerName not configured in {update_path}'
 
-                tmp = tempfile.NamedTemporaryFile(delete=False)
-                with urllib.request.urlopen(f) as fbsd_update:
-                    tmp.write(fbsd_update.read())
-                tmp.close()
-                os.chmod(tmp.name, 0o755)
-                fetch_name = tmp.name
-            else:
-                fetch_name = f"{mount_root}/usr/sbin/freebsd-update"
+        if exception_msg:
+            iocage_lib.ioc_common.logit(
+                {'level': 'EXCEPTION', 'message': f'Failed to update: {exception_msg}'}
+            )
 
-            fetch_cmd = [
+        su.Popen(cmd).communicate()
+        if self.verify:
+            f = "https://raw.githubusercontent.com/freebsd/freebsd" \
+                "/master/usr.sbin/freebsd-update/freebsd-update.sh"
+
+            tmp = tempfile.NamedTemporaryFile(delete=False)
+            with urllib.request.urlopen(f) as fbsd_update:
+                tmp.write(fbsd_update.read())
+            tmp.close()
+            os.chmod(tmp.name, 0o755)
+            fetch_name = tmp.name
+        else:
+            fetch_name = f"{mount_root}/usr/sbin/freebsd-update"
+
+        fetch_cmd = [
+            fetch_name, "-b", mount_root, "-d",
+            f"{mount_root}/var/db/freebsd-update/", "-f",
+            f"{mount_root}/etc/freebsd-update.conf",
+            "--not-running-from-cron", "fetch"
+        ]
+        with iocage_lib.ioc_exec.IOCExec(
+            fetch_cmd,
+            f"{self.iocroot}/jails/{uuid}",
+            uuid=uuid,
+            unjailed=True,
+            callback=self.callback,
+            su_env=fetch_env
+        ) as _exec:
+            try:
+                iocage_lib.ioc_common.consume_and_log(
+                    _exec, callback=self.callback)
+            except iocage_lib.ioc_exceptions.CommandFailed as e:
+                su.Popen(['umount', f'{mount_root}/dev']).communicate()
+                iocage_lib.ioc_common.logit(
+                    {
+                        'level': 'EXCEPTION',
+                        'message': b''.join(e.message)
+                    },
+                    _callback=self.callback,
+                    silent=self.silent
+                )
+
+        try:
+            fetch_install_cmd = [
                 fetch_name, "-b", mount_root, "-d",
                 f"{mount_root}/var/db/freebsd-update/", "-f",
-                f"{mount_root}/etc/freebsd-update.conf",
-                "--not-running-from-cron", "fetch"
+                f"{mount_root}/etc/freebsd-update.conf", "install"
             ]
             with iocage_lib.ioc_exec.IOCExec(
-                fetch_cmd,
+                fetch_install_cmd,
                 f"{self.iocroot}/jails/{uuid}",
                 uuid=uuid,
                 unjailed=True,
@@ -907,7 +949,6 @@ class IOCFetch:
                     iocage_lib.ioc_common.consume_and_log(
                         _exec, callback=self.callback)
                 except iocage_lib.ioc_exceptions.CommandFailed as e:
-                    su.Popen(['umount', f'{mount_root}/dev']).communicate()
                     iocage_lib.ioc_common.logit(
                         {
                             'level': 'EXCEPTION',
@@ -917,67 +958,40 @@ class IOCFetch:
                         silent=self.silent
                     )
 
-            try:
-                fetch_install_cmd = [
-                    fetch_name, "-b", mount_root, "-d",
-                    f"{mount_root}/var/db/freebsd-update/", "-f",
-                    f"{mount_root}/etc/freebsd-update.conf", "install"
-                ]
-                with iocage_lib.ioc_exec.IOCExec(
-                    fetch_install_cmd,
-                    f"{self.iocroot}/jails/{uuid}",
-                    uuid=uuid,
-                    unjailed=True,
-                    callback=self.callback,
-                    su_env=fetch_env
-                ) as _exec:
-                    try:
-                        iocage_lib.ioc_common.consume_and_log(
-                            _exec, callback=self.callback)
-                    except iocage_lib.ioc_exceptions.CommandFailed as e:
-                        iocage_lib.ioc_common.logit(
-                            {
-                                'level': 'EXCEPTION',
-                                'message': b''.join(e.message)
-                            },
-                            _callback=self.callback,
-                            silent=self.silent
-                        )
+        finally:
+            su.Popen(['umount', f'{mount_root}/dev']).communicate()
+            new_release = iocage_lib.ioc_common.get_jail_freebsd_version(
+                mount_root, self.release
+            )
 
-            finally:
-                su.Popen(['umount', f'{mount_root}/dev']).communicate()
-                new_release = iocage_lib.ioc_common.get_jail_freebsd_version(
-                    mount_root, self.release
-                )
+            if self.release != new_release:
+                jails = iocage_lib.ioc_list.IOCList(
+                    'uuid', hdr=False).list_datasets()
 
-                if self.release != new_release:
-                    jails = iocage_lib.ioc_list.IOCList(
-                        'uuid', hdr=False).list_datasets()
-
-                    if not cli:
-                        for jail, path in jails.items():
-                            _json = iocage_lib.ioc_json.IOCJson(
-                                path, cli=False
-                            )
-                            props = _json.json_get_value('all')
-
-                            if props['basejail'] and self.release.rsplit(
-                                '-', 1
-                            )[0] in props['release']:
-                                _json.json_set_value(f'release={new_release}')
-                    else:
+                if not cli:
+                    for jail, path in jails.items():
                         _json = iocage_lib.ioc_json.IOCJson(
-                            jails[uuid], cli=False
+                            path, cli=False
                         )
-                        _json.json_set_value(f'release={new_release}')
+                        props = _json.json_get_value('all')
 
-            if self.verify:
-                # tmp only exists if they verify SSL certs
+                        if props['basejail'] and self.release.rsplit(
+                            '-', 1
+                        )[0] in props['release']:
+                            _json.json_set_value(f'release={new_release}')
+                else:
+                    _json = iocage_lib.ioc_json.IOCJson(
+                        jails[uuid], cli=False
+                    )
+                    _json.json_set_value(f'release={new_release}')
 
-                if not tmp.closed:
-                    tmp.close()
+        if self.verify:
+            # tmp only exists if they verify SSL certs
 
-                os.remove(tmp.name)
+            if not tmp.closed:
+                tmp.close()
+
+            os.remove(tmp.name)
 
         try:
             if not cli:
