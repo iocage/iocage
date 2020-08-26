@@ -50,7 +50,10 @@ class Resource:
         return str(self.resource_name)
 
     def iocage_path(self):
-        return iocage_activated_dataset() or ''
+        if self.cache:
+            return iocage_cache.iocage_activated_dataset or ''
+        else:
+            return iocage_activated_dataset() or ''
 
     @property
     def path(self):

@@ -12,7 +12,7 @@ class Cache:
     cache_lock = threading.Lock()
 
     def __init__(self):
-        self.fields = ['dataset_data', 'pool_data', 'dataset_dep_data', 'ioc_pool']
+        self.fields = ['dataset_data', 'pool_data', 'dataset_dep_data', 'ioc_pool', 'ioc_dataset']
         self.reset()
 
     @property
@@ -30,6 +30,15 @@ class Cache:
                 ):
                     self.ioc_pool = p
             return self.ioc_pool
+
+    @property
+    def iocage_activated_dataset(self):
+        with self.cache_lock:
+            if not self.ioc_dataset:
+                ioc_pool = self.iocage_activated_pool
+                if ioc_pool and os.path.join(ioc_pool, 'iocage') in self.dependents(ioc_pool, 1):
+                    self.ioc_dataset = os.path.join(ioc_pool, 'iocage')
+            return self.ioc_dataset
 
     @property
     def datasets(self):
