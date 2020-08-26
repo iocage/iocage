@@ -115,21 +115,26 @@ def get_all_dependents():
 
 def get_dependents(identifier, depth=None, filters=None):
     filters = filters or ['-t', 'filesystem']
-    id_depth = len(identifier.split('/'))
     try:
-        return list(
-            filter(
-                lambda p: p and (p if not depth else len(
-                    p.split('/')
-                ) - id_depth <= depth and len(p.split('/')) - id_depth),
-                run(
-                    ['zfs', 'list'] + filters + ['-rHo', 'name'] + (
-                        [identifier] if identifier else []),
-                ).stdout.split('\n')
-            )
-        )
+        datasets = run(
+            ['zfs', 'list'] + filters + ['-rHo', 'name'] + ([identifier] if identifier else [])
+        ).stdout.split('\n')
     except ZFSException:
         return []
+    else:
+        return get_dependents_with_depth(identifier, datasets, depth)
+
+
+def get_dependents_with_depth(identifier, datasets, depth=None):
+    id_depth = len(identifier.split('/'))
+    return list(
+        filter(
+            lambda p: p and (p if not depth else len(
+                p.split('/')
+            ) - id_depth <= depth and len(p.split('/')) - id_depth),
+            datasets
+        )
+    )
 
 
 def set_property(dataset, prop, value, resource_type='zfs'):
