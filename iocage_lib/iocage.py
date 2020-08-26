@@ -1269,11 +1269,12 @@ class IOCage:
                         silent=self.silent)
         else:
             jail_list = []
+            active_jails = ioc_common.get_active_jails()
 
             for uuid, path in self.jails.items():
                 try:
-                    status, jid = self.list("jid", uuid=uuid)
-                    state = "up" if status else "down"
+                    jid = active_jails.get(f'ioc-{uuid.replace(".", "_")}', {}).get('jid')
+                    state = "up" if jid else "down"
 
                     if prop == "state":
                         jail_list.append({uuid: state})
