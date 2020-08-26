@@ -91,9 +91,10 @@ class IOCage:
         if reset_cache:
             self.reset_cache()
 
+        self.generic_iocjson = ioc_json.IOCJson()
         if not activate:
-            self.pool = PoolAndDataset().get_pool()
-            self.iocroot = PoolAndDataset().get_iocroot()
+            self.pool = self.generic_iocjson.pool
+            self.iocroot = self.generic_iocjson.iocroot
 
             if not skip_jails:
                 # When they need to destroy a jail with a missing or bad
