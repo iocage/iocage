@@ -23,10 +23,15 @@ class Cache:
                 if ioc_pool:
                     ds = os.path.join(ioc_pool, 'iocage')
                 self.dataset_data = all_properties(
-                    ds if ds and dataset_exists(ds) else '', recursive=True,
-                    types=['filesystem']
+                    ds if ds and dataset_exists(ds) else '', recursive=True, types=['filesystem']
                 )
+                if not self.dataset_data[ioc_pool]:
+                    self.dataset_data.update(all_properties(ioc_pool, types=['filesystem']))
             return self.dataset_data
+
+    def update_dataset_data(self, dataset, props):
+        with self.cache_lock:
+            self.dataset_data[dataset] = props
 
     @property
     def pools(self):
