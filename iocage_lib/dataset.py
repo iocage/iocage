@@ -78,9 +78,10 @@ class Dataset(Resource):
     def mounted(self):
         return self.properties['mounted'] == 'yes'
 
-    def get_dependents(self, depth=1, cache=True):
-        for d in get_dependents(self.resource_name, depth):
-            ds = Dataset(d, cache=cache)
+    def get_dependents(self, depth=1, ds_cache=True):
+        gd = cache.dependents if ds_cache else get_dependents
+        for d in gd(self.resource_name, depth):
+            ds = Dataset(d, cache=ds_cache)
             if ds.locked:
                 continue
             yield ds
