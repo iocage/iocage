@@ -1272,7 +1272,7 @@ class IOCage:
 
             for uuid, path in self.jails.items():
                 try:
-                    status, _ = self.list("jid", uuid=uuid)
+                    status, jid = self.list("jid", uuid=uuid)
                     state = "up" if status else "down"
 
                     if prop == "state":
@@ -1289,20 +1289,24 @@ class IOCage:
                                 'all',
                                 default=True
                             )
-                            props = {
-                                x: 'N/A'
-                                for x in def_props
-                            }
-                            props['host_hostuuid'] = uuid
-                            props['state'] = 'CORRUPT'
-                            props['release'] = 'N/A'
-                            jail_list.append({uuid: props})
+                            jail_list.append({
+                                uuid: {
+                                    **{x: 'N/A' for x in def_props},
+                                    'host_hostuuid': uuid,
+                                    'state': 'CORRUPT',
+                                    'release': 'N/A',
+                                    'jid': None,
+                                }
+                            })
 
                             continue
 
                         # We want this sorted below, so we add it to the old
                         # dict
-                        props["state"] = state
+                        props.update({
+                            'state': state,
+                            'jid': jid,
+                        })
 
                         for key in sorted(props.keys()):
                             _props[key] = props[key]
