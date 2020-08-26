@@ -2,6 +2,7 @@ import os
 
 from iocage_lib.zfs import (
     all_properties, dataset_exists, iocage_activated_pool, get_all_dependents,
+    get_dependents_with_depth,
 )
 
 import threading
@@ -29,7 +30,7 @@ class Cache:
                     self.dataset_data.update(all_properties(ioc_pool, types=['filesystem']))
             return self.dataset_data
 
-    def dependents(self, dataset):
+    def dependents(self, dataset, depth=None):
         with self.cache_lock:
             if not self.dataset_dep_data:
                 self.dataset_dep_data = {}
@@ -39,7 +40,9 @@ class Cache:
                         if ds.startswith(k):
                             self.dataset_dep_data[k].append(ds)
 
-            return self.dataset_dep_data.get(dataset, [])
+            return get_dependents_with_depth(
+                dataset, self.dataset_dep_data.get(dataset, []), depth
+            )
 
     def update_dataset_data(self, dataset, props):
         with self.cache_lock:
