@@ -1194,7 +1194,9 @@ def retrieve_ip4_for_jail(conf, jail_running):
     return {'short_ip4': short_ip4, 'full_ip4': full_ip4}
 
 
-def retrieve_admin_portals(conf, jail_running, admin_portal):
+def retrieve_admin_portals(
+    conf, jail_running, admin_portal, default_gateways=None, full_ipv4_dict=None
+):
     # We want to ensure that we show the correct NAT ports for nat based plugins and when NAT
     # isn't desired, we don't show them at all. In all these variable values, what persists across
     # NAT/DHCP/Static ip based plugins is that the internal ports of the jail don't change. For
@@ -1220,13 +1222,14 @@ def retrieve_admin_portals(conf, jail_running, admin_portal):
         nat_forwards_dict[int(jail)] = int(host)
 
     if not conf.get('nat'):
-        full_ip4 = retrieve_ip4_for_jail(conf, jail_running)['full_ip4'] or conf.get('ip4_addr', '')
+        full_ipv4_dict = full_ipv4_dict or retrieve_ip4_for_jail(conf, jail_running)
+        full_ip4 = full_ipv4_dict['full_ip4'] or conf.get('ip4_addr', '')
         all_ips = map(
             lambda v: 'DHCP' if 'dhcp' in v.lower() else v,
             [i.split('|')[-1].split('/')[0].strip() for i in full_ip4.split(',')]
         )
     else:
-        default_gateways = iocage_lib.ioc_common.get_host_gateways()
+        default_gateways = default_gateways or iocage_lib.ioc_common.get_host_gateways()
 
         # We should list out the ips based on nat_interface property because that's the one which
         # the firewall will be handling port forwarding on TODO: pf/ipfw only do port forwarding

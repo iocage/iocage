@@ -187,6 +187,8 @@ class IOCList(object):
     def list_all(self, jails):
         """List all jails."""
         self.full = True if self.plugin else self.full
+        active_jails = iocage_lib.ioc_common.get_active_jails()
+        default_gateways = iocage_lib.ioc_common.get_host_gateways()
         jail_list = []
         plugin_index_data = {}
 
@@ -277,14 +279,10 @@ class IOCList(object):
                 ip6 = "-"
 
             # Will be set already by a corrupt jail
-            status = False
+            jid = None
             if state != 'CORRUPT':
-                status, jid = self.list_get_jid(uuid_full)
-
-                if status:
-                    state = "up"
-                else:
-                    state = "down"
+                jid = active_jails.get(f'ioc-{uuid.replace(".", "_")}', {}).get('jid')
+                state = 'up' if jid else 'down'
 
             if conf["type"] == "template":
                 template = "-"
@@ -305,7 +303,7 @@ class IOCList(object):
             if "release" in template.lower() or "stable" in template.lower():
                 template = "-"
 
-            ip_dict = iocage_lib.ioc_common.retrieve_ip4_for_jail(conf, status)
+            ip_dict = iocage_lib.ioc_common.retrieve_ip4_for_jail(conf, bool(jid))
             full_ip4 = ip_dict['full_ip4'] or full_ip4
             short_ip4 = ip_dict['short_ip4'] or short_ip4
 
@@ -323,12 +321,12 @@ class IOCList(object):
                         ui_data = json.load(u)
                         admin_portal = ','.join(
                             iocage_lib.ioc_common.retrieve_admin_portals(
-                                conf, status, ui_data['adminportal']
+                                conf, bool(jid), ui_data['adminportal'], default_gateways, ip_dict
                             )
                         )
                         try:
                             ph = ui_data["adminportal_placeholders"].items()
-                            if ph and not status:
+                            if ph and not bool(jid):
                                 admin_portal = f"{uuid} is not running!"
                             else:
                                 for placeholder, prop in ph:
