@@ -1,10 +1,10 @@
 import os
+import subprocess as su
+import threading
 
 from iocage_lib.zfs import (
     all_properties, dataset_exists, get_all_dependents, get_dependents_with_depth,
 )
-
-import threading
 
 
 class Cache:
@@ -12,8 +12,19 @@ class Cache:
     cache_lock = threading.Lock()
 
     def __init__(self):
-        self.fields = ['dataset_data', 'pool_data', 'dataset_dep_data', 'ioc_pool', 'ioc_dataset']
+        self.fields = [
+            'dataset_data', 'pool_data', 'dataset_dep_data', 'ioc_pool', 'ioc_dataset',
+            '_freebsd_version',
+        ]
         self.reset()
+
+    @property
+    def freebsd_version(self):
+        if not self._freebsd_version:
+            self._freebsd_version = su.run(
+                ['freebsd-version'], stdout=su.PIPE, stderr=su.STDOUT
+            ).stdout.decode().rstrip().split('-', 1)[0]
+        return self._freebsd_version
 
     @property
     def iocage_activated_pool(self):
