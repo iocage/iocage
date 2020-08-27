@@ -4,6 +4,7 @@ import requests
 
 import iocage_lib.dataset as dataset
 
+from iocage_lib.cache import cache
 from iocage_lib.resource import IocageListableResource
 from iocage_lib.ioc_fetch import IOCFetch
 from iocage_lib.ioc_common import check_release_newer
@@ -12,8 +13,8 @@ from iocage_lib.ioc_common import check_release_newer
 class Release(dataset.Dataset):
 
     def __init__(self, name, *args, **kwargs):
-        if '/' not in name and self.iocage_path():
-            name = os.path.join(self.iocage_path(), 'releases', name)
+        if '/' not in name and cache.iocage_activated_dataset:
+            name = os.path.join(cache.iocage_activated_dataset, 'releases', name)
         super().__init__(name, *args, **kwargs)
         if self.resource_name:
             self.name = self.resource_name.rsplit('/', 1)[-1]

@@ -51,7 +51,7 @@ class Cache:
             ioc_ds = os.path.join(ioc_pool, 'iocage')
         with self.cache_lock:
             if not self.ioc_dataset and ioc_pool and ioc_ds in dependents:
-                    self.ioc_dataset = ioc_ds
+                self.ioc_dataset = ioc_ds
             return self.ioc_dataset
 
     @property
