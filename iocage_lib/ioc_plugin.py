@@ -54,6 +54,7 @@ import iocage_lib.ioc_upgrade
 import iocage_lib.ioc_exceptions
 import texttable
 
+from iocage_lib.cache import cache
 from iocage_lib.dataset import Dataset
 
 
@@ -127,7 +128,7 @@ class IOCPlugin(object):
             )
 
         if self.branch is None and not self.hardened:
-            r = self.retrieve_freebsd_version()
+            r = cache.freebsd_version
 
             self.branch = f'{r}-RELEASE' if '.' in r else f'{r}.0-RELEASE'
         elif self.branch is None and self.hardened:
@@ -139,12 +140,6 @@ class IOCPlugin(object):
             self.branch, self.git_repository, self.git_destination,
             depth, self.callback
         )
-
-    @staticmethod
-    def retrieve_freebsd_version():
-        return su.run(
-            ['freebsd-version'], stdout=su.PIPE, stderr=su.STDOUT
-        ).stdout.decode().rstrip().split('-', 1)[0]
 
     @staticmethod
     def fetch_plugin_packagesites(package_sites):

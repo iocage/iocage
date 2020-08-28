@@ -1389,20 +1389,6 @@ class IOCJson(IOCConfiguration):
         if write or fix_write:
             self.json_write(conf)
 
-        state, _ = iocage_lib.ioc_list.IOCList().list_get_jid(
-            conf['host_hostuuid'])
-
-        if state:
-            ruleset = su.check_output(
-                [
-                    'jls', '-j',
-                    f'ioc-{conf["host_hostuuid"].replace(".", "_")}',
-                    'devfs_ruleset'
-                ]
-            ).decode().rstrip()
-
-            conf['devfs_ruleset'] = ruleset
-
         d_conf.update(conf)
 
         for p, v in d_conf.items():

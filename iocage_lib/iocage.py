@@ -91,9 +91,10 @@ class IOCage:
         if reset_cache:
             self.reset_cache()
 
+        self.generic_iocjson = ioc_json.IOCJson()
         if not activate:
-            self.pool = PoolAndDataset().get_pool()
-            self.iocroot = PoolAndDataset().get_iocroot()
+            self.pool = self.generic_iocjson.pool
+            self.iocroot = self.generic_iocjson.iocroot
 
             if not skip_jails:
                 # When they need to destroy a jail with a missing or bad
@@ -1268,11 +1269,12 @@ class IOCage:
                         silent=self.silent)
         else:
             jail_list = []
+            active_jails = ioc_common.get_active_jails()
 
             for uuid, path in self.jails.items():
                 try:
-                    status, _ = self.list("jid", uuid=uuid)
-                    state = "up" if status else "down"
+                    jid = active_jails.get(f'ioc-{uuid.replace(".", "_")}', {}).get('jid')
+                    state = "up" if jid else "down"
 
                     if prop == "state":
                         jail_list.append({uuid: state})
@@ -1288,20 +1290,24 @@ class IOCage:
                                 'all',
                                 default=True
                             )
-                            props = {
-                                x: 'N/A'
-                                for x in def_props
-                            }
-                            props['host_hostuuid'] = uuid
-                            props['state'] = 'CORRUPT'
-                            props['release'] = 'N/A'
-                            jail_list.append({uuid: props})
+                            jail_list.append({
+                                uuid: {
+                                    **{x: 'N/A' for x in def_props},
+                                    'host_hostuuid': uuid,
+                                    'state': 'CORRUPT',
+                                    'release': 'N/A',
+                                    'jid': None,
+                                }
+                            })
 
                             continue
 
                         # We want this sorted below, so we add it to the old
                         # dict
-                        props["state"] = state
+                        props.update({
+                            'state': state,
+                            'jid': jid,
+                        })
 
                         for key in sorted(props.keys()):
                             _props[key] = props[key]
