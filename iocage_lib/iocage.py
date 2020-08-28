@@ -91,8 +91,8 @@ class IOCage:
         if reset_cache:
             self.reset_cache()
 
-        self.generic_iocjson = ioc_json.IOCJson()
         if not activate:
+            self.generic_iocjson = ioc_json.IOCJson()
             self.pool = self.generic_iocjson.pool
             self.iocroot = self.generic_iocjson.iocroot
 
