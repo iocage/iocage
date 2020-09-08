@@ -67,7 +67,8 @@ class IOCStop(object):
         vnet = self.conf["vnet"]
         dhcp = self.conf["dhcp"]
         exec_fib = self.conf["exec_fib"]
-        devfs_ruleset = self.conf['devfs_ruleset']
+        devfs_ruleset = iocage_lib.ioc_json.IOCJson(
+            self.path, suppress_log=True).json_get_value('devfs_ruleset')
         debug_mode = True if os.environ.get(
             'IOCAGE_DEBUG', 'FALSE') == 'TRUE' else False
         nat = self.conf['nat']
