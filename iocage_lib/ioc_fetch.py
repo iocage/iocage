@@ -866,6 +866,10 @@ class IOCFetch:
         path = '/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:'\
                '/usr/local/bin:/root/bin'
         fetch_env = {
+            **{
+                k: os.environ.get(k)
+                for k in ['HTTP_PROXY', 'HTTP_PROXY_AUTH', 'HTTP_TIMEOUT'] if os.environ.get(k)
+            },
             'UNAME_r': self.release,
             'PAGER': '/bin/cat',
             'PATH': path,
