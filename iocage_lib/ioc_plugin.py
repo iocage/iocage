@@ -97,7 +97,7 @@ class IOCPlugin(object):
         self.jail = jail
         self.http = kwargs.pop("http", True)
         self.hardened = kwargs.pop("hardened", False)
-        self.pass_data = kwargs.pop("pass_data", None)
+        self.copyin = kwargs.pop("copyin", None)
         self.date = datetime.datetime.utcnow().strftime("%F")
         self.branch = branch
         self.silent = silent
@@ -809,15 +809,32 @@ fingerprint: {fingerprint}
                 shutil.copy(f"{jaildir}/plugin/post_install.sh",
                             f"{jaildir}/root/root")
 
-                if self.pass_data is not None:
-                    if os.path.exists(self.pass_data):
-                        shutil.copy(f"{self.pass_data}",
-                                    f"{jaildir}/root/root")
+                if self.copyin is not None:
+                    if os.path.exists(self.copyin):
+                        try:
+                            if os.path.isdir(f"{self.copyin}"):
+                                distutils.dir_util._path_created = {}
+                                distutils.dir_util.copy_tree(
+                                    f"{self.copyin}/",
+                                    f"{jaildir}/root/root",
+                                    preserve_symlinks=True)
+                            else:
+                                shutil.copy(f"{self.copyin}",
+                                            f"{jaildir}/root/root")
+                        except Exception as e:
+                            iocage_lib.ioc_common.logit(
+                                {
+                                    'level': 'EXCEPTION',
+                                    'message': f'Error during copyin: {str(e)}'
+                                },
+                                _callback=self.callback,
+                                silent=self.silent
+                            )
                     else:
                         iocage_lib.ioc_common.logit(
                             {
                                 "level": "WARNING",
-                                "message": f"\n{self.pass_data} does not exist!"
+                                "message": f"\n{self.copyin} does not exist!"
                             },
                             _callback=self.callback,
                             silent=self.silent)

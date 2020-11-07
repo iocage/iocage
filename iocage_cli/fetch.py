@@ -151,8 +151,8 @@ def validate_count(ctx, param, value):
     help='Provide proxy to use for creating jail'
 )
 @click.option(
-    '--pass-data', default=None,
-    help='Data file passed to plugin environment'
+    '--copyin', default=None,
+    help='Copy data to plugin environment'
 )
 def cli(**kwargs):
     """CLI command that calls fetch_release()"""

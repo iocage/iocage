@@ -1091,7 +1091,7 @@ class IOCage:
         else:
             kwargs.pop('git_repository', None)
             kwargs.pop('git_destination', None)
-            kwargs.pop('pass_data', None)
+            kwargs.pop('copyin', None)
 
             if _list:
                 if remote:
