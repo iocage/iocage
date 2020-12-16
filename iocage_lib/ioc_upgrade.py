@@ -100,9 +100,9 @@ class IOCUpgrade:
 
         self.__upgrade_check_conf__()
 
-        f_rel = f'{self.new_release.rsplit("-RELEASE")[0]}.0'
+        f_rel = f'{self.new_release.rsplit("-RELEASE")[0]}'
         f = 'https://raw.githubusercontent.com/freebsd/freebsd' \
-            f'/release/{f_rel}/usr.sbin/freebsd-update/freebsd-update.sh'
+            f'/releng/{f_rel}/usr.sbin/freebsd-update/freebsd-update.sh'
 
         tmp = None
         try:
