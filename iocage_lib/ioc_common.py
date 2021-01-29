@@ -1106,17 +1106,21 @@ def get_host_gateways():
                       ['route-table']
                       ['rt-family'])
     for af in af_mapping.keys():
-        route_entries = list(filter(
-            lambda x: x['address-family'] == af, route_families)
-        )[0]['rt-entry']
-        default_route = list(filter(
-            lambda x: x['destination'] == 'default', route_entries)
-        )
-        if default_route and 'gateway' in default_route[0]:
-            gateways[af_mapping[af]]['gateway'] = \
-                default_route[0]['gateway']
-            gateways[af_mapping[af]]['interface'] = \
-                default_route[0]['interface-name']
+        try:
+            route_entries = list(filter(
+                lambda x: x['address-family'] == af, route_families)
+            )[0]['rt-entry']
+        except IndexError:
+            pass
+        else:
+            default_route = list(filter(
+                lambda x: x['destination'] == 'default', route_entries)
+            )
+            if default_route and 'gateway' in default_route[0]:
+                gateways[af_mapping[af]]['gateway'] = \
+                    default_route[0]['gateway']
+                gateways[af_mapping[af]]['interface'] = \
+                    default_route[0]['interface-name']
     return gateways
 
 
