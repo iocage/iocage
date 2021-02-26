@@ -1191,7 +1191,7 @@ fingerprint: {fingerprint}
             )
         else:
             self._clone_repo(
-                self.branch, plugin_conf['artifact'],
+                plugin_conf['release'], plugin_conf['artifact'],
                 f'{path}/plugin', callback=self.callback
             )
 
