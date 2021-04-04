@@ -142,7 +142,7 @@ class IOCPlugin(object):
 
     def pull_clone_git_repo(self, depth=None):
         self._clone_repo(
-            self.branch, self.git_repository, self.git_destination,
+            self.index_branch, self.git_repository, self.git_destination,
             depth, self.callback
         )
 
