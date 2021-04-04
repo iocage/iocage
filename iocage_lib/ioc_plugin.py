@@ -127,6 +127,8 @@ class IOCPlugin(object):
                     '://', 1)[-1].replace('/', '_').replace('.', '_')
             )
 
+    @property
+    def index_branch(self):
         if self.branch is None and not self.hardened:
             r = cache.freebsd_version
 
