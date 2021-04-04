@@ -129,13 +129,16 @@ class IOCPlugin(object):
 
     @property
     def index_branch(self):
-        if self.branch is None and not self.hardened:
+        if self.branch is not None:
+            return self.branch
+
+        if not self.hardened:
             r = cache.freebsd_version
 
-            self.branch = f'{r}-RELEASE' if '.' in r else f'{r}.0-RELEASE'
-        elif self.branch is None and self.hardened:
+            return f'{r}-RELEASE' if '.' in r else f'{r}.0-RELEASE'
+        else:
             # Backwards compat
-            self.branch = 'master'
+            return 'master'
 
     def pull_clone_git_repo(self, depth=None):
         self._clone_repo(
