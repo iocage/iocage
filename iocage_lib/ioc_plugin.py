@@ -1195,8 +1195,9 @@ fingerprint: {fingerprint}
                 os.path.join(path, 'plugin')
             )
         else:
+            plugin_branch = self.__get_plugin_branch(plugin_conf)
             self._clone_repo(
-                self.branch, plugin_conf['artifact'],
+                plugin_branch, plugin_conf['artifact'],
                 f'{path}/plugin', callback=self.callback
             )
 
@@ -1220,6 +1221,15 @@ fingerprint: {fingerprint}
                     _callback=self.callback,
                     silent=self.silent
                 )
+
+    def __get_plugin_branch(self, plugin_conf):
+        if self.branch is not None:
+            return self.branch
+
+        if 'branch' in plugin_conf:
+            return plugin_conf['branch']
+
+        return 'master'
 
     def __update_pkg_remove__(self, jid):
         """Remove all pkgs from the plugin"""
