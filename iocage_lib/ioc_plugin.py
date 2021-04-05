@@ -380,7 +380,15 @@ class IOCPlugin(object):
             iocage_lib.ioc_common.logit(
                 {
                     "level": "INFO",
-                    "message": f"  Using Branch: {self.branch}"
+                    "message": f"  Using Index Branch: {self.index_branch}"
+                },
+                _callback=self.callback,
+                silent=self.silent)
+            iocage_lib.ioc_common.logit(
+                {
+                    "level": "INFO",
+                    "message": f"  Using Plugin Branch: "
+                               f"{self.__get_plugin_branch(conf)}"
                 },
                 _callback=self.callback,
                 silent=self.silent)
