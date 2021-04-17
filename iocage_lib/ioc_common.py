@@ -54,88 +54,88 @@ INTERACTIVE = False
 IOCAGE_DEVFS_RULESET = 4
 
 PLUGIN_MANIFEST_SCHEMA = {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "required": [
-    "name",
-    "release",
-    "pkgs",
-    "packagesite",
-    "fingerprints",
-    "artifact"
-  ],
-  "properties": {
-    "name": {
-      "type": "string"
-    },
-    "release": {
-      "type": "string"
-    },
-    "pkgs": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "packagesite": {
-      "type": "string"
-    },
-    "fingerprints": {
-      "type": "object",
-      "patternProperties": {
-        ".*": {
-          "type": "array",
-          "items": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "required": [
+        "name",
+        "release",
+        "pkgs",
+        "packagesite",
+        "fingerprints",
+        "artifact"
+    ],
+    "properties": {
+        "name": {
+            "type": "string"
+        },
+        "release": {
+            "type": "string"
+        },
+        "pkgs": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "packagesite": {
+            "type": "string"
+        },
+        "fingerprints": {
+            "type": "object",
+            "patternProperties": {
+                ".*": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "function",
+                            "fingerprint"
+                        ],
+                        "properties": {
+                            "function": {
+                                "type": "string"
+                            },
+                            "fingerprint": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "devfs_ruleset": {
             "type": "object",
             "required": [
-              "function",
-              "fingerprint"
+                "paths"
             ],
             "properties": {
-              "function": {
-                "type": "string"
-              },
-              "fingerprint": {
-                "type": "string"
-              }
+                "paths": {
+                    "type": "object"
+                },
+                "includes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
             }
-          }
-        }
-      }
-    },
-    "devfs_ruleset": {
-      "type": "object",
-      "required": [
-        "paths"
-      ],
-      "properties": {
-        "paths": {
-          "type": "object"
         },
-        "includes": {
-          "type": "array",
-          "items": {
+        "artifact": {
             "type": "string"
-          }
+        },
+        "plugin_schema": {
+            "type": "string"
+        },
+        "official": {
+            "type": "boolean"
+        },
+        "properties": {
+            "type": "object"
+        },
+        "revision": {
+            "type": "string"
         }
-      }
-    },
-    "artifact": {
-      "type": "string"
-    },
-    "plugin_schema": {
-      "type": "string"
-    },
-    "official": {
-      "type": "boolean"
-    },
-    "properties": {
-      "type": "object"
-    },
-    "revision": {
-      "type": "string"
     }
-  }
 }
 
 
