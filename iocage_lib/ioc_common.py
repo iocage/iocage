@@ -103,6 +103,9 @@ PLUGIN_MANIFEST_SCHEMA = {
                 }
             }
         },
+        "artifact": {
+            "type": "string"
+        },
         "devfs_ruleset": {
             "type": "object",
             "required": [
@@ -119,9 +122,6 @@ PLUGIN_MANIFEST_SCHEMA = {
                     }
                 }
             }
-        },
-        "artifact": {
-            "type": "string"
         },
         "plugin_schema": {
             "type": "string"
