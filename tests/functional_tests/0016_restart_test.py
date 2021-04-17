@@ -23,6 +23,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
+import time
+
 import pytest
 import uuid
 
@@ -90,14 +92,21 @@ def common_restart_all_jails(invoke_cli, resource_selector, skip_test, command):
 
     command.append('ALL')
     result = invoke_cli(
-        command, assert_returncode=False
+        command
     )
 
     for jail in jails:
         if '* Starting empty_jail' in result.output:
             continue
 
-        assert jail.running is True
+        jail_running = False
+        for i in range(0, 5):
+            if jail.running:
+                jail_running = True
+                break
+            time.sleep(10)
+
+        assert jail_running is True
 
     for jail in resource_selector.running_jails:
         invoke_cli(
@@ -128,6 +137,8 @@ def test_02_soft_restart_jail(invoke_cli, resource_selector, skip_test, write_fi
 @require_zpool
 def test_03_restart_all_jails(invoke_cli, resource_selector, skip_test):
     common_restart_all_jails(invoke_cli, resource_selector, skip_test, ['restart'])
+
+
 
 
 @require_root

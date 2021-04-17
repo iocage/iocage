@@ -38,7 +38,7 @@ def pytest_addoption(parser):
         help='Specify a zpool to use.'
     )
     parser.addoption(
-        '--release', action='store', default='11.3-RELEASE',
+        '--release', action='store', default='12.2-RELEASE',
         help='Specify a RELEASE to use.'
     )
     parser.addoption(

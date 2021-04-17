@@ -1441,6 +1441,7 @@ class IOCStart(object):
 
         rc_conf_path = os.path.join(self.path, 'root/etc/rc.conf')
         if not os.path.exists(rc_conf_path):
+            os.makedirs(os.path.dirname(rc_conf_path), exist_ok=True)
             open(rc_conf_path, 'w').close()
             entries = {}
         else:
