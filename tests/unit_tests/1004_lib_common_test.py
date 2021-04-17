@@ -13,6 +13,7 @@ VALID_MANIFEST = {
             }
         ]
     },
+    "artifact": "TEST_ARTIFACT",
 }
 
 
