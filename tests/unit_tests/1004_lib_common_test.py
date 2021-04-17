@@ -31,7 +31,7 @@ def test_missing_required_fields(missing_field):
     manifest = VALID_MANIFEST.copy()
     del manifest[missing_field]
 
-    exp_msg = f"Missing \"{missing_field}\" key in manifest"
+    exp_msg = f"\"{missing_field}\" is a required property"
     with pytest.raises(RuntimeError, match=exp_msg):
         validate_plugin_manifest(manifest, None, None)
 
@@ -40,7 +40,7 @@ def test_devfs_ruleset_not_dict():
     manifest = VALID_MANIFEST.copy()
     manifest["devfs_ruleset"] = "INVALID_TYPE"
 
-    exp_msg = "\"devfs_ruleset\" must be a dictionary"
+    exp_msg = "'INVALID_TYPE' is not of type 'object'"
     with pytest.raises(RuntimeError, match=exp_msg):
         validate_plugin_manifest(manifest, None, None)
 
@@ -49,7 +49,7 @@ def test_devfs_ruleset_missing_paths():
     manifest = VALID_MANIFEST.copy()
     manifest["devfs_ruleset"] = {}
 
-    exp_msg = "Key \"paths\" not specified in devfs_ruleset"
+    exp_msg = "'paths' is a required property"
     with pytest.raises(RuntimeError, match=exp_msg):
         validate_plugin_manifest(manifest, None, None)
 
@@ -60,7 +60,7 @@ def test_devfs_ruleset_invalid_paths_type():
         "paths": "INVALID_TYPE",
     }
 
-    exp_msg = "\"devfs_ruleset.paths\" should be a valid dictionary"
+    exp_msg = "'INVALID_TYPE' is not of type 'object'"
     with pytest.raises(RuntimeError, match=exp_msg):
         validate_plugin_manifest(manifest, None, None)
 
@@ -72,7 +72,7 @@ def test_devfs_ruleset_invalid_includes_type():
         "includes": "INVALID_TYPE"
     }
 
-    exp_msg = "\"devfs_ruleset.includes\" should be a valid list"
+    exp_msg = "'INVALID_TYPE' is not of type 'array'"
     with pytest.raises(RuntimeError, match=exp_msg):
         validate_plugin_manifest(manifest, None, None)
 
