@@ -22,6 +22,7 @@ VALID_MANIFEST = {
 def test_validate_plugin_manifest():
     validate_plugin_manifest(VALID_MANIFEST, None, None)
 
+
 @pytest.mark.parametrize(
     "missing_field",
     ["name", "release", "pkgs", "packagesite", "fingerprints", "artifact"]
@@ -32,4 +33,4 @@ def test_missing_required_fields(missing_field):
 
     exp_msg = "Missing \"{missing_field}\" key in manifest"
     with pytest.raises(RuntimeError, match=exp_msg):
-        validate_plugin_manifest(VALID_MANIFEST, None, None)
+        validate_plugin_manifest(manifest, None, None)
