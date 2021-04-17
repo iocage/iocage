@@ -1224,7 +1224,10 @@ def get_active_jails():
 
 def validate_plugin_manifest(manifest, _callback, silent):
     v = jsonschema.Draft7Validator(PLUGIN_MANIFEST_SCHEMA)
-    errors = v.iter_errors(manifest)
+
+    errors = []
+    for e in v.iter_errors(manifest):
+        errors.append(e.message)
 
     if errors:
         errors = '\n'.join(errors)
