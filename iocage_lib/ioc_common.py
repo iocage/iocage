@@ -111,12 +111,12 @@ PLUGIN_MANIFEST_SCHEMA = {
       "properties": {
         "paths": {
           "type": "object"
-        }
-      },
-      "includes": {
-        "type": "array",
-        "items": {
-          "type": "string"
+        },
+        "includes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
