@@ -185,6 +185,8 @@ def ioc_sort(caller, s_type, data=None):
 def get_natural_sortkey(text):
     # attempt to convert str to int to facilitate simplified natural sorting
     # integers will be ranked before alphanumerical values
+    if text is None:
+        return 30, None
     try:
         return 10, int(text)
     except ValueError:
