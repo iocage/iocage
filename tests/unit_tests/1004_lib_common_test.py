@@ -34,3 +34,12 @@ def test_missing_required_fields(missing_field):
     exp_msg = f"Missing \"{missing_field}\" key in manifest"
     with pytest.raises(RuntimeError, match=exp_msg):
         validate_plugin_manifest(manifest, None, None)
+
+
+def test_devfs_ruleset_not_dict():
+    manifest = VALID_MANIFEST.copy()
+    manifest["devfs_ruleset"] = "INVALID_TYPE"
+
+    exp_msg = "\"devfs_ruleset\" must be a dictionary"
+    with pytest.raises(RuntimeError, match=exp_msg):
+        validate_plugin_manifest(manifest, None, None)
