@@ -31,6 +31,8 @@ import shutil
 import stat
 import subprocess as su
 import tempfile as tmp
+
+import jsonschema
 import requests
 import datetime as dt
 import re
@@ -1222,25 +1224,8 @@ def get_active_jails():
 
 
 def validate_plugin_manifest(manifest, _callback, silent):
-    errors = []
-    for k in (
-        'name', 'release', 'pkgs', 'packagesite', 'fingerprints', 'artifact',
-    ):
-        if k not in manifest:
-            errors.append(f'Missing "{k}" key in manifest')
-
-    if 'devfs_ruleset' in manifest:
-        if not isinstance(manifest['devfs_ruleset'], dict):
-            errors.append('"devfs_ruleset" must be a dictionary')
-        else:
-            devfs_ruleset = manifest['devfs_ruleset']
-            if 'paths' not in devfs_ruleset:
-                errors.append('Key "paths" not specified in devfs_ruleset')
-            elif not isinstance(devfs_ruleset['paths'], dict):
-                errors.append('"devfs_ruleset.paths" should be a valid dictionary')
-
-            if 'includes' in devfs_ruleset and not isinstance(devfs_ruleset['includes'], list):
-                errors.append('"devfs_ruleset.includes" should be a valid list')
+    v = jsonschema.Draft7Validator(PLUGIN_MANIFEST_SCHEMA)
+    errors = v.iter_errors(manifest)
 
     if errors:
         errors = '\n'.join(errors)
