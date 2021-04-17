@@ -75,3 +75,13 @@ def test_devfs_ruleset_invalid_includes_type():
     exp_msg = "\"devfs_ruleset.includes\" should be a valid list"
     with pytest.raises(RuntimeError, match=exp_msg):
         validate_plugin_manifest(manifest, None, None)
+
+
+def test_valid_devfs_ruleset():
+    manifest = VALID_MANIFEST.copy()
+    manifest["devfs_ruleset"] = {
+        "paths": {},
+        "includes": []
+    }
+
+    validate_plugin_manifest(manifest, None, None)
