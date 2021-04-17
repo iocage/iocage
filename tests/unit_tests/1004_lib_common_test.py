@@ -16,10 +16,5 @@ VALID_MANIFEST = {
 }
 
 
-def log_callback(content, exception):
-    print(content)
-    print(exception)
-
-
 def test_validate_plugin_manifest():
-    validate_plugin_manifest(VALID_MANIFEST, log_callback, None)
+    validate_plugin_manifest(VALID_MANIFEST, None, None)
