@@ -1161,7 +1161,7 @@ def validate_plugin_manifest(manifest, _callback, silent):
         logit(
             {
                 'level': 'EXCEPTION',
-                'msg': f'The Following errors were encountered with plugin manifest:\n{errors}'
+                'message': f'The Following errors were encountered with plugin manifest:\n{errors}'
             },
             _callback=_callback,
             silent=silent,
