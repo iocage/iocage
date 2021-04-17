@@ -106,8 +106,7 @@ PLUGIN_MANIFEST_SCHEMA = {
     "devfs_ruleset": {
       "type": "object",
       "required": [
-        "paths",
-        "includes"
+        "paths"
       ],
       "properties": {
         "paths": {
