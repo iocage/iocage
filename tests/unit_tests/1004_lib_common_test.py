@@ -60,6 +60,18 @@ def test_devfs_ruleset_invalid_paths_type():
         "paths": "INVALID_TYPE",
     }
 
-    exp_msg = "Key \"paths\" not specified in devfs_ruleset"
+    exp_msg = "\"devfs_ruleset.paths\" should be a valid dictionary"
+    with pytest.raises(RuntimeError, match=exp_msg):
+        validate_plugin_manifest(manifest, None, None)
+
+
+def test_devfs_ruleset_invalid_includes_type():
+    manifest = VALID_MANIFEST.copy()
+    manifest["devfs_ruleset"] = {
+        "paths": {},
+        "includes": "INVALID_TYPE"
+    }
+
+    exp_msg = "\"devfs_ruleset.includes\" should be a valid list"
     with pytest.raises(RuntimeError, match=exp_msg):
         validate_plugin_manifest(manifest, None, None)
