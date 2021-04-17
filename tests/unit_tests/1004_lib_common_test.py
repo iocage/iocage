@@ -52,3 +52,14 @@ def test_devfs_ruleset_missing_paths():
     exp_msg = "Key \"paths\" not specified in devfs_ruleset"
     with pytest.raises(RuntimeError, match=exp_msg):
         validate_plugin_manifest(manifest, None, None)
+
+
+def test_devfs_ruleset_invalid_paths_type():
+    manifest = VALID_MANIFEST.copy()
+    manifest["devfs_ruleset"] = {
+        "paths": "INVALID_TYPE",
+    }
+
+    exp_msg = "Key \"paths\" not specified in devfs_ruleset"
+    with pytest.raises(RuntimeError, match=exp_msg):
+        validate_plugin_manifest(manifest, None, None)
