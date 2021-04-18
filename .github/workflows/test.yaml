@@ -25,3 +25,13 @@ jobs:
       run: pytest tests/unit_tests
     - name: Lint with flake8
       run: ./flake8.sh
+
+  coverage:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report coverage
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.github_token }}
+          parallel-finished: true
