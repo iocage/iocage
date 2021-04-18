@@ -23,11 +23,11 @@ jobs:
         pip install -r requirements.txt
     - name: Unit test
       run: pytest tests/unit_tests
-    - name: Lint with flake8
-      run: ./flake8.sh
     - name: Upload coverage
       run: |
         pip install coveralls==3.0.1
         coveralls --service=github
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Lint with flake8
+      run: ./flake8.sh
