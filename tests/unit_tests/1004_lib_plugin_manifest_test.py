@@ -36,6 +36,16 @@ def test_missing_required_fields(missing_field):
         validate_plugin_manifest(manifest, None, None)
 
 
+def test_missing_multiple_required_fields(missing_field):
+    manifest = VALID_MANIFEST.copy()
+    del manifest["name"]
+    del manifest["packagesite"]
+
+    exp_msg = f"'{missing_field}' is a required property"
+    with pytest.raises(RuntimeError, match=exp_msg):
+        validate_plugin_manifest(manifest, None, None)
+
+
 def test_devfs_ruleset_not_dict():
     manifest = VALID_MANIFEST.copy()
     manifest["devfs_ruleset"] = "INVALID_TYPE"
