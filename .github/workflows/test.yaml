@@ -24,4 +24,4 @@ jobs:
     - name: Lint with flake8
       run: ./flake8.sh
     - name: Unit test
-      run: pytest test/unit
+      run: pytest tests/unit_tests
