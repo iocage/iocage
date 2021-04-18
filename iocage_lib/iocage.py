@@ -125,7 +125,7 @@ class IOCage:
                 self.stop(j, ignore_exception=ignore_exception)
             elif action == 'start':
                 if not status:
-                    err, msg = self.start(j, ignore_exception=ignore_exception)
+                    err, msg = self.start(j, ignore_exception=True)
 
                     if err:
                         ioc_common.logit(

@@ -77,7 +77,7 @@ def test_01_add_fstab_entry(invoke_cli, resource_selector, skip_test):
 
     invoke_cli([
         'fstab', '-a', jail.name, SOURCE_DIR, DESTINATION_DIR,
-        'none', 0, 0, 0
+        'nullfs', 'rw', 0, 0
     ])
 
     assert any(destination_dir_absolute in s for s in jail.fstab) is True

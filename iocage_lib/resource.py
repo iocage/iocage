@@ -19,7 +19,7 @@ class Resource:
     @property
     def properties(self):
         if not self._properties:
-            if self.cache:
+            if self.cache and self.resource_name in iocage_cache.datasets:
                 self._properties = iocage_cache.datasets[self.resource_name]
             if not self._properties:
                 # For cases where we are using this for datasets which are not under

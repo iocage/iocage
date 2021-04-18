@@ -29,46 +29,38 @@ import requests
 
 from distutils.version import StrictVersion
 
-
 require_root = pytest.mark.require_root
 require_zpool = pytest.mark.require_zpool
 require_upgrade = pytest.mark.require_upgrade
-require_networking = pytest.mark.require_networking
+require_nat = pytest.mark.require_nat
+
+JAIL_NAME = 'upgrade_jail'
+OLD_RELEASE = '12.1-RELEASE'
+
+
+@require_root
+@require_zpool
+@require_nat
+@require_upgrade
+def test_01_create_jail_with_older_release(invoke_cli, jail):
+    invoke_cli(
+        ['create', '-r', OLD_RELEASE, '-n', JAIL_NAME, 'nat=1',
+         'allow_raw_sockets=1']
+    )
+
+    assert jail(JAIL_NAME).exists is True
 
 
 @require_upgrade
-@require_networking
+@require_nat
 @require_root
 @require_zpool
-def test_01_upgrade_jail(
-    invoke_cli, jail, skip_test, release,
-    freebsd_download_server, dhcp, jail_ip, resource_selector
+def test_02_upgrade_jail(
+        invoke_cli, skip_test, release, jail
 ):
-    # This scenario should work in most cases
-    # We can take the value of release specified, go down one version
-    # Create a jail for this version and then upgrade to release
-    # If it passes as desired, we can mark this as resolved
+    jail = jail(JAIL_NAME)
 
-    req = requests.get(freebsd_download_server)
-    assert req.status_code == 200
-
-    releases = [
-        StrictVersion(r) for r in re.findall(
-            r'href="(\d.*)-RELEASE/"', req.content.decode('utf-8')
-        )
-    ]
-    releases.sort()
-    release = StrictVersion(release.split('-')[0])
-
-    skip_test(release not in releases, f'{releases} does contain {release}')
-
-    skip_test(releases.index(release) == 0, f'Cannot execute upgrade test')
-
-    jails = resource_selector.jails_with_prop('ip4_addr', jail_ip)
-    if not jails:
-        jails = resource_selector.jails_with_prop('dhcp', 'on')
-
-    skip_test(not jails)
+    skip_test(not jail)
 
     invoke_cli(
         ['upgrade', jail.name, '-r', release]
