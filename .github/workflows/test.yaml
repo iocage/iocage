@@ -21,7 +21,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 pytest
         pip install -r requirements.txt
-    - name: Lint with flake8
-      run: ./flake8.sh
     - name: Unit test
       run: pytest tests/unit_tests
+    - name: Lint with flake8
+      run: ./flake8.sh
