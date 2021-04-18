@@ -45,6 +45,7 @@ import urllib.parse
 
 import iocage_lib.ioc_exceptions
 import iocage_lib.ioc_exec
+from iocage_lib.cache import cache
 
 from iocage_lib.dataset import Dataset
 
@@ -1138,13 +1139,7 @@ def get_active_jails():
 
 
 def validate_plugin_manifest(manifest, _callback, silent):
-    current_dir = os.path.dirname(os.path.realpath(__file__))
-    schema_path = os.path.join(current_dir, "plugin_manifest.json")
-
-    with open(schema_path, "r") as f:
-        manifest_schema = json.load(f)
-
-    v = jsonschema.Draft7Validator(manifest_schema)
+    v = jsonschema.Draft7Validator(cache.plugin_manifest_schema)
 
     errors = []
     for e in v.iter_errors(manifest):
