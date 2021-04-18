@@ -41,7 +41,8 @@ def test_missing_multiple_required_fields():
     del manifest["name"]
     del manifest["packagesite"]
 
-    exp_msg = "'name' is a required property"
+    exp_msg = "'name' is a required property\n"
+    exp_msg += "'packagesite' is a required property"
     with pytest.raises(RuntimeError, match=exp_msg):
         validate_plugin_manifest(manifest, None, None)
 
