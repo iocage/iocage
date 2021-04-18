@@ -53,91 +53,6 @@ INTERACTIVE = False
 # to the actual ruleset 4 in devfs.rules(!)
 IOCAGE_DEVFS_RULESET = 4
 
-PLUGIN_MANIFEST_SCHEMA = {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "type": "object",
-    "required": [
-        "name",
-        "release",
-        "pkgs",
-        "packagesite",
-        "fingerprints",
-        "artifact"
-    ],
-    "properties": {
-        "name": {
-            "type": "string"
-        },
-        "release": {
-            "type": "string"
-        },
-        "pkgs": {
-            "type": "array",
-            "items": {
-                "type": "string"
-            }
-        },
-        "packagesite": {
-            "type": "string"
-        },
-        "fingerprints": {
-            "type": "object",
-            "patternProperties": {
-                ".*": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "required": [
-                            "function",
-                            "fingerprint"
-                        ],
-                        "properties": {
-                            "function": {
-                                "type": "string"
-                            },
-                            "fingerprint": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "artifact": {
-            "type": "string"
-        },
-        "devfs_ruleset": {
-            "type": "object",
-            "required": [
-                "paths"
-            ],
-            "properties": {
-                "paths": {
-                    "type": "object"
-                },
-                "includes": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "plugin_schema": {
-            "type": "string"
-        },
-        "official": {
-            "type": "boolean"
-        },
-        "properties": {
-            "type": "object"
-        },
-        "revision": {
-            "type": "string"
-        }
-    }
-}
-
 
 def callback(_log, callback_exception):
     """Helper to call the appropriate logging level"""
@@ -1223,7 +1138,13 @@ def get_active_jails():
 
 
 def validate_plugin_manifest(manifest, _callback, silent):
-    v = jsonschema.Draft7Validator(PLUGIN_MANIFEST_SCHEMA)
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+    schema_path = os.path.join(current_dir, "plugin_manifest.json")
+
+    with open(schema_path, "r") as f:
+        manifest_schema = json.load(f)
+
+    v = jsonschema.Draft7Validator(manifest_schema)
 
     errors = []
     for e in v.iter_errors(manifest):
