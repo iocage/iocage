@@ -19,4 +19,4 @@ def test_04_version_revision_epoch():
     data = parse_package_name('dnsmasq-2.80_2,1')
     assert data['version'] == '2.80'
     assert data['revision'] == '2'
-    assert data['epoch'] == '0'
+    assert data['epoch'] == '1'

@@ -31,6 +31,8 @@ import shutil
 import stat
 import subprocess as su
 import tempfile as tmp
+
+import jsonschema
 import requests
 import datetime as dt
 import re
@@ -43,6 +45,7 @@ import urllib.parse
 
 import iocage_lib.ioc_exceptions
 import iocage_lib.ioc_exec
+from iocage_lib.cache import cache
 
 from iocage_lib.dataset import Dataset
 
@@ -1087,6 +1090,7 @@ def parse_package_name(pkg):
     revision_split = epoch_split[0].rsplit('_', 1)
     revision = \
         revision_split[1] if len(revision_split) == 2 else '0'
+    revision = revision.replace(".txz", "")
     return {
         'version': revision_split[0],
         'revision': revision,
@@ -1135,32 +1139,18 @@ def get_active_jails():
 
 
 def validate_plugin_manifest(manifest, _callback, silent):
+    v = jsonschema.Draft7Validator(cache.plugin_manifest_schema)
+
     errors = []
-    for k in (
-        'name', 'release', 'pkgs', 'packagesite', 'fingerprints', 'artifact',
-    ):
-        if k not in manifest:
-            errors.append(f'Missing "{k}" key in manifest')
-
-    if 'devfs_ruleset' in manifest:
-        if not isinstance(manifest['devfs_ruleset'], dict):
-            errors.append('"devfs_ruleset" must be a dictionary')
-        else:
-            devfs_ruleset = manifest['devfs_ruleset']
-            if 'paths' not in devfs_ruleset:
-                errors.append('Key "paths" not specified in devfs_ruleset')
-            elif not isinstance(devfs_ruleset['paths'], dict):
-                errors.append('"devfs_ruleset.paths" should be a valid dictionary')
-
-            if 'includes' in devfs_ruleset and not isinstance(devfs_ruleset['includes'], list):
-                errors.append('"devfs_ruleset.includes" should be a valid list')
+    for e in v.iter_errors(manifest):
+        errors.append(e.message)
 
     if errors:
         errors = '\n'.join(errors)
         logit(
             {
                 'level': 'EXCEPTION',
-                'msg': f'The Following errors were encountered with plugin manifest:\n{errors}'
+                'message': f'The Following errors were encountered with plugin manifest:\n{errors}'
             },
             _callback=_callback,
             silent=silent,
