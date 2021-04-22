@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess as su
 import threading
@@ -14,7 +15,7 @@ class Cache:
     def __init__(self):
         self.fields = [
             'dataset_data', 'pool_data', 'dataset_dep_data', 'ioc_pool', 'ioc_dataset',
-            '_freebsd_version',
+            '_freebsd_version', '_plugin_manifest_schema'
         ]
         self.reset()
 
@@ -116,6 +117,16 @@ class Cache:
         finally:
             if lock:
                 self.cache_lock.release()
+
+    @property
+    def plugin_manifest_schema(self):
+        if not self._plugin_manifest_schema:
+            current_dir = os.path.dirname(os.path.realpath(__file__))
+            schema_path = os.path.join(current_dir, "plugin_manifest.json")
+
+            with open(schema_path, "r") as f:
+                self._plugin_manifest_schema = json.load(f)
+        return self._plugin_manifest_schema
 
     def reset(self):
         with self.cache_lock:
