@@ -12,11 +12,13 @@ iocage_tests_task:
     - python3 -m ensurepip
   pip_cache:
     folder: ~/.cache/pip
-    populate_script: python3 -m pip install -U pytest pytest-cov pytest-pep8 pytest-mock mock cython
+    populate_script:
+      - python3 install -r requirements-test.txt
+      - python3 -m pip install -U cython
   env_setup_script:
-    - python3 -m pip install -U pytest pytest-cov pytest-pep8 pytest-mock mock
+    - python3 -m pip install -U -r requirements-test.txt
     - mount -t fdescfs null /dev/fd
     - pkg install -y devel/py-libzfs
   install_iocage_script:
     - python3 setup.py install
-  test_script: pytest --zpool=pool
+  test_script: pytest --zpool=pool tests/functional_tests
