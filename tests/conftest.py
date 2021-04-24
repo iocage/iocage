@@ -29,7 +29,6 @@ import subprocess
 import pytest
 
 import iocage_lib.ioc_common
-from .data_classes import ZFS, Jail, ResourceSelector, Row
 
 
 def pytest_addoption(parser):
@@ -306,16 +305,19 @@ def remove_file():
 
 @pytest.fixture
 def zfs():
+    from tests.data_classes import ZFS
     return ZFS()
 
 
 @pytest.fixture
 def jail():
+    from tests.data_classes import Jail
     return Jail
 
 
 @pytest.fixture
 def resource_selector():
+    from tests.data_classes import ResourceSelector
     return ResourceSelector()
 
 
@@ -336,6 +338,8 @@ def freebsd_download_server():
 
 @pytest.fixture
 def parse_rows_output():
+    from tests.data_classes import Row
+
     def _output_list(data, type):
         rows = []
         for index, line in enumerate(data.split('\n')):
