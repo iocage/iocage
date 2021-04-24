@@ -388,7 +388,7 @@ class IOCPlugin(object):
                 {
                     "level": "INFO",
                     "message": f"  Using Plugin Branch: "
-                               f"{self.__get_plugin_branch(conf)}"
+                               f"{self.__get_plugin_branch__(conf)}"
                 },
                 _callback=self.callback,
                 silent=self.silent)
@@ -1203,7 +1203,7 @@ fingerprint: {fingerprint}
                 os.path.join(path, 'plugin')
             )
         else:
-            plugin_branch = self.__get_plugin_branch(plugin_conf)
+            plugin_branch = self.__get_plugin_branch__(plugin_conf)
             self._clone_repo(
                 plugin_branch, plugin_conf['artifact'],
                 f'{path}/plugin', callback=self.callback
@@ -1230,7 +1230,7 @@ fingerprint: {fingerprint}
                     silent=self.silent
                 )
 
-    def __get_plugin_branch(self, plugin_conf):
+    def __get_plugin_branch__(self, plugin_conf):
         if self.branch is not None:
             return self.branch
 
