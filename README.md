@@ -15,7 +15,7 @@ technologies the FreeBSD operating system has to offer. It is geared for ease
  of use with a simple and easy to understand command syntax.
 
 iocage is in the FreeBSD ports tree as sysutils/py-iocage.
-To install using binary packages, simply run: `pkg install py36-iocage`
+To install using binary packages, simply run: `pkg install py37-iocage`
 
 ## Installation
 
@@ -35,7 +35,7 @@ To install subsequent updates: run `make install` as root.
 
 ### Pkg:
 
-- It is possible to install pre-built packages using pkg(8) if you are using FreeBSD 10 or above: `pkg install py36-iocage`
+- It is possible to install pre-built packages using pkg(8) if you are using FreeBSD 10 or above: `pkg install py37-iocage`
 
 #### Upgrading from `iocage_legacy`:
 
