@@ -14,7 +14,7 @@ Using binary packages
 
 To install using binary packages on a FreeBSD system, run:
 
-:samp:`sudo pkg install py36-iocage`
+:samp:`sudo pkg install py37-iocage`
 
 Using github
 ++++++++++++
@@ -41,7 +41,7 @@ FreeBSD 10 or above.
 
 To install using pkg(8), run:
 
-:samp:`sudo pkg install py36-iocage`
+:samp:`sudo pkg install py37-iocage`
 
 Building Ports
 ++++++++++++++
