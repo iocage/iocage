@@ -2265,10 +2265,6 @@ class IOCJson(IOCConfiguration):
                     # 5 - interface|accept_rtadv
                     # All the while of course assuming that we can
                     # have more then one ip
-                    if key == 'ip4_addr':
-                        ip_check = ipaddress.IPv4Network
-                    else:
-                        ip_check = ipaddress.IPv6Network
 
                     final_value = []
                     for ip_str in value.split(','):
@@ -2296,7 +2292,10 @@ class IOCJson(IOCConfiguration):
 
                         # Let's validate the ip address now
                         try:
-                            ip_check(ip, strict=False)
+                            if key == 'ip4_addr':
+                                IOCJson.validate_ip4_addr(ip)
+                            else:
+                                IOCJson.validate_ip6_addr(ip)
                         except ValueError as e:
                             iocage_lib.ioc_common.logit(
                                 {
@@ -2826,3 +2825,23 @@ class IOCJson(IOCConfiguration):
             conf["host_hostname"] = tag
 
         return (conf, False, True)
+
+    @staticmethod
+    def validate_ip4_addr(ip):
+        # PTP configurations have two addresses.  Otherwise there will be 1.
+        parts = ip.split(" ")
+        if len(parts) > 2:
+            raise ValueError("Unrecognized IP4 address format")
+        if len(parts) == 2:
+            ipaddress.IPv4Address(parts[1])
+        ipaddress.IPv4Network(parts[0], strict=False)
+
+    @staticmethod
+    def validate_ip6_addr(ip):
+        # PTP configurations have two addresses.  Otherwise there will be 1.
+        parts = ip.split(" ")
+        if len(parts) > 2:
+            raise ValueError("Unrecognized IP6 address format")
+        if len(parts) == 2:
+            ipaddress.IPv6Address(parts[1])
+        ipaddress.IPv6Network(parts[0], strict=False)
