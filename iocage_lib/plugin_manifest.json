@@ -79,6 +79,9 @@
         },
         "revision": {
             "type": "string"
+        },
+        "branch": {
+            "type": "string"
         }
     }
 }

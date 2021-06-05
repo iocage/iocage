@@ -127,17 +127,22 @@ class IOCPlugin(object):
                     '://', 1)[-1].replace('/', '_').replace('.', '_')
             )
 
-        if self.branch is None and not self.hardened:
+    @property
+    def index_branch(self):
+        if self.branch is not None:
+            return self.branch
+
+        if not self.hardened:
             r = cache.freebsd_version
 
-            self.branch = f'{r}-RELEASE' if '.' in r else f'{r}.0-RELEASE'
-        elif self.branch is None and self.hardened:
+            return f'{r}-RELEASE' if '.' in r else f'{r}.0-RELEASE'
+        else:
             # Backwards compat
-            self.branch = 'master'
+            return 'master'
 
     def pull_clone_git_repo(self, depth=None):
         self._clone_repo(
-            self.branch, self.git_repository, self.git_destination,
+            self.index_branch, self.git_repository, self.git_destination,
             depth, self.callback
         )
 
@@ -375,7 +380,15 @@ class IOCPlugin(object):
             iocage_lib.ioc_common.logit(
                 {
                     "level": "INFO",
-                    "message": f"  Using Branch: {self.branch}"
+                    "message": f"  Using Index Branch: {self.index_branch}"
+                },
+                _callback=self.callback,
+                silent=self.silent)
+            iocage_lib.ioc_common.logit(
+                {
+                    "level": "INFO",
+                    "message": f"  Using Plugin Branch: "
+                               f"{self.__get_plugin_branch__(conf)}"
                 },
                 _callback=self.callback,
                 silent=self.silent)
@@ -1190,8 +1203,9 @@ fingerprint: {fingerprint}
                 os.path.join(path, 'plugin')
             )
         else:
+            plugin_branch = self.__get_plugin_branch__(plugin_conf)
             self._clone_repo(
-                self.branch, plugin_conf['artifact'],
+                plugin_branch, plugin_conf['artifact'],
                 f'{path}/plugin', callback=self.callback
             )
 
@@ -1215,6 +1229,15 @@ fingerprint: {fingerprint}
                     _callback=self.callback,
                     silent=self.silent
                 )
+
+    def __get_plugin_branch__(self, plugin_conf):
+        if self.branch is not None:
+            return self.branch
+
+        if 'branch' in plugin_conf:
+            return plugin_conf['branch']
+
+        return 'master'
 
     def __update_pkg_remove__(self, jid):
         """Remove all pkgs from the plugin"""
