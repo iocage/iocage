@@ -68,9 +68,6 @@
                 }
             }
         },
-        "plugin_schema": {
-            "type": "string"
-        },
         "official": {
             "type": "boolean"
         },
