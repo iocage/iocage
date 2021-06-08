@@ -112,7 +112,7 @@ Following is an example of a plugin manifest:
                 }
             ]
         },
-        "revision": "0"
+        "revision": 0
     }
 
 * **devfs_ruleset**: It should be a valid dictionary object where "paths" must be specified. Value of "paths" is a

@@ -68,9 +68,6 @@
                 }
             }
         },
-        "plugin_schema": {
-            "type": "string"
-        },
         "official": {
             "type": "boolean"
         },
@@ -78,7 +75,7 @@
             "type": "object"
         },
         "revision": {
-            "type": "string"
+            "type": "number"
         }
     }
 }
