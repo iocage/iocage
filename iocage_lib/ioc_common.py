@@ -769,7 +769,7 @@ def generate_devfs_ruleset(conf, paths=None, includes=None, callback=None,
         if int(configured_ruleset) != 0 and int(configured_ruleset) not in ruleset_list:
             return True, configured_ruleset, '-1'
         rules = su.run(
-            ['devfs', 'rule', '-s', configured_ruleset, 'show'],
+            ['devfs', 'rule', '-s', str(configured_ruleset), 'show'],
             stdout=su.PIPE, universal_newlines=True
         )
         for rule in rules.stdout.splitlines():
