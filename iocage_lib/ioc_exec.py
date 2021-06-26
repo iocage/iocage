@@ -77,7 +77,8 @@ class IOCExec(object):
         su_env.setdefault('TERM', 'xterm-256color')
         su_env.setdefault('LANG', env_lang)
         su_env.setdefault('LC_ALL', env_lang)
-
+        su_env.setdefault('https_proxy', os.environ.get('https_proxy', '')) # iocage upgrade fails on machines having proxy without these
+        su_env.setdefault('http_proxy', os.environ.get('http_proxy', ''))
         self.su_env = su_env
         self.callback = callback
         self.cmd = self.command
