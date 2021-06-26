@@ -77,7 +77,11 @@ class IOCUpgrade:
             'PATH': path,
             'PWD': '/',
             'HOME': '/',
-            'TERM': 'xterm-256color'
+            'TERM': 'xterm-256color',
+            'HTTP_PROXY': os.environ.get('HTTP_PROXY', ''),
+            'HTTPS_PROXY': os.environ.get('HTTPS_PROXY', ''),
+            'HTTP_PROXY_AUTH': os.environ.get('HTTP_PROXY_AUTH', ''),
+            'NO_PROXY': os.environ.get('NO_PROXY', '')
         }
 
         self.callback = callback
@@ -180,7 +184,7 @@ class IOCUpgrade:
                 #  https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=239498
                 cp = su.Popen(
                     ['pkg-static', '-j', self.jid, 'install', '-q', '-f', '-y', 'pkg'],
-                    stdout=su.PIPE, stderr=su.PIPE
+                    stdout=su.PIPE, stderr=su.PIPE, env=self.upgrade_env
                 )
                 _, stderr = cp.communicate()
                 if cp.returncode:
