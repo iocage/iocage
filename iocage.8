@@ -1491,8 +1491,9 @@ Default: 0
 .Pp
 Source: local
 .It Pf jail_zfs_dataset= Op iocage/jails/UUID/root/data | zfs_filesystem
-The dataset to be jailed and fully handed over to a jail.
-Takes the ZFS filesystem name without pool name.
+The dataset(s) to be jailed and fully handed over to a jail.
+Takes the ZFS filesystem name without the pool name.
+Multiple datasets may be specified, separated by whitespace.
 .Pp
 NOTE: only valid when
 .Ql jail_zfs=1.
