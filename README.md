@@ -2,7 +2,7 @@
 
 [![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/iocage/iocage.svg)](http://isitmaintained.com/project/iocage/iocage "Average time to resolve an issue")
 [![Percentage of issues still open](http://isitmaintained.com/badge/open/iocage/iocage.svg)](http://isitmaintained.com/project/iocage/iocage "Percentage of issues still open")
-![Python Version](https://img.shields.io/badge/Python-3.6-blue.svg)
+![Python Version](https://img.shields.io/badge/Python-3.8-blue.svg)
 [![GitHub issues](https://img.shields.io/github/issues/iocage/iocage.svg)](https://github.com/iocage/iocage/issues)
 [![GitHub forks](https://img.shields.io/github/forks/iocage/iocage.svg)](https://github.com/iocage/iocage/network)
 [![GitHub stars](https://img.shields.io/github/stars/iocage/iocage.svg)](https://github.com/iocage/iocage/stargazers)
@@ -15,7 +15,7 @@ technologies the FreeBSD operating system has to offer. It is geared for ease
  of use with a simple and easy to understand command syntax.
 
 iocage is in the FreeBSD ports tree as sysutils/py-iocage.
-To install using binary packages, simply run: `pkg install py37-iocage`
+To install using binary packages, simply run: `pkg install py38-iocage`
 
 ## Installation
 
@@ -23,8 +23,8 @@ To install using binary packages, simply run: `pkg install py37-iocage`
 
 The FreeBSD source tree ***must*** be located at `$SRC_BASE` (`/usr/src` by default) to build from git.
 
-- `pkg install python36 git-lite py36-cython py36-pip`
-- `git clone --recursive https://github.com/iocage/iocage`
+- `pkg install python38 git-lite py38-cython py38-libzfs py38-pip`
+- `git clone https://github.com/iocage/iocage`
 - `make install` as root
 
 To install subsequent updates: run `make install` as root.
@@ -35,7 +35,7 @@ To install subsequent updates: run `make install` as root.
 
 ### Pkg:
 
-- It is possible to install pre-built packages using pkg(8) if you are using FreeBSD 10 or above: `pkg install py37-iocage`
+- It is possible to install pre-built packages using pkg(8) if you are using FreeBSD 10 or above: `pkg install py38-iocage`
 
 #### Upgrading from `iocage_legacy`:
 
@@ -120,9 +120,9 @@ To see a list of commands available to you now, type `iocage` outside the jail.
 
 ### REQUIREMENTS
 
-- FreeBSD 9.3-RELEASE amd64 and higher or HardenedBSD/TrueOS
+- FreeBSD 11.4-RELEASE amd64 and higher or HardenedBSD/TrueOS
 - ZFS file system
-- Python 3.6+
+- Python 3.8+
 - UTF-8 locale (place into your ~/.login_conf):
 
 ```plain
