@@ -10,7 +10,7 @@ depends:
 	${PYTHON} -m pip install -Ur requirements.txt
 
 install: depends
-	${PYTHON} -m pip install -U .
+	${PYTHON} setup.py install 
 uninstall:
 	${PYTHON} -m pip uninstall -y iocage-lib iocage-cli
 test:
