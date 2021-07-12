@@ -38,8 +38,8 @@ else:
 if os.path.isdir("/".join([sys.prefix, "share/zsh/site-functions/"])):
     _data.append(('share/zsh/site-functions', ['zsh-completion/_iocage']))
 
-if sys.version_info < (3, 6):
-    exit("Only Python 3.6 and higher is supported.")
+if sys.version_info < (3, 8):
+    exit("Only Python 3.8 and higher is supported.")
 
 VERSION = '1.2'
 
