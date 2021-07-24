@@ -51,6 +51,7 @@ setup(
     author_email='https://groups.google.com/forum/#!forum/iocage',
     url='https://github.com/iocage/iocage',
     packages=find_packages(exclude=['tests']),
+    package_data={'iocage_lib': ['plugin_manifest.json']},
     include_package_data=True,
     install_requires=[
         'GitPython>=2.1.11',
