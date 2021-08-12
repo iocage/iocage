@@ -690,11 +690,14 @@ def parse_latest_release():
         # We want a dynamic supported
         try:
             if "releng/" in rel[1]:
-                rel = rel[1].strip('</td').strip("releng/")
+                rel = rel[1].strip('</td').strip('</p').strip("releng/")
+                float(rel)
 
                 if rel not in sup_releases:
                     sup_releases.append(rel)
         except IndexError:
+            pass
+        except ValueError:
             pass
 
     latest = f"{sorted(sup_releases)[-1]}-RELEASE"
