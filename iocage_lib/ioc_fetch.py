@@ -123,7 +123,7 @@ class IOCFetch:
             # We want a dynamic EOL
             try:
                 if "-RELEASE" in eol[1]:
-                    eol = eol[1].strip('</td')
+                    eol = eol[1].strip('</td').strip('</p')
 
                     if eol not in eol_releases:
                         eol_releases.append(eol)
