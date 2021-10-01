@@ -961,7 +961,10 @@ class IOCCreate(object):
                             log=not(self.silent)
                         )
                 except iocage_lib.ioc_exceptions.CommandFailed as e:
-                    pkg_stderr = e.message[-1].decode().rstrip()
+                    nonempty_lines = [line.rstrip() for line in e.message if line.rstrip()]
+                    pkg_stderr = ''
+                    if len(nonempty_lines) > 0:
+                        pkg_stderr = nonempty_lines[-1].decode()
                     pkg_err = True
 
                 if not pkg_err:
