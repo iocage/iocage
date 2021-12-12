@@ -199,7 +199,7 @@ class IOCCpuset(object):
             pass
         else:
             result = re.findall(
-                r'.*mask:.*(\d+)$',
+                r'.*mask:.*?(\d+)$',
                 output.stdout.split('\n')[0]
             )
             if result:
