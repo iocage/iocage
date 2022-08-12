@@ -1297,3 +1297,23 @@ def tmp_dataset_checks(_callback, silent):
                 _callback=_callback,
                 silent=silent
             )
+
+def generate_resolv(resolver, mount_root):
+        #                                     compat
+
+        if resolver != "/etc/resolv.conf" and resolver != "none" and \
+                resolver != "/dev/null":
+            with iocage_lib.ioc_common.open_atomic(
+                    f"{mount_root}/etc/resolv.conf", "w") as resolv_conf:
+
+                for line in resolver.split(";"):
+                    resolv_conf.write(line + "\n")
+        elif resolver == "none":
+            shutil.copy("/etc/resolv.conf",
+                        f"{mount_root}/etc/resolv.conf")
+        elif resolver == "/dev/null":
+            # They don't want the resolv.conf to be touched.
+
+            return
+        else:
+            shutil.copy(resolver, f"{mount_root}/etc/resolv.conf")

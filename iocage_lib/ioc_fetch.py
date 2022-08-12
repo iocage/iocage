@@ -842,6 +842,10 @@ class IOCFetch:
                 },
                 _callback=self.callback,
                 silent=self.silent)
+            iocage_lib.ioc_common.generate_resolv(
+                iocage_lib.ioc_json.IOCJson(
+                    mount, cli=False).json_get_value('resolver'),
+                mount_root)
         else:
             cmd = [
                 "mount", "-t", "devfs", "devfs",
@@ -860,8 +864,7 @@ class IOCFetch:
                 },
                 _callback=self.callback,
                 silent=self.silent)
-
-        shutil.copy("/etc/resolv.conf", f"{mount_root}/etc/resolv.conf")
+            shutil.copy("/etc/resolv.conf", f"{mount_root}/etc/resolv.conf")
 
         path = '/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:'\
                '/usr/local/bin:/root/bin'
