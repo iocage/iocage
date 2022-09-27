@@ -761,7 +761,7 @@ class IOCFetch:
             status = "\r\n"
 
         if self.silent:
-            return
+            return ""
 
         text = "\r{} [{}] {:.0f}% {} {}MB/s".format(
             display_text,
