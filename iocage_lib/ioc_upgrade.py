@@ -120,7 +120,7 @@ class IOCUpgrade:
                 tmp.name, "-b", self.path, "-d",
                 f"{self.path}/var/db/freebsd-update/", "-f",
                 f"{self.path}/etc/freebsd-update.conf",
-                "--not-running-from-cron", "--currently-running "
+                "--not-running-from-cron", "--currently-running",
                 f"{self.jail_release}", "-r", self.new_release, "upgrade"
             ]
 
