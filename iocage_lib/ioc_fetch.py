@@ -892,7 +892,7 @@ class IOCFetch:
         su.Popen(cmd).communicate()
         if self.verify:
             f = "https://raw.githubusercontent.com/freebsd/freebsd-src" \
-                "/master/usr.sbin/freebsd-update/freebsd-update.sh"
+                "/main/usr.sbin/freebsd-update/freebsd-update.sh"
 
             tmp = tempfile.NamedTemporaryFile(delete=False)
             with urllib.request.urlopen(f) as fbsd_update:
