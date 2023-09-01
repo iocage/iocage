@@ -1644,6 +1644,18 @@ Default: 0
 .Pp
 Source:
 .Xr jail 8
+.It Pf allow_mount_fdescfs= Op 1 | 0
+Allow privileged users inside the jail to mount and unmount the fdescfs
+file system.
+This permission is effective only together with allow.mount and if
+enforce_statfs is set to a value lower than 2.
+.Pp
+Note: This is not supported on FreeBSD 9.3.
+.Pp
+Default: 0
+.Pp
+Source:
+.Xr jail 8
 .It Pf allow_mount_fusefs= Op 1 | 0
 Allow privileged users inside the jail to mount and unmount fusefs file
 systems.
