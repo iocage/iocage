@@ -907,7 +907,7 @@ class IOCStart(object):
                 # newer freebsd versions use 'ifconfig -f inet:cidr' and don't need any hex conversion
                 freebsd_version = iocage_lib.ioc_common.checkoutput(['freebsd-version']).split('-')[0].split('.')
                 freebsd_version_major = int(freebsd_version[0])
-                if freebsd_version_major < 12:
+                if freebsd_version_major < 11:
                     cmd = ['jexec', f'ioc-{self.uuid}', 'ifconfig', interface, 'inet']
                     out = su.check_output(cmd)
                     addr_split = out.splitlines()[2].split()
