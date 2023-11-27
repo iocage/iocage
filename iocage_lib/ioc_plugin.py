@@ -97,6 +97,7 @@ class IOCPlugin(object):
         self.jail = jail
         self.http = kwargs.pop("http", True)
         self.hardened = kwargs.pop("hardened", False)
+        self.pass_data = kwargs.pop("pass_data", None)
         self.date = datetime.datetime.utcnow().strftime("%F")
         self.branch = branch
         self.silent = silent
@@ -807,6 +808,19 @@ fingerprint: {fingerprint}
             try:
                 shutil.copy(f"{jaildir}/plugin/post_install.sh",
                             f"{jaildir}/root/root")
+
+                if self.pass_data is not None:
+                    if os.path.exists(self.pass_data):
+                        shutil.copy(f"{self.pass_data}",
+                                    f"{jaildir}/root/root")
+                    else:
+                        iocage_lib.ioc_common.logit(
+                            {
+                                "level": "WARNING",
+                                "message": f"\n{self.pass_data} does not exist!"
+                            },
+                            _callback=self.callback,
+                            silent=self.silent)
 
                 iocage_lib.ioc_common.logit(
                     {
