@@ -1,4 +1,4 @@
-.Dd September 12, 2020
+.Dd February 25, 2021
 .Dt IOCAGE 8
 .Os
 .Sh NAME
@@ -212,6 +212,7 @@
 .\" == UPDATE ==
 .Nm
 .Cm update
+.Op Fl s | -server
 .Ar UUID | NAME
 .\" == UPGRADE ==
 .Nm
@@ -1017,6 +1018,12 @@ Stop the jail identified by the shortened UUID.
 Runs
 .Cm freebsd-update
 to update the specified jail to the latest patch level.
+.Pp
+Options:
+.Bl -tag -width "[-s | --server TEXT]"
+.It Op Fl s | -server Ar TEXT
+Define the server from which to fetch the RELEASE.
+.El
 .Pp
 Example:
 .Pp
