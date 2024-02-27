@@ -252,6 +252,18 @@ class IOCage:
                 tuple: The jails uuid, path
         """
 
+        if '/' in self.jail:
+            msg = f"jail '{self.jail}' not found ('/' not allowed in jail name)!"
+
+            ioc_common.logit(
+                {
+                    "level": "EXCEPTION",
+                    "message": msg
+                },
+                _callback=self.callback,
+                silent=self.silent)
+            return
+
         if os.path.isdir(f"{self.iocroot}/jails/{self.jail}"):
             path = f"{self.iocroot}/jails/{self.jail}"
 
